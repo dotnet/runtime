@@ -5,11 +5,8 @@
       <SupportedFramework>net461;uap10.0.16299;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Microsoft.Win32.Registry.csproj" />
-    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
-    <HarvestIncludePaths Include="ref/netstandard1.3">
-      <SupportedFramework>netcore50</SupportedFramework>
-    </HarvestIncludePaths>
-    <HarvestIncludePaths Include="runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
+    <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
+    <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore50;uap10.0;net46" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

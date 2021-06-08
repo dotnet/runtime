@@ -76,7 +76,7 @@ namespace System.Numerics
         internal static uint RoundUpToPowerOf2(uint value)
         {
             // TODO: https://github.com/dotnet/runtime/issues/43135
-            // When this is exposed publicly, decide on behavior be for the boundary cases...
+            // When this is exposed publicly, decide on the behavior for the boundary cases...
             // the accelerated and fallback paths differ.
             Debug.Assert(value > 0 && value <= (uint.MaxValue / 2) + 1);
 

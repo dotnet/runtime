@@ -20,7 +20,7 @@ gint64 mono_msec_boottime (void);
 gint64 mono_msec_ticks (void);
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
-gint64 mono_100ns_ticks (void);
+MONO_COMPONENT_API gint64 mono_100ns_ticks (void);
 
 /* Returns the number of 100ns ticks since 1/1/1601, UTC timezone */
 gint64 mono_100ns_datetime (void);

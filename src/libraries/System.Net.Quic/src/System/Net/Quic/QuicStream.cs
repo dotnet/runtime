@@ -101,6 +101,8 @@ namespace System.Net.Quic
 
         public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
 
+        public ValueTask ShutdownCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownCompleted(cancellationToken);
+
         public void Shutdown() => _provider.Shutdown();
 
         protected override void Dispose(bool disposing)

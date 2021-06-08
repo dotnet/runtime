@@ -49,6 +49,26 @@ VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr
     SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(scanProc, lp1, lp2);
 }
 
+void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef VERIFY_HEAP
+    if (is_bgc)
+    {
+        // Validate byrefs pinned by IL stubs since the last GC.
+        StubHelpers::ProcessByrefValidationList();
+    }
+#endif // VERIFY_HEAP
+
+    Interop::OnBeforeGCScanRoots(is_concurrent);
+}
+
 //EE can perform post stack scanning action, while the
 // user threads are still suspended
 VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
@@ -66,6 +86,8 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     // the RCW cache from resurrecting them.
     ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
+
+    Interop::OnAfterGCScanRoots(sc->concurrent);
 }
 
 /*
@@ -87,7 +109,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     // the threadstore lock.
 
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
-                GetThread() == NULL ||
+                GetThreadNULLOk() == NULL ||
                 // this is for background GC threads which always call this when EE is suspended.
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
@@ -157,7 +179,22 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
 static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 {
-    TailCallArgBuffer* argBuffer = pThread->GetTailCallTls()->GetArgBuffer();
+    TailCallTls* tls = pThread->GetTailCallTls();
+    // Keep loader associated with CallTailCallTarget alive.
+    if (sc->promotion)
+    {
+#ifndef DACCESS_COMPILE
+        const PortableTailCallFrame* frame = tls->GetFrame();
+        if (frame->NextCall != NULL)
+        {
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)frame->NextCall);
+            if (pMD != NULL)
+                GcReportLoaderAllocator(fn, sc, pMD->GetLoaderAllocator());
+        }
+#endif
+    }
+
+    TailCallArgBuffer* argBuffer = tls->GetArgBuffer();
     if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 
@@ -272,9 +309,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     ETW::TypeSystemLog::Cleanup();
 #endif
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCStarted(condemned);
-#endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
     {
@@ -291,9 +326,7 @@ void GCToEEInterface::GcDone(int condemned)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCFinished(condemned);
-#endif // FEATURE_COMINTEROP
 }
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
@@ -317,23 +350,16 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
         return isRooted;
 #endif
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
+        return isReferenced;
+#endif
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCMARSHAL)
+#error COM and Objective-C are not supported at the same time.
+#endif
 
     return false;
-}
-
-void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef VERIFY_HEAP
-    // Validate byrefs pinned by IL stubs since the last GC.
-    StubHelpers::ProcessByrefValidationList();
-#endif // VERIFY_HEAP
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
@@ -376,7 +402,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
     if (!pThread)
     {
         return nullptr;
@@ -425,8 +451,7 @@ bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
-    
+    Thread* pThread = ::GetThreadNULLOk();
     return (pThread && pThread->PreemptiveGCDisabled());
 }
 
@@ -434,7 +459,7 @@ bool GCToEEInterface::EnablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
 
     if (pThread && pThread->PreemptiveGCDisabled())
     {
@@ -449,7 +474,7 @@ void GCToEEInterface::DisablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
     if (pThread)
     {
         pThread->DisablePreemptiveGC();
@@ -460,7 +485,7 @@ Thread* GCToEEInterface::GetThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    return ::GetThread();
+    return ::GetThreadNULLOk();
 }
 
 //
@@ -1075,6 +1100,13 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
         FinalizeWeakReference(obj);
         return true;
     }
+#ifdef FEATURE_OBJCMARSHAL
+    else if (pMT->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue((OBJECTREF)obj);
+        return false;
+    }
+#endif // FEATURE_OBJCMARSHAL
 
     return false;
 }
@@ -1125,7 +1157,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     // otherwise, ask the config subsystem.
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::EEConfig_default };
+        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::LookupOptions::Default };
         *value = CLRConfig::GetConfigValue(info) != 0;
         return true;
     }
@@ -1170,7 +1202,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     // so have to fake it with getting the string and converting to uint64_t
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
         LPWSTR out = CLRConfig::GetConfigValue(info);
         if (!out)
         {
@@ -1226,7 +1258,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
     LPWSTR fromClrConfig = CLRConfig::GetConfigValue(info);
     LPCWSTR out = fromClrConfig;
     if (out == NULL)
@@ -1346,7 +1378,7 @@ namespace
 
         EX_TRY
         {
-            args.Thread = SetupUnstartedThread(FALSE);
+            args.Thread = SetupUnstartedThread(SUTF_ThreadStoreLockAlreadyTaken);
         }
         EX_CATCH
         {
@@ -1367,7 +1399,7 @@ namespace
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial(true);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
-            args->HasStarted = !!args->Thread->HasStarted(false);
+            args->HasStarted = !!args->Thread->HasStarted();
 
             Thread* thread = args->Thread;
             auto threadStart = args->ThreadStart;
@@ -1392,7 +1424,7 @@ namespace
             return false;
         }
 
-        args.Thread->SetBackground(TRUE, FALSE);
+        args.Thread->SetBackground(TRUE);
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
@@ -1608,7 +1640,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             DACNotify::DoGCNotification(gea);
         }
     }
-    
+
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
@@ -1690,3 +1722,7 @@ void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const Stre
     StressLog::LogMsg(level, facility, msg);
 }
 
+uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return ::GetCurrentProcessCpuCount();
+}

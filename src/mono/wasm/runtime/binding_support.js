@@ -278,8 +278,12 @@ var BindingSupportLib = {
 			return null;
 		},
 
+		_get_string_from_intern_table: function (mono_obj) {
+			return this._managed_pointer_to_interned_string_table.get (mono_obj);
+		},
+
 		conv_string: function (mono_obj, interned) {
-			var interned_instance = this._managed_pointer_to_interned_string_table.get (mono_obj);
+			var interned_instance = this._get_string_from_intern_table(mono_obj);
 			if (interned_instance !== undefined)
 				return interned_instance;
 

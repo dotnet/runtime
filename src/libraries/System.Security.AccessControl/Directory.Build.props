@@ -3,7 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides base classes that enable managing access and audit control lists on securable objects.
 
 Commonly Used Types:

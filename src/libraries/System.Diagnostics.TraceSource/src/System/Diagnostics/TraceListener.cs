@@ -390,7 +390,7 @@ namespace System.Diagnostics
 
         private void WriteHeader(string source, TraceEventType eventType, int id)
         {
-            Write(string.Format(CultureInfo.InvariantCulture, "{0} {1}: {2} : ", source, eventType.ToString(), id.ToString(CultureInfo.InvariantCulture)));
+            Write($"{source} {eventType.ToString()}: {id.ToString(CultureInfo.InvariantCulture)} : ");
         }
 
         private void WriteFooter(TraceEventCache? eventCache)

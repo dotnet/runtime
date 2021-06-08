@@ -606,7 +606,6 @@ namespace System.Collections.Concurrent
             Node? head;
             Node next;
             int backoff = 1;
-            Random? r = null;
             while (true)
             {
                 head = _head;
@@ -649,11 +648,7 @@ namespace System.Collections.Concurrent
 
                 if (spin.NextSpinWillYield)
                 {
-                    if (r == null)
-                    {
-                        r = new Random();
-                    }
-                    backoff = r.Next(1, BACKOFF_MAX_YIELDS);
+                    backoff = Random.Shared.Next(1, BACKOFF_MAX_YIELDS);
                 }
                 else
                 {

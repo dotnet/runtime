@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 
 namespace System.Configuration
 {
-    internal class ConfigurationValues : NameObjectCollectionBase
+    internal sealed class ConfigurationValues : NameObjectCollectionBase
     {
         private static volatile IEnumerable s_emptyCollection;
         private BaseConfigurationRecord _configRecord;

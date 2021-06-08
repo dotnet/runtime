@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Net.Security
 {
-    internal class CipherSuitesPolicyPal
+    internal sealed class CipherSuitesPolicyPal
     {
         internal CipherSuitesPolicyPal(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {

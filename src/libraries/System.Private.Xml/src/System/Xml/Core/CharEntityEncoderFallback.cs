@@ -10,7 +10,7 @@ namespace System.Xml
     //
     // CharEntityEncoderFallback
     //
-    internal class CharEntityEncoderFallback : EncoderFallback
+    internal sealed class CharEntityEncoderFallback : EncoderFallback
     {
         private CharEntityEncoderFallbackBuffer? _fallbackBuffer;
 
@@ -78,7 +78,7 @@ namespace System.Xml
     //
     // CharEntityFallbackBuffer
     //
-    internal class CharEntityEncoderFallbackBuffer : EncoderFallbackBuffer
+    internal sealed class CharEntityEncoderFallbackBuffer : EncoderFallbackBuffer
     {
         private readonly CharEntityEncoderFallback _parent;
 

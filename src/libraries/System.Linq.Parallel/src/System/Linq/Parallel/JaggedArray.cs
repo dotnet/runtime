@@ -3,7 +3,7 @@
 
 namespace System.Linq.Parallel
 {
-    internal class JaggedArray<TElement>
+    internal static class JaggedArray<TElement>
     {
         public static TElement[][] Allocate(int size1, int size2)
         {

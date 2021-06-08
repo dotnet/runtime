@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Formats.Asn1
 {
-    internal class SetOfValueComparer : IComparer<ReadOnlyMemory<byte>>
+    internal sealed class SetOfValueComparer : IComparer<ReadOnlyMemory<byte>>
     {
         internal static SetOfValueComparer Instance { get; } = new SetOfValueComparer();
 

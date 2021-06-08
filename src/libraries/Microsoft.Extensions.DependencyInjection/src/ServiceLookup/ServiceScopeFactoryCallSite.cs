@@ -5,10 +5,11 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ServiceScopeFactoryCallSite : ServiceCallSite
+    internal sealed class ServiceScopeFactoryCallSite : ServiceCallSite
     {
-        public ServiceScopeFactoryCallSite() : base(ResultCache.None)
+        public ServiceScopeFactoryCallSite(IServiceScopeFactory value) : base(ResultCache.None)
         {
+            Value = value;
         }
 
         public override Type ServiceType { get; } = typeof(IServiceScopeFactory);

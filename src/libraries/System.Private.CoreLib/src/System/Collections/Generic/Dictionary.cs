@@ -254,7 +254,7 @@ namespace System.Collections.Generic
             int count = _count;
             if (count > 0)
             {
-                Array.Clear(_buckets, 0, _buckets.Length);
+                Array.Clear(_buckets);
 
                 _count = 0;
                 _freeList = -1;

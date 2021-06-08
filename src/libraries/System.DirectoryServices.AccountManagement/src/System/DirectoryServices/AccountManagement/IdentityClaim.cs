@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class IdentityClaim
+    internal sealed class IdentityClaim
     {
         public string UrnValue
         {

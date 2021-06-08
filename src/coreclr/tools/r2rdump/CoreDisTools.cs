@@ -506,7 +506,7 @@ namespace R2RDump
                 if (pointsOutsideRuntimeFunction && IsIntel2ByteIndirectJumpPCRelativeInstruction(targetImageOffset, out int instructionRelativeOffset))
                 {
                     int thunkTargetRVA = targetRVA + instructionRelativeOffset;
-                    bool haveImportCell = TryGetImportCellName(thunkTargetRVA, out string importCellName); ;
+                    bool haveImportCell = TryGetImportCellName(thunkTargetRVA, out string importCellName);
 
                     if (_options.Naked && haveImportCell)
                     {

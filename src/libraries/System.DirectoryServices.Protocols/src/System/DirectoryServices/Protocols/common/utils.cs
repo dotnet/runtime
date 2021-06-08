@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Protocols
 {
-    internal class Utility
+    internal static class Utility
     {
         internal static bool IsResultCode(ResultCode code)
         {

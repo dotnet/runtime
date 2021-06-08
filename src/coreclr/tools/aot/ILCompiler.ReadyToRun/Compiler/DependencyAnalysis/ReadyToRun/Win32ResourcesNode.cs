@@ -23,7 +23,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool IsShareable => false;
 
-        public override int ClassCode => 315358339;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.Win32ResourcesNode;
 
         public override bool StaticDependenciesAreComputed => true;
 

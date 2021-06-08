@@ -1857,7 +1857,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class ProcessData
+    internal sealed class ProcessData
     {
         public ProcessData(int pid, long startTime)
         {

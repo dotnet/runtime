@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.Registration
 {
     public class RegistrationBuilder : CustomReflectionContext
     {
-        internal class InnerRC : ReflectionContext
+        internal sealed class InnerRC : ReflectionContext
         {
             public override TypeInfo MapType(TypeInfo t) { return t; }
             public override Assembly MapAssembly(Assembly a) { return a; }

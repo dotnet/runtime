@@ -89,7 +89,7 @@ namespace Internal.IL
                 return Array.Empty<LocalVariableDefinition>();
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetStandaloneSignature(localSignature).Signature);
 
-            EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
+            EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader, NotFoundBehavior.Throw);
             LocalVariableDefinition[] locals = parser.ParseLocalsSignature();
 
             Interlocked.CompareExchange(ref _locals, locals, null);
@@ -131,13 +131,13 @@ namespace Internal.IL
             return _ilExceptionRegions;
         }
 
-        public override object GetObject(int token)
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
         {
             // UserStrings cannot be wrapped in EntityHandle
             if ((token & 0xFF000000) == 0x70000000)
                 return _module.GetUserString(MetadataTokens.UserStringHandle(token));
 
-            return _module.GetObject(MetadataTokens.EntityHandle(token));
+            return _module.GetObject(MetadataTokens.EntityHandle(token), notFoundBehavior);
         }
     }
 }

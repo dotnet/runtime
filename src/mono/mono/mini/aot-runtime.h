@@ -82,7 +82,8 @@ typedef enum {
 	MONO_AOT_METHOD_FLAG_HAS_CCTOR = 1,
 	MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE = 2,
 	MONO_AOT_METHOD_FLAG_HAS_PATCHES = 4,
-	MONO_AOT_METHOD_FLAG_HAS_CTX = 8
+	MONO_AOT_METHOD_FLAG_HAS_CTX = 8,
+	MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY = 16,
 } MonoAotMethodFlags;
 
 typedef enum {
@@ -241,7 +242,6 @@ typedef struct MonoAotFileInfo
 #define MONO_AOT_FILE_INFO_NUM_SYMBOLS (((G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_LAST_SYMBOL) - G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_FIRST_SYMBOL)) / sizeof (gpointer)) + 1)
 
 void      mono_aot_init                     (void);
-void      mono_aot_cleanup                  (void);
 gpointer  mono_aot_get_method               (MonoMethod *method, MonoError *error);
 gpointer  mono_aot_get_method_from_token    (MonoImage *image, guint32 token, MonoError *error);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
@@ -249,7 +249,7 @@ guint8*   mono_aot_get_plt_entry            (host_mgreg_t *regs, guint8 *code);
 guint32   mono_aot_get_plt_info_offset      (gpointer aot_module, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_space, const char *name, MonoClass **klass);
-MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
+MonoJitInfo* mono_aot_find_jit_info         (MonoImage *image, gpointer addr);
 gpointer mono_aot_plt_resolve               (gpointer aot_module, host_mgreg_t *regs, guint8 *code, MonoError *error);
 void     mono_aot_patch_plt_entry           (gpointer aot_module, guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr);
 gpointer mono_aot_get_method_from_vt_slot   (MonoVTable *vtable, int slot, MonoError *error);

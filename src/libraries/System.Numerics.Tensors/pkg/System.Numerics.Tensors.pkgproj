@@ -6,8 +6,11 @@
          2. We don't currently have a good mechanism for telling nuget to include the xml doc from the
             implementation project in the ref folder for the generated package -->
     <ProjectReference Include="..\src\System.Numerics.Tensors.csproj">
-        <SupportedFramework>net45;wpa81;win8;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+        <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+
+    <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
+    <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore45;netcore451;netcore50;uap10.0;net45;net451;net46;wpa81" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

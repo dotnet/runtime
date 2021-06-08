@@ -39,11 +39,37 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using MonoTests.Common;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Runtime.Versioning;
 
 namespace MonoTests.System.Runtime.Caching
 {
     public class MemoryCacheTest
     {
+        public static bool SupportsPhysicalMemoryMonitor
+        {
+            get
+            {
+                // This is always supported on windows
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return true;
+                }
+
+                // On non-windows, we only support .Net 5.0 and higher
+                if (Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+        public static bool DoesNotSupportPhysicalMemoryMonitor => !SupportsPhysicalMemoryMonitor;
+
+
         [Fact]
         public void ConstructorParameters()
         {
@@ -144,8 +170,8 @@ namespace MonoTests.System.Runtime.Caching
             mc = new MemoryCache("MyCache", config);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Negative case for "physicalMemoryLimitPercentage" on non Windows
+        // Negative case for "physicalMemoryLimitPercentage" on non-supporting OS's
+        [ConditionalFact(nameof(DoesNotSupportPhysicalMemoryMonitor))]
         public void PhysicalMemoryLimitNotSupported()
         {
             var config = new NameValueCollection();
@@ -188,8 +214,7 @@ namespace MonoTests.System.Runtime.Caching
                 mc.DefaultCacheCapabilities);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
         public void ConstructorValues()
         {
             var config = new NameValueCollection();
@@ -1006,8 +1031,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(11, mc.GetCount());
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
         public void TestExpiredGetValues()
         {
             var config = new NameValueCollection();
@@ -1040,9 +1064,13 @@ namespace MonoTests.System.Runtime.Caching
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
         [OuterLoop] // makes long wait
+        [Fact]
+        // This little dance is needed to prevent this test from running against the OS-specific
+        // runtime binary on the wrong OS. Without it, this test will run for each 'TargetFramework'
+        // in the test csproj, and the non-windows framework will run against the non-windows library
+        // because 'netstandard' is still valid for windows execution.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestCacheSliding()
         {
             var config = new NameValueCollection();
@@ -1348,8 +1376,9 @@ namespace MonoTests.System.Runtime.Caching
 
     public class MemoryCacheTestExpires4
     {
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
+        public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
+
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
         public async Task TestCacheShrink()
         {
             const int HEAP_RESIZE_THRESHOLD = 8192 + 2;
@@ -1406,8 +1435,9 @@ namespace MonoTests.System.Runtime.Caching
 
     public class MemoryCacheTestExpires5
     {
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
+        public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
+
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
         public async Task TestCacheExpiryOrdering()
         {
             var config = new NameValueCollection();

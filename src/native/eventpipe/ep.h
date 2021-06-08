@@ -297,6 +297,11 @@ ep_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackCo
 	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
 }
 
+bool
+ep_add_rundown_execution_checkpoint (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
 /*
  * EventPipePerf.
  */
@@ -336,6 +341,13 @@ ep_system_time_get (EventPipeSystemTime *system_time)
 {
 	ep_rt_system_time_get (system_time);
 }
+
+/*
+ * EventPipeIpcStreamFactoryCallback.
+ */
+
+void
+ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback);
 
 #else /* ENABLE_PERFTRACING */
 

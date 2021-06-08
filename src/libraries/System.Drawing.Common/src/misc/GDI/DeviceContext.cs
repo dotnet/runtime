@@ -342,7 +342,7 @@ namespace System.Drawing.Internal
         /// </summary>
         public override int GetHashCode() => _hDC.GetHashCode();
 
-        internal class GraphicsState
+        internal sealed class GraphicsState
         {
             internal IntPtr hBrush;
             internal IntPtr hFont;

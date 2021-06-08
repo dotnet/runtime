@@ -232,51 +232,14 @@ struct _MonoAssembly {
 };
 
 typedef struct {
-	/*
-	 * indexed by MonoMethodSignature 
-	 * Protected by the marshal lock
-	 */
-	GHashTable *delegate_invoke_cache;
-	GHashTable *delegate_begin_invoke_cache;
-	GHashTable *delegate_end_invoke_cache;
-	GHashTable *runtime_invoke_signature_cache;
-	GHashTable *runtime_invoke_sig_cache;
-
-	/*
-	 * indexed by SignaturePointerPair
-	 */
-	GHashTable *delegate_abstract_invoke_cache;
-	GHashTable *delegate_bound_static_invoke_cache;
-
-	/*
-	 * indexed by MonoMethod pointers
-	 * Protected by the marshal lock
-	 */
-	GHashTable *runtime_invoke_method_cache;
-	GHashTable *managed_wrapper_cache;
-
-	GHashTable *native_wrapper_cache;
-	GHashTable *native_wrapper_aot_cache;
-	GHashTable *native_wrapper_check_cache;
-	GHashTable *native_wrapper_aot_check_cache;
-
-	GHashTable *native_func_wrapper_aot_cache;
-	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
-	GHashTable *synchronized_cache;
-	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
-	GHashTable *thunk_invoke_cache;
-} MonoWrapperCaches;
-
-typedef struct {
 	const char* data;
 	guint32  size;
 } MonoStreamHeader;
 
 struct _MonoTableInfo {
 	const char *base;
-	guint       rows     : 24;
+	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
+
 	guint       row_size : 8;
 
 	/*
@@ -583,42 +546,6 @@ struct _MonoImage {
 	mono_mutex_t    lock;
 };
 
-/*
- * Generic instances and aggregated custom modifiers depend on many images, and they need to be deleted if one
- * of the images they depend on is unloaded. For example,
- * List<Foo> depends on both List's image and Foo's image.
- * A MonoImageSet is the owner of all generic instances depending on the same set of
- * images.
- */
-typedef struct {
-	int nimages;
-	MonoImage **images;
-
-	// Generic-specific caches
-	GHashTable *ginst_cache, *gmethod_cache, *gsignature_cache;
-	MonoConcurrentHashTable *gclass_cache;
-
-	/* mirror caches of ones already on MonoImage. These ones contain generics */
-	GHashTable *szarray_cache, *array_cache, *ptr_cache;
-
-	MonoWrapperCaches wrapper_caches;
-
-	GHashTable *aggregate_modifiers_cache;
-
-	/* Indexed by MonoGenericParam pointers */
-	GHashTable **gshared_types;
-	/* The length of the above array */
-	int gshared_types_len;
-
-	mono_mutex_t    lock;
-
-	/*
-	 * Memory for generic instances owned by this image set should be allocated from
-	 * this mempool, using the mono_image_set_alloc family of functions.
-	 */
-	MonoMemPool         *mempool;
-} MonoImageSet;
-
 enum {
 	MONO_SECTION_TEXT,
 	MONO_SECTION_RSRC,
@@ -648,7 +575,6 @@ struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;
 	guint32 strong_name_size;
-	MonoDomain *domain;
 };
 
 struct _MonoDynamicImage {
@@ -801,6 +727,12 @@ assembly_is_dynamic (MonoAssembly *assembly)
 #endif
 }
 
+static inline int
+table_info_get_rows (const MonoTableInfo *table)
+{
+	return table->rows_;
+}
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr);
 
@@ -893,7 +825,7 @@ static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (*idx >= (*t)->rows)) {
+		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
@@ -905,32 +837,6 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 void
 mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 #endif /* ENABLE_METADATA_UPDATE */
-
-gpointer
-mono_image_set_alloc  (MonoImageSet *set, guint size);
-
-gpointer
-mono_image_set_alloc0 (MonoImageSet *set, guint size);
-
-void
-mono_image_set_lock (MonoImageSet *set);
-
-void
-mono_image_set_unlock (MonoImageSet *set);
-
-char*
-mono_image_set_strdup (MonoImageSet *set, const char *s);
-
-MonoImageSet *
-mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *amods);
-
-MonoImageSet *
-mono_metadata_get_image_set_for_type (MonoType *type);
-
-MonoImageSet *
-mono_metadata_merge_image_sets (MonoImageSet *set1, MonoImageSet *set2);
-
-#define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
@@ -954,20 +860,14 @@ MonoType*
 mono_metadata_get_shared_type (MonoType *type);
 
 void
-mono_metadata_clean_for_image (MonoImage *image);
-
-void
 mono_metadata_clean_generic_classes_for_image (MonoImage *image);
-
-MONO_API void
-mono_metadata_cleanup (void);
 
 #ifndef ENABLE_METADATA_UPDATE
 static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
 	/* token_index is 1-based. TRUE means the token is out of bounds */
-	return token_index > image->tables [table_index].rows;
+	return token_index > image->tables [table_index].rows_;
 }
 #else
 gboolean
@@ -978,7 +878,7 @@ static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
 	/* returns true if given index is not in bounds with provided table/index pair */
-	if (G_LIKELY (token_index <= image->tables [table_index].rows))
+	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
 }
@@ -1096,6 +996,7 @@ MonoType *mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o
 
 MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 
 MonoGenericInst *
@@ -1189,12 +1090,6 @@ mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
 
 MonoGenericContainer *
 mono_get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar);
-
-char *
-mono_image_set_description (MonoImageSet *);
-
-MonoImageSet *
-mono_find_image_set_owner (void *ptr);
 
 void
 mono_loader_register_module (const char *name, MonoDl *module);

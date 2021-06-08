@@ -1445,7 +1445,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     {1, 2, 3},
                     {4, 5, 6}
-                }); ;
+                });
 
             var actual = tensor;
             tensor = TensorOperations.Increment(tensor);
@@ -1509,7 +1509,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     {-1, 0, 1},
                     {2, 3, 4}
-                }); ;
+                });
 
             var actual = tensor;
             tensor = TensorOperations.Decrement(tensor);
@@ -2161,9 +2161,9 @@ namespace System.Numerics.Tensors.Tests
     }
 }";
 
-            Assert.Equal(expected, tensor.GetArrayString());
+            Assert.Equal(expected, tensor.GetArrayString(), ignoreLineEndingDifferences: !LineEndingsHelper.IsNewLineConsistent);
 
-            var expectedNoSpace = expected.Replace(Environment.NewLine, "").Replace(" ", "");
+            var expectedNoSpace = expected.Replace(LineEndingsHelper.CompiledNewline, "").Replace(" ", "");
             Assert.Equal(expectedNoSpace, tensor.GetArrayString(false));
         }
 

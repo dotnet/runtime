@@ -7,7 +7,7 @@ using System.ComponentModel.Composition.Primitives;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class PartCreatorExportDefinition : ExportDefinition
+    internal sealed class PartCreatorExportDefinition : ExportDefinition
     {
         private readonly ExportDefinition _productDefinition;
         private IDictionary<string, object?>? _metadata;

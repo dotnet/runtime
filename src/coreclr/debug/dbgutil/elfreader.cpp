@@ -62,7 +62,7 @@ private:
 //
 // Main entry point to get an export symbol
 //
-bool
+extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     ElfReaderExport elfreader(dataTarget);

@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -255,19 +256,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Override abstract method
         /// </summary>
+        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public override void Write(string name, object? value)
         {
             for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
                 curSubscription.Observer.OnNext(new KeyValuePair<string, object?>(name, value));
         }
-
-        /// <summary>
-        /// We don't have Activities in NetStandard1.1. but it is a pain to ifdef out all references to the Activity type
-        /// in DiagnosticSubscription so we just define a private type for it here just so things compile.
-        /// </summary>
-#if NETSTANDARD1_1
-        private sealed class Activity {}
-#endif
 
         // Note that Subscriptions are READ ONLY.   This means you never update any fields (even on removal!)
         private sealed class DiagnosticSubscription : IDisposable
@@ -409,7 +403,7 @@ namespace System.Diagnostics
             /// One node in the linked list of subscriptions that AllListenerObservable keeps.   It is
             /// IDisposable, and when that is called it removes itself from the list.
             /// </summary>
-            internal class AllListenerSubscription : IDisposable
+            internal sealed class AllListenerSubscription : IDisposable
             {
                 internal AllListenerSubscription(AllListenerObservable owner, IObserver<DiagnosticListener> subscriber, AllListenerSubscription? next)
                 {

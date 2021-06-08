@@ -8,13 +8,13 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.Hosting
 {
-    internal class HostFactoryResolver
+    internal sealed class HostFactoryResolver
     {
         private const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
-        public static readonly string BuildWebHost = nameof(BuildWebHost);
-        public static readonly string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
-        public static readonly string CreateHostBuilder = nameof(CreateHostBuilder);
+        public const string BuildWebHost = nameof(BuildWebHost);
+        public const string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
+        public const string CreateHostBuilder = nameof(CreateHostBuilder);
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {

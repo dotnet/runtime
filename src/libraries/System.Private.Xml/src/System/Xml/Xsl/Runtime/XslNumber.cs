@@ -10,7 +10,7 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
-    internal class TokenInfo
+    internal sealed class TokenInfo
     {
         public char startChar;      // First element of numbering sequence for format token
         public int startIdx;       // Start index of separator token
@@ -109,7 +109,7 @@ namespace System.Xml.Xsl.Runtime
         }
     }
 
-    internal class NumberFormatter : NumberFormatterBase
+    internal sealed class NumberFormatter : NumberFormatterBase
     {
         private readonly string _formatString;
         private readonly int _lang;

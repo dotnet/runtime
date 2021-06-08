@@ -94,12 +94,13 @@ static int map_hw_reg_to_dwarf_reg [ppc_lr + 1] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
 #elif defined (TARGET_S390X)
 /*
  * 0-15 = GR0-15
- * 16-31 = FP0-15
+ * 16-31 = FP0-15 (f0, f2, f4, f6, f1, f3, f5, f7, f8, f10, f12, f14, f9, f11, f13, f15)
  */
 static int map_hw_reg_to_dwarf_reg [] = {  0,  1,  2,  3,  4,  5,  6,  7, 
 					   8,  9, 10, 11, 12, 13, 14, 15,
-					  16, 17, 18, 19, 20, 21, 22, 23, 
-					  24, 25, 26, 27, 28, 29, 30, 31};
+					  16, 20, 17, 21, 18, 22, 19, 23,
+					  24, 28, 25, 29, 26, 30, 27, 31};
+
 #define NUM_DWARF_REGS 32
 #define DWARF_DATA_ALIGN (-8)
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (14))
@@ -726,27 +727,6 @@ mono_unwind_init (void)
 	mono_os_mutex_init_recursive (&unwind_mutex);
 
 	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &unwind_info_size);
-}
-
-void
-mono_unwind_cleanup (void)
-{
-	mono_os_mutex_destroy (&unwind_mutex);
-
-	if (!cached_info)
-		return;
-
-	for (int i = 0; i < cached_info_next; ++i) {
-		MonoUnwindInfo *cached = cached_info [i];
-
-		g_free (cached);
-	}
-	g_free (cached_info);
-
-	for (GSList *cursor = cached_info_list; cursor != NULL; cursor = cursor->next)
-		g_free (cursor->data);
-
-	g_slist_free (cached_info_list);
 }
 
 /*

@@ -5,7 +5,7 @@
 //
 
 #include "common.h"
-#include "dllimport.h"
+#include "nativelibrary.h"
 #include "nativelibrarynative.h"
 
 // static
@@ -17,7 +17,7 @@ INT_PTR QCALLTYPE NativeLibraryNative::LoadFromPath(LPCWSTR path, BOOL throwOnEr
 
     BEGIN_QCALL;
 
-    handle = NDirect::LoadLibraryFromPath(path, throwOnError);
+    handle = NativeLibrary::LoadLibraryFromPath(path, throwOnError);
 
     END_QCALL;
 
@@ -36,7 +36,7 @@ INT_PTR QCALLTYPE NativeLibraryNative::LoadByName(LPCWSTR name, QCall::AssemblyH
 
     BEGIN_QCALL;
 
-    handle = NDirect::LoadLibraryByName(name, pAssembly, hasDllImportSearchPathFlag, dllImportSearchPathFlag, throwOnError);
+    handle = NativeLibrary::LoadLibraryByName(name, pAssembly, hasDllImportSearchPathFlag, dllImportSearchPathFlag, throwOnError);
 
     END_QCALL;
 
@@ -50,7 +50,7 @@ void QCALLTYPE NativeLibraryNative::FreeLib(INT_PTR handle)
 
     BEGIN_QCALL;
 
-    NDirect::FreeNativeLibrary((NATIVE_LIBRARY_HANDLE) handle);
+    NativeLibrary::FreeNativeLibrary((NATIVE_LIBRARY_HANDLE) handle);
 
     END_QCALL;
 }
@@ -64,7 +64,7 @@ INT_PTR QCALLTYPE NativeLibraryNative::GetSymbol(INT_PTR handle, LPCWSTR symbolN
 
     BEGIN_QCALL;
 
-    address = NDirect::GetNativeLibraryExport((NATIVE_LIBRARY_HANDLE)handle, symbolName, throwOnError);
+    address = NativeLibrary::GetNativeLibraryExport((NATIVE_LIBRARY_HANDLE)handle, symbolName, throwOnError);
 
     END_QCALL;
 

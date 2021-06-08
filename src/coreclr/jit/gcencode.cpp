@@ -127,9 +127,8 @@ ReturnKind GCInfo::getReturnKind()
 void GCInfo::gcMarkFilterVarsPinned()
 {
     assert(compiler->ehAnyFunclets());
-    const EHblkDsc* endHBtab = &(compiler->compHndBBtab[compiler->compHndBBtabCount]);
 
-    for (EHblkDsc* HBtab = compiler->compHndBBtab; HBtab < endHBtab; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         if (HBtab->HasFilter())
         {
@@ -2160,7 +2159,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     /* Start computing the total size of the table */
 
-    BOOL emitArgTabOffset = (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX);
+    bool emitArgTabOffset = (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX);
     if (mask != 0 && emitArgTabOffset)
     {
         assert(*pArgTabOffset <= MAX_UNSIGNED_SIZE_T);
@@ -3931,13 +3930,24 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
         int offset = 0;
 
+        // OSR can report the root method's frame slot, if that method reported context.
+        //
+        bool isOsrAndUsingRootFrameSlot = false;
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
-            offset                 = ppInfo->GenericContextArgOffset();
-            assert(offset != -1);
+            PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+
+            if (ppInfo->HasKeptAliveThis())
+            {
+                offset = ppInfo->GenericContextArgOffset();
+                assert(offset != -1);
+                isOsrAndUsingRootFrameSlot = true;
+            }
         }
-        else
+
+        // If not OSR, or OSR but newly reporting context, use the current frame offset.
+        //
+        if (!isOsrAndUsingRootFrameSlot)
         {
             offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
                                                            compiler->isFramePointerUsed());
@@ -4659,7 +4669,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         }
         else
         {
-            BOOL b = m_regSlotMap->Lookup(rskey, &regSlotId);
+            bool b = m_regSlotMap->Lookup(rskey, &regSlotId);
             assert(b); // Should have been added in the first pass.
             gcInfoEncoderWithLog->SetSlotState(instrOffset, regSlotId, newState);
         }
@@ -4759,7 +4769,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
         }
         else
         {
-            BOOL b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+            bool b = m_stackSlotMap->Lookup(sskey, &varSlotId);
             assert(b); // Should have been added in the first pass.
             // Live from the beginning to the end.
             gcInfoEncoderWithLog->SetSlotState(begOffs, varSlotId, GC_SLOT_LIVE);
@@ -4781,7 +4791,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    StackSlotIdKey sskey(genStackPtr->rpdPtrArg, FALSE,
+    StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
     GcSlotId varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
@@ -4794,7 +4804,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
     }
     else
     {
-        BOOL b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        bool b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(genStackPtr->rpdOffs, varSlotId, GC_SLOT_LIVE);
@@ -4829,10 +4839,10 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
         assert(genRegPtrTemp->rpdGCtypeGet() != GCT_NONE);
         assert(genRegPtrTemp->rpdArgTypeGet() == rpdARG_PUSH);
 
-        StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, FALSE,
+        StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
         GcSlotId varSlotId;
-        BOOL     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);

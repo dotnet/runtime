@@ -1081,7 +1081,7 @@ namespace System.Xml.XPath
     }
 
 #if NAVREADER_SUPPORTSLINEINFO
-    internal class XPathNavigatorReaderWithLI : XPathNavigatorReader, System.Xml.IXmlLineInfo {
+    internal sealed class XPathNavigatorReaderWithLI : XPathNavigatorReader, System.Xml.IXmlLineInfo {
         internal XPathNavigatorReaderWithLI( XPathNavigator navToRead, IXmlLineInfo xli, IXmlSchemaInfo? xsi )
             : base( navToRead, xli, xsi ) {
         }
@@ -1095,7 +1095,7 @@ namespace System.Xml.XPath
         public virtual int LinePosition { get { return IsReading ? this.lineInfo.LinePosition : 0; } }
     }
 
-    internal class XPathNavigatorReaderWithLIAndSI : XPathNavigatorReaderWithLI, System.Xml.IXmlLineInfo, System.Xml.Schema.IXmlSchemaInfo {
+    internal sealed class XPathNavigatorReaderWithLIAndSI : XPathNavigatorReaderWithLI, System.Xml.IXmlLineInfo, System.Xml.Schema.IXmlSchemaInfo {
         internal XPathNavigatorReaderWithLIAndSI( XPathNavigator navToRead, IXmlLineInfo xli, IXmlSchemaInfo xsi )
             : base( navToRead, xli, xsi ) {
         }
@@ -1114,7 +1114,7 @@ namespace System.Xml.XPath
     }
 #endif
 
-    internal class XPathNavigatorReaderWithSI : XPathNavigatorReader, System.Xml.Schema.IXmlSchemaInfo
+    internal sealed class XPathNavigatorReaderWithSI : XPathNavigatorReader, System.Xml.Schema.IXmlSchemaInfo
     {
         internal XPathNavigatorReaderWithSI(XPathNavigator navToRead, IXmlLineInfo? xli, IXmlSchemaInfo xsi)
             : base(navToRead, xli, xsi)
@@ -1126,13 +1126,13 @@ namespace System.Xml.XPath
         // IXmlSchemaInfo
         //-----------------------------------------------
 
-        public virtual XmlSchemaValidity Validity { get { return IsReading ? this.schemaInfo!.Validity : XmlSchemaValidity.NotKnown; } }
+        public XmlSchemaValidity Validity { get { return IsReading ? this.schemaInfo!.Validity : XmlSchemaValidity.NotKnown; } }
         public override bool IsDefault { get { return IsReading ? this.schemaInfo!.IsDefault : false; } }
-        public virtual bool IsNil { get { return IsReading ? this.schemaInfo!.IsNil : false; } }
-        public virtual XmlSchemaSimpleType? MemberType { get { return IsReading ? this.schemaInfo!.MemberType : null; } }
-        public virtual XmlSchemaType? SchemaType { get { return IsReading ? this.schemaInfo!.SchemaType : null; } }
-        public virtual XmlSchemaElement? SchemaElement { get { return IsReading ? this.schemaInfo!.SchemaElement : null; } }
-        public virtual XmlSchemaAttribute? SchemaAttribute { get { return IsReading ? this.schemaInfo!.SchemaAttribute : null; } }
+        public bool IsNil { get { return IsReading ? this.schemaInfo!.IsNil : false; } }
+        public XmlSchemaSimpleType? MemberType { get { return IsReading ? this.schemaInfo!.MemberType : null; } }
+        public XmlSchemaType? SchemaType { get { return IsReading ? this.schemaInfo!.SchemaType : null; } }
+        public XmlSchemaElement? SchemaElement { get { return IsReading ? this.schemaInfo!.SchemaElement : null; } }
+        public XmlSchemaAttribute? SchemaAttribute { get { return IsReading ? this.schemaInfo!.SchemaAttribute : null; } }
     }
 
     /// <summary>
@@ -1140,7 +1140,7 @@ namespace System.Xml.XPath
     /// Only one XmlEmptyNavigator exists per AppDomain (Singleton).  That's why the constructor is private.
     /// Use the Singleton property to get the EmptyNavigator.
     /// </summary>
-    internal class XmlEmptyNavigator : XPathNavigator
+    internal sealed class XmlEmptyNavigator : XPathNavigator
     {
         private static volatile XmlEmptyNavigator? s_singleton;
 

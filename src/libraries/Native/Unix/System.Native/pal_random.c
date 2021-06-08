@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#if defined(__APPLE__) && __APPLE__
+#include <CommonCrypto/CommonRandom.h>
+#endif
 
 #include "pal_config.h"
 #include "pal_random.h"
@@ -35,7 +38,7 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 
     if (!sInitializedMRand)
     {
-        srand48(time(NULL));
+        srand48((long int)time(NULL));
         sInitializedMRand = true;
     }
 
@@ -75,6 +78,17 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
             sMissingBrowserCrypto = true;
         else
             return 0;
+    }
+#elif defined(__APPLE__) && __APPLE__
+    CCRNGStatus status = CCRandomGenerateBytes(buffer, bufferLength);
+
+    if (status == kCCSuccess)
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
     }
 #else
 

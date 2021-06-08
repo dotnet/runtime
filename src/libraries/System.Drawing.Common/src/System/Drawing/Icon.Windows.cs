@@ -951,13 +951,13 @@ namespace System.Drawing
             void SetHdc([In] IntPtr hdc);
         }
 
-        internal class Ole
+        internal static class Ole
         {
             public const int PICTYPE_ICON = 3;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PICTDESC
+        internal sealed class PICTDESC
         {
             internal int cbSizeOfStruct;
             public int picType;

@@ -135,5 +135,119 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Empty<string>(), input2.Intersect(input1, EqualityComparer<string>.Default));
             Assert.Equal(new[] { "A" }, input2.Intersect(input1, StringComparer.OrdinalIgnoreCase));
         }
+
+        [Fact]
+        public void IntersectBy_FirstNull_ThrowsArgumentNullException()
+        {
+            string[] first = null;
+            string[] second = { "bBo", "shriC" };
+
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.IntersectBy(second, x => x));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.IntersectBy(second, x => x, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void IntersectBy_SecondNull_ThrowsArgumentNullException()
+        {
+            string[] first = { "Bob", "Tim", "Robert", "Chris" };
+            string[] second = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.IntersectBy(second, x => x));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.IntersectBy(second, x => x, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void IntersectBy_KeySelectorNull_ThrowsArgumentNullException()
+        {
+            string[] first = { "Bob", "Tim", "Robert", "Chris" };
+            string[] second = { "bBo", "shriC" };
+            Func<string, string> keySelector = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => first.IntersectBy(second, keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => first.IntersectBy(second, keySelector, new AnagramEqualityComparer()));
+        }
+
+        [Theory]
+        [MemberData(nameof(IntersectBy_TestData))]
+        public static void IntersectBy_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TKey> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+        {
+            Assert.Equal(expected, first.IntersectBy(second, keySelector, comparer));
+        }
+
+        [Theory]
+        [MemberData(nameof(IntersectBy_TestData))]
+        public static void IntersectBy_RunOnce_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TKey> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+        {
+            Assert.Equal(expected, first.RunOnce().IntersectBy(second.RunOnce(), keySelector, comparer));
+        }
+
+        public static IEnumerable<object[]> IntersectBy_TestData()
+        {
+            yield return WrapArgs(
+                first: Enumerable.Range(0, 10),
+                second: Enumerable.Range(0, 5),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Range(0, 5));
+
+            yield return WrapArgs(
+                first: Enumerable.Range(0, 10),
+                second: Enumerable.Range(10, 10),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Empty<int>());
+
+            yield return WrapArgs(
+                first: Enumerable.Repeat(5, 20),
+                second: Enumerable.Empty<int>(),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Empty<int>());
+
+            yield return WrapArgs(
+                first: Enumerable.Repeat(5, 20),
+                second: Enumerable.Repeat(5, 3),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Repeat(5, 1));
+
+            yield return WrapArgs(
+                first: new string[] { "Bob", "Tim", "Robert", "Chris" },
+                second: new string[] { "bBo", "shriC" },
+                keySelector: x => x,
+                null,
+                expected: Array.Empty<string>());
+
+            yield return WrapArgs(
+                first: new string[] { "Bob", "Tim", "Robert", "Chris" },
+                second: new string[] { "bBo", "shriC" },
+                keySelector: x => x,
+                new AnagramEqualityComparer(),
+                expected: new string[] { "Bob", "Chris" });
+
+            yield return WrapArgs(
+                first: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
+                second: new int[] { 15, 20, 40 },
+                keySelector: x => x.Age,
+                comparer: null,
+                expected: new (string Name, int Age)[] { ("Tom", 20), ("Harry", 40) });
+
+            yield return WrapArgs(
+                first: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
+                second: new string[] { "moT" },
+                keySelector: x => x.Name,
+                comparer: null,
+                expected: Array.Empty<(string Name, int Age)>());
+
+            yield return WrapArgs(
+                first: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
+                second: new string[] { "moT" },
+                keySelector: x => x.Name,
+                comparer: new AnagramEqualityComparer(),
+                expected: new (string Name, int Age)[] { ("Tom", 20) });
+
+            object[] WrapArgs<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TKey> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+                => new object[] { first, second, keySelector, comparer, expected };
+        }
     }
 }

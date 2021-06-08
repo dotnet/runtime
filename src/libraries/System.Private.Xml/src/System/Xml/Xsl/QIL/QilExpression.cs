@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.Qil
     ///    designed for optimization, composition with virtual XML views, translation into other forms,
     ///    and direct execution.  See also <a href="http://dynamo/qil/qil.xml">the QIL specification</a>.</p>
     /// </remarks>
-    internal class QilExpression : QilNode
+    internal sealed class QilExpression : QilNode
     {
         private QilFactory _factory;
         private QilNode _isDebug;

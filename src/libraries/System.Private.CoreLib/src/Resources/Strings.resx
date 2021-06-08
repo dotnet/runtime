@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -477,6 +477,14 @@
   </data>
   <data name="Arg_MustBeChar" xml:space="preserve">
     <value>Object must be of type Char.</value>
+  </data>
+  <data name="Arg_MustBeDateOnly" xml:space="preserve">
+    <value>Object must be of type DateOnly.</value>
+    <comment>{Locked="DateOnly"}</comment>
+  </data>
+  <data name="Arg_MustBeTimeOnly" xml:space="preserve">
+    <value>Object must be of type TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
   </data>
   <data name="Arg_MustBeDateTime" xml:space="preserve">
     <value>Object must be of type DateTime.</value>
@@ -1123,6 +1131,10 @@
   <data name="Argument_InvalidDateTimeStyles" xml:space="preserve">
     <value>An undefined DateTimeStyles value is being used.</value>
   </data>
+  <data name="Argument_InvalidDateStyles" xml:space="preserve">
+    <value>The only allowed values for the styles are AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite.</value>
+    <comment>{Locked="AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite"}</comment>
+  </data>
   <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
     <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
   </data>
@@ -1651,6 +1663,9 @@
   <data name="ArgumentOutOfRange_DateTimeBadTicks" xml:space="preserve">
     <value>Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
+  <data name="ArgumentOutOfRange_TimeOnlyBadTicks" xml:space="preserve">
+    <value>Ticks must be between 0 and and TimeOnly.MaxValue.Ticks.</value>
+  </data>
   <data name="ArgumentOutOfRange_DateTimeBadYears" xml:space="preserve">
     <value>Years value must be between +/-10000.</value>
   </data>
@@ -1747,6 +1762,10 @@
   <data name="ArgumentOutOfRange_Month" xml:space="preserve">
     <value>Month must be between one and twelve.</value>
   </data>
+  <data name="ArgumentOutOfRange_DayNumber" xml:space="preserve">
+    <value>Day number must be between 0 and DateOnly.MaxValue.DayNumber.</value>
+    <comment>{Locked="DateOnly.MaxValue.DayNumber"}</comment>
+  </data>
   <data name="ArgumentOutOfRange_MonthParam" xml:space="preserve">
     <value>The Month parameter must be in the range 1 through 12.</value>
   </data>
@@ -1818,9 +1837,6 @@
   </data>
   <data name="ArgumentOutOfRange_StartIndexLargerThanLength" xml:space="preserve">
     <value>startIndex cannot be larger than length of string.</value>
-  </data>
-  <data name="ArgumentOutOfRange_StartIndexLessThanLength" xml:space="preserve">
-    <value>startIndex must be less than length of string.</value>
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
@@ -2175,6 +2191,17 @@
   </data>
   <data name="Format_BadDateTime" xml:space="preserve">
     <value>String '{0}' was not recognized as a valid DateTime.</value>
+  </data>
+  <data name="Format_BadDateOnly" xml:space="preserve">
+    <value>String '{0}' was not recognized as a valid DateOnly.</value>
+    <comment>{Locked="DateOnly"}</comment>
+  </data>
+  <data name="Format_BadTimeOnly" xml:space="preserve">
+    <value>String '{0}' was not recognized as a valid TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
+  </data>
+  <data name="Format_DateTimeOnlyContainsNoneDateParts" xml:space="preserve">
+    <value>String '{0}' contains parts which are not specific to the {1}.</value>
   </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
     <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>
@@ -2616,6 +2643,12 @@
   </data>
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
     <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_DiskFull_Path_AllocationSize" xml:space="preserve">
+    <value>Failed to create '{0}' with allocation size '{1}' because the disk was full.</value>
+  </data>
+  <data name="IO_FileTooLarge_Path_AllocationSize" xml:space="preserve">
+    <value>Failed to create '{0}' with allocation size '{1}' because the file was too large.</value>
   </data>
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
@@ -3256,6 +3289,9 @@
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
   </data>
+  <data name="StackTrace_InFileILOffset" xml:space="preserve">
+    <value>in {0}:token 0x{1:x}+0x{2:x}</value>
+  </data>
   <data name="StackTrace_InFileLineNumber" xml:space="preserve">
     <value>in {0}:line {1}</value>
   </data>
@@ -3592,6 +3628,18 @@
   <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
     <value>Attempt to update previously set global instance.</value>
   </data>
+  <data name="InvalidOperation_ResetGlobalObjectiveCMsgSend" xml:space="preserve">
+    <value>Attempt to update previously set Objective-C msgSend API overrides.</value>
+  </data>
+  <data name="InvalidOperation_ObjectiveCMarshalNotInitialized" xml:space="preserve">
+    <value>Attempt to track an Objective-C Type without initializing.</value>
+  </data>
+  <data name="InvalidOperation_ReinitializeObjectiveCMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize ObjectiveCMarshal.</value>
+  </data>
+  <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
+    <value>Attempt to track an Objective-C Type without a finalizer.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
@@ -3685,7 +3733,52 @@
   <data name="InvalidOperation_EditFailed" xml:space="preserve">
     <value>The assembly update failed.</value>
   </data>
+  <data name="NotSupported_DebuggerAttached" xml:space="preserve">
+    <value>Assembly updates cannot be applied while a debugger is attached.</value>
+  </data>
   <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
     <value>Method body replacement not supported in this runtime.</value>
+  </data>
+  <data name="NotSupported_COM" xml:space="preserve">
+    <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
+  </data>
+  <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
+    <value>Queue empty.</value>
+  </data>
+  <data name="Arg_FileIsDirectory_Name" xml:space="preserve">
+    <value>The target file '{0}' is a directory, not a file.</value>
+  </data>
+  <data name="Arg_InvalidFileAttrs" xml:space="preserve">
+    <value>Invalid File or Directory attributes value.</value>
+  </data>
+  <data name="Arg_Path2IsRooted" xml:space="preserve">
+    <value>Second path fragment must not be a drive or UNC name.</value>
+  </data>
+  <data name="Arg_PathIsVolume" xml:space="preserve">
+    <value>Path must not be a drive.</value>
+  </data>
+  <data name="Argument_FileNotResized" xml:space="preserve">
+    <value>The stream's length cannot be changed.</value>
+  </data>
+  <data name="Argument_InvalidSubPath" xml:space="preserve">
+    <value>The directory specified, '{0}', is not a subdirectory of '{1}'.</value>
+  </data>
+  <data name="IO_CannotCreateDirectory" xml:space="preserve">
+    <value>The specified directory '{0}' cannot be created.</value>
+  </data>
+  <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
+    <value>Source and destination path must be different.</value>
+  </data>
+  <data name="IO_SourceDestMustHaveSameRoot" xml:space="preserve">
+    <value>Source and destination path must have identical roots. Move will not work across volumes.</value>
+  </data>
+  <data name="IO_SyncOpOnUIThread" xml:space="preserve">
+    <value>Synchronous operations should not be performed on the UI thread.  Consider wrapping this method in Task.Run.</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
+  <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
+    <value>File encryption is not supported on this platform.</value>
   </data>
 </root>

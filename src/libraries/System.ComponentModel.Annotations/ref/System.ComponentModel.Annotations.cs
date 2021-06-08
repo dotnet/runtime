@@ -30,6 +30,7 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class CompareAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The property referenced by 'otherProperty' may be trimmed. Ensure it is preserved.")]
         public CompareAttribute(string otherProperty) { }
         public string OtherProperty { get { throw null; } }
         public string? OtherPropertyDisplayName { get { throw null; } }
@@ -51,8 +52,9 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=true)]
     public sealed partial class CustomValidationAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        public CustomValidationAttribute(System.Type validatorType, string method) { }
+        public CustomValidationAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type validatorType, string method) { }
         public string Method { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Type ValidatorType { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { throw null; }
@@ -99,6 +101,7 @@ namespace System.ComponentModel.DataAnnotations
         public string? Name { get { throw null; } set { } }
         public int Order { get { throw null; } set { } }
         public string? Prompt { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Type? ResourceType { get { throw null; } set { } }
         public string? ShortName { get { throw null; } set { } }
         public bool? GetAutoGenerateField() { throw null; }
@@ -129,6 +132,7 @@ namespace System.ComponentModel.DataAnnotations
         public string? DataFormatString { get { throw null; } set { } }
         public bool HtmlEncode { get { throw null; } set { } }
         public string? NullDisplayText { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Type? NullDisplayTextResourceType { get { throw null; } set { } }
         public string? GetNullDisplayText() { throw null; }
     }
@@ -170,7 +174,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string FilterUIHint { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial interface IValidatableObject
@@ -185,7 +189,9 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class MaxLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public MaxLengthAttribute() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public MaxLengthAttribute(int length) { }
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
@@ -201,6 +207,7 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class MinLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public MinLengthAttribute(int length) { }
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
@@ -273,7 +280,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
         public string UIHint { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -289,6 +296,7 @@ namespace System.ComponentModel.DataAnnotations
         protected ValidationAttribute(string errorMessage) { }
         public string? ErrorMessage { get { throw null; } set { } }
         public string? ErrorMessageResourceName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Type? ErrorMessageResourceType { get { throw null; } set { } }
         protected string ErrorMessageString { get { throw null; } }
         public virtual bool RequiresValidationContext { get { throw null; } }
@@ -301,8 +309,11 @@ namespace System.ComponentModel.DataAnnotations
     }
     public sealed partial class ValidationContext : System.IServiceProvider
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public ValidationContext(object instance) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public ValidationContext(object instance, System.Collections.Generic.IDictionary<object, object?>? items) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public ValidationContext(object instance, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
         public string DisplayName { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<object, object?> Items { get { throw null; } }
@@ -336,12 +347,18 @@ namespace System.ComponentModel.DataAnnotations
     }
     public static partial class Validator
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, bool validateAllProperties) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static bool TryValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
         public static bool TryValidateValue(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, bool validateAllProperties) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static void ValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
         public static void ValidateValue(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { }
     }

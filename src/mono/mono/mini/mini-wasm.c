@@ -502,14 +502,6 @@ mono_runtime_setup_stat_profiler (void)
 	g_error ("mono_runtime_setup_stat_profiler");
 }
 
-
-void
-mono_runtime_shutdown_stat_profiler (void)
-{
-	g_error ("mono_runtime_shutdown_stat_profiler");
-}
-
-
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
@@ -524,18 +516,7 @@ mono_runtime_install_handlers (void)
 }
 
 void
-mono_runtime_cleanup_handlers (void)
-{
-}
-
-void
 mono_init_native_crash_info (void)
-{
-	return;
-}
-
-void
-mono_cleanup_native_crash_info (void)
 {
 	return;
 }

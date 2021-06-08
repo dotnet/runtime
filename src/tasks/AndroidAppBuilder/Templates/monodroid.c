@@ -41,6 +41,8 @@ static char *executable;
 #error Unknown architecture
 #endif
 
+#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
 static MonoAssembly*
 mono_droid_load_assembly (const char *name, const char *culture)
 {
@@ -170,7 +172,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
     char *type_name = strdup_printf ("%s.%s", mono_class_get_namespace (type), mono_class_get_name (type));
     char *trace = mono_droid_fetch_exception_property_string (exc, "get_StackTrace", true);
     char *message = mono_droid_fetch_exception_property_string (exc, "get_Message", true);
-    
+
     LOG_ERROR("UnhandledException: %s %s %s", type_name, message, trace);
 
     free (trace);
@@ -193,15 +195,30 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 void register_aot_modules (void);
 #endif
 
-int
-mono_droid_runtime_init (void)
+void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
+    free (args);
+    free (user_data);
+}
+
+int
+mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
+{
+    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
+
     // uncomment for debug output:
     //
     //setenv ("XUNIT_VERBOSE", "true", true);
     //setenv ("MONO_LOG_LEVEL", "debug", true);
     //setenv ("MONO_LOG_MASK", "all", true);
-    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
+
+    // build using DiagnosticPorts property in AndroidAppBuilder
+    // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents=diagnostics_tracing
+#ifdef DIAGNOSTIC_PORTS
+    setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
+#endif
 
     bool wait_for_debugger = false;
     chdir (bundle_path);
@@ -215,7 +232,25 @@ mono_droid_runtime_init (void)
     const char* appctx_values[2];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
-    
+
+    char *file_name = RUNTIMECONFIG_BIN_FILE;
+    int str_len = strlen (bundle_path) + strlen (file_name) + 2;
+    char *file_path = (char *)malloc (sizeof (char) * str_len);
+    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    struct stat buffer;
+
+    LOG_INFO ("file_path: %s\n", file_path);
+    assert (num_char > 0 && num_char < str_len);
+
+    if (stat (file_path, &buffer) == 0) {
+        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+        arg->kind = 0;
+        arg->runtimeconfig.name.path = file_path;
+        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+    } else {
+        free (file_path);
+    }
+
     monovm_initialize(2, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
@@ -234,22 +269,23 @@ mono_droid_runtime_init (void)
 #if FORCE_INTERPRETER
     LOG_INFO("Interp Enabled");
     mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
-#elif FORCE_AOT    
+#elif FORCE_AOT
     register_aot_modules();
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #endif
 
-    mono_jit_init_version ("dotnet.android", "mobile");
+    MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");
+    assert (domain);
 
     MonoAssembly *assembly = mono_droid_load_assembly (executable, NULL);
     assert (assembly);
+
     LOG_INFO ("Executable: %s", executable);
-
-    char *managed_argv [1];
-    managed_argv[0] = bundle_path;
-
-    int res = mono_jit_exec (mono_domain_get (), assembly, 1, managed_argv);
+    int res = mono_jit_exec (domain, assembly, managed_argc, managed_argv);
     LOG_INFO ("Exit code: %d.", res);
+
+    mono_jit_cleanup (domain);
+
     return res;
 }
 
@@ -274,7 +310,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jobjectArray j_args)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -292,7 +328,27 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     setenv ("TMPDIR", cache_dir, true);
     setenv ("DOCSDIR", docs_dir, true);
 
-    return mono_droid_runtime_init ();
+    int args_len = (*env)->GetArrayLength(env, j_args);
+    int managed_argc = args_len + 1;
+    char** managed_argv = (char**)malloc(managed_argc * sizeof(char*));
+
+    managed_argv[0] = bundle_path;
+    for (int i = 0; i < args_len; ++i)
+    {
+        jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
+        managed_argv[i + 1] = (*env)->GetStringUTFChars(env, j_arg, NULL);
+    }
+
+    int res = mono_droid_runtime_init (executable, managed_argc, managed_argv);
+
+    for (int i = 0; i < args_len; ++i)
+    {
+        jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
+        (*env)->ReleaseStringUTFChars(env, j_arg, managed_argv[i + 1]);
+    }
+
+    free(managed_argv);
+    return res;
 }
 
 // called from C#

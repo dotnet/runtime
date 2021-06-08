@@ -690,7 +690,7 @@ ep_event_block_base_write_event (
 	instance_timestamp = ep_event_instance_get_timestamp (event_instance);
 	if (event_block_base->min_timestamp > instance_timestamp)
 		event_block_base->min_timestamp = instance_timestamp;
-	if (event_block_base->max_timestamp > instance_timestamp)
+	if (event_block_base->max_timestamp < instance_timestamp)
 		event_block_base->max_timestamp = instance_timestamp;
 
 	block->write_pointer = write_pointer;

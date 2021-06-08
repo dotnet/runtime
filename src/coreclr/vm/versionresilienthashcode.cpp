@@ -164,6 +164,7 @@ public:
         {
             *data = *_pCode;
             _cbCode--;
+            _pCode++;
             return true;
         }
         return false;
@@ -175,6 +176,7 @@ public:
         {
             *data = *(uint16_t UNALIGNED*)_pCode;
             _cbCode -= 2;
+            _pCode += 2;
             return true;
         }
         return false;
@@ -186,6 +188,7 @@ public:
         {
             *data = *(uint32_t UNALIGNED*)_pCode;
             _cbCode -= 4;
+            _pCode += 4;
             return true;
         }
         return false;
@@ -237,7 +240,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
     switch (opcodeFormat)
     {
         case InlineNone: // no inline args
-            return opcodeValue;
+            break;
 
         case ShortInlineI:
         case ShortInlineBrTarget:
@@ -355,7 +358,7 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
     {
         COR_ILMETHOD_DECODER header(pMD->GetILHeader(TRUE), pMD->GetMDImport(), NULL);
 
-        pILCode = header.GetCode();
+        pILCode = header.Code;
         cbILCode = header.GetCodeSize();
         maxStack = header.GetMaxStack();
         EHCount = header.EHCount();

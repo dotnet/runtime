@@ -1049,6 +1049,7 @@ namespace System.Threading.Tasks.Tests
 
             cts.Dispose();
         }
+
         [Fact]
         public static void CancellationTokenSourceWithTimer_Negative()
         {
@@ -1074,6 +1075,54 @@ namespace System.Threading.Tasks.Tests
             cts.Dispose();
             Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(1); });
             Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(reasonableTimeSpan); });
+        }
+
+        [Fact]
+        public static void CancellationTokenSource_TryReset_ReturnsFalseIfAlreadyCanceled()
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Assert.False(cts.TryReset());
+            Assert.True(cts.IsCancellationRequested);
+        }
+
+        [Fact]
+        public static void CancellationTokenSource_TryReset_ReturnsTrueIfNotCanceledAndNoTimer()
+        {
+            var cts = new CancellationTokenSource();
+            Assert.True(cts.TryReset());
+            Assert.True(cts.TryReset());
+        }
+
+        [Fact]
+        public static void CancellationTokenSource_TryReset_ReturnsTrueIfNotCanceledAndTimerHasntFired()
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(TimeSpan.FromDays(1));
+            Assert.True(cts.TryReset());
+        }
+
+        [Fact]
+        public static void CancellationTokenSource_TryReset_UnregistersAll()
+        {
+            bool registration1Invoked = false;
+            bool registration2Invoked = false;
+
+            var cts = new CancellationTokenSource();
+            CancellationTokenRegistration ctr1 = cts.Token.Register(() => registration1Invoked = true);
+            Assert.True(cts.TryReset());
+            CancellationTokenRegistration ctr2 = cts.Token.Register(() => registration2Invoked = true);
+
+            cts.Cancel();
+
+            Assert.False(registration1Invoked);
+            Assert.True(registration2Invoked);
+
+            Assert.False(ctr1.Unregister());
+            Assert.False(ctr2.Unregister());
+
+            Assert.Equal(cts.Token, ctr1.Token);
+            Assert.Equal(cts.Token, ctr2.Token);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

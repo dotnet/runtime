@@ -4,8 +4,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -81,45 +83,63 @@ namespace System.Tests
             Assert.NotNull(utc.ToString());
         }
 
-        //  Due to ICU size limitations, full daylight/standard names are not included.
-        //  name abbreviations, if available, are used instead
+        //  Due to ICU size limitations, full daylight/standard names are not included for the browser.
+        //  Name abbreviations, if available, are used instead
         public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
         {
             if (PlatformDetection.IsBrowser)
                 return new TheoryData<TimeZoneInfo, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) PST", "PST", "PDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) AEST", "AEST", "AEDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) AWST", "AWST", "AWDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", "PST", "PDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australia/Sydney", "AEST", "AEDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australia/Perth", "AWST", "AWDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Asia/Tehran", "+0330", "+0430" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
-                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                    { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", "-03", "-02" }
+                };
+            else if (PlatformDetection.IsWindows)
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (US & Canada)", "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Canberra, Melbourne, Sydney", "AUS Eastern Standard Time", "AUS Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", "W. Australia Standard Time", "W. Australia Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Tehran", "Iran Standard Time", "Iran Daylight Time" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
+                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", "Argentina Standard Time", "Argentina Daylight Time" }
                 };
             else
                 return new TheoryData<TimeZoneInfo, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Standard Time", "Pacific Standard Time", "Pacific Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australian Eastern Standard Time", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time", "Australian Western Standard Time", "Australian Western Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (Los Angeles)", "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time (Perth)", "Australian Western Standard Time", "Australian Western Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "Iran Standard Time", "Iran Daylight Time" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
-                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland Time (St. John’s)", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
+                    { s_catamarcaTz, "(UTC-03:00) Argentina Standard Time (Catamarca)", "Argentina Standard Time", "Argentina Summer Time" }
                 };
         }
 
-        [Theory]
+        // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
+        [ConditionalTheory(nameof(IsEnglishUILanguage))]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
         {
-            if (PlatformDetection.IsBrowser)
+            // Edge case - Optionally allow some characters to be absent in the display name.
+            const string chars = ".’";
+            foreach (char c in chars)
             {
-                // Console.WriteLine($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}");
-                Assert.Equal($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}",
-                            $"DisplayName: {displayName}, StandardName: {standardName}, DaylightName: {daylightName}");
+                if (displayName.Contains(c, StringComparison.Ordinal) && !tzi.DisplayName.Contains(c, StringComparison.Ordinal))
+                {
+                    displayName = displayName.Replace(c.ToString(), "", StringComparison.Ordinal);
+                }
             }
+
+            Assert.Equal($"DisplayName: \"{displayName}\", StandardName: {standardName}\", DaylightName: {daylightName}\"",
+                         $"DisplayName: \"{tzi.DisplayName}\", StandardName: {tzi.StandardName}\", DaylightName: {tzi.DaylightName}\"");
         }
 
         [Fact]
@@ -160,8 +180,9 @@ namespace System.Tests
             Assert.True(libyaLocalTime.Equals(expectResult), string.Format("Expected {0} and got {1}", expectResult, libyaLocalTime));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        public static void TestYukunTZ()
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void TestYukonTZ()
         {
             try
             {
@@ -190,7 +211,7 @@ namespace System.Tests
             }
             catch (TimeZoneNotFoundException)
             {
-                // Some Windows versions don't carry the complete TZ data. Ignore the tests on such versiosn.
+                // Some Windows versions don't carry the complete TZ data. Ignore the tests on such versions.
             }
        }
 
@@ -1820,7 +1841,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [SkipOnPlatform(TestPlatforms.Windows, "Not supported on Windows.")]
         public static void TestSplittingRulesWhenReported()
         {
             // This test confirm we are splitting the rules which span multiple years on Linux
@@ -2288,6 +2309,101 @@ namespace System.Tests
             {
                 yield return new object[] { tz };
             }
+
+            // Include fixed offset IANA zones in the test data when they are available.
+            if (!PlatformDetection.IsWindows)
+            {
+                for (int i = -14; i <= 12; i++)
+                {
+                    TimeZoneInfo tz = null;
+
+                    try
+                    {
+                        string id = $"Etc/GMT{i:+0;-0}";
+                        tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+                    }
+                    catch (TimeZoneNotFoundException)
+                    {
+                    }
+
+                    if (tz != null)
+                    {
+                        yield return new object[] { tz };
+                    }
+                }
+            }
+        }
+
+        private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
+        private static readonly Regex s_IanaAbbreviationRegex = new Regex(IanaAbbreviationPattern);
+
+        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // (This list is not likely to change.)
+        private static readonly string[] s_UtcAliases = new[] {
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UCT",
+            "UTC",
+            "Universal",
+            "Zulu"
+        };
+
+        [Theory]
+        [MemberData(nameof(SystemTimeZonesTestData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void TimeZoneDisplayNames_Unix(TimeZoneInfo timeZone)
+        {
+            bool isUtc = s_UtcAliases.Contains(timeZone.Id, StringComparer.OrdinalIgnoreCase);
+
+            if (PlatformDetection.IsBrowser)
+            {
+                // Browser platform doesn't have full ICU names, but uses the IANA IDs and abbreviations instead.
+
+                // The display name will be the offset plus the ID.
+                // The offset is checked separately in TimeZoneInfo_DisplayNameStartsWithOffset
+                Assert.True(timeZone.DisplayName.EndsWith(" " + timeZone.Id),
+                    $"Id: \"{timeZone.Id}\", DisplayName should have ended with the ID, Actual DisplayName: \"{timeZone.DisplayName}\"");
+
+                if (isUtc)
+                {
+                    // Make sure UTC and its aliases have exactly "UTC" for the standard and daylight names
+                    Assert.True(timeZone.StandardName == "UTC",
+                        $"Id: \"{timeZone.Id}\", Expected StandardName: \"UTC\", Actual StandardName: \"{timeZone.StandardName}\"");
+                    Assert.True(timeZone.DaylightName == "UTC",
+                        $"Id: \"{timeZone.Id}\", Expected DaylightName: \"UTC\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+                }
+                else
+                {
+                    // For other time zones, match any valid IANA time zone abbreviation, including numeric forms
+                    Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
+                        $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                    Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
+                        $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+                }
+            }
+            else if (isUtc)
+            {
+                // UTC's display name is the string "(UTC) " and the same text as the standard name.
+                Assert.True(timeZone.DisplayName == $"(UTC) {timeZone.StandardName}",
+                    $"Id: \"{timeZone.Id}\", Expected DisplayName: \"(UTC) {timeZone.StandardName}\", Actual DisplayName: \"{timeZone.DisplayName}\"");
+
+                // All aliases of UTC should have the same names as UTC itself
+                Assert.True(timeZone.DisplayName == TimeZoneInfo.Utc.DisplayName,
+                    $"Id: \"{timeZone.Id}\", Expected DisplayName: \"{TimeZoneInfo.Utc.DisplayName}\", Actual DisplayName: \"{timeZone.DisplayName}\"");
+                Assert.True(timeZone.StandardName == TimeZoneInfo.Utc.StandardName,
+                    $"Id: \"{timeZone.Id}\", Expected StandardName: \"{TimeZoneInfo.Utc.StandardName}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                Assert.True(timeZone.DaylightName == TimeZoneInfo.Utc.DaylightName,
+                    $"Id: \"{timeZone.Id}\", Expected DaylightName: \"{TimeZoneInfo.Utc.DaylightName}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+            }
+            else
+            {
+                // All we can really say generically here is that they aren't empty.
+                Assert.False(string.IsNullOrWhiteSpace(timeZone.DisplayName), $"Id: \"{timeZone.Id}\", DisplayName should not have been empty.");
+                Assert.False(string.IsNullOrWhiteSpace(timeZone.StandardName), $"Id: \"{timeZone.Id}\", StandardName should not have been empty.");
+                Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/19794", TestPlatforms.AnyUnix)]
@@ -2353,6 +2469,79 @@ namespace System.Tests
             }
         }
 
+        private static byte [] timeZoneFileContents = new byte[]
+        {
+            0x54, 0x5A, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x54, 0x5A, 0x69, 0x66,
+            0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0C, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x08, 0x00, 0x00, 0x0E, 0x10, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x4C,
+            0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00,
+            // POSIX Rule
+            // 0x0A, 0x3C, 0x2B, 0x30, 0x30, 0x3E, 0x30, 0x3C, 0x2B, 0x30, 0x31,
+            // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
+        };
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
+        [InlineData("<+00>0<+01>,30/0,J365/25", 31, 1, true)]
+        [InlineData("<+00>0<+01>,31/0,J365/25", 1, 2, true)]
+        [InlineData("<+00>0<+01>,58/0,J365/25", 28, 2, true)]
+        [InlineData("<+00>0<+01>,59/0,J365/25", 0, 0, false)]
+        [InlineData("<+00>0<+01>,9999999/0,J365/25", 0, 0, false)]
+        [InlineData("<+00>0<+01>,A/0,J365/25", 0, 0, false)]
+        public static void NJulianRuleTest(string posixRule, int dayNumber, int monthNumber, bool shouldSucceed)
+        {
+            string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
+            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
+            {
+                fs.Write(timeZoneFileContents.AsSpan());
+
+                // Append the POSIX rule
+                fs.WriteByte(0x0A);
+                foreach (char c in posixRule)
+                {
+                    fs.WriteByte((byte) c);
+                }
+                fs.WriteByte(0x0A);
+            }
+
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+                psi.Environment.Add("TZ", zoneFilePath);
+
+                RemoteExecutor.Invoke((day, month, succeed) =>
+                {
+                    bool expectedToSucceed = bool.Parse(succeed);
+                    int d = int.Parse(day);
+                    int m = int.Parse(month);
+
+                    TimeZoneInfo.AdjustmentRule [] rules = TimeZoneInfo.Local.GetAdjustmentRules();
+
+                    if (expectedToSucceed)
+                    {
+                        Assert.Equal(1, rules.Length);
+                        Assert.Equal(d, rules[0].DaylightTransitionStart.Day);
+                        Assert.Equal(m, rules[0].DaylightTransitionStart.Month);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, rules.Length);
+                    }
+                }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+            }
+            finally
+            {
+                try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
+            }
+        }
+
         [Fact]
         public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
         {
@@ -2365,43 +2554,46 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void TimeZoneInfo_DisplayNameStartsWithOffset()
+        [Theory]
+        [MemberData(nameof(SystemTimeZonesTestData))]
+        public static void TimeZoneInfo_DisplayNameStartsWithOffset(TimeZoneInfo tzi)
         {
-            foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
+            if (s_UtcAliases.Contains(tzi.Id, StringComparer.OrdinalIgnoreCase))
             {
-                if (tzi.Id != "UTC")
-                {
-                    Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
-                    Assert.Matches(@"^\(UTC(\+|-)[0-9]{2}:[0-9]{2}\) \S.*", tzi.DisplayName);
+                // UTC and all of its aliases (Etc/UTC, and others) start with just "(UTC) "
+                Assert.StartsWith("(UTC) ", tzi.DisplayName);
+            }
+            else
+            {
+                Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
+                Assert.Matches(@"^\(UTC(\+|-)[0-9]{2}:[0-9]{2}\) \S.*", tzi.DisplayName);
 
-                    // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
-                    if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
+                // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
+                if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
+                {
+                    string offset = Regex.Match(tzi.DisplayName, @"(-|)[0-9]{2}:[0-9]{2}").Value;
+                    TimeSpan ts = TimeSpan.Parse(offset);
+                    if (PlatformDetection.IsWindows &&
+                        tzi.BaseUtcOffset != ts &&
+                        (tzi.Id.Contains("Morocco")  || tzi.Id.Contains("Volgograd")))
                     {
-                        string offset = Regex.Match(tzi.DisplayName, @"(-|)[0-9]{2}:[0-9]{2}").Value;
-                        TimeSpan ts = TimeSpan.Parse(offset);
-                        if (PlatformDetection.IsWindows &&
-                            tzi.BaseUtcOffset != ts &&
-                            (tzi.Id.Contains("Morocco")  || tzi.Id.Contains("Volgograd")))
+                        // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
+                        // We special case this in the test to avoid the test failures like:
+                        //      01:00 != 00:00:00, dn:(UTC+01:00) Casablanca, sn:Morocco Standard Time
+                        //      04:00 != 03:00:00, dn:(UTC+04:00) Volgograd, sn:Volgograd Standard Time
+                        if (tzi.Id.Contains("Morocco"))
                         {
-                            // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
-                            // We special case this in the test to avoid the test failures like:
-                            //      01:00 != 00:00:00, dn:(UTC+01:00) Casablanca, sn:Morocco Standard Time
-                            //      04:00 != 03:00:00, dn:(UTC+04:00) Volgograd, sn:Volgograd Standard Time
-                            if (tzi.Id.Contains("Morocco"))
-                            {
-                                Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
-                            }
-                            else
-                            {
-                                // Volgograd, Russia
-                                Assert.True(tzi.BaseUtcOffset == new TimeSpan(3, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
-                            }
+                            Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
                         }
                         else
                         {
-                            Assert.True(tzi.BaseUtcOffset == ts || tzi.GetUtcOffset(DateTime.Now) == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            // Volgograd, Russia
+                            Assert.True(tzi.BaseUtcOffset == new TimeSpan(3, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
                         }
+                    }
+                    else
+                    {
+                        Assert.True(tzi.BaseUtcOffset == ts || tzi.GetUtcOffset(DateTime.Now) == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
                     }
                 }
             }
@@ -2431,6 +2623,7 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Argentina/Catamarca")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
             if (PlatformDetection.ICUVersion.Major >= 52)
@@ -2446,6 +2639,81 @@ namespace System.Tests
                 Assert.Throws<TimeZoneNotFoundException>(() => TimeZoneInfo.FindSystemTimeZoneById(s_isWindows ? ianaId : windowsId));
                 TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(s_isWindows ? windowsId : ianaId);
             }
+        }
+
+        public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
+
+        [ConditionalFact(nameof(SupportIanaNamesConversion))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public static void IsIanaIdTest()
+        {
+            bool expected = !s_isWindows;
+
+            foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
+            {
+                Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
+            }
+
+            Assert.False(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId, $"`Pacific Standard Time` should not be IANA Id.");
+            Assert.True(TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles").HasIanaId, $"'America/Los_Angeles' should be IANA Id");
+        }
+
+        [ConditionalTheory(nameof(SupportIanaNamesConversion))]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles")]
+        [InlineData("AUS Eastern Standard Time", "Australia/Sydney")]
+        [InlineData("GMT Standard Time", "Europe/London")]
+        [InlineData("Tonga Standard Time", "Pacific/Tongatapu")]
+        [InlineData("W. Australia Standard Time", "Australia/Perth")]
+        [InlineData("E. South America Standard Time", "America/Sao_Paulo")]
+        [InlineData("E. Africa Standard Time", "Africa/Nairobi")]
+        [InlineData("W. Europe Standard Time", "Europe/Berlin")]
+        [InlineData("Russian Standard Time", "Europe/Moscow")]
+        [InlineData("Libya Standard Time", "Africa/Tripoli")]
+        [InlineData("South Africa Standard Time", "Africa/Johannesburg")]
+        [InlineData("Morocco Standard Time", "Africa/Casablanca")]
+        [InlineData("Argentina Standard Time", "America/Buenos_Aires")]
+        [InlineData("Newfoundland Standard Time", "America/St_Johns")]
+        [InlineData("Iran Standard Time", "Asia/Tehran")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public static void IdsConversionsTest(string windowsId, string ianaId)
+        {
+            Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
+            Assert.Equal(windowsId, winId);
+
+            Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(winId, out string ianaConvertedId));
+            Assert.Equal(ianaId, ianaConvertedId);
+        }
+
+        [ConditionalTheory(nameof(SupportIanaNamesConversion))]
+        [InlineData("Pacific Standard Time", "America/Vancouver", "CA")]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles", "US")]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles", "\u0600NotValidRegion")]
+        [InlineData("Central Europe Standard Time", "Europe/Budapest", "DJ")]
+        [InlineData("Central Europe Standard Time", "Europe/Budapest", "\uFFFFNotValidRegion")]
+        [InlineData("Central Europe Standard Time", "Europe/Prague", "CZ")]
+        [InlineData("Central Europe Standard Time", "Europe/Ljubljana", "SI")]
+        [InlineData("Central Europe Standard Time", "Europe/Bratislava", "SK")]
+        [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
+        [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
+        [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
+        // lowercased region name cases:
+        [InlineData("Cen. Australia Standard Time", "Australia/Adelaide", "au")]
+        [InlineData("AUS Central Standard Time", "Australia/Darwin", "au")]
+        [InlineData("E. Australia Standard Time", "Australia/Brisbane", "au")]
+        [InlineData("AUS Eastern Standard Time", "Australia/Sydney", "au")]
+        [InlineData("Tasmania Standard Time", "Australia/Hobart", "au")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "Es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "eS")]
+        [InlineData("GMT Standard Time", "Europe/London", "gb")]
+        [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
+        [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
+        [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
+        {
+            Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
+            Assert.Equal(ianaId, ianaConvertedId);
         }
 
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
@@ -2466,7 +2734,31 @@ namespace System.Tests
                 Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expected display name for Pacific time zone");
 
             }).Dispose();
+        }
 
+        private static readonly CultureInfo[] s_CulturesForWindowsNlsDisplayNamesTest = WindowsUILanguageHelper.GetInstalledWin32CulturesWithUniqueLanguages();
+        private static bool CanTestWindowsNlsDisplayNames => RemoteExecutor.IsSupported && s_CulturesForWindowsNlsDisplayNamesTest.Length > 1;
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(nameof(CanTestWindowsNlsDisplayNames))]
+        public static void TestWindowsNlsDisplayNames()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                CultureInfo[] cultures = s_CulturesForWindowsNlsDisplayNamesTest;
+
+                CultureInfo.CurrentUICulture = cultures[0];
+                TimeZoneInfo.ClearCachedData();
+                TimeZoneInfo tz1 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
+
+                CultureInfo.CurrentUICulture = cultures[1];
+                TimeZoneInfo.ClearCachedData();
+                TimeZoneInfo tz2 = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
+
+                Assert.True(tz1.DisplayName != tz2.DisplayName, $"The display name '{tz1.DisplayName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+                Assert.True(tz1.StandardName != tz2.StandardName, $"The standard name '{tz1.StandardName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+                Assert.True(tz1.DaylightName != tz2.DaylightName, $"The daylight name '{tz1.DaylightName}' should be different between {cultures[0].Name} and {cultures[1].Name}.");
+            }).Dispose();
         }
 
         [Theory]
@@ -2483,7 +2775,8 @@ namespace System.Tests
             TimeZoneInfo currenttz = TimeZoneInfo.FindSystemTimeZoneById(currentId);
 
             Assert.Equal(oldtz.StandardName, currenttz.StandardName);
-            Assert.Equal(oldtz.DisplayName, currenttz.DisplayName);
+            Assert.Equal(oldtz.DaylightName, currenttz.DaylightName);
+            // Note we cannot test the DisplayName, as it will contain the ID.
         }
 
         [Theory]
@@ -2497,7 +2790,8 @@ namespace System.Tests
         public static void ChangeLocalTimeZone(string id)
         {
             string originalTZ = Environment.GetEnvironmentVariable("TZ");
-            try {
+            try
+            {
                 TimeZoneInfo.ClearCachedData();
                 Environment.SetEnvironmentVariable("TZ", id);
 
@@ -2507,13 +2801,42 @@ namespace System.Tests
                 Assert.Equal(tz.StandardName, localtz.StandardName);
                 Assert.Equal(tz.DisplayName, localtz.DisplayName);
             }
-            finally {
+            finally
+            {
                 TimeZoneInfo.ClearCachedData();
                 Environment.SetEnvironmentVariable("TZ", originalTZ);
             }
         }
 
-        private static bool IsEnglishUILanguageAndRemoteExecutorSupported => (CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal)) && RemoteExecutor.IsSupported;
+        [Fact]
+        public static void AdjustmentRuleBaseUtcOffsetDeltaTest()
+        {
+            TimeZoneInfo.TransitionTime start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 2, 0, 0), month: 3, day: 7);
+            TimeZoneInfo.TransitionTime end = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 1, 0, 0), month: 11, day: 7);
+            TimeZoneInfo.AdjustmentRule rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, new TimeSpan(1, 0, 0), start, end, baseUtcOffsetDelta: new TimeSpan(1, 0, 0));
+            TimeZoneInfo customTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+                                                            id: "Fake Time Zone",
+                                                            baseUtcOffset: new TimeSpan(0),
+                                                            displayName: "Fake Time Zone",
+                                                            standardDisplayName: "Standard Fake Time Zone",
+                                                            daylightDisplayName: "British Summer Time",
+                                                            new TimeZoneInfo.AdjustmentRule[] { rule });
+
+            TimeZoneInfo.AdjustmentRule[] rules = customTimeZone.GetAdjustmentRules();
+
+            Assert.Equal(1, rules.Length);
+            Assert.Equal(new TimeSpan(1, 0, 0), rules[0].BaseUtcOffsetDelta);
+
+            // BaseUtcOffsetDelta should be counted to the returned offset during the standard time.
+            Assert.Equal(new TimeSpan(1, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 1, 1, 2, 0, 0)));
+
+            // BaseUtcOffsetDelta should be counted to the returned offset during the daylight time.
+            Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
+        }
+
+        private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+
+        private static bool IsEnglishUILanguageAndRemoteExecutorSupported => IsEnglishUILanguage && RemoteExecutor.IsSupported;
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
         {
@@ -2697,6 +3020,66 @@ namespace System.Tests
                     TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, displayName, standardDisplayName, daylightDisplayName, adjustmentRules);
                 }
             });
+        }
+
+        //  This helper class is used to retrieve information about installed OS languages from Windows.
+        //  Its methods returns empty when run on non-Windows platforms.
+        private static class WindowsUILanguageHelper
+        {
+            public static CultureInfo[] GetInstalledWin32CulturesWithUniqueLanguages() =>
+                GetInstalledWin32Cultures()
+                    .GroupBy(c => c.TwoLetterISOLanguageName)
+                    .Select(g => g.First())
+                    .ToArray();
+
+            public static unsafe CultureInfo[] GetInstalledWin32Cultures()
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    return new CultureInfo[0];
+                }
+
+                var list = new List<CultureInfo>();
+                GCHandle handle = GCHandle.Alloc(list);
+                try
+                {
+                    EnumUILanguages(
+                        &EnumUiLanguagesCallback,
+                        MUI_ALL_INSTALLED_LANGUAGES | MUI_LANGUAGE_NAME,
+                        GCHandle.ToIntPtr(handle));
+                }
+                finally
+                {
+                    handle.Free();
+                }
+
+                return list.ToArray();
+            }
+
+            [UnmanagedCallersOnly]
+            private static unsafe int EnumUiLanguagesCallback(char* lpUiLanguageString, IntPtr lParam)
+            {
+                // native string is null terminated
+                var cultureName = new string(lpUiLanguageString);
+
+                try
+                {
+                    var handle = GCHandle.FromIntPtr(lParam);
+                    var list = (List<CultureInfo>) handle.Target;
+                    list!.Add(CultureInfo.GetCultureInfo(cultureName));
+                    return 1;
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+
+            private const uint MUI_LANGUAGE_NAME = 0x8;
+            private const uint MUI_ALL_INSTALLED_LANGUAGES = 0x20;
+
+            [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
+            private static extern unsafe bool EnumUILanguages(delegate* unmanaged<char*, IntPtr, int> lpUILanguageEnumProc, uint dwFlags, IntPtr lParam);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
     /// Modifies the activators of parts so that they a) get associated with the correct
     /// scope, and b) obtain their dependencies from the correct scope.
     /// </summary>
-    internal class LifetimeFeature : ActivationFeature
+    internal sealed class LifetimeFeature : ActivationFeature
     {
         public const string SharingBoundaryPartMetadataName = "SharingBoundary";
 

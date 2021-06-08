@@ -180,6 +180,10 @@ bool g_fEEInit = false;
 // code:IsAtProcessExit to read this.
 GVAL_IMPL(bool, g_fProcessDetach);
 
+#ifdef EnC_SUPPORTED
+GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
+#endif
+
 GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
 
 #ifndef TARGET_UNIX

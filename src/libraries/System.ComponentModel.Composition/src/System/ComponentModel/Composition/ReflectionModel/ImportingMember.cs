@@ -12,7 +12,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class ImportingMember : ImportingItem
+    internal sealed class ImportingMember : ImportingItem
     {
         private readonly ReflectionWritableMember _member;
 

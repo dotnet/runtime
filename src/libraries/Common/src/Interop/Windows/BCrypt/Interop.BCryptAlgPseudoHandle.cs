@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class BCrypt
+    internal static partial class BCrypt
     {
         // Pseudo-handles, as defined in bcrypt.h
         // TODO: This really should be backed by 'nuint' (see https://github.com/dotnet/roslyn/issues/44110)
@@ -17,6 +17,11 @@ internal partial class Interop
             BCRYPT_SHA256_ALG_HANDLE = 0x00000041,
             BCRYPT_SHA384_ALG_HANDLE = 0x00000051,
             BCRYPT_SHA512_ALG_HANDLE = 0x00000061,
+            BCRYPT_HMAC_MD5_ALG_HANDLE = 0x00000091,
+            BCRYPT_HMAC_SHA1_ALG_HANDLE = 0x000000a1,
+            BCRYPT_HMAC_SHA256_ALG_HANDLE = 0x000000b1,
+            BCRYPT_HMAC_SHA384_ALG_HANDLE = 0x000000c1,
+            BCRYPT_HMAC_SHA512_ALG_HANDLE = 0x000000d1,
             BCRYPT_PBKDF2_ALG_HANDLE = 0x00000331,
         }
 

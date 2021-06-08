@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        private partial class AndroidX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AndroidX509Pal : ManagedX509ExtensionProcessor, IX509Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {

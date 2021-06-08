@@ -41,6 +41,7 @@ namespace System.Security.Cryptography
             this(password, salt, hashName, iterations, new CspParameters()) { }
 #pragma warning restore CA1416
 
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The correct hash algorithm is being preserved by the DynamicDependency.")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(SHA1CryptoServiceProvider))]
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, CspParameters? cspParams) :
@@ -50,6 +51,7 @@ namespace System.Security.Cryptography
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(SHA1CryptoServiceProvider))]
         public PasswordDeriveBytes(byte[] password, byte[]? salt, CspParameters? cspParams) :
             this(password, salt, "SHA1", 100, cspParams) { }
+#pragma warning restore SYSLIB0021
 
         [RequiresUnreferencedCode(HashAlgorithmUnreferencedCodeMessage)]
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, CspParameters? cspParams) :
@@ -175,22 +177,22 @@ namespace System.Security.Cryptography
 
                 if (_baseValue != null)
                 {
-                    Array.Clear(_baseValue, 0, _baseValue.Length);
+                    Array.Clear(_baseValue);
                 }
 
                 if (_extra != null)
                 {
-                    Array.Clear(_extra, 0, _extra.Length);
+                    Array.Clear(_extra);
                 }
 
                 if (_password != null)
                 {
-                    Array.Clear(_password, 0, _password.Length);
+                    Array.Clear(_password);
                 }
 
                 if (_salt != null)
                 {
-                    Array.Clear(_salt, 0, _salt.Length);
+                    Array.Clear(_salt);
                 }
             }
         }

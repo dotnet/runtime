@@ -27,9 +27,6 @@ mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee);
 void
 mono_metadata_update_init (void);
 
-void
-mono_metadata_update_cleanup (void);
-
 gboolean
 mono_metadata_update_available (void);
 

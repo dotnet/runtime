@@ -46,6 +46,21 @@ jobs:
       timeoutInMinutes: 90
 
 #
+# Build with Release config and runtimeConfiguration with MSBuild generator
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x86
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: MSBuild_CMake
+      buildArgs: -c Release -msbuild
+      timeoutInMinutes: 90
+
+#
 # Build with Debug config and Release runtimeConfiguration
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -61,7 +76,7 @@ jobs:
       timeoutInMinutes: 90
 
 #
-# Build with RuntimeFlavor only. This excercise code paths where only Configuration is
+# Build with RuntimeFlavor only. This excercise code paths where only RuntimeFlavor is
 # specified. Catches cases where we depend on Configuration also being specified
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -93,6 +108,21 @@ jobs:
       timeoutInMinutes: 90
 
 #
+# Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
+# configurations on a non Windows operating system.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+    - Linux_x64
+    jobParameters:
+      nameSuffix: Libraries_AllConfigurations
+      buildArgs: -subset libs -allconfigurations
+      timeoutInMinutes: 90
+
+#
 # SourceBuild Build
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -100,8 +130,8 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
+    - SourceBuild_Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
-      buildArgs: /p:DotNetBuildFromSource=true
+      buildArgs: -subset clr+libs+host+packs /p:DotNetBuildFromSource=true --portableBuild false
       timeoutInMinutes: 90

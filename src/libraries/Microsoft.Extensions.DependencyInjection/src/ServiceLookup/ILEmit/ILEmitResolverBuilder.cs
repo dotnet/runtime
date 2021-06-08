@@ -14,6 +14,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly MethodInfo ResolvedServicesGetter = typeof(ServiceProviderEngineScope).GetProperty(
             nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
 
+        private static readonly MethodInfo ScopeLockGetter = typeof(ServiceProviderEngineScope).GetProperty(
+            nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
+
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
@@ -22,7 +25,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private sealed class ILEmitResolverBuilderRuntimeContext
         {
-            public IServiceScopeFactory ScopeFactory;
             public object[] Constants;
             public Func<IServiceProvider, object>[] Factories;
         }
@@ -35,39 +37,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             public DynamicMethod DynamicMethod;
         }
 
-        private readonly CallSiteRuntimeResolver _runtimeResolver;
-
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-
         private readonly ServiceProviderEngineScope _rootScope;
 
         private readonly ConcurrentDictionary<ServiceCacheKey, GeneratedMethod> _scopeResolverCache;
 
         private readonly Func<ServiceCacheKey, ServiceCallSite, GeneratedMethod> _buildTypeDelegate;
 
-        public ILEmitResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope) :
-            base()
+        public ILEmitResolverBuilder(ServiceProvider serviceProvider)
         {
-            if (runtimeResolver == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeResolver));
-            }
-            _runtimeResolver = runtimeResolver;
-            _serviceScopeFactory = serviceScopeFactory;
-            _rootScope = rootScope;
+            _rootScope = serviceProvider.Root;
             _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, GeneratedMethod>();
             _buildTypeDelegate = (key, cs) => BuildTypeNoCache(cs);
         }
 
         public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            // Optimize singleton case
-            if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
-            {
-                object value = _runtimeResolver.Resolve(callSite, _rootScope);
-                return scope => value;
-            }
-
             return BuildType(callSite).Lambda;
         }
 
@@ -97,8 +81,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 owner: GetType(),
                 skipVisibility: true);
 
-            ILEmitCallSiteAnalysisResult info = ILEmitCallSiteAnalyzer.Instance.CollectGenerationInfo(callSite);
-            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(info.Size);
+            // In traces we've seen methods range from 100B - 4K sized methods since we've
+            // stop trying to inline everything into scoped methods. We'll pay for a couple of resizes
+            // so there'll be allocations but we could potentially change ILGenerator to use the array pool
+            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(512);
             ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator);
 
 #if SAVE_ASSEMBLIES
@@ -161,7 +147,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitRootCache(ServiceCallSite callSite, ILEmitResolverBuilderContext argument)
         {
-            AddConstant(argument, _runtimeResolver.Resolve(callSite, _rootScope));
+            AddConstant(argument, CallSiteRuntimeResolver.Instance.Resolve(callSite, _rootScope));
             return null;
         }
 
@@ -200,9 +186,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, ILEmitResolverBuilderContext argument)
         {
-            // this.ScopeFactory
-            argument.Generator.Emit(OpCodes.Ldarg_0);
-            argument.Generator.Emit(OpCodes.Ldfld, typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.ScopeFactory)));
+            AddConstant(argument, serviceScopeFactoryCallSite.Value);
             return null;
         }
 
@@ -319,6 +303,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 LocalBuilder cacheKeyLocal = context.Generator.DeclareLocal(typeof(ServiceCacheKey));
                 LocalBuilder resolvedServicesLocal = context.Generator.DeclareLocal(typeof(IDictionary<ServiceCacheKey, object>));
+                LocalBuilder syncLocal = context.Generator.DeclareLocal(typeof(object));
                 LocalBuilder lockTakenLocal = context.Generator.DeclareLocal(typeof(bool));
                 LocalBuilder resultLocal = context.Generator.DeclareLocal(typeof(object));
 
@@ -339,8 +324,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Store resolved services
                 Stloc(context.Generator, resolvedServicesLocal.LocalIndex);
 
-                // Load resolvedServices
-                Ldloc(context.Generator, resolvedServicesLocal.LocalIndex);
+                // scope
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                // .Sync
+                context.Generator.Emit(OpCodes.Callvirt, ScopeLockGetter);
+                // Store syncLocal
+                Stloc(context.Generator, syncLocal.LocalIndex);
+
+                // Load syncLocal
+                Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Load address of lockTaken
                 context.Generator.Emit(OpCodes.Ldloca_S, lockTakenLocal.LocalIndex);
                 // Monitor.Enter
@@ -388,8 +380,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Ldloc(context.Generator, lockTakenLocal.LocalIndex);
                 // return if not
                 context.Generator.Emit(OpCodes.Brfalse, returnLabel);
-                // Load resolvedServices
-                Ldloc(context.Generator, resolvedServicesLocal.LocalIndex);
+                // Load syncLocal
+                Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Monitor.Exit
                 context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorExitMethodInfo);
 
@@ -413,8 +405,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return new ILEmitResolverBuilderRuntimeContext
             {
                 Constants = context.Constants?.ToArray(),
-                Factories = context.Factories?.ToArray(),
-                ScopeFactory = _serviceScopeFactory
+                Factories = context.Factories?.ToArray()
             };
         }
 

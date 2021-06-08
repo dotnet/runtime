@@ -82,6 +82,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(CultureResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36893", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);
@@ -92,6 +93,7 @@ namespace System.Resources.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36893", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void GetString_FromTestClassWithoutNeutralResources()
         {
             // This test is designed to complement the GetString_FromCulutureAndResourceType "fr" & "fr-CA" cases
@@ -232,6 +234,7 @@ namespace System.Resources.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50935", TestPlatforms.Android)]
         public static void GetObject(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             _ = requiresBinaryFormatter;
@@ -305,6 +308,7 @@ namespace System.Resources.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50935", TestPlatforms.Android)]
         public static void GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             _ = requiresBinaryFormatter;
@@ -317,6 +321,7 @@ namespace System.Resources.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50935", TestPlatforms.Android)]
         public static void GetResourceSet_NonStringsIgnoreCase(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             _ = requiresBinaryFormatter;

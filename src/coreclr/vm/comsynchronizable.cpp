@@ -466,10 +466,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    // validate the sleep time
-    if ((iTime < 0) && (iTime != INFINITE_TIMEOUT))
-        COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-
     GetThread()->UserSleep(iTime);
 
     HELPER_METHOD_FRAME_END();

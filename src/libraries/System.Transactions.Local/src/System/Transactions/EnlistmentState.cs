@@ -103,7 +103,7 @@ namespace System.Transactions
         }
     }
 
-    internal class EnlistmentStatePromoted : EnlistmentState
+    internal sealed class EnlistmentStatePromoted : EnlistmentState
     {
         internal override void EnterState(InternalEnlistment enlistment)
         {

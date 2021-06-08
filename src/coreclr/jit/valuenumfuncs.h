@@ -29,7 +29,7 @@ ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operat
                                                         //           Args: 0: Source for the cast operation.
                                                         //                 1: Constant integer representing the operation .
                                                         //                    Use VNForCastOper() to construct.
-ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception, currently we don't try to constant fold this
+ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception.
 
 ValueNumFuncDef(CastClass, 2, false, false, false)          // Args: 0: Handle of class being cast to, 1: object being cast.
 ValueNumFuncDef(IsInstanceOf, 2, false, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
@@ -144,15 +144,13 @@ ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
 ValueNumFuncDef(LazyStrCns, 2, false, true, false)  // lazy-initialized string literal (helper)
-ValueNumFuncDef(StrCns, 1, false, true, false)      // indirect for a string literal
+ValueNumFuncDef(NonNullIndirect, 1, false, true, false)  // this indirect is expected to always return a non-null value
 ValueNumFuncDef(Unbox, 2, false, true, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
-
-// currently we don't constant fold the next six
 
 ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations
 ValueNumFuncDef(SUB_OVF, 2, false, false, false)

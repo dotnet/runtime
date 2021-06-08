@@ -55,7 +55,7 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 0, buffer.Length));
                 Assert.Equal(TestBuffer, buffer);
 
-                Array.Clear(buffer, 0, buffer.Length);
+                Array.Clear(buffer);
 
                 // read should now complete synchronously since it is serviced by the read buffer filled in the first request
                 Assert.Equal(TestBuffer.Length, FSAssert.CompletesSynchronously(ReadAsync(fs, buffer, 0, buffer.Length)));

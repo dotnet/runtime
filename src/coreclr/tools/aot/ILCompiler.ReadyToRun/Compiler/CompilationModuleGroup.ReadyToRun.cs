@@ -82,6 +82,12 @@ namespace ILCompiler
         public abstract bool IsInputBubble { get; }
 
         /// <summary>
+        /// Returns true when the base type and derived type don't reside in the same version bubble
+        /// in which case the runtime aligns the field base offset.
+        /// </summary>
+        public abstract bool NeedsAlignmentBetweenBaseTypeAndDerived(MetadataType baseType, MetadataType derivedType);
+
+        /// <summary>
         /// List of input modules to use for the compilation.
         /// </summary>
         public abstract IEnumerable<EcmaModule> CompilationModuleSet { get; }

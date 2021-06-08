@@ -27,26 +27,6 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
         internal bool PreferInlineCompletions
         {
             get => _handle.PreferInlineCompletions;
@@ -245,62 +225,6 @@ namespace System.Net.Sockets
             {
                 Send(postBuffer);
             }
-        }
-
-        private async Task SendFileInternalAsync(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer)
-        {
-            SocketError errorCode = SocketError.Success;
-            using (fileStream)
-            {
-                // Send the preBuffer, if any
-                // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
-                {
-                    // Using "this." makes the extension method kick in
-                    await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None).ConfigureAwait(false);
-                }
-
-                // Send the file, if any
-                if (fileStream != null)
-                {
-                    var tcs = new TaskCompletionSource<SocketError>();
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
-                    if (errorCode == SocketError.IOPending)
-                    {
-                        errorCode = await tcs.Task.ConfigureAwait(false);
-                    }
-                }
-            }
-
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-
-            // Send the postBuffer, if any
-            // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
-            {
-                // Using "this." makes the extension method kick in
-                await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None).ConfigureAwait(false);
-            }
-        }
-
-        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
-        {
-            CheckTransmitFileOptions(flags);
-
-            // Open the file, if any
-            // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
-
-            return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
-        }
-
-        private void EndSendFileInternal(IAsyncResult asyncResult)
-        {
-            TaskToApm.End(asyncResult);
         }
     }
 }

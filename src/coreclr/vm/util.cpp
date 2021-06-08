@@ -2098,7 +2098,7 @@ int GetRandomInt(int maxVal)
 {
 #ifndef CROSSGEN_COMPILE
     // Use the thread-local Random instance if possible
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread)
         return pThread->GetRandom()->Next(maxVal);
 #endif

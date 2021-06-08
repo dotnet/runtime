@@ -3,7 +3,7 @@
 
 namespace System.DirectoryServices.Interop
 {
-    internal class NativeMethods
+    internal static class NativeMethods
     {
         public enum AuthenticationModes
         {

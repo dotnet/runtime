@@ -162,7 +162,7 @@ int QCALLTYPE EventPipeInternal::EventActivityIdControl(uint32_t controlCode, GU
 
     BEGIN_QCALL;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL || pActivityId == NULL)
     {
         retVal = 1;

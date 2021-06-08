@@ -772,6 +772,9 @@ public:
     TADDR               m_pRCW;
 #endif
 
+#endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
 public:
     bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
     {
@@ -882,8 +885,39 @@ private:
 
     CrstExplicitInit m_managedObjectComWrapperLock;
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+public:
+    void* AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(memoryInSizeT != NULL);
+
+        *memoryInSizeT = _countof(m_taggedAlloc) / sizeof(SIZE_T);
+
+        // The allocation is meant to indicate that memory
+        // has been made available by the system. Calling the 'get'
+        // without allocating memory indicates there has been
+        // no request for reference tracking tagged memory.
+        m_taggedMemory = m_taggedAlloc;
+        return m_taggedMemory;
+    }
+
+    void* GetTaggedMemory()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_taggedMemory;
+    }
+
+private:
+    void* m_taggedMemory;
+
+    // Two pointers worth of bytes of the requirement for
+    // the current consuming implementation so that is what
+    // is being allocated.
+    BYTE m_taggedAlloc[2 * sizeof(void*)];
+#endif // FEATURE_OBJCMARSHAL
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;
@@ -933,7 +967,7 @@ class SyncBlock
     // A 0 in this variable means no hash code has been set yet - this saves having
     // another flag to express this state, and it enables us to use a 32-bit interlocked
     // operation to set the hash code, on the other hand it means that hash codes
-    // can never be 0. ObjectNative::GetHashCode in COMObject.cpp makes sure to enforce this.
+    // can never be 0. ObjectNative::GetHashCode in objectnative.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
     // In some early version of VB when there were no arrays developers used to use BSTR as arrays

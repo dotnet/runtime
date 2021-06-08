@@ -620,7 +620,7 @@ namespace System.Diagnostics.Tracing
     [EventSource(Name = "Microsoft.Tasks.Nuget")]
     internal sealed class TplEventSource : EventSource
     {
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
             public const EventKeywords Debug = (EventKeywords)0x20000;

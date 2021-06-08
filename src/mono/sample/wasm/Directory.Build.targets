@@ -5,4 +5,25 @@
     </ItemGroup>
   </Target>
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+
+  <Target Name="BuildSampleInTree"
+      Inputs="Program.cs"
+      Outputs="bin/$(Configuration)/AppBundle/dotnet.wasm">
+    <PropertyGroup>
+      <_ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</_ScriptExt>
+      <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
+      <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
+      <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
+    </PropertyGroup>
+    <Exec Command="$(_Dotnet) publish /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
+  </Target>
+  <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
+    <Exec Command="cd bin/$(Configuration)/AppBundle &amp;&amp; v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll" IgnoreExitCode="true" />
+  </Target>
+  <Target Name="CheckServe">
+    <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
+  </Target>
+  <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
+    <Exec Command="$(_Dotnet) serve -o -d:bin/Release/AppBundle -p:8000" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+  </Target>
 </Project>

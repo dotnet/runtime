@@ -4,7 +4,7 @@
 namespace System.Configuration
 {
     // Used in cases where the Host does not require impersonation.
-    internal class EmptyImpersonationContext : IDisposable
+    internal sealed class EmptyImpersonationContext : IDisposable
     {
         private static volatile IDisposable s_emptyImpersonationContext;
 

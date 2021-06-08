@@ -31,6 +31,7 @@ public:
             , skipCleanup(false)
             , workerCount(-1)
             , indexCount(-1)
+            , failureLimit(-1)
             , indexes(nullptr)
             , hash(nullptr)
             , methodStatsTypes(nullptr)
@@ -60,6 +61,7 @@ public:
         bool  skipCleanup; // In /parallel mode, do we skip cleanup of temporary files? Used for debugging /parallel.
         int   workerCount; // Number of workers to use for /parallel mode. -1 (or 1) means don't use parallel mode.
         int   indexCount;  // If indexCount is -1 and hash points to nullptr it means compile all.
+        int   failureLimit; // Number of failures after which bail out the replay/asmdiffs.
         int*  indexes;
         char* hash;
         char* methodStatsTypes;

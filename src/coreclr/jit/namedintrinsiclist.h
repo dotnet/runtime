@@ -52,8 +52,16 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsValueType,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
+    NI_System_Type_op_Equality,
+    NI_System_Type_op_Inequality,
+    NI_System_Type_GetTypeFromHandle,
     NI_System_Array_Clone,
     NI_System_Object_MemberwiseClone,
+
+    NI_System_String_get_Chars,
+    NI_System_String_get_Length,
+    NI_System_Span_get_Item,
+    NI_System_ReadOnlySpan_get_Item,
 
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case

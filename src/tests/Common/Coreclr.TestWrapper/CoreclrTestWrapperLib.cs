@@ -78,15 +78,15 @@ namespace CoreclrTestLib
         public unsafe static IEnumerable<Process> GetChildren(this Process process)
         {
             var children = new List<Process>();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return Windows_GetChildren(process);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsLinux())
             {
                 return Linux_GetChildren(process);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 return MacOS_GetChildren(process);
             }
@@ -210,12 +210,12 @@ namespace CoreclrTestLib
             string arguments = $"--name \"{path}\" {process.Id} --withheap";
             Process createdump = new Process();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 createdump.StartInfo.FileName = createdumpPath + ".exe";
                 createdump.StartInfo.Arguments = arguments;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 createdump.StartInfo.FileName = "sudo";
                 createdump.StartInfo.Arguments = $"{createdumpPath} " + arguments;
@@ -284,7 +284,7 @@ namespace CoreclrTestLib
             return children;
         }
 
-        public int RunTest(string executable, string outputFile, string errorFile, string category, string testBinaryBase)
+        public int RunTest(string executable, string outputFile, string errorFile, string category, string testBinaryBase, string outputDir)
         {
             Debug.Assert(outputFile != errorFile);
 
@@ -305,7 +305,7 @@ namespace CoreclrTestLib
             using (Process process = new Process())
             {
                 // Windows can run the executable implicitly
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     process.StartInfo.FileName = executable;
                 }
@@ -321,6 +321,7 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.EnvironmentVariables.Add("__Category", category);
                 process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
+                process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
 
                 DateTime startTime = DateTime.Now;
                 process.Start();

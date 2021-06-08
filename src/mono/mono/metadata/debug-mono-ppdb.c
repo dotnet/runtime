@@ -158,7 +158,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	int ppdb_size = 0, ppdb_compressed_size = 0;
 	gboolean is_embedded_ppdb = FALSE;
 
-	if (image->tables [MONO_TABLE_DOCUMENT].rows) {
+	if (table_info_get_rows (&image->tables [MONO_TABLE_DOCUMENT])) {
 		/* Embedded ppdb */
 		mono_image_addref (image);
 		return create_ppdb_file (image, TRUE);
@@ -490,16 +490,16 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	if (source_files)
 		sindexes = g_ptr_array_new ();
 
-	if (!method->token || tables [MONO_TABLE_METHODBODY].rows == 0)
+	if (!method->token || table_info_get_rows (&tables [MONO_TABLE_METHODBODY]) == 0)
 		return;
 
 	method_idx = mono_metadata_token_index (method->token);
 
 	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
-	if (G_UNLIKELY (method_idx - 1 >= methodbody_table->rows)) {
+	if (G_UNLIKELY (method_idx - 1 >= table_info_get_rows (methodbody_table))) {
 		char *method_name = mono_method_full_name (method, FALSE);
 		g_error ("Method idx %d is greater than number of rows (%d) in PPDB MethodDebugInformation table, for method %s in '%s'. Likely a malformed PDB file.",
-			   method_idx - 1, methodbody_table->rows, method_name, image->name);
+		 method_idx - 1, table_info_get_rows (methodbody_table), method_name, image->name);
 		g_free (method_name);
 	}
 	mono_metadata_decode_row (methodbody_table, method_idx - 1, cols, MONO_METHODBODY_SIZE);
@@ -641,7 +641,8 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	// this endpoint becomes locals_end_idx below
 
 	// March to the last scope that is in this method
-	while (scope_idx <= tables [MONO_TABLE_LOCALSCOPE].rows) {
+	int rows = table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE]);
+	while (scope_idx <= rows) {
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
 			break;
@@ -654,8 +655,8 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	// Ends with "the last row of the LocalVariable table"
 	// this happens if the above loop marched one past the end
 	// of the rows
-	if (scope_idx > tables [MONO_TABLE_LOCALSCOPE].rows) {
-		locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows + 1;
+	if (scope_idx > table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE])) {
+		locals_end_idx = table_info_get_rows (&tables [MONO_TABLE_LOCALVARIABLE]) + 1;
 	} else {
 		// Ends with "the next run of LocalVariables,
 		// found by inspecting the VariableList of the next row in this LocalScope table."
@@ -674,8 +675,8 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 
 		locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
-		if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
-			locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows + 1;
+		if (scope_idx == table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE])) {
+			locals_end_idx = table_info_get_rows (&tables [MONO_TABLE_LOCALVARIABLE]) + 1;
 		} else {
 			locals_end_idx = mono_metadata_decode_row_col (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1 + 1, MONO_LOCALSCOPE_VARIABLELIST);
 		}
@@ -756,7 +757,7 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent
 	loc.col_idx = MONO_CUSTOMDEBUGINFORMATION_PARENT;
 	loc.t = table;
 
-	if (!mono_binary_search (&loc, table->base, table->rows, table->row_size, table_locator))
+	if (!mono_binary_search (&loc, table->base, table_info_get_rows (table), table->row_size, table_locator))
 		return NULL;
 	// Great we found one of possibly many CustomDebugInformations of this entity they are distinguished by KIND guid
 	// First try on this index found by binary search...(it's most likeley to be only one and binary search found the one we want)
@@ -764,7 +765,8 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent
 		return mono_metadata_blob_heap (image, mono_metadata_decode_row_col (table, loc.result, MONO_CUSTOMDEBUGINFORMATION_VALUE));
 
 	// Move forward from binary found index, until parent token differs
-	for (int i = loc.result + 1; i < table->rows; i++)
+	int rows = table_info_get_rows (table);
+	for (int i = loc.result + 1; i < rows; i++)
 	{
 		if (mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_PARENT) != loc.idx)
 			break;

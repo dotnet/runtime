@@ -15,12 +15,6 @@ namespace System.Runtime.InteropServices
             return e?.HResult ?? 0;
         }
 
-        [SupportedOSPlatform("windows")]
-        public static int AddRef(IntPtr pUnk)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
         public static bool AreComObjectsAvailableForCleanup() => false;
 
         [SupportedOSPlatform("windows")]
@@ -29,6 +23,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [SupportedOSPlatform("windows")]
         public static object BindToMoniker(string monikerName)
         {
@@ -91,16 +86,6 @@ namespace System.Runtime.InteropServices
         public static object? GetComObjectData(object obj, object key)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        public static IntPtr GetHINSTANCE(Module m)
-        {
-            if (m is null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
-
-            return (IntPtr)(-1);
         }
 
         [SupportedOSPlatform("windows")]
@@ -212,18 +197,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(t));
             }
             return false;
-        }
-
-        [SupportedOSPlatform("windows")]
-        public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        [SupportedOSPlatform("windows")]
-        public static int Release(IntPtr pUnk)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]

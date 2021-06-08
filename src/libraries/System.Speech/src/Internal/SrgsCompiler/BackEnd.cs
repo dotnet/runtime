@@ -498,7 +498,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
                         else
                         {
-                            destToState = SrcToDestHash[srcToState]; ;
+                            destToState = SrcToDestHash[srcToState];
                         }
                     }
 
@@ -737,7 +737,7 @@ namespace System.Speech.Internal.SrgsCompiler
             sToken = sToken.Trim(Helpers._achTrimChars);
 
             // Easy out if there are no consecutive double white spaces
-            if (sToken.IndexOf("  ", StringComparison.Ordinal) == -1)
+            if (!sToken.Contains("  ", StringComparison.Ordinal))
             {
                 return sToken;
             }

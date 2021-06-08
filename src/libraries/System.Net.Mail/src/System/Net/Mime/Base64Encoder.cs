@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.Mime
 {
-    internal class Base64Encoder : ByteEncoder
+    internal sealed class Base64Encoder : ByteEncoder
     {
         private static ReadOnlySpan<byte> Base64EncodeMap => new byte[]
         {

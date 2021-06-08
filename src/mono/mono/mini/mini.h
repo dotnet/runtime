@@ -30,6 +30,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-machine.h>
 #include <mono/utils/mono-stack-unwinding.h>
@@ -139,6 +140,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -628,7 +630,9 @@ enum {
 	BB_EXCEPTION_UNSAFE     = 1 << 3,
 	BB_EXCEPTION_HANDLER    = 1 << 4,
 	/* for Native Client, mark the blocks that can be jumped to indirectly */
-	BB_INDIRECT_JUMP_TARGET = 1 << 5 
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 ,
+	/* Contains code with some side effects */
+	BB_HAS_SIDE_EFFECTS = 1 << 6,
 };
 
 typedef struct MonoMemcpyArgs {
@@ -880,6 +884,7 @@ enum {
 	MONO_INST_GC_CALLSITE = 128,
 	/* On comparisons, mark the branch following the condition as likely to be taken */
 	MONO_INST_LIKELY = 128,
+	MONO_INST_NONULLCHECK   = 128,
 };
 
 #define inst_c0 data.op[0].const_val
@@ -1605,6 +1610,8 @@ typedef struct {
 	/* pointer to context datastructure used for graph dumping */
 	MonoGraphDumper *gdump_ctx;
 
+	gboolean *clause_is_dead;
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;
@@ -1643,8 +1650,7 @@ typedef enum {
 
 typedef enum {
 	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1,
-	MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE = 1 << 2
+	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
 } MonoSimdIntrinsicsFlags;
 
 typedef struct {
@@ -1720,6 +1726,23 @@ typedef struct {
 } MonoJitStats;
 
 extern MonoJitStats mono_jit_stats;
+
+static inline void
+get_jit_stats (gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes)
+{
+	*methods_compiled = mono_jit_stats.methods_compiled;
+	*cil_code_size_bytes = mono_jit_stats.cil_code_size;
+	*native_code_size_bytes = mono_jit_stats.native_code_size;
+}
+
+guint32
+mono_get_exception_count (void);
+
+static inline void
+get_exception_stats (guint32 *exception_count)
+{
+	*exception_count = mono_get_exception_count ();
+}
 
 /* opcodes: value assigned after all the CIL opcodes */
 #ifdef MINI_OP
@@ -2190,9 +2213,8 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, co
 #endif // __cplusplus
 
 void              mono_trampolines_init (void);
-void              mono_trampolines_cleanup (void);
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
-gpointer          mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
+gpointer          mono_create_specific_trampoline (MonoMemoryManager *mem_manager, gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
 gpointer          mono_create_jump_trampoline (MonoMethod *method, 
 											   gboolean add_sync_wrapper,
 											   MonoError *error);
@@ -2299,8 +2321,8 @@ void              mono_emit_unwind_op (MonoCompile *cfg, int when,
 									   int val);
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops);
 void              mono_tramp_info_free (MonoTrampInfo *info);
-void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
-void              mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
+void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
+void              mono_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
 int mini_exception_id_by_name (const char *name);
 gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 
@@ -2717,7 +2739,6 @@ gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *v
 					  gint32 rgctx_index);
 
 void mono_generic_sharing_init (void);
-void mono_generic_sharing_cleanup (void);
 
 MonoClass* mini_class_get_container_class (MonoClass *klass);
 MonoGenericContext* mini_class_get_context (MonoClass *klass);
@@ -2875,112 +2896,6 @@ enum {
 	SIMD_PREFETCH_MODE_1,
 	SIMD_PREFETCH_MODE_2,
 };
-
-/* SIMD operations */
-typedef enum {
-	SIMD_OP_SSE_CVTSS2SI,
-	SIMD_OP_SSE_CVTTSS2SI,
-	SIMD_OP_SSE_CVTSS2SI64,
-	SIMD_OP_SSE_CVTTSS2SI64,
-	SIMD_OP_SSE_CVTSD2SI,
-	SIMD_OP_SSE_CVTTSD2SI,
-	SIMD_OP_SSE_CVTSD2SI64,
-	SIMD_OP_SSE_CVTTSD2SI64,
-	SIMD_OP_SSE_CVTSD2SS,
-	SIMD_OP_SSE_MAXPS,
-	SIMD_OP_SSE_MAXSS,
-	SIMD_OP_SSE_MINPS,
-	SIMD_OP_SSE_MINSS,
-	SIMD_OP_SSE_MAXPD,
-	SIMD_OP_SSE_MAXSD,
-	SIMD_OP_SSE_MINPD,
-	SIMD_OP_SSE_MINSD,
-	SIMD_OP_SSE_SFENCE,
-	SIMD_OP_SSE_LFENCE,
-	SIMD_OP_SSE_MFENCE,
-	SIMD_OP_SSE_SQRTPS,
-	SIMD_OP_SSE_RCPPS,
-	SIMD_OP_SSE_RSQRTPS,
-	SIMD_OP_SSE_SQRTSS,
-	SIMD_OP_SSE_RCPSS,
-	SIMD_OP_SSE_RSQRTSS,
-	SIMD_OP_SSE_SQRTPD,
-	SIMD_OP_SSE_SQRTSD,
-	SIMD_OP_SSE_PMULUDQ,
-	SIMD_OP_SSE_PMULHW,
-	SIMD_OP_SSE_PMULHUW,
-	SIMD_OP_SSE_PMADDWD,
-	SIMD_OP_SSE_PACKSSWB,
-	SIMD_OP_SSE_PACKSSDW,
-	SIMD_OP_SSE_PSRLW_IMM,
-	SIMD_OP_SSE_PSRLD_IMM,
-	SIMD_OP_SSE_PSRLQ_IMM,
-	SIMD_OP_SSE_PSRLW,
-	SIMD_OP_SSE_PSRLD,
-	SIMD_OP_SSE_PSRLQ,
-	SIMD_OP_SSE_PSLLW_IMM,
-	SIMD_OP_SSE_PSLLD_IMM,
-	SIMD_OP_SSE_PSLLQ_IMM,
-	SIMD_OP_SSE_PSLLW,
-	SIMD_OP_SSE_PSLLD,
-	SIMD_OP_SSE_PSLLQ,
-	SIMD_OP_SSE_PSRAW_IMM,
-	SIMD_OP_SSE_PSRAD_IMM,
-	SIMD_OP_SSE_PSRAW,
-	SIMD_OP_SSE_PSRAD,
-	SIMD_OP_SSE_PSADBW,
-	SIMD_OP_SSE_ADDSUBPS,
-	SIMD_OP_SSE_ADDSUBPD,
-	SIMD_OP_SSE_HADDPS,
-	SIMD_OP_SSE_HADDPD,
-	SIMD_OP_SSE_PHADDW,
-	SIMD_OP_SSE_PHADDD,
-	SIMD_OP_SSE_PHSUBW,
-	SIMD_OP_SSE_PHSUBD,
-	SIMD_OP_SSE_HSUBPS,
-	SIMD_OP_SSE_HSUBPD,
-	SIMD_OP_SSE_PHADDSW,
-	SIMD_OP_SSE_PHSUBSW,
-	SIMD_OP_SSE_PSIGNB,
-	SIMD_OP_SSE_PSIGNW,
-	SIMD_OP_SSE_PSIGND,
-	SIMD_OP_SSE_PMADDUBSW,
-	SIMD_OP_SSE_PMULHRSW,
-	SIMD_OP_SSE_LDDQU,
-	SIMD_OP_SSE_TESTC,
-	SIMD_OP_SSE_TESTNZ,
-	SIMD_OP_SSE_TESTZ,
-	SIMD_OP_SSE_PACKUSDW,
-	SIMD_OP_SSE_PHMINPOSUW,
-	SIMD_OP_AES_IMC,
-	SIMD_OP_AES_ENC,
-	SIMD_OP_AES_ENCLAST,
-	SIMD_OP_AES_DEC,
-	SIMD_OP_AES_DECLAST,
-	SIMD_OP_ARM64_CRC32B,
-	SIMD_OP_ARM64_CRC32H,
-	SIMD_OP_ARM64_CRC32W,
-	SIMD_OP_ARM64_CRC32X,
-	SIMD_OP_ARM64_CRC32CB,
-	SIMD_OP_ARM64_CRC32CH,
-	SIMD_OP_ARM64_CRC32CW,
-	SIMD_OP_ARM64_CRC32CX,
-	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64,
-	SIMD_OP_ARM64_AES_AESMC,
-	SIMD_OP_ARM64_SHA1C,
-	SIMD_OP_ARM64_SHA1H,
-	SIMD_OP_ARM64_SHA1M,
-	SIMD_OP_ARM64_SHA1P,
-	SIMD_OP_ARM64_SHA1SU0,
-	SIMD_OP_ARM64_SHA1SU1,
-	SIMD_OP_ARM64_SHA256H,
-	SIMD_OP_ARM64_SHA256H2,
-	SIMD_OP_ARM64_SHA256SU0,
-	SIMD_OP_ARM64_SHA256SU1,
-	SIMD_OP_ARM64_PMULL64_LOWER,
-	SIMD_OP_ARM64_PMULL64_UPPER,
-} SimdOp;
 
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);

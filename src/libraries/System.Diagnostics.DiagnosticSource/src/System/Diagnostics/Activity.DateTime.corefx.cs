@@ -3,7 +3,9 @@
 
 namespace System.Diagnostics
 {
+#pragma warning disable CA1052 // make class static
     partial class Activity
+#pragma warning restore CA1052
     {
         /// <summary>
         /// Returns high resolution (~1 usec) current UTC DateTime.

@@ -273,13 +273,6 @@ mono_images_init (void)
 void
 mono_images_cleanup (void)
 {
-	mono_os_mutex_destroy (&images_mutex);
-
-	g_hash_table_destroy (images_storage_hash);
-
-	mono_os_mutex_destroy (&images_storage_mutex);
-
-	mutex_inited = FALSE;
 }
 
 /**
@@ -622,13 +615,13 @@ load_tables (MonoImage *image)
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
 			if (table > MONO_TABLE_LAST)
 				continue;
-			image->tables [table].rows = 0;
+			image->tables [table].rows_ = 0;
 			continue;
 		}
 		if (table > MONO_TABLE_LAST) {
 			g_warning("bits in valid must be zero above 0x37 (II - 23.1.6)");
 		} else {
-			image->tables [table].rows = read32 (rows);
+			image->tables [table].rows_ = read32 (rows);
 		}
 		rows++;
 		valid++;
@@ -680,16 +673,16 @@ mono_image_check_for_module_cctor (MonoImage *image)
 		image->checked_module_cctor = TRUE;
 		return;
 	}
-	if (t->rows >= 1) {
+	if (table_info_get_rows (t) >= 1) {
 		guint32 nameidx = mono_metadata_decode_row_col (t, 0, MONO_TYPEDEF_NAME);
 		const char *name = mono_metadata_string_heap (image, nameidx);
 		if (strcmp (name, "<Module>") == 0) {
 			guint32 first_method = mono_metadata_decode_row_col (t, 0, MONO_TYPEDEF_METHOD_LIST) - 1;
 			guint32 last_method;
-			if (t->rows > 1)
+			if (table_info_get_rows (t) > 1)
 				last_method = mono_metadata_decode_row_col (t, 1, MONO_TYPEDEF_METHOD_LIST) - 1;
 			else 
-				last_method = mt->rows;
+				last_method = table_info_get_rows (mt);
 			for (; first_method < last_method; first_method++) {
 				nameidx = mono_metadata_decode_row_col (mt, first_method, MONO_METHOD_NAME);
 				name = mono_metadata_string_heap (image, nameidx);
@@ -1114,7 +1107,7 @@ void
 mono_image_load_names (MonoImage *image)
 {
 	/* modules don't have an assembly table row */
-	if (image->tables [MONO_TABLE_ASSEMBLY].rows) {
+	if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
 		image->assembly_name = mono_metadata_string_heap (image, 
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
 					0, MONO_ASSEMBLY_NAME));
@@ -1124,7 +1117,7 @@ mono_image_load_names (MonoImage *image)
 	/* Minimal ENC delta images index the combined string heap of the base and delta image,
 	 * so the module index is out of bounds here.
 	 */
-	if (image->tables [MONO_TABLE_MODULE].rows && !image->minimal_delta) {
+	if (table_info_get_rows (&image->tables [MONO_TABLE_MODULE]) && !image->minimal_delta) {
 		image->module_name = mono_metadata_string_heap (image,
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
 					0, MONO_MODULE_NAME));
@@ -1186,12 +1179,12 @@ static void
 dump_encmap (MonoImage *image)
 {
 	MonoTableInfo *encmap = &image->tables [MONO_TABLE_ENCMAP];
-	if (!encmap || !encmap->rows)
+	if (!encmap || !table_info_get_rows (encmap))
 		return;
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
-		for (int i = 0; i < encmap->rows; ++i) {
+		for (int i = 0; i < table_info_get_rows (encmap); ++i) {
 			guint32 cols [MONO_ENCMAP_SIZE];
 			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
 			int token = cols [MONO_ENCMAP_TOKEN];
@@ -2172,8 +2165,6 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_image_invoke_unload_hook (image);
 
-	mono_metadata_clean_for_image (image);
-
 #ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_cleanup_on_close (image);
 #endif
@@ -2626,7 +2617,7 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 
 	error_init (error);
 
-	if (fileidx < 1 || fileidx > t->rows)
+	if (fileidx < 1 || fileidx > table_info_get_rows (t))
 		return NULL;
 
 	mono_image_lock (image);
@@ -2665,8 +2656,9 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 		}
 
 		if (!image->files) {
-			image->files = g_new0 (MonoImage*, t->rows);
-			image->file_count = t->rows;
+			int n = table_info_get_rows (t);
+			image->files = g_new0 (MonoImage*, n);
+			image->file_count = n;
 		}
 		image->files [fileidx - 1] = res;
 		mono_image_unlock (image);
@@ -2773,7 +2765,7 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 			*size = ((MonoDynamicImage*)image)->public_key_len;
 		return (char*)((MonoDynamicImage*)image)->public_key;
 	}
-	if (image->tables [MONO_TABLE_ASSEMBLY].rows != 1)
+	if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY]) != 1)
 		return NULL;
 	tok = mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY], 0, MONO_ASSEMBLY_PUBLIC_KEY);
 	if (!tok)
@@ -2836,7 +2828,7 @@ mono_image_get_table_rows (MonoImage *image, int table_id)
 {
 	if (table_id < 0 || table_id >= MONO_TABLE_NUM)
 		return 0;
-	return image->tables [table_id].rows;
+	return table_info_get_rows (&image->tables [table_id]);
 }
 
 /**
@@ -2845,7 +2837,7 @@ mono_image_get_table_rows (MonoImage *image, int table_id)
 int
 mono_table_info_get_rows (const MonoTableInfo *table)
 {
-	return table->rows;
+	return table_info_get_rows (table);
 }
 
 /**

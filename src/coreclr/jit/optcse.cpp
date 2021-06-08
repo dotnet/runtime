@@ -16,10 +16,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-/*****************************************************************************/
-#if FEATURE_ANYCSE
-/*****************************************************************************/
-
 /* static */
 const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
@@ -219,7 +215,7 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     // If we haven't setup cseMaskTraits, do it now
     if (cseMaskTraits == nullptr)
     {
-        cseMaskTraits = new (getAllocator()) BitVecTraits(optCSECandidateCount, this);
+        cseMaskTraits = new (getAllocator(CMK_CSE)) BitVecTraits(optCSECandidateCount, this);
     }
 
     optCSE_MaskData op1MaskData;
@@ -337,10 +333,6 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
     return dsc1->csdIndex < dsc2->csdIndex;
 }
-
-/*****************************************************************************/
-#if FEATURE_VALNUM_CSE
-/*****************************************************************************/
 
 /*****************************************************************************
  *
@@ -787,7 +779,7 @@ unsigned Compiler::optValnumCSE_Locate()
     }
 #endif
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Make the block publicly available */
 
@@ -798,13 +790,13 @@ unsigned Compiler::optValnumCSE_Locate()
         noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
         /* Walk the statement trees in this basic block */
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             const bool isReturn = stmt->GetRootNode()->OperIs(GT_RETURN);
 
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperIsCompare() && stmtHasArrLenCandidate)
                 {
@@ -975,7 +967,7 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
             if (optCseCheckedBoundMap == nullptr)
             {
                 // Allocate map on first use.
-                optCseCheckedBoundMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseCheckedBoundMap = new (getAllocator(CMK_CSE)) NodeToNodeMap(getAllocator());
             }
 
             optCseCheckedBoundMap->Set(bound, compare);
@@ -1005,7 +997,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     const unsigned bitCount = (optCSECandidateCount * 2) + 1;
 
     // Init traits and cseCallKillsMask bitvectors.
-    cseLivenessTraits = new (getAllocator()) BitVecTraits(bitCount, this);
+    cseLivenessTraits = new (getAllocator(CMK_CSE)) BitVecTraits(bitCount, this);
     cseCallKillsMask  = BitVecOps::MakeEmpty(cseLivenessTraits);
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
     {
@@ -1017,7 +1009,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         BitVecOps::AddElemD(cseLivenessTraits, cseCallKillsMask, cseAvailBit);
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Initialize the blocks's bbCseIn set */
 
@@ -1086,7 +1078,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // If the block doesn't contains a call then skip it...
         //
@@ -1148,7 +1140,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     if (verbose)
     {
         bool headerPrinted = false;
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             if (block->bbCseGen != nullptr)
             {
@@ -1195,7 +1187,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("StartMerge BB%02u\n", block->bbNum);
+            printf("StartMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
@@ -1207,7 +1199,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("Merge BB%02u and BB%02u\n", block->bbNum, predBlock->bbNum);
+            printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
@@ -1283,7 +1275,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("EndMerge BB%02u\n", block->bbNum);
+            printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
@@ -1336,7 +1328,7 @@ void Compiler::optValnumCSE_DataFlow()
     {
         printf("\nAfter performing DataFlow for ValnumCSE's\n");
 
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             printf(FMT_BB, block->bbNum);
             printf(" cseIn  = %s,", genES2str(cseLivenessTraits, block->bbCseIn));
@@ -1395,7 +1387,7 @@ void Compiler::optValnumCSE_Availablity()
 #endif
     EXPSET_TP available_cses = BitVecOps::MakeEmpty(cseLivenessTraits);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Make the block publicly available
 
@@ -1407,11 +1399,11 @@ void Compiler::optValnumCSE_Availablity()
 
         // Walk the statement trees in this basic block
 
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We walk the tree in the forwards direction (bottom up)
 
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 bool isUse = false;
                 bool isDef = false;
@@ -1451,7 +1443,7 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (verbose)
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
                         printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
@@ -3471,8 +3463,6 @@ void Compiler::optOptimizeValnumCSEs()
     optValnumCSE_phase = false;
 }
 
-#endif // FEATURE_VALNUM_CSE
-
 /*****************************************************************************
  *
  *  The following determines whether the given expression is a worthy CSE
@@ -3829,11 +3819,9 @@ void Compiler::optOptimizeCSEs()
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 
-#if FEATURE_VALNUM_CSE
     INDEBUG(optEnsureClearCSEInfo());
     optOptimizeValnumCSEs();
     EndPhase(PHASE_OPTIMIZE_VALNUM_CSES);
-#endif // FEATURE_VALNUM_CSE
 }
 
 /*****************************************************************************
@@ -3844,13 +3832,13 @@ void Compiler::optOptimizeCSEs()
 void Compiler::optCleanupCSEs()
 {
     // We must clear the BBF_VISITED and BBF_MARKED flags.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // And clear all the "visited" bits on the block.
         block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We must clear the gtCSEnum field.
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
@@ -3871,13 +3859,11 @@ void Compiler::optCleanupCSEs()
 
 void Compiler::optEnsureClearCSEInfo()
 {
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
-        // Initialize 'stmt' to the first non-Phi statement
-        // Walk the statement trees in this basic block
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
             {
@@ -3888,7 +3874,3 @@ void Compiler::optEnsureClearCSEInfo()
 }
 
 #endif // DEBUG
-
-/*****************************************************************************/
-#endif // FEATURE_ANYCSE
-/*****************************************************************************/

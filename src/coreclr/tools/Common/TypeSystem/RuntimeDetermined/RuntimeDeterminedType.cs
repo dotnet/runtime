@@ -114,6 +114,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override IEnumerable<MethodDesc> GetVirtualMethods()
+        {
+            foreach (var method in _rawCanonType.GetVirtualMethods())
+            {
+                yield return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
+            }
+        }
+
         public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethod(name, signature, substitution);

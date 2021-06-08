@@ -9,6 +9,7 @@ namespace System.IO.Pipelines
     public class StreamPipeReaderOptions
     {
         private const int DefaultBufferSize = 4096;
+        internal const int DefaultMaxBufferSize = 2048 * 1024;
         private const int DefaultMinimumReadSize = 1024;
 
         internal static readonly StreamPipeReaderOptions s_default = new StreamPipeReaderOptions();
@@ -54,6 +55,10 @@ namespace System.IO.Pipelines
         /// <summary>Gets the minimum buffer size to use when renting memory from the <see cref="System.IO.Pipelines.StreamPipeReaderOptions.Pool" />.</summary>
         /// <value>The buffer size.</value>
         public int BufferSize { get; }
+
+        /// <summary>Gets the maximum buffer size to use when renting memory from the <see cref="System.IO.Pipelines.StreamPipeReaderOptions.Pool" />.</summary>
+        /// <value>The maximum buffer size.</value>
+        internal int MaxBufferSize { get; } = DefaultMaxBufferSize;
 
         /// <summary>Gets the threshold of remaining bytes in the buffer before a new buffer is allocated.</summary>
         /// <value>The minimum read size.</value>

@@ -493,7 +493,7 @@ namespace System.Linq.Expressions
         public sealed override ExpressionType NodeType => ExpressionType.Assign;
     }
 
-    internal class ByRefAssignBinaryExpression : AssignBinaryExpression
+    internal sealed class ByRefAssignBinaryExpression : AssignBinaryExpression
     {
         internal ByRefAssignBinaryExpression(Expression left, Expression right)
             : base(left, right)

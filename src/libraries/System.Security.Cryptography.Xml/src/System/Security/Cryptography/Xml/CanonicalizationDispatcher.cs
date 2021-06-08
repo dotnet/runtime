@@ -8,10 +8,8 @@ namespace System.Security.Cryptography.Xml
 {
     // the central dispatcher for canonicalization writes. not all node classes
     // implement ICanonicalizableNode; so a manual dispatch is sometimes necessary.
-    internal class CanonicalizationDispatcher
+    internal static class CanonicalizationDispatcher
     {
-        private CanonicalizationDispatcher() { }
-
         public static void Write(XmlNode node, StringBuilder strBuilder, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
             if (node is ICanonicalizableNode)

@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <RuntimeConfigParserTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
+  </PropertyGroup>
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
+</Project>

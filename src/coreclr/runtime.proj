@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <!-- NoTargets SDK needs a TFM set. So we used the latest .NETCoreApp supported one. -->
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-  </PropertyGroup>
 
   <Target Name="BuildRuntime"
           AfterTargets="Build">
@@ -26,15 +22,19 @@
                                    '$(PgoInstrument)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
-      <_CoreClrBuildArg Condition="'$(Ninja)' == 'true'" Include="-ninja" />
-      <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' != 'true'" Include="-skipruntime" />
-      <_CoreClrBuildArg Condition="'$(ClrJitSubset)' != 'true'" Include="-skipjit" />
-      <_CoreClrBuildArg Condition="'$(ClrILToolsSubset)' != 'true'" Include="-skipiltools" />
-      <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-paltests" />
-      <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' != 'true'" Include="-skipalljits" />
+      <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
+      <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true' or '$(PgoInstrument)' == 'true'" Include="-nopgooptimize" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
+      <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' == 'true'" Include="-component runtime" />
+      <_CoreClrBuildArg Condition="'$(ClrJitSubset)' == 'true'" Include="-component jit" />
+      <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />
+      <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' == 'true'" Include="-component alljits" />
+      <_CoreClrBuildArg Condition="'$(ClrILToolsSubset)' == 'true'" Include="-component iltools" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -80,7 +80,7 @@ namespace System.ComponentModel
 
         // This is a helper class that supports the CLR's IClassFactory2 marshaling
         // support.
-        private sealed class LicenseInteropHelper
+        private static class LicenseInteropHelper
         {
             // Used to validate a type and retrieve license details
             // when activating a managed COM server from an IClassFactory2 instance.

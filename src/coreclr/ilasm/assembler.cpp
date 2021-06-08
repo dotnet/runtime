@@ -1799,7 +1799,6 @@ mdToken Assembler::MakeMemberRef(mdToken cr, __in __nullterminated char* pszMemb
                 mr = 0;
             }
         }
-        //if(m_fOBJ)    m_pCurMethod->m_TRDList.PUSH(new TokenRelocDescr(m_CurPC,mr));
         delete [] pszMemberName;
         delete sig;
     }
@@ -2068,7 +2067,6 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     else
     {
         EmitOpcode(instr);
-        if(m_fOBJ)  m_pCurMethod->m_TRDList.PUSH(new TokenRelocDescr(m_CurPC,tk));
 
         EmitBytes((BYTE *)&tk,sizeof(mdToken));
     }
@@ -2092,7 +2090,6 @@ void Assembler::EmitInstrSig(Instr* instr, BinStr* sig)
     else
     {
         EmitOpcode(instr);
-        if(m_fOBJ)  m_pCurMethod->m_TRDList.PUSH(new TokenRelocDescr(m_CurPC,MetadataToken));
         EmitBytes((BYTE *)&MetadataToken, sizeof(mdSignature));
     }
     delete sig;

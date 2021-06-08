@@ -16,6 +16,7 @@
 
 #include "mono/utils/mono-coop-mutex.h"
 #include "mono/utils/mono-error.h"
+#include <mono/utils/mono-compiler.h>
 
 #define MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS 64
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
@@ -101,9 +102,6 @@ void
 mono_w32handle_init (void);
 
 void
-mono_w32handle_cleanup (void);
-
-void
 mono_w32handle_register_ops (MonoW32Type type, const MonoW32HandleOps *ops);
 
 gpointer
@@ -139,6 +137,7 @@ mono_w32handle_lock (MonoW32Handle *handle_data);
 void
 mono_w32handle_unlock (MonoW32Handle *handle_data);
 
+MONO_COMPONENT_API
 MonoW32HandleWaitRet
 mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable);
 

@@ -22,7 +22,7 @@ public:
 
 public:
 
-    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedDatapAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData);
+    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedDatapAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
     static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
     static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                              Module* pModule,
@@ -35,9 +35,6 @@ public:
                                                              BYTE**pInstrumentationData);
 
     static void CreatePgoManager(PgoManager* volatile* ppPgoManager, bool loaderAllocator);
-
-    // Retrieve the most likely class for a particular call
-    static CORINFO_CLASS_HANDLE getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses);
 
     // Verify address in bounds
     static void VerifyAddress(void* address);
@@ -150,7 +147,8 @@ protected:
                                                  BYTE** pAllocatedData,
                                                  ICorJitInfo::PgoInstrumentationSchema** ppSchema,
                                                  UINT32 *pCountSchemaItems,
-                                                 BYTE**pInstrumentationData);
+                                                 BYTE**pInstrumentationData,
+                                                 ICorJitInfo::PgoSource* pPgoSource);
 
     HRESULT allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
                                                     ICorJitInfo::PgoInstrumentationSchema* pSchema,

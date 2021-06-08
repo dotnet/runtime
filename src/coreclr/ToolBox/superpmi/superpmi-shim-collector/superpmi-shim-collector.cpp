@@ -25,8 +25,6 @@ char*          g_logFilePath        = nullptr; // We *don't* leak this, hooray!
 WCHAR*         g_HomeDirectory      = nullptr;
 WCHAR*         g_DefaultRealJitPath = nullptr;
 MethodContext* g_globalContext      = nullptr;
-WCHAR*         g_debugRecStr        = nullptr;
-WCHAR*         g_debugRepStr        = nullptr;
 bool           g_initialized        = false;
 
 void SetDefaultPaths()
@@ -79,27 +77,6 @@ void SetLogFilePath()
     {
         // If the environment variable isn't set, we don't enable file logging
         g_logFilePath = GetEnvironmentVariableWithDefaultA("SuperPMIShimLogFilePath", nullptr);
-    }
-}
-
-void SetDebugVariables()
-{
-    if (g_debugRecStr == nullptr)
-    {
-        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
-    }
-    if (g_debugRepStr == nullptr)
-    {
-        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
-    }
-
-    if (0 == wcscmp(g_debugRecStr, W("1")))
-    {
-        g_debugRec = true;
-    }
-    if (0 == wcscmp(g_debugRepStr, W("1")))
-    {
-        g_debugRep = true;
     }
 }
 
@@ -160,7 +137,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
 
     SetDefaultPaths();
     SetLibName();
-    SetDebugVariables();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
@@ -191,7 +168,7 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
     SetLibName();
     SetLogPath();
     SetLogPathName();
-    SetDebugVariables();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

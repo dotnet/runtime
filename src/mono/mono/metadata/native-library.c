@@ -82,9 +82,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (dllimportsearchpath_attribute, "System
  * LOCKING: Assumes the relevant lock is held.
  * For the global DllMap, this is `global_loader_data_mutex`, and for images it's their internal lock.
  */
-static int
+static gboolean
 mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func, const char **rdll, const char **rfunc) {
-	int found = 0;
+	gboolean found = FALSE;
 
 	*rdll = dll;
 	*rfunc = func;
@@ -106,7 +106,7 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 
 		if (!found && dll_map->target) {
 			*rdll = dll_map->target;
-			found = 1;
+			found = TRUE;
 			/* we don't quit here, because we could find a full
 			 * entry that also matches the function, which takes priority.
 			 */
@@ -119,8 +119,6 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 	}
 
 exit:
-	*rdll = g_strdup (*rdll);
-	*rfunc = g_strdup (*rfunc);
 	return found;
 }
 
@@ -128,10 +126,10 @@ exit:
  * The locking and GC state transitions here are wonky due to the fact the image lock is a coop lock
  * and the global loader data lock is an OS lock.
  */
-static int
+static gboolean
 mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, const char **rdll, const char **rfunc)
 {
-	int res;
+	gboolean res;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -140,7 +138,7 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 		res = mono_dllmap_lookup_list (assembly->dll_map, dll, func, rdll, rfunc);
 		mono_image_unlock (assembly);
 		if (res)
-			return res;
+			goto leave;
 	}
 
 	MONO_ENTER_GC_SAFE;
@@ -150,6 +148,10 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 	mono_global_loader_data_unlock ();
 
 	MONO_EXIT_GC_SAFE;
+
+leave:
+	*rdll = g_strdup (*rdll);
+	*rfunc = g_strdup (*rfunc);
 
 	return res;
 }
@@ -336,19 +338,6 @@ mono_global_loader_cache_init (void)
 	if (!native_library_module_blocklist)
 		native_library_module_blocklist = g_hash_table_new (g_direct_hash, g_direct_equal);
 	mono_coop_mutex_init (&native_library_module_lock);
-}
-
-void
-mono_global_loader_cache_cleanup (void)
-{
-	if (global_module_map != NULL) {
-		g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
-
-		g_hash_table_destroy(global_module_map);
-		global_module_map = NULL;
-	}
-
-	// No need to clean up the native library hash tables since they're netcore-only, where this is never called
 }
 
 static gboolean
@@ -641,6 +630,9 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
+	if (!mono_gchandle_get_target_internal (alc->gchandle))
+		return NULL;
+
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
@@ -702,6 +694,9 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 		return NULL;
 
 	if (mono_runtime_get_no_exec ())
+		return NULL;
+
+	if (!mono_gchandle_get_target_internal (alc->gchandle))
 		return NULL;
 
 	HANDLE_FUNCTION_ENTER ();
@@ -990,12 +985,12 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		orig_scope = method_aux->dll;
 	}
 	else {
-		if (!piinfo->implmap_idx || piinfo->implmap_idx > im->rows)
+		if (!piinfo->implmap_idx || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
 			goto exit;
 
 		mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
-		if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
+		if (!im_cols [MONO_IMPLMAP_SCOPE] || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, im_cols [MONO_IMPLMAP_SCOPE]))
 			goto exit;
 
 		piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
@@ -1237,7 +1232,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 		g_hash_table_add (native_library_module_blocklist, module);
 		mono_dl_close (module);
 	} else {
-		MonoDl raw_module = { 0 };
+		MonoDl raw_module = { { 0 } };
 		raw_module.handle = lib;
 		mono_dl_close (&raw_module);
 	}
@@ -1268,7 +1263,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_GetSymbol (gpointer lib, 
 		if (!symbol)
 			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
 	} else {
-		MonoDl raw_module = { 0 };
+		MonoDl raw_module = { { 0 } };
 		raw_module.handle = lib;
 		mono_dl_symbol (&raw_module, symbol_name, &symbol);
 		if (!symbol)

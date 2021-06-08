@@ -71,6 +71,7 @@ namespace System
                     if (!_callback1(targetObj))
                     {
                         // If the callback returns false, this callback object is no longer needed.
+                        _weakTargetObj.Free();
                         return;
                     }
                 }

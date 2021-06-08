@@ -50,14 +50,10 @@
              Link="Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs"
              Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
-             Link="Common\Interop\Windows\Interop.GetFileType_SafeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs"
              Link="Common\Interop\Windows\Interop.GetFullPathNameW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs"
              Link="Common\Interop\Windows\Interop.GetLongPathNameW.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs"
-             Link="Common\Interop\Windows\Interop.GetLogicalDrives.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
              Link="Common\Interop\Windows\Interop.MAX_PATH.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs"

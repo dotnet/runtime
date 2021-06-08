@@ -479,6 +479,10 @@ typedef struct {
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
 
+#if defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
+#define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
+#endif
+
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
 

@@ -800,7 +800,7 @@ private:
 
     void InitializeBaseType(const GenTreeHWIntrinsic* node)
     {
-        baseType = node->gtSIMDBaseType;
+        baseType = node->GetSimdBaseType();
 
         if (baseType == TYP_UNKNOWN)
         {

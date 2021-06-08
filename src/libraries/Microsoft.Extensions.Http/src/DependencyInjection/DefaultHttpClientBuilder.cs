@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal class DefaultHttpClientBuilder : IHttpClientBuilder
+    internal sealed class DefaultHttpClientBuilder : IHttpClientBuilder
     {
         public DefaultHttpClientBuilder(IServiceCollection services, string name)
         {

@@ -2412,7 +2412,7 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
     X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
 
     // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetThread), sizeof(void*));
+    X86EmitCall(NewExternalCodeLabel((LPVOID)GetThreadHelper), sizeof(void*));
 
     // mov dstreg, eax
     X86EmitMovRegReg(dstreg, kEAX);

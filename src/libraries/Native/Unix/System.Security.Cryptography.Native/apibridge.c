@@ -298,6 +298,23 @@ int32_t local_DSA_set0_key(DSA* dsa, BIGNUM* bnY, BIGNUM* bnX)
     return 1;
 }
 
+RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey)
+{
+    if (pkey == NULL)
+    {
+        return NULL;
+    }
+
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+
+    if (rsa != NULL)
+    {
+        RSA_free(rsa);
+    }
+
+    return rsa;
+}
+
 int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey)
 {
     if (!pkey)
@@ -794,6 +811,11 @@ int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, 
     // On OpenSSL 1.0.2 there aren't two different identifiers for RSA,
     // so just pass the request on th EVP_PKEY_CTX_ctrl with the only identifier defined.
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, optype, cmd, p1, p2);
+}
+
+int local_RSA_test_flags(const RSA *r, int flags)
+{
+    return r->flags & flags;
 }
 
 #endif

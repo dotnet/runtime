@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,8 +19,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-
-    internal class EvaluateExpression
+    internal static class EvaluateExpression
     {
         private class FindVariableNMethodCall : CSharpSyntaxWalker
         {
@@ -211,6 +211,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/51202")]
         internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {
             expression = expression.Trim();
