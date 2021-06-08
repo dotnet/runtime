@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private int _fileType = -1;
+        private bool? _canSeek;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -29,7 +29,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public bool IsAsync { get; private set; }
 
-        internal bool CanSeek => !IsClosed && GetFileType() == Interop.Sys.FileTypes.S_IFREG;
+        internal bool CanSeek => !IsClosed && (_canSeek ??= Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
 
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
         /// <param name="path">The path to the file.</param>
@@ -66,10 +66,25 @@ namespace Microsoft.Win32.SafeHandles
 
             // Make sure it's not a directory; we do this after opening it once we have a file descriptor
             // to avoid race conditions.
-            if (handle.GetFileType(path) == Interop.Sys.FileTypes.S_IFDIR)
+            Interop.Sys.FileStatus status;
+            if (Interop.Sys.FStat(handle, out status) != 0)
+            {
+                handle.Dispose();
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path);
+            }
+            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
             {
                 handle.Dispose();
                 throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
+            }
+
+            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
+            {
+                // we take advantage of the information provided by the fstat syscall
+                // and for regular files (most common case)
+                // avoid one extra sys call for determining whether file can be seeked
+                handle._canSeek = true;
+                Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
             }
 
             return handle;
@@ -286,28 +301,6 @@ namespace Microsoft.Win32.SafeHandles
                         preallocationSize));
                 }
             }
-        }
-
-        private int GetFileType(string? path = null)
-        {
-            if (_fileType == -1)
-            {
-                // Make sure it's not a directory; we do this after opening it once we have a file descriptor
-                // to avoid race conditions.
-                if (Interop.Sys.FStat(this, out Interop.Sys.FileStatus status) != 0)
-                {
-                    if (OwnsHandle)
-                    {
-                        Dispose();
-                    }
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path);
-                }
-
-                _fileType = status.Mode & Interop.Sys.FileTypes.S_IFMT;
-                Debug.Assert((Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0) == (_fileType == Interop.Sys.FileTypes.S_IFREG));
-            }
-
-            return _fileType;
         }
     }
 }
