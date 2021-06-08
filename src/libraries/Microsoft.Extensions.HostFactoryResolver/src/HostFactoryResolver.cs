@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Hosting
             return ResolveFactory<THostBuilder>(assembly, CreateHostBuilder);
         }
 
-        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, TimeSpan? waitTimeout = null,  Action<object>? configureHostBuilder = null)
+        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, TimeSpan? waitTimeout = null, bool stopApplication = true, Action<object>? configureHostBuilder = null)
         {
             if (assembly.EntryPoint is null)
             {
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
-            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, configureHostBuilder).CreateHost();
+            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, stopApplication, configureHostBuilder).CreateHost();
         }
 
         private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
@@ -166,16 +166,18 @@ namespace Microsoft.Extensions.Hosting
             private readonly string[] _args;
             private readonly MethodInfo _entryPoint;
             private readonly TimeSpan _waitTimeout;
+            private readonly bool _stopApplication;
 
             private readonly TaskCompletionSource<object> _hostTcs = new();
             private IDisposable? _disposable;
             private Action<object>? _configure;
 
-            public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, Action<object>? configure)
+            public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure)
             {
                 _args = args;
                 _entryPoint = entryPoint;
                 _waitTimeout = waitTimeout;
+                _stopApplication = stopApplication;
                 _configure = configure;
             }
 
@@ -273,8 +275,11 @@ namespace Microsoft.Extensions.Hosting
                 {
                     _hostTcs.TrySetResult(value.Value!);
 
-                    // Stop the host from running further
-                    throw new StopTheHostException();
+                    if (_stopApplication)
+                    {
+                        // Stop the host from running further
+                        throw new StopTheHostException();
+                    }
                 }
             }
 
