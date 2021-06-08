@@ -295,6 +295,45 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void ThrowsIfPropertyInConfigMissingInModel()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            Assert.Throws<BindingException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+        }
+        [Fact]
+        public void ThrowsIfPropertyInConfigMissingInNestedModel()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Nested:ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            Assert.Throws<BindingException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+        }
+
+        [Fact]
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>

@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Configuration.Binder;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -209,7 +211,29 @@ namespace Microsoft.Extensions.Configuration
         {
             if (instance != null)
             {
-                foreach (PropertyInfo property in GetAllProperties(instance.GetType()))
+                IEnumerable<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+
+                var configSections = configuration.GetChildren();
+
+                if (options.ErrorOnUnknownConfiguration)
+                {
+                    HashSet<string> propertyNames = new HashSet<string>(modelProperties.Select(mp => mp.Name),
+                        StringComparer.OrdinalIgnoreCase);
+
+                    var missingPropertyNames =
+                        configSections.Where(cs => !propertyNames.Contains(cs.Key))
+                            .Select(mp => mp.Key)
+                            .ToList();
+
+                    if (missingPropertyNames.Any())
+                    {
+                        throw new BindingException(
+                            $"\"{nameof(options.ErrorOnUnknownConfiguration)}\" was set on the provided {nameof(BinderOptions)}, but the following properties were not found on the instance of {instance.GetType()}:" +
+                            Environment.NewLine + string.Join($"{Environment.NewLine}\t", missingPropertyNames));
+                    }
+                }
+
+                foreach (PropertyInfo property in modelProperties)
                 {
                     BindProperty(property, instance, configuration, options);
                 }
