@@ -12,8 +12,15 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use CreateDirectory.
         /// </summary>
+#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateDirectoryW", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static partial bool CreateDirectoryPrivate(string path, ref SECURITY_ATTRIBUTES lpSecurityAttributes);
+        private static partial bool CreateDirectoryPrivate(
+#else
+        [DllImport(Libraries.Kernel32, EntryPoint = "CreateDirectoryW", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool CreateDirectoryPrivate(
+#endif
+            string path,
+            ref SECURITY_ATTRIBUTES lpSecurityAttributes);
 
         internal static bool CreateDirectory(string path, ref SECURITY_ATTRIBUTES lpSecurityAttributes)
         {

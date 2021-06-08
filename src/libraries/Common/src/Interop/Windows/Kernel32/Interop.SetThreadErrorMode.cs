@@ -7,9 +7,16 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
         [SuppressGCTransition]
-        internal static partial bool SetThreadErrorMode(uint dwNewMode, out uint lpOldMode);
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        internal static partial bool SetThreadErrorMode(
+#else
+        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        internal static extern bool SetThreadErrorMode(
+#endif
+            uint dwNewMode,
+            out uint lpOldMode);
 
         internal const uint SEM_FAILCRITICALERRORS = 1;
     }
