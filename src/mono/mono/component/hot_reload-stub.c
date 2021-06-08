@@ -70,11 +70,11 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_effective_table_slow,
 	&hot_reload_stub_relative_delta_index,
 	&hot_reload_stub_apply_changes,
-        &hot_reload_stub_close_except_pools_all,
-        &hot_reload_stub_close_all,
-        &hot_reload_stub_get_updated_method_rva,
-        &hot_reload_stub_table_bounds_check,
-        &hot_reload_stub_delta_heap_lookup,
+	&hot_reload_stub_close_except_pools_all,
+	&hot_reload_stub_close_all,
+	&hot_reload_stub_get_updated_method_rva,
+	&hot_reload_stub_table_bounds_check,
+	&hot_reload_stub_delta_heap_lookup,
 };
 
 static bool
@@ -141,7 +141,7 @@ hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token)
 void
 hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
 {
-        mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
+	mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
 }
 
 static void
@@ -157,19 +157,19 @@ hot_reload_stub_close_all (MonoImage *base_image)
 gpointer
 hot_reload_stub_get_updated_method_rva (MonoImage *base_image, uint32_t idx)
 {
-        g_assert_not_reached ();
+	g_assert_not_reached ();
 }
 
 gboolean
 hot_reload_stub_table_bounds_check (MonoImage *base_image, int table_index, int token_index)
 {
-        g_assert_not_reached ();
+	g_assert_not_reached ();
 }
 
 static gboolean
 hot_reload_stub_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out)
 {
-        g_assert_not_reached ();
+	g_assert_not_reached ();
 }
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
