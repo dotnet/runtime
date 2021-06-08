@@ -38467,7 +38467,7 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
                         heap_segment_mem (seg), (*delete_p ? "should" : "should not")));
 
         }
-        else
+        if (!*delete_p)
         {
             dprintf (3, ("[h%d] seg %Ix alloc %Ix->%Ix",
                 heap_number, (size_t)seg,
