@@ -3,11 +3,10 @@
     <OutputType>Exe</OutputType>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\</MicrosoftNetCoreAppRuntimePackDir>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
   </PropertyGroup>
 
@@ -75,7 +74,7 @@
         ProjectName="HelloAndroid"
         ForceInterpreter="$(MonoForceInterpreter)"
         ForceAOT="$(ForceAOT)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
