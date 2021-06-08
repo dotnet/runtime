@@ -75,7 +75,7 @@
       <_EmccCommonFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccCommonFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccCommonFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccCommonFlags Include="-s &quot;EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
+      <_EmccCommonFlags Include="-s &quot;EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
       <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
       <_EmccCommonFlags Include="-emit-llvm" />
@@ -93,10 +93,6 @@
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_EmccFlags Include="@(_EmccCommonFlags)" />
-
-      <_EmccFlags Include="-s WASM=1" />
-      <_EmccFlags Include="-s BINARYEN=1" />
-      <_EmccFlags Include="-s ALIASING_FUNCTION_POINTERS=0" />
       <_EmccFlags Include="-s USE_ZLIB=1" />
     </ItemGroup>
 
@@ -194,7 +190,7 @@
 
     <PropertyGroup>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
-      <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz --llvm-opts 2 -DENABLE_NETCORE=1</EmccConfigurationFlags>
+      <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_NETCORE=1</EmccConfigurationFlags>
       <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)dotnet.wasm&quot; -o &quot;$(NativeBinDir)dotnet.wasm&quot;</StripCmd>
       <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
       <WasmVersionFile>$(WasmObjDir)\emcc-version.txt</WasmVersionFile>
