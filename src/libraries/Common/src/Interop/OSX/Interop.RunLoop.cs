@@ -88,6 +88,6 @@ internal static partial class Interop
         /// false if rl either is not running or is currently processing
         /// a source, timer, or observer.</returns>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        internal static extern bool CFRunLoopIsWaiting(CFRunLoopRef rl);
+        internal static extern int CFRunLoopIsWaiting(CFRunLoopRef rl);
     }
 }
