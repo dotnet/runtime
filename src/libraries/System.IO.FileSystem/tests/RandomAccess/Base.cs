@@ -70,6 +70,7 @@ namespace System.IO.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
         public void ThrowsArgumentExceptionForAsyncFileHandle()
         {
             if (ShouldThrowForAsyncHandle)
