@@ -5096,9 +5096,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
     // Instrument cold blocks in order to validate profiles
-    if (!compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
-        compileFlags->IsSet(JitFlags::JIT_FLAG_VALIDATE_PROFILE) && opts.OptimizationEnabled() &&
-        fgFirstBB->hasProfileWeight() && !opts.IsReadyToRun())
+    if (!compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && compileFlags->IsSet(JitFlags::JIT_FLAG_VALIDATE_PROFILE) &&
+        opts.OptimizationEnabled() && fgFirstBB->hasProfileWeight() && !opts.IsReadyToRun())
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInsertProfileValidators);
     }

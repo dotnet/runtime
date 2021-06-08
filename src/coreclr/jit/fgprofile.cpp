@@ -1570,9 +1570,9 @@ PhaseStatus Compiler::fgInsertProfileValidators()
             // TODO: don't emit validator if the block is dominated by other cold blocks
 
             // Pass CORINFO_METHOD_HANDLE
-            GenTreeCall::Use* const args = gtNewCallArgs(
-                gtNewIconNode(reinterpret_cast<ssize_t>(info.compMethodHnd), TYP_I_IMPL),
-                gtNewIconNode(block->bbNum, TYP_INT));
+            GenTreeCall::Use* const args =
+                gtNewCallArgs(gtNewIconNode(reinterpret_cast<ssize_t>(info.compMethodHnd), TYP_I_IMPL),
+                              gtNewIconNode(block->bbNum, TYP_INT));
 
             GenTree* call = fgMorphCall(gtNewHelperCallNode(CORINFO_HELP_PROFILE_VALIDATOR, TYP_VOID, args));
             gtSetEvalOrder(call);
