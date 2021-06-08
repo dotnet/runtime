@@ -8803,7 +8803,7 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
     }
 
     // Iterate for remaining blocks
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
