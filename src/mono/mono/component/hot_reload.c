@@ -460,12 +460,6 @@ publish_unlock (void)
 	mono_coop_mutex_unlock (&publish_mutex);
 }
 
-MonoComponentHotReload *
-mono_component_hot_reload_init (void)
-{
-	/* TODO: implement me */
-	return &fn_table;
-}
 static mono_lazy_init_t metadata_update_lazy_init;
 
 static void

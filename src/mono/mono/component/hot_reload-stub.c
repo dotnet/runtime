@@ -83,12 +83,6 @@ hot_reload_stub_available (void)
 	return false;
 }
 
-static void
-hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
-{
-	mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
-}
-
 static MonoComponentHotReload *
 component_hot_reload_stub_init (void)
 {
