@@ -18912,10 +18912,10 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         }
     }
 
-    bool callsiteIsGeneric = (rootCompiler->info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+    bool callsiteIsGeneric = (rootCompiler->info.compMethodInfo->args.sigInst.methInstCount != 0) ||
                              (rootCompiler->info.compClassAttr & CORINFO_FLG_SHAREDINST);
 
-    bool calleeIsGeneric = (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_GENERIC) ||
+    bool calleeIsGeneric = (info.compMethodInfo->args.sigInst.methInstCount != 0) ||
                            (info.compClassAttr & CORINFO_FLG_SHAREDINST);
 
     if (!callsiteIsGeneric && calleeIsGeneric)
