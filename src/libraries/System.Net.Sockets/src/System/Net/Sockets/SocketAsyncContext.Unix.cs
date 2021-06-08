@@ -172,7 +172,7 @@ namespace System.Net.Sockets
 
                     Volatile.Write(ref _state, (int)State.Complete);
 
-                    TraceWithContext(context, $"Exit, Completed");
+                    TraceWithContext(context, "Exit, Completed");
                     return OperationResult.Completed;
                 }
 
@@ -195,11 +195,11 @@ namespace System.Net.Sockets
                 if (newState == (int)State.Cancelled)
                 {
                     ProcessCancellation();
-                    TraceWithContext(context, $"Exit, Newly cancelled");
+                    TraceWithContext(context, "Exit, Newly cancelled");
                     return OperationResult.Cancelled;
                 }
 
-                TraceWithContext(context, $"Exit, Pending");
+                TraceWithContext(context, "Exit, Pending");
                 return OperationResult.Pending;
             }
 
