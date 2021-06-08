@@ -19,7 +19,7 @@
     <AllPackages Include="@(AllPackagesFilePath->'%(PackageName)')" />
 
     <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
-    <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)"/>
+    <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)" />
     <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
 
     <!-- no targeting pack was ever shipped for net463 -->
@@ -42,24 +42,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestSupportFiles Include="$(LibrariesProjectRoot)shims\netfxreference.props">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">
-      <DestinationFolder>$(TestToolsDir)eng/</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(PackagingTaskDir)..\..\**\*.*" Exclude="$(PackagingTaskDir)..\..\*.*">
-      <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="props\Directory.Build.props">
-      <DestinationFolder>$(TestDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="**\*.targets">
-      <DestinationFolder>$(TestSupportDir)%(RecursiveDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(TestProjectName)">
-      <DestinationFolder>$(TestSupportDir)</DestinationFolder>
-    </TestSupportFiles>
+    <TestSupportFile Include="$(RepositoryEngineeringDir)Versions.props;
+                              $(RepositoryEngineeringDir)targetingpacks.targets;
+                              $(LibrariesProjectRoot)shims\netfxreference.props"
+                     DestinationFolder="$(TestToolsDir)" />
+    <TestSupportFile Include="$(PackagingTaskDir)..\..\**\*.*"
+                     Exclude="$(PackagingTaskDir)..\..\*.*"
+                     DestinationFolder="$(TestToolsDir)%(RecursiveDir)" />
+    <TestSupportFile Include="props\Directory.Build.*"
+                     DestinationFolder="$(TestDir)" />
+    <TestSupportFile Include="**\*.targets"
+                     DestinationFolder="$(TestSupportDir)%(RecursiveDir)" />
+    <TestSupportFile Include="$(TestProjectName)"
+                     DestinationFolder="$(TestSupportDir)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -69,10 +64,10 @@
   </ItemGroup>
 
   <Target Name="CreateTestDir"
-          Inputs="@(TestSupportFiles)"
-          Outputs="@(TestSupportFiles->'%(DestinationFolder)\%(FileName)%(Extension)')">
-    <MakeDir Directories="%(TestSupportFiles.DestinationFolder)" />
-    <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
+          Inputs="@(TestSupportFile)"
+          Outputs="@(TestSupportFile->'%(DestinationFolder)\%(FileName)%(Extension)')">
+    <MakeDir Directories="%(TestSupportFile.DestinationFolder)" />
+    <Copy SourceFiles="@(TestSupportFile)" DestinationFolder="%(TestSupportFile.DestinationFolder)" />
   </Target>
 
   <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageTestingAssembly)"/>
@@ -123,7 +118,7 @@
     <!-- Update project.csproj template -->
     <WriteLinesToFile
       File="$(_projectFile)"
-      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TFMs}', $(_projectTFMs)))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TargetFrameworks}', $(_projectTFMs)).Replace('{NetCoreAppCurrent}', $(NetCoreAppCurrent)).Replace('{NetCoreAppCurrentVersion}', $(NetCoreAppCurrentVersion)).Replace('{MicrosoftNetCoreAppFrameworkName}', $(MicrosoftNetCoreAppFrameworkName)))"
       Overwrite="true" />
     <Message Text="Generated $(_projectFile)" />
   </Target>
@@ -167,6 +162,7 @@
       <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(ArtifactsPackagesDir)</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /p:MicrosoftNetCoreAppRefPackDir=$(MicrosoftNetCoreAppRefPackDir)</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
       <TestRestoreCommand  Condition="'$(PackagesToTest)' != ''">$(TestRestoreCommand) /p:PackagesToTest=$(PackagesToTest)</TestRestoreCommand>
@@ -186,6 +182,7 @@
       <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /nr:false</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /warnaserror</TestBuildCommand>
+      <TestBuildCommand>$(TestBuildCommand) /p:MicrosoftNetCoreAppRefPackDir=$(MicrosoftNetCoreAppRefPackDir)</TestBuildCommand>
       <TestBuildCommand  Condition="'$(PackagesToTest)' != ''">$(TestBuildCommand) /p:PackagesToTest=$(PackagesToTest)</TestBuildCommand>
     </PropertyGroup>
 

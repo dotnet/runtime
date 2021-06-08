@@ -6,16 +6,6 @@
     <WasmMainAssemblyFileName>project.dll</WasmMainAssemblyFileName>
   </PropertyGroup>
 
-  <Target Name="RemoveRuntimePackFromDownloadItem"
-          AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="UpdateRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>

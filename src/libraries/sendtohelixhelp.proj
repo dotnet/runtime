@@ -76,6 +76,9 @@
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
     <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
+
+    <!-- For package testing we need the live targeting pack available. -->
+    <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)" Destination="build/targetingpack" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TestPackages)' == 'true'">
@@ -84,6 +87,7 @@
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:MicrosoftNetCoreAppRefPackDir="%HELIX_CORRELATION_PAYLOAD%\build\targetingpack\"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
