@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />

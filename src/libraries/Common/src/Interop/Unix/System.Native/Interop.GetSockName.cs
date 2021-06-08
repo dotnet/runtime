@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSockName")]
-        internal static extern unsafe Error GetSockName(SafeHandle socket, byte* socketAddress, int* socketAddressLen);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSockName")]
+        internal static unsafe partial Error GetSockName(SafeHandle socket, byte* socketAddress, int* socketAddressLen);
     }
 }

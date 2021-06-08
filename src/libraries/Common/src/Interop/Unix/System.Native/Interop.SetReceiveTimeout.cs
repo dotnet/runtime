@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetReceiveTimeout")]
-        internal static extern Error SetReceiveTimeout(SafeHandle socket, int millisecondsTimeout);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetReceiveTimeout")]
+        internal static partial Error SetReceiveTimeout(SafeHandle socket, int millisecondsTimeout);
     }
 }
