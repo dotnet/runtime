@@ -173,7 +173,9 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
+#pragma warning disable SYSLIB0026
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
+#pragma warning restore SYSLIB0026
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
@@ -197,7 +199,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+#pragma warning disable SYSLIB0026
         public X509Certificate(SerializationInfo info, StreamingContext context) : this()
+#pragma warning restore SYSLIB0026
         {
             throw new PlatformNotSupportedException();
         }
