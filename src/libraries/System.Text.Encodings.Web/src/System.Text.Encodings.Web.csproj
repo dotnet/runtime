@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
     <!-- CS3011: Only CLS-compliant members can be abstract -->
     <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->

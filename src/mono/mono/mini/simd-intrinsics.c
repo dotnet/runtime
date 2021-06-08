@@ -518,8 +518,7 @@ is_elementwise_create_overload (MonoMethodSignature *fsig, MonoType *ret_type)
 	uint16_t param_count = fsig->param_count;
 	if (param_count < 1) return FALSE;
 	MonoType *type = fsig->params [0];
-	gboolean is_vector_primitive = MONO_TYPE_IS_PRIMITIVE (type) && ((type->type >= MONO_TYPE_I1 && type->type <= MONO_TYPE_R8) || type->type == MONO_TYPE_I || type->type <= MONO_TYPE_U);
-	if (!is_vector_primitive) return FALSE;
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (type)) return FALSE;
 	if (!mono_metadata_type_equal (ret_type, type)) return FALSE;
 	for (uint16_t i = 1; i < param_count; ++i)
 		if (!mono_metadata_type_equal (type, fsig->params [i])) return FALSE;
@@ -560,8 +559,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsSingle:
 	case SN_AsUInt16:
 	case SN_AsUInt32:
-	case SN_AsUInt64:
+	case SN_AsUInt64: {
+		MonoType *etype = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
 	case SN_Create: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))

@@ -36,7 +36,6 @@
     <PrereleaseLibraryPackage Include="System.Management" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
     <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
-    <PrereleaseLibraryPackage Include="System.Security.Cryptography.Cng" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Pkcs" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.ProtectedData" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Xml" />
@@ -52,21 +51,12 @@
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
     <!-- Packages we don't build in main anymore -->
-    <LibraryPackage Include="System.Data.DataSetExtensions">
-      <Version>4.5.0</Version>
-    </LibraryPackage>
-    <LibraryPackage Include="System.Data.SqlClient">
-      <Version>4.8.1</Version>
-    </LibraryPackage>
-    <LibraryPackage Include="System.Reflection.Emit">
-      <Version>4.7.0</Version>
-    </LibraryPackage>
-    <LibraryPackage Include="System.Reflection.Emit.ILGeneration">
-      <Version>4.7.0</Version>
-    </LibraryPackage>
-    <LibraryPackage Include="System.Reflection.Emit.Lightweight">
-      <Version>4.7.0</Version>
-    </LibraryPackage>
+    <LibraryPackage Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <LibraryPackage Include="System.Data.SqlClient" Version="4.8.2" />
+    <LibraryPackage Include="System.Reflection.Emit" Version="4.7.0" />
+    <LibraryPackage Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
+    <LibraryPackage Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+    <LibraryPackage Include="System.Security.Cryptography.Cng" Version="5.0.0" />
 
     <!-- Service model packages -->
     <ExternalLibraryPackage Include="System.ServiceModel.Primitives">

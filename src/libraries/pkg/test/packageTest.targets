@@ -1,12 +1,9 @@
 <Project>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != ''">
+    <_targetFrameworkIdentifier>$(TargetFrameworkIdentifier.Substring(1).ToLower())</_targetFrameworkIdentifier>
+  </PropertyGroup>
 
   <PropertyGroup>
-    <_targetFrameworkVersionIndex>$(TargetFramework.IndexOfAny(".-0123456789"))</_targetFrameworkVersionIndex>
-    <_targetFrameworkIdentifier Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(TargetFramework.SubString(0, $(_targetFrameworkVersionIndex)))</_targetFrameworkIdentifier>
-    <!-- For net5.0 and later use netcoreapp folder. -->
-    <_targetFrameworkIdentifier Condition="'$(_targetFrameworkIdentifier)' == 'net' and !$(TargetFramework.StartsWith('net4'))">netcoreapp</_targetFrameworkIdentifier>
-    <ToolsDir>$(MSBuildThisFileDirectory)tools\</ToolsDir>
-
     <RestoreSources>
       https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
@@ -14,15 +11,24 @@
       https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6-transport/nuget/v3/index.json;
       $(LocalPackagesPath)
     </RestoreSources>
+
+    <!-- Make sure the SDK raises the runtime items so that they are passed to conflict resolution -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
-  <Import Project="tools\build\Packaging.common.targets" />
-  <Import Project="tools\eng\Versions.props" />
-  <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
+  <Import Project="build\Packaging.common.targets" />
+  <!-- Import framework settings. -->
+  <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets"
+          Condition="'$(_targetFrameworkIdentifier)' != ''"  />
   <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
+  <!-- Import package settings. -->
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
-  <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
-  <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
+  <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets"
+          Condition="'$(_targetFrameworkIdentifier)' != ''" />
+  <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets"
+          Condition="'$(TargetFramework)' != ''" />
   
   <ItemGroup>
     <!-- Type duplicated: https://github.com/dotnet/runtime/issues/33998 -->
@@ -31,17 +37,14 @@
     <IgnoredTypes Include="System.Collections.Generic.CollectionExtensions" />
   </ItemGroup>
 
+  
   <Target Name="LogBeginTest">
-    <PropertyGroup>
-      <_message>Testing $(TestPackageID) TFM=$(TargetFramework)</_message>
-      <_message Condition="'$(RuntimeIdentifier)' != ''">$(_message) RID=$(RuntimeIdentifier)</_message>
-    </PropertyGroup>
-    <Message Importance="High" Text="$(_message)" />
+    <Message Importance="High" Text="Testing $(TestPackageID) TFM=$(TargetFramework)" />
   </Target>
 
   <Target Name="VerifyReferenceClosure"
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' == ''">
+          Condition="'$(ShouldVerifyClosure)' == 'true'">
     <ItemGroup>
       <_refClosureFileNames Include="@(ReferencePath->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -57,7 +60,7 @@
 
   <Target Name="VerifyReferenceTypes" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyTypes)' == 'true' and '$(RuntimeIdentifier)' == ''">
+          Condition="'$(ShouldVerifyTypes)' == 'true'">
     <ItemGroup>
       <_refTypesFileNames Include="@(ReferencePath->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -71,11 +74,47 @@
                  IgnoredTypes="@(IgnoredTypes)" />
   </Target>
 
-  <Target Name="VerifyRuntimeClosure" 
-          DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' != '' and '$(SkipVerifyClosureForRuntime)' != 'true'">
+  <Target Name="PrepareForRuntimeTesting" DependsOnTargets="ResolveReferences">
     <ItemGroup>
-      <_runClosureFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
+      <ReferenceLibToTest Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' == '$(TestPackageId)'" />
+      <RuntimeLibToTest Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' == '$(TestPackageId)'" />
+      <RuntimeLibToTest Condition="'%(RuntimeLibToTest.RuntimeIdentifier)' == ''" RuntimeIdentifier="none" />
+    </ItemGroup>
+
+    <!-- These libraries are part of the runtime pack but aren't exposed in the targeting pack: https://github.com/dotnet/runtime/issues/53892 -->
+    <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <ReferenceLibToTest Remove="@(ReferenceLibToTest)"
+                          Condition="'$(TestPackageId)' == 'Microsoft.Win32.Registry' or
+                                     '$(TestPackageId)' == 'System.IO.FileSystem.AccessControl' or
+                                     '$(TestPackageId)' == 'System.IO.Pipes.AccessControl' or
+                                     '$(TestPackageId)' == 'System.Security.AccessControl' or
+                                     '$(TestPackageId)' == 'System.Security.Principal.Windows'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RuntimeLibToTestDependency Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' != '$(TestPackageId)'" />
+
+      <!-- Some dependent packages may be excluded from compile, consider these as candiates as well.-->
+      <ReferenceCopyLocalPaths Original="%(Identity)" />
+      <_referenceCopyLocalPathsPackages Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" 
+                                        Condition="'%(ReferenceCopyLocalPaths.RuntimeIdentifier)' == ''"
+                                        Exclude="@(ReferencePath->'%(NuGetPackageId)');$(TestPackageId)" />
+      <RuntimeLibToTestDependency Include="@(_referenceCopyLocalPathsPackages->'%(Original)')" />
+    </ItemGroup>
+
+    <Error Condition="'@(RuntimeLibToTest)' == '' AND '@(ReferenceLibToTest)' != ''" Text="Could not locate any runtime items from Package $(TestPackageID)" />
+    
+    <Message Condition="'@(RuntimeLibToTest)' != ''" Importance="High" Text="Testing $(TestPackageID) runtime on TFM=$(TargetFramework) RIDs=@(RuntimeLibToTest->'%(RuntimeIdentifier)'->Distinct())" />
+  </Target>
+
+  <Target Name="VerifyRuntimeClosure" 
+          Inputs="%(RuntimeLibToTest.RuntimeIdentifier)" 
+          Outputs="unused"
+          DependsOnTargets="PrepareForRuntimeTesting"
+          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(SkipVerifyClosureForRuntime)' != 'true'">
+    <Message Importance="High" Text="Testing closure for $(TestPackageID) TFM=$(TargetFramework) RID=%(RuntimeLibToTest.RuntimeIdentifier)" />
+    <ItemGroup>
+      <_runClosureFileNames Include="@(RuntimeLibToTestDependency->'%(FileName)');@(RuntimeLibToTest->'%(FileName)')">
         <Original>%(Identity)</Original>
       </_runClosureFileNames>
       <_runClosureFileNamesFiltered Include="@(_runClosureFileNames)" Exclude="@(ExcludeFromClosure);@(ExcludeFromClosure->'%(Identity).ni')"/>
@@ -88,10 +127,13 @@
   </Target>
 
   <Target Name="VerifyRuntimeTypes" 
-          DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyTypes)' == 'true' and '$(RuntimeIdentifier)' != ''">
+          Inputs="%(RuntimeLibToTest.RuntimeIdentifier)" 
+          Outputs="unused"
+          DependsOnTargets="PrepareForRuntimeTesting"
+          Condition="'$(ShouldVerifyTypes)' == 'true'">
+    <Message Importance="High" Text="Testing for duplicate types for $(TestPackageID) TFM=$(TargetFramework) RID=%(RuntimeLibToTest.RuntimeIdentifier)" />
     <ItemGroup>
-      <_runTypesFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
+      <_runTypesFileNames Include="@(RuntimeLibToTestDependency->'%(FileName)');@(RuntimeLibToTest->'%(FileName)')">
         <Original>%(Identity)</Original>
       </_runTypesFileNames>
       <_runTypesFileNamesFiltered Include="@(_runTypesFileNames)" Exclude="@(ExcludeFromTypes);@(ExcludeFromTypes->'%(Identity).ni')"/>
@@ -105,55 +147,23 @@
 
   <Target Name="VerifyNotDependsOnNetStandard"
           DependsOnTargets="ResolveReferences"
-          Condition="'$(_ShortFrameworkIdentifier)' == 'net' AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '4.6.1' AND '$(RuntimeIdentifier)' == '' AND '$(DisableVerifyNotDependsOnNetStandardTest)' != 'true'">
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and
+                      '$(DisableVerifyNotDependsOnNetStandardTest)' != 'true'">
     <Error Condition="'$(DependsOnNetStandard)' == 'true'" Text="Package $(TestPackageId) requires netstandard shims when targeting $(TargetFramework)" />
   </Target>
 
   <PropertyGroup>
-    <_testDependsOn>
+    <TestDependsOn>
       LogBeginTest;
       VerifyNotDependsOnNetStandard;
       VerifyReferenceClosure;
       VerifyReferenceTypes;
       VerifyRuntimeClosure;
       VerifyRuntimeTypes;
-    </_testDependsOn>
+    </TestDependsOn>
+    <InnerTargets>Test</InnerTargets>
   </PropertyGroup>
   
-  <!-- inner target to be called by outer Test Target -->
-  <Target Name="_test"
-          DependsOnTargets="$(_testDependsOn)">
-    <MakeDir Directories="$(IntermediateOutputPath)" />
-    <Touch AlwaysCreate="true" Files="$(IntermediateOutputPath)\$(RuntimeIdentifier).testComplete" />
-  </Target>
-  
-  <Target Name="_getTestProjects">
-    <ItemGroup>
-      <_projectRuntime Include="$(RuntimeIdentifiers)" />
-
-      <!-- Run _test once without RID, then for each RID -->
-      <TestProject Include="$(MSBuildProjectFullPath)">
-        <Semaphore>$(IntermediateOutputPath)\.testComplete</Semaphore>
-      </TestProject>
-      <TestProject Include="$(MSBuildProjectFullPath)" Condition="'%(_projectRuntime.Identity)' != ''">
-        <Semaphore>$(IntermediateOutputPath)\%(_projectRuntime.Identity).testComplete</Semaphore>
-        <AdditionalProperties>RuntimeIdentifier=%(_projectRuntime.Identity)</AdditionalProperties>
-      </TestProject>
-    </ItemGroup>
-  </Target>
-  
-  
-  <PropertyGroup>
-    <TestDependsOn>_getTestProjects</TestDependsOn>
-    <!-- Runs ResolveReferences once up front in order to ensure we don't run it for the first time concurrently during testing.
-         This is needed to avoid sharing violations when RAR and ResolvePackageAssets write out state files. -->
-    <TestDependsOn Condition="'$(ShouldVerifyClosure)' == 'true' or '$(ShouldVerifyTypes)' == 'true'">$(TestDependsOn);ResolveReferences</TestDependsOn>
-  </PropertyGroup>
   <!-- Runs all tests scenarios for this project -->
-  <Target Name="Test"
-          DependsOnTargets="$(TestDependsOn)"
-          Inputs="@(TestProject);$(MSBuildAllProjects);$(ProjectAssetsFile)"
-          Outputs="@(TestProject->'%(Semaphore)')">
-    <MSBuild Projects="@(TestProject)" Targets="_test" BuildInParallel="true" />
-  </Target>
+  <Target Name="Test" DependsOnTargets="$(TestDependsOn)"/>
 </Project>

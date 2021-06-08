@@ -4190,7 +4190,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 	if (mono_llvm_only) {
 		guint8 flags = amodule->method_flags_table [method_index];
 		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
-		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+		if (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY)) {
 			mono_aot_lock ();
 			if (!code_to_method_flags)
 				code_to_method_flags = g_hash_table_new (NULL, NULL);

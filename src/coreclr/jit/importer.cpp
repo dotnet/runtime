@@ -17376,10 +17376,9 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 
 void Compiler::impReimportMarkSuccessors(BasicBlock* block)
 {
-    const unsigned numSuccs = block->NumSucc();
-    for (unsigned i = 0; i < numSuccs; i++)
+    for (BasicBlock* const succBlock : block->Succs())
     {
-        impReimportMarkBlock(block->GetSucc(i));
+        impReimportMarkBlock(succBlock);
     }
 }
 
@@ -17562,10 +17561,9 @@ void Compiler::impImportBlock(BasicBlock* block)
         JITDUMP("Marking BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", block->bbNum);
         block->bbFlags |= BBF_IMPORTED;
 
-        const unsigned numSuccs = block->NumSucc();
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (BasicBlock* const succBlock : block->Succs())
         {
-            impImportBlockPending(block->GetSucc(i));
+            impImportBlockPending(succBlock);
         }
 
         return;
@@ -17722,20 +17720,11 @@ SPILLSTACK:
                 break;
 
             case BBJ_SWITCH:
-
-                BasicBlock** jmpTab;
-                unsigned     jmpCnt;
-
                 addStmt = impExtractLastStmt();
                 assert(addStmt->GetRootNode()->gtOper == GT_SWITCH);
 
-                jmpCnt = block->bbJumpSwt->bbsCount;
-                jmpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
+                for (BasicBlock* const tgtBlock : block->SwitchTargets())
                 {
-                    tgtBlock = (*jmpTab);
-
                     multRef |= tgtBlock->bbRefs;
 
                     // Thanks to spill cliques, we should have assigned all or none
@@ -17745,8 +17734,7 @@ SPILLSTACK:
                     {
                         break;
                     }
-                } while (++jmpTab, --jmpCnt);
-
+                }
                 break;
 
             case BBJ_CALLFINALLY:
@@ -17964,10 +17952,8 @@ SPILLSTACK:
         impReimportSpillClique(block);
 
         // For blocks that haven't been imported yet, we still need to mark them as pending import.
-        const unsigned numSuccs = block->NumSucc();
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (BasicBlock* const succ : block->Succs())
         {
-            BasicBlock* succ = block->GetSucc(i);
             if ((succ->bbFlags & BBF_IMPORTED) == 0)
             {
                 impImportBlockPending(succ);
@@ -17979,10 +17965,9 @@ SPILLSTACK:
         // otherwise just import the successors of block
 
         /* Does this block jump to any other blocks? */
-        const unsigned numSuccs = block->NumSucc();
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (BasicBlock* const succ : block->Succs())
         {
-            impImportBlockPending(block->GetSucc(i));
+            impImportBlockPending(succ);
         }
     }
 }
@@ -18237,10 +18222,8 @@ void Compiler::impWalkSpillCliqueFromPred(BasicBlock* block, SpillCliqueWalker* 
             BasicBlock* blk     = node->m_blk;
             FreeBlockListNode(node);
 
-            const unsigned numSuccs = blk->NumSucc();
-            for (unsigned succNum = 0; succNum < numSuccs; succNum++)
+            for (BasicBlock* const succ : blk->Succs())
             {
-                BasicBlock* succ = blk->GetSucc(succNum);
                 // If it's not already in the clique, add it, and also add it
                 // as a member of the successor "toDo" set.
                 if (impSpillCliqueGetMember(SpillCliqueSucc, succ) == 0)
@@ -18491,12 +18474,12 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
     return;
 }
 
-ThisInitState BasicBlock::bbThisOnEntry()
+ThisInitState BasicBlock::bbThisOnEntry() const
 {
     return bbEntryState ? bbEntryState->thisInitialized : TIS_Bottom;
 }
 
-unsigned BasicBlock::bbStackDepthOnEntry()
+unsigned BasicBlock::bbStackDepthOnEntry() const
 {
     return (bbEntryState ? bbEntryState->esStackDepth : 0);
 }
@@ -18508,7 +18491,7 @@ void BasicBlock::bbSetStack(void* stackBuffer)
     bbEntryState->esStack = (StackEntry*)stackBuffer;
 }
 
-StackEntry* BasicBlock::bbStackOnEntry()
+StackEntry* BasicBlock::bbStackOnEntry() const
 {
     assert(bbEntryState);
     return bbEntryState->esStack;
@@ -18753,7 +18736,7 @@ void Compiler::impImport()
     }
 
     // Used in impImportBlockPending() for STRESS_CHK_REIMPORT
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
     }

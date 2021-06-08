@@ -76,11 +76,13 @@
     <Compile Include="System\Net\Http\Headers\EntityTagHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\GenericHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderDescriptor.cs" />
+    <Compile Include="System\Net\Http\Headers\HeaderStringValues.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderUtilities.cs" />
     <Compile Include="System\Net\Http\Headers\HttpContentHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpGeneralHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaders.cs" />
+    <Compile Include="System\Net\Http\Headers\HttpHeadersNonValidated.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderValueCollection.cs" />
     <Compile Include="System\Net\Http\Headers\HttpRequestHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpResponseHeaders.cs" />

@@ -3228,6 +3228,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		gboolean use_interp = FALSE;
 
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+			/* The runtime invoke wrappers contain clauses so they are not AOTed */
+			use_interp = TRUE;
+
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
