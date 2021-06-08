@@ -148,7 +148,7 @@ public:
 
     // Get next offset to shuffle. There has to be at least one offset left.
     // It returns an offset encoded properly for a ShuffleEntry offset.
-    // - For floating resgister arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // - For floating register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
     // - For register arguments it returns regNum | ShuffleEntry::REGMASK.
     // - For stack arguments it returns stack offset index in stack slots for most architectures. For macOS-arm64,
     //     it returns an encoded stack offset, see below.
