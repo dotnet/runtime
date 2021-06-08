@@ -211,19 +211,17 @@ namespace Microsoft.Extensions.Configuration
         {
             if (instance != null)
             {
-                IEnumerable<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
-
-                var configSections = configuration.GetChildren();
+                var modelProperties = GetAllProperties(instance.GetType()).ToList();
 
                 if (options.ErrorOnUnknownConfiguration)
                 {
-                    HashSet<string> propertyNames = new HashSet<string>(modelProperties.Select(mp => mp.Name),
+                    HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
                         StringComparer.OrdinalIgnoreCase);
 
-                    var missingPropertyNames =
-                        configSections.Where(cs => !propertyNames.Contains(cs.Key))
-                            .Select(mp => mp.Key)
-                            .ToList();
+                    var missingPropertyNames = configuration.GetChildren()
+                        .Where(cs => !propertyNames.Contains(cs.Key))
+                        .Select(mp => mp.Key)
+                        .ToList();
 
                     if (missingPropertyNames.Any())
                     {
