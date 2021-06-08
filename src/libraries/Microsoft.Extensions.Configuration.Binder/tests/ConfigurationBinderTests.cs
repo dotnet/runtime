@@ -310,7 +310,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var instance = new ComplexOptions();
 
-            Assert.Throws<BindingException>(
+            Assert.Throws<InvalidOperationException>(
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
         }
         [Fact]
@@ -329,7 +329,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var instance = new ComplexOptions();
 
-            Assert.Throws<BindingException>(
+            Assert.Throws<InvalidOperationException>(
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
         }
 

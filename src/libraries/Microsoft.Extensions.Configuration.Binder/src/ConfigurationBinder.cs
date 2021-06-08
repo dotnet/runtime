@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.Configuration.Binder;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -225,7 +223,7 @@ namespace Microsoft.Extensions.Configuration
 
                     if (missingPropertyNames.Any())
                     {
-                        throw new BindingException(
+                        throw new InvalidOperationException(
                             $"\"{nameof(options.ErrorOnUnknownConfiguration)}\" was set on the provided {nameof(BinderOptions)}, but the following properties were not found on the instance of {instance.GetType()}:" +
                             Environment.NewLine + string.Join($"{Environment.NewLine}\t", missingPropertyNames));
                     }
