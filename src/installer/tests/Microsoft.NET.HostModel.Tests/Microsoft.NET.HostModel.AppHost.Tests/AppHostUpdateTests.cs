@@ -12,6 +12,7 @@ using FluentAssertions;
 using Xunit;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.DotNet.CoreSetup.Test;
+using System.Diagnostics;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -217,6 +218,44 @@ namespace Microsoft.NET.HostModel.Tests
                    windowsGraphicalUserInterface: false);
 
                 File.SetAttributes(sourceAppHostMock, FileAttributes.Normal);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void CanCodeSignAppHostOnMacOS()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                const string codesign = @"/usr/bin/codesign";
+                var p = new Process()
+                {
+                    StartInfo = new ProcessStartInfo()
+                    {
+                        Arguments = $"-d {destinationFilePath}",
+                        CreateNoWindow = true,
+                        ErrorDialog = false,
+                        FileName = codesign,
+                        RedirectStandardOutput = true,
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = Environment.CurrentDirectory
+                    }
+                };
+
+                p.Start();
+                p.StandardOutput.ReadToEnd()
+                    .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
             }
         }
 

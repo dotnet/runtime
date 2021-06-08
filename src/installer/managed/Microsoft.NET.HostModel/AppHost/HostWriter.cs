@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -141,6 +142,11 @@ namespace Microsoft.NET.HostModel.AppHost
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
                     }
                 }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    CodeSign($"-s - {appHostDestinationFilePath}");
+                }
             }
             catch (Exception ex)
             {
@@ -231,6 +237,32 @@ namespace Microsoft.NET.HostModel.AppHost
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
+        }
+
+        private static void CodeSign(string args)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return;
+
+            const string codesign = @"/usr/bin/codesign";
+            if (!File.Exists(codesign))
+                return;
+
+            var p = new Process()
+            {
+                StartInfo = new ProcessStartInfo()
+                {
+                    Arguments = args,
+                    CreateNoWindow = true,
+                    ErrorDialog = false,
+                    FileName = codesign,
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = Environment.CurrentDirectory
+                }
+            };
+
+            p.Start();
         }
 
         [DllImport("libc", SetLastError = true)]
