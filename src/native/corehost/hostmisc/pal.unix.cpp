@@ -421,24 +421,17 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         return false;
     }
 
-    char buffer[PATH_MAX];
-    pal::string_t install_location, architecture_install_location;
+    pal::string_t install_location, architecture_install_location, file_line;
     bool is_first_line = true;
-    while (fgets(buffer, sizeof(buffer), install_location_file))
-    {
-        size_t len = strlen(buffer);
-        // fgets includes the newline character in the string - so remove it.
-        if (len > 0 && len < PATH_MAX && buffer[len - 1] == '\n')
-        {
-            buffer[len - 1] = '\0';
-        }
 
-        char* pDelimiter = strchr(buffer, '=');
-        if (pDelimiter == nullptr && len > 0)
+    while (get_line_from_file(install_location_file, file_line))
+    {
+        size_t arch_sep = file_line.find(_X('='));
+        if (arch_sep == pal::string_t::npos)
         {
             if (is_first_line)
             {
-                install_location = pal::string_t(buffer);
+                install_location = file_line;
                 trace::verbose(_X("Found install location path '%s'."), install_location.c_str());
             }
             else
@@ -450,16 +443,18 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
             continue;
         }
 
-        auto delimiter_index = (int)(strlen(buffer) - strlen(pDelimiter));
-        pal::string_t arch_prefix = pal::string_t(buffer).substr(0, delimiter_index);
-        pal::string_t path_to_location = pal::string_t(buffer).substr(delimiter_index + 1);
+        pal::string_t arch_prefix = file_line.substr(0, arch_sep);
+        pal::string_t path_to_location = file_line.substr(arch_sep + 1);
 
         trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
         if (arch_prefix == get_arch())
         {
             architecture_install_location = path_to_location;
             trace::verbose(_X("Found architecture-specific install location path matching the current OS architecture ('%s'): '%s'."), arch_prefix.c_str(), architecture_install_location.c_str());
+            break;
         }
+
+        is_first_line = false;
     }
 
     if (architecture_install_location != "")

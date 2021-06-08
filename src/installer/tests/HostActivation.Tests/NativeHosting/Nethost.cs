@@ -276,7 +276,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 result.Should().Pass()
                     .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
                     .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}/invalid' ('someOtherArch').")
                     .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }

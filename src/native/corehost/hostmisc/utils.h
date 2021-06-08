@@ -41,6 +41,7 @@ bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::s
 bool multilevel_lookup_enabled();
 void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
+bool get_line_from_file(FILE* pFile, pal::string_t& line);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);

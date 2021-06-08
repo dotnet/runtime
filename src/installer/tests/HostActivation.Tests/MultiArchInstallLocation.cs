@@ -24,7 +24,7 @@ namespace HostActivation.Tests
         [Fact]
         public void GlobalInstallation_CurrentArchitectureIsUsedIfEnvVarSet()
         {
-            var fixture = sharedTestState.StandaloneAppFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -40,7 +40,7 @@ namespace HostActivation.Tests
         [Fact]
         public void GlobalInstallation_IfNoArchSpecificEnvVarIsFoundDotnetRootIsUed()
         {
-            var fixture = sharedTestState.StandaloneAppFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -56,18 +56,19 @@ namespace HostActivation.Tests
         [Fact]
         public void GlobalInstallation_ArchSpecificDotnetRootIsUsedOverDotnetRoot()
         {
-            var fixture = sharedTestState.StandaloneAppFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
             var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var dotnet = fixture.BuiltDotnet.BinPath;
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot("non_existent_path")
-                .DotNetRoot(fixture.BuiltDotnet.BinPath, arch)
+                .DotNetRoot(dotnet, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"DOTNET_ROOT_{arch}")
+                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT_{arch}=[{dotnet}] as runtime location.")
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
         }
 
@@ -77,7 +78,7 @@ namespace HostActivation.Tests
         [InlineData(true)]
         public void GlobalInstallation_WindowsX86(bool setArchSpecificDotnetRoot)
         {
-            var fixture = sharedTestState.StandaloneAppFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             if (RuntimeInformation.OSArchitecture != Architecture.X86)
@@ -106,7 +107,7 @@ namespace HostActivation.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ArchSpecificLocationIsPickedFirst()
         {
-            var fixture = sharedTestState.StandaloneAppFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -139,7 +140,7 @@ namespace HostActivation.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_OnlyFirstLineMayNotSpecifyArchitecture()
         {
-            var fixture = sharedTestState.StandaloneAppFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -163,25 +164,25 @@ namespace HostActivation.Tests
         public class SharedTestState : IDisposable
         {
             public string BaseDirectory { get; }
-            public TestProjectFixture StandaloneAppFixture { get; }
+            public TestProjectFixture PortableAppFixture { get; }
             public RepoDirectoriesProvider RepoDirectories { get; }
             public string InstallLocation { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                var fixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
+                var fixture = new TestProjectFixture("PortableApp", RepoDirectories);
                 fixture
-                    .EnsureRestoredForRid(fixture.CurrentRid)
-                    .PublishProject(runtime: fixture.CurrentRid, selfContained: false);
+                    .EnsureRestored()
+                    .PublishProject();
 
-                StandaloneAppFixture = fixture;
-                BaseDirectory = Path.GetDirectoryName(StandaloneAppFixture.SdkDotnet.GreatestVersionHostFxrFilePath);
+                PortableAppFixture = fixture;
+                BaseDirectory = Path.GetDirectoryName(PortableAppFixture.SdkDotnet.GreatestVersionHostFxrFilePath);
             }
 
             public void Dispose()
             {
-                StandaloneAppFixture.Dispose();
+                PortableAppFixture.Dispose();
             }
         }
     }

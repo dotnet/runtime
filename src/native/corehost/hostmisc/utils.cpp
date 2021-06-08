@@ -98,6 +98,22 @@ pal::string_t strip_file_ext(const pal::string_t& path)
     return path.substr(0, dot_pos);
 }
 
+bool get_line_from_file(FILE* pFile, pal::string_t& line)
+{
+    std::vector<pal::char_t> buffer;
+    char last_char;
+    while ((last_char = fgetc(pFile)))
+    {
+        if (last_char == '\n' || last_char == EOF)
+            break;
+
+        buffer.push_back((pal::char_t)last_char);
+    }
+
+    line = pal::string_t(buffer.begin(), buffer.end());
+    return buffer.size() != 0;
+}
+
 pal::string_t get_filename_without_ext(const pal::string_t& path)
 {
     if (path.empty())
