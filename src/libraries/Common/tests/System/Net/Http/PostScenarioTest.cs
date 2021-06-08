@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 
 #if !NETFRAMEWORK
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
@@ -53,7 +53,7 @@ namespace System.Net.Http.Functional.Tests
         }
 #endif
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [MemberData(nameof(RemoteServersMemberData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
@@ -63,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
@@ -81,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Configuration.Http.RemoteServer remoteServer)
@@ -90,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
@@ -99,7 +99,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
@@ -117,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostRepeatedFlushContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
@@ -126,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingUsingConflictingSemantics_UsesChunkedSemantics(Configuration.Http.RemoteServer remoteServer)
@@ -135,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Configuration.Http.RemoteServer remoteServer)
@@ -154,7 +154,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(RemoteServersAndLargeContentSizes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
@@ -223,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(remoteServer, ExpectedContent, content, credential, preAuthenticate: true);
         }
 
-        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [MemberData(nameof(RemoteServersMemberData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]

@@ -4,22 +4,14 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <Scenario>WasmTestOnBrowser</Scenario>
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-
-    <!-- handle different path to middleware in Helix -->
-    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
-    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/TestEchoMiddleware</_TestEchoMiddleware>
-    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(NetCoreAppCurrent)-$(Configuration)</_TestEchoMiddleware>
-
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-use-cors --web-server-use-https</WasmXHarnessArgs>
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_HTTP2HOST</WasmXHarnessArgs>
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2SECUREHOST</WasmXHarnessArgs>
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-middleware=$(_TestEchoMiddleware)/NetCoreServer.dll,GenericHandler</WasmXHarnessArgs>
   </PropertyGroup>
+
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
