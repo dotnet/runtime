@@ -141,9 +141,15 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SocketsHttpHandler_DiagnosticsTest : DiagnosticsTest
+    public sealed class SocketsHttpHandler_DiagnosticsTest_Http11 : DiagnosticsTest
     {
-        public SocketsHttpHandler_DiagnosticsTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_DiagnosticsTest_Http11(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SocketsHttpHandler_DiagnosticsTest_Http20 : DiagnosticsTest
+    {
+        public SocketsHttpHandler_DiagnosticsTest_Http20(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 
     public sealed class SocketsHttpHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
