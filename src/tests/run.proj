@@ -240,9 +240,15 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
 ]]>
       </_XunitProlog>
-      <_XunitPrologMobile Condition=" '$(TargetOS)' != 'Android' ">
+      <_XunitPrologMobile>
         <![CDATA[
             }
+
+            public void Dispose()
+            {
+                // There is nothing to be done here.
+            }
+        }
 ]]>
       </_XunitPrologMobile>
       <_XunitPrologMobile Condition=" '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator'">
