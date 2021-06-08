@@ -1199,6 +1199,10 @@ namespace Internal.JitInterface
                 {
                     return false;
                 }
+                if (!_compilation.CompilationModuleGroup.VersionsWithTypeReference(decl.OwningType))
+                {
+                    return false;
+                }
                 methodWithTokenDecl = new MethodWithToken(decl, declToken, null, false, null, devirtualizedMethodOwner: decl.OwningType);
             }
             MethodWithToken methodWithTokenImpl;
