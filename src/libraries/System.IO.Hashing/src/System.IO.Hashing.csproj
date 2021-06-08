@@ -3,6 +3,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <!-- TODO: Remove when the package ships with .NET 6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
+
+Commonly Used Types:
+System.IO.Hashing.Crc32
+System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\Hashing\BitOperations.cs" />
