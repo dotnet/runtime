@@ -176,7 +176,7 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 //
 bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
 {
-    return (CodeGenInterface::instInfo[ins] & (Resets_OF | Resets_CF)) != 0;
+    return (CodeGenInterface::instInfo[ins] & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
 }
 
 //------------------------------------------------------------------------
