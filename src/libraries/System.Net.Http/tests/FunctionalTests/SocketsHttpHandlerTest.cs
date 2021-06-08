@@ -146,9 +146,9 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_DiagnosticsTest_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SocketsHttpHandler_DiagnosticsTest_Http20 : DiagnosticsTest
+    public sealed class SocketsHttpHandler_DiagnosticsTest_Http2 : DiagnosticsTest
     {
-        public SocketsHttpHandler_DiagnosticsTest_Http20(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_DiagnosticsTest_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 

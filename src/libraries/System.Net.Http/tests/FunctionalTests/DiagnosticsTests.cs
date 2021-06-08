@@ -27,6 +27,8 @@ namespace System.Net.Http.Functional.Tests
         private static bool EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported =>
             string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName)) && RemoteExecutor.IsSupported;
 
+        private static readonly Uri InvalidUri = new("http://nosuchhost.invalid");
+
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -58,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
                 bool exceptionLogged = false;
                 bool activityLogged = false;
 
-                SemaphoreSlim responseLoggedSemaphore = new(0, 1);
+                TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -75,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
                         responseGuid = GetProperty<Guid>(kvp.Value, "LoggingRequestId");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        responseLoggedSemaphore.Release();
+                        responseLoggedTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -96,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             (HttpRequestMessage request, HttpResponseMessage response) = await GetAsync(useVersion, testAsync, uri);
 
-                            Assert.True(await responseLoggedSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                            await responseLoggedTcs.Task;
 
                             Assert.Same(request, requestLogged);
                             Assert.Same(response, responseLogged);
@@ -217,7 +219,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Exception exceptionLogged = null;
 
-                SemaphoreSlim responseLoggedSemaphore = new(0, 1);
+                TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -226,7 +228,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.NotNull(kvp.Value);
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        responseLoggedSemaphore.Release();
+                        responseLoggedTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -239,10 +241,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     diagnosticListenerObserver.Enable();
 
-                    var invalidUri = new Uri($"http://_{Guid.NewGuid().ToString("N")}.com");
-                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => GetAsync(useVersion, testAsync, invalidUri));
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => GetAsync(useVersion, testAsync, InvalidUri));
 
-                    Assert.True(await responseLoggedSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await responseLoggedTcs.Task;
 
                     Assert.Same(ex, exceptionLogged);
                 }
@@ -254,8 +255,8 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
-                SemaphoreSlim responseLoggedSemaphore = new(0, 1);
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -264,7 +265,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.NotNull(kvp.Value);
                         TaskStatus status = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        responseLoggedSemaphore.Release();
+                        responseLoggedTcs.SetResult();
                     }
                     else if (kvp.Key == "System.Net.Http.HttpRequestOut.Stop")
                     {
@@ -272,7 +273,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus status = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                 });
 
@@ -293,8 +294,8 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 cts.Cancel();
 
-                                Assert.True(await responseLoggedSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
-                                Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                                await responseLoggedTcs.Task;
+                                await activityStopTcs.Task;
                             });
                         });
                 }
@@ -317,7 +318,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestMessage activityStopRequestLogged = null;
                 HttpResponseMessage activityStopResponseLogged = null;
 
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(idFormat);
@@ -360,7 +361,7 @@ namespace System.Net.Http.Functional.Tests
                         activityStopResponseLogged = GetProperty<HttpResponseMessage>(kvp.Value, "Response");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                 });
 
@@ -373,7 +374,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             (HttpRequestMessage request, HttpResponseMessage response) = await GetAsync(useVersion, testAsync, uri);
 
-                            Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                            await activityStopTcs.Task;
 
                             Assert.Same(request, activityStartRequestLogged);
                             Assert.Same(request, activityStopRequestLogged);
@@ -399,7 +400,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool exceptionLogged = false;
 
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
@@ -425,7 +426,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -444,7 +445,7 @@ namespace System.Net.Http.Functional.Tests
                         },
                         async server => await server.HandleRequestAsync());
 
-                    Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await activityStopTcs.Task;
 
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                 }
@@ -458,7 +459,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool activityStartLogged = false;
 
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
@@ -483,7 +484,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.False(request.Headers.TryGetValues("traceparent", out var _));
                         Assert.False(request.Headers.TryGetValues("tracestate", out var _));
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                 });
 
@@ -498,7 +499,7 @@ namespace System.Net.Http.Functional.Tests
                         },
                         async server => await server.HandleRequestAsync());
 
-                    Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await activityStopTcs.Task;
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                 }
@@ -512,7 +513,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool activityStartLogged = false;
 
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
@@ -535,7 +536,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
                     {
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                 });
 
@@ -556,7 +557,7 @@ namespace System.Net.Http.Functional.Tests
                         },
                         async server => await server.HandleRequestAsync());
 
-                    Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await activityStopTcs.Task;
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                 }
@@ -614,7 +615,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Exception exceptionLogged = null;
 
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -624,7 +625,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -637,10 +638,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     diagnosticListenerObserver.Enable();
 
-                    var invalidUri = new Uri($"http://_{Guid.NewGuid().ToString("N")}.com");
-                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => GetAsync(useVersion, testAsync, invalidUri));
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => GetAsync(useVersion, testAsync, InvalidUri));
 
-                    Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await activityStopTcs.Task;
 
                     Assert.Same(ex, exceptionLogged);
                 }
@@ -654,7 +654,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Exception exceptionLogged = null;
 
-                SemaphoreSlim activityStopSemaphore = new(0, 1);
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -664,7 +664,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopSemaphore.Release();
+                        activityStopTcs.SetResult();;
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -683,8 +683,8 @@ namespace System.Net.Http.Functional.Tests
                         // Set a https proxy.
                         // Forces a synchronous exception for SocketsHttpHandler.
                         // SocketsHttpHandler only allow http scheme for proxies.
-                        handler.Proxy = new WebProxy($"https://_{Guid.NewGuid().ToString("N")}.com", false);
-                        var request = new HttpRequestMessage(HttpMethod.Get, $"http://_{Guid.NewGuid().ToString("N")}.com")
+                        handler.Proxy = new WebProxy($"https://foo.bar", false);
+                        var request = new HttpRequestMessage(HttpMethod.Get, InvalidUri)
                         {
                             Version = Version.Parse(useVersion)
                         };
@@ -715,7 +715,7 @@ namespace System.Net.Http.Functional.Tests
                             Assert.NotNull(exception);
                         }
 
-                        Assert.True(await activityStopSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                        await activityStopTcs.Task;
 
                         Assert.IsType<NotSupportedException>(exception);
                         Assert.Same(exceptionLogged, exception);
@@ -733,7 +733,7 @@ namespace System.Net.Http.Functional.Tests
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
 
-                SemaphoreSlim responseLoggedStopwatch = new(0, 1);
+                TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -743,7 +743,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Response"))
                     {
-                        responseLoggedStopwatch.Release();
+                        responseLoggedTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start"))
                     {
@@ -766,7 +766,7 @@ namespace System.Net.Http.Functional.Tests
                         },
                         async server => await server.HandleRequestAsync());
 
-                    Assert.True(await responseLoggedStopwatch.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await responseLoggedTcs.Task;
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                     Assert.True(requestLogged, "Request was not logged.");
@@ -783,7 +783,7 @@ namespace System.Net.Http.Functional.Tests
                 bool activityLogged = false;
                 Exception exceptionLogged = null;
 
-                SemaphoreSlim exceptionLoggedSemaphore = new(0, 1);
+                TaskCompletionSource exceptionLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -795,7 +795,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.NotNull(kvp.Value);
                         exceptionLogged = GetProperty<Exception>(kvp.Value, "Exception");
-                        exceptionLoggedSemaphore.Release();
+                        exceptionLoggedTcs.SetResult();
                     }
                 });
 
@@ -803,10 +803,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     diagnosticListenerObserver.Enable(s => s.Equals("System.Net.Http.Exception"));
 
-                    var invalidUri = new Uri($"http://_{Guid.NewGuid().ToString("N")}.com");
-                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => GetAsync(useVersion, testAsync, invalidUri));
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => GetAsync(useVersion, testAsync, InvalidUri));
 
-                    Assert.True(await exceptionLoggedSemaphore.WaitAsync(TimeSpan.FromSeconds(10)));
+                    await exceptionLoggedTcs.Task;
 
                     Assert.Same(ex, exceptionLogged);
                     Assert.False(activityLogged, "HttpOutReq was logged when logging was disabled");
