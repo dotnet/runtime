@@ -87,6 +87,19 @@ namespace System.ServiceProcess.Tests
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
+        public void Stop_TrueArg_WithDependentServices_StopsTheServiceAndItsDependents()
+        {
+            var controller = new ServiceController(_testService.TestServiceName);
+            controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
+
+            controller.Stop(stopDependentServices: true);
+            controller.WaitForStatus(ServiceControllerStatus.Stopped, _testService.ControlTimeout);
+
+            Assert.Equal(ServiceControllerStatus.Stopped, controller.Status);
+            Assert.All(controller.DependentServices, service => Assert.Equal(ServiceControllerStatus.Stopped, service.Status));
+        }
+
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void StopAndStart()
         {
             var controller = new ServiceController(_testService.TestServiceName);
