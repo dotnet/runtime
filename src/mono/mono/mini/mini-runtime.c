@@ -164,7 +164,6 @@ static void mini_metadata_update_init (MonoError *error);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
 
-
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -378,7 +377,10 @@ void *(mono_global_codeman_reserve) (int size)
 
 	if (!global_codeman) {
 		/* This can happen during startup */
-		global_codeman = mono_code_manager_new ();
+		if (!mono_compile_aot)
+			global_codeman = mono_code_manager_new ();
+		else
+			global_codeman = mono_code_manager_new_aot ();
 		return mono_code_manager_reserve (global_codeman, size);
 	}
 	else {
@@ -3226,6 +3228,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		gboolean use_interp = FALSE;
 
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+			/* The runtime invoke wrappers contain clauses so they are not AOTed */
+			use_interp = TRUE;
+
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
@@ -4243,6 +4249,8 @@ mini_init (const char *filename, const char *runtime_version)
 		MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_INIT_CALLBACK, mono)
 	};
 
+	mono_component_event_pipe_100ns_ticks_start ();
+
 	MONO_VES_INIT_BEGIN ();
 
 	CHECKED_MONO_INIT ();
@@ -4292,8 +4300,12 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_tls_init_runtime_keys ();
 
-	if (!global_codeman)
-		global_codeman = mono_code_manager_new ();
+	if (!global_codeman) {
+		if (!mono_compile_aot)
+			global_codeman = mono_code_manager_new ();
+		else
+			global_codeman = mono_code_manager_new_aot ();
+	}
 
 	memset (&callbacks, 0, sizeof (callbacks));
 	callbacks.create_ftnptr = mini_create_ftnptr;
@@ -4346,7 +4358,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mini_parse_debug_options ();
 	}
 
-	mono_code_manager_init ();
+	mono_code_manager_init (mono_compile_aot);
 
 #ifdef MONO_ARCH_HAVE_CODE_CHUNK_TRACKING
 
@@ -4444,6 +4456,15 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mini_debug_options.collect_pagefault_stats)
 		mono_aot_set_make_unreadable (TRUE);
 
+	/* set no-exec before the default ALC is created */
+	if (mono_compile_aot) {
+		/*
+		 * Avoid running managed code when AOT compiling, since the platform
+		 * might only support aot-only execution.
+		 */
+		mono_runtime_set_no_exec (TRUE);
+	}
+
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
@@ -4453,6 +4474,10 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_component_diagnostics_server ()->disable ();
 
 	mono_component_event_pipe ()->init ();
+
+	// EventPipe up is now up and running, convert 100ns ticks since runtime init into EventPipe compatbile timestamp (using negative delta to represent timestamp in past).
+	// Add RuntimeInit execution checkpoint using converted timestamp.
+	mono_component_event_pipe ()->add_rundown_execution_checkpoint_2 ("RuntimeInit", mono_component_event_pipe ()->convert_100ns_ticks_to_timestamp_t (-mono_component_event_pipe_100ns_ticks_stop ()));
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
@@ -4499,13 +4524,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	register_trampolines (domain);
-
-	if (mono_compile_aot)
-		/*
-		 * Avoid running managed code when AOT compiling, since the platform
-		 * might only support aot-only execution.
-		 */
-		mono_runtime_set_no_exec (TRUE);
 
 	mono_mem_account_register_counters ();
 

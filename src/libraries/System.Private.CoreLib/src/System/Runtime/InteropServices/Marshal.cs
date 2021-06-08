@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices
             if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
+            void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 
@@ -573,7 +573,7 @@ namespace System.Runtime.InteropServices
         /// native memory block to it.
         /// </summary>
         public static object? PtrToStructure(IntPtr ptr,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type structureType)
         {
             if (ptr == IntPtr.Zero)
@@ -594,7 +594,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(structureType));
             }
 
-            return PtrToStructureHelper(ptr, structureType);
+            object structure = Activator.CreateInstance(structureType, nonPublic: true)!;
+            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
+            return structure;
         }
 
         /// <summary>
@@ -607,10 +609,29 @@ namespace System.Runtime.InteropServices
 
         public static void PtrToStructure<T>(IntPtr ptr, [DisallowNull] T structure)
         {
-            PtrToStructure(ptr, (object)structure!);
+            PtrToStructureHelper(ptr, structure, allowValueClasses: false);
         }
 
-        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                // Compat: this was originally implemented as a call to the non-generic version+cast.
+                // It would throw for non-nullable valuetypes here and return null for Nullable<T> even
+                // though it's generic.
+                return (T)(object)null!;
+            }
+
+            Type structureType = typeof(T);
+            if (structureType.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(T));
+            }
+
+            object structure = Activator.CreateInstance(structureType, nonPublic: true)!;
+            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
+            return (T)structure;
+        }
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 

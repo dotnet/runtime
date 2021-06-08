@@ -41,6 +41,8 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Type Name="GenTreeOp">
     <DisplayString Condition="this->gtOper==GT_ASG">[{this-&gt;gtOp1,na}={this-&gt;gtOp2,na}]</DisplayString>
     <DisplayString Condition="this->gtOper==GT_CAST">[{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_SIMD">[{((GenTreeSIMD*)this)-&gt;gtSIMDIntrinsicID,en}, {gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">[{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}]</DisplayString>
     <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
 
@@ -153,6 +155,14 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Type Name="insGroup">
     <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d} [extend]</DisplayString>
     <DisplayString>IG{igNum,d}</DisplayString>
+  </Type>
+
+  <Type Name="emitter::instrDesc">
+    <DisplayString Condition="(_idInsFmt == IF_RRD) || (_idInsFmt == IF_RWR) || (_idInsFmt == IF_RRW)">{_idIns,en} {_idReg1,en}</DisplayString>
+    <DisplayString Condition="(_idInsFmt == IF_RRD_CNS) || (_idInsFmt == IF_RWR_CNS) || (_idInsFmt == IF_RRW_CNS)">{_idIns,en} {_idReg1,en}, {_idLargeCns,d}</DisplayString>
+    <DisplayString Condition="(_idInsFmt == IF_RRW_SHF) &amp;&amp; (_idLargeCns != 0)">{_idIns,en} {_idReg1,en}, {_idLargeCns,d}</DisplayString>
+    <DisplayString Condition="(_idInsFmt == IF_RRW_SHF) &amp;&amp; (_idLargeCns == 0)">{_idIns,en} {_idReg1,en}, {_idSmallCns,d}</DisplayString>
+    <DisplayString>{_idIns,en}</DisplayString>
   </Type>
 
   <!-- utils -->

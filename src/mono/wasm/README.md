@@ -13,7 +13,7 @@ Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building ta
 you are directly using the `dotnet build`, or `build.sh`.
 
 * Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.12`. See [emscripten-version.txt](./emscripten-version.txt)
+Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.21`. See [emscripten-version.txt](./emscripten-version.txt)
 
 Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
 

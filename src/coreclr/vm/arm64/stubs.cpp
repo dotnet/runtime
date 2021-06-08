@@ -1198,7 +1198,7 @@ AdjustContextForVirtualStub(
     {
         pExceptionRecord->ExceptionAddress = (PVOID)callsite;
     }
-	
+
     SetIP(pContext, callsite);
 
     return TRUE;
@@ -1331,23 +1331,19 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
         // MOVK Rd, <2nd word>, LSL 1
         // MOVK Rd, <3nd word>, LSL 2
         // MOVK Rd, <4nd word>, LSL 3
-        WORD word = (WORD) (constant & WORD_MASK);
-        Emit32((DWORD)(0xD2<<24 | (4)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFF)) return;
 
-        word = (WORD) ((constant>>16) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (5)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFFFFFF)) return;
+        DWORD movInstr = 0xD2; // MOVZ
+        int shift = 0;
+        do
+        {
+            WORD word = (WORD) (constant & WORD_MASK);
+            Emit32((DWORD)(movInstr<<24 | (1 << 23) | (shift)<<21 | word<<5 | target));
+            shift++;
+            movInstr = 0xF2; // MOVK
+        }
+        while ((constant >>= 16) != 0);
 
-        word = (WORD) ((constant>>32) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (6)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFFFFFFFFFF)) return;
 
-        word = (WORD) ((constant>>48) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (7)<<21 | word<<5 | target));
 #undef WORD_MASK
 }
 
@@ -1571,21 +1567,23 @@ void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum
 }
 
 
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset)
+void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset, int log2Size)
 {
-    EmitLoadStoreRegImm(flags, (int)Xt, Xn, offset, FALSE);
+    EmitLoadStoreRegImm(flags, (int)Xt, Xn, offset, FALSE, log2Size);
 }
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset)
 {
     EmitLoadStoreRegImm(flags, (int)Vt, Xn, offset, TRUE);
 }
 
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec)
+void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size)
 {
     // Encoding:
     // wb=1 : [size(2)=11] | 1 | 1 | 1 | [IsVec(1)] | 0 | [!writeBack(1)] | 0 | [isLoad(1)] | 0 | [imm(7)] | [!postIndex(1)] | [Xn(5)] | [Xt(5)]
     // wb=0 : [size(2)=11] | 1 | 1 | 1 | [IsVec(1)] | 0 | [!writeBack(1)] | 0 | [isLoad(1)] | [          imm(12)           ] | [Xn(5)] | [Xt(5)]
     // where IsVec=0 for IntReg, 1 for VecReg
+
+    _ASSERTE((log2Size & ~0x3ULL) == 0);
 
     BOOL isLoad    = flags & 1;
     BOOL writeBack = flags & 2;
@@ -1593,7 +1591,8 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
     if (writeBack)
     {
         _ASSERTE(-256 <= offset && offset <= 255);
-        Emit32((DWORD) ( (0x1F<<27) |
+        Emit32((DWORD) ( (log2Size << 30) |
+                         (0x7<<27) |
                          (!!isVec<<26) |
                          (!writeBack<<24) |
                          (!!isLoad<<22) |
@@ -1606,13 +1605,16 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
     }
     else
     {
-        _ASSERTE((0 <= offset) && (offset <= 32760));
-        _ASSERTE((offset & 7) == 0);
-        Emit32((DWORD) ( (0x1F<<27) |
+        int scaledOffset = 0xFFF & (offset >> log2Size);
+
+        _ASSERTE(offset == (scaledOffset << log2Size));
+
+        Emit32((DWORD) ( (log2Size << 30) |
+                         (0x7<<27) |
                          (!!isVec<<26) |
                          (!writeBack<<24) |
                          (!!isLoad<<22) |
-                         ((0xFFF & (offset >> 3)) << 10) |
+                         (scaledOffset << 10) |
                          (Xn<<5) |
                          (regNum))
               );
@@ -1719,15 +1721,25 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         {
             // If source is present in register then destination must also be a register
             _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
+            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
+            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::FPREGMASK));
 
-            EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSMASK));
+            EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSREGMASK));
         }
         else if (pEntry->dstofs & ShuffleEntry::REGMASK)
         {
             // source must be on the stack
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
+            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
 
-            EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), RegSp, pEntry->srcofs * sizeof(void*));
+
+#if !defined(TARGET_OSX)
+            EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), RegSp, pEntry->srcofs * sizeof(void*));
+#else
+            int log2Size = (pEntry->srcofs >> 12);
+            int srcOffset = int(pEntry->srcofs & 0xfff) << log2Size;
+            EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), RegSp, srcOffset, log2Size);
+#endif
         }
         else
         {
@@ -1737,8 +1749,22 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             // dest must be on the stack
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
 
+#if !defined(TARGET_OSX)
             EmitLoadStoreRegImm(eLOAD, IntReg(9), RegSp, pEntry->srcofs * sizeof(void*));
             EmitLoadStoreRegImm(eSTORE, IntReg(9), RegSp, pEntry->dstofs * sizeof(void*));
+#else
+            // Decode ShuffleIterator::GetNextOfs() encoded entries
+            // See comments in that function
+
+            // We expect src and dst stack size to be the same.
+            _ASSERTE((pEntry->srcofs >> 12) == (pEntry->dstofs >> 12));
+            int log2Size = (pEntry->srcofs >> 12);
+            int srcOffset = int(pEntry->srcofs & 0xfff) << log2Size;
+            int dstOffset = int(pEntry->dstofs & 0xfff) << log2Size;
+
+            EmitLoadStoreRegImm(eLOAD, IntReg(9), RegSp, srcOffset, log2Size);
+            EmitLoadStoreRegImm(eSTORE, IntReg(9), RegSp, dstOffset, log2Size);
+#endif
         }
     }
 
@@ -1761,7 +1787,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
 
-        EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSMASK));
+        EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSREGMASK));
     }
 
     MetaSig msig(pSharedMD);

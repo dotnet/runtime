@@ -19,6 +19,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/mini/mini-runtime.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
@@ -137,6 +138,45 @@ typedef struct _EventPipeSampleProfileData {
 #define DOMAIN_FLAGS_DEFAULT_DOMAIN 0x1
 #define DOMAIN_FLAGS_EXECUTABLE_DOMAIN 0x2
 
+// Event data types.
+struct _ModuleEventData {
+	uint8_t signature [EP_GUID_SIZE];
+	uint64_t domain_id;
+	uint64_t module_id;
+	uint64_t assembly_id;
+	const char *module_il_path;
+	const char *module_il_pdb_path;
+	const char *module_native_path;
+	const char *module_native_pdb_path;
+	uint32_t module_il_pdb_age;
+	uint32_t module_native_pdb_age;
+	uint32_t reserved_flags;
+	uint32_t module_flags;
+};
+
+typedef struct _ModuleEventData ModuleEventData;
+
+struct _AssemblyEventData {
+	uint64_t domain_id;
+	uint64_t assembly_id;
+	uint64_t binding_id;
+	char *assembly_name;
+	uint32_t assembly_flags;
+};
+
+typedef struct _AssemblyEventData AssemblyEventData;
+
+// Event flags.
+#define THREAD_FLAGS_GC_SPECIAL 0x00000001
+#define THREAD_FLAGS_FINALIZER 0x00000002
+#define THREAD_FLAGS_THREADPOOL_WORKER 0x00000004
+
+#define EXCEPTION_THROWN_FLAGS_HAS_INNER 0x1
+#define EXCEPTION_THROWN_FLAGS_IS_NESTED 0x2
+#define EXCEPTION_THROWN_FLAGS_IS_RETHROWN 0x4
+#define EXCEPTION_THROWN_FLAGS_IS_CSE 0x8
+#define EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT 0x10
+
 /*
  * Forward declares of all static functions.
  */
@@ -238,6 +278,29 @@ profiler_eventpipe_thread_exited (
 	uintptr_t tid);
 
 static
+bool
+get_module_event_data (
+	MonoImage *image,
+	ModuleEventData *module_data);
+
+static
+bool
+get_assembly_event_data (
+	MonoAssembly *assembly,
+	AssemblyEventData *assembly_data);
+
+static
+uint32_t
+get_type_start_id (MonoType *type);
+
+static
+gboolean
+get_exception_ip_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	void *data);
+
+static
 void
 profiler_jit_begin (
 	MonoProfiler *prof,
@@ -264,9 +327,93 @@ profiler_image_loaded (
 
 static
 void
+profiler_image_unloaded (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
 profiler_assembly_loaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly);
+
+static
+void
+profiler_assembly_unloaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly);
+
+static
+void
+profiler_thread_started (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+profiler_thread_stopped (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+profiler_class_loading (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+profiler_class_failed (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+profiler_class_loaded (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+profiler_exception_throw (
+	MonoProfiler *prof,
+	MonoObject *exception);
+
+static
+void
+profiler_exception_clause (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *exc);
+
+static
+void
+profiler_monitor_contention (
+	MonoProfiler *prof,
+	MonoObject *obj);
+
+static
+void
+profiler_monitor_acquired (
+	MonoProfiler *prof,
+	MonoObject *obj);
+
+static
+void
+profiler_monitor_failed (
+	MonoProfiler *prof,
+	MonoObject *obj);
+
+static
+void
+profiler_jit_code_buffer (
+	MonoProfiler *prof,
+	const mono_byte *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
 
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
@@ -348,7 +495,7 @@ ep_rt_mono_method_get_full_name (
 	size_t name_len);
 
 void
-ep_rt_mono_execute_rundown (void);
+ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
 
 static
 inline
@@ -1285,9 +1432,9 @@ ep_rt_mono_walk_managed_stack_for_thread (
 {
 	EP_ASSERT (thread != NULL && stack_contents != NULL);
 
-	if (thread == ep_rt_thread_get_handle ())
+	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, stack_contents);
-	else
+	else if (mono_get_eh_callbacks ()->mono_walk_stack_with_state)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, stack_contents);
 
 	return true;
@@ -1406,7 +1553,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_mono_execute_rundown (void)
+ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
@@ -1436,6 +1583,20 @@ ep_rt_mono_execute_rundown (void)
 		runtime_module_path,
 		NULL,
 		NULL);
+
+	if (execution_checkpoints) {
+		ep_rt_execution_checkpoint_array_iterator_t execution_checkpoints_iterator = ep_rt_execution_checkpoint_array_iterator_begin (execution_checkpoints);
+		while (!ep_rt_execution_checkpoint_array_iterator_end (execution_checkpoints, &execution_checkpoints_iterator)) {
+			EventPipeExecutionCheckpoint *checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&execution_checkpoints_iterator);
+			FireEtwExecutionCheckpointDCEnd (
+				clr_instance_get_id (),
+				checkpoint->name,
+				checkpoint->timestamp,
+				NULL,
+				NULL);
+			ep_rt_execution_checkpoint_array_iterator_next (&execution_checkpoints_iterator);
+		}
+	}
 
 	FireEtwDCEndInit_V1 (
 		clr_instance_get_id (),
@@ -1711,6 +1872,46 @@ ep_rt_mono_write_event_method_load (
 	return true;
 }
 
+static
+bool
+get_module_event_data (
+	MonoImage *image,
+	ModuleEventData *module_data)
+{
+	if (image && module_data) {
+		memset (module_data->signature, 0, EP_GUID_SIZE);
+
+		// Under netcore we only have root domain.
+		MonoDomain *root_domain = mono_get_root_domain ();
+
+		module_data->domain_id = (uint64_t)root_domain;
+		module_data->module_id = (uint64_t)image;
+		module_data->assembly_id = (uint64_t)image->assembly;
+
+		// TODO: Extract all module IL/Native paths and pdb metadata when available.
+		module_data->module_il_path = "";
+		module_data->module_il_pdb_path = "";
+		module_data->module_native_path = "";
+		module_data->module_native_pdb_path = "";
+
+		module_data->module_il_pdb_age = 0;
+		module_data->module_native_pdb_age = 0;
+
+		module_data->reserved_flags = 0;
+
+		// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
+		module_data->module_flags = MODULE_FLAGS_MANIFEST_MODULE;
+		if (image->dynamic)
+			module_data->module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
+		if (image->aot_module)
+			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
+
+		module_data->module_il_path = image->filename ? image->filename : "";
+	}
+
+	return true;
+}
+
 bool
 ep_rt_mono_write_event_module_load (MonoImage *image)
 {
@@ -1718,61 +1919,95 @@ ep_rt_mono_write_event_module_load (MonoImage *image)
 		return true;
 
 	if (image) {
+		ModuleEventData module_data;
+		if (get_module_event_data (image, &module_data)) {
+			FireEtwModuleLoad_V2 (
+				module_data.module_id,
+				module_data.assembly_id,
+				module_data.module_flags,
+				module_data.reserved_flags,
+				module_data.module_il_path,
+				module_data.module_native_path,
+				clr_instance_get_id (),
+				module_data.signature,
+				module_data.module_il_pdb_age,
+				module_data.module_il_pdb_path,
+				module_data.signature,
+				module_data.module_native_pdb_age,
+				module_data.module_native_pdb_path,
+				NULL,
+				NULL);
+
+			FireEtwDomainModuleLoad_V1 (
+				module_data.module_id,
+				module_data.assembly_id,
+				module_data.domain_id,
+				module_data.module_flags,
+				module_data.reserved_flags,
+				module_data.module_il_path,
+				module_data.module_native_path,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
+		}
+	}
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_module_unload (MonoImage *image)
+{
+	if (!EventEnabledModuleUnload_V2())
+		return true;
+
+	if (image) {
+		ModuleEventData module_data;
+		if (get_module_event_data (image, &module_data)) {
+			FireEtwModuleUnload_V2 (
+				module_data.module_id,
+				module_data.assembly_id,
+				module_data.module_flags,
+				module_data.reserved_flags,
+				module_data.module_il_path,
+				module_data.module_native_path,
+				clr_instance_get_id (),
+				module_data.signature,
+				module_data.module_il_pdb_age,
+				module_data.module_il_pdb_path,
+				module_data.signature,
+				module_data.module_native_pdb_age,
+				module_data.module_native_pdb_path,
+				NULL,
+				NULL);
+		}
+	}
+
+	return true;
+}
+
+static
+bool
+get_assembly_event_data (
+	MonoAssembly *assembly,
+	AssemblyEventData *assembly_data)
+{
+	if (assembly && assembly_data) {
 		// Under netcore we only have root domain.
 		MonoDomain *root_domain = mono_get_root_domain ();
 
-		uint64_t domain_id = (uint64_t)root_domain;
-		uint64_t module_id = (uint64_t)image;
-		uint64_t assembly_id = (uint64_t)image->assembly;
+		assembly_data->domain_id = (uint64_t)root_domain;
+		assembly_data->assembly_id = (uint64_t)assembly;
+		assembly_data->binding_id = 0;
 
-		// TODO: Extract all module IL/Native paths and pdb metadata when available.
-		const char *module_il_path = "";
-		const char *module_il_pdb_path = "";
-		const char *module_native_path = "";
-		const char *module_native_pdb_path = "";
-		uint8_t signature [EP_GUID_SIZE] = { 0 };
-		uint32_t module_il_pdb_age = 0;
-		uint32_t module_native_pdb_age = 0;
+		assembly_data->assembly_flags = 0;
+		if (assembly->dynamic)
+			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-		uint32_t reserved_flags = 0;
+		if (assembly->image && assembly->image->aot_module)
+			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 
-		// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
-		uint32_t module_flags = MODULE_FLAGS_MANIFEST_MODULE;
-		if (image->dynamic)
-			module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (image->aot_module)
-			module_flags |= MODULE_FLAGS_NATIVE_MODULE;
-
-		module_il_path = image->filename ? image->filename : "";
-
-		FireEtwModuleLoad_V2 (
-			module_id,
-			assembly_id,
-			module_flags,
-			reserved_flags,
-			module_il_path,
-			module_native_path,
-			clr_instance_get_id (),
-			signature,
-			module_il_pdb_age,
-			module_il_pdb_path,
-			signature,
-			module_native_pdb_age,
-			module_native_pdb_path,
-			NULL,
-			NULL);
-
-		FireEtwDomainModuleLoad_V1 (
-			module_id,
-			assembly_id,
-			domain_id,
-			module_flags,
-			reserved_flags,
-			module_il_path,
-			module_native_path,
-			clr_instance_get_id (),
-			NULL,
-			NULL);
+		assembly_data->assembly_name = mono_stringify_assembly_name (&assembly->aname);
 	}
 
 	return true;
@@ -1785,36 +2020,515 @@ ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly)
 		return true;
 
 	if (assembly) {
-		// Under netcore we only have root domain.
-		MonoDomain *root_domain = mono_get_root_domain ();
+		AssemblyEventData assembly_data;
+		if (get_assembly_event_data (assembly, &assembly_data)) {
+			FireEtwAssemblyLoad_V1 (
+				assembly_data.assembly_id,
+				assembly_data.domain_id,
+				assembly_data.binding_id,
+				assembly_data.assembly_flags,
+				assembly_data.assembly_name,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
 
-		uint64_t domain_id = (uint64_t)root_domain;
-		uint64_t assembly_id = (uint64_t)assembly;
-		uint64_t binding_id = 0;
+			g_free (assembly_data.assembly_name);
+		}
+	}
 
-		uint32_t assembly_flags = 0;
-		if (assembly->dynamic)
-			assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
+	return true;
+}
 
-		if (assembly->image && assembly->image->aot_module)
-			assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
+bool
+ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly)
+{
+	if (!EventEnabledAssemblyUnload_V1 ())
+		return true;
 
-		char *assembly_name = mono_stringify_assembly_name (&assembly->aname);
+	if (assembly) {
+		AssemblyEventData assembly_data;
+		if (get_assembly_event_data (assembly, &assembly_data)) {
+			FireEtwAssemblyUnload_V1 (
+				assembly_data.assembly_id,
+				assembly_data.domain_id,
+				assembly_data.binding_id,
+				assembly_data.assembly_flags,
+				assembly_data.assembly_name,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
 
-		FireEtwAssemblyLoad_V1 (
-			assembly_id,
-			domain_id,
-			binding_id,
-			assembly_flags,
-			assembly_name,
+			g_free (assembly_data.assembly_name);
+		}
+	}
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
+{
+	if (!EventEnabledThreadCreated ())
+		return true;
+
+	uint64_t managed_thread = 0;
+	uint64_t native_thread_id = ep_rt_thread_id_t_to_uint64_t (tid);
+	uint64_t managed_thread_id = 0;
+	uint32_t flags = 0;
+
+	MonoThread *thread = mono_thread_current ();
+	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid) {
+		managed_thread_id = (uint64_t)mono_thread_get_managed_id (thread);
+		managed_thread = (uint64_t)thread;
+
+		switch (mono_thread_info_get_flags (thread->thread_info)) {
+		case MONO_THREAD_INFO_FLAGS_NO_GC:
+		case MONO_THREAD_INFO_FLAGS_NO_SAMPLE:
+			flags |= THREAD_FLAGS_GC_SPECIAL;
+		}
+
+		if (mono_gc_is_finalizer_thread (thread))
+			flags |= THREAD_FLAGS_FINALIZER;
+
+		if (thread->threadpool_thread)
+			flags |= THREAD_FLAGS_THREADPOOL_WORKER;
+	}
+
+	FireEtwThreadCreated (
+		managed_thread,
+		(uint64_t)mono_get_root_domain (),
+		flags,
+		managed_thread_id,
+		native_thread_id,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid)
+{
+	if (!EventEnabledThreadTerminated ())
+		return true;
+
+	uint64_t managed_thread = 0;
+	MonoThread *thread = mono_thread_current ();
+	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid)
+		managed_thread = (uint64_t)thread;
+
+	FireEtwThreadTerminated (
+		managed_thread,
+		(uint64_t)mono_get_root_domain (),
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+static
+uint32_t
+get_type_start_id (MonoType *type)
+{
+	uint32_t start_id = (uint32_t)(uintptr_t)type;
+
+	start_id = (((start_id * 215497) >> 16) ^ ((start_id * 1823231) + start_id));
+
+	// Mix in highest bits on 64-bit systems only
+	if (sizeof (type) > 4)
+		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+
+	return start_id;
+}
+
+bool
+ep_rt_mono_write_event_type_load_start (MonoType *type)
+{
+	if (!EventEnabledTypeLoadStart ())
+		return true;
+
+	FireEtwTypeLoadStart (
+		get_type_start_id (type),
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_type_load_stop (MonoType *type)
+{
+	if (!EventEnabledTypeLoadStop ())
+		return true;
+
+	char *type_name = NULL;
+	if (type)
+		type_name = mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_IL);
+
+	FireEtwTypeLoadStop (
+		get_type_start_id (type),
+		clr_instance_get_id (),
+		6 /* CLASS_LOADED */,
+		(uint64_t)type,
+		type_name,
+		NULL,
+		NULL);
+
+	g_free (type_name);
+
+	return true;
+}
+
+static
+gboolean
+get_exception_ip_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	void *data)
+{
+	*(uintptr_t *)data = (uintptr_t)MONO_CONTEXT_GET_IP (ctx);
+	return TRUE;
+}
+
+bool
+ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
+{
+	if (!EventEnabledExceptionThrown_V1 ())
+		return true;
+
+	if (obj) {
+		ERROR_DECL (error);
+		char *type_name = NULL;
+		char *exception_message = NULL;
+		uint16_t flags = 0;
+		uint32_t hresult = 0;
+		uintptr_t ip = 0;
+
+		if (mono_object_isinst_checked ((MonoObject *) obj, mono_get_exception_class (), error)) {
+			MonoException *exception = (MonoException *)obj;
+			flags |= EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT;
+			if (exception->inner_ex)
+				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
+			exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+			hresult = exception->hresult;
+		}
+
+		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
+			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
+
+		type_name = mono_type_get_name_full (m_class_get_byval_arg (mono_object_class (obj)), MONO_TYPE_NAME_FORMAT_IL);
+
+		FireEtwExceptionThrown_V1 (
+			type_name,
+			exception_message,
+			(void *)&ip,
+			hresult,
+			flags,
 			clr_instance_get_id (),
 			NULL,
 			NULL);
 
-		g_free (assembly_name);
+		if (!mono_component_profiler_clauses_enabled ()) {
+			FireEtwExceptionThrownStop (
+				NULL,
+				NULL);
+		}
+
+		g_free (exception_message);
+		g_free (type_name);
+
+		mono_error_cleanup (error);
 	}
 
 	return true;
+}
+
+bool
+ep_rt_mono_write_event_exception_clause (
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *obj)
+{
+	if (!mono_component_profiler_clauses_enabled ())
+		return true;
+
+	if ((clause_type == MONO_EXCEPTION_CLAUSE_FAULT || clause_type == MONO_EXCEPTION_CLAUSE_NONE) && (!EventEnabledExceptionCatchStart() || !EventEnabledExceptionCatchStop()))
+		return true;
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER && (!EventEnabledExceptionFilterStart() || !EventEnabledExceptionFilterStop()))
+		return true;
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FINALLY && (!EventEnabledExceptionFinallyStart() || !EventEnabledExceptionFinallyStop()))
+		return true;
+
+	uintptr_t ip = 0; //TODO: Have profiler pass along IP of handler block.
+	uint64_t method_id = (uint64_t)method;
+	char *method_name = NULL;
+
+	method_name = mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL);
+
+	if ((clause_type == MONO_EXCEPTION_CLAUSE_FAULT || clause_type == MONO_EXCEPTION_CLAUSE_NONE)) {
+		FireEtwExceptionCatchStart (
+			(uint64_t)ip,
+			method_id,
+			(const ep_char8_t *)method_name,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		FireEtwExceptionCatchStop (
+			NULL,
+			NULL);
+
+		FireEtwExceptionThrownStop (
+			NULL,
+			NULL);
+	}
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		FireEtwExceptionFilterStart (
+			(uint64_t)ip,
+			method_id,
+			(const ep_char8_t *)method_name,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		FireEtwExceptionFilterStop (
+			NULL,
+			NULL);
+	}
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FINALLY) {
+		FireEtwExceptionFinallyStart (
+			(uint64_t)ip,
+			method_id,
+			(const ep_char8_t *)method_name,
+			clr_instance_get_id (),
+			NULL,
+			NULL);
+
+		FireEtwExceptionFinallyStop (
+			NULL,
+			NULL);
+	}
+
+	g_free (method_name);
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj)
+{
+	if (!EventEnabledContentionStart_V1 ())
+		return true;
+
+	FireEtwContentionStart_V1 (
+		0 /* ManagedContention */,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj)
+{
+	if (!EventEnabledContentionStop ())
+		return true;
+
+	FireEtwContentionStop (
+		0 /* ManagedContention */,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
+	const uint8_t *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data)
+{
+	if (!EventEnabledMethodJitMemoryAllocatedForCode ())
+		return true;
+
+	if (type != MONO_PROFILER_CODE_BUFFER_METHOD)
+		return true;
+
+	uint64_t method_id = 0;
+	uint64_t module_id = 0;
+
+	if (data) {
+		MonoMethod *method;
+		method = (MonoMethod *)data;
+		method_id = (uint64_t)method;
+		if (method->klass)
+			module_id = (uint64_t)(uint64_t)m_class_get_image (method->klass);
+	}
+
+	FireEtwMethodJitMemoryAllocatedForCode (
+		method_id,
+		module_id,
+		size,
+		0,
+		size,
+		0 /* CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN */,
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+
+	return true;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_start (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadStart (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_stop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadStop (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_wait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadWait (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
+	double throughput,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadAdjustmentSample (
+		throughput,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadAdjustmentAdjustment (
+		average_throughput,
+		networker_thread_count,
+		reason,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_stats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkerThreadAdjustmentStats (
+		duration,
+		throughput,
+		threadpool_worker_thread_wait,
+		throughput_wave,
+		throughput_error_estimate,
+		average_throughput_error_estimate,
+		throughput_ratio,
+		confidence,
+		new_control_setting,
+		new_thread_wave_magnitude,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_io_enqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	bool multi_dequeues,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIOEnqueue (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
+		multi_dequeues,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_io_dequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIODequeue (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_working_thread_count (
+	uint16_t count,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolWorkingThreadCount (
+		count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
 }
 
 static
@@ -1858,11 +2572,135 @@ profiler_image_loaded (
 
 static
 void
+profiler_image_unloaded (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (image && image->heap_pdb.size == 0)
+		ep_rt_mono_write_event_module_unload (image);
+}
+
+static
+void
 profiler_assembly_loaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly)
 {
 	ep_rt_mono_write_event_assembly_load (assembly);
+}
+
+static
+void
+profiler_assembly_unloaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly)
+{
+	ep_rt_mono_write_event_assembly_unload (assembly);
+}
+
+static
+void
+profiler_thread_started (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	ep_rt_mono_write_event_thread_created (ep_rt_uint64_t_to_thread_id_t (tid));
+}
+
+static
+void
+profiler_thread_stopped (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	ep_rt_mono_write_event_thread_terminated (ep_rt_uint64_t_to_thread_id_t (tid));
+}
+
+static
+void
+profiler_class_loading (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	ep_rt_mono_write_event_type_load_start (m_class_get_byval_arg (klass));
+}
+
+static
+void
+profiler_class_failed (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	ep_rt_mono_write_event_type_load_stop (m_class_get_byval_arg (klass));
+}
+
+static
+void
+profiler_class_loaded (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	ep_rt_mono_write_event_type_load_stop (m_class_get_byval_arg (klass));
+}
+
+static
+void
+profiler_exception_throw (
+	MonoProfiler *prof,
+	MonoObject *exc)
+{
+	ep_rt_mono_write_event_exception_thrown (exc);
+}
+
+static
+void
+profiler_exception_clause (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *exc)
+{
+	ep_rt_mono_write_event_exception_clause (method, clause_num, clause_type, exc);
+}
+
+static
+void
+profiler_monitor_contention (
+	MonoProfiler *prof,
+	MonoObject *obj)
+{
+	ep_rt_mono_write_event_monitor_contention_start (obj);
+}
+
+static
+void
+profiler_monitor_acquired (
+	MonoProfiler *prof,
+	MonoObject *obj)
+{
+	ep_rt_mono_write_event_monitor_contention_stop (obj);
+}
+
+static
+void
+profiler_monitor_failed (
+	MonoProfiler *prof,
+	MonoObject *obj)
+{
+	ep_rt_mono_write_event_monitor_contention_stop (obj);
+}
+
+static
+void
+profiler_jit_code_buffer (
+	MonoProfiler *prof,
+	const mono_byte *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data)
+{
+	ep_rt_mono_write_event_method_jit_memory_allocated_for_code ((const uint8_t *)buffer, size, type, data);
 }
 
 void
@@ -1887,10 +2725,36 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, profiler_jit_failed);
 			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, profiler_jit_done);
 			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, profiler_image_loaded);
+			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, profiler_image_unloaded);
 			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, profiler_assembly_loaded);
+			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, profiler_assembly_unloaded);
+			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, profiler_thread_started);
+			mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_thread_stopped);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, profiler_class_loading);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
+			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, profiler_exception_throw);
+			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, profiler_exception_clause);
+			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, profiler_monitor_contention);
+			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, profiler_monitor_acquired);
+			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, profiler_monitor_failed);
+			mono_profiler_set_jit_code_buffer_callback (_ep_rt_mono_profiler, profiler_jit_code_buffer);
 		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
 			// Remove profiler callbacks for DotNETRuntime provider events.
+			mono_profiler_set_jit_code_buffer_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, NULL);
+			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, NULL);
 			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, NULL);
