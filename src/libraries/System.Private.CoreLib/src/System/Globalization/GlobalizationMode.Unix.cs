@@ -33,7 +33,8 @@ namespace System.Globalization
             private static string GetIcuLoadFailureMessage()
             {
                 // These strings can't go into resources, because a resource lookup requires globalization, which requires ICU
-                if (OperatingSystem.IsBrowser() || OperatingSystem.IsIOS() || OperatingSystem.IsAndroid())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ||
+                    OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS() || OperatingSystem.IsMacCatalyst())
                 {
                     return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information";
                 }
