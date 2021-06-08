@@ -100,18 +100,22 @@ pal::string_t strip_file_ext(const pal::string_t& path)
 
 bool get_line_from_file(FILE* pFile, pal::string_t& line)
 {
-    std::vector<pal::char_t> buffer;
-    char last_char;
-    while ((last_char = fgetc(pFile)))
+    line = pal::string_t();
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), pFile))
     {
-        if (last_char == '\n' || last_char == EOF)
-            break;
+        line += (pal::char_t*)buffer;
+        size_t len = line.length();
 
-        buffer.push_back((pal::char_t)last_char);
+        // fgets includes the newline character in the string - so remove it.
+        if (len > 0 && line[len - 1] == '\n')
+        {
+            line[len - 1] = '\0';
+            break;
+        }
     }
 
-    line = pal::string_t(buffer.begin(), buffer.end());
-    return buffer.size() != 0;
+    return !line.empty();
 }
 
 pal::string_t get_filename_without_ext(const pal::string_t& path)
@@ -368,14 +372,15 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
 {
     *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
     dotnet_root_env_var_name->append(to_upper(get_arch()));
-    if (pal::getenv(dotnet_root_env_var_name->c_str(), recv))
-        return pal::file_exists(*recv);
+    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+        return true;
 
 #if defined(WIN32)
     if (pal::is_running_in_wow64())
     {
         *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
-        return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
+        if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+            return true;
     }
 #endif
 

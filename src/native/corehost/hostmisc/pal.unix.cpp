@@ -421,57 +421,51 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         return false;
     }
 
-    pal::string_t install_location, architecture_install_location, file_line;
-    bool is_first_line = true;
+    pal::string_t install_location;
+    bool is_first_line = true, install_location_found = false;
 
-    while (get_line_from_file(install_location_file, file_line))
+    while (get_line_from_file(install_location_file, install_location))
     {
-        size_t arch_sep = file_line.find(_X('='));
+        size_t arch_sep = install_location.find(_X('='));
         if (arch_sep == pal::string_t::npos)
         {
             if (is_first_line)
             {
-                install_location = file_line;
+                *recv = install_location;
+                install_location_found = true;
                 trace::verbose(_X("Found install location path '%s'."), install_location.c_str());
             }
             else
             {
-                trace::error(_X("Only the first line in '%s' may not have an architecture prefix."), install_location_file_path.c_str());
+                trace::warning(_X("Only the first line in '%s' may not have an architecture prefix."), install_location_file_path.c_str());
             }
 
             is_first_line = false;
             continue;
         }
 
-        pal::string_t arch_prefix = file_line.substr(0, arch_sep);
-        pal::string_t path_to_location = file_line.substr(arch_sep + 1);
+        pal::string_t arch_prefix = install_location.substr(0, arch_sep);
+        pal::string_t path_to_location = install_location.substr(arch_sep + 1);
 
         trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
         if (arch_prefix == get_arch())
         {
-            architecture_install_location = path_to_location;
-            trace::verbose(_X("Found architecture-specific install location path matching the current OS architecture ('%s'): '%s'."), arch_prefix.c_str(), architecture_install_location.c_str());
+            *recv = path_to_location;
+            install_location_found = true;
+            trace::verbose(_X("Found architecture-specific install location path matching the current OS architecture ('%s'): '%s'."), arch_prefix.c_str(), path_to_location.c_str());
             break;
         }
 
         is_first_line = false;
     }
 
-    if (architecture_install_location != "")
+    if (!install_location_found)
     {
-        *recv = architecture_install_location;
-    }
-    else if (install_location != "")
-    {
-        *recv = install_location;
-    }
-    else
-    {
-        trace::error(_X("Did not find any install location in '%s'."), install_location_file_path.c_str());
+        trace::warning(_X("Did not find any install location in '%s'."), install_location_file_path.c_str());
         return false;
     }
 
-    trace::verbose(_X("Using install location '%s'."), (*recv).c_str());
+    trace::verbose(_X("Using install location '%s'."), recv->c_str());
     fclose(install_location_file);
     return true;
 }

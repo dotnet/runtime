@@ -111,10 +111,10 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var arch1 = fixture.RepoDirProvider.BuildArchitecture;
-            var path1 = "a/b/c";
-            var arch2 = "someArch";
-            var path2 = "x/y/z";
+            var arch1 = "someArch";
+            var path1 = "x/y/z";
+            var arch2 = fixture.RepoDirProvider.BuildArchitecture;
+            var path2 = "a/b/c";
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
@@ -123,6 +123,7 @@ namespace HostActivation.Tests
                     (arch1, path1),
                     (arch2, path2)
                 });
+
                 Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
@@ -130,9 +131,9 @@ namespace HostActivation.Tests
                     .Execute()
                     .Should().HaveStdErrContaining($"Found install location path '{path1}'.")
                     .And.HaveStdErrContaining($"Found architecture-specific install location path: '{path1}' ('{arch1}').")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path matching the current OS architecture ('{arch1}'): '{path1}'.")
                     .And.HaveStdErrContaining($"Found architecture-specific install location path: '{path2}' ('{arch2}').")
-                    .And.HaveStdErrContaining($"Using global installation location [{path1}] as runtime location.");
+                    .And.HaveStdErrContaining($"Found architecture-specific install location path matching the current OS architecture ('{arch2}'): '{path2}'.")
+                    .And.HaveStdErrContaining($"Using global installation location [{path2}] as runtime location.");
             }
         }
 
