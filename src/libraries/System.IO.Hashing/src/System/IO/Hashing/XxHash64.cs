@@ -31,7 +31,6 @@ namespace System.IO.Hashing
         public XxHash64()
             : this(0)
         {
-            Reset();
         }
 
         /// <summary>

@@ -39,6 +39,7 @@ namespace System.IO.Hashing
             internal void ProcessStripe(ReadOnlySpan<byte> source)
             {
                 Debug.Assert(source.Length >= StripeSize);
+                source = source.Slice(0, StripeSize);
 
                 _acc1 = ApplyRound(_acc1, source);
                 _acc2 = ApplyRound(_acc2, source.Slice(sizeof(uint)));
@@ -81,14 +82,12 @@ namespace System.IO.Hashing
                     remaining = remaining.Slice(sizeof(uint));
                 }
 
-                while (remaining.Length > 0)
+                for (int i = 0; i < remaining.Length; i++)
                 {
-                    uint lane = remaining[0];
+                    uint lane = remaining[i];
                     acc += lane * Prime32_5;
                     acc = BitOperations.RotateLeft(acc, 11);
                     acc *= Prime32_1;
-
-                    remaining = remaining.Slice(1);
                 }
 
                 acc ^= (acc >> 15);
