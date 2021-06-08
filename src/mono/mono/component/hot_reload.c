@@ -1237,9 +1237,11 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
 		g_print ("LOADING basename=%s delta update.\ndelta image=%p & dil=%p\n", basename, dmeta_bytes, dil_bytes_orig);
-		/* TODO: add a non-async version of mono_dump_mem */
+                mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "delta image size 0x%08x, delta IL size 0x%08x\n", dmeta_length, dil_length);
+#if 0
 		mono_dump_mem (dmeta_bytes, dmeta_length);
 		mono_dump_mem (dil_bytes_orig, dil_length);
+#endif
 	}
 
 	uint32_t generation = hot_reload_update_prepare ();

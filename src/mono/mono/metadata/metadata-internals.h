@@ -765,9 +765,11 @@ mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property
 void
 mono_image_property_remove (MonoImage *image, gpointer subject);
 
+MONO_COMPONENT_API
 gboolean
 mono_image_close_except_pools (MonoImage *image);
 
+MONO_COMPONENT_API
 void
 mono_image_close_finish (MonoImage *image);
 
@@ -886,6 +888,7 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 }
 #endif
 
+MONO_COMPONENT_API
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
 
