@@ -22,6 +22,9 @@ namespace Microsoft.Extensions.Hosting
         public const string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
 
+        // The amount of time we wait for the diagnostic source events to fire
+        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromSeconds(5);
+
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
             return ResolveFactory<TWebHost>(assembly, BuildWebHost);
@@ -37,14 +40,33 @@ namespace Microsoft.Extensions.Hosting
             return ResolveFactory<THostBuilder>(assembly, CreateHostBuilder);
         }
 
-        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, Action<object>? configureHostBuilder = null)
+        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, TimeSpan? waitTimeout = null,  Action<object>? configureHostBuilder = null)
         {
             if (assembly.EntryPoint is null)
             {
                 return null;
             }
 
-            return args => new HostingListener(args, assembly.EntryPoint, configureHostBuilder).CreateHost();
+            try
+            {
+                // Attempt to load hosting and check the version to make sure the events
+                // even have a change of firing (they were adding in .NET >= 6)
+                var hostingAssembly = Assembly.Load("Microsoft.Extensions.Hosting");
+                if (hostingAssembly.GetName().Version is Version version && version.Major < 6)
+                {
+                    return null;
+                }
+                
+                // We're using a version >= 6 so the events can fire. If they don't fire
+                // then it's because the application isn't using the hosting APIs
+            }
+            catch
+            {
+                // There was an error loading the extensions assembly, return null.
+                return null;
+            }
+
+            return args => new HostingListener(args, assembly.EntryPoint, waitTimeout ?? s_defaultWaitTimeout, configureHostBuilder).CreateHost();
         }
 
         private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
@@ -74,7 +96,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         // Used by EF tooling without any Hosting references. Looses some return type safety checks.
-        public static Func<string[], IServiceProvider?>? ResolveServiceProviderFactory(Assembly assembly)
+        public static Func<string[], IServiceProvider?>? ResolveServiceProviderFactory(Assembly assembly, TimeSpan? waitTimeout = null)
         {
             // Prefer the older patterns by default for back compat.
             var webHostFactory = ResolveWebHostFactory<object>(assembly);
@@ -109,7 +131,7 @@ namespace Microsoft.Extensions.Hosting
                 };
             }
 
-            var hostFactory = ResolveHostFactory(assembly, builder => { });
+            var hostFactory = ResolveHostFactory(assembly, waitTimeout: waitTimeout);
             if (hostFactory != null)
             {
                 return args =>
@@ -143,19 +165,17 @@ namespace Microsoft.Extensions.Hosting
         {
             private readonly string[] _args;
             private readonly MethodInfo _entryPoint;
+            private readonly TimeSpan _waitTimeout;
 
             private readonly TaskCompletionSource<object> _hostTcs = new();
             private IDisposable? _disposable;
-
             private Action<object>? _configure;
 
-            // The amount of time we wait for the diagnostic source events to fire
-            private static readonly TimeSpan s_waitTimeout = TimeSpan.FromSeconds(20);
-
-            public HostingListener(string[] args, MethodInfo entryPoint, Action<object>? configure)
+            public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, Action<object>? configure)
             {
                 _args = args;
                 _entryPoint = entryPoint;
+                _waitTimeout = waitTimeout;
                 _configure = configure;
             }
 
@@ -209,7 +229,7 @@ namespace Microsoft.Extensions.Hosting
                 try
                 {
                     // Wait before throwing an exception
-                    if (!_hostTcs.Task.Wait(s_waitTimeout))
+                    if (!_hostTcs.Task.Wait(_waitTimeout))
                     {
                         throw new InvalidOperationException("Unable to build IHost");
                     }

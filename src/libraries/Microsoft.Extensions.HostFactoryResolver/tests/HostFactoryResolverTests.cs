@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Hosting.Tests
     {
         public static bool RequirementsMet => RemoteExecutor.IsSupported && PlatformDetection.IsThreadingSupported;
 
+        private static readonly TimeSpan s_WaitTimeout = TimeSpan.FromSeconds(20);
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(BuildWebHostPatternTestSite.Program))]
         public void BuildWebHostPattern_CanFindWebHost()
@@ -129,7 +131,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() => 
             {
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
@@ -142,7 +144,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() => 
             {
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
@@ -155,7 +157,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() => 
             {
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternThrows.Program).Assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternThrows.Program).Assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.Throws<Exception>(() => factory(Array.Empty<string>()));
@@ -168,7 +170,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() => 
             {
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternExits.Program).Assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternExits.Program).Assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
@@ -181,7 +183,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() => 
             {
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternHangs.Program).Assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternHangs.Program).Assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
@@ -194,7 +196,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() => 
             {
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
@@ -207,7 +209,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var _ = RemoteExecutor.Invoke(() => 
             {
                 var assembly = Assembly.Load("TopLevelStatements");
-                var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly);
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
 
                 Assert.NotNull(factory);
                 Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
