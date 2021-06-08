@@ -343,16 +343,21 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
             {
                 // External servers do not support HTTP3 currently.
+                return;
+            }
+            if (PlatformDetection.IsBrowser && withPort)
+            {
+                // we already have custom port with the local echo server
                 return;
             }
 
@@ -372,8 +377,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)

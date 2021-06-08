@@ -96,7 +96,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             WinHttpHandler handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             string payload = "Mutual Authentication Test";
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Test.Common.Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Test.Common.Configuration.Http.Http2SecureRemoteEchoServer) { Version = HttpVersion20.Value };
             request.Content = new StringContent(payload);
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.SendAsync(request))

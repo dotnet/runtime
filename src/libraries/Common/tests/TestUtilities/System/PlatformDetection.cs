@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
+using Xunit;
 
 namespace System
 {
@@ -59,6 +60,7 @@ namespace System
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public const TestPlatforms LocalEchoServerIsNotAvailable = TestPlatforms.Any & ~TestPlatforms.Browser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
@@ -78,7 +80,7 @@ namespace System
                     }
                     else
                     {
-                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+                        return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
                     }
                 }
 #endif

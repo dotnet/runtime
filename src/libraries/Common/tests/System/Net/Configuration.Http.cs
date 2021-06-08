@@ -17,6 +17,7 @@ namespace System.Net.Test.Common
             public static string SecureHost => GetValue("DOTNET_TEST_SECUREHTTPHOST", DefaultAzureServer);
 
             public static string Http2Host => GetValue("DOTNET_TEST_HTTP2HOST", DefaultHttp2AzureServer);
+            public static string Http2SecureHost => GetValue("DOTNET_TEST_HTTP2SECUREHOST", DefaultHttp2AzureServer);
 
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
@@ -53,32 +54,34 @@ namespace System.Net.Test.Common
 
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
-            public static readonly Uri Http2RemoteEchoServer = new Uri("https://" + Http2Host + "/" + EchoHandler);
-            public static readonly Uri[] EchoServerList = new Uri[] { RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer };
+            public static readonly Uri Http2RemoteEchoServer = new Uri("http://" + Http2Host + "/" + EchoHandler);
+            public static readonly Uri Http2SecureRemoteEchoServer = new Uri("https://" + Http2SecureHost + "/" + EchoHandler);
+            public static readonly Uri[] EchoServerList = new Uri[] { RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer, Http2SecureRemoteEchoServer };
 
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
-            public static readonly Uri Http2RemoteVerifyUploadServer = new Uri("https://" + Http2Host + "/" + VerifyUploadHandler);
+            public static readonly Uri Http2RemoteVerifyUploadServer = new Uri("https://" + Http2SecureHost + "/" + VerifyUploadHandler);
             public static readonly Uri[] VerifyUploadServerList = new Uri[] { RemoteVerifyUploadServer, SecureRemoteVerifyUploadServer, Http2RemoteVerifyUploadServer };
 
             public static readonly Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
             public static readonly Uri RemoteDeflateServer = new Uri("http://" + Host + "/" + DeflateHandler);
             public static readonly Uri RemoteGZipServer = new Uri("http://" + Host + "/" + GZipHandler);
-            public static readonly Uri Http2RemoteDeflateServer = new Uri("https://" + Http2Host + "/" + DeflateHandler);
-            public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
+            public static readonly Uri Http2RemoteDeflateServer = new Uri("https://" + Http2SecureHost + "/" + DeflateHandler);
+            public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2SecureHost + "/" + GZipHandler);
 
             public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
             public static readonly object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer }, new object[] { Http2RemoteDeflateServer }, new object[] { Http2RemoteGZipServer } };
 
-            public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
+            public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2SecureHost) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
 
             public static readonly RemoteServer RemoteHttp11Server = new RemoteServer(new Uri("http://" + Host + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);
-            public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), new Version(2, 0));
+            public static readonly RemoteServer RemoteSecureHttp2Server = new RemoteServer(new Uri("https://" + Http2SecureHost + "/"), new Version(2, 0));
+            public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("http://" + Http2Host + "/"), new Version(2, 0));
 
-            public static readonly IEnumerable<RemoteServer> RemoteServers = new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
+            public static readonly IEnumerable<RemoteServer> RemoteServers = new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteSecureHttp2Server };
 
             public static readonly IEnumerable<object[]> RemoteServersMemberData = RemoteServers.Select(s => new object[] { s });
 
