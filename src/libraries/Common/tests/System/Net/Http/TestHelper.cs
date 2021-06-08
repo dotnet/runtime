@@ -41,9 +41,13 @@ namespace System.Net.Http.Functional.Tests
             bool chunkedUpload,
             string requestBody)
         {
-            // Verify that response body from the server was corrected received by comparing MD5 hash.
-            byte[] actualMD5Hash = ComputeMD5Hash(responseContent);
-            Assert.Equal(expectedMD5Hash, actualMD5Hash);
+            // https://github.com/dotnet/runtime/issues/37669
+            if(!PlatformDetection.IsBrowser)
+            {
+                // Verify that response body from the server was corrected received by comparing MD5 hash.
+                byte[] actualMD5Hash = ComputeMD5Hash(responseContent);
+                Assert.Equal(expectedMD5Hash, actualMD5Hash);
+            }
 
             // Verify upload semantics: 'Content-Length' vs. 'Transfer-Encoding: chunked'.
             if (requestBody != null)
@@ -66,6 +70,11 @@ namespace System.Net.Http.Functional.Tests
 
         public static void VerifyRequestMethod(HttpResponseMessage response, string expectedMethod)
         {
+            if(PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53668", TestPlatforms.Browser)] 
+                return;
+            }
            IEnumerable<string> values = response.Headers.GetValues("X-HttpRequest-Method");
            foreach (string value in values)
            {
