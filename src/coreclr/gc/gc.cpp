@@ -28669,11 +28669,6 @@ heap_segment* gc_heap::relocate_advance_to_non_sip (heap_segment* region)
                             {
                                 dprintf (4444, ("SIP %Ix(%Ix)->%Ix->%Ix(%Ix)", 
                                     x, (uint8_t*)pval, child, *pval, method_table (child)));
-
-                                if (method_table (child) == 0)
-                                {
-                                    FATAL_GC_ERROR();
-                                }
                             }
                         });
                     }
