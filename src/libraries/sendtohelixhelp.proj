@@ -86,8 +86,8 @@
     <HelixCommand>$(HelixCommand) /bl:%HELIX_WORKITEM_UPLOAD_ROOT%\%HELIX_WORKITEM_FRIENDLYNAME%.package.test.binlog</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
     <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:MicrosoftNetCoreAppRefPackDir="%HELIX_CORRELATION_PAYLOAD%\targetingpack\"</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath=%HELIX_CORRELATION_PAYLOAD%\packages\</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:MicrosoftNetCoreAppRefPackDir=%HELIX_CORRELATION_PAYLOAD%\targetingpack\</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
