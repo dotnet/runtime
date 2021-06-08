@@ -127,9 +127,8 @@ ReturnKind GCInfo::getReturnKind()
 void GCInfo::gcMarkFilterVarsPinned()
 {
     assert(compiler->ehAnyFunclets());
-    const EHblkDsc* endHBtab = &(compiler->compHndBBtab[compiler->compHndBBtabCount]);
 
-    for (EHblkDsc* HBtab = compiler->compHndBBtab; HBtab < endHBtab; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         if (HBtab->HasFilter())
         {

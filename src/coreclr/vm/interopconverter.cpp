@@ -188,18 +188,29 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (ReqIpType & ComIpType_Dispatch)
         {
             hr = SafeQueryInterface(pUnk, IID_IDispatch, &pvObj);
-            pUnk->Release();
+            if (SUCCEEDED(hr))
+            {
+                pUnk->Release();
+                FetchedIpType = ComIpType_Dispatch;
+            }
+            else if (ReqIpType & ComIpType_Unknown)
+            {
+                hr = S_OK;
+                pvObj = pUnk;
+                FetchedIpType = ComIpType_Unknown;
+            }
         }
         else
         {
             pvObj = pUnk;
+            FetchedIpType = ComIpType_Unknown;
         }
 
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
         if (pFetchedIpType != NULL)
-            *pFetchedIpType = ReqIpType;
+            *pFetchedIpType = FetchedIpType;
 
         RETURN pvObj;
     }

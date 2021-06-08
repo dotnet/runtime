@@ -205,12 +205,20 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 int
 mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
 {
+    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
+
     // uncomment for debug output:
     //
     //setenv ("XUNIT_VERBOSE", "true", true);
     //setenv ("MONO_LOG_LEVEL", "debug", true);
     //setenv ("MONO_LOG_MASK", "all", true);
-    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
+
+    // build using DiagnosticPorts property in AndroidAppBuilder
+    // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents=diagnostics_tracing
+#ifdef DIAGNOSTIC_PORTS
+    setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
+#endif
 
     bool wait_for_debugger = false;
     chdir (bundle_path);
@@ -266,14 +274,18 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #endif
 
-    mono_jit_init_version ("dotnet.android", "mobile");
+    MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");
+    assert (domain);
 
     MonoAssembly *assembly = mono_droid_load_assembly (executable, NULL);
     assert (assembly);
-    LOG_INFO ("Executable: %s", executable);
 
-    int res = mono_jit_exec (mono_domain_get (), assembly, managed_argc, managed_argv);
+    LOG_INFO ("Executable: %s", executable);
+    int res = mono_jit_exec (domain, assembly, managed_argc, managed_argv);
     LOG_INFO ("Exit code: %d.", res);
+
+    mono_jit_cleanup (domain);
+
     return res;
 }
 

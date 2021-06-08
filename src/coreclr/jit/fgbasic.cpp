@@ -145,11 +145,13 @@ void Compiler::fgInit()
 #ifdef DEBUG
     if (!compIsForInlining())
     {
-        if ((JitConfig.JitNoStructPromotion() & 1) == 1)
+        const int noStructPromotionValue = JitConfig.JitNoStructPromotion();
+        assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
+        if (noStructPromotionValue == 1)
         {
             fgNoStructPromotion = true;
         }
-        if ((JitConfig.JitNoStructPromotion() & 2) == 2)
+        if (noStructPromotionValue == 2)
         {
             fgNoStructParamPromotion = true;
         }
@@ -380,15 +382,9 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     noway_assert(newSwitchBlock != nullptr);
     noway_assert(oldSwitchBlock->bbJumpKind == BBJ_SWITCH);
 
-    unsigned     jumpCnt = oldSwitchBlock->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTab = oldSwitchBlock->bbJumpSwt->bbsDstTab;
-
-    unsigned i;
-
     // Walk the switch's jump table, updating the predecessor for each branch.
-    for (i = 0; i < jumpCnt; i++)
+    for (BasicBlock* const bJump : oldSwitchBlock->SwitchTargets())
     {
-        BasicBlock* bJump = jumpTab[i];
         noway_assert(bJump != nullptr);
 
         // Note that if there are duplicate branch targets in the switch jump table,
@@ -621,7 +617,7 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
 
     bool modified = false;
 
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         if (oldPred == pred->getBlock())
         {
@@ -657,7 +653,6 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
 void Compiler::fgInitBBLookup()
 {
     BasicBlock** dscBBptr;
-    BasicBlock*  tmpBBdesc;
 
     /* Allocate the basic block table */
 
@@ -665,9 +660,9 @@ void Compiler::fgInitBBLookup()
 
     /* Walk all the basic blocks, filling in the table */
 
-    for (tmpBBdesc = fgFirstBB; tmpBBdesc; tmpBBdesc = tmpBBdesc->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        *dscBBptr++ = tmpBBdesc;
+        *dscBBptr++ = block;
     }
 
     noway_assert(dscBBptr == fgBBs + fgBBcount);
@@ -1779,7 +1774,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
 {
     noway_assert(targetBlock->bbNum <= sourceBlock->bbNum);
 
-    for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
+    for (BasicBlock* const block : Blocks(targetBlock, sourceBlock))
     {
         if (((block->bbFlags & BBF_BACKWARD_JUMP) == 0) && (block->bbJumpKind != BBJ_RETURN))
         {
@@ -1808,7 +1803,7 @@ void Compiler::fgLinkBasicBlocks()
 
     /* Walk all the basic blocks, filling in the target addresses */
 
-    for (BasicBlock* curBBdesc = fgFirstBB; curBBdesc; curBBdesc = curBBdesc->bbNext)
+    for (BasicBlock* const curBBdesc : Blocks())
     {
         switch (curBBdesc->bbJumpKind)
         {
@@ -2936,8 +2931,7 @@ void Compiler::fgFindBasicBlocks()
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
-    EHblkDsc* HBtabEnd;
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (ehMaxHndNestingCount <= HBtab->ebdHandlerNestingLevel)
             ehMaxHndNestingCount = HBtab->ebdHandlerNestingLevel + 1;
@@ -2988,7 +2982,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
     EHblkDsc* HBtab;
 
-    for (BasicBlock* blk = fgFirstBB; blk; blk = blk->bbNext)
+    for (BasicBlock* const blk : Blocks())
     {
         if (blk->bbFlags & BBF_INTERNAL)
         {
@@ -3070,18 +3064,10 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_SWITCH: // block ends with a switch statement
-
-                BBswtDesc* swtDesc;
-                swtDesc = blk->bbJumpSwt;
-
-                assert(swtDesc);
-
-                unsigned i;
-                for (i = 0; i < swtDesc->bbsCount; i++)
+                for (BasicBlock* const bTarget : blk->SwitchTargets())
                 {
-                    fgControlFlowPermitted(blk, swtDesc->bbsDstTab[i]);
+                    fgControlFlowPermitted(blk, bTarget);
                 }
-
                 break;
 
             case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
@@ -3471,7 +3457,7 @@ IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
     // could have a similar function for LIR that searches for GT_IL_OFFSET nodes.
     assert(!block->IsLIR());
 
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
         {
@@ -3502,10 +3488,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Without these arcs, a block 'b' may not be a member of succs(preds(b))
     if (curr->bbJumpKind != BBJ_SWITCH)
     {
-        unsigned numSuccs = curr->NumSucc(this);
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (BasicBlock* const succ : curr->Succs(this))
         {
-            BasicBlock* succ = curr->GetSucc(i, this);
             if (succ != newBlock)
             {
                 JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succ->bbNum, curr->bbNum,
@@ -4129,7 +4113,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(succBlock, block);
 
-        for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+        for (flowList* const pred : block->PredEdges())
         {
             BasicBlock* predBlock = pred->getBlock();
 
@@ -4479,7 +4463,7 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered && fgComputePredsDone)
     {
-        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             block->ensurePredListOrder(this);
         }
@@ -4980,7 +4964,7 @@ bool Compiler::fgMightHaveLoop()
     BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
     BitVec       blocksSeen(BitVecOps::MakeEmpty(&blockVecTraits));
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 

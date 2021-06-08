@@ -363,6 +363,22 @@ VNFunc GetVNFuncForNode(GenTree* node)
     return VNFunc(node->OperGet());
 }
 
+bool ValueNumStore::VNFuncIsOverflowArithmetic(VNFunc vnf)
+{
+    static_assert_no_msg(VNF_ADD_OVF + 1 == VNF_SUB_OVF);
+    static_assert_no_msg(VNF_SUB_OVF + 1 == VNF_MUL_OVF);
+    static_assert_no_msg(VNF_MUL_OVF + 1 == VNF_ADD_UN_OVF);
+    static_assert_no_msg(VNF_ADD_UN_OVF + 1 == VNF_SUB_UN_OVF);
+    static_assert_no_msg(VNF_SUB_UN_OVF + 1 == VNF_MUL_UN_OVF);
+
+    return VNF_ADD_OVF <= vnf && vnf <= VNF_MUL_UN_OVF;
+}
+
+bool ValueNumStore::VNFuncIsNumericCast(VNFunc vnf)
+{
+    return (vnf == VNF_Cast) || (vnf == VNF_CastOvf);
+}
+
 unsigned ValueNumStore::VNFuncArity(VNFunc vnf)
 {
     // Read the bit field out of the table...
@@ -734,6 +750,31 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
 
             default:
                 // For any other value of 'oper', we will assert below
+                break;
+        }
+    }
+    else // must be a VNF_ function
+    {
+        switch (vnf)
+        {
+            // Here we handle those that are the same for all integer types.
+            case VNF_ADD_OVF:
+            case VNF_ADD_UN_OVF:
+                assert(!CheckedOps::AddOverflows(v0, v1, vnf == VNF_ADD_UN_OVF));
+                return v0 + v1;
+
+            case VNF_SUB_OVF:
+            case VNF_SUB_UN_OVF:
+                assert(!CheckedOps::SubOverflows(v0, v1, vnf == VNF_SUB_UN_OVF));
+                return v0 - v1;
+
+            case VNF_MUL_OVF:
+            case VNF_MUL_UN_OVF:
+                assert(!CheckedOps::MulOverflows(v0, v1, vnf == VNF_MUL_UN_OVF));
+                return v0 * v1;
+
+            default:
+                // For any other value of 'vnf', we will assert below
                 break;
         }
     }
@@ -1687,7 +1728,8 @@ ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
 
-ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /*=false*/)
+ValueNum ValueNumStore::VNForCastOper(var_types castToType,
+                                      bool srcIsUnsigned /*=false*/ DEBUGARG(bool printResult /*=true*/))
 {
     assert(castToType != TYP_STRUCT);
     INT32 cnsVal = INT32(castToType) << INT32(VCA_BitCount);
@@ -1701,7 +1743,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /
     ValueNum result = VNForIntCon(cnsVal);
 
 #ifdef DEBUG
-    if (m_pComp->verbose)
+    if (printResult && m_pComp->verbose)
     {
         printf("    VNForCastOper(%s%s) is " FMT_VN "\n", varTypeName(castToType), srcIsUnsigned ? ", unsignedSrc" : "",
                result);
@@ -1709,6 +1751,21 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /
 #endif
 
     return result;
+}
+
+void ValueNumStore::GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned)
+{
+    assert(pCastToType != nullptr);
+    assert(pSrcIsUnsigned != nullptr);
+    assert(IsVNInt32Constant(vn));
+
+    int value = GetConstantInt32(vn);
+    assert(value >= 0);
+
+    *pSrcIsUnsigned = (value & INT32(VCA_UnsignedSrc)) != 0;
+    *pCastToType    = var_types(value >> INT32(VCA_BitCount));
+
+    assert(VNForCastOper(*pCastToType, *pSrcIsUnsigned DEBUGARG(/*printResult*/ false)) == vn);
 }
 
 ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
@@ -1916,26 +1973,23 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // Special case for VNF_Cast of constant handles
         // Don't allow an eval/fold of a GT_CAST(non-I_IMPL, Handle)
         //
-        if ((func == VNF_Cast) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
+        if (VNFuncIsNumericCast(func) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
         {
             canFold = false;
         }
 
-        // Currently CanEvalForConstantArgs() returns false for VNF_CastOvf
-        // In the future we could handle this case in folding.
-        assert(func != VNF_CastOvf);
-
         // It is possible for us to have mismatched types (see Bug 750863)
         // We don't try to fold a binary operation when one of the constant operands
-        // is a floating-point constant and the other is not.
-        //
+        // is a floating-point constant and the other is not, except for casts.
+        // For casts, the second operand just carries the information about the source.
+
         var_types arg0VNtyp      = TypeOfVN(arg0VN);
         bool      arg0IsFloating = varTypeIsFloating(arg0VNtyp);
 
         var_types arg1VNtyp      = TypeOfVN(arg1VN);
         bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
 
-        if (arg0IsFloating != arg1IsFloating)
+        if (!VNFuncIsNumericCast(func) && (arg0IsFloating != arg1IsFloating))
         {
             canFold = false;
         }
@@ -2574,7 +2628,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
     assert(!VNHasExc(arg0VN) && !VNHasExc(arg1VN)); // Otherwise, would not be constant.
 
     // if our func is the VNF_Cast operation we handle it first
-    if (func == VNF_Cast)
+    if (VNFuncIsNumericCast(func))
     {
         return EvalCastForConstantArgs(typ, func, arg0VN, arg1VN);
     }
@@ -2785,7 +2839,7 @@ ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, Va
 //
 ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(func == VNF_Cast);
+    assert(VNFuncIsNumericCast(func));
     assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
     // Stack-normalize the result type.
@@ -2795,12 +2849,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     }
 
     var_types arg0VNtyp = TypeOfVN(arg0VN);
-    var_types arg1VNtyp = TypeOfVN(arg1VN);
-
-    // arg1VN is really the gtCastType that we are casting to
-    assert(arg1VNtyp == TYP_INT);
-    int arg1Val = ConstantValue<int>(arg1VN);
-    assert(arg1Val >= 0);
 
     if (IsVNHandle(arg0VN))
     {
@@ -2808,12 +2856,12 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         assert(typ == TYP_I_IMPL);
     }
 
-    // We previously encoded the castToType operation using vnForCastOper()
-    //
-    bool      srcIsUnsigned = ((arg1Val & INT32(VCA_UnsignedSrc)) != 0);
-    var_types castToType    = var_types(arg1Val >> INT32(VCA_BitCount));
-
+    // We previously encoded the castToType operation using VNForCastOper().
+    var_types castToType;
+    bool      srcIsUnsigned;
+    GetCastOperFromVN(arg1VN, &castToType, &srcIsUnsigned);
     var_types castFromType = arg0VNtyp;
+    bool      checkedCast  = func == VNF_CastOvf;
 
     switch (castFromType) // GT_CAST source type
     {
@@ -2824,6 +2872,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_INT:
         {
             int arg0Val = GetConstantInt32(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromIntOverflows(arg0Val, castToType, srcIsUnsigned));
 
             switch (castToType)
             {
@@ -2906,6 +2955,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 #endif
                 case TYP_LONG:
                     INT64 arg0Val = GetConstantInt64(arg0VN);
+                    assert(!checkedCast || !CheckedOps::CastFromLongOverflows(arg0Val, castToType, srcIsUnsigned));
 
                     switch (castToType)
                     {
@@ -2962,6 +3012,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_FLOAT:
         {
             float arg0Val = GetConstantSingle(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromFloatOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3003,6 +3054,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_DOUBLE:
         {
             double arg0Val = GetConstantDouble(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromDoubleOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3123,7 +3175,16 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
             case VNF_GE_UN:
             case VNF_LT_UN:
             case VNF_LE_UN:
+
+            case VNF_ADD_OVF:
+            case VNF_SUB_OVF:
+            case VNF_MUL_OVF:
+            case VNF_ADD_UN_OVF:
+            case VNF_SUB_UN_OVF:
+            case VNF_MUL_UN_OVF:
+
             case VNF_Cast:
+            case VNF_CastOvf:
                 // We can evaluate these.
                 return true;
 
@@ -3147,9 +3208,11 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
 //
 // Return Value:     - Returns true if we should perform a folding operation.
 //
+// Notes:            - Does not handle operations producing TYP_BYREF.
+//
 bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    bool shouldFold = true;
+    assert(typ != TYP_BYREF);
 
     // We have some arithmetic operations that will always throw
     // an exception given particular constant argument(s).
@@ -3158,80 +3221,136 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
     // We will avoid performing any constant folding on them
     // since they won't actually produce any result.
     // Instead they always will throw an exception.
-    //
-    if (func < VNF_Boundary)
+
+    // Floating point operations do not throw exceptions.
+    if (varTypeIsFloating(typ))
     {
-        genTreeOps oper = genTreeOps(func);
+        return true;
+    }
 
-        // Floating point operations do not throw exceptions
-        //
-        if (!varTypeIsFloating(typ))
+    genTreeOps oper = genTreeOps(func);
+    // Is this an integer divide/modulo that will always throw an exception?
+    if (GenTree::StaticOperIs(oper, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD))
+    {
+        if (!((typ == TYP_INT) || (typ == TYP_LONG)))
         {
-            // Is this an integer divide/modulo that will always throw an exception?
-            //
-            if ((oper == GT_DIV) || (oper == GT_UDIV) || (oper == GT_MOD) || (oper == GT_UMOD))
-            {
-                if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
-                {
-                    // Just in case we have mismatched types
-                    shouldFold = false;
-                }
-                else
-                {
-                    bool isUnsigned = (oper == GT_UDIV) || (oper == GT_UMOD);
-                    if (typ == TYP_LONG)
-                    {
-                        INT64 kArg0 = ConstantValue<INT64>(arg0VN);
-                        INT64 kArg1 = ConstantValue<INT64>(arg1VN);
+            assert(!"Unexpected type in VNEvalShouldFold for integer division/modulus");
+            return false;
+        }
+        // Just in case we have mismatched types.
+        if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
+        {
+            return false;
+        }
 
-                        if (IsIntZero(kArg1))
-                        {
-                            // Don't fold, we have a divide by zero
-                            shouldFold = false;
-                        }
-                        else if (!isUnsigned || IsOverflowIntDiv(kArg0, kArg1))
-                        {
-                            // Don't fold, we have a divide of INT64_MIN/-1
-                            shouldFold = false;
-                        }
-                    }
-                    else if (typ == TYP_INT)
-                    {
-                        int kArg0 = ConstantValue<int>(arg0VN);
-                        int kArg1 = ConstantValue<int>(arg1VN);
+        INT64 divisor = CoercedConstantValue<INT64>(arg1VN);
 
-                        if (IsIntZero(kArg1))
-                        {
-                            // Don't fold, we have a divide by zero
-                            shouldFold = false;
-                        }
-                        else if (!isUnsigned && IsOverflowIntDiv(kArg0, kArg1))
-                        {
-                            // Don't fold, we have a divide of INT32_MIN/-1
-                            shouldFold = false;
-                        }
-                    }
-                    else // strange value for 'typ'
-                    {
-                        assert(!"unexpected 'typ' in VNForFunc constant folding");
-                        shouldFold = false;
-                    }
-                }
-            }
+        if (divisor == 0)
+        {
+            // Don't fold, we have a divide by zero.
+            return false;
+        }
+        else if ((oper == GT_DIV || oper == GT_MOD) && (divisor == -1))
+        {
+            // Don't fold if we have a division of INT32_MIN or INT64_MIN by -1.
+            // Note that while INT_MIN % -1 is mathematically well-defined (and equal to 0),
+            // we still give up on folding it because the "idiv" instruction is used to compute it on x64.
+            // And "idiv" raises an exception on such inputs.
+            INT64 dividend    = CoercedConstantValue<INT64>(arg0VN);
+            INT64 badDividend = typ == TYP_INT ? INT32_MIN : INT64_MIN;
+
+            // Only fold if our dividend is good.
+            return dividend != badDividend;
         }
     }
-    else // (func > VNF_Boundary)
+
+    // Is this a checked operation that will always throw an exception?
+    if (VNFuncIsOverflowArithmetic(func))
     {
-        // OK to fold,
-        // Add checks in the future if we support folding of VNF_ADD_OVF, etc...
+        if (typ == TYP_INT)
+        {
+            int op1 = ConstantValue<int>(arg0VN);
+            int op2 = ConstantValue<int>(arg1VN);
+
+            switch (func)
+            {
+                case VNF_ADD_OVF:
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_SUB_OVF:
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_MUL_OVF:
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_ADD_UN_OVF:
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_SUB_UN_OVF:
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_MUL_UN_OVF:
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Unsigned);
+                default:
+                    assert(!"Unexpected checked operation in VNEvalShouldFold");
+                    return false;
+            }
+        }
+        else if (typ == TYP_LONG)
+        {
+            INT64 op1 = ConstantValue<INT64>(arg0VN);
+            INT64 op2 = ConstantValue<INT64>(arg1VN);
+
+            switch (func)
+            {
+                case VNF_ADD_OVF:
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_SUB_OVF:
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_MUL_OVF:
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_ADD_UN_OVF:
+                    return !CheckedOps::AddOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_SUB_UN_OVF:
+                    return !CheckedOps::SubOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_MUL_UN_OVF:
+                    return !CheckedOps::MulOverflows(op1, op2, CheckedOps::Unsigned);
+                default:
+                    assert(!"Unexpected checked operation in VNEvalShouldFold");
+                    return false;
+            }
+        }
+        else
+        {
+            assert(!"Unexpected type in VNEvalShouldFold for overflow arithmetic");
+            return false;
+        }
     }
 
-    return shouldFold;
+    // Is this a checked cast that will always throw an exception?
+    if (func == VNF_CastOvf)
+    {
+        var_types castToType;
+        bool      fromUnsigned;
+        GetCastOperFromVN(arg1VN, &castToType, &fromUnsigned);
+        var_types castFromType = TypeOfVN(arg0VN);
+
+        switch (castFromType)
+        {
+            case TYP_INT:
+                return !CheckedOps::CastFromIntOverflows(GetConstantInt32(arg0VN), castToType, fromUnsigned);
+            case TYP_LONG:
+                return !CheckedOps::CastFromLongOverflows(GetConstantInt64(arg0VN), castToType, fromUnsigned);
+            case TYP_FLOAT:
+                return !CheckedOps::CastFromFloatOverflows(GetConstantSingle(arg0VN), castToType);
+            case TYP_DOUBLE:
+                return !CheckedOps::CastFromDoubleOverflows(GetConstantDouble(arg0VN), castToType);
+            default:
+                return false;
+        }
+    }
+
+    return true;
 }
 
 //----------------------------------------------------------------------------------------
 //  EvalUsingMathIdentity
-//                   - Attempts to evaluate 'func' by using mathimatical identities
+//                   - Attempts to evaluate 'func' by using mathematical identities
 //                     that can be applied to 'func'.
 //
 // Arguments:
@@ -3252,81 +3371,96 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         return resultVN; // return the unsuccessful value
     }
 
+    // (0 + x) == x
+    // (x + 0) == x
+    // This identity does not apply for floating point (when x == -0.0).
+    auto identityForAddition = [=]() -> ValueNum {
+        if (!varTypeIsFloating(typ))
+        {
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg0VN == ZeroVN)
+            {
+                return arg1VN;
+            }
+            else if (arg1VN == ZeroVN)
+            {
+                return arg0VN;
+            }
+        }
+
+        return NoVN;
+    };
+
+    // (x - 0) == x
+    // (x - x) == 0
+    // This identity does not apply for floating point (when x == -0.0).
+    auto identityForSubtraction = [=]() -> ValueNum {
+        if (!varTypeIsFloating(typ))
+        {
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg1VN == ZeroVN)
+            {
+                return arg0VN;
+            }
+            else if (arg0VN == arg1VN)
+            {
+                return ZeroVN;
+            }
+        }
+
+        return NoVN;
+    };
+
+    // These identities do not apply for floating point.
+    auto identityForMultiplication = [=]() -> ValueNum {
+        if (!varTypeIsFloating(typ))
+        {
+            // (0 * x) == 0
+            // (x * 0) == 0
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg0VN == ZeroVN)
+            {
+                return ZeroVN;
+            }
+            else if (arg1VN == ZeroVN)
+            {
+                return ZeroVN;
+            }
+
+            // (x * 1) == x
+            // (1 * x) == x
+            ValueNum OneVN = VNOneForType(typ);
+            if (arg0VN == OneVN)
+            {
+                return arg1VN;
+            }
+            else if (arg1VN == OneVN)
+            {
+                return arg0VN;
+            }
+        }
+
+        return NoVN;
+    };
+
     // We have ways of evaluating some binary functions.
     if (func < VNF_Boundary)
     {
+        ValueNum ZeroVN;
+        ValueNum OneVN;
+
         switch (genTreeOps(func))
         {
-            ValueNum ZeroVN;
-            ValueNum OneVN;
-
             case GT_ADD:
-                // (0 + x) == x
-                // (x + 0) == x
-                // This identity does not apply for floating point (when x == -0.0)
-                //
-                if (!varTypeIsFloating(typ))
-                {
-                    ZeroVN = VNZeroForType(typ);
-                    if (arg0VN == ZeroVN)
-                    {
-                        resultVN = arg1VN;
-                    }
-                    else if (arg1VN == ZeroVN)
-                    {
-                        resultVN = arg0VN;
-                    }
-                }
+                resultVN = identityForAddition();
                 break;
 
             case GT_SUB:
-                // (x - 0) == x
-                // (x - x) == 0
-                // This identity does not apply for floating point (when x == -0.0)
-                //
-                if (!varTypeIsFloating(typ))
-                {
-                    ZeroVN = VNZeroForType(typ);
-                    if (arg1VN == ZeroVN)
-                    {
-                        resultVN = arg0VN;
-                    }
-                    else if (arg0VN == arg1VN)
-                    {
-                        resultVN = ZeroVN;
-                    }
-                }
+                resultVN = identityForSubtraction();
                 break;
 
             case GT_MUL:
-                // These identities do not apply for floating point
-                //
-                if (!varTypeIsFloating(typ))
-                {
-                    // (0 * x) == 0
-                    // (x * 0) == 0
-                    ZeroVN = VNZeroForType(typ);
-                    if (arg0VN == ZeroVN)
-                    {
-                        resultVN = ZeroVN;
-                    }
-                    else if (arg1VN == ZeroVN)
-                    {
-                        resultVN = ZeroVN;
-                    }
-
-                    // (x * 1) == x
-                    // (1 * x) == x
-                    OneVN = VNOneForType(typ);
-                    if (arg0VN == OneVN)
-                    {
-                        resultVN = arg1VN;
-                    }
-                    else if (arg1VN == OneVN)
-                    {
-                        resultVN = arg0VN;
-                    }
-                }
+                resultVN = identityForMultiplication();
                 break;
 
             case GT_DIV:
@@ -3451,6 +3585,21 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     {
         switch (func)
         {
+            case VNF_ADD_OVF:
+            case VNF_ADD_UN_OVF:
+                resultVN = identityForAddition();
+                break;
+
+            case VNF_SUB_OVF:
+            case VNF_SUB_UN_OVF:
+                resultVN = identityForSubtraction();
+                break;
+
+            case VNF_MUL_OVF:
+            case VNF_MUL_UN_OVF:
+                resultVN = identityForMultiplication();
+                break;
+
             case VNF_LT_UN:
                 // (x < 0) == false
                 // (x < x) == false
@@ -6042,12 +6191,11 @@ void Compiler::fgValueNumber()
         {
             lvMemoryPerSsaData.GetSsaDefByIndex(i)->m_vnPair = noVnp;
         }
-        for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
+        for (BasicBlock* const blk : Blocks())
         {
-            // Now iterate over the block's statements, and their trees.
-            for (Statement* stmt : StatementList(blk->FirstNonPhiDef()))
+            for (Statement* const stmt : blk->NonPhiStatements())
             {
-                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+                for (GenTree* const tree : stmt->TreeList())
                 {
                     tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                 }
@@ -6393,7 +6541,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
-        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+        for (GenTree* const tree : stmt->TreeList())
         {
             fgValueNumberTree(tree);
         }
@@ -7503,9 +7651,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // Now that we've labeled the assignment as a whole, we don't care about exceptions.
             rhsVNPair = vnStore->VNPNormalPair(rhsVNPair);
 
-            // Record the exeception set for this 'tree' in vnExcSet.
-            // First we'll record the exeception set for the rhs and
-            // later we will union in the exeception set for the lhs
+            // Record the exception set for this 'tree' in vnExcSet.
+            // First we'll record the exception set for the rhs and
+            // later we will union in the exception set for the lhs.
             //
             ValueNum vnExcSet;
 
@@ -9077,7 +9225,7 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
-    assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Insure that the resultType is correct
+    assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Ensure that the resultType is correct
 
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
@@ -9157,10 +9305,25 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     // If we have a check for overflow, add the exception information.
     if (hasOverflowCheck)
     {
-        ValueNumPair ovfChk = VNPairForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP, castTypeVNPair);
-        ValueNumPair excSet = VNPExcSetSingleton(ovfChk);
-        excSet              = VNPExcSetUnion(excSet, castArgxVNP);
-        resultVNP           = VNPWithExc(castNormRes, excSet);
+        ValueNumPair excSet = ValueNumStore::VNPForEmptyExcSet();
+
+        ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+        for (ValueNumKind vnKind : vnKinds)
+        {
+            // Do not add exceptions for folded casts.
+            // We only fold checked casts that do not overflow.
+            if (IsVNConstant(castNormRes.Get(vnKind)))
+            {
+                continue;
+            }
+
+            ValueNum ovfChk =
+                VNForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP.Get(vnKind), castTypeVNPair.Get(vnKind));
+            excSet.Set(vnKind, VNExcSetSingleton(ovfChk));
+        }
+
+        excSet    = VNPExcSetUnion(excSet, castArgxVNP);
+        resultVNP = VNPWithExc(castNormRes, excSet);
     }
 
     return resultVNP;
@@ -9740,8 +9903,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         //
         switch (helpFunc)
         {
+            // This helper always throws the VNF_OverflowExc exception.
             case CORINFO_HELP_OVERFLOW:
-                // This helper always throws the VNF_OverflowExc exception
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNPForVoid()));
                 break;
@@ -10115,7 +10278,7 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
 //
 // Return Value:
 //               - The tree's gtVNPair is updated to include the VNF_OverflowExc
-//                 exception set.
+//                 exception set, except for constant VNs and those produced from identities.
 //
 void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
 {
@@ -10123,31 +10286,53 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
 
     // We should only be dealing with an Overflow checking ALU operation.
     VNFunc vnf = GetVNFuncForNode(tree);
-    assert((vnf >= VNF_ADD_OVF) && (vnf <= VNF_MUL_UN_OVF));
+    assert(ValueNumStore::VNFuncIsOverflowArithmetic(vnf));
 
-    // Unpack, Norm,Exc for the tree's VN
-    //
-    ValueNumPair vnpTreeNorm;
-    ValueNumPair vnpTreeExc;
+    ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+    for (ValueNumKind vnKind : vnKinds)
+    {
+        ValueNum vn = tree->GetVN(vnKind);
 
-    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
+        // Unpack Norm, Exc for the current VN.
+        ValueNum vnNorm;
+        ValueNum vnExcSet;
+        vnStore->VNUnpackExc(vn, &vnNorm, &vnExcSet);
+
+        // Don't add exceptions if the normal VN represents a constant.
+        // We only fold to constant VNs for operations that provably cannot overflow.
+        if (vnStore->IsVNConstant(vnNorm))
+        {
+            continue;
+        }
+
+        // Don't add exceptions if the tree's normal VN has been derived from an identity.
+        // This takes care of x + 0 == x, 0 + x == x, x - 0 == x, x * 1 == x, 1 * x == x.
+        // The x - x == 0 and x * 0 == 0, 0 * x == 0 cases are handled by the "IsVNConstant" check above.
+        if ((vnNorm == vnStore->VNNormalValue(tree->gtGetOp1()->GetVN(vnKind))) ||
+            (vnNorm == vnStore->VNNormalValue(tree->gtGetOp2()->GetVN(vnKind))))
+        {
+            // TODO-Review: would it be acceptable to make ValueNumStore::EvalUsingMathIdentity
+            // public just to assert here?
+            continue;
+        }
 
 #ifdef DEBUG
-    // The normal value number function should be the same overflow checking ALU operation as 'vnf'
-    VNFuncApp treeNormFuncApp;
-    assert(vnStore->GetVNFunc(vnpTreeNorm.GetLiberal(), &treeNormFuncApp) && (treeNormFuncApp.m_func == vnf));
+        // The normal value number function should now be the same overflow checking ALU operation as 'vnf'.
+        VNFuncApp normFuncApp;
+        assert(vnStore->GetVNFunc(vnNorm, &normFuncApp) && (normFuncApp.m_func == vnf));
 #endif // DEBUG
 
-    // Overflow-checking operations add an overflow exception
-    // The normal result is used as the input argument for the OverflowExc
-    ValueNumPair overflowExcSet =
-        vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnpTreeNorm));
+        // Overflow-checking operations add an overflow exception.
+        // The normal result is used as the input argument for the OverflowExc.
+        ValueNum vnOverflowExc = vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_OverflowExc, vnNorm));
 
-    // Combine the new Overflow exception with the original exception set of tree
-    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, overflowExcSet);
+        // Combine the new Overflow exception with the original exception set.
+        vnExcSet = vnStore->VNExcSetUnion(vnExcSet, vnOverflowExc);
 
-    // Updated VN for tree, it now includes Overflow exception
-    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
+        // Update the VN to include the Overflow exception.
+        ValueNum newVN = vnStore->VNWithExc(vnNorm, vnExcSet);
+        tree->SetVN(vnKind, newVN);
+    }
 }
 
 //--------------------------------------------------------------------------------

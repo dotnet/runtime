@@ -4,7 +4,7 @@
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <TargetFrameworks>netstandard2.0;netstandard1.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
