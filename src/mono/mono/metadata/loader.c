@@ -2036,7 +2036,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	idx = mono_metadata_token_index (method->token);
 
 #ifdef ENABLE_METADATA_UPDATE
-        if (G_UNLIKELY (&img->has_updates))
+        if (G_UNLIKELY (img->has_updates))
                 loc = mono_metadata_update_get_updated_method_rva (img, idx);
 #endif
 
