@@ -10,7 +10,8 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private bool? _canSeek;
+        // not using bool? as it's not thread safe
+        private NullableBool _canSeek = NullableBool.Undefined;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -29,7 +30,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public bool IsAsync { get; private set; }
 
-        internal bool CanSeek => !IsClosed && (_canSeek ??= Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+        internal bool CanSeek => !IsClosed && GetCanSeek();
 
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
         /// <param name="path">The path to the file.</param>
@@ -83,7 +84,7 @@ namespace Microsoft.Win32.SafeHandles
                 // we take advantage of the information provided by the fstat syscall
                 // and for regular files (most common case)
                 // avoid one extra sys call for determining whether file can be seeked
-                handle._canSeek = true;
+                handle._canSeek = NullableBool.True;
                 Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
             }
 
@@ -301,6 +302,23 @@ namespace Microsoft.Win32.SafeHandles
                         preallocationSize));
                 }
             }
+        }
+
+        private bool GetCanSeek()
+        {
+            if (_canSeek == NullableBool.Undefined)
+            {
+                _canSeek = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0 ? NullableBool.True : NullableBool.False;
+            }
+
+            return _canSeek == NullableBool.True;
+        }
+
+        private enum NullableBool
+        {
+            Undefined = 0,
+            False = -1,
+            True = 1
         }
     }
 }
