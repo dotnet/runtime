@@ -173,7 +173,6 @@ namespace System.Diagnostics.Tracing
         private void DisableTimer()
         {
             _pollingIntervalInMilliseconds = 0;
-            _nextPollingTimeStamp = DateTime.MaxValue;
             s_counterGroupEnabledList?.Remove(this);
         }
 
