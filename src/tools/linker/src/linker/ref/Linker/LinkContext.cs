@@ -28,5 +28,7 @@ namespace Mono.Linker
 		public MethodDefinition TryResolve (MethodReference methodReference) { throw null; }
 		public FieldDefinition TryResolve (FieldReference fieldReference) { throw null; }
 		public TypeDefinition TryResolve (TypeReference typeReference) { throw null; }
+
+		public AssemblyDefinition Resolve (AssemblyNameReference nameReference) { throw null; }
 	}
 }
