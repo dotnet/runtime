@@ -158,7 +158,7 @@ namespace System.Net.Sockets
                 int oldState = Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
                 if (oldState == (int)State.Cancelled)
                 {
-                    TraceWithContext(context, $"Exit, Previously cancelled");
+                    TraceWithContext(context, "Exit, Previously canceled");
                     return OperationResult.Cancelled;
                 }
 
