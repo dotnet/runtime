@@ -285,6 +285,7 @@ namespace System.Tests
             yield return new object[] { Half.NegativeInfinity, Half.MinValue, -1 };
             yield return new object[] { UInt16BitsToHalf(0x8000), Half.NegativeInfinity, 1 }; // Negative zero
             yield return new object[] { Half.NegativeInfinity, UInt16BitsToHalf(0x8000), -1 }; // Negative zero
+            yield return new object[] { Half.MinValue, Half.MinValue, 0 };
         }
 
         [Theory]
