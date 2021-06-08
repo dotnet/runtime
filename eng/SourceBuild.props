@@ -6,7 +6,7 @@
 
   <!-- Set up the dotnet/runtime source-build command. -->
   <PropertyGroup>
-    <BaseInnerSourceBuildCommand>$(CurrentRepoSourceBuildSourceDir)eng\build-source-build.sh</BaseInnerSourceBuildCommand>
+    <BaseInnerSourceBuildCommand>./build.sh</BaseInnerSourceBuildCommand>
 
     <SourceBuildPortable>true</SourceBuildPortable>
     <SourceBuildPortable Condition="'$(SourceBuildNonPortable)' == 'true'">false</SourceBuildPortable>
@@ -22,54 +22,26 @@
 
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
 
-    <!-- Common args -->
     <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetRidPlatform)</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) --configuration Release</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeConfiguration=Release</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:MicrosoftNetFrameworkReferenceAssembliesVersion=1.0.0</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) --binaryLog</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) --ci</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) --runtimeConfiguration Release</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --runtimeConfiguration $(Configuration)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
-
-    <!-- CoreCLR args -->
-    <InnerBuildArgs>$(InnerBuildArgs) --coreclr-args</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) -cmakeargs</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:MicrosoftNetFrameworkReferenceAssembliesVersion=1.0.0</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:ContinuousIntegrationBuild=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
-
-    <!-- Libraries args -->
-    <InnerBuildArgs>$(InnerBuildArgs) --libraries-args</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) --restore --build --pack</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:SkipTests=true</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:ConfigurationGroup=Release</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:ConfigurationGroup=$(Configuration)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllPackages=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllOOBPackages=true</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
-
-    <!-- Installer args -->
-    <InnerBuildArgs>$(InnerBuildArgs) --installer-args</InnerBuildArgs>
-    <!-- Restore and build?????????? -->
-    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) -cmakeargs</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllPackages=true</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:RestoreAllBuildRids=false</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:OutputRid=$(TargetRid)</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
 
-    <InnerBuildArgs>$(InnerBuildArgs) --additional-args</InnerBuildArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -80,6 +52,7 @@
     <InnerBuildEnv Include="DeterministicSourcePaths=false" />
   </ItemGroup>
 
+  <!-- Remove once patches are integrated into the repo -->
   <Target Name="ApplySourceBuildPatchFiles"
           AfterTargets="PrepareInnerSourceBuildRepoRoot"
           BeforeTargets="RunInnerSourceBuildCommand">

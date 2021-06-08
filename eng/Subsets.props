@@ -25,6 +25,7 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">clr+libs+host+packs</DefaultSubsets>
     <!-- On Windows mono is supported for x86/x64 only -->
     <DefaultSubsets Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64'">clr+libs+host+packs</DefaultSubsets>
   </PropertyGroup>
@@ -43,13 +44,14 @@
 
   <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages+clr.jit+clr.alljits</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
-     
+
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
@@ -58,9 +60,11 @@
     <DefaultHostSubsets>host.native+host.pkg+host.tools+host.tests</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono'"></DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">host.native</DefaultHostSubsets>
+    <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">host.native+host.tools</DefaultHostSubsets>
 
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
+    <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">packs.product+packs.installers</DefaultPacksSubsets>
   </PropertyGroup>
 
   <PropertyGroup>

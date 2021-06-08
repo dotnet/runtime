@@ -52,6 +52,10 @@
                                                   '$(DisableImplicitFrameworkReferences)' != 'true' and
                                                   '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                   ('$(IsReferenceAssembly)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
+
+    <!-- Where should the ILAsmToolPath get set?  This is too late as the Microsoft.NET.Sdk.IL.targets get evaluated first and therefore sets the CoreCompileDependsOn to restore the package. -->
+    <!-- If coreclr was built, use the ilasm and ildasm it produced. -->
+    <!-- <ILAsmToolPath Condition="'$(ILAsmToolPath)' == '' and Exists('$(CoreCLRArtifactsPath)ilasm') and Exists('$(CoreCLRArtifactsPath)ildasm')">$(CoreCLRArtifactsPath)</ILAsmToolPath> -->
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
