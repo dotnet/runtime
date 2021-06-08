@@ -3,10 +3,13 @@
 
 using System;
 
-namespace MockHostTypes
+namespace NoSpecialEntryPointPatternExits
 {
-    public class Host : IHost
+    public class Program
     {
-        public IServiceProvider Services { get; } = new ServiceProvider();
+        public static void Main(string[] args)
+        {
+            
+        }
     }
 }

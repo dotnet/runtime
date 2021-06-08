@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Hosting;
 
-namespace MockHostTypes
-{
-    public interface IHost
-    {
-        IServiceProvider Services { get; }
-    }
-}
+var host = new HostBuilder().Build();
