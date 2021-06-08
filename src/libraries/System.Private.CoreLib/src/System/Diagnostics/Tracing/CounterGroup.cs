@@ -253,7 +253,7 @@ namespace System.Diagnostics.Tracing
                     _timeStampSinceCollectionStarted = now;
                     do
                     {
-                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
+                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, (_pollingIntervalInMilliseconds > 0) ? _pollingIntervalInMilliseconds : 1);
                     } while (_nextPollingTimeStamp <= now);
                 }
             }
