@@ -1824,6 +1824,7 @@ ep_rt_diagnostics_command_line_get (void)
 }
 
 static
+inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
@@ -1831,6 +1832,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 }
 
 static
+inline
 const ep_char8_t *
 ep_rt_runtime_version_get_utf8 (void)
 {

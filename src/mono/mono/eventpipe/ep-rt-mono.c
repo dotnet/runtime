@@ -43,9 +43,6 @@ char *_ep_rt_mono_os_cmd_line = NULL;
 mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 char *_ep_rt_mono_managed_cmd_line = NULL;
 
-// Managed Entrypoint Assembly Path
-mono_lazy_init_t _ep_rt_mono_managed_entrypoint_assembly_path_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-ep_char16_t *_ep_rt_mono_managed_entrypoint_assembly_path = NULL;
 
 // Sample profiler.
 static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
