@@ -88,6 +88,8 @@
         <![CDATA[
 
 $(_XunitProlog)
+$(_XunitPrologMobile)
+$(_XunitPrologCollectionDefiniton)
 @(AllXUnitFacts)
 $(_XunitEpilog)
 
@@ -181,6 +183,8 @@ $(_XunitEpilog)
       <Category Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
+      <MobilePlatform Condition=" '$(TargetOS)' == 'Android' ">android</MobilePlatform>
+      <MobilePlatform Condition=" '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator' ">apple</MobilePlatform>
     </PropertyGroup>
     <PropertyGroup>
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' ">
@@ -197,16 +201,17 @@ using System.IO%3B
 
 namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
 {
-        internal class _Global
+        public class _Global : IDisposable
         {
-            internal static bool runningInWindows%3B
-            internal static string reportBase%3B
-            internal static string testBinaryBase%3B
-            internal static string coreRoot%3B
-            internal static string category%3B
-            internal static string helixUploadRoot%3B
+            public bool runningInWindows%3B
+            public string reportBase%3B
+            public string testBinaryBase%3B
+            public string coreRoot%3B
+            public string category%3B
+            public string helixUploadRoot%3B
+            public MobileAppHandler handler = new MobileAppHandler()%3B
 
-            static _Global()
+            public _Global()
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
@@ -218,7 +223,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 }
 
                 if (String.IsNullOrEmpty(reportBase)) {
-                    reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
+                    reportBase = System.IO.Path.Combine(testBinaryBase, %22Reports%22)%3B
                 }
                 else
                 {
@@ -233,12 +238,36 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 string operatingSystem = System.Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
-            }
-        }
-
 ]]>
       </_XunitProlog>
+      <_XunitPrologMobile Condition=" '$(TargetOS)' != 'Android' ">
+        <![CDATA[
+            }
+]]>
+      </_XunitPrologMobile>
+      <_XunitPrologMobile Condition=" '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator'">
+        <![CDATA[
+                handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+            }
 
+            public void Dispose()
+            {
+                handler.UninstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+            }
+        }
+]]>
+      </_XunitPrologMobile>
+      <_XunitPrologCollectionDefiniton>
+        <![CDATA[
+        [CollectionDefinition("Runtime test collection")]
+        public class RuntimeTestCollection : ICollectionFixture<_Global>
+        {
+            // This class has no code, and is never created. Its purpose is simply
+            // to be the place to apply [CollectionDefinition] and all the
+            // ICollectionFixture<> interfaces.
+        }
+]]>
+      </_XunitPrologCollectionDefiniton>
       <_XunitEpilog Condition=" '$(_XunitEpilog)'=='' ">
       <![CDATA[
 }
@@ -274,13 +303,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         <XUnitFact >
           <![CDATA[
 
+        [Collection("Runtime test collection")]
         public class %(AllCommands.ClassName)
         {
             private readonly ITestOutputHelper output%3B
+            _Global globalVar%3B
 
-            public %(AllCommands.ClassName)(ITestOutputHelper output)
+            public %(AllCommands.ClassName)(ITestOutputHelper output, _Global globalVar)
             {
                 this.output = output%3B
+                this.globalVar = globalVar%3B
             }
 
             [Fact(DisplayName=@"%(AllCommands.DisplayName)")]
@@ -298,19 +330,19 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 {
                   CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
                   string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)$([System.IO.Path]::DirectorySeparatorChar)",''))"%3B
-                  outputFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
-                  errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
-                  testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+                  outputFile = System.IO.Path.GetFullPath(globalVar.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
+                  errorFile = System.IO.Path.GetFullPath(globalVar.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
+                  testExecutable = System.IO.Path.GetFullPath(globalVar.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
                   $(TestExecutableReplacement)
                   outputDir = System.IO.Path.GetDirectoryName(outputFile)%3B
 
-                  if (!_Global.runningInWindows) {
+                  if (!globalVar.runningInWindows) {
                       testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
                   }
 
-                  System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
+                  System.IO.Directory.CreateDirectory(globalVar.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase, outputDir)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, globalVar.category, globalVar.testBinaryBase, outputDir)%3B
                 }
                 catch (Exception ex)
                 {
@@ -351,7 +383,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     }
 
                     testOutput.Add("To run the test:")%3B
-                    testOutput.Add("> set CORE_ROOT=" + _Global.coreRoot)%3B
+                    testOutput.Add("> set CORE_ROOT=" + globalVar.coreRoot)%3B
                     testOutput.Add("> " + testExecutable)%3B
 
                     var unicodeControlCharsRegex = new Regex("%5C%5Cp{C}+")%3B
@@ -372,7 +404,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     // Add Android app running log to testOutput
                     if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                     {
-                        string androidLogFile = System.IO.Path.Combine(outputDir, "adb-logcat-net.dot." + _Global.category + "-net.dot.MonoRunner.log")%3B
+                        string androidLogFile = System.IO.Path.Combine(outputDir, "adb-logcat-net.dot." + globalVar.category + "-net.dot.MonoRunner.log")%3B
                         if(File.Exists(androidLogFile))
                         {
                             testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
