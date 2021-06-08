@@ -28,6 +28,9 @@
 
 #include <mono/utils/mono-compiler.h>
 
+#define ALLOW_METHOD_ADD
+
+
 static void
 hot_reload_init (void);
 
@@ -1025,6 +1028,15 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 	return TRUE;
 }
 
+enum MonoEnCFuncCode {
+	ENC_FUNC_DEFAULT = 0,
+	ENC_FUNC_ADD_METHOD = 1,
+	ENC_FUNC_ADD_FIELD = 2,
+	ENC_FUNC_ADD_PARAM = 3,
+	ENC_FUNC_ADD_PROPERTY = 4,
+	ENC_FUNC_ADD_EVENT = 5,
+};
+
 static const char*
 funccode_to_str (int func_code)
 {
@@ -1069,17 +1081,19 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), func_code);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x (\"%s\")\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), func_code, funccode_to_str (func_code));
 
 
 		if (token_table != MONO_TABLE_METHOD)
 			continue;
 
+#ifndef ALLOW_METHOD_ADD
 		if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
 			unsupported_edits = TRUE;
 		}
+#endif
 
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
 	}
@@ -1206,6 +1220,28 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			} else
 				break; /* added a row. ok */
 		}
+		case MONO_TABLE_TYPEDEF: {
+#ifdef ALLOW_METHOD_ADD
+			/* FIXME: wrong for cumulative updates - need to look at DeltaInfo:count.prev_gen_rows */
+			gboolean new_class = token_index > table_info_get_rows (&image_base->tables [token_table]);
+			/* only allow adding methods to existing classes for now */
+			if (!new_class && func_code == ENC_FUNC_ADD_METHOD) {
+				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
+				g_assert (i + 1 < rows);
+				guint32 next_cols [MONO_ENCLOG_SIZE];
+				mono_metadata_decode_row (table_enclog, i + 1, next_cols, MONO_ENCLOG_SIZE);
+				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
+				int next_token = next_cols [MONO_ENCLOG_TOKEN];
+				int next_table = mono_metadata_token_table (next_token);
+				int next_index = mono_metadata_token_index (next_token);
+				g_assert (next_table == MONO_TABLE_METHOD);
+				g_assert (next_index > table_info_get_rows (&image_base->tables [next_table]));
+				i++; /* skip the next record */
+				continue;
+			}
+#endif
+			/* fallthru */
+		}
 		default:
 			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
 			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
@@ -1223,7 +1259,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		 * the preceeding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
 		 */
 		switch (func_code) {
-			case 0: /* default */
+			case ENC_FUNC_DEFAULT: /* default */
 				break;
 			default:
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x FunCode %d (%s) not supported (token=0x%08x)", i, log_token, func_code, funccode_to_str (func_code), log_token);
@@ -1302,6 +1338,8 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	 * have it in writable memory (and not mmap-ed pages), so we can rewrite the table values.
 	 */
 
+	MonoClass *add_method_klass = NULL;
+
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
@@ -1317,11 +1355,25 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		/* TODO: See CMiniMdRW::ApplyDelta for how to drive this.
 		 */
 		switch (func_code) {
-			case 0: /* default */
-				break;
-			default:
-				g_error ("EnC: unsupported FuncCode, should be caught by pass1");
-				break;
+		case ENC_FUNC_DEFAULT: /* default */
+			break;
+#ifdef ALLOW_METHOD_ADD
+		case ENC_FUNC_ADD_METHOD: {
+			g_assert (token_table == MONO_TABLE_TYPEDEF);
+			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
+			/* should've been caught by pass1 if we're adding a new method to a new class. */
+			MonoClass *klass = mono_class_get_checked (image_base, log_token, error);
+			if (!is_ok (error)) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", log_token, mono_error_get_message (error));
+				return FALSE;
+			}
+			add_method_klass = klass;
+			break;
+		}
+#endif
+		default:
+			g_error ("EnC: unsupported FuncCode, should be caught by pass1");
+			break;
 		}
 
 		switch (token_table) {
@@ -1361,7 +1413,10 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		}
 		case MONO_TABLE_METHOD: {
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
-				g_error ("EnC: new method added, should be caught by pass1");
+				if (!add_method_klass)
+					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
+				g_assert (add_method_klass);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", token_index, m_class_get_name_space (add_method_klass), m_class_get_name (add_method_klass));
 			}
 
 			if (!base_info->method_table_update)
@@ -1382,6 +1437,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
+			add_method_klass = NULL;
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
