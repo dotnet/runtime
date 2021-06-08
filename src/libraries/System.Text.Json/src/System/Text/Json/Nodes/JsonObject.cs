@@ -125,7 +125,7 @@ namespace System.Text.Json.Nodes
         {
             if (child != null)
             {
-                Initialize();
+                InitializeIfRequired();
                 Debug.Assert(_dictionary != null);
                 string propertyName = _dictionary.FindValue(child)!.Value.Key;
                 if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
@@ -146,7 +146,7 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
             JsonNode? existing = _dictionary.SetValue(propertyName, value, () => value?.AssignParent(this));
             DetachParent(existing);
@@ -154,7 +154,7 @@ namespace System.Text.Json.Nodes
 
         private void DetachParent(JsonNode? item)
         {
-            Initialize();
+            InitializeIfRequired();
             Debug.Assert(_dictionary != null);
 
             if (item != null)
