@@ -1189,10 +1189,10 @@ enum bookkeeping_element
 {
     card_table_element = 0,
     brick_table_element = 1,
-    card_bundle_table_element= 2,
-    software_write_watch_table_element= 3,
-    seg_mapping_table_element= 4,
-    mark_array_element= 5,
+    card_bundle_table_element = 2,
+    software_write_watch_table_element = 3,
+    seg_mapping_table_element = 4,
+    mark_array_element = 5,
     total_bookkeeping_elements = 6
 };
 
@@ -1573,11 +1573,14 @@ public:
     void get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1]);
 
     static
-    void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t card_table_element_sizes[total_bookkeeping_elements]);
+    void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
 
 #ifdef USE_REGIONS
     static
-    bool inplace_commit_card_table(uint8_t* from, uint8_t* to);
+    bool on_used_changed (uint8_t* left);
+
+    static
+    bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
 #endif //USE_REGIONS
 
     static
@@ -4987,6 +4990,17 @@ public:
 protected:
     PER_HEAP
     void update_collection_counts ();
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    uint8_t* bookkeeping_data;
+
+    PER_HEAP_ISOLATED
+    uint8_t* bookkeeping_data_committed;
+
+    PER_HEAP_ISOLATED
+    size_t bookkeeping_sizes[total_bookkeeping_elements];
+#endif //USE_REGIONS
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
@@ -5637,7 +5651,7 @@ enum allocate_direction
     allocate_backward = -1,
 };
 
-typedef bool (*region_allocator_callback_fn)(uint8_t*, uint8_t*);
+typedef bool (*region_allocator_callback_fn)(uint8_t*);
 
 // The big space we reserve for regions is divided into units of region_alignment.
 // 
@@ -5751,6 +5765,8 @@ public:
         return (region_map_left_end - region_map_left_start);
     }
     void move_highest_free_regions (int64_t n, bool small_region_p, region_free_list to_free_list[count_free_region_kinds]);
+
+    uint8_t* get_start() { return global_region_start; }
 
     // global_region_left_used can be modified concurrently by allocate and delete
     // usage of this function must make sure either it is under the region lock or we
