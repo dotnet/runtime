@@ -53,8 +53,6 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllPackages=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllOOBPackages=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
-      <!-- Work around issue where libs build does not consume coreclr ILAsm build output: TODO Log issue -->
-      <InnerBuildArgs>$(InnerBuildArgs) /p:ILAsmToolPath=$([MSBuild]::NormalizeDirectory('$(CurrentRepoSourceBuildArtifactsDir)', 'bin', 'coreclr', 'Linux.$(TargetArchitecture).$(Configuration)'))</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
