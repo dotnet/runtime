@@ -19,7 +19,7 @@ index 0548b4468af..7460e44616b 100644
 --- a/src/libraries/Directory.Build.targets
 +++ b/src/libraries/Directory.Build.targets
 @@ -230,7 +230,7 @@
-   </Choose>
+   </ItemGroup>
  
    <PropertyGroup>
 -    <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
