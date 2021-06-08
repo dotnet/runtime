@@ -795,7 +795,8 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                  TypeHandle *ppTH, /*=NULL*/
                                  PCCOR_SIGNATURE *ppOwnerTypeSpecWithVars, /*=NULL*/
                                  PCCOR_SIGNATURE *ppMethodSpecWithVars, /*=NULL*/
-                                 PCCOR_SIGNATURE *ppAfterSig /*=NULL*/)
+                                 PCCOR_SIGNATURE *ppAfterSig /*=NULL*/,
+                                 BOOL actualOwnerRequired /*=FALSE*/)
 {
     STANDARD_VM_CONTRACT;
 
@@ -867,7 +868,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                 MethodDesc * pMD = NULL;
                 FieldDesc * pFD = NULL;
 
-                MemberLoader::GetDescFromMemberRef(pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMD, &pFD, NULL, FALSE, &th);
+                MemberLoader::GetDescFromMemberRef(pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMD, &pFD, NULL, actualOwnerRequired, &th);
                 _ASSERTE(pMD != NULL);
 
                 thOwner = th;
@@ -955,7 +956,8 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pMethod, thOwner.GetMethodTable(),
                                                             isUnboxingStub,
                                                             inst,
-                                                            !(isInstantiatingStub || isUnboxingStub));
+                                                            !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
+                                                            actualOwnerRequired);
 
     g_IBCLogger.LogMethodDescAccess(pMethod);
 

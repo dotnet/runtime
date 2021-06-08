@@ -180,7 +180,8 @@ public:
         TypeHandle          *ppTH = NULL,
         PCCOR_SIGNATURE     *ppOwnerTypeSpecWithVars = NULL,
         PCCOR_SIGNATURE     *ppMethodSpecWithVars = NULL,
-        PCCOR_SIGNATURE     *ppAfterSig = NULL);
+        PCCOR_SIGNATURE     *ppAfterSig = NULL,
+        BOOL                actualOwnerRequired = FALSE);
 
     static FieldDesc *DecodeField(
         Module              *referencingModule,
