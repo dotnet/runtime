@@ -462,15 +462,18 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
                 {
                     CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
 
-                    OSStatus status = 0;
-                    // look for first failure to keep it simple. Normally, there will be exactly one.
-                    for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
+                    if (statusCodes != NULL)
                     {
-                        CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
-                        if (status != noErr)
+                        OSStatus status = 0;
+                        // look for first failure to keep it simple. Normally, there will be exactly one.
+                        for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
                         {
-                            *pOSStatus = status;
-                            break;
+                            CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
+                            if (status != noErr)
+                            {
+                                *pOSStatus = status;
+                                break;
+                            }
                         }
                     }
                 }

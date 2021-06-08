@@ -279,6 +279,7 @@ CONFIG_INTEGER(EnableSSE41, W("EnableSSE41"), 1)             // Enable SSE41
 CONFIG_INTEGER(EnableSSE42, W("EnableSSE42"), 1)             // Enable SSE42
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1)                 // Enable AVX
 CONFIG_INTEGER(EnableAVX2, W("EnableAVX2"), 1)               // Enable AVX2
+CONFIG_INTEGER(EnableAVXVNNI, W("EnableAVXVNNI"), 1)         // Enable AVXVNNI
 CONFIG_INTEGER(EnableFMA, W("EnableFMA"), 1)                 // Enable FMA
 CONFIG_INTEGER(EnableAES, W("EnableAES"), 1)                 // Enable AES
 CONFIG_INTEGER(EnableBMI1, W("EnableBMI1"), 1)               // Enable BMI1
@@ -469,6 +470,7 @@ CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtual
 CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 4)
 #if defined(DEBUG)
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
+CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.

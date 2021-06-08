@@ -1,0 +1,4 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)targetingpacks.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)packageTest.targets" />
+</Project>

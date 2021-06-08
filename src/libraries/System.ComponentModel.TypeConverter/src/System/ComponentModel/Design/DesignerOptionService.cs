@@ -215,7 +215,8 @@ namespace System.ComponentModel.Design
                             propList.AddRange(child.Properties);
                         }
 
-                        PropertyDescriptor[] propArray = (PropertyDescriptor[])propList.ToArray(typeof(PropertyDescriptor));
+                        var propArray = new PropertyDescriptor[propList.Count];
+                        propList.CopyTo(propArray);
                         _properties = new PropertyDescriptorCollection(propArray, true);
                     }
 

@@ -47,16 +47,6 @@
     <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) &amp;&amp; $(RunScriptCommand)</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
-    <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys>false</UseSystemResourceKeys>
-    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-
-    <!-- we want to default to what Blazor has, except if we are building in Debug config -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
-  </PropertyGroup>
-
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
