@@ -610,7 +610,8 @@ namespace System.IO.Strategies
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
-            Debug.Assert(!fileHandle.IsClosed && fileHandle.CanSeek);
+            Debug.Assert(!fileHandle.IsInvalid);
+            Debug.Assert(fileHandle.CanSeek);
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = FileStreamHelpers.CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin), _path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
