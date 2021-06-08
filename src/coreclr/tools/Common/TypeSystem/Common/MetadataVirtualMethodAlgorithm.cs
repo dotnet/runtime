@@ -459,6 +459,11 @@ namespace Internal.TypeSystem
 
             foreach (MethodDesc memberMethod in unificationGroup.Members)
             {
+                // If a method is both overriden via MethodImpl and name/sig, we don't remove it from the unification list
+                // as the local MethodImpl takes priority over the name/sig match, and prevents the slot disunificaiton
+                if (FindSlotDefiningMethodForVirtualMethod(memberMethod) == FindSlotDefiningMethodForVirtualMethod(originalDefiningMethod))
+                    continue;
+
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
