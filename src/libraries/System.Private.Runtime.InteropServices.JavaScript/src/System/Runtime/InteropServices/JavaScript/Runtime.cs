@@ -623,6 +623,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
+            if (task == null)
+                throw new ArgumentNullException(nameof(task));
+            if (continuationObj == null)
+                throw new ArgumentNullException(nameof(continuationObj));
+
             if (task.IsCompleted)
                 Complete();
             else

@@ -357,7 +357,7 @@ mono_determine_physical_ram_available_size (void)
 #endif
 
 	if (page_size == -1 || num_pages == -1) {
-		g_warning ("Your operating system's sysconf (3) function doesn't correctly report physical memory size!");
+		// g_warning ("Your operating system's sysconf (3) function doesn't correctly report physical memory size!");
 		return _DEFAULT_MEM_SIZE;
 	}
 
