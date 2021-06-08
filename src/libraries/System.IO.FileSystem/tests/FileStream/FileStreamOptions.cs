@@ -9,14 +9,6 @@ namespace System.IO.Tests
 {
     public class FileStream_FileStreamOptions : FileSystemTest
     {
-        private static IEnumerable<FileMode> WritingModes()
-        {
-            yield return FileMode.Create;
-            yield return FileMode.CreateNew;
-            yield return FileMode.Append;
-            yield return FileMode.Truncate;
-        }
-
         [Fact]
         public void NullOptionsThrows()
         {
