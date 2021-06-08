@@ -166,6 +166,7 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = new ModuleTokenResolver(compilationModuleGroup, TypeSystemContext);
+            ((ReadyToRunCompilationModuleGroupBase)compilationModuleGroup).AssociateTokenResolver(Resolver);
             Header = new GlobalHeaderNode(Target, flags);
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);

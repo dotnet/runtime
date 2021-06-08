@@ -1234,8 +1234,13 @@ namespace Internal.JitInterface
                 }
             }
 
-            ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
-            _methodCodeNode.Fixups.Add(virtualResolutionNode);
+            // Testing has not shown that concerns about virtual matching are significant
+            // Only generate verification for builds with the stress mode enabled
+            if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+            {
+                ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
+                _methodCodeNode.Fixups.Add(virtualResolutionNode);
+            }
 #else
             info->resolvedTokenDevirtualizedMethod = default(CORINFO_RESOLVED_TOKEN);
             info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);

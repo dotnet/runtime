@@ -23,9 +23,11 @@ namespace ILCompiler
         private readonly bool _isInputBubble;
         private readonly ConcurrentDictionary<TypeDesc, CompilationUnitSet> _layoutCompilationUnits = new ConcurrentDictionary<TypeDesc, CompilationUnitSet>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeReferenceCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
         private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
+        private ModuleTokenResolver _tokenResolver = null;
 
         public ReadyToRunCompilationModuleGroupBase(
             TypeSystemContext context,
@@ -45,6 +47,12 @@ namespace ILCompiler
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
+        }
+
+        public void AssociateTokenResolver(ModuleTokenResolver tokenResolver)
+        {
+            Debug.Assert(_tokenResolver == null);
+            _tokenResolver = tokenResolver;
         }
 
         public sealed override bool ContainsType(TypeDesc type)
@@ -292,6 +300,11 @@ namespace ILCompiler
                 _versionsWithTypeCache.GetOrAdd(typeDesc, ComputeTypeVersionsWithCode);
         }
 
+        public sealed override bool VersionsWithTypeReference(TypeDesc typeDesc)
+        {
+            return _versionsWithTypeReferenceCache.GetOrAdd(typeDesc, ComputeTypeReferenceVersionsWithCode);
+        }
+
 
         public sealed override bool VersionsWithMethodBody(MethodDesc method)
         {
@@ -397,6 +410,93 @@ namespace ILCompiler
                 return true;
 
             return ComputeInstantiationVersionsWithCode(type.Instantiation, type);
+        }
+
+        private bool ComputeTypeReferenceVersionsWithCode(TypeDesc type)
+        {
+            switch(type.Category)
+            {
+                case TypeFlags.Void:
+                case TypeFlags.Boolean:
+                case TypeFlags.Char:
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    return true;
+            }
+
+            if (type.IsObject || type.IsString)
+                return true;
+
+            if (VersionsWithType(type))
+                return true;
+
+            if (type.IsParameterizedType)
+            {
+                return VersionsWithTypeReference(type.GetParameterType());
+            }
+
+            if (type.IsFunctionPointer)
+            {
+                MethodSignature ptrSignature = ((FunctionPointerType)type).Signature;
+
+                if (!VersionsWithTypeReference(ptrSignature.ReturnType))
+                    return false;
+
+                for (int i = 0; i < ptrSignature.Length; i++)
+                {
+                    if (!VersionsWithTypeReference(ptrSignature[i]))
+                        return false;
+                }
+                if (ptrSignature.HasEmbeddedSignatureData)
+                {
+                    foreach (var embeddedSigData in ptrSignature.GetEmbeddedSignatureData())
+                    {
+                        if (embeddedSigData.type != null)
+                        {
+                            if (!VersionsWithTypeReference(embeddedSigData.type))
+                                return false;
+                        }
+                    }
+                }
+            }
+
+            if (type is EcmaType ecmaType)
+            {
+                return !_tokenResolver.GetModuleTokenForType(ecmaType, false).IsNull;
+            }
+
+            if (type.GetTypeDefinition() == type)
+            {
+                // Must not be an ECMA type, which are the only form of simple type which cannot reach here
+                return false;
+            }
+
+            if (type.HasInstantiation)
+            {
+                if (!VersionsWithTypeReference(type.GetTypeDefinition()))
+                    return false;
+
+                foreach (TypeDesc instParam in type.Instantiation)
+                {
+                    if (!VersionsWithTypeReference(instParam))
+                        return false;
+                }
+
+                return true;
+            }
+
+            Debug.Assert(false, "Unhandled form of type in VersionsWithTypeReference");
+            return false;
         }
 
         private bool ComputeInstantiationVersionsWithCode(Instantiation inst, TypeSystemEntity entityWithInstantiation)
