@@ -10,7 +10,15 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use GetFullPath/PathHelper.
         /// </summary>
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial uint GetLongPathNameW(
+#else
         [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        internal static extern uint GetLongPathNameW(ref char lpszShortPath, ref char lpszLongPath, uint cchBuffer);
+        internal static extern uint GetLongPathNameW(
+#endif
+            ref char lpszShortPath,
+            ref char lpszLongPath,
+            uint cchBuffer);
     }
 }
