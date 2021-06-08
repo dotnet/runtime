@@ -3913,7 +3913,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 #ifdef DEBUG
         if (compiler->opts.IsOSR())
         {
-            // Sanity the offset vs saved patchpoint info.
+            // Sanity check the offset vs saved patchpoint info.
             //
             // PP info has FP relative offset, to get to caller SP we need to
             // subtract off 2 register slots (saved FP, saved RA).
@@ -3949,7 +3949,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 #ifdef DEBUG
         if (compiler->opts.IsOSR() && useRootFrameSlot)
         {
-            // Sanity the offset vs saved patchpoint info.
+            // Sanity check the offset vs saved patchpoint info.
             //
             // PP info has FP relative offset, to get to caller SP we need to
             // subtract off 2 register slots (saved FP, saved RA).
