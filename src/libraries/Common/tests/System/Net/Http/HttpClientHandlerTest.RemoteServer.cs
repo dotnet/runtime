@@ -580,7 +580,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", PlatformDetection.LocalEchoServerIsNotAvailable)]
         [Theory]
         [MemberData(nameof(ExpectContinueVersion))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
             // Sync API supported only up to HTTP/1.1
