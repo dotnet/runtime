@@ -8,8 +8,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public static partial class WindowsServiceLifetimeHostBuilderExtensions
     {
-       public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
-       public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.WindowsServiceLifetimeOptions> configure) { throw null; }
+        public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
+        public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.WindowsServiceLifetimeOptions> configure) { throw null; }
     }
     public partial class WindowsServiceLifetimeOptions
     {
