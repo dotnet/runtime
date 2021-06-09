@@ -8,9 +8,7 @@ namespace Microsoft.Extensions.Hosting
 {
     public static partial class WindowsServiceLifetimeHostBuilderExtensions
     {
-       [System.Runtime.Versioning.SupportedOSPlatform("windows")]
        public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
-       [System.Runtime.Versioning.SupportedOSPlatform("windows")]
        public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.WindowsServiceLifetimeOptions> configure) { throw null; }
     }
     public partial class WindowsServiceLifetimeOptions

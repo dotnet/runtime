@@ -26,7 +26,6 @@ namespace Microsoft.Extensions.Hosting
         /// </remarks>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to operate on.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        [SupportedOSPlatform("windows")]
         public static IHostBuilder UseWindowsService(this IHostBuilder hostBuilder)
         {
             return UseWindowsService(hostBuilder, _ => { });
@@ -43,7 +42,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to operate on.</param>
         /// <param name="configure"></param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        [SupportedOSPlatform("windows")]
         public static IHostBuilder UseWindowsService(this IHostBuilder hostBuilder, Action<WindowsServiceLifetimeOptions> configure)
         {
             if (WindowsServiceHelpers.IsWindowsService())
