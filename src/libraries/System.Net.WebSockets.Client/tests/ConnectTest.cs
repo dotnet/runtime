@@ -17,7 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
         {
@@ -42,21 +42,21 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoBinaryMessage_Success(Uri server)
         {
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Binary, TimeOutMilliseconds, _output);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoTextMessage_Success(Uri server)
         {
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Text, TimeOutMilliseconds, _output);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         [SkipOnPlatform(TestPlatforms.Browser, "CustomHeaders not supported on browser")]
         public async Task ConnectAsync_AddCustomHeaders_Success(Uri server)
@@ -118,7 +118,7 @@ namespace System.Net.WebSockets.Client.Tests
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         [SkipOnPlatform(TestPlatforms.Browser, "Cookies not supported on browser")]
         public async Task ConnectAsync_CookieHeaders_Success(Uri server)
@@ -168,7 +168,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45583", TestPlatforms.Browser)]
         public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(Uri server)
@@ -194,7 +194,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(Uri server)
         {
@@ -235,7 +235,7 @@ namespace System.Net.WebSockets.Client.Tests
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
