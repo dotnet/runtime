@@ -989,10 +989,12 @@ namespace System.Numerics
 
             if (_bits == null)
                 return _sign;
-            int hash = _sign;
+
+            HashCode hash = default;
+            hash.Add(_sign);
             for (int iv = _bits.Length; --iv >= 0;)
-                hash = NumericsHelpers.CombineHash(hash, unchecked((int)_bits[iv]));
-            return hash;
+                hash.Add(_bits[iv]);
+            return hash.ToHashCode();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

@@ -127,16 +127,6 @@ namespace System.Numerics
             }
         }
 
-        public static uint CombineHash(uint u1, uint u2)
-        {
-            return ((u1 << 7) | (u1 >> 25)) ^ u2;
-        }
-
-        public static int CombineHash(int n1, int n2)
-        {
-            return unchecked((int)CombineHash((uint)n1, (uint)n2));
-        }
-
         public static int CbitHighZero(uint u)
         {
             if (u == 0)
