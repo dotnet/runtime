@@ -99,6 +99,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static IEnumerable<object[]> GetIncompatibleOptions()
         {
             yield return new object[] { new JsonSerializerOptions() };
+            yield return new object[] { new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } } };
+            yield return new object[] { new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } };
+            yield return new object[] { new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString } };
+            yield return new object[] { new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve } };
+            yield return new object[] { new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles } };
             yield return new object[] { new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.Never } };
             yield return new object[] { new JsonSerializerOptions { IgnoreReadOnlyFields = true } };
             yield return new object[] { new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault } };
