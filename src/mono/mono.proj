@@ -511,11 +511,11 @@
       <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" />
     </ItemGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from %(FilesToStrip.Identity)" Importance="High"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --only-keep-debug %(FilesToStrip.Identity) %(FilesToStrip.Identity).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --strip-unneeded %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --add-gnu-debuglink=%(FilesToStrip.Identity).dbg %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('OSX'))" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --only-keep-debug %(FilesToStrip.Identity) %(FilesToStrip.Identity).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --strip-unneeded %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and $([MSBuild]::IsOSPlatform('Linux'))" Command="$(_Objcopy) --add-gnu-debuglink=%(FilesToStrip.Identity).dbg %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
