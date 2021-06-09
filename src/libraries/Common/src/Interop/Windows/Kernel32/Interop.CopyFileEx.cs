@@ -12,8 +12,13 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use CopyFileEx.
         /// </summary>
+#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CopyFileExW", SetLastError = true, CharSet = CharSet.Unicode)]
         private static partial bool CopyFileExPrivate(
+#else
+        [DllImport(Libraries.Kernel32, EntryPoint = "CopyFileExW", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool CopyFileExPrivate(
+#endif
             string src,
             string dst,
             IntPtr progressRoutine,

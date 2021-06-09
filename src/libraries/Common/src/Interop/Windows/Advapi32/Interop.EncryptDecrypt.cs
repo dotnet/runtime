@@ -11,8 +11,13 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use EncryptFile.
         /// </summary>
+#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "EncryptFileW", SetLastError = true, CharSet = CharSet.Unicode)]
         private static partial bool EncryptFilePrivate(string lpFileName);
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "EncryptFileW", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool EncryptFilePrivate(string lpFileName);
+#endif
 
         internal static bool EncryptFile(string path)
         {
@@ -23,8 +28,15 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use DecryptFile.
         /// </summary>
+#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "DecryptFileW", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static partial bool DecryptFileFilePrivate(string lpFileName, int dwReserved);
+        private static partial bool DecryptFileFilePrivate(
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "DecryptFileW", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool DecryptFileFilePrivate(
+#endif
+            string lpFileName,
+            int dwReserved);
 
         internal static bool DecryptFile(string path)
         {
