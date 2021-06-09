@@ -173,7 +173,7 @@ namespace System.Numerics
             uint divLo = rightLength > 1 ? right[rightLength - 2] : 0;
 
             // We measure the leading zeros of the divisor
-            int shift = LeadingZeros(divHi);
+            int shift = BitOperations.LeadingZeroCount(divHi);
             int backShift = 32 - shift;
 
             // And, we make sure the most significant bit is set
@@ -315,40 +315,6 @@ namespace System.Numerics
                 return true;
 
             return false;
-        }
-
-        private static int LeadingZeros(uint value)
-        {
-            if (value == 0)
-                return 32;
-
-            int count = 0;
-            if ((value & 0xFFFF0000) == 0)
-            {
-                count += 16;
-                value = value << 16;
-            }
-            if ((value & 0xFF000000) == 0)
-            {
-                count += 8;
-                value = value << 8;
-            }
-            if ((value & 0xF0000000) == 0)
-            {
-                count += 4;
-                value = value << 4;
-            }
-            if ((value & 0xC0000000) == 0)
-            {
-                count += 2;
-                value = value << 2;
-            }
-            if ((value & 0x80000000) == 0)
-            {
-                count += 1;
-            }
-
-            return count;
         }
     }
 }
