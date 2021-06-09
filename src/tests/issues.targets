@@ -735,28 +735,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/48786</Issue>
         </ExcludeList>
-        <!-- Intermittent failures disable to improve pass rate -->
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/runtime_32848/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Coverage/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)Loader/classloader/TypeGeneratorTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
-            <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)readytorun/crossgen2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/49365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)readytorun/determinism/crossgen2determinism/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52529</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->

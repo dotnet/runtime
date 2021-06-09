@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <TargetFrameworks>net6.0;netstandard2.0;net461</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <!-- TODO: Remove when the package ships with .NET 6. -->
+    <EnablePackageBaselineValidation>false</EnablePackageBaselineValidation>
+    <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
+
+Commonly Used Types:
+System.IO.Hashing.Crc32
+System.IO.Hashing.XxHash32</PackageDescription>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\IO\Hashing\BitOperations.cs" />
+    <Compile Include="System\IO\Hashing\Crc32.cs" />
+    <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc64.cs" />
+    <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\XxHash32.cs" />
+    <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
+    <Compile Include="System\IO\Hashing\XxHash64.cs" />
+    <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
+    <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+</Project>
