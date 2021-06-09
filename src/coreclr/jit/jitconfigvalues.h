@@ -441,6 +441,8 @@ CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
 CONFIG_INTEGER(JitInlineDumpXml, W("JitInlineDumpXml"), 0) // 1 = full xml (+ failures in DEBUG)
                                                            // 2 = only methods with inlines (+ failures in DEBUG)
                                                            // 3 = only methods with inlines, no failures
+CONFIG_STRING(JitInlineDumpXmlFile, W("JitInlineDumpXmlFile"))
+CONFIG_INTEGER(JitInlinePolicyDumpXml, W("JitInlinePolicyDumpXml"), 0)
 CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
 CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
