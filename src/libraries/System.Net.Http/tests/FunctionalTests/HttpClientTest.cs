@@ -1226,7 +1226,7 @@ namespace System.Net.Http.Functional.Tests
             }
             if (serverVersion == HttpVersion.Version20)
             {
-                remoteServer = useSsl ? RemoteSecureHttp2Server : null;
+                remoteServer = useSsl ? RemoteHttp2Server : null;
             }
             // No remote server that could serve the requested version.
             if (remoteServer == null)

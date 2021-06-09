@@ -60,8 +60,8 @@ namespace System
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
-        public static bool LocalEchoServerIsNotAvailable = !LocalEchoServerIsNotAvailable;
-        public static bool LocalEchoServerIsAvailable = IsBrowser;
+        public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
+        public static bool LocalEchoServerIsAvailable => IsBrowser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
