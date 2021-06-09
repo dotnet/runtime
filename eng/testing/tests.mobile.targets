@@ -26,12 +26,6 @@
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(EnableTrimming)' == 'true'">
-    <PublishTrimmed>true</PublishTrimmed>
-    <!-- Suppress linker warnings as these are tests -->
-    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
     <!-- The -arg flag for xharness passes the arguments along to the instrumentation app -->
     <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) --arg=-m=$(XUnitMethodName)</AdditionalXHarnessArguments>
