@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -275,6 +276,7 @@ LAgain:
         //
         // Returns Left if m1 is better, Right if m2 is better, or Neither/Same
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private BetterType WhichMethodIsBetter(
             CandidateFunctionMember node1,
             CandidateFunctionMember node2,
@@ -392,6 +394,7 @@ LAgain:
             return betterMethod;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private BetterType WhichConversionIsBetter(CType argType, CType p1, CType p2)
         {
             Debug.Assert(argType != null);
@@ -475,6 +478,7 @@ LAgain:
         ////////////////////////////////////////////////////////////////////////////////
         // Determine best method for overload resolution. Returns null if no best
         // method, in which case two tying methods are returned for error reporting.
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private CandidateFunctionMember FindBestMethod(
             List<CandidateFunctionMember> list,
             CType pTypeThrough,

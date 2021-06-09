@@ -828,7 +828,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
             long accuracyMicroSeconds = (long)(TimeSpan.FromMinutes(1).TotalMilliseconds * 1000);
 
             byte[] serialNumber = BitConverter.GetBytes(DateTimeOffset.UtcNow.Ticks);
-            Array.Reverse(serialNumber);
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(serialNumber);
+            }
 
             Rfc3161TimestampTokenInfo info = new Rfc3161TimestampTokenInfo(
                 new Oid("0.0", "0.0"),

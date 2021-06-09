@@ -16,7 +16,7 @@ namespace Generators
 {
     public partial class EventSourceGenerator
     {
-        private class Parser
+        private sealed class Parser
         {
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;

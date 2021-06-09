@@ -759,6 +759,14 @@ var MonoSupportLib = {
                 throw new Error(`Could not get a value for ${root}`);
 
             return this._resolve_member_by_name(rootObject, root, parts);
+		},
+
+		mono_wasm_set_variable_value: function (scope, index, name, newValue) {
+			console.debug (">> mono_wasm_set_variable_value " + name + " - " + newValue);
+			var ret = this._c_fn_table.mono_wasm_set_variable_on_frame_wrapper(scope, index, name, newValue);
+			if (ret == false)
+				throw new Error(`Could not get a value for ${name}`);
+            return ret;
         },
 
 		/**
@@ -1224,6 +1232,32 @@ var MonoSupportLib = {
 			return getter_res.length > 0 ? getter_res [0] : {};
 		},
 
+		/**
+		 * @param  {string} objectIdStr objectId
+		 * @param  {string} name property name
+		 * @returns {object} return true if it works and false if it doesn't
+		 */
+		_set_value_on_object: function (objectIdStr, name, newvalue) {
+			const id = this._parse_object_id (objectIdStr);
+			if (id === undefined)
+				throw new Error (`Invalid object id: ${objectIdStr}`);
+
+			let setter_res;
+			if (id.scheme == 'object') {
+				if (isNaN (id.o) || id.o < 0)
+					throw new Error (`Invalid object id: ${objectIdStr}`);
+
+				var ret = this._c_fn_table.mono_wasm_set_value_on_object_wrapper (id.o, name, newvalue);
+				if (!ret)
+					throw new Error (`Invoking setter on ${objectIdStr} failed`);
+
+				setter_res = ret;
+			}
+			else
+				throw new Error (`Only object is supported for setters, id: ${objectIdStr}`);
+			return setter_res;
+		},
+
 		_create_proxy_from_object_id: function (objectId) {
 			const details = this.mono_wasm_get_details(objectId);
 
@@ -1245,7 +1279,10 @@ var MonoSupportLib = {
 				}
 			});
 
-			return proxy;
+			const handler1 = {
+				set (obj, prop, newValue) {return MONO._set_value_on_object (objectId, prop, newValue.toString());},
+			};
+			return new Proxy(proxy, handler1);
 		},
 
 		mono_wasm_call_function_on: function (request) {
@@ -1384,12 +1421,14 @@ var MonoSupportLib = {
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
-			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'number' ]);
-			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'number' ]);
-			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 'bool', [ 'number', 'string' ]);
-			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
-			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
-			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   	'bool', [ 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        	'bool', [ 'number', 'number', 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 	'bool', [ 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  	'bool', [ 'number', 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_get_local_vars',          	'bool', [ 'number', 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     	'bool', [ 'number', 'number']);
+			this._register_c_fn     ('mono_wasm_set_value_on_object',     	'bool', [ 'number', 'string', 'string' ]);
+			this._register_c_fn     ('mono_wasm_set_variable_on_frame', 'bool', [ 'number', 'number', 'string', 'string']);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;
@@ -1904,6 +1943,9 @@ var MonoSupportLib = {
 
 			if (invariantMode)
 				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+
+			// Set globalization mode to PredefinedCulturesOnly
+			this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
 		},
 
 		// Used by the debugger to enumerate loaded dlls and pdbs
@@ -2096,7 +2138,8 @@ var MonoSupportLib = {
 						type: "boolean",
 						value: v,
 						description: v.toString ()
-					}
+					},
+					writable:true
 				});
 				break;
 			}
@@ -2108,7 +2151,8 @@ var MonoSupportLib = {
 						type: "symbol",
 						value: v,
 						description: v
-					}
+					},
+					writable:true
 				});
 				break;
 			}
@@ -2119,7 +2163,8 @@ var MonoSupportLib = {
 						type: "number",
 						value: value,
 						description: '' + value
-					}
+					},
+					writable:true
 				});
 				break;
 

@@ -19,6 +19,8 @@
 #define DS_LOG_WARNING_1(msg, data1) ds_rt_redefine
 #define DS_LOG_WARNING_2(msg, data1, data2) ds_rt_redefine
 #define DS_LOG_DEBUG_0(msg) ds_rt_redefine
+#define DS_LOG_DEBUG_1(msg, data1) ds_rt_redefine
+#define DS_LOG_DEBUG_2(msg, data1, data2) ds_rt_redefine
 
 #define DS_ENTER_BLOCKING_PAL_SECTION ds_rt_redefine
 #define DS_EXIT_BLOCKING_PAL_SECTION ds_rt_redefine
@@ -132,6 +134,25 @@ DS_RT_DECLARE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array
 static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload);
+
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload);
+
+/*
+* Environment variables
+*/
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+
+static
+uint32_t
+ds_rt_get_environment_variable (const ep_char16_t *name,
+								uint32_t valueBufferLength,
+								uint32_t *valueLengthOut,
+								ep_char16_t *valueBuffer);
 
 /*
 * DiagnosticServer.

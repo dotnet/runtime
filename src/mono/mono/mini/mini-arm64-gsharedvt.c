@@ -229,7 +229,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		}
 		if (ainfo2->storage == ArgVtypeByRef && ainfo2->gsharedvt) {
 			/* Pass the address of the first src slot in a reg */
-			if (ainfo->storage != ArgVtypeByRef) {
+			if (ainfo->storage != ArgVtypeByRef && ainfo->storage != ArgVtypeByRefOnStack) {
 				if (ainfo->storage == ArgHFA && ainfo->esize == 4) {
 					arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF_HFAR4;
 					g_assert (src [0] < 64);
@@ -244,7 +244,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 			dst [0] = map_reg (ainfo2->reg);
 		} else if (ainfo2->storage == ArgVtypeByRefOnStack && ainfo2->gsharedvt) {
 			/* Pass the address of the first src slot in a stack slot */
-			if (ainfo->storage != ArgVtypeByRef)
+			if (ainfo->storage != ArgVtypeByRef && ainfo->storage != ArgVtypeByRefOnStack)
 				arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF;
 			ndst = 1;
 			dst = g_new0 (int, 1);

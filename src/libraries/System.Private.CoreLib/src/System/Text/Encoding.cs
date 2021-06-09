@@ -1301,7 +1301,7 @@ namespace System.Text
                 _encoding.GetChars(bytes, byteCount, chars, charCount);
         }
 
-        internal class EncodingCharBuffer
+        internal sealed class EncodingCharBuffer
         {
             private unsafe char* _chars;
             private readonly unsafe char* _charStart;
@@ -1449,7 +1449,7 @@ namespace System.Text
             internal int Count => _charCountResult;
         }
 
-        internal class EncodingByteBuffer
+        internal sealed class EncodingByteBuffer
         {
             private unsafe byte* _bytes;
             private readonly unsafe byte* _byteStart;

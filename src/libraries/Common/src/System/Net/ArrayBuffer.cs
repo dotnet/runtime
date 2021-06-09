@@ -41,15 +41,12 @@ namespace System.Net
             _activeStart = 0;
             _availableStart = 0;
 
-            if (_usePool)
-            {
-                byte[] array = _bytes;
-                _bytes = null!;
+            byte[] array = _bytes;
+            _bytes = null!;
 
-                if (array != null)
-                {
-                    ArrayPool<byte>.Shared.Return(array);
-                }
+            if (_usePool && array != null)
+            {
+                ArrayPool<byte>.Shared.Return(array);
             }
         }
 

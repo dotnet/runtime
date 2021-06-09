@@ -86,13 +86,14 @@ set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_IN
 
 ac_check_funcs(
   pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
-  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
+  pthread_attr_setstacksize pthread_get_stackaddr_np
 )
 
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
+check_symbol_exists(pthread_jit_write_protect_np "pthread.h" HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
 ac_check_type("struct timeval" timeval "sys/time.h;sys/types.h;utime.h")
@@ -156,6 +157,10 @@ if(HOST_IOS)
     set(HAVE_EXECVE 0)
     set(HAVE_EXECVP 0)
   endif()
-elseif(HOST_MACCATALYST)
+elseif(HOST_MACCAT)
   set(HAVE_SYSTEM 0)
+endif()
+
+if(HOST_BROWSER)
+  set(HAVE_FORK 0)
 endif()

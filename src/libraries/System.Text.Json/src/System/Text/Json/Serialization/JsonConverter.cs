@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -19,7 +20,7 @@ namespace System.Text.Json.Serialization
         /// <returns>True if the type can be converted, false otherwise.</returns>
         public abstract bool CanConvert(Type typeToConvert);
 
-        internal abstract ClassType ClassType { get; }
+        internal abstract ConverterStrategy ConverterStrategy { get; }
 
         /// <summary>
         /// Can direct Read or Write methods be called (for performance).
@@ -33,11 +34,34 @@ namespace System.Text.Json.Serialization
 
         internal bool CanBePolymorphic { get; set; }
 
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// </summary>
+        internal virtual object CreateObject(JsonSerializerOptions options)
+        {
+            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+        }
+
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// </summary>
+        internal virtual void ReadElementAndSetProperty(
+            object obj,
+            string propertyName,
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state)
+        {
+            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+        }
+
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
         internal abstract Type? ElementType { get; }
+
+        internal abstract Type? KeyType { get; }
 
         /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
@@ -85,7 +109,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
 
-        // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
+        // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
 
         internal ConstructorInfo? ConstructorInfo { get; set; }

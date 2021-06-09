@@ -34,7 +34,7 @@ namespace System.Net.Test.Common
                 Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
-            }, options: options).TimeoutAfter(millisecondsTimeout);
+            }, options: options).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
     }
 

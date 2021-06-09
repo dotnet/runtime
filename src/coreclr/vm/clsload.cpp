@@ -214,7 +214,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
     // If this instantiation doesn't have a unique home then use the ngen module
 
     // OK, we're certainly NGEN'ing.  And if we're NGEN'ing then we're not on the debugger thread.
-    CONSISTENCY_CHECK(((GetThread() && GetAppDomain()) || IsGCThread()) &&
+    CONSISTENCY_CHECK(((GetThreadNULLOk() && GetAppDomain()) || IsGCThread()) &&
         "unexpected: running a load on debug thread but IsCompilationProcess() returned TRUE");
 
     // Save it into its PreferredZapModule if it's always going to be saved there.
@@ -4424,16 +4424,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         // NinGen should always perform normal accessibility checks
         _ASSERTE(false);
 
-        if (m_fThrowIfTargetIsInaccessible)
-        {
-            ThrowAccessException(pContext, pTargetMT, NULL);
-        }
-
-        return FALSE;
-    }
-
-    if (pTargetMT && pTargetMT->GetAssembly()->IsDisabledPrivateReflection())
-    {
         if (m_fThrowIfTargetIsInaccessible)
         {
             ThrowAccessException(pContext, pTargetMT, NULL);

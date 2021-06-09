@@ -65,6 +65,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             int altWin32Error = 0);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NoMac()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -73,6 +74,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NoMac_ArbitraryPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -84,6 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_EmptyPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -95,6 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NullPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -106,6 +110,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_BadPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();

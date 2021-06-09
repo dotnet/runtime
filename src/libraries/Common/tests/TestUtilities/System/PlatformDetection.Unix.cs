@@ -32,10 +32,7 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
-        public static bool IsOSXLike =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
@@ -52,7 +49,7 @@ namespace System
 
         public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
-        public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
+        public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
@@ -101,6 +98,19 @@ namespace System
                 {
                     return "glibc_not_found";
                 }
+            }
+        }
+
+        public static bool OpenSslPresentOnSystem
+        {
+            get
+            {
+                if (IsAndroid || UsesMobileAppleCrypto || IsBrowser)
+                {
+                    return false;
+                }
+
+                return Interop.OpenSslNoInit.OpenSslIsAvailable;
             }
         }
 

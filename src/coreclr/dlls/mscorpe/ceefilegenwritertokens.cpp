@@ -126,11 +126,6 @@ HRESULT CeeFileGenWriter::MapTokensForMethod(
 
     COR_ILMETHOD_DECODER method((COR_ILMETHOD*) pCode);
 
-    // If compressed IL is being emitted, this routine will have no idea how to walk the tokens,
-    // so don't do it
-    if (m_dwMacroDefinitionSize != 0)
-        return S_OK;
-
     pCode = const_cast<BYTE*>(method.Code);
 
     PC = 0;

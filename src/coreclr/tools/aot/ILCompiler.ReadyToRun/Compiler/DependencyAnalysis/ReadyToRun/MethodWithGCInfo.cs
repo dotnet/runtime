@@ -26,6 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
+        private bool _lateTriggeredCompilation;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -33,6 +34,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fixups = new List<ISymbolNode>();
             _method = methodDesc;
         }
+
+        protected override void OnMarked(NodeFactory context)
+        {
+            // Once past phase 1, no new methods which are interesting for compilation may be marked except for methods
+            // specially enabled for higher phases
+            if (context.CompilationCurrentPhase > 1)
+            {
+                SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
+                InitializeFrameInfos(Array.Empty<FrameInfo>());
+            }
+            _lateTriggeredCompilation = context.CompilationCurrentPhase != 0;
+        }
+
+        public override int DependencyPhaseForDeferredStaticComputation => _lateTriggeredCompilation ? 2 : 0;
 
         public void SetCode(ObjectData data)
         {

@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// A QueryOperator that represents the output of the query partitioner.AsParallel().
     /// </summary>
-    internal class PartitionerQueryOperator<TElement> : QueryOperator<TElement>
+    internal sealed class PartitionerQueryOperator<TElement> : QueryOperator<TElement>
     {
         private readonly Partitioner<TElement> _partitioner; // The partitioner to use as data source.
 
@@ -113,7 +113,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// QueryResults for a PartitionerQueryOperator
         /// </summary>
-        private class PartitionerQueryOperatorResults : QueryResults<TElement>
+        private sealed class PartitionerQueryOperatorResults : QueryResults<TElement>
         {
             private readonly Partitioner<TElement> _partitioner; // The data source for the query
 
@@ -204,7 +204,7 @@ namespace System.Linq.Parallel
         /// Enumerator that converts an enumerator over key-value pairs exposed by a partitioner
         /// to a QueryOperatorEnumerator used by PLINQ internally.
         /// </summary>
-        private class OrderablePartitionerEnumerator : QueryOperatorEnumerator<TElement, int>
+        private sealed class OrderablePartitionerEnumerator : QueryOperatorEnumerator<TElement, int>
         {
             private readonly IEnumerator<KeyValuePair<long, TElement>> _sourceEnumerator;
 
@@ -239,7 +239,7 @@ namespace System.Linq.Parallel
         /// Enumerator that converts an enumerator over key-value pairs exposed by a partitioner
         /// to a QueryOperatorEnumerator used by PLINQ internally.
         /// </summary>
-        private class PartitionerEnumerator : QueryOperatorEnumerator<TElement, int>
+        private sealed class PartitionerEnumerator : QueryOperatorEnumerator<TElement, int>
         {
             private readonly IEnumerator<TElement> _sourceEnumerator;
 

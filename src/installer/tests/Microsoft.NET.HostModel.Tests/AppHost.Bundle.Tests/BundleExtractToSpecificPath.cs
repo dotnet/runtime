@@ -15,6 +15,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
+    [Trait("category", "FlakyAppHostTests")]
     public class BundleExtractToSpecificPath : BundleTestBase, IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -31,8 +32,8 @@ namespace AppHost.Bundle.Tests
             var hostName = BundleHelper.GetHostName(fixture);
 
             // Publish the bundle
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options: BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -43,7 +44,7 @@ namespace AppHost.Bundle.Tests
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
             extractBaseDir.Should().NotHaveDirectory(BundleHelper.GetAppBaseName(fixture));
 
-            // Run the bundled app for the first time, and extract files to 
+            // Run the bundled app for the first time, and extract files to
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
             Command.Create(singleFile)
                 .CaptureStdErr()
@@ -76,12 +77,11 @@ namespace AppHost.Bundle.Tests
             // any forward slashes to the standard Windows dir separator ('\'), thus
             // failing to create directory trees for bundle extraction that use Unix
             // style dir separator in Windows.
-            if (relativePath == "foo/bar" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (relativePath == "foo/bar" && OperatingSystem.IsWindows())
                 return;
 
             var fixture = sharedTestState.TestFixture.Copy();
-            UseSingleFileSelfContainedHost(fixture);
-            var bundler = BundleHelper.BundleApp(fixture, out var singleFile, bundleOptions);
+            var bundler = BundleSelfContainedApp(fixture, out var singleFile, bundleOptions);
 
             // Run the bundled app (extract files to <path>)
             var cmd = Command.Create(singleFile);
@@ -110,13 +110,13 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
 
             // Publish the bundle
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
-            // Run the bunded app for the first time, and extract files to 
+            // Run the bunded app for the first time, and extract files to
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
             Command.Create(singleFile)
                 .CaptureStdErr()
@@ -160,14 +160,13 @@ namespace AppHost.Bundle.Tests
             var appName = Path.GetFileNameWithoutExtension(hostName);
 
             // Publish the bundle
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
-
-            // Run the bunded app for the first time, and extract files to 
+            // Run the bunded app for the first time, and extract files to
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
             Command.Create(singleFile)
                 .CaptureStdErr()

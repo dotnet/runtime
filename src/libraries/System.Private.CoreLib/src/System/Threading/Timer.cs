@@ -37,7 +37,7 @@ namespace System.Threading
     // in order to minimize contention when lots of threads are concurrently creating and destroying timers often.
     [DebuggerDisplay("Count = {CountForDebugger}")]
     [DebuggerTypeProxy(typeof(TimerQueueDebuggerTypeProxy))]
-    internal partial class TimerQueue
+    internal sealed partial class TimerQueue
     {
         #region Shared TimerQueue instances
         /// <summary>Mapping from a tick count to a time to use when debugging to translate tick count values.</summary>
@@ -206,6 +206,7 @@ namespace System.Threading
                         if (remaining <= 0)
                         {
                             // Timer is ready to fire.
+                            timer._everQueued = true;
 
                             if (timer._period != Timeout.UnsignedInfinite)
                             {
@@ -476,6 +477,7 @@ namespace System.Threading
         // instead of with a provided WaitHandle.
         private int _callbacksRunning;
         private bool _canceled;
+        internal bool _everQueued;
         private object? _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
 
         internal TimerQueueTimer(TimerCallback timerCallback, object? state, uint dueTime, uint period, bool flowExecutionContext)

@@ -65,7 +65,7 @@ namespace System.Xml
         ConstString
     }
 
-    internal class ValueHandle
+    internal sealed class ValueHandle
     {
         private readonly XmlBufferReader _bufferReader;
         private ValueHandleType _type;
@@ -773,7 +773,7 @@ namespace System.Xml
                             else
                             {
                                 DiagnosticUtility.DebugAssert(byteOffset + actualByteCount < bytes.Length,
-                                    string.Format("byteOffset {0} + actualByteCount {1} MUST BE < bytes.Length {2}", byteOffset, actualByteCount, bytes.Length));
+                                    $"byteOffset {byteOffset} + actualByteCount {actualByteCount} MUST BE < bytes.Length {bytes.Length}");
 
                                 // Request a few more bytes to get at least one character
                                 actualCharCount = decoder.GetChars(bytes, byteOffset + actualByteCount, 1, chars, charOffset);

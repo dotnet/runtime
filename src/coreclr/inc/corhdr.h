@@ -16,18 +16,6 @@
 #ifndef __CORHDR_H__
 #define __CORHDR_H__
 
-#define FRAMEWORK_REGISTRY_KEY          "Software\\Microsoft\\.NETFramework"
-#define FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
-
-// keys for HKCU
-#ifdef HOST_64BIT
-#define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework64"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework64")
-#else
-#define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
-#endif
-
 #include <stdint.h>
 
 #ifdef _MSC_VER
@@ -1510,6 +1498,7 @@ typedef enum CorTokenType
     mdtFile                 = 0x26000000,       //
     mdtExportedType         = 0x27000000,       //
     mdtManifestResource     = 0x28000000,       //
+    mdtNestedClass          = 0x29000000,       //
     mdtGenericParam         = 0x2a000000,       //
     mdtMethodSpec           = 0x2b000000,       //
     mdtGenericParamConstraint = 0x2c000000,
@@ -1821,10 +1810,6 @@ typedef enum CorAttributeTargets
 #define SUBJECT_ASSEMBLY_TYPE_NAME              "IgnoresAccessChecksToAttribute"
 #define SUBJECT_ASSEMBLY_SIG                    {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define DISABLED_PRIVATE_REFLECTION_TYPE_W      W("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")
-#define DISABLED_PRIVATE_REFLECTION_TYPE         "System.Runtime.CompilerServices.DisablePrivateReflectionAttribute"
-#define DISABLED_PRIVATE_REFLECTION_SIG         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
-
 #define DEFAULTDOMAIN_STA_TYPE_W                W("System.STAThreadAttribute")
 #define DEFAULTDOMAIN_STA_TYPE                   "System.STAThreadAttribute"
 #define DEFAULTDOMAIN_STA_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
@@ -1898,6 +1883,7 @@ typedef enum LoadHintEnum
 #define CMOD_CALLCONV_NAME_THISCALL             "CallConvThiscall"
 #define CMOD_CALLCONV_NAME_FASTCALL             "CallConvFastcall"
 #define CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION "CallConvSuppressGCTransition"
+#define CMOD_CALLCONV_NAME_MEMBERFUNCTION       "CallConvMemberFunction"
 
 #endif // MACROS_NOT_SUPPORTED
 

@@ -63,9 +63,9 @@ namespace SuperPMICollection
                 throw new SpmiException("Illegal CORE_ROOT environment variable (" + core_root_raw + "), exception: " + ex.Message);
             }
 
-            IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            IsOSX     = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-            IsLinux   = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+            IsWindows = OperatingSystem.IsWindows();
+            IsOSX     = OperatingSystem.IsMacOS();
+            IsLinux   = OperatingSystem.IsLinux();
 
             if (IsWindows)
             {

@@ -8,7 +8,7 @@ using System.IO;
 
 namespace System.Resources.Extensions
 {
-    internal class UnknownType { }
+    internal sealed class UnknownType { }
 
     public partial class PreserializedResourceWriter
     {
@@ -188,7 +188,7 @@ namespace System.Resources.Extensions
             _requiresDeserializingResourceReader = true;
         }
 
-        private class ResourceDataRecord
+        private sealed class ResourceDataRecord
         {
             internal readonly SerializationFormat Format;
             internal readonly object Data;

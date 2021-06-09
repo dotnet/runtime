@@ -13,7 +13,7 @@ namespace System.ComponentModel
         // A private implementation of a LicenseContext used for instantiating
         // managed objects exposed to COM. It has memory for the license key
         // of a single Type.
-        private class CLRLicenseContext : LicenseContext
+        private sealed class CLRLicenseContext : LicenseContext
         {
             private readonly Type _type;
             private string _key;
@@ -62,7 +62,7 @@ namespace System.ComponentModel
         }
 
         // Used from IClassFactory2 when retrieving LicInfo
-        private class LicInfoHelperLicenseContext : LicenseContext
+        private sealed class LicInfoHelperLicenseContext : LicenseContext
         {
             private readonly Hashtable _savedLicenseKeys = new Hashtable();
 
@@ -80,7 +80,7 @@ namespace System.ComponentModel
 
         // This is a helper class that supports the CLR's IClassFactory2 marshaling
         // support.
-        private class LicenseInteropHelper
+        private static class LicenseInteropHelper
         {
             // Used to validate a type and retrieve license details
             // when activating a managed COM server from an IClassFactory2 instance.

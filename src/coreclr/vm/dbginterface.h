@@ -209,7 +209,7 @@ public:
 
     virtual void getBoundaries(MethodDesc * ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes* implictBoundaries) = 0;
+                       ICorDebugInfo::BoundaryTypes* implicitBoundaries) = 0;
 
     virtual void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
@@ -392,7 +392,6 @@ public:
 
     virtual BOOL ShouldAutoAttach() = 0;
     virtual BOOL FallbackJITAttachPrompt() = 0;
-    virtual HRESULT SetFiberMode(bool isFiberMode) = 0;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual LONG FirstChanceSuspendHijackWorker(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord) = 0;

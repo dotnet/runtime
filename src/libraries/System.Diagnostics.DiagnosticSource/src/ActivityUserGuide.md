@@ -1,5 +1,9 @@
 # Activity User Guide
 
+**This doc is being obsoleted by: https://docs.microsoft.com/dotnet/core/diagnostics/distributed-tracing
+Future doc changes should be done in the official docs, not here.
+There is still some information here that is not present in the official docs (yet) so I am preserving it as-is.**
+
 This document describes Activity, a class that allows storing and accessing diagnostics context and consuming it with logging system.
 
 This document provides Activity architecture [overview](#overview) and [usage](#activity-usage).

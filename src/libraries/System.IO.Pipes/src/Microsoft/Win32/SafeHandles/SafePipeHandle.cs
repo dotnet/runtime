@@ -17,12 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {
-            SetHandle(preexistingHandle);
-        }
-
-        internal void SetHandle(int descriptor)
-        {
-            base.SetHandle((IntPtr)descriptor);
+            SetHandle(preexistingHandle, ownsHandle);
         }
     }
 }

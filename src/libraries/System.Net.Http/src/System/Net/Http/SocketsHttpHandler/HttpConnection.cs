@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : HttpConnectionBase, IDisposable
+    internal sealed partial class HttpConnection : HttpConnectionBase, IDisposable
     {
         /// <summary>Default size of the read buffer used for the connection.</summary>
         private const int InitialReadBufferSize =
@@ -63,6 +63,7 @@ namespace System.Net.Http
 
         private bool _inUse;
         private bool _canRetry;
+        private bool _startedSendingRequestBody;
         private bool _connectionClose; // Connection: close was seen on last response
 
         private const int Status_Disposed = 1;
@@ -71,6 +72,7 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
+            Socket? socket,
             Stream stream,
             TransportContext? transportContext)
         {
@@ -79,10 +81,7 @@ namespace System.Net.Http
 
             _pool = pool;
             _stream = stream;
-            if (stream is NetworkStream networkStream)
-            {
-                _socket = networkStream.Socket;
-            }
+            _socket = socket;
 
             _transportContext = transportContext;
 
@@ -104,7 +103,7 @@ namespace System.Net.Http
 
         public void Dispose() => Dispose(disposing: true);
 
-        protected void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
@@ -137,54 +136,84 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>Do a non-blocking poll to see whether the connection has data available or has been closed.</summary>
-        /// <remarks>If we don't have direct access to the underlying socket, we instead use a read-ahead task.</remarks>
-        public bool PollRead()
+        /// <summary>Prepare an idle connection to be used for a new request.</summary>
+        /// <param name="async">Indicates whether the coming request will be sync or async.</param>
+        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        public bool PrepareForReuse(bool async)
         {
-            if (_socket != null) // may be null if we don't have direct access to the socket
+            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
+            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
+            if (_readAheadTask is not null)
             {
+                return !_readAheadTask.Value.IsCompleted;
+            }
+
+            // Check to see if we've received anything on the connection; if we have, that's
+            // either erroneous data (we shouldn't have received anything yet) or the connection
+            // has been closed; either way, we can't use it.
+            if (!async && _socket is not null)
+            {
+                // Directly poll the socket rather than doing an async read, so that we can
+                // issue an appropriate sync read when we actually need it.
                 try
                 {
-                    return _socket.Poll(0, SelectMode.SelectRead);
+                    return !_socket.Poll(0, SelectMode.SelectRead);
                 }
                 catch (Exception e) when (e is SocketException || e is ObjectDisposedException)
                 {
                     // Poll can throw when used on a closed socket.
-                    return true;
+                    return false;
                 }
             }
             else
             {
-                return EnsureReadAheadAndPollRead();
-            }
-        }
-
-        /// <summary>
-        /// Issues a read-ahead on the connection, which will serve both as the first read on the
-        /// response as well as a polling indication of whether the connection is usable.
-        /// </summary>
-        /// <returns>true if there's data available on the connection or it's been closed; otherwise, false.</returns>
-        public bool EnsureReadAheadAndPollRead()
-        {
-            try
-            {
-                Debug.Assert(_readAheadTask == null || _socket == null, "Should only already have a read-ahead task if we don't have a socket to poll");
-                if (_readAheadTask == null)
+                // Perform an async read on the stream, since we're going to need to read from it
+                // anyway, and in doing so we can avoid the extra syscall.
+                try
                 {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
                     _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
 #pragma warning restore CA2012
+                    return !_readAheadTask.Value.IsCompleted;
+                }
+                catch (Exception error)
+                {
+                    // If reading throws, eat the error and don't reuse the connection.
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
+                    return false;
                 }
             }
-            catch (Exception error)
+        }
+
+        /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
+        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        public bool CheckUsabilityOnScavenge()
+        {
+            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
+            if (_readAheadTask is null)
             {
-                // If reading throws, eat the error and don't pool the connection.
-                if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
-                Dispose();
-                _readAheadTask = new ValueTask<int>(0);
+#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
+                _readAheadTask = ReadAheadWithZeroByteReadAsync();
+#pragma warning restore CA2012
             }
 
-            return _readAheadTask.Value.IsCompleted; // equivalent to polling
+            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
+            return !_readAheadTask.Value.IsCompleted;
+
+            async ValueTask<int> ReadAheadWithZeroByteReadAsync()
+            {
+                Debug.Assert(_readAheadTask is null);
+                Debug.Assert(RemainingBuffer.Length == 0);
+
+                // Issue a zero-byte read.
+                // If the underlying stream supports it, this will not complete until the stream has data available,
+                // which will avoid pinning the connection's read buffer (and possibly allow us to release it to the buffer pool in the future, if desired).
+                // If not, it will complete immediately.
+                await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+
+                // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
+                return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
+            }
         }
 
         private ValueTask<int>? ConsumeReadAheadTask()
@@ -357,8 +386,8 @@ namespace System.Net.Http
             _currentRequest = request;
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
-            Debug.Assert(!_canRetry);
-            _canRetry = true;
+            _canRetry = false;
+            _startedSendingRequestBody = false;
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -533,19 +562,28 @@ namespace System.Net.Http
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
 
-                    if (bytesRead == 0)
-                    {
-                        throw new IOException(SR.net_http_invalid_response_premature_eof);
-                    }
-
                     _readOffset = 0;
                     _readLength = bytesRead;
                 }
+                else
+                {
+                    // No read-ahead, so issue a read ourselves. We will check below for EOF.
+                    await InitialFillAsync(async).ConfigureAwait(false);
+                }
 
-                // The request is no longer retryable; either we received data from the _readAheadTask,
-                // or there was no _readAheadTask because this is the first request on the connection.
-                // (We may have already set this as well if we sent request content.)
-                _canRetry = false;
+                if (_readLength == 0)
+                {
+                    // The server shutdown the connection on their end, likely because of an idle timeout.
+                    // If we haven't started sending the request body yet (or there is no request body),
+                    // then we allow the request to be retried.
+                    if (!_startedSendingRequestBody)
+                    {
+                        _canRetry = true;
+                    }
+
+                    throw new IOException(SR.net_http_invalid_response_premature_eof);
+                }
+
 
                 // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
@@ -793,7 +831,7 @@ namespace System.Net.Http
             {
                 // For consistency with other handlers we wrap the exception in an HttpRequestException.
                 // If the request is retryable, indicate that on the exception.
-                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
+                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnConnectionFailure : RequestRetryType.NoRetry);
                 return true;
             }
             // Otherwise, just allow the original exception to propagate.
@@ -835,8 +873,8 @@ namespace System.Net.Http
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
-            // Now that we're sending content, prohibit retries on this connection.
-            _canRetry = false;
+            // Now that we're sending content, prohibit retries of this request by setting this flag.
+            _startedSendingRequestBody = true;
 
             Debug.Assert(stream.BytesWritten == 0);
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
@@ -1520,6 +1558,19 @@ namespace System.Net.Http
             ValueTask fillTask = FillAsync(async: false);
             Debug.Assert(fillTask.IsCompleted);
             fillTask.GetAwaiter().GetResult();
+        }
+
+        // Does not throw on EOF. Also assumes there is no buffered data.
+        private async ValueTask InitialFillAsync(bool async)
+        {
+            Debug.Assert(_readAheadTask == null);
+
+            _readOffset = 0;
+            _readLength = async ?
+                await _stream.ReadAsync(_readBuffer).ConfigureAwait(false) :
+                _stream.Read(_readBuffer);
+
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {_readLength} bytes.");
         }
 
         // Throws IOException on EOF.  This is only called when we expect more data.

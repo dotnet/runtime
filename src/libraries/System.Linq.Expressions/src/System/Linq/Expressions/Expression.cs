@@ -31,7 +31,7 @@ namespace System.Linq.Expressions
         // To support the 3.5 protected constructor, we store the fields that
         // used to be here in a ConditionalWeakTable.
 
-        private class ExtensionInfo
+        private sealed class ExtensionInfo
         {
             public ExtensionInfo(ExpressionType nodeType, Type type)
             {

@@ -491,20 +491,7 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD data_index;
     DWORD dataByteCount;
     DWORD result;
-};
-
-struct Agnostic_GetLikelyClass
-{
-    DWORDLONG ftnHnd;
-    DWORDLONG baseHnd;
-    DWORD     ilOffset;
-};
-
-struct Agnostic_GetLikelyClassResult
-{
-    DWORDLONG classHnd;
-    DWORD     likelihood;
-    DWORD     numberOfClasses;
+    DWORD pgoSource;
 };
 
 struct Agnostic_GetProfilingHandle
@@ -581,6 +568,7 @@ struct Agnostic_ResolveVirtualMethodResult
     DWORDLONG devirtualizedMethod;
     bool      requiresInstMethodTableArg;
     DWORDLONG exactContext;
+    DWORD     detail;
 };
 
 struct ResolveTokenValue

@@ -499,7 +499,7 @@ namespace ILCompiler.DependencyAnalysis
                 return LookupKind == other.LookupKind &&
                     FixupKind == other.FixupKind &&
                     RuntimeDeterminedTypeHelper.Equals(TypeArgument, other.TypeArgument) &&
-                    RuntimeDeterminedTypeHelper.Equals(MethodArgument?.Method ?? null, other.MethodArgument?.Method ?? null) &&
+                    RuntimeDeterminedTypeHelper.Equals(MethodArgument, other.MethodArgument) &&
                     RuntimeDeterminedTypeHelper.Equals(FieldArgument, other.FieldArgument) &&
                     MethodContext.Equals(other.MethodContext);
             }
@@ -514,7 +514,7 @@ namespace ILCompiler.DependencyAnalysis
                 return unchecked(((int)LookupKind << 24) +
                     (int)FixupKind +
                     (TypeArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(TypeArgument) : 0) +
-                    (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument.Method) : 0) +
+                    (MethodArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(MethodArgument) : 0) +
                     (FieldArgument != null ? 31 * RuntimeDeterminedTypeHelper.GetHashCode(FieldArgument) : 0) +
                     MethodContext.GetHashCode());
             }

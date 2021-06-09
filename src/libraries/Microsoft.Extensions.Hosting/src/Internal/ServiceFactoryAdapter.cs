@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal class ServiceFactoryAdapter<TContainerBuilder> : IServiceFactoryAdapter
+    internal sealed class ServiceFactoryAdapter<TContainerBuilder> : IServiceFactoryAdapter
     {
         private IServiceProviderFactory<TContainerBuilder> _serviceProviderFactory;
         private readonly Func<HostBuilderContext> _contextResolver;

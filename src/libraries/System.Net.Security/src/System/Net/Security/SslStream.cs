@@ -523,21 +523,17 @@ namespace System.Net.Security
 
         public virtual bool CheckCertRevocationStatus => _context != null && _context.CheckCertRevocationStatus != X509RevocationMode.NoCheck;
 
-        //
-        // This will return selected local cert for both client/server streams
-        //
-        public virtual X509Certificate? LocalCertificate
-        {
-            get
-            {
-                ThrowIfExceptionalOrNotAuthenticated();
-                if (_nestedAuth == 0)
-                {
-                    var crt = GetRemoteCertificate().GetAwaiter().GetResult();
-                }
-                return _context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate;
-            }
-        }
+         //
+         // This will return selected local cert for both client/server streams
+         //
+         public virtual X509Certificate? LocalCertificate
+         {
+             get
+             {
+                 ThrowIfExceptionalOrNotAuthenticated();
+                 return _context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate;
+             }
+         }
 
         public virtual X509Certificate? RemoteCertificate
         {
@@ -693,6 +689,17 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+            if (RemoteCertificate != null)
+            {
+                throw new InvalidOperationException(SR.net_ssl_certificate_exist);
+            }
+
+            return RenegotiateAsync(cancellationToken);
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -824,18 +831,18 @@ namespace System.Net.Security
             return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
         }
 
-        public virtual async Task<X509Certificate?> GetRemoteCertificate()
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
+        // public virtual async Task<X509Certificate?> GetRemoteCertificate()
+        // {
+        //     ThrowIfExceptionalOrNotAuthenticated();
 
-            Console.WriteLine("Calling GetRemoteCertificate ???");
-            _sslAuthenticationOptions!.RemoteCertRequired = true;
-            //await ProcessAuthentication(true)!.ConfigureAwait(false);
-           // await ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
-           await Renegotiate(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
-           Console.WriteLine("Calling GetRemoteCertificate Finished!!!");
-            return RemoteCertificate;
-        }
+        //     Console.WriteLine("Calling GetRemoteCertificate ???");
+        //     _sslAuthenticationOptions!.RemoteCertRequired = true;
+        //     //await ProcessAuthentication(true)!.ConfigureAwait(false);
+        //    // await ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
+        //    await Renegotiate(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
+        //    Console.WriteLine("Calling GetRemoteCertificate Finished!!!");
+        //     return RemoteCertificate;
+        // }
 
         private void ThrowIfExceptional()
         {

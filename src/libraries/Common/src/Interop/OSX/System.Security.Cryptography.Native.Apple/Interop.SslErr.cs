@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        internal class SslException : Exception
+        internal sealed class SslException : Exception
         {
             internal SslException()
             {

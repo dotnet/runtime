@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public sealed class NamedPipeTest_CrossProcess
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -24,9 +24,19 @@
         "Unix"
         ]
       },
+    "iOSSimulator": {
+      "#import": [
+        "iOS"
+        ]
+      },
     "tvOS": {
       "#import": [
         "Unix"
+        ]
+      },
+    "tvOSSimulator": {
+      "#import": [
+        "tvOS"
         ]
       },
     "Android": {

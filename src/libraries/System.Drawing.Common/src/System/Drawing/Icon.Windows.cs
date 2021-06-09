@@ -94,7 +94,7 @@ namespace System.Drawing
             if (_iconData == null)
             {
                 _iconSize = original.Size;
-                _handle = SafeNativeMethods.CopyImage(new HandleRef(original, original.Handle), SafeNativeMethods.IMAGE_ICON, _iconSize.Width, _iconSize.Height, 0);
+                _handle = Interop.User32.CopyImage(new HandleRef(original, original.Handle), SafeNativeMethods.IMAGE_ICON, _iconSize.Width, _iconSize.Height, 0);
             }
             else
             {
@@ -190,7 +190,7 @@ namespace System.Drawing
 
             fixed (char* b = buffer)
             {
-                IntPtr hIcon = SafeNativeMethods.ExtractAssociatedIcon(NativeMethods.NullHandleRef, b, ref index);
+                IntPtr hIcon = Interop.Shell32.ExtractAssociatedIcon(NativeMethods.NullHandleRef, b, ref index);
                 ArrayPool<char>.Shared.Return(buffer);
                 if (hIcon != IntPtr.Zero)
                 {
@@ -223,24 +223,24 @@ namespace System.Drawing
             {
                 if (_iconSize.IsEmpty)
                 {
-                    SafeNativeMethods.ICONINFO info = default;
-                    SafeNativeMethods.GetIconInfo(new HandleRef(this, Handle), ref info);
-                    SafeNativeMethods.BITMAP bitmap = default;
+                    Interop.User32.ICONINFO info = default;
+                    Interop.User32.GetIconInfo(new HandleRef(this, Handle), ref info);
+                    Interop.Gdi32.BITMAP bitmap = default;
 
                     if (info.hbmColor != IntPtr.Zero)
                     {
-                        SafeNativeMethods.GetObject(
+                        Interop.Gdi32.GetObject(
                             new HandleRef(null, info.hbmColor),
-                            sizeof(SafeNativeMethods.BITMAP),
+                            sizeof(Interop.Gdi32.BITMAP),
                             ref bitmap);
                         Interop.Gdi32.DeleteObject(info.hbmColor);
                         _iconSize = new Size((int)bitmap.bmWidth, (int)bitmap.bmHeight);
                     }
                     else if (info.hbmMask != IntPtr.Zero)
                     {
-                        SafeNativeMethods.GetObject(
+                        Interop.Gdi32.GetObject(
                             new HandleRef(null, info.hbmMask),
-                            sizeof(SafeNativeMethods.BITMAP),
+                            sizeof(Interop.Gdi32.BITMAP),
                             ref bitmap);
                         _iconSize = new Size((int)bitmap.bmWidth, (int)(bitmap.bmHeight / 2));
                     }
@@ -274,7 +274,7 @@ namespace System.Drawing
         {
             if (_ownHandle)
             {
-                SafeNativeMethods.DestroyIcon(new HandleRef(this, _handle));
+                Interop.User32.DestroyIcon(new HandleRef(this, _handle));
                 _handle = IntPtr.Zero;
             }
         }
@@ -367,8 +367,8 @@ namespace System.Drawing
             IntPtr hSaveRgn = SaveClipRgn(dc);
             try
             {
-                SafeNativeMethods.IntersectClipRect(new HandleRef(this, dc), targetX, targetY, targetX + clipWidth, targetY + clipHeight);
-                SafeNativeMethods.DrawIconEx(new HandleRef(null, dc),
+                Interop.Gdi32.IntersectClipRect(new HandleRef(this, dc), targetX, targetY, targetX + clipWidth, targetY + clipHeight);
+                Interop.User32.DrawIconEx(new HandleRef(null, dc),
                                             targetX - imageX,
                                             targetY - imageY,
                                             new HandleRef(this, _handle),
@@ -479,12 +479,12 @@ namespace System.Drawing
             // Get the correct width and height.
             if (width == 0)
             {
-                width = UnsafeNativeMethods.GetSystemMetrics(SafeNativeMethods.SM_CXICON);
+                width = Interop.User32.GetSystemMetrics(SafeNativeMethods.SM_CXICON);
             }
 
             if (height == 0)
             {
-                height = UnsafeNativeMethods.GetSystemMetrics(SafeNativeMethods.SM_CYICON);
+                height = Interop.User32.GetSystemMetrics(SafeNativeMethods.SM_CYICON);
             }
 
             if (s_bitDepth == 0)
@@ -614,7 +614,7 @@ namespace System.Drawing
 
                     fixed (byte* pbAlignedBuffer = alignedBuffer)
                     {
-                        _handle = SafeNativeMethods.CreateIconFromResourceEx(pbAlignedBuffer, _bestBytesInRes, true, 0x00030000, 0, 0, 0);
+                        _handle = Interop.User32.CreateIconFromResourceEx(pbAlignedBuffer, _bestBytesInRes, true, 0x00030000, 0, 0, 0);
                     }
                     ArrayPool<byte>.Shared.Return(alignedBuffer);
                 }
@@ -622,7 +622,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        _handle = SafeNativeMethods.CreateIconFromResourceEx(checked(b + _bestImageOffset), _bestBytesInRes, true, 0x00030000, 0, 0, 0);
+                        _handle = Interop.User32.CreateIconFromResourceEx(checked(b + _bestImageOffset), _bestBytesInRes, true, 0x00030000, 0, 0, 0);
                     }
                     catch (OverflowException)
                     {
@@ -770,14 +770,14 @@ namespace System.Drawing
             else if (_bestBitDepth == 0 || _bestBitDepth == 32)
             {
                 // This may be a 32bpp icon or an icon without any data.
-                SafeNativeMethods.ICONINFO info = default;
-                SafeNativeMethods.GetIconInfo(new HandleRef(this, _handle), ref info);
-                SafeNativeMethods.BITMAP bmp = default;
+                Interop.User32.ICONINFO info = default;
+                Interop.User32.GetIconInfo(new HandleRef(this, _handle), ref info);
+                Interop.Gdi32.BITMAP bmp = default;
                 try
                 {
                     if (info.hbmColor != IntPtr.Zero)
                     {
-                        SafeNativeMethods.GetObject(new HandleRef(null, info.hbmColor), sizeof(SafeNativeMethods.BITMAP), ref bmp);
+                        Interop.Gdi32.GetObject(new HandleRef(null, info.hbmColor), sizeof(Interop.Gdi32.BITMAP), ref bmp);
                         if (bmp.bmBitsPixel == 32)
                         {
                             Bitmap? tmpBitmap = null;
@@ -905,7 +905,7 @@ namespace System.Drawing
 
         public override string ToString() => SR.toStringIcon;
 
-        [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
         internal static extern IPicture OleCreatePictureIndirect(PICTDESC pictdesc, [In]ref Guid refiid, bool fOwn);
 
         [ComImport]
@@ -951,13 +951,13 @@ namespace System.Drawing
             void SetHdc([In] IntPtr hdc);
         }
 
-        internal class Ole
+        internal static class Ole
         {
             public const int PICTYPE_ICON = 3;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PICTDESC
+        internal sealed class PICTDESC
         {
             internal int cbSizeOfStruct;
             public int picType;

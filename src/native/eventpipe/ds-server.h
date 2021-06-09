@@ -34,5 +34,8 @@ ds_server_pause_for_diagnostics_monitor (void);
 void
 ds_server_resume_runtime_startup (void);
 
+bool
+ds_server_is_paused_in_startup (void);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_SERVER_H__ */

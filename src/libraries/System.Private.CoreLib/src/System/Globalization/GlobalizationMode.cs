@@ -8,25 +8,18 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
+        private static partial class Settings
+        {
+            internal static readonly bool PredefinedCulturesOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
+        }
+
+        internal static bool PredefinedCulturesOnly => !Invariant && Settings.PredefinedCulturesOnly;
+
         private static bool GetInvariantSwitchValue() =>
-            GetSwitchValue("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+            AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
         private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
             TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
-
-        private static bool GetSwitchValue(string switchName, string envVariable)
-        {
-            if (!AppContext.TryGetSwitch(switchName, out bool ret))
-            {
-                string? switchValue = Environment.GetEnvironmentVariable(envVariable);
-                if (switchValue != null)
-                {
-                    ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
-                }
-            }
-
-            return ret;
-        }
 
         private static bool TryGetStringValue(string switchName, string envVariable, [NotNullWhen(true)] out string? value)
         {

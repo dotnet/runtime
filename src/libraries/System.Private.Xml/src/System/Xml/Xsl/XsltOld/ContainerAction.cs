@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Runtime.Versioning;
     using System.Diagnostics.CodeAnalysis;
 
-    internal class NamespaceInfo
+    internal sealed class NamespaceInfo
     {
         internal string? prefix;
         internal string? nameSpace;

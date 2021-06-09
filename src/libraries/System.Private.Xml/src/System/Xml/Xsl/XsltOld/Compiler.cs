@@ -21,7 +21,7 @@ using KeywordsTable = System.Xml.Xsl.Xslt.KeywordsTable;
 
 namespace System.Xml.Xsl.XsltOld
 {
-    internal class Sort
+    internal sealed class Sort
     {
         internal int select;
         internal string? lang;
@@ -1169,7 +1169,7 @@ namespace System.Xml.Xsl.XsltOld
             return XsltException.Create(SR.Xslt_UnexpectedKeyword, thisName, parentName);
         }
 
-        internal class ErrorXPathExpression : CompiledXpathExpr
+        internal sealed class ErrorXPathExpression : CompiledXpathExpr
         {
             private readonly string _baseUri;
             private readonly int _lineNumber, _linePosition;

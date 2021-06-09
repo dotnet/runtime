@@ -215,7 +215,7 @@ namespace System.Xml
             }
         }
 
-        private class NamespaceDecl
+        private sealed class NamespaceDecl
         {
             public string prefix;
             public string uri;
@@ -254,7 +254,7 @@ namespace System.Xml
             }
         }
 
-        private class NestedBinXml
+        private sealed class NestedBinXml
         {
             public SymbolTables symbolTables;
             public int docState;
@@ -1987,7 +1987,7 @@ namespace System.Xml
         {
             _symbolTables.symCount = _symbolTables.qnameCount = 1;
             Array.Clear(_symbolTables.symtable, 1, _symbolTables.symtable.Length - 1);
-            Array.Clear(_symbolTables.qnametable, 0, _symbolTables.qnametable.Length);
+            Array.Clear(_symbolTables.qnametable);
         }
 
         private void SkipExtn()

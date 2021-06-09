@@ -1,30 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;net47</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">4.1.0.0</AssemblyVersion>
-    <!-- We need to build against net47 because that is where ECParameters got added inbox. We ship as net461 in order to not require
-    the facades when the package is restored. -->
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'net47'">net461</PackageTargetFramework>
-  </PropertyGroup>
   <ItemGroup>
-    <SuppressPackageTargetFrameworkCompatibility Include="net461" />
     <Compile Include="System.Security.Cryptography.OpenSsl.cs" />
-    <Compile Include="System.Security.Cryptography.OpenSsl.netcoreapp.cs" Condition="'$(TargetFramework)' == 'netcoreapp3.0' OR '$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Primitives\ref\System.Security.Cryptography.Primitives.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <Reference Include="System.IO" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Handles" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
 </Project>

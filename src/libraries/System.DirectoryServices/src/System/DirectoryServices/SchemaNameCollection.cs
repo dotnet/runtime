@@ -218,7 +218,7 @@ namespace System.DirectoryServices
         // this class and HintsDelegateWrapper exist only because you can't create
         // a delegate to a property's accessors. You have to supply methods. So these
         // classes wrap an object and supply properties as methods.
-        internal class FilterDelegateWrapper
+        internal sealed class FilterDelegateWrapper
         {
             private readonly UnsafeNativeMethods.IAdsContainer _obj;
             internal FilterDelegateWrapper(UnsafeNativeMethods.IAdsContainer wrapped)

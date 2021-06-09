@@ -5,9 +5,12 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        // Order of these properties in Windows matter because GetUseIcuMode is dependent on Invariant.
-        // So we need Invariant to be initialized first.
-        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
+        private static partial class Settings
+        {
+            internal static readonly bool Invariant = GetGlobalizationInvariantMode();
+        }
+
+        internal static bool Invariant => Settings.Invariant;
 
         internal static bool UseNls => false;
 
@@ -22,7 +25,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    int loaded = Interop.Globalization.LoadICU();
+                    int loaded = LoadICU();
                     if (loaded == 0 && !OperatingSystem.IsBrowser())
                     {
                         // This can't go into resources, because a resource lookup requires globalization, which requires ICU

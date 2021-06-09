@@ -104,7 +104,7 @@ namespace System.Globalization.Tests
 
                     break;
             }
-            return (weekOfYear - 1) * DaysPerWeek + offset + 1;;
+            return (weekOfYear - 1) * DaysPerWeek + offset + 1;
         }
     }
 }

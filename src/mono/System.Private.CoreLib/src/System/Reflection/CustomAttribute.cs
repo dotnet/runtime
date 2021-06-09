@@ -752,7 +752,7 @@ namespace System.Reflection
         private static readonly AttributeUsageAttribute DefaultAttributeUsage =
             new AttributeUsageAttribute(AttributeTargets.All);
 
-        private class AttributeInfo
+        private sealed class AttributeInfo
         {
             private AttributeUsageAttribute _usage;
             private int _inheritanceLevel;

@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel
@@ -390,15 +391,26 @@ namespace System.ComponentModel
         /// <summary>
         /// Finds the given method through reflection. This method only looks for public methods.
         /// </summary>
-        protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "This method only looks for public methods by hard-coding publicOnly=true")]
+        protected static MethodInfo FindMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type componentClass,
+            string name,
+            Type[] args,
+            Type returnType)
         {
-            return FindMethod(componentClass, name, args, returnType, true);
+            return FindMethod(componentClass, name, args, returnType, publicOnly: true);
         }
 
         /// <summary>
         /// Finds the given method through reflection.
         /// </summary>
-        protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType, bool publicOnly)
+        protected static MethodInfo FindMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type componentClass,
+            string name,
+            Type[] args,
+            Type returnType,
+            bool publicOnly)
         {
             if (componentClass == null)
             {

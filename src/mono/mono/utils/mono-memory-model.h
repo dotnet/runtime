@@ -49,7 +49,7 @@ enum {
 #define LOAD_BARRIER mono_memory_read_barrier ()
 #define STORE_BARRIER mono_memory_write_barrier ()
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 /*
 Both x86 and amd64 follow the SPO memory model:
 -Loads are not reordered with other loads

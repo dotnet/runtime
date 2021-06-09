@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal class ValidatorOptions
+    internal sealed class ValidatorOptions
     {
         // Maps each options type to a method that forces its evaluation, e.g. IOptionsMonitor<TOptions>.Get(name)
         public IDictionary<Type, Action> Validators { get; } = new Dictionary<Type, Action>();

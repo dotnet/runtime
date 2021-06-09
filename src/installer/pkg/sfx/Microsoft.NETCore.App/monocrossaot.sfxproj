@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' != 'Windows_NT'">$(MonoAotTargets);android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' == 'Windows_NT'">$(MonoAotTargets);android-x64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);browser-wasm</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvos-x64;tvos-arm64</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);ios-x64;ios-arm64;ios-x86;ios-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvossimulator-x64;tvossimulator-arm64;tvos-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iossimulator-x64;iossimulator-arm64;iossimulator-x86;ios-arm64;ios-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))">$(MonoAotTargets);maccatalyst-x64;maccatalyst-arm64</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>

@@ -15,7 +15,7 @@ namespace System.Net.Security
 {
     // SecureChannel - a wrapper on SSPI based functionality.
     // Provides an additional abstraction layer over SSPI for SslStream.
-    internal class SecureChannel
+    internal sealed class SecureChannel
     {
         // When reading a frame from the wire first read this many bytes for the header.
         internal const int ReadHeaderSize = 5;
@@ -830,6 +830,15 @@ namespace System.Net.Security
             return status;
         }
 
+        internal SecurityStatusPal Renegotiate(out byte[]? output)
+        {
+            return SslStreamPal.Renegotiate(
+                                      ref _credentialsHandle!,
+                                      ref _securityContext,
+                                      _sslAuthenticationOptions,
+                                      out output);
+        }
+
         /*++
             ProcessHandshakeSuccess -
                Called on successful completion of Handshake -
@@ -1107,9 +1116,9 @@ Console.WriteLine("VerifyRemoteCertificate called, remote is {0}", certificate);
             return GenerateAlertToken();
         }
 
-        public int Renegotiate()
+        public SecurityStatusPal Renegotiate()
         {
-            return  SslStreamPal.Renegotiate(_securityContext!);
+            return SslStreamPal.Renegotiate(_securityContext!);
         }
 
         private ProtocolToken GenerateAlertToken()
@@ -1222,7 +1231,7 @@ Console.WriteLine("VerifyRemoteCertificate called, remote is {0}", certificate);
     }
 
     // ProtocolToken - used to process and handle the return codes from the SSPI wrapper
-    internal class ProtocolToken
+    internal sealed class ProtocolToken
     {
         internal SecurityStatusPal Status;
         internal byte[]? Payload;

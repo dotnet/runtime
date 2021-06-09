@@ -62,25 +62,6 @@ mono_trace_init (void)
 }
 
 /**
- * mono_trace_cleanup:
- *
- * Releases the mono tracer.
- */
-void 
-mono_trace_cleanup (void)
-{
-	if(level_stack != NULL) {
-		while(!g_queue_is_empty (level_stack)) {
-			g_free (g_queue_pop_head (level_stack));
-		}
-
-		logCallback.closer();
-		g_queue_free (level_stack);
-		level_stack = NULL;
-	}
-}
-
-/**
  * mono_tracev_inner:
  * \param level Verbose level of the specified message
  * \param mask Type of the specified message
@@ -156,12 +137,12 @@ mono_trace_set_logdest_string (const char *dest)
 	logger.writer = mono_log_write_logcat;
 	logger.closer = mono_log_close_logcat;
 	logger.dest   = (char*) dest;
-#elif defined (HOST_IOS)
-	logger.opener = mono_log_open_asl;
-	logger.writer = mono_log_write_asl;
-	logger.closer = mono_log_close_asl;
+#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_WATCHOS) || defined(HOST_MACCAT)
+	logger.opener = mono_log_open_os_log;
+	logger.writer = mono_log_write_os_log;
+	logger.closer = mono_log_close_os_log;
 	logger.dest   = (char*) dest;
-#else
+#elif !defined(DISABLE_LOG_DEST)
 	if (dest && !strcmp("flight-recorder", dest)) {
 		logger.opener = mono_log_open_recorder;
 		logger.writer = mono_log_write_recorder;
@@ -183,6 +164,11 @@ mono_trace_set_logdest_string (const char *dest)
 		logger.closer = mono_log_close_logfile;
 		logger.dest   = (char *) dest;
 	}
+#else
+	logger.opener = mono_log_open_logfile;
+	logger.writer = mono_log_write_logfile;
+	logger.closer = mono_log_close_logfile;
+	logger.dest   = NULL;
 #endif
 
 	mono_trace_set_log_handler_internal(&logger, NULL);
@@ -317,6 +303,7 @@ mono_trace_set_mask_string (const char *value)
 		{ "tiered", MONO_TRACE_TIERED },
 		{ "qcall", MONO_TRACE_QCALL },
 		{ "metadata-update", MONO_TRACE_METADATA_UPDATE },
+		{ "diagnostics", MONO_TRACE_DIAGNOSTICS },
 		{ "all", (MonoTraceMask)~0 }, // FIXMEcxx there is a better way -- operator overloads of enums
 		{ NULL, (MonoTraceMask)0 },
 	};

@@ -400,6 +400,7 @@ BEGIN
     IDS_CLASSLOAD_MI_MISSING_SIG_BODY       "Signature for the body in a method implementation cannot be found.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_MISSING_SIG_DECL       "Signature for the declaration in a method implementation cannot be found.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_BADRETURNTYPE          "Return type in method '%1' on type '%2' from assembly '%3' is not compatible with base type method '%4'."
+    IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL     "Virtual static method '%3' is not implemented on type '%1' from assembly '%2'."
 
     IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS   "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a method."
     IDS_CLASSLOAD_EQUIVALENTSTRUCTFIELDS    "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a static or non-public field."
@@ -413,7 +414,7 @@ BEGIN
 
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
-    IDS_INVALID_PINVOKE_CALLCONV            "Invalid unmanaged calling convention: must be one of stdcall, cdecl, or thiscall."
+    IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
     IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 

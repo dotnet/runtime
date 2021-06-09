@@ -36,7 +36,7 @@ namespace System.Reflection
 {
     public class CustomAttributeData
     {
-        private class LazyCAttrData
+        private sealed class LazyCAttrData
         {
             internal Assembly assembly = null!; // only call site always sets it
             internal IntPtr data;

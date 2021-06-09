@@ -261,7 +261,7 @@ namespace System.Reflection.Emit
             return DefineType(name, attr, typeof(object), null);
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             return DefineType(name, attr, parent, null);
         }
@@ -287,7 +287,7 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
-        private TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
+        private TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             if (name == null)
                 throw new ArgumentNullException("fullname");
@@ -315,22 +315,22 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             return DefineType(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, int typesize)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typesize)
         {
             return DefineType(name, attr, parent, null, PackingSize.Unspecified, typesize);
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, PackingSize packsize)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packsize)
         {
             return DefineType(name, attr, parent, null, packsize, TypeBuilder.UnspecifiedTypeSize);
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, PackingSize packingSize, int typesize)
+        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
         {
             return DefineType(name, attr, parent, null, packingSize, typesize);
         }
@@ -991,7 +991,7 @@ namespace System.Reflection.Emit
         }
     }
 
-    internal class ModuleBuilderTokenGenerator : ITokenGenerator
+    internal sealed class ModuleBuilderTokenGenerator : ITokenGenerator
     {
 
         private ModuleBuilder mb;

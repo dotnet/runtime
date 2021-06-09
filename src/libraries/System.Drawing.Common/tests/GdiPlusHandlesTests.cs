@@ -40,7 +40,7 @@ namespace System.Drawing.Tests
                 int finalHandles = Helpers.GetGuiResources(processHandle, 0);
                 ValidateNoWin32Error(finalHandles);
 
-                Assert.InRange(finalHandles, initialHandles, initialHandles + handleTreshold);
+                Assert.InRange(finalHandles, initialHandles - handleTreshold, initialHandles + handleTreshold);
             }).Dispose();
         }
 

@@ -41,7 +41,7 @@ namespace Microsoft.Internal.Collections
             return (ICollection<object>)Activator.CreateInstance(collectionType, collectionObject)!;
         }
 
-        private class CollectionOfObjectList : ICollection<object>
+        private sealed class CollectionOfObjectList : ICollection<object>
         {
             private readonly IList _list;
 
@@ -96,7 +96,7 @@ namespace Microsoft.Internal.Collections
             }
         }
 
-        private class CollectionOfObject<T> : ICollection<object>
+        private sealed class CollectionOfObject<T> : ICollection<object>
         {
             private readonly ICollection<T> _collectionOfT;
 

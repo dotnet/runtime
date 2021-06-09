@@ -52,8 +52,9 @@ public:
         , m_managed_app(args.managed_application)
         , m_core_servicing(args.core_servicing)
         , m_is_framework_dependent(is_framework_dependent)
+        , m_needs_file_existence_checks(false)
     {
-        int lowest_framework = m_fx_definitions.size() - 1;
+        int lowest_framework = static_cast<int>(m_fx_definitions.size()) - 1;
         int root_framework = -1;
         if (root_framework_rid_fallback_graph == nullptr)
         {
@@ -90,6 +91,11 @@ public:
 
         setup_additional_probes(args.probe_paths);
         setup_probe_config(args);
+
+        if (m_additional_deps.size() > 0)
+        {
+            m_needs_file_existence_checks = true;
+        }
     }
 
     bool valid(pal::string_t* errors)
@@ -170,6 +176,11 @@ public:
     bool is_framework_dependent() const
     {
         return m_is_framework_dependent;
+    }
+
+    bool needs_file_existence_checks() const
+    {
+        return m_needs_file_existence_checks;
     }
 
     void get_app_dir(pal::string_t *app_dir) const
@@ -272,6 +283,9 @@ private:
 
     // Is the deps file for an app using shared frameworks?
     const bool m_is_framework_dependent;
+
+    // File existence checks must be performed for probed paths.This will cause symlinks to be resolved.
+    bool m_needs_file_existence_checks;
 };
 
 #endif // DEPS_RESOLVER_H

@@ -60,6 +60,14 @@ alloc_ireg_ref (MonoCompile *cfg)
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_ref (cfg, vreg);
 
+#ifdef TARGET_WASM
+	/*
+	 * For GC stack scanning to work, have to spill all reference variables to the stack.
+	 */
+	MonoInst *ins = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_get_object_class ()), OP_LOCAL, vreg);
+	ins->flags |= MONO_INST_VOLATILE;
+#endif
+
 	return vreg;
 }
 

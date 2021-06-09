@@ -20,7 +20,7 @@
 #include "pal_icushim.h"
 
 // Define pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) TYPEOF(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib, required) TYPEOF(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -41,14 +41,14 @@ static void* libicui18n = NULL;
 
 #if defined (TARGET_UNIX)
 
-#define PER_FUNCTION_BLOCK(fn, lib) \
+#define PER_FUNCTION_BLOCK(fn, lib, required) \
     c_static_assert_msg((sizeof(#fn) + MaxICUVersionStringWithSuffixLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
     sprintf(symbolName, #fn "%s", symbolVersion); \
     fn##_ptr = (TYPEOF(fn)*)dlsym(lib, symbolName); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
+    if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
 static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
-{    
+{
     // Find out the format of the version string added to each symbol
     // First try just the unversioned symbol
     if (dlsym(libicuuc, "u_strlen") == NULL)
@@ -89,10 +89,10 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 
 #define sscanf sscanf_s
 
-#define PER_FUNCTION_BLOCK(fn, lib) \
+#define PER_FUNCTION_BLOCK(fn, lib, required) \
     sprintf_s(symbolName, SYMBOL_NAME_SIZE, #fn "%s", symbolVersion); \
     fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
+    if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
 
 static int FindICULibs()
 {
@@ -421,7 +421,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     assert(icuuc != NULL);
     assert(icuin != NULL);
     assert(version != NULL);
-    
+
     libicuuc = icuuc;
     libicui18n = icuin;
     int major = -1;
@@ -476,7 +476,7 @@ int32_t GlobalizationNative_GetICUVersion()
 {
     if (u_getVersion_ptr == NULL)
         return 0;
-    
+
     UVersionInfo versionInfo;
     u_getVersion(versionInfo);
 

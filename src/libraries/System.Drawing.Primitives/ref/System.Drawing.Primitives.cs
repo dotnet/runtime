@@ -504,7 +504,7 @@ namespace System.Drawing
         public readonly bool Contains(System.Drawing.RectangleF rect) { throw null; }
         public readonly bool Contains(float x, float y) { throw null; }
         public readonly bool Equals(System.Drawing.RectangleF other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Drawing.RectangleF FromLTRB(float left, float top, float right, float bottom) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Drawing.RectangleF Inflate(System.Drawing.RectangleF rect, float x, float y) { throw null; }

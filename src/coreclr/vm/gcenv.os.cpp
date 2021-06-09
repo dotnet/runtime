@@ -743,23 +743,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifndef TARGET_UNIX
-    // GetCurrentProcessCpuCount only returns up to 64 procs.
-    return CPUGroupInfo::CanEnableGCCPUGroups() ?
-                GCToOSInterface::GetTotalProcessorCount():
-                ::GetCurrentProcessCpuCount();
-#else // !TARGET_UNIX
-    return ::GetCurrentProcessCpuCount();
-#endif // !TARGET_UNIX
-}
-
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, (size_t)-1 if not available
@@ -1037,18 +1020,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef TARGET_UNIX
-    if (CPUGroupInfo::CanEnableGCCPUGroups())
-    {
-        return CPUGroupInfo::GetNumActiveProcessors();
-    }
-    else
-    {
-        return g_SystemInfo.dwNumberOfProcessors;
-    }
-#else // !TARGET_UNIX
-    return PAL_GetTotalCpuCount();
-#endif // !TARGET_UNIX
+    return ::GetTotalProcessorCount();
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()

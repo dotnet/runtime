@@ -4386,6 +4386,13 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	g_assert_not_reached ();
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	/* FIXME: implement */
+	g_assert_not_reached ();
+}
+
 gboolean
 mono_arch_opcode_supported (int opcode)
 {

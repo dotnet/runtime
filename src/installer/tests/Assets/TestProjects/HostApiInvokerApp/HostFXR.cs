@@ -24,75 +24,77 @@ namespace HostApiInvokerApp
                 global_json_path = 1,
             }
 
-            [StructLayout(LayoutKind.Sequential, CharSet = Utils.OSCharSet)]
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
             internal struct hostfxr_dotnet_environment_sdk_info
             {
-                internal int size;
+                internal nuint size;
+
                 internal string version;
                 internal string path;
             }
 
-            [StructLayout(LayoutKind.Sequential, CharSet = Utils.OSCharSet)]
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
             internal struct hostfxr_dotnet_environment_framework_info
             {
-                internal int size;
+                internal nuint size;
+
                 internal string name;
                 internal string version;
                 internal string path;
             }
 
-            [StructLayout(LayoutKind.Sequential, CharSet = Utils.OSCharSet)]
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
             internal struct hostfxr_dotnet_environment_info
             {
-                internal int size;
+                internal nuint size;
 
                 internal string hostfxr_version;
                 internal string hostfxr_commit_hash;
 
-                internal int sdk_count;
+                internal nuint sdk_count;
                 internal IntPtr sdks;
 
-                internal int framework_count;
+                internal nuint framework_count;
                 internal IntPtr frameworks;
             }
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void hostfxr_resolve_sdk2_result_fn(
                 hostfxr_resolve_sdk2_result_key_t key,
                 string value);
 
-            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            [DllImport(nameof(hostfxr), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int hostfxr_resolve_sdk2(
                 string exe_dir,
                 string working_dir,
                 hostfxr_resolve_sdk2_flags_t flags,
                 hostfxr_resolve_sdk2_result_fn result);
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void hostfxr_get_available_sdks_result_fn(
                 int sdk_count,
                 [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]
                 string[] sdk_dirs);
 
-            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            [DllImport(nameof(hostfxr), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int hostfxr_get_available_sdks(
                 string exe_dir,
                 hostfxr_get_available_sdks_result_fn result);
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void hostfxr_error_writer_fn(
                 string message);
 
-            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            [DllImport(nameof(hostfxr), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern IntPtr hostfxr_set_error_writer(
                 hostfxr_error_writer_fn error_writer);
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void hostfxr_get_dotnet_environment_info_result_fn(
                  IntPtr info,
                  IntPtr result_context);
 
-            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            [DllImport(nameof(hostfxr), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int hostfxr_get_dotnet_environment_info(
                 string dotnet_root,
                 IntPtr reserved,
@@ -209,26 +211,27 @@ namespace HostApiInvokerApp
 
                 hostfxr_version = environment_info.hostfxr_version;
                 hostfxr_commit_hash = environment_info.hostfxr_commit_hash;
-                    
+
                 int env_info_size = Marshal.SizeOf(environment_info);
-                if (env_info_size != environment_info.size)
+
+                if ((nuint)env_info_size != environment_info.size)
                     throw new Exception($"Size field value of hostfxr_dotnet_environment_info struct is {environment_info.size} but {env_info_size} was expected.");
-                    
-                for (int i = 0; i < environment_info.sdk_count; i++)
+
+                for (int i = 0; i < (int)environment_info.sdk_count; i++)
                 {
                     IntPtr pSdkInfo = new IntPtr(environment_info.sdks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_sdk_info>()));
                     sdks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_sdk_info>(pSdkInfo));
 
-                    if (Marshal.SizeOf(sdks[i]) != sdks[i].size)
+                    if ((nuint)Marshal.SizeOf(sdks[i]) != sdks[i].size)
                         throw new Exception($"Size field value of hostfxr_dotnet_environment_sdk_info struct is {sdks[i].size} but {Marshal.SizeOf(sdks[i])} was expected.");
                 }
 
-                for (int i = 0; i < environment_info.framework_count; i++)
+                for (int i = 0; i < (int)environment_info.framework_count; i++)
                 {
                     IntPtr pFrameworkInfo = new IntPtr(environment_info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
                     frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
 
-                    if (Marshal.SizeOf(frameworks[i]) != frameworks[i].size)
+                    if ((nuint)Marshal.SizeOf(frameworks[i]) != frameworks[i].size)
                         throw new Exception($"Size field value of hostfxr_dotnet_environment_framework_info struct is {frameworks[i].size} but {Marshal.SizeOf(frameworks[i])} was expected.");
                 }
 

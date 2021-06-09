@@ -107,7 +107,6 @@ typedef struct {
 } MonoProfilerCoverageInfo;
 
 void mono_profiler_started (void);
-void mono_profiler_cleanup (void);
 
 static inline gboolean
 mono_profiler_installed (void)

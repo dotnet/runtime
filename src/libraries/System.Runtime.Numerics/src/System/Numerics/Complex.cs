@@ -13,7 +13,7 @@ namespace System.Numerics
     /// </summary>
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Complex : IEquatable<Complex>, IFormattable
+    public readonly struct Complex : IEquatable<Complex>, IFormattable
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
@@ -33,8 +33,8 @@ namespace System.Numerics
         private static readonly double s_log2 = Math.Log(2.0);
 
         // Do not rename, these fields are needed for binary serialization
-        private double m_real; // Do not rename (binary serialization)
-        private double m_imaginary; // Do not rename (binary serialization)
+        private readonly double m_real; // Do not rename (binary serialization)
+        private readonly double m_imaginary; // Do not rename (binary serialization)
 
         public Complex(double real, double imaginary)
         {
@@ -388,20 +388,11 @@ namespace System.Numerics
             return finalHash;
         }
 
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", m_real, m_imaginary);
-        }
+        public override string ToString() => $"({m_real}, {m_imaginary})";
 
-        public string ToString(string? format)
-        {
-            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", m_real.ToString(format, CultureInfo.CurrentCulture), m_imaginary.ToString(format, CultureInfo.CurrentCulture));
-        }
+        public string ToString(string? format) => ToString(format, null);
 
-        public string ToString(IFormatProvider? provider)
-        {
-            return string.Format(provider, "({0}, {1})", m_real, m_imaginary);
-        }
+        public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
         public string ToString(string? format, IFormatProvider? provider)
         {
@@ -687,82 +678,75 @@ namespace System.Numerics
                 {
                     return new Complex(0.0, Math.Sqrt(-value.m_real));
                 }
-                else
+
+                return new Complex(Math.Sqrt(value.m_real), 0.0);
+            }
+
+            // One way to compute Sqrt(z) is just to call Pow(z, 0.5), which coverts to polar coordinates
+            // (sqrt + atan), halves the phase, and reconverts to cartesian coordinates (cos + sin).
+            // Not only is this more expensive than necessary, it also fails to preserve certain expected
+            // symmetries, such as that the square root of a pure negative is a pure imaginary, and that the
+            // square root of a pure imaginary has exactly equal real and imaginary parts. This all goes
+            // back to the fact that Math.PI is not stored with infinite precision, so taking half of Math.PI
+            // does not land us on an argument with cosine exactly equal to zero.
+
+            // To find a fast and symmetry-respecting formula for complex square root,
+            // note x + i y = \sqrt{a + i b} implies x^2 + 2 i x y - y^2 = a + i b,
+            // so x^2 - y^2 = a and 2 x y = b. Cross-substitute and use the quadratic formula to obtain
+            //   x = \sqrt{\frac{\sqrt{a^2 + b^2} + a}{2}}  y = \pm \sqrt{\frac{\sqrt{a^2 + b^2} - a}{2}}
+            // There is just one complication: depending on the sign on a, either x or y suffers from
+            // cancelation when |b| << |a|. We can get aroud this by noting that our formulas imply
+            // x^2 y^2 = b^2 / 4, so |x| |y| = |b| / 2. So after computing the one that doesn't suffer
+            // from cancelation, we can compute the other with just a division. This is basically just
+            // the right way to evaluate the quadratic formula without cancelation.
+
+            // All this reduces our total cost to two sqrts and a few flops, and it respects the desired
+            // symmetries. Much better than atan + cos + sin!
+
+            // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
+
+            // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
+            // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
+            // when we encounter very large components to avoid intermediate infinities.
+            bool rescale = false;
+            double realCopy = value.m_real;
+            double imaginaryCopy = value.m_imaginary;
+            if ((Math.Abs(realCopy) >= s_sqrtRescaleThreshold) || (Math.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
+            {
+                if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
                 {
-                    return new Complex(Math.Sqrt(value.m_real), 0.0);
+                    // We need to handle infinite imaginary parts specially because otherwise
+                    // our formulas below produce inf/inf = NaN. The NaN test is necessary
+                    // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                    return (new Complex(double.PositiveInfinity, imaginaryCopy));
                 }
+
+                realCopy *= 0.25;
+                imaginaryCopy *= 0.25;
+                rescale = true;
+            }
+
+            // This is the core of the algorithm. Everything else is special case handling.
+            double x, y;
+            if (realCopy >= 0.0)
+            {
+                x = Math.Sqrt((Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
+                y = imaginaryCopy / (2.0 * x);
             }
             else
             {
-
-                // One way to compute Sqrt(z) is just to call Pow(z, 0.5), which coverts to polar coordinates
-                // (sqrt + atan), halves the phase, and reconverts to cartesian coordinates (cos + sin).
-                // Not only is this more expensive than necessary, it also fails to preserve certain expected
-                // symmetries, such as that the square root of a pure negative is a pure imaginary, and that the
-                // square root of a pure imaginary has exactly equal real and imaginary parts. This all goes
-                // back to the fact that Math.PI is not stored with infinite precision, so taking half of Math.PI
-                // does not land us on an argument with cosine exactly equal to zero.
-
-                // To find a fast and symmetry-respecting formula for complex square root,
-                // note x + i y = \sqrt{a + i b} implies x^2 + 2 i x y - y^2 = a + i b,
-                // so x^2 - y^2 = a and 2 x y = b. Cross-substitute and use the quadratic formula to obtain
-                //   x = \sqrt{\frac{\sqrt{a^2 + b^2} + a}{2}}  y = \pm \sqrt{\frac{\sqrt{a^2 + b^2} - a}{2}}
-                // There is just one complication: depending on the sign on a, either x or y suffers from
-                // cancelation when |b| << |a|. We can get aroud this by noting that our formulas imply
-                // x^2 y^2 = b^2 / 4, so |x| |y| = |b| / 2. So after computing the one that doesn't suffer
-                // from cancelation, we can compute the other with just a division. This is basically just
-                // the right way to evaluate the quadratic formula without cancelation.
-
-                // All this reduces our total cost to two sqrts and a few flops, and it respects the desired
-                // symmetries. Much better than atan + cos + sin!
-
-                // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
-
-                // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
-                // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
-                // when we encounter very large components to avoid intermediate infinities.
-                bool rescale = false;
-                if ((Math.Abs(value.m_real) >= s_sqrtRescaleThreshold) || (Math.Abs(value.m_imaginary) >= s_sqrtRescaleThreshold))
-                {
-                    if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
-                    {
-                        // We need to handle infinite imaginary parts specially because otherwise
-                        // our formulas below produce inf/inf = NaN. The NaN test is necessary
-                        // so that we return NaN rather than (+inf,inf) for (NaN,inf).
-                        return (new Complex(double.PositiveInfinity, value.m_imaginary));
-                    }
-                    else
-                    {
-                        value.m_real *= 0.25;
-                        value.m_imaginary *= 0.25;
-                        rescale = true;
-                    }
-                }
-
-                // This is the core of the algorithm. Everything else is special case handling.
-                double x, y;
-                if (value.m_real >= 0.0)
-                {
-                    x = Math.Sqrt((Hypot(value.m_real, value.m_imaginary) + value.m_real) * 0.5);
-                    y = value.m_imaginary / (2.0 * x);
-                }
-                else
-                {
-                    y = Math.Sqrt((Hypot(value.m_real, value.m_imaginary) - value.m_real) * 0.5);
-                    if (value.m_imaginary < 0.0) y = -y;
-                    x = value.m_imaginary / (2.0 * y);
-                }
-
-                if (rescale)
-                {
-                    x *= 2.0;
-                    y *= 2.0;
-                }
-
-                return new Complex(x, y);
-
+                y = Math.Sqrt((Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
+                if (imaginaryCopy < 0.0) y = -y;
+                x = imaginaryCopy / (2.0 * y);
             }
 
+            if (rescale)
+            {
+                x *= 2.0;
+                y *= 2.0;
+            }
+
+            return new Complex(x, y);
         }
 
         public static Complex Pow(Complex value, Complex power)

@@ -9,6 +9,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -870,7 +871,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (!(value is SqlString))
             {
@@ -974,7 +975,7 @@ namespace System.Data.SqlTypes
         };
 
         // Class to store map of lcids to ordinal
-        internal class CBuildLcidOrdMap {
+        internal sealed class CBuildLcidOrdMap {
             internal SLcidOrdMapItem[] m_rgLcidOrdMap;
             internal int m_cValidLocales;
             internal int m_uiPosEnglish; // Start binary searches here - this is index in array, not ordinal

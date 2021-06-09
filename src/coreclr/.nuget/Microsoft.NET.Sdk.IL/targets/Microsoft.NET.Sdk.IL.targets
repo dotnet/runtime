@@ -16,7 +16,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
     <Language>IL</Language>
     <TargetRuntime>Managed</TargetRuntime>
-    <DefaultProjectTypeGuid Condition="'$(DefaultProjectTypeGuid)' == ''">{F571AB99-FB84-49F4-A0DF-F27AA55F3F3F}</DefaultProjectTypeGuid>
+    <DefaultProjectTypeGuid Condition="'$(DefaultProjectTypeGuid)' == ''">{9A19103F-16F7-4668-BE54-9A1E7A4F7556}</DefaultProjectTypeGuid>
     <AppDesignerFolder Condition="'$(AppDesignerFolder)' == ''">Properties</AppDesignerFolder>
     <AlwaysUseNumericalSuffixInItemNames>true</AlwaysUseNumericalSuffixInItemNames>
   </PropertyGroup>

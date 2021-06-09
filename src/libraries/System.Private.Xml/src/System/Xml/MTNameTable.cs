@@ -599,7 +599,7 @@ namespace System.Xml {
 
 
     // A MTNameTable node.
-    internal class MTNameTableNode {
+    internal sealed class MTNameTableNode {
         internal String value;
         internal Int64 hash;
         internal Int64 counter;
@@ -676,7 +676,7 @@ namespace System.Xml {
 
 
     // Enumerates all the names (strings) of a MTNameTable
-    internal class MTNameTableEnumerator: IEnumerator {
+    internal sealed class MTNameTableEnumerator: IEnumerator {
         private ArrayList names;
         private int iName;
 

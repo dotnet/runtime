@@ -267,8 +267,11 @@ namespace ILCompiler
             return ModuleToCompilationUnitIndex(module1) == ModuleToCompilationUnitIndex(module2);
         }
 
-        public bool NeedsAlignmentBetweenBaseTypeAndDerived(MetadataType baseType, MetadataType derivedType)
+        public override bool NeedsAlignmentBetweenBaseTypeAndDerived(MetadataType baseType, MetadataType derivedType)
         {
+            if (baseType.IsObject)
+                return false;
+
             if (!ModuleMatchesCompilationUnitIndex(derivedType.Module, baseType.Module) ||
                 TypeLayoutCompilationUnits(baseType).HasMultipleCompilationUnits)
             {

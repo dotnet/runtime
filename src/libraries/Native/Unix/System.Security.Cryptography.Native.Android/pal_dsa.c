@@ -5,29 +5,18 @@
 #include "pal_utilities.h"
 #include "pal_signature.h"
 #include "pal_bignum.h"
-
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS_ENV(name, releaseFn) \
-do { \
-    for (int i = 0; i < count_##name; ++i) \
-    { \
-        releaseFn(env, name[i]); \
-    } \
-} while(0)
+#include "pal_misc.h"
 
 int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
 {
-    assert(dsa);
+    abort_if_invalid_pointer_argument (dsa);
 
     // KeyPairGenerator kpg = KeyPairGenerator.getInstance("DSA");
     // kpg.initialize(bits);
     // KeyPair kp = kpg.genKeyPair();
 
     JNIEnv* env = GetJNIEnv();
-    jobject dsaStr = JSTRING("DSA");
+    jobject dsaStr = make_java_string(env, "DSA");
     jobject kpgObj =  (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, dsaStr);
     (*env)->DeleteLocalRef(env, dsaStr);
     if (CheckJNIExceptions(env))
@@ -51,30 +40,29 @@ int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
     return SUCCESS;
 }
 
-static jobject GetQParameter(JNIEnv* env, jobject dsa)
+ARGS_NON_NULL_ALL static jobject GetQParameter(JNIEnv* env, jobject dsa)
 {
-    assert(dsa);
+    jobject ret = NULL;
 
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec);
-    loc[algName] = JSTRING("DSA");
+    loc[algName] = make_java_string(env, "DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
     loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
     loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jobject q = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = q;
 
-    return q;
-
-error:
+cleanup:
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    return FAIL;
+    return ret;
 }
 
 int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
 {
-    assert(dsa);
+    abort_if_invalid_pointer_argument (dsa);
 
     // The maximum size of a signature for the provided key is 2* bitlength of Q + extra bytes for the DER
     // encoding. The DER encoding is as follows (with R and S being the components of the signature and all lengths
@@ -99,11 +87,11 @@ int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
 
 int32_t AndroidCryptoNative_DsaSizeP(jobject dsa)
 {
-    assert(dsa);
+    abort_if_invalid_pointer_argument (dsa);
 
     JNIEnv* env = GetJNIEnv();
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, p);
-    loc[algName] = JSTRING("DSA");
+    loc[algName] = make_java_string(env, "DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
     loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
     loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
@@ -123,6 +111,8 @@ error:
 
 int32_t AndroidCryptoNative_DsaSignatureFieldSize(jobject dsa)
 {
+    abort_if_invalid_pointer_argument (dsa);
+
     JNIEnv* env = GetJNIEnv();
     jobject q = GetQParameter(env, dsa);
     if (!q)
@@ -134,9 +124,9 @@ int32_t AndroidCryptoNative_DsaSignatureFieldSize(jobject dsa)
     return byteLength;
 }
 
-static jobject GetDsaSignatureObject(JNIEnv* env)
+ARGS_NON_NULL_ALL static jobject GetDsaSignatureObject(JNIEnv* env)
 {
-    jstring algorithmName = JSTRING("NONEwithDSA");
+    jstring algorithmName = make_java_string(env, "NONEwithDSA");
     jobject signatureObject =
         (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, algorithmName);
     (*env)->DeleteLocalRef(env, algorithmName);
@@ -152,9 +142,9 @@ int32_t AndroidCryptoNative_DsaSign(
     uint8_t* refsignature,
     int32_t* outSignatureLength)
 {
-    assert(hash);
-    assert(refsignature);
-    assert(dsa);
+    abort_if_invalid_pointer_argument (hash);
+    abort_if_invalid_pointer_argument (refsignature);
+    abort_if_invalid_pointer_argument (dsa);
     if (!outSignatureLength)
     {
         return FAIL;
@@ -188,9 +178,9 @@ int32_t AndroidCryptoNative_DsaVerify(
     uint8_t* signature,
     int32_t signatureLength)
 {
-    assert(hash);
-    assert(signature);
-    assert(dsa);
+    abort_if_invalid_pointer_argument (hash);
+    abort_if_invalid_pointer_argument (signature);
+    abort_if_invalid_pointer_argument (dsa);
     JNIEnv* env = GetJNIEnv();
 
     jobject signatureObject = GetDsaSignatureObject(env);
@@ -214,23 +204,23 @@ int32_t AndroidCryptoNative_GetDsaParameters(
     jobject* y, int32_t* yLength,
     jobject* x, int32_t* xLength)
 {
-    assert(dsa);
-    assert(p);
-    assert(q);
-    assert(g);
-    assert(y);
-    assert(x);
-    assert(pLength);
-    assert(qLength);
-    assert(gLength);
-    assert(yLength);
-    assert(xLength);
-    
+    abort_if_invalid_pointer_argument (dsa);
+    abort_if_invalid_pointer_argument (p);
+    abort_if_invalid_pointer_argument (q);
+    abort_if_invalid_pointer_argument (g);
+    abort_if_invalid_pointer_argument (y);
+    abort_if_invalid_pointer_argument (x);
+    abort_if_invalid_pointer_argument (pLength);
+    abort_if_invalid_pointer_argument (qLength);
+    abort_if_invalid_pointer_argument (gLength);
+    abort_if_invalid_pointer_argument (yLength);
+    abort_if_invalid_pointer_argument (xLength);
+
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, privateKey, privateKeySpec);
 
-    loc[algName] = JSTRING("DSA");
+    loc[algName] = make_java_string(env, "DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
     loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
     loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
@@ -277,12 +267,8 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
     uint8_t* x,
     int32_t xLength)
 {
-    if (!outDsa)
-    {
-        assert(false);
-        return 0;
-    }
-    
+    abort_if_invalid_pointer_argument (outDsa);
+
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(bn, P, Q, G, Y, X);
@@ -300,7 +286,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
         loc[privateKeySpec] = (*env)->NewObject(env, g_DSAPrivateKeySpecClass, g_DSAPrivateKeySpecCtor, bn[X], bn[P], bn[Q], bn[G]);
     }
 
-    loc[dsa] = JSTRING("DSA");
+    loc[dsa] = make_java_string(env, "DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[dsa]);
     loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[publicKeySpec]);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
@@ -311,8 +297,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
-    jobject keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, loc[publicKey], loc[privateKey]);
-    *outDsa = ToGRef(env, keyPair);
+    *outDsa = AndroidCryptoNative_CreateKeyPair(env, loc[publicKey], loc[privateKey]);
     if (CheckJNIExceptions(env))
     {
         ON_EXCEPTION_PRINT_AND_GOTO(error);
@@ -324,7 +309,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
 error:
     returnValue = FAIL;
 cleanup:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
 
     return returnValue;

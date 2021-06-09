@@ -2,7 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides types for managing access and audit control lists for pipes.
 
 Commonly Used Types:

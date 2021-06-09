@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -52,7 +53,7 @@ namespace System.Reflection.Metadata
             return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode)!);
         }
 
-        public static unsafe BlobContentId FromHash(byte[] hashCode)
+        public static BlobContentId FromHash(byte[] hashCode)
         {
             const int minHashSize = 20;
 
@@ -66,16 +67,23 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.Format(SR.HashTooShort, minHashSize), nameof(hashCode));
             }
 
-            Guid guid = default(Guid);
-            byte* guidPtr = (byte*)&guid;
-            for (var i = 0; i < BlobUtilities.SizeOfGuid; i++)
-            {
-                guidPtr[i] = hashCode[i];
-            }
+            // extract guid components from input data
+            uint a = ((uint)hashCode[3] << 24 | (uint)hashCode[2] << 16 | (uint)hashCode[1] << 8 | hashCode[0]);
+            ushort b = (ushort)((ushort)hashCode[5] << 8 | (ushort)hashCode[4]);
+            ushort c = (ushort)((ushort)hashCode[7] << 8 | (ushort)hashCode[6]);
+            byte d = hashCode[8];
+            byte e = hashCode[9];
+            byte f = hashCode[10];
+            byte g = hashCode[11];
+            byte h = hashCode[12];
+            byte i = hashCode[13];
+            byte j = hashCode[14];
+            byte k = hashCode[15];
 
             // modify the guid data so it decodes to the form of a "random" guid ala rfc4122
-            guidPtr[7] = (byte)((guidPtr[7] & 0x0f) | (4 << 4));
-            guidPtr[8] = (byte)((guidPtr[8] & 0x3f) | (2 << 6));
+            c = (ushort)((c & 0x0fff) | (4 << 12));
+            d = (byte)((d & 0x3f) | (2 << 6));
+            Guid guid = new Guid((int)a, (short)b, (short)c, d, e, f, g, h, i, j, k);
 
             // compute a random-looking stamp from the remaining bits, but with the upper bit set
             uint stamp = 0x80000000u | ((uint)hashCode[19] << 24 | (uint)hashCode[18] << 16 | (uint)hashCode[17] << 8 | hashCode[16]);
@@ -93,7 +101,7 @@ namespace System.Reflection.Metadata
         }
 
         public bool Equals(BlobContentId other) => Guid == other.Guid && Stamp == other.Stamp;
-        public override bool Equals(object? obj) => obj is BlobContentId bcid && Equals(bcid);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is BlobContentId bcid && Equals(bcid);
         public override int GetHashCode() => Hash.Combine(Stamp, Guid.GetHashCode());
         public static bool operator ==(BlobContentId left, BlobContentId right) => left.Equals(right);
         public static bool operator !=(BlobContentId left, BlobContentId right) => !left.Equals(right);

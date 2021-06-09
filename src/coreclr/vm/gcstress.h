@@ -464,7 +464,7 @@ namespace _GCStress
             GcStressBase::MaybeTrigger(acontext);
 
 #ifdef _DEBUG
-            Thread *pThread = GetThread();
+            Thread *pThread = GetThreadNULLOk();
             if (pThread)
             {
                 pThread->EnableStressHeap();

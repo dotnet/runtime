@@ -782,7 +782,7 @@ internal class Program
             Eval(0784, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(0785, v is EmptyStruct, false);
             Eval(0786, v is EmptyStruct[], false);
             Eval(0787, v is EmptyStruct?, false);
@@ -1740,7 +1740,7 @@ internal class Program
             Eval(1764, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(1765, v is EmptyStruct, false);
             Eval(1766, v is EmptyStruct[], false);
             Eval(1767, v is EmptyStruct?, false);
@@ -2698,7 +2698,7 @@ internal class Program
             Eval(2744, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(2745, v is EmptyStruct, false);
             Eval(2746, v is EmptyStruct[], false);
             Eval(2747, v is EmptyStruct?, false);
@@ -3656,7 +3656,7 @@ internal class Program
             Eval(3724, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(3725, v is EmptyStruct, false);
             Eval(3726, v is EmptyStruct[], false);
             Eval(3727, v is EmptyStruct?, false);
@@ -4614,7 +4614,7 @@ internal class Program
             Eval(4704, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(4705, v is EmptyStruct, false);
             Eval(4706, v is EmptyStruct[], false);
             Eval(4707, v is EmptyStruct?, false);
@@ -5572,7 +5572,7 @@ internal class Program
             Eval(5684, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(5685, v is EmptyStruct, false);
             Eval(5686, v is EmptyStruct[], false);
             Eval(5687, v is EmptyStruct?, false);
@@ -6530,7 +6530,7 @@ internal class Program
             Eval(6664, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(6665, v is EmptyStruct, false);
             Eval(6666, v is EmptyStruct[], false);
             Eval(6667, v is EmptyStruct?, false);
@@ -7488,7 +7488,7 @@ internal class Program
             Eval(7644, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(7645, v is EmptyStruct, false);
             Eval(7646, v is EmptyStruct[], false);
             Eval(7647, v is EmptyStruct?, false);
@@ -8446,7 +8446,7 @@ internal class Program
             Eval(8624, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(8625, v is EmptyStruct, false);
             Eval(8626, v is EmptyStruct[], false);
             Eval(8627, v is EmptyStruct?, false);
@@ -9404,7 +9404,7 @@ internal class Program
             Eval(9604, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(9605, v is EmptyStruct, false);
             Eval(9606, v is EmptyStruct[], false);
             Eval(9607, v is EmptyStruct?, false);
@@ -10362,7 +10362,7 @@ internal class Program
             Eval(10584, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(10585, v is EmptyStruct, false);
             Eval(10586, v is EmptyStruct[], false);
             Eval(10587, v is EmptyStruct?, false);
@@ -11320,7 +11320,7 @@ internal class Program
             Eval(11564, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(11565, v is EmptyStruct, false);
             Eval(11566, v is EmptyStruct[], false);
             Eval(11567, v is EmptyStruct?, false);
@@ -12278,7 +12278,7 @@ internal class Program
             Eval(12544, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(12545, v is EmptyStruct, false);
             Eval(12546, v is EmptyStruct[], false);
             Eval(12547, v is EmptyStruct?, false);
@@ -13236,7 +13236,7 @@ internal class Program
             Eval(13524, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(13525, v is EmptyStruct, false);
             Eval(13526, v is EmptyStruct[], false);
             Eval(13527, v is EmptyStruct?, false);
@@ -14194,7 +14194,7 @@ internal class Program
             Eval(14504, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(14505, v is EmptyStruct, false);
             Eval(14506, v is EmptyStruct[], false);
             Eval(14507, v is EmptyStruct?, false);
@@ -15152,7 +15152,7 @@ internal class Program
             Eval(15484, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(15485, v is EmptyStruct, false);
             Eval(15486, v is EmptyStruct[], false);
             Eval(15487, v is EmptyStruct?, false);
@@ -16110,7 +16110,7 @@ internal class Program
             Eval(16464, v is SealedClass[], false);
         }
         {
-            T?[] v = new T?[] { default(T) }; ;
+            T?[] v = new T?[] { default(T) };
             Eval(16465, v is EmptyStruct, false);
             Eval(16466, v is EmptyStruct[], false);
             Eval(16467, v is EmptyStruct?, false);

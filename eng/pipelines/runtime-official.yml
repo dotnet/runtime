@@ -42,6 +42,15 @@ stages:
   jobs:
 
   #
+  # Localization build
+  #
+  - template: /eng/common/templates/job/onelocbuild.yml
+    parameters:
+      CreatePr: false
+      LclSource: lclFilesfromPackage
+      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+
+  #
   # Source Index Build
   #
   - template: ./source-index.yml
@@ -105,10 +114,12 @@ stages:
       - Android_arm64
       - MacCatalyst_x64
       - MacCatalyst_arm64
-      - tvOS_x64
+      - tvOSSimulator_x64
+      - tvOSSimulator_arm64
       - tvOS_arm64
-      - iOS_x64
-      - iOS_x86
+      - iOSSimulator_x64
+      - iOSSimulator_x86
+      - iOSSimulator_arm64
       - iOS_arm
       - iOS_arm64
       - OSX_x64
@@ -125,7 +136,7 @@ stages:
       # - windows_arm
       # - windows_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -141,8 +152,9 @@ stages:
       platforms:
       - Android_x64
       - Browser_wasm
-      - tvOS_x64
-      - iOS_x64
+      - tvOS_arm64
+      - iOS_arm64
+      - MacCatalyst_x64
 
   #
   # Build Mono release AOT cross-compilers
@@ -180,7 +192,6 @@ stages:
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
                    /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-                   -ninja
         nameSuffix: CrossAOT_Mono
         runtimeVariant: crossaot
         dependsOn:
@@ -203,7 +214,7 @@ stages:
       - OSX_x64
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
-                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS+MacCatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
         nameSuffix: CrossAOT_Mono
         runtimeVariant: crossaot
         dependsOn:
@@ -211,11 +222,13 @@ stages:
         - mono_browser_offsets
         - mono_tvos_offsets
         - mono_ios_offsets
+        - mono_maccatalyst_offsets
         monoCrossAOTTargetOS:
         - Android
         - Browser
         - tvOS
         - iOS
+        - MacCatalyst
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
@@ -336,6 +349,8 @@ stages:
       buildConfig: release
       platforms:
       - windows_x64
+      - windows_x86
+      - Linux_x64
       jobParameters:
         testGroup: innerloop
         pgoType: 'PGO'
@@ -353,6 +368,8 @@ stages:
         pgoType: 'PGO'
       platforms:
       - windows_x64
+      - windows_x86
+      - Linux_x64
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

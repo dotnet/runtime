@@ -1085,7 +1085,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
                         // specifies this so that vararg processing on the callee side is simplified).
-                        if (fFloatingPoint && !IsVarArg)
+                        if (fFloatingPoint && _transitionBlock.IsArmhfABI && !IsVarArg)
                         {
                             // Handle floating point (primitive) arguments.
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using OLEDB.Test.ModuleCore;
+using System.Buffers.Binary;
 
 namespace System.Xml.Tests
 {
@@ -28,7 +29,8 @@ namespace System.Xml.Tests
             string strDeVal = string.Empty;
             string strVal = string.Empty;
 
-            strVal = (BitConverter.ToChar(_byte_BaseChar, i)).ToString();
+            char c = (char)BinaryPrimitives.ReadUInt16LittleEndian(new Span<byte>(_byte_BaseChar, i, 2));
+            strVal = c.ToString();
             strEnVal = XmlConvert.EncodeName(strVal);
             CError.Compare(strEnVal, _Expbyte_BaseChar[i / 2], "Encode Comparison failed at " + i);
 

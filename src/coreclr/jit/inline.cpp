@@ -1456,8 +1456,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
     DumpDataEnsurePolicyIsSet();
 
     // Cache references to compiler substructures.
-    const Compiler::Info&    info = m_Compiler->info;
-    const Compiler::Options& opts = m_Compiler->opts;
+    const Compiler::Info& info = m_Compiler->info;
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
@@ -1472,7 +1471,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
     unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
-        double countsPerSec      = CycleTimer::CyclesPerSecond();
+        double countsPerSec      = CachedCyclesPerSecond();
         double counts            = (double)compCycles;
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
@@ -1567,7 +1566,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
-        double countsPerSec      = CycleTimer::CyclesPerSecond();
+        double countsPerSec      = CachedCyclesPerSecond();
         double counts            = (double)compCycles;
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
@@ -1666,6 +1665,9 @@ void InlineStrategy::FinalizeXml(FILE* file)
 //------------------------------------------------------------------------
 // GetRandom: setup or access random state
 //
+// Arguments:
+//   seed -- seed value to use if not doing random inlines
+//
 // Return Value:
 //    New or pre-existing random state.
 //
@@ -1674,11 +1676,11 @@ void InlineStrategy::FinalizeXml(FILE* file)
 //    specified externally (via stress or policy setting) and partially
 //    specified internally via method hash.
 
-CLRRandom* InlineStrategy::GetRandom()
+CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
 {
     if (m_Random == nullptr)
     {
-        int externalSeed = 0;
+        int externalSeed = optionalSeed;
 
 #ifdef DEBUG
 
@@ -1707,6 +1709,8 @@ CLRRandom* InlineStrategy::GetRandom()
         assert(internalSeed != 0);
 
         int seed = externalSeed ^ internalSeed;
+
+        JITDUMP("\n*** Using random seed ext(%u) ^ int(%u) = %u\n", externalSeed, internalSeed, seed);
 
         m_Random = new (m_Compiler, CMK_Inlining) CLRRandom();
         m_Random->Init(seed);

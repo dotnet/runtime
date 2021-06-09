@@ -113,7 +113,9 @@ namespace System.Threading
     ///   - Since <see cref="s_lock"/> provides mutual exclusion for the states of all <see cref="WaitableObject"/>s in the
     ///     process, any operation that does not involve waiting or releasing a wait can occur with minimal p/invokes
     ///
+#if CORERT
     [EagerStaticClassConstruction] // the wait subsystem is used during lazy class construction
+#endif
     internal static partial class WaitSubsystem
     {
         private static readonly LowLevelLock s_lock = new LowLevelLock();
@@ -121,7 +123,7 @@ namespace System.Threading
         private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
         {
             IntPtr handle = HandleManager.NewHandle(waitableObject);
-            SafeWaitHandle safeWaitHandle = null;
+            SafeWaitHandle? safeWaitHandle = null;
             try
             {
                 safeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
@@ -280,7 +282,7 @@ namespace System.Threading
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
+            WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
             try
             {
@@ -320,7 +322,7 @@ namespace System.Threading
 
             if (waitHandles.Length == 1)
             {
-                WaitableObject waitableObject = waitableObjects[0];
+                WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
                     waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false);
@@ -373,7 +375,14 @@ namespace System.Threading
                     throw new ThreadInterruptedException();
                 }
 
-                waitableObjectToSignal.Signal(1);
+                try
+                {
+                    waitableObjectToSignal.Signal(1);
+                }
+                catch (SemaphoreFullException ex)
+                {
+                    throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts, ex);
+                }
                 waitCalled = true;
                 return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize);
             }
@@ -414,11 +423,6 @@ namespace System.Threading
             {
                 s_lock.Release();
             }
-        }
-
-        public static void OnThreadExiting(Thread thread)
-        {
-            thread.WaitInfo.OnThreadExiting();
         }
     }
 }

@@ -763,7 +763,7 @@ namespace System.Xml
     //
     // 4).    SE SC    same as above          EE            a). check stored blockPro                      <A></A>
     //                                                     b). true:  indentLevel no change
-    internal class HtmlUtf8RawTextWriterIndent : HtmlUtf8RawTextWriter
+    internal sealed class HtmlUtf8RawTextWriterIndent : HtmlUtf8RawTextWriter
     {
         //
         // Fields

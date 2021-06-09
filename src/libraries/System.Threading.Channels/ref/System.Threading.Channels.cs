@@ -23,6 +23,7 @@ namespace System.Threading.Channels
     {
         public static System.Threading.Channels.Channel<T> CreateBounded<T>(int capacity) { throw null; }
         public static System.Threading.Channels.Channel<T> CreateBounded<T>(System.Threading.Channels.BoundedChannelOptions options) { throw null; }
+        public static System.Threading.Channels.Channel<T> CreateBounded<T>(BoundedChannelOptions options, Action<T>? itemDropped) { throw null; }
         public static System.Threading.Channels.Channel<T> CreateUnbounded<T>() { throw null; }
         public static System.Threading.Channels.Channel<T> CreateUnbounded<T>(System.Threading.Channels.UnboundedChannelOptions options) { throw null; }
     }
@@ -47,7 +48,7 @@ namespace System.Threading.Channels
         public virtual System.Threading.Tasks.Task Completion { get { throw null; } }
         public virtual int Count { get { throw null; } }
         public virtual System.Threading.Tasks.ValueTask<T> ReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public abstract bool TryRead([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T item);
+        public abstract bool TryRead([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item);
         public abstract System.Threading.Tasks.ValueTask<bool> WaitToReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }
     public abstract partial class ChannelWriter<T>

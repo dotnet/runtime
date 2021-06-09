@@ -63,7 +63,6 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
 {
     CONTRACTL {
         NOTHROW;
-        PRECONDITION(CheckPointer(GetThread()));
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
 
@@ -79,7 +78,6 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 {
     CONTRACTL {
         NOTHROW;
-        PRECONDITION(CheckPointer(GetThread()));
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;

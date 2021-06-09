@@ -419,10 +419,6 @@ void BasicBlock::dspFlags()
     {
         printf("label ");
     }
-    if (bbFlags & BBF_JMP_TARGET)
-    {
-        printf("target ");
-    }
     if (bbFlags & BBF_HAS_JMP)
     {
         printf("jmp ");
@@ -650,19 +646,32 @@ void BasicBlock::dspJumpKind()
             break;
 
         case BBJ_SWITCH:
+        {
             printf(" ->");
 
-            unsigned jumpCnt;
-            jumpCnt = bbJumpSwt->bbsCount;
-            BasicBlock** jumpTab;
-            jumpTab = bbJumpSwt->bbsDstTab;
-            do
+            const unsigned     jumpCnt = bbJumpSwt->bbsCount;
+            BasicBlock** const jumpTab = bbJumpSwt->bbsDstTab;
+
+            for (unsigned i = 0; i < jumpCnt; i++)
             {
-                printf("%c" FMT_BB, (jumpTab == bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
-            } while (++jumpTab, --jumpCnt);
+                printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+
+                const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                if (isDefault)
+                {
+                    printf("[def]");
+                }
+
+                const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                if (isDominant)
+                {
+                    printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                }
+            }
 
             printf(" (switch)");
-            break;
+        }
+        break;
 
         default:
             unreached();
@@ -706,7 +715,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     printf("\n");
 }
 
-const char* BasicBlock::dspToString(int blockNumPadding /* = 2*/)
+const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
 {
     static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
     static int  nextBufferIndex = 0;
@@ -766,7 +775,7 @@ bool BasicBlock::CloneBlockState(
 
     for (Statement* fromStmt : from->Statements())
     {
-        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), 0, varNum, varVal);
+        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
         if (!newExpr)
         {
             // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
@@ -917,18 +926,37 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     return ptr->bbNum;
 }
 
+//------------------------------------------------------------------------
+// isEmpty: check if block is empty or contains only ignorable statements
+//
+// Return Value:
+//    True if block is empty, or contains only PHI assignments,
+//    or contains zero or more PHI assignments followed by NOPs.
+//
 bool BasicBlock::isEmpty()
 {
     if (!IsLIR())
     {
-        return (this->FirstNonPhiDef() == nullptr);
-    }
+        Statement* stmt = FirstNonPhiDef();
 
-    for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
-    {
-        if (node->OperGet() != GT_IL_OFFSET)
+        while (stmt != nullptr)
         {
-            return false;
+            if (!stmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                return false;
+            }
+
+            stmt = stmt->GetNextStmt();
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this))
+        {
+            if (node->OperGet() != GT_IL_OFFSET)
+            {
+                return false;
+            }
         }
     }
 
@@ -991,21 +1019,6 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
         stmt = stmt->GetNextStmt();
     }
     return stmt;
-}
-
-/*****************************************************************************
- *
- *  Mark a block as rarely run, we also don't want to have a loop in a
- *   rarely run block, and we set it's weight to zero.
- */
-
-void BasicBlock::bbSetRunRarely()
-{
-    setBBWeight(BB_ZERO_WEIGHT);
-    if (bbWeight == BB_ZERO_WEIGHT)
-    {
-        bbFlags |= BBF_RUN_RARELY; // This block is never/rarely run
-    }
 }
 
 /*****************************************************************************
@@ -1629,4 +1642,28 @@ bool BasicBlock::hasEHBoundaryOut()
 #endif // FEATURE_EH_FUNCLETS
 
     return returnVal;
+}
+
+//------------------------------------------------------------------------
+// BBswtDesc copy ctor: copy a switch descriptor
+//
+// Arguments:
+//    comp - compiler instance
+//    other - existing switch descriptor to copy
+//
+BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
+    : bbsDstTab(nullptr)
+    , bbsCount(other->bbsCount)
+    , bbsDominantCase(other->bbsDominantCase)
+    , bbsDominantFraction(other->bbsDominantFraction)
+    , bbsHasDefault(other->bbsHasDefault)
+    , bbsHasDominantCase(other->bbsHasDominantCase)
+{
+    // Allocate and fill in a new dst tab
+    //
+    bbsDstTab = new (comp, CMK_BasicBlock) BasicBlock*[bbsCount];
+    for (unsigned i = 0; i < bbsCount; i++)
+    {
+        bbsDstTab[i] = other->bbsDstTab[i];
+    }
 }

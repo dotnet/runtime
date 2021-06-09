@@ -150,7 +150,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 
     file.seekg(current_pos, file.beg);
 
-    realloc_buffer(stream_size - current_pos);
+    realloc_buffer(static_cast<size_t>(stream_size - current_pos));
     file.read(m_json.data(), stream_size - current_pos);
 
     return parse_raw_data(m_json.data(), m_json.size(), path);

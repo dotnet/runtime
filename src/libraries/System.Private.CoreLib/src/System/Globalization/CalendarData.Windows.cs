@@ -7,7 +7,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    internal partial class CalendarData
+    internal sealed partial class CalendarData
     {
         private const uint CAL_ICALINTVALUE = 0x00000001;
         private const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;

@@ -5,12 +5,12 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
     //
     // These structures define the layout of CNG key blobs passed to NCryptImportKey
     //
-    internal partial class BCrypt
+    internal static partial class BCrypt
     {
         /// <summary>
         ///     Append "value" to the data already in blob.

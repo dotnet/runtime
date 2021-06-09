@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class CryptUI
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class CRYPTUI_VIEWCERTIFICATE_STRUCTW
+        internal sealed class CRYPTUI_VIEWCERTIFICATE_STRUCTW
         {
             internal uint dwSize;
             internal IntPtr hwndParent;
@@ -33,7 +33,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class CRYPTUI_SELECTCERTIFICATE_STRUCTW
+        internal sealed class CRYPTUI_SELECTCERTIFICATE_STRUCTW
         {
             internal uint dwSize;
             internal IntPtr hwndParent;

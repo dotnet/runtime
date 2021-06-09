@@ -102,7 +102,7 @@ protected:
 
     // The debugger application to launch. eg:
     //    c:\debuggers_amd64\windbg.exe
-    ConfigStringHolder m_DebuggerCmd;
+    CLRConfigStringHolder m_DebuggerCmd;
 
     // The common format string for the command line.
     // This will get the following printf args:
@@ -113,7 +113,7 @@ protected:
     //    target debuggee (%d or %x): pid of the debuggee.
     // eg (for windbg):
     //   -c ".load C:\vbl\ClrDbg\ndp\clr\src\Tools\strikeRS\objc\amd64\strikeRS.dll; !watch %x %p" %s -p %d
-    ConfigStringHolder m_CommonParams;
+    CLRConfigStringHolder m_CommonParams;
 
     // Command parameters for create case.
     // Note that we must always physically call CreateProcess on the debuggee so that we get the proper out-parameters
@@ -128,12 +128,12 @@ protected:
     // to not create the break-in thread (which it can't do on a pre-initialized process).
     // eg:
     //  "-WX -pb -pr"
-    ConfigStringHolder m_CreateParams;
+    CLRConfigStringHolder m_CreateParams;
 
     // command parameters for attach. The WFDE server will send a loader breakpoint.
     // eg:
     //   "-WX"
-    ConfigStringHolder m_AttachParams;
+    CLRConfigStringHolder m_AttachParams;
 
     DWORD              m_dwProcessId;
 };

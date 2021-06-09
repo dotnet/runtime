@@ -145,8 +145,6 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
     add_compile_options(-wd4475) # 'fprintf' : length modifier 'L' cannot be used
     add_compile_options(-wd4477) # fprintf argument type
-
-    add_compile_options(-wd9025) # overriding '/TP' with '/TC'
 endif (CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM)

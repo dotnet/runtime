@@ -215,7 +215,8 @@ namespace System.ComponentModel.Design
                             propList.AddRange(child.Properties);
                         }
 
-                        PropertyDescriptor[] propArray = (PropertyDescriptor[])propList.ToArray(typeof(PropertyDescriptor));
+                        var propArray = new PropertyDescriptor[propList.Count];
+                        propList.CopyTo(propArray);
                         _properties = new PropertyDescriptorCollection(propArray, true);
                     }
 
@@ -484,7 +485,7 @@ namespace System.ComponentModel.Design
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }
 
-            private class OptionPropertyDescriptor : PropertyDescriptor
+            private sealed class OptionPropertyDescriptor : PropertyDescriptor
             {
                 private readonly DesignerOptionCollection _option;
 

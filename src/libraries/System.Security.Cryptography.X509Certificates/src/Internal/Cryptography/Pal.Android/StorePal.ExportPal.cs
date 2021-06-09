@@ -57,6 +57,9 @@ namespace Internal.Cryptography.Pal
                     case SafeRsaHandle rsa:
                         algorithm = new RSAImplementation.RSAAndroid(rsa);
                         break;
+                    case SafeDsaHandle dsa:
+                        algorithm = new DSAImplementation.DSAAndroid(dsa);
+                        break;
                     default:
                         throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
                 }

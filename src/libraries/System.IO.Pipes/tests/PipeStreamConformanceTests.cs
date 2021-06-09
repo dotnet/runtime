@@ -20,7 +20,7 @@ namespace System.IO.Pipes.Tests
         protected override Type UnsupportedConcurrentExceptionType => null;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool CansReturnFalseAfterDispose => false;
-        protected override bool FullyCancelableOperations => false;
+        protected override bool FullyCancelableOperations => !OperatingSystem.IsWindows();
 
         [PlatformSpecific(TestPlatforms.Windows)] // WaitForPipeDrain isn't supported on Unix
         [Fact]
@@ -201,14 +201,10 @@ namespace System.IO.Pipes.Tests
 
             var ctx = new CancellationTokenSource();
 
-            if (OperatingSystem.IsWindows()) // cancellation token after the operation has been initiated
-            {
-                Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
-                ctx.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWaitTimeout);
-            }
-
+            Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
             ctx.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWaitTimeout);
+
             Assert.True(server.WaitForConnectionAsync(ctx.Token).IsCanceled);
         }
 

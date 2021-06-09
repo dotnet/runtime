@@ -101,7 +101,7 @@ namespace System.ComponentModel
         /// Simple site implementation. We do some special processing to name the site, but
         /// that's about it.
         /// </summary>
-        private class Site : INestedSite
+        private sealed class Site : INestedSite
         {
             private string _name;
 

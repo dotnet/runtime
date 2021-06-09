@@ -24,6 +24,43 @@ int verbJitFlags::DoWork(const char* nameOfInput)
         mc->repGetJitFlags(&corJitFlags, sizeof(corJitFlags));
         unsigned long long rawFlags = corJitFlags.GetFlagsRaw();
 
+        // We co-opt unused flag bits to note if there's pgo data,
+        // and if so, what kind
+        //
+        bool hasEdgeProfile = false;
+        bool hasClassProfile = false;
+        bool hasLikelyClass = false;
+        ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
+        if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass, pgoSource))
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
+
+            if (hasEdgeProfile)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE);
+            }
+
+            if (hasClassProfile)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
+            }
+
+            if (hasLikelyClass)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
+            }
+
+            if (pgoSource == ICorJitInfo::PgoSource::Static)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE);
+            }
+
+            if (pgoSource == ICorJitInfo::PgoSource::Dynamic)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE);
+            }
+        }
+
         int index = flagMap.GetIndex(rawFlags);
         if (index == -1)
         {

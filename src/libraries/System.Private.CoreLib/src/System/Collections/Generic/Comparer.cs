@@ -120,7 +120,7 @@ namespace System.Collections.Generic
     [Serializable]
     internal sealed partial class EnumComparer<T> : Comparer<T>, ISerializable where T : struct, Enum
     {
-        internal EnumComparer() { }
+        public EnumComparer() { }
 
         // Used by the serialization engine.
         private EnumComparer(SerializationInfo info, StreamingContext context) { }

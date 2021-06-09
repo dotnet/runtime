@@ -65,7 +65,7 @@ static void DetectCiphersuiteConfiguration()
     //
     // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
     // make the portable version easier.
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
@@ -392,7 +392,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl)
     printf("%s:%d: pending=%d ssl=%p\n", __func__, __LINE__, pending, (void*)ssl);
  //   static int pending = 0;
     int ret=0;
-printf("%s:%d: version=%lu 0x%lx pending %d state %d in_init %d\n", __func__, __LINE__, OpenSSL_version_num(), OpenSSL_version_num(), pending , SSL_get_state(ssl), SSL_in_init(ssl));
+    printf("%s:%d: version=%lu 0x%lx pending %d state %d in_init %d\n", __func__, __LINE__, OpenSSL_version_num(), OpenSSL_version_num(), pending , SSL_get_state(ssl), SSL_in_init(ssl));
     if (!pending)
     {
         
@@ -411,7 +411,7 @@ printf("%s:%d: version=%lu 0x%lx pending %d state %d in_init %d\n", __func__, __
         printf("%s:%d: started renego %d %d\n", __func__, __LINE__, ret, ret1);
         pending = 1;
 
-    return 1;
+        return 1;
     }
 
 
@@ -468,7 +468,7 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
-    return SSL_get_peer_certificate(ssl);
+    return SSL_get1_peer_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
@@ -715,16 +715,22 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 // This function generates key pair and creates simple certificate.
 static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 {
-    RSA* rsa = CryptoNative_RsaCreate();
+    RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();
-    BIGNUM* bn = BN_new();
-    BN_set_word(bn, RSA_F4);
     X509_NAME * asnName;
     unsigned char * name = (unsigned char*)"localhost";
 
     int ret = 0;
 
-    if (rsa != NULL && CryptoNative_RsaGenerateKeyEx(rsa, 2048, bn) == 1)
+    EVP_PKEY* pkey = CryptoNative_RsaGenerateKey(2048);
+
+    if (pkey != NULL)
+    {
+        rsa = EVP_PKEY_get1_RSA(pkey);
+        EVP_PKEY_free(pkey);
+    }
+
+    if (rsa != NULL)
     {
         if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
         {
@@ -744,11 +750,6 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
         X509_set1_notAfter(cert, time);
 
         ret = X509_sign(cert, evp, EVP_sha256());
-    }
-
-    if (bn != NULL)
-    {
-        BN_free(bn);
     }
 
     if (rsa != NULL)

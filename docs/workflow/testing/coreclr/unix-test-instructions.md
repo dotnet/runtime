@@ -18,6 +18,12 @@ To build the tests on Unix:
 ./src/tests/build.sh
 ```
 
+By default, the test build uses Release as the libraries configuration. To use a different configuration, set the `LibrariesConfiguration` property to the desired configuration. For example:
+
+```
+./src/tests/build.sh /p:LibrariesConfiguration=Debug
+```
+
 Please note that this builds the Priority 0 tests. To build priority 1:
 
 ```sh

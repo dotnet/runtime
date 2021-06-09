@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging
 
             string providerAlias = ProviderAliasUtilities.GetAlias(providerType);
             LoggerFilterRule current = null;
-            foreach (LoggerFilterRule rule in options.Rules)
+            foreach (LoggerFilterRule rule in options.RulesInternal)
             {
                 if (IsBetter(rule, current, providerType.FullName, category)
                     || (!string.IsNullOrEmpty(providerAlias) && IsBetter(rule, current, providerAlias, category)))

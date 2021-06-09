@@ -90,33 +90,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         }
         private readonly ModuleHashtable _moduleHashtable = new ModuleHashtable();
 
-        private class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
-        {
-            private readonly StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
-
-            protected override int GetKeyHashCode(string key)
-            {
-                return _comparer.GetHashCode(key);
-            }
-            protected override int GetValueHashCode(ModuleData value)
-            {
-                return _comparer.GetHashCode(value.SimpleName);
-            }
-            protected override bool CompareKeyToValue(string key, ModuleData value)
-            {
-                return _comparer.Equals(key, value.SimpleName);
-            }
-            protected override bool CompareValueToValue(ModuleData value1, ModuleData value2)
-            {
-                return _comparer.Equals(value1.SimpleName, value2.SimpleName);
-            }
-            protected override ModuleData CreateValueFromKey(string key)
-            {
-                Debug.Fail("CreateValueFromKey not supported");
-                return null;
-            }
-        }
-        private readonly SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
+        private readonly Dictionary<string, ModuleData> _simpleNameHashtable = new Dictionary<string, ModuleData>(StringComparer.OrdinalIgnoreCase);
 
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
@@ -127,63 +101,82 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         public ModuleDesc GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
         {
-            ModuleData existing;
-            if (_simpleNameHashtable.TryGetValue(simpleName, out existing))
-                return existing.Module;
-
-            string filePath = null;
-
-            foreach (var module in _pgoTraceProcess.EnumerateLoadedManagedModules())
+            lock (this)
             {
-                var managedModule = module.ManagedModule;
-
-                if (module.ClrInstanceID != _clrInstanceID)
-                    continue;
-
-                if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
+                ModuleData existing;
+                if (_simpleNameHashtable.TryGetValue(simpleName, out existing))
                 {
-                    string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+                    if (existing == null)
+                    {
+                        if (throwIfNotFound)
+                        {
+                            ThrowHelper.ThrowFileNotFoundException(ExceptionStringID.FileLoadErrorGeneric, simpleName);
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
 
-                    // This path may be normalized
-                    if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
-                        filePath = filePathTemp;
-                    break;
+                    return existing.Module;
                 }
-            }
 
-            if (filePath == null)
-            {
-                // TODO: the exception is wrong for two reasons: for one, this should be assembly full name, not simple name.
-                // The other reason is that on CoreCLR, the exception also captures the reason. We should be passing two
-                // string IDs. This makes this rather annoying.
+                string filePath = null;
 
-                _moduleLoadLogger.LogModuleLoadFailure(simpleName);
+                foreach (var module in _pgoTraceProcess.EnumerateLoadedManagedModules())
+                {
+                    var managedModule = module.ManagedModule;
 
-                if (throwIfNotFound)
-                    ThrowHelper.ThrowFileNotFoundException(ExceptionStringID.FileLoadErrorGeneric, simpleName);
+                    if (module.ClrInstanceID != _clrInstanceID)
+                        continue;
 
-                return null;
-            }
+                    if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
+                    {
+                        string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
 
-            bool succeededOrReportedError = false;
-            try
-            {
-                ModuleDesc returnValue = AddModule(filePath, simpleName, null, true);
-                _moduleLoadLogger.LogModuleLoadSuccess(simpleName, filePath);
-                succeededOrReportedError = true;
-                return returnValue;
-            }
-            catch (Exception) when (!throwIfNotFound)
-            {
-                _moduleLoadLogger.LogModuleLoadFailure(simpleName, filePath);
-                succeededOrReportedError = true;
-                return null;
-            }
-            finally
-            {
-                if (!succeededOrReportedError)
+                        // This path may be normalized
+                        if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
+                            filePath = filePathTemp;
+                        break;
+                    }
+                }
+
+                if (filePath == null)
+                {
+                    // TODO: the exception is wrong for two reasons: for one, this should be assembly full name, not simple name.
+                    // The other reason is that on CoreCLR, the exception also captures the reason. We should be passing two
+                    // string IDs. This makes this rather annoying.
+
+                    _moduleLoadLogger.LogModuleLoadFailure(simpleName);
+
+                    if (throwIfNotFound)
+                        ThrowHelper.ThrowFileNotFoundException(ExceptionStringID.FileLoadErrorGeneric, simpleName);
+
+                    return null;
+                }
+
+                bool succeededOrReportedError = false;
+                try
+                {
+                    ModuleDesc returnValue = AddModule(filePath, simpleName, null, true);
+                    _moduleLoadLogger.LogModuleLoadSuccess(simpleName, filePath);
+                    succeededOrReportedError = true;
+                    return returnValue;
+                }
+                catch (Exception) when (!throwIfNotFound)
                 {
                     _moduleLoadLogger.LogModuleLoadFailure(simpleName, filePath);
+                    succeededOrReportedError = true;
+                    _simpleNameHashtable.Add(simpleName, null);
+                    return null;
+                }
+                finally
+                {
+                    if (!succeededOrReportedError)
+                    {
+                        _moduleLoadLogger.LogModuleLoadFailure(simpleName, filePath);
+                        _simpleNameHashtable.Add(simpleName, null);
+                    }
                 }
             }
         }
@@ -301,7 +294,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     if (useForBinding)
                     {
-                        ModuleData actualModuleData = _simpleNameHashtable.AddOrGetExisting(moduleData);
+                        ModuleData actualModuleData;
+
+                        if (!_simpleNameHashtable.TryGetValue(moduleData.SimpleName, out actualModuleData))
+                        {
+                            _simpleNameHashtable.Add(moduleData.SimpleName, moduleData);
+                            actualModuleData = moduleData;
+                        }
                         if (actualModuleData != moduleData)
                         {
                             if (actualModuleData.FilePath != filePath)

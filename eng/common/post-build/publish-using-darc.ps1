@@ -55,15 +55,12 @@ try {
       $optionalParams.Add($SigningValidationAdditionalParameters) | Out-Null
     }
   }
-  # note the custom branch to work around https://github.com/dotnet/arcade/issues/6987 .  Try to keep this rebased off master if publishing changes
-  
-  Write-Host "Using Arcade branch master-workaround-publishing-issue to work around disk space issues with alternate build pool.  Will be lost on Arcade updates as this is in eng common.  Contact dnceng for questions."
-  
+
   & $darc add-build-to-channel `
   --id $buildId `
   --publishing-infra-version $PublishingInfraVersion `
   --default-channels `
-  --source-branch master-workaround-publishing-issue `
+  --source-branch main `
   --azdev-pat $AzdoToken `
   --bar-uri $MaestroApiEndPoint `
   --password $MaestroToken `

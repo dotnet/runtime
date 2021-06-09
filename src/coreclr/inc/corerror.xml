@@ -2189,6 +2189,12 @@
   <Comment>The delegate contains a delegate currently not supported by the API.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131c69">
+  <SymbolicName>CORDBG_E_ASSEMBLY_UPDATES_APPLIED</SymbolicName>
+  <Message>"The operation is not supported because assembly updates have been applied."</Message>
+  <Comment>The operation is not supported because assembly updates have been applied.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131d02">
 	<SymbolicName>PEFMT_E_64BIT</SymbolicName>
 	<Message>"File is PE32+."</Message>
@@ -2281,6 +2287,18 @@
 	<SymbolicName>CLR_E_CROSSGEN_NO_IBC_DATA_FOUND</SymbolicName>
 	<Message>"Cannot compile using the PartialNgen flag because no IBC data was found."</Message>
 	<Comment>During crossgen compilation, the PartialNgen flag was set, but no IBC data was found in the resources section of the input image, and no IBC file was externally provided.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013200D">
+	<SymbolicName>CLR_E_GC_BAD_HARD_LIMIT</SymbolicName>
+	<Message>"GC heap hard limit configuration is invalid."</Message>
+	<Comment>During a GC initialization, the GC heap hard limit configuration is invalid.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013200E">
+	<SymbolicName>CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT</SymbolicName>
+	<Message>"GC large page support requires hard limit settings."</Message>
+	<Comment>During a GC initialization, GC large page support requires hard limit settings.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="E_ACCESSDENIED">

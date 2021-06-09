@@ -27,9 +27,10 @@ namespace System.ComponentModel
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
-        // TODO: https://github.com/mono/linker/issues/943
-        [DynamicDependency("ConvertFromInvariantString", "System.ComponentModel.TypeConverter", "System.ComponentModel.TypeConverter")]
-        public DefaultValueAttribute(Type type, string? value)
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        public DefaultValueAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            string? value)
         {
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.
@@ -58,8 +59,12 @@ namespace System.ComponentModel
                     _value = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
 
+                [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
-                static bool TryConvertFromInvariantString(Type? typeToConvert, string? stringValue, out object? conversionResult)
+                static bool TryConvertFromInvariantString(
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert,
+                    string? stringValue,
+                    out object? conversionResult)
                 {
                     conversionResult = null;
 
@@ -71,7 +76,7 @@ namespace System.ComponentModel
                         Volatile.Write(ref s_convertFromInvariantString, mi == null ? new object() : mi.CreateDelegate(typeof(Func<Type, string, object>)));
                     }
 
-                    if (!(s_convertFromInvariantString is Func<Type?, string?, object> convertFromInvariantString))
+                    if (!(s_convertFromInvariantString is Func<Type, string?, object> convertFromInvariantString))
                         return false;
 
                     try

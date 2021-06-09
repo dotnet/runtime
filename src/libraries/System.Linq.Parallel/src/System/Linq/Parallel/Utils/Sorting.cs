@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
         internal abstract TInputOutput[] Sort();
     }
 
-    internal class SortHelper<TInputOutput, TKey> : SortHelper<TInputOutput>, IDisposable
+    internal sealed class SortHelper<TInputOutput, TKey> : SortHelper<TInputOutput>, IDisposable
     {
         private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source from which to pull data.
         private readonly int _partitionCount; // The partition count.

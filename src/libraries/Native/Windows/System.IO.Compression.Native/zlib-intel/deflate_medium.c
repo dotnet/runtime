@@ -16,8 +16,6 @@ struct match {
     uInt    orgstart;
 };
 
-#define MAX_DIST2  ((1 << MAX_WBITS) - MIN_LOOKAHEAD)
-
 static int tr_tally_dist(deflate_state *s, int distance, int length)
 {
     return _tr_tally(s, distance, length);
@@ -113,6 +111,7 @@ static void fizzle_matches(deflate_state *s, struct match *current, struct match
     unsigned char *match, *orig;
     int changed = 0;
     struct match c,n;
+    uInt maxDist;
     /* step zero: sanity checks */
 
     if (current->match_length <= 1)
@@ -142,7 +141,8 @@ static void fizzle_matches(deflate_state *s, struct match *current, struct match
     n = *next;
 
     /* step one: try to move the "next" match to the left as much as possible */
-    limit = next->strstart > MAX_DIST2 ? next->strstart - MAX_DIST2 : 0;
+    maxDist = MAX_DIST(s);
+    limit = next->strstart > maxDist ? next->strstart - maxDist : 0;
      
     match = s->window + n.match_start - 1;
     orig = s->window + n.strstart - 1;
@@ -230,7 +230,7 @@ block_state deflate_medium(deflate_state *s, int flush)
              * At this point we have always match_length < MIN_MATCH
              */
              
-            if (hash_head != 0 && s->strstart - hash_head <= MAX_DIST2) {
+            if (hash_head != 0 && s->strstart - hash_head <= MAX_DIST(s)) {
                 /* To simplify the code, we prevent matches with the string
                  * of window index 0 (in particular we have to avoid a match
                  * of the string with itself at the start of the input file).
@@ -265,7 +265,7 @@ block_state deflate_medium(deflate_state *s, int flush)
             /* Find the longest match, discarding those <= prev_length.
              * At this point we have always match_length < MIN_MATCH
              */
-            if (hash_head != 0 && s->strstart - hash_head <= MAX_DIST2) {
+            if (hash_head != 0 && s->strstart - hash_head <= MAX_DIST(s)) {
                 /* To simplify the code, we prevent matches with the string
                  * of window index 0 (in particular we have to avoid a match
                  * of the string with itself at the start of the input file).

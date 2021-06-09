@@ -2,6 +2,7 @@
   <PropertyGroup>
     <!-- Shims built from this directory will double as reference and runtime facades -->
     <BinPlaceRef>true</BinPlaceRef>
+    <IsFrameworkSupportFacade>true</IsFrameworkSupportFacade>
     <!-- if a manual project exists, it will be used for the runtime facade instead -->
     <IsRuntimeAssembly Condition="!Exists('$(MSBuildThisFileDirectory)../manual/$(MSBuildProjectName).csproj')">true</IsRuntimeAssembly>
   </PropertyGroup>

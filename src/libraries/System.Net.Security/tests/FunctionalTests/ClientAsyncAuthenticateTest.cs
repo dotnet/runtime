@@ -152,7 +152,7 @@ namespace System.Net.Security.Tests
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, certificateCallback != null ? certificateCallback : AllowAnyServerCertificate, null))
                 {
                     Task clientAuthTask = sslStream.AuthenticateAsClientAsync(serverName, null, clientSslProtocols, false);
-                    await clientAuthTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    await clientAuthTask.WaitAsync(TestConfiguration.PassingTestTimeout);
 
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         server.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);

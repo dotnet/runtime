@@ -12,9 +12,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Mono.Cecil.Cil;
-using Mono.Cecil.Pdb;
-using Mono.Cecil;
 using System.Net.Http;
 
 namespace Microsoft.WebAssembly.Diagnostics
@@ -325,6 +322,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         return await Step(id, StepKind.Into, token);
                     }
+                case "Debugger.setVariableValue":
+                    {
+                        if (!DotnetObjectId.TryParse(args?["callFrameId"], out DotnetObjectId objectId))
+                            return false;
+                        switch (objectId.Scheme)
+                        {
+                            case "scope":
+                                return await OnSetVariableValue(id,
+                                    int.Parse(objectId.Value),
+                                    args?["variableName"]?.Value<string>(),
+                                    args?["newValue"],
+                                    token);
+                            default:
+                                return false;
+                        }
+                    }
 
                 case "Debugger.stepOut":
                     {
@@ -473,6 +486,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
+        private async Task<bool> OnSetVariableValue(MessageId id, int scopeId, string varName, JToken varValue, CancellationToken token)
+        {
+            ExecutionContext ctx = GetContext(id);
+            Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
+            if (scope == null)
+                return false;
+            var varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
+            if (varIds == null)
+                return false;
+            var varToSetValue = varIds.FirstOrDefault(v => v.Name == varName);
+            if (varToSetValue == null)
+                return false;
+            Result res = await SendMonoCommand(id, MonoCommands.SetVariableValue(scopeId, varToSetValue.Index, varName, varValue["value"].Value<string>()), token);
+            if (res.IsOk)
+                SendResponse(id, Result.Ok(new JObject()), token);
+            else
+                SendResponse(id, Result.Err($"Unable to set '{varValue["value"].Value<string>()}' to variable '{varName}'"), token);
+            return true;
+        }
+
         private async Task<Result> RuntimeGetProperties(MessageId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             if (objectId.Scheme == "scope")
@@ -506,6 +539,39 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             return res;
+        }
+
+        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, Breakpoint bp, CancellationToken token)
+        {
+            if (string.IsNullOrEmpty(bp?.Condition) || mono_frame == null)
+                return true;
+
+            string condition = bp.Condition;
+
+            if (bp.ConditionAlreadyEvaluatedWithError)
+                return false;
+            try {
+                var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
+
+                JObject retValue = await resolver.Resolve(condition, token);
+                if (retValue == null)
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
+                if (retValue?["value"]?.Type == JTokenType.Boolean ||
+                    retValue?["value"]?.Type == JTokenType.Integer ||
+                    retValue?["value"]?.Type == JTokenType.Float) {
+                    if (retValue?["value"]?.Value<bool>() == true)
+                        return true;
+                }
+                else if (retValue?["value"]?.Type != JTokenType.Null)
+                    return true;
+            }
+            catch (Exception e)
+            {
+                Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                bp.ConditionAlreadyEvaluatedWithError = true;
+                return false;
+            }
+            return false;
         }
 
         private async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
@@ -574,7 +640,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         int frame_id = mono_frame["frame_id"].Value<int>();
                         int il_pos = mono_frame["il_pos"].Value<int>();
-                        uint method_token = mono_frame["method_token"].Value<uint>();
+                        int method_token = mono_frame["method_token"].Value<int>();
                         string assembly_name = mono_frame["assembly_name"].Value<string>();
 
                         // This can be different than `method.Name`, like in case of generic methods
@@ -590,7 +656,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         MethodInfo method = asm.GetMethodByToken(method_token);
 
-                        if (method == null && !asm.Image.HasSymbols)
+                        if (method == null && !asm.HasSymbols)
                         {
                             try
                             {
@@ -656,6 +722,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         context.CallStack = frames;
 
                     }
+                    if (!await EvaluateCondition(sessionId, context, the_mono_frames?.First(), bp, token))
+                    {
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
                 }
                 else if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
                         url.StartsWith("wasm://wasm/", StringComparison.Ordinal)))
@@ -680,79 +751,48 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, uint method_token, SessionId sessionId, CancellationToken token)
+        private async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
+            if (urlSymbolServerList.Count == 0)
+                return null;
             if (asm.TriedToLoadSymbolsOnDemand)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;
-            ImageDebugHeader header = asm.Image.GetDebugHeader();
+            var peReader = asm.peReader;
+            var entries = peReader.ReadDebugDirectory();
+            var codeView = entries[0];
+            var codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
+            int pdbAge = codeViewData.Age;
+            var pdbGuid = codeViewData.Guid;
+            string pdbName = codeViewData.Path;
+            pdbName = Path.GetFileName(pdbName);
 
-            for (int i = 0; i < header.Entries.Length; i++)
+            foreach (string urlSymbolServer in urlSymbolServerList)
             {
-                ImageDebugHeaderEntry entry = header.Entries[i];
-                if (entry.Directory.Type != ImageDebugType.CodeView)
+                string downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
+
+                try
                 {
-                    continue;
+                    using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
+                        continue;
+                    }
+
+                    using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync(token);
+                    asm.UpdatePdbInformation(streamToReadFrom);
+                    foreach (SourceFile source in asm.Sources)
+                    {
+                        var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
+                        SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                    }
+                    return asm.GetMethodByToken(method_token);
                 }
-
-                byte[] data = entry.Data;
-
-                if (data.Length < 24)
-                    return null;
-
-                int pdbSignature = (data[0]
-                    | (data[1] << 8)
-                    | (data[2] << 16)
-                    | (data[3] << 24));
-
-                if (pdbSignature != 0x53445352) // "SDSR" mono/metadata/debug-mono-ppdb.c#L101
-                    return null;
-
-                byte[] buffer = new byte[16];
-                Buffer.BlockCopy(data, 4, buffer, 0, 16);
-
-                int pdbAge = (data[20]
-                    | (data[21] << 8)
-                    | (data[22] << 16)
-                    | (data[23] << 24));
-
-                var pdbGuid = new Guid(buffer);
-                byte[] buffer2 = new byte[(data.Length - 24) - 1];
-                Buffer.BlockCopy(data, 24, buffer2, 0, (data.Length - 24) - 1);
-                string pdbName = System.Text.Encoding.UTF8.GetString(buffer2, 0, buffer2.Length);
-                pdbName = Path.GetFileName(pdbName);
-
-                foreach (string urlSymbolServer in urlSymbolServerList)
+                catch (Exception e)
                 {
-                    string downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
-
-                    try
-                    {
-                        using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
-                            continue;
-                        }
-
-                        using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync(token);
-                        var portablePdbReaderProvider = new PdbReaderProvider();
-                        ISymbolReader symbolReader = portablePdbReaderProvider.GetSymbolReader(asm.Image, streamToReadFrom);
-                        asm.ClearDebugInfo(); //workaround while cecil PR #686 is not merged
-                        asm.Image.ReadSymbols(symbolReader);
-                        asm.Populate();
-                        foreach (SourceFile source in asm.Sources)
-                        {
-                            var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-                        }
-                        return asm.GetMethodByToken(method_token);
-                    }
-                    catch (Exception e)
-                    {
-                        Log("info", $"Unable to load symbols on demand exception: {e} url:{downloadURL} assembly: {asm.Name}");
-                    }
+                    Log("info", $"Unable to load symbols on demand exception: {e} url:{downloadURL} assembly: {asm.Name}");
                 }
                 break;
             }
@@ -921,7 +961,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
+        internal async Task<Result> GetScopeProperties(SessionId msg_id, int scope_id, CancellationToken token)
         {
             try
             {
@@ -957,11 +997,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<Breakpoint> SetMonoBreakpoint(SessionId sessionId, string reqId, SourceLocation location, CancellationToken token)
+        private async Task<Breakpoint> SetMonoBreakpoint(SessionId sessionId, string reqId, SourceLocation location, string condition, CancellationToken token)
         {
-            var bp = new Breakpoint(reqId, location, BreakpointState.Pending);
+            var bp = new Breakpoint(reqId, location, condition, BreakpointState.Pending);
             string asm_name = bp.Location.CliLocation.Method.Assembly.Name;
-            uint method_token = bp.Location.CliLocation.Method.Token;
+            int method_token = bp.Location.CliLocation.Method.Token;
             int il_offset = bp.Location.CliLocation.Offset;
 
             Result res = await SendMonoCommand(sessionId, MonoCommands.SetBreakpoint(asm_name, method_token, il_offset), token);
@@ -1092,7 +1132,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();
-                Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, token);
+                Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint
                 // don't add it to the list of locations for this id

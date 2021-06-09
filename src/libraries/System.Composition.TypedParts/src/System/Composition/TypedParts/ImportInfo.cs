@@ -5,7 +5,7 @@ using System.Composition.Hosting.Core;
 
 namespace System.Composition.TypedParts
 {
-    internal class ImportInfo
+    internal sealed class ImportInfo
     {
         private readonly CompositionContract _exportKey;
         private readonly bool _allowDefault;

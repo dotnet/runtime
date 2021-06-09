@@ -3,10 +3,12 @@
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
+    [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
     public static class AiaTests
     {
         [Fact]
@@ -47,6 +49,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "CA store is not available")]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(

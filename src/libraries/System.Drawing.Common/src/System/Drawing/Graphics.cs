@@ -2454,40 +2454,6 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// GDI+ will return a 'generic error' with specific win32 last error codes when
-        /// a terminal server session has been closed, minimized, etc... We don't want
-        /// to throw when this happens, so we'll guard against this by looking at the
-        /// 'last win32 error code' and checking to see if it is either 1) access denied
-        /// or 2) proc not found and then ignore it.
-        ///
-        /// The problem is that when you lock the machine, the secure desktop is enabled and
-        /// rendering fails which is expected (since the app doesn't have permission to draw
-        /// on the secure desktop). Not sure if there's anything you can do, short of catching
-        /// the desktop switch message and absorbing all the exceptions that get thrown while
-        /// it's the secure desktop.
-        /// </summary>
-        private void CheckErrorStatus(int status)
-        {
-            if (status == Gdip.Ok)
-                return;
-
-            // Generic error from GDI+ can be GenericError or Win32Error.
-            if (status == Gdip.GenericError || status == Gdip.Win32Error)
-            {
-                int error = Marshal.GetLastWin32Error();
-                if (error == SafeNativeMethods.ERROR_ACCESS_DENIED || error == SafeNativeMethods.ERROR_PROC_NOT_FOUND ||
-                        // Here, we'll check to see if we are in a terminal services session...
-                        (((UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_REMOTESESSION) & 0x00000001) != 0) && (error == 0)))
-                {
-                    return;
-                }
-            }
-
-            // Legitimate error, throw our status exception.
-            throw Gdip.StatusException(status);
-        }
-
-        /// <summary>
         /// GDI+ will return a 'generic error' when we attempt to draw an Emf
         /// image with width/height == 1. Here, we will hack around this by
         /// resetting the errorstatus. Note that we don't do simple arg checking
@@ -2498,6 +2464,39 @@ namespace System.Drawing
         {
             if (errorStatus != Gdip.Ok && image.RawFormat.Equals(ImageFormat.Emf))
                 errorStatus = Gdip.Ok;
+        }
+
+        /// <summary>
+        /// Creates a Region class only if the native region is not infinite.
+        /// </summary>
+        internal Region? GetRegionIfNotInfinite()
+        {
+            Gdip.CheckStatus(Gdip.GdipCreateRegion(out IntPtr regionHandle));
+            try
+            {
+                Gdip.GdipGetClip(new HandleRef(this, NativeGraphics), new HandleRef(null, regionHandle));
+                Gdip.CheckStatus(Gdip.GdipIsInfiniteRegion(
+                    new HandleRef(null, regionHandle),
+                    new HandleRef(this, NativeGraphics),
+                    out int isInfinite));
+
+                if (isInfinite != 0)
+                {
+                    // Infinite
+                    return null;
+                }
+
+                Region region = new Region(regionHandle);
+                regionHandle = IntPtr.Zero;
+                return region;
+            }
+            finally
+            {
+                if (regionHandle != IntPtr.Zero)
+                {
+                    Gdip.GdipDeleteRegion(new HandleRef(null, regionHandle));
+                }
+            }
         }
     }
 }

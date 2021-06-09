@@ -388,12 +388,21 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
                     if ((checkConstVal >= 0) && (checkConstVal < actualConstVal))
                     {
                         GenTree* comma = check->gtGetParent(nullptr);
-                        if ((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check))
+
+                        // We should never see cases other than these in the IR,
+                        // as the check node does not produce a value.
+                        assert(((comma != nullptr) && comma->OperIs(GT_COMMA) &&
+                                (comma->gtGetOp1() == check || comma->TypeIs(TYP_VOID))) ||
+                               (check == compCurStmt->GetRootNode()));
+
+                        // Still, we guard here so that release builds do not try to optimize trees we don't understand.
+                        if (((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check)) ||
+                            (check == compCurStmt->GetRootNode()))
                         {
-                            optRemoveRangeCheck(comma, compCurStmt);
                             // Both `tree` and `check` have been removed from the statement.
                             // 'tree' was replaced with 'nop' or side effect list under 'comma'.
-                            return comma->gtGetOp1();
+                            // optRemoveRangeCheck returns this modified tree.
+                            return optRemoveRangeCheck(check, comma, compCurStmt);
                         }
                     }
                 }

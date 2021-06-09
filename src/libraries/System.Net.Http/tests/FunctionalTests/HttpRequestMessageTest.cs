@@ -204,18 +204,23 @@ namespace System.Net.Http.Functional.Tests
 
             rm.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain", 0.2));
             rm.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/xml", 0.1));
+            rm.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.5"); // validate this remains unparsed
             rm.Headers.Add("Custom-Request-Header", "value1");
             rm.Content.Headers.Add("Custom-Content-Header", "value2");
 
-            Assert.Equal(
-                "Method: PUT, RequestUri: 'http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
-                "{" + Environment.NewLine +
-                "  Accept: text/plain; q=0.2" + Environment.NewLine +
-                "  Accept: text/xml; q=0.1" + Environment.NewLine +
-                "  Custom-Request-Header: value1" + Environment.NewLine +
-                "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
-                "  Custom-Content-Header: value2" + Environment.NewLine +
-                "}", rm.ToString());
+            for (int i = 0; i < 2; i++) // make sure ToString() doesn't impact subsequent use
+            {
+                Assert.Equal(
+                    "Method: PUT, RequestUri: 'http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
+                    "{" + Environment.NewLine +
+                    "  Accept: text/plain; q=0.2" + Environment.NewLine +
+                    "  Accept: text/xml; q=0.1" + Environment.NewLine +
+                    "  Accept-Language: en-US,en;q=0.5" + Environment.NewLine +
+                    "  Custom-Request-Header: value1" + Environment.NewLine +
+                    "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
+                    "  Custom-Content-Header: value2" + Environment.NewLine +
+                    "}", rm.ToString());
+            }
         }
 
         [Theory]

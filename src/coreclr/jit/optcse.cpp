@@ -16,10 +16,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-/*****************************************************************************/
-#if FEATURE_ANYCSE
-/*****************************************************************************/
-
 /* static */
 const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
@@ -219,7 +215,7 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     // If we haven't setup cseMaskTraits, do it now
     if (cseMaskTraits == nullptr)
     {
-        cseMaskTraits = new (getAllocator()) BitVecTraits(optCSECandidateCount, this);
+        cseMaskTraits = new (getAllocator(CMK_CSE)) BitVecTraits(optCSECandidateCount, this);
     }
 
     optCSE_MaskData op1MaskData;
@@ -338,10 +334,6 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     return dsc1->csdIndex < dsc2->csdIndex;
 }
 
-/*****************************************************************************/
-#if FEATURE_VALNUM_CSE
-/*****************************************************************************/
-
 /*****************************************************************************
  *
  *  Initialize the Value Number CSE tracking logic.
@@ -409,7 +401,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     size_t   key;
     unsigned hval;
     CSEdsc*  hashDsc;
-    bool     isIntConstHash       = false;
     bool     enableSharedConstCSE = false;
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
@@ -976,7 +967,7 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
             if (optCseCheckedBoundMap == nullptr)
             {
                 // Allocate map on first use.
-                optCseCheckedBoundMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseCheckedBoundMap = new (getAllocator(CMK_CSE)) NodeToNodeMap(getAllocator());
             }
 
             optCseCheckedBoundMap->Set(bound, compare);
@@ -1006,7 +997,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     const unsigned bitCount = (optCSECandidateCount * 2) + 1;
 
     // Init traits and cseCallKillsMask bitvectors.
-    cseLivenessTraits = new (getAllocator()) BitVecTraits(bitCount, this);
+    cseLivenessTraits = new (getAllocator(CMK_CSE)) BitVecTraits(bitCount, this);
     cseCallKillsMask  = BitVecOps::MakeEmpty(cseLivenessTraits);
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
     {
@@ -1196,7 +1187,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("StartMerge BB%02u\n", block->bbNum);
+            printf("StartMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
@@ -1208,7 +1199,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("Merge BB%02u and BB%02u\n", block->bbNum, predBlock->bbNum);
+            printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
@@ -1284,7 +1275,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("EndMerge BB%02u\n", block->bbNum);
+            printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
@@ -1452,7 +1443,7 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (verbose)
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
                         printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
@@ -2366,14 +2357,12 @@ public:
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
         BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-        bool      canEnregister = true;
-        unsigned  slotCount     = 1;
-        var_types cseLclVarTyp  = genActualType(candidate->Expr()->TypeGet());
+        bool     canEnregister = true;
+        unsigned slotCount     = 1;
         if (candidate->Expr()->TypeGet() == TYP_STRUCT)
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
-            GenTree*             value     = candidate->Expr();
             CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
             if (structHnd == NO_CLASS_HANDLE)
             {
@@ -3474,8 +3463,6 @@ void Compiler::optOptimizeValnumCSEs()
     optValnumCSE_phase = false;
 }
 
-#endif // FEATURE_VALNUM_CSE
-
 /*****************************************************************************
  *
  *  The following determines whether the given expression is a worthy CSE
@@ -3832,11 +3819,9 @@ void Compiler::optOptimizeCSEs()
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 
-#if FEATURE_VALNUM_CSE
     INDEBUG(optEnsureClearCSEInfo());
     optOptimizeValnumCSEs();
     EndPhase(PHASE_OPTIMIZE_VALNUM_CSES);
-#endif // FEATURE_VALNUM_CSE
 }
 
 /*****************************************************************************
@@ -3891,7 +3876,3 @@ void Compiler::optEnsureClearCSEInfo()
 }
 
 #endif // DEBUG
-
-/*****************************************************************************/
-#endif // FEATURE_ANYCSE
-/*****************************************************************************/

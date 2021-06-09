@@ -16,7 +16,7 @@ namespace System.Xml
     /// This writer implements XmlOutputMethod.AutoDetect.  If the first element is "html", then output will be
     /// directed to an Html writer.  Otherwise, output will be directed to an Xml writer.
     /// </summary>
-    internal class XmlAutoDetectWriter : XmlRawWriter, IRemovableWriter
+    internal sealed class XmlAutoDetectWriter : XmlRawWriter, IRemovableWriter
     {
         private XmlRawWriter? _wrapped;
         private OnRemoveWriter? _onRemove;

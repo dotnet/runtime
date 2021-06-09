@@ -5,7 +5,7 @@ using System.IO;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPv4InterfaceProperties : UnixIPv4InterfaceProperties
+    internal sealed class LinuxIPv4InterfaceProperties : UnixIPv4InterfaceProperties
     {
         private readonly LinuxNetworkInterface _linuxNetworkInterface;
         private readonly bool _isForwardingEnabled;

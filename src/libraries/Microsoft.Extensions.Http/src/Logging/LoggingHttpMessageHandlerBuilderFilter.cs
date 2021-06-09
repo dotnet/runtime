@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Http
 {
     // Internal so we can change the requirements without breaking changes.
-    internal class LoggingHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
+    internal sealed class LoggingHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;

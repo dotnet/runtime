@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         public const uint ERROR_SUCCESS = 0;
         public const uint ERROR_FILE_NOT_FOUND = 2;
@@ -61,6 +61,7 @@ internal partial class Interop
 
         public const uint WINHTTP_FLAG_SECURE = 0x00800000;
         public const uint WINHTTP_FLAG_ESCAPE_DISABLE = 0x00000040;
+        public const uint WINHTTP_FLAG_AUTOMATIC_CHUNKING = 0x00000200;
 
         public const uint WINHTTP_QUERY_FLAG_NUMBER = 0x20000000;
         public const uint WINHTTP_QUERY_VERSION = 18;
@@ -129,10 +130,10 @@ internal partial class Interop
         public const uint WINHTTP_AUTH_TARGET_PROXY = 0x00000001;
 
         public const uint WINHTTP_OPTION_USERNAME = 0x1000;
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PASSWORD = 0x1001;
         public const uint WINHTTP_OPTION_PROXY_USERNAME = 0x1002;
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PROXY_PASSWORD = 0x1003;
 
         public const uint WINHTTP_OPTION_SERVER_SPN_USED = 106;

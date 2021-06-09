@@ -42,8 +42,7 @@ SloccountOutput="sloccount.sc"
 # processors available to a single process.
 platform="$(uname)"
 if [ "$platform" = "FreeBSD" ]; then
-  output=("$(sysctl hw.ncpu)")
-  NumProc="$((output[1] + 1))"
+  NumProc=$(($(sysctl -n hw.ncpu)+1))
 elif [ "$platform" = "NetBSD" || "$platform" = "SunOS" ]; then
   NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 else

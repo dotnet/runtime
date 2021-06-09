@@ -98,35 +98,6 @@ namespace System.Drawing
             return source;
         }
 
-        public PropertyItem GetPropertyItem(int propid)
-        {
-            int propSize;
-            IntPtr property;
-            PropertyItem item = new PropertyItem();
-            GdipPropertyItem gdipProperty = default;
-            int status;
-
-            status = Gdip.GdipGetPropertyItemSize(nativeImage, propid,
-                                        out propSize);
-            Gdip.CheckStatus(status);
-
-            /* Get PropertyItem */
-            property = Marshal.AllocHGlobal(propSize);
-            try
-            {
-                status = Gdip.GdipGetPropertyItem(nativeImage, propid, propSize, property);
-                Gdip.CheckStatus(status);
-                gdipProperty = (GdipPropertyItem)Marshal.PtrToStructure(property,
-                                    typeof(GdipPropertyItem))!;
-                GdipPropertyItem.MarshalTo(gdipProperty, item);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(property);
-            }
-            return item;
-        }
-
         public Image GetThumbnailImage(int thumbWidth, int thumbHeight, Image.GetThumbnailImageAbort? callback, IntPtr callbackData)
         {
             if ((thumbWidth <= 0) || (thumbHeight <= 0))
@@ -285,37 +256,6 @@ namespace System.Drawing
             Gdip.CheckStatus(st);
         }
 
-        public void SetPropertyItem(PropertyItem propitem)
-        {
-            if (propitem == null)
-                throw new ArgumentNullException(nameof(propitem));
-
-            int nItemSize = Marshal.SizeOf(propitem.Value![0]);
-            int size = nItemSize * propitem.Value.Length;
-            IntPtr dest = Marshal.AllocHGlobal(size);
-            try
-            {
-                GdipPropertyItem pi = default;
-                pi.id = propitem.Id;
-                pi.len = propitem.Len;
-                pi.type = propitem.Type;
-
-                Marshal.Copy(propitem.Value, 0, dest, size);
-                pi.value = dest;
-
-                unsafe
-                {
-                    int status = Gdip.GdipSetPropertyItem(nativeImage, &pi);
-
-                    Gdip.CheckStatus(status);
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(dest);
-            }
-        }
-
         [Browsable(false)]
         public ColorPalette Palette
         {
@@ -372,72 +312,6 @@ namespace System.Drawing
             finally
             {
                 Marshal.FreeHGlobal(palette_data);
-            }
-        }
-
-        [Browsable(false)]
-        public int[] PropertyIdList
-        {
-            get
-            {
-                uint propNumbers;
-
-                int status = Gdip.GdipGetPropertyCount(nativeImage,
-                                        out propNumbers);
-                Gdip.CheckStatus(status);
-
-                int[] idList = new int[propNumbers];
-                status = Gdip.GdipGetPropertyIdList(nativeImage,
-                                    propNumbers, idList);
-                Gdip.CheckStatus(status);
-
-                return idList;
-            }
-        }
-
-        [Browsable(false)]
-        public PropertyItem[] PropertyItems
-        {
-            get
-            {
-                int propNums, propsSize, propSize;
-                IntPtr properties, propPtr;
-                PropertyItem[] items;
-                GdipPropertyItem gdipProperty = default;
-                int status;
-
-                status = Gdip.GdipGetPropertySize(nativeImage, out propsSize, out propNums);
-                Gdip.CheckStatus(status);
-
-                items = new PropertyItem[propNums];
-
-                if (propNums == 0)
-                    return items;
-
-                /* Get PropertyItem list*/
-                properties = Marshal.AllocHGlobal(propsSize * propNums);
-                try
-                {
-                    status = Gdip.GdipGetAllPropertyItems(nativeImage, propsSize,
-                                    propNums, properties);
-                    Gdip.CheckStatus(status);
-
-                    propSize = Marshal.SizeOf(gdipProperty);
-                    propPtr = properties;
-
-                    for (int i = 0; i < propNums; i++, propPtr = new IntPtr(propPtr.ToInt64() + propSize))
-                    {
-                        gdipProperty = (GdipPropertyItem)Marshal.PtrToStructure
-                            (propPtr, typeof(GdipPropertyItem))!;
-                        items[i] = new PropertyItem();
-                        GdipPropertyItem.MarshalTo(gdipProperty, items[i]);
-                    }
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(properties);
-                }
-                return items;
             }
         }
 

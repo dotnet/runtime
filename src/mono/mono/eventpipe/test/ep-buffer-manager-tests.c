@@ -333,7 +333,7 @@ test_buffer_manager_read_event (void)
 
 	test_location = 5;
 
-	ep_raise_error_if_nok (ep_event_instance_get_thread_id (ep_event_instance) == ep_rt_current_thread_get_id ());
+	ep_raise_error_if_nok (ep_event_instance_get_thread_id (ep_event_instance) == ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ()));
 
 ep_on_exit:
 	buffer_manager_fini (buffer_manager,thread, session, provider, ep_event);
@@ -581,11 +581,12 @@ ep_on_error:
 static RESULT
 test_buffer_manager_teardown (void)
 {
+#ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
+	extern void ep_rt_mono_thread_exited (void);
 	ep_rt_mono_thread_exited ();
 
-#ifdef _CRTDBG_MAP_ALLOC
 	_CrtMemCheckpoint (&eventpipe_memory_end_snapshot);
 	if ( _CrtMemDifference( &eventpipe_memory_diff_snapshot, &eventpipe_memory_start_snapshot, &eventpipe_memory_end_snapshot) ) {
 		_CrtMemDumpStatistics( &eventpipe_memory_diff_snapshot );

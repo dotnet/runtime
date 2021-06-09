@@ -32,9 +32,10 @@ Note:  CoreCLR must be built prior to building an individual test. See the first
   * Projects are auto-generated when the `build.sh`/`build.cmd` script is run
     * It is possible to explicitly run only the native test build with `build.sh/cmd skipmanaged`
 * Managed Test: Invoke `dotnet build` on the project directly. `dotnet` can be the `dotnet.sh` or `dotnet.cmd` script in the repo root.
-```
-<runtime-repo-root>/dotnet.sh build <runtime-repo-root>/src/tests/JIT/CodegenBringupTests/Array1_d.csproj /p:Configuration=Release
-```
+  ```
+  <runtime-repo-root>/dotnet.sh build <runtime-repo-root>/src/tests/<path-to-project> -c <configuration>
+  ```
+  * To build managed test projects with dependencies on native test projects, the native test project must first be built. The managed test should then be built using `dotnet build --no-restore` to skip restoring.
 
 ## Additional Documents
 

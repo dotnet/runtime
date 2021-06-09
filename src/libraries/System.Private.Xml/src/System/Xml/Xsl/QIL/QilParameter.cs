@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.Qil
     /// <summary>
     /// View over a Qil parameter node.
     /// </summary>
-    internal class QilParameter : QilIterator
+    internal sealed class QilParameter : QilIterator
     {
         private QilNode? _name;
 

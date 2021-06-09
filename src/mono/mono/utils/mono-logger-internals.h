@@ -31,6 +31,7 @@ typedef enum {
 	MONO_TRACE_TIERED             = 1 << 18,
 	MONO_TRACE_QCALL              = 1 << 19,
 	MONO_TRACE_METADATA_UPDATE    = 1 << 20,
+	MONO_TRACE_DIAGNOSTICS        = 1 << 21
 } MonoTraceMask;
 
 MONO_BEGIN_DECLS
@@ -40,9 +41,6 @@ MONO_END_DECLS
 
 MONO_API void
 mono_trace_init (void);
-
-void 
-mono_trace_cleanup (void);
 
 MONO_API void
 mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);
@@ -153,10 +151,10 @@ void mono_log_write_logcat (const char *log_domain, GLogLevelFlags level, mono_b
 void mono_log_close_logcat (void);
 #endif
 
-#if defined(HOST_IOS)
-void mono_log_open_asl (const char *path, void *userData);
-void mono_log_write_asl (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message);
-void mono_log_close_asl (void);
+#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_WATCHOS) || defined(HOST_MACCAT)
+void mono_log_open_os_log (const char *path, void *userData);
+void mono_log_write_os_log (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message);
+void mono_log_close_os_log (void);
 #endif
 
 void mono_log_open_recorder (const char *path, void *userData);

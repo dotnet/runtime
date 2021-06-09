@@ -1724,12 +1724,11 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 
 #ifndef DACCESS_COMPILE
 
-void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
+void PEDecoder::LayoutILOnly(void *base, bool enableExecution) const
 {
     CONTRACT_VOID
     {
         INSTANCE_CHECK;
-        PRECONDITION(allowFullPE || CheckILOnlyFormat());
         PRECONDITION(CheckZeroedMemory(base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfImage)));
         // Ideally we would require the layout address to honor the section alignment constraints.
         // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
@@ -1770,22 +1769,26 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
                            PAGE_READONLY, &oldProtection))
         ThrowLastError();
 
-    // Finally, apply proper protection to copied sections    
+    // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
-        if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
-            continue;
+        DWORD newProtection;
+        if (!enableExecution)
+        {
+            if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
+                continue;
 
-        DWORD newProtection = PAGE_READONLY;
-#else
-        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
-            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
-                PAGE_READWRITE :
-                PAGE_READONLY;
-#endif
+            newProtection = PAGE_READONLY;
+        }
+        else
+        {
+            newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+                PAGE_EXECUTE_READ :
+                section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+                    PAGE_READWRITE :
+                    PAGE_READONLY;
+        }
 
         if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
             VAL32(section->Misc.VirtualSize),
@@ -2343,8 +2346,7 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     return NULL;
 }
 
-#ifndef DACCESS_COMPILE
-void *PEDecoder::GetExport(LPCSTR exportName) const
+PTR_VOID PEDecoder::GetExport(LPCSTR exportName) const
 {
     // Get the export directory entry
     PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
@@ -2353,30 +2355,30 @@ void *PEDecoder::GetExport(LPCSTR exportName) const
         return NULL;
     }
 
-    uint8_t *imageBase = (uint8_t *)GetBase();
-    const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
+    PTR_IMAGE_EXPORT_DIRECTORY pExportDir = dac_cast<PTR_IMAGE_EXPORT_DIRECTORY>(GetDirectoryData(pExportDirectoryEntry));
 
     uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
     uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
-    uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);
+    uint32_t ordinalTableRVA = VAL32(pExportDir->AddressOfNameOrdinals);
+    uint32_t nameTableRVA = VAL32(pExportDir->AddressOfNames);
 
     for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
     {
-        uint32_t namePointerRVA = VAL32(*(const uint32_t *)&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
+        uint32_t namePointerRVA = *dac_cast<PTR_UINT32>(GetRvaData(nameTableRVA + sizeof(uint32_t) * nameIndex));
         if (namePointerRVA != 0)
         {
-            const char *namePointer = (const char *)&imageBase[namePointerRVA];
+            const char *namePointer = dac_cast<PTR_CSTR>(GetRvaData(namePointerRVA));
             if (!strcmp(namePointer, exportName))
             {
-                uint32_t exportRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
-                return &imageBase[exportRVA];
+                uint16_t ordinalForNamedExport = *dac_cast<PTR_UINT16>(GetRvaData(ordinalTableRVA + sizeof(uint16_t) * nameIndex));
+                uint32_t exportRVA = *dac_cast<PTR_UINT32>(GetRvaData(addressTableRVA + sizeof(uint32_t) * ordinalForNamedExport));
+                return dac_cast<PTR_VOID>(GetRvaData(exportRVA));
             }
         }
     }
 
     return NULL;
 }
-#endif
 
 //
 // code:PEDecoder::CheckILMethod and code:PEDecoder::ComputeILMethodSize really belong to

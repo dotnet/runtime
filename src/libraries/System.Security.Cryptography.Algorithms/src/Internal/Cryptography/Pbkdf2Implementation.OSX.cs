@@ -8,7 +8,7 @@ using PAL_HashAlgorithm = Interop.AppleCrypto.PAL_HashAlgorithm;
 
 namespace Internal.Cryptography
 {
-    internal partial class Pbkdf2Implementation
+    internal static partial class Pbkdf2Implementation
     {
         public static unsafe void Fill(
             ReadOnlySpan<byte> password,

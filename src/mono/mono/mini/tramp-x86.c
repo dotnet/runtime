@@ -55,7 +55,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -79,7 +79,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -94,7 +94,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	// last instruction of a function is the call (due to OP_NOT_REACHED) instruction and then directly followed by a
 	// different method. In that case current orig_code points into next method and method_start will also point into
 	// next method, not the method including the call to patch. For this specific case, fallback to using a method_start of NULL.
-	gboolean can_write = mono_breakpoint_clean_code (method_start != orig_code ? method_start : NULL, orig_code, 8, buf, sizeof (buf));
+	mono_breakpoint_clean_code (method_start != orig_code ? method_start : NULL, orig_code, 8, buf, sizeof (buf));
 
 	code = buf + 8;
 
@@ -108,16 +108,13 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	code -= 6;
 	orig_code -= 6;
 	if (code [1] == 0xe8) {
-		if (can_write) {
-			mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
+		mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
 
-			/* Tell valgrind to recompile the patched code */
-			VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, 4);
-		}
+		/* Tell valgrind to recompile the patched code */
+		VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, 4);
 	} else if (code [1] == 0xe9) {
 		/* A PLT entry: jmp <DISP> */
-		if (can_write)
-			mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
+		mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
 	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x n", code [0], code [1], code [2], code [3],
 				code [4], code [5]);
@@ -612,7 +609,7 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }

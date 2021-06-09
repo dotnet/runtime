@@ -20,6 +20,9 @@ internal static partial class Interop
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Deflate")]
         internal static extern ZLibNative.ErrorCode Deflate(ref ZLibNative.ZStream stream, ZLibNative.FlushCode flush);
 
+        [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateReset")]
+        internal static extern ZLibNative.ErrorCode DeflateReset(ref ZLibNative.ZStream stream);
+
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateEnd")]
         internal static extern ZLibNative.ErrorCode DeflateEnd(ref ZLibNative.ZStream stream);
 
@@ -28,6 +31,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Inflate")]
         internal static extern ZLibNative.ErrorCode Inflate(ref ZLibNative.ZStream stream, ZLibNative.FlushCode flush);
+
+        [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateReset")]
+        internal static extern ZLibNative.ErrorCode InflateReset(ref ZLibNative.ZStream stream);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateEnd")]
         internal static extern ZLibNative.ErrorCode InflateEnd(ref ZLibNative.ZStream stream);
