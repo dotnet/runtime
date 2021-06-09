@@ -276,6 +276,35 @@ SET(libunwind_x86_64_la_SOURCES_x86_64
     x86_64/Gstash_frame.c x86_64/Gstep.c x86_64/Gtrace.c
 )
 
+# The list of files that go both into libunwind and libunwind-s390x:
+SET(libunwind_la_SOURCES_s390x_common
+    ${libunwind_la_SOURCES_common}
+    s390x/is_fpreg.c s390x/regname.c
+)
+
+# The list of files that go into libunwind:
+SET(libunwind_la_SOURCES_s390x
+    ${libunwind_la_SOURCES_s390x_common}
+    ${libunwind_la_SOURCES_local}
+    s390x/setcontext.S s390x/getcontext.S
+    s390x/Lapply_reg_state.c s390x/Lreg_states_iterate.c
+    s390x/Lcreate_addr_space.c s390x/Lget_save_loc.c s390x/Lglobal.c
+    s390x/Linit.c s390x/Linit_local.c s390x/Linit_remote.c
+    s390x/Lget_proc_info.c s390x/Lregs.c s390x/Lresume.c
+    s390x/Lis_signal_frame.c s390x/Lstep.c
+)
+
+# The list of files that go into libunwind-s390x:
+SET(libunwind_s390x_la_SOURCES_s390x
+    ${libunwind_la_SOURCES_s390x_common}
+    ${libunwind_la_SOURCES_generic}
+    s390x/Gapply_reg_state.c s390x/Greg_states_iterate.c
+    s390x/Gcreate_addr_space.c s390x/Gget_save_loc.c s390x/Gglobal.c
+    s390x/Ginit.c s390x/Ginit_local.c s390x/Ginit_remote.c
+    s390x/Gget_proc_info.c s390x/Gregs.c s390x/Gresume.c
+    s390x/Gis_signal_frame.c s390x/Gstep.c
+)
+
 if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_ARCH_ARM64)
         SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
@@ -297,6 +326,10 @@ if(CLR_CMAKE_HOST_UNIX)
         SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
         SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
+    elseif(CLR_CMAKE_HOST_ARCH_S390X)
+        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
+        SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
+        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     endif()
 
     if(CLR_CMAKE_HOST_OSX)
@@ -340,6 +373,10 @@ else(CLR_CMAKE_HOST_UNIX)
         SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
         SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
+    elseif(CLR_CMAKE_TARGET_ARCH_S390X)
+        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
+        SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
+        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     endif()
 
     set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)

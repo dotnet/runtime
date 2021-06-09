@@ -146,20 +146,21 @@ INST6(ldrsh,   "ldrsh",  0,LD, IF_EN6A,   0x5E00,    BAD_CODE,    0xF9300000,   
                                    //  ldrsh   Rt,[Rn+i12]       T2_K1     111110011011nnnn ttttiiiiiiiiiiii   F9B0 0000           imm(0-4095)
                                    //  ldrsh   Rt,[PC+i12]       T2_K4     11111001U0111111 ttttiiiiiiiiiiii   F93F 0000           imm(+-4095)
 
-//    enum     name      FP LD/ST          Rd, Rm     Rd,Rm        Rd,i8       Rd,+i8<<i4   S / Rn,Rm{,sh}
-//                                          T1_E       T1_D0        T1_J0       T2_L1/L2     T2_C3/C8
-INST5(mov,     "mov",    0, 0, IF_EN5A,   0x0000,    0x4600,      0x2000,      0xF04F0000,  0xEA5F0000)
-                                   //  movs    Rd,Rm             T1_E      0000000000mmmddd                    0000        low
-                                   //  mov     Rd,Rm             T1_D0     01000110Dmmmmddd                    4600        high
-                                   //  movs    Rd,i8             T1_J0     00100dddiiiiiiii                    2000        low     imm(0-255)
-                                   //  mov{s}  Rd,+i8<<i4        T2_L1     11110i00010S1111 0iiiddddiiiiiiii   F04F 0000           imm(i8<<i4)
-                                   //  mov{s}  Rd,Rm             T2_C3     1110101001011111 0000dddd0000mmmm   EA5F 0000
-INST5(cmp,     "cmp",    0,CMP,IF_EN5B,   0x4280,    0x4500,      0x2800,      0xF1B00F00,  0xEBB00F00)
-                                   //  cmp     Rn,Rm             T1_E      0100001010mmmnnn                    4280        low
-                                   //  cmp     Rn,Rm             T1_D0     01000101Nmmmmnnn                    4500        high
-                                   //  cmp     Rn,i8             T1_J0     00101nnniiiiiiii                    2800        low     imm(0-255)
-                                   //  cmp     Rn,+i8<<i4        T2_L2     11110i011011nnnn 0iii1111iiiiiiii   F1B0 0F00           imm(i8<<i4)
-                                   //  cmp     Rn,Rm{,sh}        T2_C8     111010111011nnnn 0iii1111iishmmmm   EBB0 0F00
+//    enum            name      FP LD/ST          Rd, Rm     Rd,Rm        Rd,i8       Rd,+i8<<i4   S / Rn,Rm{,sh}
+//                                                 T1_E       T1_D0        T1_J0       T2_L1/L2     T2_C3/C8
+INST5(mov,            "mov",            0, 0, IF_EN5A,   0x0000,    0x4600,      0x2000,      0xF04F0000,  0xEA5F0000)
+                                                  //  movs    Rd,Rm             T1_E      0000000000mmmddd                    0000        low
+                                                  //  mov     Rd,Rm             T1_D0     01000110Dmmmmddd                    4600        high
+                                                  //  movs    Rd,i8             T1_J0     00100dddiiiiiiii                    2000        low     imm(0-255)
+                                                  //  mov{s}  Rd,+i8<<i4        T2_L1     11110i00010S1111 0iiiddddiiiiiiii   F04F 0000           imm(i8<<i4)
+                                                  //  mov{s}  Rd,Rm             T2_C3     1110101001011111 0000dddd0000mmmm   EA5F 0000
+INST5(mov_eliminated, "mov_eliminated", 0, 0, IF_EN5A,   0x0000,    0x4600,      0x2000,      0xF04F0000,  0xEA5F0000)
+INST5(cmp,            "cmp",            0,CMP,IF_EN5B,   0x4280,    0x4500,      0x2800,      0xF1B00F00,  0xEBB00F00)
+                                                  //  cmp     Rn,Rm             T1_E      0100001010mmmnnn                    4280        low
+                                                  //  cmp     Rn,Rm             T1_D0     01000101Nmmmmnnn                    4500        high
+                                                  //  cmp     Rn,i8             T1_J0     00101nnniiiiiiii                    2800        low     imm(0-255)
+                                                  //  cmp     Rn,+i8<<i4        T2_L2     11110i011011nnnn 0iii1111iiiiiiii   F1B0 0F00           imm(i8<<i4)
+                                                  //  cmp     Rn,Rm{,sh}        T2_C8     111010111011nnnn 0iii1111iishmmmm   EBB0 0F00
 
 //    enum     name      FP LD/ST          Rdn, Rn    Rd,Rn,i5     Rd,Rn,Rm     Rd,Rn,i5
 //                                          T1_E       T2_C         T2_C4        T2_C2

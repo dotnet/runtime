@@ -15527,9 +15527,9 @@ int bgc_allocate_spin(size_t min_gc_size, size_t bgc_begin_size, size_t bgc_size
         return 0;
     }
 
-    if (((bgc_begin_size / end_size) >= 2) || (bgc_size_increased >= bgc_begin_size))
+    if ((bgc_begin_size >= (2 * end_size)) || (bgc_size_increased >= bgc_begin_size))
     {
-        if ((bgc_begin_size / end_size) >= 2)
+        if (bgc_begin_size >= (2 * end_size))
         {
             dprintf (3, ("alloc-ed too much before bgc started"));
         }
@@ -28669,11 +28669,6 @@ heap_segment* gc_heap::relocate_advance_to_non_sip (heap_segment* region)
                             {
                                 dprintf (4444, ("SIP %Ix(%Ix)->%Ix->%Ix(%Ix)", 
                                     x, (uint8_t*)pval, child, *pval, method_table (child)));
-
-                                if (method_table (child) == 0)
-                                {
-                                    FATAL_GC_ERROR();
-                                }
                             }
                         });
                     }
@@ -29214,6 +29209,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
             }
         }
 
+        dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, old_address, new_address));
         *pold_address = new_address;
         return;
     }
@@ -29243,7 +29239,9 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 #endif
                 )
             {
-                *pold_address = old_address + loh_node_relocation_distance (old_address);
+                new_address = old_address + loh_node_relocation_distance (old_address);
+                dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, old_address, new_address));
+                *pold_address = new_address;
             }
         }
     }
@@ -38467,7 +38465,7 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
                         heap_segment_mem (seg), (*delete_p ? "should" : "should not")));
 
         }
-        else
+        if (!*delete_p)
         {
             dprintf (3, ("[h%d] seg %Ix alloc %Ix->%Ix",
                 heap_number, (size_t)seg,
@@ -39732,9 +39730,6 @@ go_through_refs:
 
 void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 {
-#ifdef USE_REGIONS
-    assert (!"not impl!!");
-#else
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
     {
@@ -39753,6 +39748,16 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
         {
             generation* gen = hp->generation_of (curr_gen_number);
             heap_segment* seg = generation_start_segment (gen);
+#ifdef USE_REGIONS
+            while (seg)
+            {
+                fn(context, curr_gen_number, heap_segment_mem (seg),
+                                              heap_segment_allocated (seg),
+                                              heap_segment_reserved (seg));
+
+                seg = heap_segment_next (seg);
+            }
+#else
             while (seg && (seg != hp->ephemeral_heap_segment))
             {
                 assert (curr_gen_number > 0);
@@ -39805,9 +39810,9 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                                                   heap_segment_reserved (hp->ephemeral_heap_segment) );
                 }
             }
+#endif //USE_REGIONS
         }
     }
-#endif //USE_REGIONS
 }
 
 #ifdef TRACE_GC

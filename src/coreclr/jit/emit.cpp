@@ -417,6 +417,8 @@ void emitterStats(FILE* fout)
 #endif // TARGET_ARM
         fprintf(fout, "Total instrDescAlign:  %8u (%5.2f%%)\n", emitter::emitTotalDescAlignCnt,
                 100.0 * emitter::emitTotalDescAlignCnt / emitter::emitTotalInsCnt);
+        fprintf(fout, "Total instrDescZeroSz: %8u (%5.2f%%)\n", emitter::emitTotalDescZeroSzCnt,
+                100.0 * emitter::emitTotalDescZeroSzCnt / emitter::emitTotalInsCnt);
 
         fprintf(fout, "\n");
     }
@@ -665,6 +667,10 @@ void emitter::emitGenIG(insGroup* ig)
     emitCurIGinsCnt = 0;
     emitCurIGsize   = 0;
 
+#if defined(DEBUG)
+    emitCurIGZeroSzCnt = 0;
+#endif // DEBUG
+
     assert(emitCurIGjmpList == nullptr);
 
 #if FEATURE_LOOP_ALIGN
@@ -793,14 +799,21 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     emitCurCodeOffset += emitCurIGsize;
     assert(IsCodeAligned(emitCurCodeOffset));
 
+#if defined(DEBUG) || EMITTER_STATS
+    noway_assert((BYTE)emitCurIGZeroSzCnt == emitCurIGZeroSzCnt);
+    ig->igZeroSzCnt = (BYTE)emitCurIGZeroSzCnt;
+#endif // DEBUG || EMITTER_STATS
+
 #if EMITTER_STATS
     emitTotalIGicnt += emitCurIGinsCnt;
+    emitTotalIGZeroSzCnt += emitCurIGZeroSzCnt;
     emitTotalIGsize += sz;
     emitSizeMethod += sz;
 
     if (emitIGisInProlog(ig))
     {
         emitCurPrologInsCnt += emitCurIGinsCnt;
+        emitCurPrologZeroSzCnt += emitCurIGZeroSzCnt;
         emitCurPrologIGSize += sz;
 
         // Keep track of the maximums.
@@ -993,6 +1006,16 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
         emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+
+        if (emitLastEmittedIns != nullptr)
+        {
+            // Unlike with emitLastIns, we might be null if the group only contains
+            // elided instructions, in which case we'll only update in that scenario
+
+            assert(emitCurIGfreeBase <= (BYTE*)emitLastEmittedIns);
+            assert((BYTE*)emitLastEmittedIns < emitCurIGfreeBase + sz);
+            emitLastEmittedIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastEmittedIns - (BYTE*)emitCurIGfreeBase));
+        }
     }
 
     // Reset the buffer free pointers
@@ -1138,7 +1161,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns = nullptr;
+    emitLastIns        = nullptr;
+    emitLastEmittedIns = nullptr;
 
     ig->igNext = nullptr;
 
@@ -1197,6 +1221,15 @@ int emitter::instrDesc::idAddrUnion::iiaGetJitDataOffset() const
 //
 float emitter::insEvaluateExecutionCost(instrDesc* id)
 {
+    if (id->idIns() == INS_mov_eliminated)
+    {
+        // Elideable moves are specified to have a zero size, but are carried
+        // in emit so we can still do the relevant byref liveness update
+
+        assert(id->idGCref() == GCT_BYREF);
+        return 0;
+    }
+
     insExecutionCharacteristics result        = getInsExecutionCharacteristics(id);
     float                       throughput    = result.insThroughput;
     float                       latency       = result.insLatency;
@@ -1296,13 +1329,49 @@ void emitter::dispIns(instrDesc* id)
     assert(id->idDebugOnlyInfo()->idSize == sz);
 #endif // DEBUG
 
+#if defined(DEBUG) || EMITTER_STATS
+    if (id->idCodeSize() == 0)
+    {
+        emitCurIGZeroSzCnt++;
+
+#if EMITTER_STATS
+        emitTotalDescZeroSzCnt++
+#endif // EMITTER_STATS
+    }
+#endif // DEBUG || EMITTER_STATS
+
 #if EMITTER_STATS
     emitIFcounts[id->idInsFmt()]++;
-#endif
+#endif // EMITTER_STATS
 }
 
 void emitter::appendToCurIG(instrDesc* id)
 {
+    assert(id == emitLastIns);
+
+    if (emitLastIns->idIns() != INS_mov_eliminated)
+    {
+        // emitAllocAnyInstr sets emitLastIns and id
+        // to be the same. However, for the purposes
+        // of looking back we only want to consider
+        // certain "non-zero" size instructions and
+        // so we'll update the last emitted instruction
+        // when appending to the current IG.
+
+        emitLastEmittedIns = emitLastIns;
+    }
+    else if (emitCurIGsize == 0)
+    {
+        // If we are part of a new instruction group
+        // then we need to null out the last instruction
+        // so that we aren't incorrectly tracking across
+        // block boundaries.
+
+        // TOOD-CQ: We should also be able to track across
+        // extended instruction groups to allow more opts
+
+        emitLastEmittedIns = nullptr;
+    }
     emitCurIGsize += id->idCodeSize();
 }
 
@@ -1416,7 +1485,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #error "Undefined target for pseudorandom NOP insertion"
 #endif
 
-            emitCurIGsize += nopSize;
+            appendToCurIG(emitCurIGsize);
             emitNextNop = emitNextRandomNop();
         }
         else
@@ -4252,15 +4321,15 @@ AGAIN:
 #ifdef TARGET_XARCH
         /* Done if this is not a variable-sized jump */
 
-        if ((jmp->idIns() == INS_push) || (jmp->idIns() == INS_mov) || (jmp->idIns() == INS_call) ||
-            (jmp->idIns() == INS_push_hide))
+        if ((jmp->idIns() == INS_push) || (jmp->idIns() == INS_mov) || (jmp->idIns() == INS_mov_eliminated) ||
+            (jmp->idIns() == INS_call) || (jmp->idIns() == INS_push_hide))
         {
             continue;
         }
 #endif
 #ifdef TARGET_ARM
-        if ((jmp->idIns() == INS_push) || (jmp->idIns() == INS_mov) || (jmp->idIns() == INS_movt) ||
-            (jmp->idIns() == INS_movw))
+        if ((jmp->idIns() == INS_push) || (jmp->idIns() == INS_mov) || (jmp->idIns() == INS_mov_eliminated) ||
+            (jmp->idIns() == INS_movt) || (jmp->idIns() == INS_movw))
         {
             continue;
         }
@@ -5974,6 +6043,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
+
+        // We don't want to include zero size instructions in the count, as they aren't impactful
+        *instrCount -= ig->igZeroSzCnt;
 #endif // DEBUG
 
         emitCurIG = nullptr;

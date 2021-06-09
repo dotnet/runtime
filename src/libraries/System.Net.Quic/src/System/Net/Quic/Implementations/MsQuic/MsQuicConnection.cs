@@ -605,6 +605,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            _configuration?.Dispose();
             _state?.Handle?.Dispose();
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             _disposed = true;

@@ -4,12 +4,18 @@
 using MockHostTypes;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
 {
     public class HostFactoryResolverTests
     {
+        public static bool RequirementsMet => RemoteExecutor.IsSupported && PlatformDetection.IsThreadingSupported;
+
+        private static readonly TimeSpan s_WaitTimeout = TimeSpan.FromSeconds(20);
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(BuildWebHostPatternTestSite.Program))]
         public void BuildWebHostPattern_CanFindWebHost()
@@ -46,7 +52,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(BuildWebHostInvalidSignature.Program).Assembly);
 
-            Assert.Null(factory);
+            Assert.NotNull(factory);
         }
 
         [Fact]
@@ -119,13 +125,95 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Null(factory);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RequirementsMet))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderInvalidSignature.Program))]
         public void CreateHostBuilderPattern__Invalid_CantFindServiceProvider()
         {
-            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly);
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly, s_WaitTimeout);
 
-            Assert.Null(factory);
+                Assert.NotNull(factory);
+                Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPattern()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
+
+                Assert.NotNull(factory);
+                Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternThrows.Program))]
+        public void NoSpecialEntryPointPatternThrows()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternThrows.Program).Assembly, s_WaitTimeout);
+
+                Assert.NotNull(factory);
+                Assert.Throws<Exception>(() => factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternExits.Program))]
+        public void NoSpecialEntryPointPatternExits()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternExits.Program).Assembly, s_WaitTimeout);
+
+                Assert.NotNull(factory);
+                Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternHangs.Program))]
+        public void NoSpecialEntryPointPatternHangs()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternHangs.Program).Assembly, s_WaitTimeout);
+
+                Assert.NotNull(factory);
+                Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternMainNoArgs.Program))]
+        public void NoSpecialEntryPointPatternMainNoArgs()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly, s_WaitTimeout);
+
+                Assert.NotNull(factory);
+                Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        public void TopLevelStatements()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var assembly = Assembly.Load("TopLevelStatements");
+                var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
+
+                Assert.NotNull(factory);
+                Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+            });
         }
     }
 }
