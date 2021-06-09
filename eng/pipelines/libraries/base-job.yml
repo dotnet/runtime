@@ -54,7 +54,6 @@ jobs:
         - _extraHelixArguments: ''
         - _crossBuildPropertyArg: ''
         - _testRunNamePrefixSuffix: ''
-        - _buildAction: ''
 
         - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -80,7 +79,6 @@ jobs:
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
-          - _buildAction: -restore -build -test
           - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
@@ -113,7 +111,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'windows') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: $(_buildAction) $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_osArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_osArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
         # we need to override this value to support build-coreclr-and-libraries-job.yml

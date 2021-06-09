@@ -761,6 +761,8 @@ jobs:
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
+      runTests: true
+      useHelix: false
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
