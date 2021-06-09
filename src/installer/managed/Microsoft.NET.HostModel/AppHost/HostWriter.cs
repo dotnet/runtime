@@ -248,21 +248,8 @@ namespace Microsoft.NET.HostModel.AppHost
             if (!File.Exists(codesign))
                 return;
 
-            var p = new Process()
-            {
-                StartInfo = new ProcessStartInfo()
-                {
-                    Arguments = args,
-                    CreateNoWindow = true,
-                    ErrorDialog = false,
-                    FileName = codesign,
-                    UseShellExecute = false,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    WorkingDirectory = Environment.CurrentDirectory
-                }
-            };
-
-            p.Start();
+            using (var p = Process.Start(codesign, args))
+                p.WaitForExit();
         }
 
         [DllImport("libc", SetLastError = true)]

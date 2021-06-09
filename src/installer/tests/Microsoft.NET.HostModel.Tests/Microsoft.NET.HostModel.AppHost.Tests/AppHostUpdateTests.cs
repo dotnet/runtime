@@ -238,24 +238,20 @@ namespace Microsoft.NET.HostModel.Tests
                    windowsGraphicalUserInterface: false);
 
                 const string codesign = @"/usr/bin/codesign";
-                var p = new Process()
+                var psi = new ProcessStartInfo()
                 {
-                    StartInfo = new ProcessStartInfo()
-                    {
-                        Arguments = $"-d {destinationFilePath}",
-                        CreateNoWindow = true,
-                        ErrorDialog = false,
-                        FileName = codesign,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        WorkingDirectory = Environment.CurrentDirectory
-                    }
+                    Arguments = $"-d {destinationFilePath}",
+                    FileName = codesign,
+                    RedirectStandardError = true,
                 };
 
-                p.Start();
-                p.StandardError.ReadToEnd()
-                    .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
+                using (var p = Process.Start(psi))
+                {
+                    p.Start();
+                    p.StandardError.ReadToEnd()
+                        .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
+                    p.WaitForExit();
+                }
             }
         }
 
