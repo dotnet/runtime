@@ -1487,7 +1487,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
-#if HAVE_PREADV
+#if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
     while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
@@ -1527,7 +1527,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
-#if HAVE_PWRITEV
+#if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
     while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
