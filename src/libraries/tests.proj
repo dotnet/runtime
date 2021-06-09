@@ -209,34 +209,35 @@
     <!-- MarkTypeForDynamicallyAccessedMembers stack overflow https://github.com/mono/linker/issues/1881 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
 
-    <!-- IL2103 -->
+    <!-- IL2103 https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
 
-    <!-- Cannot open NativeLibrary -->
+    <!-- Cannot open NativeLibrary https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.FileVersionInfo/tests/System.Diagnostics.FileVersionInfo.Tests/System.Diagnostics.FileVersionInfo.Tests.csproj" />
 
-    <!-- Fails in AndroidAppBuilder w/ warnings -->
+    <!-- Fails in AndroidAppBuilder w/ warnings https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
 
-    <!-- System.Reflection.Emit issues-->
+    <!-- System.Reflection.Emit issues https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition/tests/System.ComponentModel.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/RefEmitLoadContext/System.Runtime.Loader.RefEmitLoadContext.Tests.csproj" />
     
-    <!-- Method not found: intptr SQLitePCL.sqlite3.get_ptr() -->
+    <!-- Method not found: intptr SQLitePCL.sqlite3.get_ptr() https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions/tests/Microsoft.Extensions.Logging.Generators.Tests/Microsoft.Extensions.Logging.Generators.Tests.csproj" />
 
-    <!-- Can't link -->
+    <!-- Can't link https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
   
     <!-- Lots of NRE and CryptographicException https://github.com/dotnet/runtime/issues/53682 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
 
-    <!-- Crash -->
+    <!-- Crash https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines/tests/System.IO.Pipelines.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel/tests/System.Linq.Parallel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory.Data/tests/System.Memory.Data.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\Interpreter\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InvariantCultureOnlyMode\*.Test.csproj" />
