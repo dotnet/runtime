@@ -660,7 +660,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private async Task FlushAcceptQueue()
         {
             _state.AcceptQueue.Writer.TryComplete();
-            await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync())
+            await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
             {
                 item.Dispose();
             }
