@@ -35,11 +35,11 @@ namespace System.Numerics
                 _mu = Divide(r, modulus);
                 _modulus = modulus;
 
-                // Allocate memory for quotients once
-                _q1 = new uint[modulus.Length * 2 + 2];
-                _q2 = new uint[modulus.Length * 2 + 1];
-
                 _muLength = ActualLength(_mu);
+
+                // Allocate memory for quotients once
+                _q1 = new uint[_muLength + modulus.Length + 1];
+                _q2 = new uint[_muLength + modulus.Length];
             }
 
             public int Reduce(uint[] value, int length)
