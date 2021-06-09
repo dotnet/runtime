@@ -37,9 +37,12 @@ namespace System.Text.Json.Serialization
                             // Guard against unsupported features
                             Options.Converters.Count == 0 &&
                             Options.Encoder == null &&
-                            Options.NumberHandling == JsonNumberHandling.Strict &&
+                            (((JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals) & Options.NumberHandling) == 0) &&
                             Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
-                            // Ensure options values are consistent with expected defaults.
+#pragma warning disable SYSLIB0020
+                            !Options.IgnoreNullValues && // This property is obsolete.
+#pragma warning restore SYSLIB0020
+                                  // Ensure options values are consistent with expected defaults.
                             Options.DefaultIgnoreCondition == _defaultOptions.DefaultIgnoreCondition &&
                             Options.IgnoreReadOnlyFields == _defaultOptions.IgnoreReadOnlyFields &&
                             Options.IgnoreReadOnlyProperties == _defaultOptions.IgnoreReadOnlyProperties &&
