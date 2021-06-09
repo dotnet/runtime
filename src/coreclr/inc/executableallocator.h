@@ -10,7 +10,6 @@
 
 #include "utilcode.h"
 #include "ex.h"
-#include <intrin.h>
 
 // Holder class to map read-execute memory as read-write so that it can be modified without using read-write-execute mapping.
 // At the moment the implementation is dummy, returning the same addresses for both cases and expecting them to be read-write-execute.
