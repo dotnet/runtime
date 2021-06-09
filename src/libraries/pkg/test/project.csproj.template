@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>{TargetFrameworks}</TargetFrameworks>
     <TestPackageId>{PackageId}</TestPackageId>
+
+    <!-- Restore settings -->
+    <RestorePackagesPath>{RestorePackagesPath}</RestorePackagesPath>
     <RestoreAdditionalProjectSources>{RestoreAdditionalProjectSources}</RestoreAdditionalProjectSources>
 
     <!-- Used in targetingpacks.targets -->

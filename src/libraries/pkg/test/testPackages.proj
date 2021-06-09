@@ -111,7 +111,7 @@
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile
       File="$(_projectFile)"
-      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TargetFrameworks}', $(_projectTFMs)).Replace('{NetCoreAppCurrent}', $(NetCoreAppCurrent)).Replace('{NetCoreAppCurrentVersion}', $(NetCoreAppCurrentVersion)).Replace('{MicrosoftNetCoreAppFrameworkName}', $(MicrosoftNetCoreAppFrameworkName)).Replace('{MicrosoftNetCoreAppRefPackDir}', $(MicrosoftNetCoreAppRefPackDir)).Replace('{RestoreAdditionalProjectSources}', $(ArtifactsPackagesDir)))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TargetFrameworks}', $(_projectTFMs)).Replace('{NetCoreAppCurrent}', $(NetCoreAppCurrent)).Replace('{NetCoreAppCurrentVersion}', $(NetCoreAppCurrentVersion)).Replace('{MicrosoftNetCoreAppFrameworkName}', $(MicrosoftNetCoreAppFrameworkName)).Replace('{MicrosoftNetCoreAppRefPackDir}', $(MicrosoftNetCoreAppRefPackDir)).Replace('{RestoreAdditionalProjectSources}', $(ArtifactsPackagesDir)).Replace('{RestorePackagesPath}', $(TestPackageDir)))"
       Overwrite="true" />
   </Target>
 
@@ -124,7 +124,7 @@
     </ItemGroup>
     
     <MSBuild Projects="@(TestProject)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestorePackagesPath=$(TestPackageDir)"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />
 
     <MSBuild Projects="@(TestProject)" />

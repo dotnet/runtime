@@ -3,6 +3,7 @@
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <RestorePackagesPath>$(MSBuildThisFileDirectory)cache\</RestorePackagesPath>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.Build.Traversal" />
