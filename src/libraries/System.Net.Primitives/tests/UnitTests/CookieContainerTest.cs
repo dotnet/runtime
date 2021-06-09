@@ -368,6 +368,7 @@ namespace System.Net.Primitives.Unit.Tests
 
         [Theory]
         [MemberData(nameof(SetCookiesData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53931")]
         public void SetCookies_Success(Uri uri, string cookieHeader, Cookie[] expected)
         {
             CookieContainer cc = CreateCount11Container();
