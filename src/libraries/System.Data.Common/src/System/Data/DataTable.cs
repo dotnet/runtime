@@ -4836,7 +4836,7 @@ namespace System.Data
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "DataColumn with int type is simple type which is safe.")]
+            Justification = "DataColumn with null expression and int data type is safe.")]
         internal DataColumn AddUniqueKey(int position)
         {
             if (_colUnique != null)

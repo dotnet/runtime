@@ -600,7 +600,7 @@ namespace System.Data
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All entry points for expression are marked as unsafe.")]
+            Justification = "All constructors are marked as unsafe.")]
         private bool AcceptRecord(int record)
         {
             DataRow? row = _table._recordManager[record];
@@ -636,7 +636,7 @@ namespace System.Data
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All entry points for expression are marked as unsafe.")]
+            Justification = "All constructors are marked as unsafe.")]
         private int Eval(BinaryNode expr, DataRow row, DataRowVersion version)
         {
             if (expr._op == Operators.And)

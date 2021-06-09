@@ -76,8 +76,6 @@ namespace System.Data
             return _right.DependsOn(column);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Evaluating constant expression is safe.")]
         internal override ExpressionNode Optimize()
         {
             _left = _left.Optimize();
@@ -115,7 +113,7 @@ namespace System.Data
 
             if (IsConstant())
             {
-                object val = Eval();
+                object val = EvalConstant();
 
                 if (val == DBNull.Value)
                 {
@@ -138,6 +136,14 @@ namespace System.Data
         internal void SetTypeMismatchError(int op, Type left, Type right)
         {
             throw ExprException.TypeMismatchInBinop(op, left, right);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Evaluating constant expression is safe.")]
+        private object EvalConstant()
+        {
+            Debug.Assert(IsConstant());
+            return Eval();
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]

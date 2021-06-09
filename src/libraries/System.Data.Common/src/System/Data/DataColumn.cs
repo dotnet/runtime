@@ -221,8 +221,6 @@ namespace System.Data
         public bool AutoIncrement
         {
             get { return ((null != _autoInc) && (_autoInc.Auto)); }
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Setting DataType to int.")]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_AutoIncrement|API> {0}, {1}", ObjectID, value);
