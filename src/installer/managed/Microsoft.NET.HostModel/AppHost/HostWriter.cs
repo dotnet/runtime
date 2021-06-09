@@ -143,10 +143,10 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
                     }
-                }
 
-                if (enableMacOSCodeSign)
-                    CodeSign(appHostDestinationFilePath);
+                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                        CodeSign(appHostDestinationFilePath);
+                }
             }
             catch (Exception ex)
             {
