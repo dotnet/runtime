@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.TypeSystem;
-
+using CORINFO_DEVIRTUALIZATION_DETAIL = Internal.JitInterface.CORINFO_DEVIRTUALIZATION_DETAIL;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -53,16 +53,16 @@ namespace ILCompiler
         /// Note that if <paramref name="implType"/> is a value type, the result of the resolution
         /// might have to be treated as an unboxing thunk by the caller.
         /// </remarks>
-        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
+        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, ref CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
             Debug.Assert(declMethod.IsVirtual);
 
             // We're operating on virtual methods. This means that if implType is an array, we need
             // to get the type that has all the virtual methods provided by the class library.
-            return ResolveVirtualMethod(declMethod, implType.GetClosestDefType());
+            return ResolveVirtualMethod(declMethod, implType.GetClosestDefType(), ref devirtualizationDetail);
         }
 
-        protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
+        protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, ref CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
             MethodDesc impl;
 
@@ -84,10 +84,17 @@ namespace ILCompiler
                             {
                                 // We cannot resolve the interface as we don't know with exact enough detail which interface
                                 // of multiple possible interfaces is being called.
+                                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL;
                                 return null;
                             }
                         }
                     }
+                }
+
+                if (!implType.CanCastTo(declMethod.OwningType))
+                {
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return null;
                 }
 
                 impl = implType.ResolveInterfaceMethodTarget(declMethod);
@@ -98,6 +105,19 @@ namespace ILCompiler
             }
             else
             {
+                // The derived class should be a subclass of the the base class.
+                // this check is perfomed via typedef checking instead of casting, as we accept canon methods calling exact types
+                TypeDesc checkType;
+                for (checkType = implType; checkType != null && !checkType.HasSameTypeDefinition(declMethod.OwningType); checkType = checkType.BaseType)
+                { }
+
+                if (checkType == null)
+                {
+                    // The derived class should be a subclass of the the base class.
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS;
+                    return null;
+                }
+
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
                 if (impl != null && (impl != declMethod))
                 {
@@ -106,7 +126,14 @@ namespace ILCompiler
 
                     if (slotDefiningMethodImpl != slotDefiningMethodDecl)
                     {
-                        // We cannot resolve virtual method in case the impl is a different slot from the declMethod
+                        // If the derived method's slot does not match the vtable slot,
+                        // bail on devirtualization, as the method was installed into
+                        // the vtable slot via an explicit override and even if the
+                        // method is final, the slot may not be.
+                        //
+                        // Note the jit could still safely devirtualize if it had an exact
+                        // class, but such cases are likely rare.
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SLOT;
                         impl = null;
                     }
                 }

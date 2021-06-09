@@ -1144,6 +1144,7 @@ namespace Internal.JitInterface
             // __Canon cannot be devirtualized
             if (objType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
             {
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                 return false;
             }
 
@@ -1160,10 +1161,11 @@ namespace Internal.JitInterface
                 }
             }
 
-            MethodDesc originalImpl = _compilation.ResolveVirtualMethod(decl, objType);
+            MethodDesc originalImpl = _compilation.ResolveVirtualMethod(decl, objType, ref info->detail);
 
             if (originalImpl == null)
             {
+                Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
                 return false;
             }
 
@@ -1197,10 +1199,12 @@ namespace Internal.JitInterface
                 ModuleToken declToken = resolver.GetModuleTokenForMethod(decl.GetTypicalMethodDefinition(), throwIfNotFound: false);
                 if (declToken.IsNull)
                 {
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE;
                     return false;
                 }
                 if (!_compilation.CompilationModuleGroup.VersionsWithTypeReference(decl.OwningType))
                 {
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE;
                     return false;
                 }
                 methodWithTokenDecl = new MethodWithToken(decl, declToken, null, false, null, devirtualizedMethodOwner: decl.OwningType);
@@ -1216,7 +1220,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(decl, methodWithTokenDecl);
+                    info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, decl, methodWithTokenDecl);
                 }
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
@@ -1224,7 +1228,7 @@ namespace Internal.JitInterface
             {
                 methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition()), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
 
-                info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(impl, methodWithTokenImpl);
+                info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, impl, methodWithTokenImpl);
 
                 if (unboxingStub)
                 {
@@ -1249,30 +1253,30 @@ namespace Internal.JitInterface
             info->resolvedTokenDevirtualizedMethod = default(CORINFO_RESOLVED_TOKEN);
             info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
 #endif
-
+            info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->requiresInstMethodTableArg = false;   // TODO! Remove this field, but the VM and crossgen2 always set this to false
+            info->requiresInstMethodTableArg = false;
             info->exactContext = contextFromType(owningType);
 
             return true;
 
 #if READYTORUN
-            CORINFO_RESOLVED_TOKEN CreateResolvedTokenFromMethod(MethodDesc method, MethodWithToken methodWithToken)
+            static CORINFO_RESOLVED_TOKEN CreateResolvedTokenFromMethod(CorInfoImpl jitInterface, MethodDesc method, MethodWithToken methodWithToken)
             {
                 CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
-                MethodILScope scope = _compilation.GetMethodIL(methodWithToken.Method);
+                MethodILScope scope = jitInterface._compilation.GetMethodIL(methodWithToken.Method);
                 if (scope == null)
                 {
                     scope = Internal.IL.EcmaMethodILScope.Create((EcmaMethod)methodWithToken.Method.GetTypicalMethodDefinition());
                 }
-                result.tokenScope = ObjectToHandle(scope);
-                result.tokenContext = contextFromMethod(method);
+                result.tokenScope = jitInterface.ObjectToHandle(scope);
+                result.tokenContext = jitInterface.contextFromMethod(method);
                 result.token = methodWithToken.Token.Token;
                 if (methodWithToken.Token.TokenType != CorTokenType.mdtMethodDef)
                     throw new NotSupportedException();
                 result.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod;
-                result.hClass = ObjectToHandle(methodWithToken.OwningType);
-                result.hMethod = ObjectToHandle(method);
+                result.hClass = jitInterface.ObjectToHandle(methodWithToken.OwningType);
+                result.hMethod = jitInterface.ObjectToHandle(method);
 
                 return result;
             }

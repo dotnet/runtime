@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.TypeSystem;
+using CORINFO_DEVIRTUALIZATION_DETAIL = Internal.JitInterface.CORINFO_DEVIRTUALIZATION_DETAIL;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -24,12 +25,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _compilationModuleGroup.VersionsWithMethodBody(method) && base.IsEffectivelySealed(method);
         }
 
-        protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
+        protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, ref CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
             // Versioning resiliency rules here are complex
             // Decl method checking
-            // 1. If the declMethod is a class method, then we do not need to check if it is within the version bubble
-            //    but the metadata for it must be within the bubble, or the decl method is in the direct parent type
+            // 1. If the declMethod is a class method, then we do not need to check if it is within the version bubble with a VersionsWithCode check
+            //    but the metadata for the open definition must be within the bubble, or the decl method is in the direct parent type
             //    of a type which is in the version bubble relative to the implType.
             // 2. If the declMethod is an interface method, we can allow it if interface type is defined within the version
             //    bubble, or if the implementation type hierarchy is entirely within the version bubble (excluding System.Object and System.ValueType).
@@ -57,7 +58,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    declMethodCheckFailed = firstTypeInImplTypeHierarchyNotInVersionBubble != declMethod.OwningType;
+                    if (firstTypeInImplTypeHierarchyNotInVersionBubble != declMethod.OwningType)
+                    {
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL;
+                        declMethodCheckFailed = true;
+                    }
+                    else
+                    {
+                        declMethodCheckFailed = false;
+                    }
                 }
             }
             else
@@ -68,11 +77,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    
                     if (firstTypeInImplTypeHierarchyNotInVersionBubble == null || implType.IsValueType || firstTypeInImplTypeHierarchyNotInVersionBubble.IsObject)
                         declMethodCheckFailed = false;
                     else
+                    {
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL;
                         declMethodCheckFailed = true;
+                    }
                 }
             }
 
@@ -80,9 +91,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return null;
 
             // Impl type check
-            if (!_compilationModuleGroup.VersionsWithType(implType.GetTypeDefinition()) ||
-                !_compilationModuleGroup.VersionsWithTypeReference(implType))
+            if (!_compilationModuleGroup.VersionsWithType(implType.GetTypeDefinition()))
             {
+                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL;
+                return null;
+            }
+
+            if (!_compilationModuleGroup.VersionsWithTypeReference(implType))
+            {
+                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
                 return null;
             }
 
@@ -108,20 +125,49 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (implTypeRuntimeInterfaces[i] == implTypeRuntimeInterfaces[j])
                         {
+                            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE;
                             return null;
                         }
                     }
                 }
             }
 
-            MethodDesc resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType);
+
+            if (declMethod.OwningType.IsInterface)
+            {
+                // Check for ComImport class, as we don't support devirtualization of ComImport classes
+                // Run this check on all platforms, to avoid possible future versioning problems if we implement
+                // COM on other architectures.
+                if (!implType.IsObject)
+                {
+                    TypeDesc typeThatDerivesFromObject = implType;
+                    while(!typeThatDerivesFromObject.BaseType.IsObject)
+                    {
+                        typeThatDerivesFromObject = typeThatDerivesFromObject.BaseType;
+                    }
+
+                    if (typeThatDerivesFromObject is Internal.TypeSystem.Ecma.EcmaType ecmaType)
+                    {
+                        if ((ecmaType.Attributes & System.Reflection.TypeAttributes.Import) != 0)
+                        {
+                            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_COM;
+                            return null;
+                        }
+                    }
+                }
+            }
+
+            MethodDesc resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType, ref devirtualizationDetail);
 
             if (resolvedVirtualMethod != null)
             {
                 // Disable devirtualizing to a default interface method as the version resilience of that
                 // has not been analyzed, and is not expected to be particularly useful.
                 if (resolvedVirtualMethod.OwningType.IsInterface)
+                {
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
                     return null;
+                }
 
                 // Validate that the inheritance chain for resolution is within version bubble
                 // The rule is somewhat tricky here.
@@ -150,6 +196,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return resolvedVirtualMethod;
                     }
                 }
+                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE;
             }
 
             // Cannot devirtualize, as we can't resolve to a target.
