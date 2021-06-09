@@ -11260,8 +11260,8 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
         float        currentSpillWeight = 0;
         RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
-                                              ? spillCandidateRegRecord->assignedInterval->recentRefPosition
-                                              : nullptr;
+                                             ? spillCandidateRegRecord->assignedInterval->recentRefPosition
+                                             : nullptr;
         if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional()) &&
             !(currentInterval->isLocalVar && recentRefPosition->IsActualRef()))
         {
