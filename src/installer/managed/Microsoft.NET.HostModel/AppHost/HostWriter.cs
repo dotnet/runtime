@@ -256,7 +256,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     CreateNoWindow = true,
                     ErrorDialog = false,
                     FileName = codesign,
-                    UseShellExecute = true,
+                    UseShellExecute = false,
                     WindowStyle = ProcessWindowStyle.Hidden,
                     WorkingDirectory = Environment.CurrentDirectory
                 }

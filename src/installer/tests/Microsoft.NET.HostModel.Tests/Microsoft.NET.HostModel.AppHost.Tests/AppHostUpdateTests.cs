@@ -246,16 +246,16 @@ namespace Microsoft.NET.HostModel.Tests
                         CreateNoWindow = true,
                         ErrorDialog = false,
                         FileName = codesign,
-                        RedirectStandardOutput = true,
-                        UseShellExecute = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
                         WindowStyle = ProcessWindowStyle.Hidden,
                         WorkingDirectory = Environment.CurrentDirectory
                     }
                 };
 
                 p.Start();
-                p.StandardOutput.ReadToEnd()
-                    .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
+                p.StandardError.ReadToEnd()
+                    .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
             }
         }
 
