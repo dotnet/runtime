@@ -115,6 +115,19 @@ enum
     ASSIGN_REG(Ebx)        \
     ASSIGN_REG(Esi)        \
     ASSIGN_REG(Edi)
+#elif (defined(HOST_UNIX) && defined(HOST_S390X))
+#define ASSIGN_UNWIND_REGS \
+    ASSIGN_REG(PSWAddr)    \
+    ASSIGN_REG(R6)         \
+    ASSIGN_REG(R7)         \
+    ASSIGN_REG(R8)         \
+    ASSIGN_REG(R9)         \
+    ASSIGN_REG(R10)        \
+    ASSIGN_REG(R11)        \
+    ASSIGN_REG(R12)        \
+    ASSIGN_REG(R13)        \
+    ASSIGN_REG(R14)        \
+    ASSIGN_REG(R15)
 #else
 #error unsupported architecture
 #endif
@@ -261,6 +274,18 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     // errors with "this target does not support pointer authentication"
     winContext->Pc = winContext->Pc & 0x7fffffffffffull;
 #endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
+#elif (defined(HOST_UNIX) && defined(HOST_S390X))
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
+    unw_get_reg(cursor, UNW_S390X_R6, (unw_word_t *) &winContext->R6);
+    unw_get_reg(cursor, UNW_S390X_R7, (unw_word_t *) &winContext->R7);
+    unw_get_reg(cursor, UNW_S390X_R8, (unw_word_t *) &winContext->R8);
+    unw_get_reg(cursor, UNW_S390X_R9, (unw_word_t *) &winContext->R9);
+    unw_get_reg(cursor, UNW_S390X_R10, (unw_word_t *) &winContext->R10);
+    unw_get_reg(cursor, UNW_S390X_R11, (unw_word_t *) &winContext->R11);
+    unw_get_reg(cursor, UNW_S390X_R12, (unw_word_t *) &winContext->R12);
+    unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
+    unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
 #else
 #error unsupported architecture
 #endif
@@ -319,6 +344,17 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
+#elif (defined(HOST_UNIX) && defined(HOST_S390X))
+    GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R8, &contextPointers->R8);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R9, &contextPointers->R9);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R10, &contextPointers->R10);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R11, &contextPointers->R11);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R12, &contextPointers->R12);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
 #else
 #error unsupported architecture
 #endif

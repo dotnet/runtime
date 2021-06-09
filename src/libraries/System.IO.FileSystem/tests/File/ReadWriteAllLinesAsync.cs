@@ -99,6 +99,7 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public async Task WriteToReadOnlyFile()
         {
             string path = GetTestFilePath();

@@ -21,7 +21,9 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidFileOptionsThrow()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("options"),
+                () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

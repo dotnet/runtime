@@ -9,6 +9,8 @@ namespace System.IO.Tests
     {
         protected abstract long PreallocationSize { get; }
 
+        protected override string GetExpectedParamName(string paramName) => "value";
+
         protected override FileStream CreateFileStream(string path, FileMode mode)
             => new FileStream(path,
                     new FileStreamOptions

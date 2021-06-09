@@ -107,7 +107,13 @@ namespace System.IO.Strategies
             {
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
             }
-            else if ((access & FileAccess.Write) == FileAccess.Write)
+
+            SerializaitonGuard(access);
+        }
+
+        internal static void SerializaitonGuard(FileAccess access)
+        {
+            if ((access & FileAccess.Write) == FileAccess.Write)
             {
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }

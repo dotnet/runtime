@@ -316,7 +316,7 @@ static int HasNoPrivateKey(const RSA* rsa)
     // That doesn't mean it's actually present, but we can't tell.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
-    if (RSA_meth_get_flags((RSA_METHOD*)meth) & RSA_FLAG_EXT_PKEY)
+    if (RSA_test_flags(rsa, RSA_FLAG_EXT_PKEY) || RSA_meth_get_flags((RSA_METHOD*)meth) & RSA_FLAG_EXT_PKEY)
 #pragma clang diagnostic pop
     {
         return 0;

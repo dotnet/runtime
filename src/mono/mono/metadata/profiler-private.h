@@ -157,6 +157,9 @@ mono_profiler_clauses_enabled (void)
 	return mono_profiler_state.clauses;
 }
 
+MONO_COMPONENT_API gboolean
+mono_component_profiler_clauses_enabled (void);
+
 #define _MONO_PROFILER_EVENT(name, ...) \
 	ICALL_EXPORT void mono_profiler_raise_ ## name (__VA_ARGS__);
 #define MONO_PROFILER_EVENT_0(name, type) \

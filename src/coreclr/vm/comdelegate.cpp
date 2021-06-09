@@ -147,8 +147,11 @@ public:
     }
 
     // Get next offset to shuffle. There has to be at least one offset left.
-    // For register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
-    // For stack arguments it returns stack offset in bytes with negative sign.
+    // It returns an offset encoded properly for a ShuffleEntry offset.
+    // - For floating register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // - For register arguments it returns regNum | ShuffleEntry::REGMASK.
+    // - For stack arguments it returns stack offset index in stack slots for most architectures. For macOS-arm64,
+    //     it returns an encoded stack offset, see below.
     int GetNextOfs()
     {
         int index;
@@ -189,6 +192,8 @@ public:
         if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
+
+#if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
             index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
@@ -198,7 +203,68 @@ public:
                 COMPlusThrow(kNotSupportedException);
             }
 
-            return -(int)byteIndex;
+            // Only Apple Silicon ABI currently supports unaligned stack argument shuffling
+            _ASSERTE(byteIndex == unsigned(index * TARGET_POINTER_SIZE));
+            return index;
+#else
+            // Tha Apple Silicon ABI does not consume an entire stack slot for every argument
+            // Arguments smaller than TARGET_POINTER_SIZE are always aligned to their argument size
+            // But may not begin at the beginning of a stack slot
+            //
+            // The argument location description has been updated to describe the stack offest and
+            // size in bytes.  We will use it as our source of truth.
+            //
+            // The ShuffleEntries will be implemented by the Arm64 StubLinkerCPU::EmitLoadStoreRegImm
+            // using the 12-bit scaled immediate stack offset. The load/stores can be implemented as 1/2/4/8
+            // bytes each (natural binary sizes).
+            //
+            // Each offset is encode as a log2 size and a 12-bit unsigned scaled offset.
+            // We only emit offsets of these natural binary sizes
+            //
+            // We choose the offset based on the ABI stack alignment requirements
+            // - Small integers are shuffled based on their size
+            // - HFA are shuffled based on their element size
+            // - Others are shuffled in full 8 byte chunks.
+            int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
+            int log2Size = 3;
+
+            // If isHFA, shuffle based on field size
+            // otherwise shuffle based on stack size
+            switch(m_argLocDesc->m_hfaFieldSize ? m_argLocDesc->m_hfaFieldSize : m_argLocDesc->m_byteStackSize)
+            {
+                case 1:
+                    log2Size = 0;
+                    break;
+                case 2:
+                    log2Size = 1;
+                    break;
+                case 4:
+                    log2Size = 2;
+                    break;
+                case 3: // Unsupported Size
+                case 5: // Unsupported Size
+                case 6: // Unsupported Size
+                case 7: // Unsupported Size
+                    _ASSERTE(false);
+                    break;
+                default: // Should be a multiple of 8 (TARGET_POINTER_SIZE)
+                    _ASSERTE(bytesRemaining >= TARGET_POINTER_SIZE);
+                    break;
+            }
+
+            m_currentByteStackIndex += (1 << log2Size);
+
+            // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
+            // Arm64 current implementation only supports 12 bit unsigned scaled offset
+            if ((byteIndex >> log2Size) > 0xfff)
+            {
+                COMPlusThrow(kNotSupportedException);
+            }
+
+            _ASSERTE((byteIndex & ((1 << log2Size) - 1)) == 0);
+
+            return (byteIndex >> log2Size) | (log2Size << 12);
+#endif
         }
 
         // There are no more offsets to get, the caller should not have called us
@@ -274,31 +340,8 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
         // different).
         if (srcOffset != dstOffset)
         {
-            if (srcOffset <= 0)
-            {
-                // It was a stack byte offset.
-                const unsigned srcStackByteOffset = -srcOffset;
-                _ASSERT(((srcStackByteOffset % TARGET_POINTER_SIZE) == 0) && "NYI: does not support shuffling of such args");
-                entry.srcofs = (UINT16)(srcStackByteOffset / TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                _ASSERT((srcOffset & ShuffleEntry::REGMASK) != 0);
-                entry.srcofs = (UINT16)srcOffset;
-            }
-
-            if (dstOffset <= 0)
-            {
-                // It was a stack byte offset.
-                const unsigned dstStackByteOffset = -dstOffset;
-                _ASSERT((dstStackByteOffset % TARGET_POINTER_SIZE) == 0 && "NYI: does not support shuffling of such args");
-                entry.dstofs = (UINT16)(dstStackByteOffset / TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                _ASSERT((dstOffset & ShuffleEntry::REGMASK) != 0);
-                entry.dstofs = (UINT16)dstOffset;
-            }
+            entry.srcofs = (UINT16)srcOffset;
+            entry.dstofs = (UINT16)dstOffset;
 
             if (shuffleType == ShuffleComputationType::InstantiatingStub)
             {
@@ -657,7 +700,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = static_cast<UINT16>(stackSizeDelta);
+    entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
 #else

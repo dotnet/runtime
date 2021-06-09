@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public sealed class X509ExtensionEnumerator : IEnumerator
+    public sealed class X509ExtensionEnumerator : IEnumerator, IEnumerator<X509Extension>
     {
         internal X509ExtensionEnumerator(X509ExtensionCollection extensions)
         {
@@ -34,6 +35,10 @@ namespace System.Security.Cryptography.X509Certificates
         public void Reset()
         {
             _current = -1;
+        }
+
+        void IDisposable.Dispose()
+        {
         }
 
         private readonly X509ExtensionCollection _extensions;

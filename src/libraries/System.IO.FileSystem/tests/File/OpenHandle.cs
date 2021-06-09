@@ -9,6 +9,8 @@ namespace System.IO.Tests
     // to avoid a lot of code duplication, we reuse FileStream tests
     public class File_OpenHandle : FileStream_ctor_options_as
     {
+        protected override string GetExpectedParamName(string paramName) => paramName;
+
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
             FileAccess access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite;

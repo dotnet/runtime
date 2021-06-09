@@ -1308,6 +1308,9 @@ void EEJitManager::SetCpuInfo()
     //   CORJIT_FLAG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX
     //      AVX2      - EBX bit 5
+    //   CORJIT_FLAG_USE_AVXVNNI if the following feature bit is set (input EAX of 0x07 and input ECX of 1):
+    //      CORJIT_FLAG_USE_AVX2
+    //      AVXVNNI   - EAX bit 4
     //   CORJIT_FLAG_USE_AVX_512 is not currently set, but defined so that it can be used in future without
     //   CORJIT_FLAG_USE_BMI1 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      BMI1 - EBX bit 3
@@ -1385,6 +1388,12 @@ void EEJitManager::SetCpuInfo()
                                         if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX2);
+
+                                            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+                                            if ((cpuidInfo[EAX] & (1 << 4)) != 0)                           // AVX-VNNI
+                                            {
+                                                CPUCompileFlags.Set(InstructionSet_AVXVNNI);
+                                            }
                                         }
                                     }
                                 }
@@ -4069,6 +4078,23 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
                     else
                     {
                         _ASSERTE(pFuncEntry);
+#ifdef _TARGET_AMD64_
+                        // On amd64, match RtlLookupFunctionEntry behavior by resolving indirect function entries
+                        // back to the associated owning function entry.
+                        if ((functionEntry.UnwindData & RUNTIME_FUNCTION_INDIRECT) != 0)
+                        {
+                            DWORD dwRvaOfOwningFunctionEntry = (functionEntry.UnwindData & ~RUNTIME_FUNCTION_INDIRECT);
+                            taFuncEntry = peDecoder.GetRvaData(dwRvaOfOwningFunctionEntry);
+                            hr = DacReadAll(taFuncEntry, &functionEntry, sizeof(functionEntry), false);
+                            if (FAILED(hr))
+                            {
+                                return;
+                            }
+
+                            _ASSERTE((functionEntry.UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
+                        }
+#endif // _TARGET_AMD64_
+
                         *pFuncEntry = (UINT_PTR)(T_RUNTIME_FUNCTION*)PTR_RUNTIME_FUNCTION(taFuncEntry);
                         break;
                     }

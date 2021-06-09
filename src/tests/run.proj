@@ -120,11 +120,25 @@ $(_XunitEpilog)
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
 </Project>
 ]]>
       </XunitWrapperGenCsProj>
+      <XunitRunnerConfig>
+        <![CDATA[
+{
+    "diagnosticMessages": true,
+    "longRunningTestSeconds": 120,
+    "shadowCopy": false,
+    "preEnumerateTheories": false
+}
+]]>
+      </XunitRunnerConfig>
     </PropertyGroup>
 
     <!-- <Exec Command="md" -->
@@ -140,6 +154,12 @@ $(_XunitEpilog)
     <WriteLinesToFile
       File="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
       Lines="$(XunitWrapperGenCsProj)"
+      Overwrite="true" />
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(XunitWrapperSrcDir)\xunit.runner.json"
+      Lines="$(XunitRunnerConfig)"
       Overwrite="true" />
   </Target>
 
@@ -184,6 +204,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             internal static string testBinaryBase%3B
             internal static string coreRoot%3B
             internal static string category%3B
+            internal static string helixUploadRoot%3B
 
             static _Global()
             {
@@ -191,6 +212,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 testBinaryBase = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
                 coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
+                helixUploadRoot = System.Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
+                if (!String.IsNullOrEmpty(helixUploadRoot)) {
+                    reportBase = System.IO.Path.Combine(System.IO.Path.GetFullPath(helixUploadRoot), "Reports")%3B
+                }
 
                 if (String.IsNullOrEmpty(reportBase)) {
                     reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
@@ -266,6 +291,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 string outputFile = null%3B
                 string errorFile = null%3B
                 string testExecutable = null%3B
+                string outputDir = null%3B
                 Exception infraEx = null%3B
 
                 try
@@ -276,6 +302,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                   errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
                   testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
                   $(TestExecutableReplacement)
+                  outputDir = System.IO.Path.GetDirectoryName(outputFile)%3B
 
                   if (!_Global.runningInWindows) {
                       testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
@@ -283,7 +310,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase, outputDir)%3B
                 }
                 catch (Exception ex)
                 {
@@ -345,7 +372,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     // Add Android app running log to testOutput
                     if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                     {
-                        string androidLogFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(testExecutable), "adb-logcat-net.dot." + _Global.category + ".log")%3B
+                        string androidLogFile = System.IO.Path.Combine(outputDir, "adb-logcat-net.dot." + _Global.category + "-net.dot.MonoRunner.log")%3B
                         if(File.Exists(androidLogFile))
                         {
                             testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B

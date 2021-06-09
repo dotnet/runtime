@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(blob, 0, blob.Length);
+                    Array.Clear(blob);
                 }
             }
 
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography
                 {
                     if (blob != null)
                     {
-                        Array.Clear(blob, 0, blob.Length);
+                        Array.Clear(blob);
                     }
                 }
             }

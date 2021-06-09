@@ -498,6 +498,12 @@ namespace System
             throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedNonNegNum);
         }
 
+        [DoesNotReturn]
+        internal static void ArgumentOutOfRangeException_Enum_Value()
+        {
+            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)

@@ -94,6 +94,7 @@ typedef void* UCalendar;
 
 typedef enum UErrorCode {
     U_STRING_NOT_TERMINATED_WARNING = -124,
+    U_USING_DEFAULT_WARNING = -127,
     U_ZERO_ERROR =  0,
     U_ILLEGAL_ARGUMENT_ERROR = 1,
     U_INTERNAL_PROGRAM_ERROR = 5,
@@ -441,7 +442,7 @@ UChar * u_strcpy(UChar * dst, const UChar * src);
 UChar * u_strncpy(UChar * dst, const UChar * src, int32_t n);
 UChar32 u_tolower(UChar32 c);
 UChar32 u_toupper(UChar32 c);
-UChar* u_uastrcpy(UChar * dst, const char * src);	
+UChar* u_uastrcpy(UChar * dst, const char * src);
 void ucal_add(UCalendar * cal, UCalendarDateFields field, int32_t amount, UErrorCode * status);
 void ucal_close(UCalendar * cal);
 int32_t ucal_get(const UCalendar * cal, UCalendarDateFields field, UErrorCode * status);
@@ -455,7 +456,7 @@ int32_t ucal_getWindowsTimeZoneID(const UChar *	id, int32_t	len, UChar * winid, 
 UCalendar * ucal_open(const UChar * zoneID, int32_t len, const char * locale, UCalendarType type, UErrorCode * status);
 UEnumeration * ucal_openTimeZoneIDEnumeration(USystemTimeZoneType zoneType, const char * region, const int32_t * rawOffset, UErrorCode * ec);
 void ucal_set(UCalendar * cal, UCalendarDateFields field, int32_t value);
-void ucal_setMillis(UCalendar * cal, UDate dateTime, UErrorCode * status);	
+void ucal_setMillis(UCalendar * cal, UDate dateTime, UErrorCode * status);
 void ucol_close(UCollator * coll);
 void ucol_closeElements(UCollationElements * elems);
 int32_t ucol_getOffset(const UCollationElements *elems);
