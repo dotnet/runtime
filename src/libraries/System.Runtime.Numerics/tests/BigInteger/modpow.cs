@@ -286,6 +286,36 @@ namespace System.Numerics.Tests
             VerifyModPowString(Math.Pow(2, 35) + " " + Math.Pow(2, 33) + " 2 tModPow");
         }
 
+        [Fact]
+        [OuterLoop]
+        public static void ModPowFastReducerBoundary()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, () =>
+            {
+                byte[] tempByteArray1 = new byte[40];
+                byte[] tempByteArray2 = new byte[40];
+                byte[] tempByteArray3 = new byte[40];
+
+                for (int i = 0; i < 32; i++)
+                {
+                    tempByteArray2[i] = 0xff;
+                }
+                tempByteArray3[36] = 1;
+
+                for (int i = 32; i < 40; i++)
+                {
+                    for (int j = 0; j < 8; j++)
+                    {
+                        tempByteArray1[i] = (byte)(1 << j);
+                        tempByteArray2[i] |= (byte)(1 << j);
+                        VerifyModPowString(Print(tempByteArray3) + "2 " + Print(tempByteArray2) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray3) + "2 " + Print(tempByteArray1) + "tModPow");
+                    }
+                    tempByteArray1[i] = 0;
+                }
+            });
+        }
+
         private static void VerifyModPowString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);
