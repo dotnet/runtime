@@ -5,7 +5,7 @@
 
   <PropertyGroup>
     <PackageTestProjectsDir Condition="'$(PackageTestProjectsDir)' == ''">$(MSBuildThisFileDirectory)..\projects</PackageTestProjectsDir>
-    <_projectProperties>SupportFilesDir=$(MSBuildThisFileDirectory)</_projectProperties>
+    <_projectProperties>SupportFilesDir=$(MSBuildThisFileDirectory);MicrosoftNetCoreAppRefPackDir=$(MicrosoftNetCoreAppRefPackDir)</_projectProperties>
     <LocalPackagesPath Condition="'$(LocalPackagesPath)' == ''">$(MSBuildThisFileDirectory)\packages</LocalPackagesPath>
   </PropertyGroup>
 
@@ -27,6 +27,6 @@
   <Target Name="Test" DependsOnTargets="GetProjects">
     <!-- We need to pass a dummy global property to force msbuild reevaluation after restoring the project to get implicit references added
     and all generated props and targets imported in the test step. This is used to be able to call RestoreAndTest target when running in helix. -->
-    <MSBuild Projects="@(Project)" Targets="Test" BuildInParallel="true" Properties="$(_projectProperties);ForceMsbuildEvaluation=true" />
+    <MSBuild Projects="@(Project)" BuildInParallel="true" Properties="$(_projectProperties);ForceMsbuildEvaluation=true" />
   </Target>
 </Project>

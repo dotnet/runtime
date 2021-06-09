@@ -2407,45 +2407,69 @@ def list_superpmi_collections_container_via_rest_api(path_filter=lambda unused: 
 
     # This URI will return *all* the blobs, for all jit-ee-version/OS/architecture combinations.
     # pass "prefix=foo/bar/..." to only show a subset. Or, we can filter later using string search.
-    list_superpmi_container_uri = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + az_collections_root_folder + "/"
-
-    try:
-        contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
-    except Exception as exception:
-        logging.error("Didn't find any collections using %s", list_superpmi_container_uri)
-        logging.error("  Error: %s", exception)
-        return None
-
-    # Contents is an XML file with contents like:
     #
-    # <EnumerationResults ContainerName="https://clrjit.blob.core.windows.net/superpmi/collections">
-    #   <Blobs>
-    #     <Blob>
-    #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Name>
-    #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Url>
-    #       <Properties>
-    #         ...
-    #       </Properties>
-    #     </Blob>
-    #     <Blob>
-    #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Name>
-    #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Url>
-    #     ... etc. ...
-    #   </Blobs>
-    # </EnumerationResults>
+    # Note that there is a maximum number of results returned in one query of 5000. So we might need to
+    # iterate. In that case, the XML result contains a `<NextMarker>` element like:
     #
-    # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
-    # use regular expressions.
+    # <NextMarker>2!184!MDAwMDkyIWJ1aWxkcy8wMTZlYzI5OTAzMzkwMmY2ZTY4Yzg0YWMwYTNlYzkxN2Y5MzA0OTQ2L0xpbnV4L3g2NC9DaGVja2VkL2xpYmNscmppdF93aW5fYXJtNjRfeDY0LnNvITAwMDAyOCE5OTk5LTEyLTMxVDIzOjU5OjU5Ljk5OTk5OTlaIQ--</NextMarker>
+    #
+    # which we need to pass to the REST API with `marker=...`.
 
-    url_prefix = az_blob_storage_superpmi_container_uri + "/" + az_collections_root_folder + "/"
-
-    urls_split = contents.split("<Url>")[1:]
     paths = []
-    for item in urls_split:
-        url = item.split("</Url>")[0].strip()
-        path = remove_prefix(url, url_prefix)
-        if path_filter(path):
-            paths.append(path)
+
+    list_superpmi_container_uri_base = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + az_collections_root_folder + "/"
+
+    iter = 1
+    marker = ""
+
+    while True:
+        list_superpmi_container_uri = list_superpmi_container_uri_base + marker
+
+        try:
+            contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
+        except Exception as exception:
+            logging.error("Didn't find any collections using %s", list_superpmi_container_uri)
+            logging.error("  Error: %s", exception)
+            return None
+
+        # Contents is an XML file with contents like:
+        #
+        # <EnumerationResults ContainerName="https://clrjit.blob.core.windows.net/superpmi/collections">
+        #   <Blobs>
+        #     <Blob>
+        #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Name>
+        #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Url>
+        #       <Properties>
+        #         ...
+        #       </Properties>
+        #     </Blob>
+        #     <Blob>
+        #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Name>
+        #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Url>
+        #     ... etc. ...
+        #   </Blobs>
+        # </EnumerationResults>
+        #
+        # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
+        # use regular expressions.
+
+        url_prefix = az_blob_storage_superpmi_container_uri + "/" + az_collections_root_folder + "/"
+
+        urls_split = contents.split("<Url>")[1:]
+        for item in urls_split:
+            url = item.split("</Url>")[0].strip()
+            path = remove_prefix(url, url_prefix)
+            if path_filter(path):
+                paths.append(path)
+
+        # Look for a continuation marker.
+        re_match = re.match(r'.*<NextMarker>(.*)</NextMarker>.*', contents)
+        if re_match:
+            marker_text = re_match.group(1)
+            marker = "&marker=" + marker_text
+            iter += 1
+        else:
+            break
 
     return paths
 

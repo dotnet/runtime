@@ -8,7 +8,7 @@ To add a library to the .NETCore shared framework, that library's `AssemblyName`
 
 The library should have both a `ref` and `src` project. Its reference assembly will be included in the ref-pack for the Microsoft.NETCore.App shared framework, and its implementation assembly will be included in the runtime pack.
 
-Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package). If a library ships both in the shared framework and a nuget package, it may decide to exclude its latest `$(NetCoreAppCurrent)` build from the package. This can be done by setting `ExcludeCurrentNetCoreAppFromPackage` to true. Libraries should take care when doing this to ensure that whatever asset in the package that would apply to `$(NetCoreAppCurrent)` is functionally equivalent to that which it replaces from the shared framework, to avoid breaking applications which reference a newer package than the shared framework. If possible, it's preferable to avoid this by choosing to target frameworks which can both ship in the package and shared framework.
+Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package).
 
 In some occasions we may want to include a library in the shared framework, but not expose it publicly. To do so, include the library in the `NetCoreAppLibraryNoReference` property in [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props). The library should also be named in a way to discourage use at runtime, for example using the `System.Private` prefix. We should avoid hiding arbitrary public libraries as it complicates deployment and servicing, though some platform specific libraries are in this state due to historical reasons.
 
@@ -58,13 +58,6 @@ By default all TargetFrameworks listed in your project will be included in the p
 ```xml
   <PropertyGroup>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net5.0'">true</ExcludeFromPackage>
-  </PropertyGroup>
-```
-
-A common pattern is to build for the latest .NET version, for example to include a library in the shared framework or a transport package, but then excluded this from the NuGet package. This can be done to avoid growing the NuGet package in size. To do this set
-```xml
-  <PropertyGroup>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
 ```
 

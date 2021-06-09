@@ -731,16 +731,6 @@
 
     <!-- MacOS arm64 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr'">
-        <!-- Hard failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_35000/test35000/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
-        </ExcludeList>
         <!-- Tracing failures -->
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/48786</Issue>

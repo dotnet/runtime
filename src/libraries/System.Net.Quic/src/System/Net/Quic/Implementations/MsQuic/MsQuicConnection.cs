@@ -204,7 +204,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             TaskCompletionSource? bidirectionalTcs = null;
             lock (state)
             {
-                unidirectionalTcs = state.NewBidirectionalStreamsAvailable;
+                unidirectionalTcs = state.NewUnidirectionalStreamsAvailable;
                 bidirectionalTcs = state.NewBidirectionalStreamsAvailable;
                 state.NewUnidirectionalStreamsAvailable = null;
                 state.NewBidirectionalStreamsAvailable = null;
@@ -605,6 +605,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            _configuration?.Dispose();
             _state?.Handle?.Dispose();
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             _disposed = true;

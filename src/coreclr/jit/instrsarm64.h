@@ -58,17 +58,18 @@
 // clang-format off
 INST9(invalid,     "INVALID",      0,      IF_NONE,   BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE)
 
-//    enum         name            info               DR_2E        DR_2G        DI_1B        DI_1D        DV_3C        DV_2B        DV_2C        DV_2E        DV_2F
-INST9(mov,         "mov",          0,      IF_EN9,    0x2A0003E0,  0x11000000,  0x52800000,  0x320003E0,  0x0EA01C00,  0x0E003C00,  0x4E001C00,  0x5E000400,  0x6E000400)
-                                   //  mov     Rd,Rm                DR_2E  X0101010000mmmmm 00000011111ddddd   2A00 03E0
-                                   //  mov     Rd,Rn                DR_2G  X001000100000000 000000nnnnnddddd   1100 0000   mov to/from SP only
-                                   //  mov     Rd,imm(i16,hw)       DI_1B  X10100101hwiiiii iiiiiiiiiiiddddd   5280 0000   imm(i16,hw)
-                                   //  mov     Rd,imm(N,r,s)        DI_1D  X01100100Nrrrrrr ssssss11111ddddd   3200 03E0   imm(N,r,s)
-                                   //  mov     Vd,Vn                DV_3C  0Q001110101nnnnn 000111nnnnnddddd   0EA0 1C00   Vd,Vn
-                                   //  mov     Rd,Vn[0]             DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]   (to general)
-                                   //  mov     Vd[],Rn              DV_2C  01001110000iiiii 000111nnnnnddddd   4E00 1C00   Vd[],Rn   (from general)
-                                   //  mov     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[]   (scalar by element)
-                                   //  mov     Vd[],Vn[]            DV_2F  01101110000iiiii 0jjjj1nnnnnddddd   6E00 0400   Vd[],Vn[] (from/to elem)
+//    enum            name              info               DR_2E        DR_2G        DI_1B        DI_1D        DV_3C        DV_2B        DV_2C        DV_2E        DV_2F
+INST9(mov,            "mov",            0,      IF_EN9,    0x2A0003E0,  0x11000000,  0x52800000,  0x320003E0,  0x0EA01C00,  0x0E003C00,  0x4E001C00,  0x5E000400,  0x6E000400)
+                                        //  mov     Rd,Rm                DR_2E  X0101010000mmmmm 00000011111ddddd   2A00 03E0
+                                        //  mov     Rd,Rn                DR_2G  X001000100000000 000000nnnnnddddd   1100 0000   mov to/from SP only
+                                        //  mov     Rd,imm(i16,hw)       DI_1B  X10100101hwiiiii iiiiiiiiiiiddddd   5280 0000   imm(i16,hw)
+                                        //  mov     Rd,imm(N,r,s)        DI_1D  X01100100Nrrrrrr ssssss11111ddddd   3200 03E0   imm(N,r,s)
+                                        //  mov     Vd,Vn                DV_3C  0Q001110101nnnnn 000111nnnnnddddd   0EA0 1C00   Vd,Vn
+                                        //  mov     Rd,Vn[0]             DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]   (to general)
+                                        //  mov     Vd[],Rn              DV_2C  01001110000iiiii 000111nnnnnddddd   4E00 1C00   Vd[],Rn   (from general)
+                                        //  mov     Vd,Vn[]              DV_2E  01011110000iiiii 000001nnnnnddddd   5E00 0400   Vd,Vn[]   (scalar by element)
+                                        //  mov     Vd[],Vn[]            DV_2F  01101110000iiiii 0jjjj1nnnnnddddd   6E00 0400   Vd[],Vn[] (from/to elem)
+INST9(mov_eliminated, "mov_eliminated", 0,      IF_EN9,    0x2A0003E0,  0x11000000,  0x52800000,  0x320003E0,  0x0EA01C00,  0x0E003C00,  0x4E001C00,  0x5E000400,  0x6E000400)
 
 //    enum         name            info               DR_3A        DR_3B        DR_3C        DI_2A        DV_3A        DV_3E
 INST6(add,         "add",          0,      IF_EN6A,   0x0B000000,  0x0B000000,  0x0B200000,  0x11000000,  0x0E208400,  0x5EE08400)

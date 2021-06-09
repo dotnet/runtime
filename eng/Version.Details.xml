@@ -146,73 +146,73 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="System.Text.Json" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="6.0.0-preview.6.21281.1">
+    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="6.0.0-preview.6.21307.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>fea7ff2cce79da2df9cf1c50ce215287750f055e</Sha>
+      <Sha>1d2aa13ffc256a8c3f645de9c4d0f1d4f3296711</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21281.4">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21304.2">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>493a448586c1fad68efc2126836f5bb9b5f9ad20</Sha>
+      <Sha>21df7dbbf881507c98026c1b9e7532303b3c0a06</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21304.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21307.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>12e4fce4088efd078409ee2bb19e50d1c9177742</Sha>
+      <Sha>2751a33949055a45fd79e2ae126f127daf1aee44</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21304.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21307.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>12e4fce4088efd078409ee2bb19e50d1c9177742</Sha>
+      <Sha>2751a33949055a45fd79e2ae126f127daf1aee44</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21304.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>85a65ea1fca1d0867f699fed44d191358270bf6a</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21301.4">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21306.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f4ee4d18519bd793bb3992349e3f756aa3028425</Sha>
+      <Sha>b9cbe7b15d222056c3287c4e43b184ecbadfb58c</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21301.4">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21306.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f4ee4d18519bd793bb3992349e3f756aa3028425</Sha>
+      <Sha>b9cbe7b15d222056c3287c4e43b184ecbadfb58c</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21301.4">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21306.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f4ee4d18519bd793bb3992349e3f756aa3028425</Sha>
+      <Sha>b9cbe7b15d222056c3287c4e43b184ecbadfb58c</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21301.4">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21306.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f4ee4d18519bd793bb3992349e3f756aa3028425</Sha>
+      <Sha>b9cbe7b15d222056c3287c4e43b184ecbadfb58c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.21.Node.win-x64" Version="6.0.0-preview.6.21275.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>defa37b05c734e025292c5747664e970cd2ac444</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21304.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21305.2">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>da87f637306fa13aec7cb92bb7e8067d7b7a6190</Sha>
+      <Sha>5befce62565e55202124c6f8c614b4c19bf01faf</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

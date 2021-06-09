@@ -914,11 +914,12 @@ namespace System.Net.Security
                             // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                             // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-                            if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13)
+                            if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
                             {
                                 // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
                                 // Tls1.3 does not have renegotiation. However on Windows this error code is used
                                 // for session management e.g. anything lsass needs to see.
+                                // We also allow it when explicitly requested using RenegotiateAsync().
                                 _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                             }
                         }

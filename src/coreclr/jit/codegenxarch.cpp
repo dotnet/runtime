@@ -2332,7 +2332,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
-    unsigned stackAdjustment = 0;
+    target_size_t stackAdjustment     = 0;
+    target_size_t locAllocStackOffset = 0;
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
@@ -2410,6 +2411,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
     }
 
+    bool initMemOrLargeAlloc; // Declaration must be separate from initialization to avoid clang compiler error.
+    initMemOrLargeAlloc = compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
+
 #if FEATURE_FIXED_OUT_ARGS
     // If we have an outgoing arg area then we must adjust the SP by popping off the
     // outgoing arg area. We will restore it right before we return from this method.
@@ -2425,8 +2429,22 @@ void CodeGen::genLclHeap(GenTree* tree)
     {
         assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
                                                                         // aligned
+
+        // If the localloc amount is a small enough constant, and we're not initializing the allocated
+        // memory, then don't bother popping off the ougoing arg space first; just allocate the amount
+        // of space needed by the allocation, and call the bottom part the new outgoing arg space.
+
+        if ((amount > 0) && !initMemOrLargeAlloc)
+        {
+            lastTouchDelta      = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, REG_NA);
+            stackAdjustment     = 0;
+            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+            goto ALLOC_DONE;
+        }
+
         inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
-        stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
+        stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+        locAllocStackOffset = stackAdjustment;
     }
 #endif
 
@@ -2450,9 +2468,6 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             goto ALLOC_DONE;
         }
-
-        bool initMemOrLargeAlloc =
-            compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
 
 #ifdef TARGET_X86
         bool needRegCntRegister = true;
@@ -2552,7 +2567,7 @@ ALLOC_DONE:
         assert(lastTouchDelta >= -1);
 
         if ((lastTouchDelta == (target_ssize_t)-1) ||
-            (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
+            (stackAdjustment + (target_size_t)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
              compiler->eeGetPageSize()))
         {
             genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, REG_NA);
@@ -2564,8 +2579,8 @@ ALLOC_DONE:
     }
 
     // Return the stackalloc'ed address in result register.
-    // TargetReg = RSP + stackAdjustment.
-    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, targetReg, REG_SPBASE, stackAdjustment);
+    // TargetReg = RSP + locAllocStackOffset
+    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, targetReg, REG_SPBASE, (int)locAllocStackOffset);
 
     if (endLabel != nullptr)
     {
