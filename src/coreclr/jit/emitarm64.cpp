@@ -4088,9 +4088,7 @@ void emitter::emitIns_Mov(
 
             if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
             {
-                // TODO-ARM64: These instructions might have a side effect in the form of a
-                // byref liveness update, so we should preserve them but emit nothing
-
+                // These instructions have no side effect and can be skipped
                 return;
             }
 
@@ -4106,10 +4104,13 @@ void emitter::emitIns_Mov(
                     return emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
                 }
             }
-            else if (isVectorRegister(srcReg))
+            else
             {
-                assert(isGeneralRegister(dstReg));
-                return emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
+                if (isVectorRegister(srcReg))
+                {
+                    assert(isGeneralRegister(dstReg));
+                    return emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
+                }
             }
 
             // Is this a MOV to/from SP instruction?
@@ -10347,17 +10348,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     assert(REG_NA == (int)REG_NA);
 
-    if (ins == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        goto UPDATE_LIVENESS;
-    }
-
     /* What instruction format have we got? */
 
     switch (fmt)
@@ -11471,7 +11461,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
     }
 
-UPDATE_LIVENESS:
     // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
     // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
     // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
@@ -11587,9 +11576,9 @@ UPDATE_LIVENESS:
     }
 #endif
 
-    /* All instructions, except eliminated moves, are expected to generate code */
+    /* All instructions are expected to generate code */
 
-    assert((*dp != dst) || (ins == INS_mov_eliminated));
+    assert(*dp != dst);
 
     *dp = dst;
 
@@ -12199,17 +12188,6 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    if (id->idIns() == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        return;
-    }
-
     if (EMITVERBOSE)
     {
         unsigned idNum =
@@ -15557,7 +15535,6 @@ bool emitter::IsMovInstruction(instruction ins)
     {
         case INS_fmov:
         case INS_mov:
-        case INS_mov_eliminated:
         case INS_sxtb:
         case INS_sxth:
         case INS_sxtw:
@@ -15640,24 +15617,23 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
     bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
     if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
-        (emitLastEmittedIns != nullptr) &&
-        (emitLastEmittedIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
-        (emitLastEmittedIns->idOpSize() == size))   // Don't optimize if operand size is different than previous
-                                                    // instruction.
+        (emitLastIns != nullptr) &&
+        (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
+        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
     {
         // Check if we did same move in prev instruction except dst/src were switched.
-        regNumber prevDst    = emitLastEmittedIns->idReg1();
-        regNumber prevSrc    = emitLastEmittedIns->idReg2();
-        insFormat lastInsfmt = emitLastEmittedIns->idInsFmt();
+        regNumber prevDst    = emitLastIns->idReg1();
+        regNumber prevSrc    = emitLastIns->idReg2();
+        insFormat lastInsfmt = emitLastIns->idInsFmt();
 
         if ((prevDst == dst) && (prevSrc == src))
         {
-            assert(emitLastEmittedIns->idOpSize() == size);
+            assert(emitLastIns->idOpSize() == size);
             JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
             return true;
         }
 
-        // Sometimes emitLastEmittedIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
+        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
         // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
         bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
 
@@ -15720,17 +15696,16 @@ bool emitter::IsRedundantLdStr(
 {
     bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
-    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastEmittedIns == nullptr))
+    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
     {
         return false;
     }
 
-    regNumber prevReg1   = emitLastEmittedIns->idReg1();
-    regNumber prevReg2   = emitLastEmittedIns->idReg2();
-    insFormat lastInsfmt = emitLastEmittedIns->idInsFmt();
-    emitAttr  prevSize   = emitLastEmittedIns->idOpSize();
-    ssize_t   prevImm    = emitLastEmittedIns->idIsLargeCns() ? ((instrDescCns*)emitLastEmittedIns)->idcCnsVal
-                                                         : emitLastEmittedIns->idSmallCns();
+    regNumber prevReg1   = emitLastIns->idReg1();
+    regNumber prevReg2   = emitLastIns->idReg2();
+    insFormat lastInsfmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
+    ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
 
     // Only optimize if:
     // 1. "base" or "base plus immediate offset" addressing modes.
@@ -15741,7 +15716,7 @@ bool emitter::IsRedundantLdStr(
         return false;
     }
 
-    if ((ins == INS_ldr) && (emitLastEmittedIns->idIns() == INS_str))
+    if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
     {
         // If reg1 is of size less than 8-bytes, then eliminating the 'ldr'
         // will not zero the upper bits of reg1.
@@ -15762,7 +15737,7 @@ bool emitter::IsRedundantLdStr(
             return true;
         }
     }
-    else if ((ins == INS_str) && (emitLastEmittedIns->idIns() == INS_ldr))
+    else if ((ins == INS_str) && (emitLastIns->idIns() == INS_ldr))
     {
         // Make sure src and dst registers are not same.
         //  ldr x0, [x0, #4]

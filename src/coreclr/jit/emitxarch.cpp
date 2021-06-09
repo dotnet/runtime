@@ -268,14 +268,8 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         return false;
     }
 
-    instrDesc* id = emitLastEmittedIns;
-
-    if (id == nullptr)
-    {
-        return false;
-    }
-
-    insFormat fmt = id->idInsFmt();
+    instrDesc* id  = emitLastIns;
+    insFormat  fmt = id->idInsFmt();
 
     // This isn't meant to be a comprehensive check. Just look for what
     // seems to be common.
@@ -343,13 +337,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    instrDesc* id = emitLastEmittedIns;
-
-    if (id == nullptr)
-    {
-        return false;
-    }
-
+    instrDesc*  id      = emitLastIns;
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
@@ -1052,7 +1040,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
  */
 bool emitter::emitIsLastInsCall()
 {
-    if ((emitLastEmittedIns != nullptr) && (emitLastEmittedIns->idIns() == INS_call))
+    if ((emitLastIns != nullptr) && (emitLastIns->idIns() == INS_call))
     {
         return true;
     }
@@ -1906,17 +1894,12 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 inline bool emitInstHasNoCode(instruction ins)
 {
-    switch (ins)
+    if (ins == INS_align)
     {
-        case INS_align:
-            return true;
-
-        case INS_mov_eliminated:
-            return true;
-
-        default:
-            return false;
+        return true;
     }
+
+    return false;
 }
 
 /*****************************************************************************
@@ -2778,7 +2761,7 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     /* Append this instruction to this IG's alignment list */
     id->idaNext = emitCurIGAlignList;
 
-    appendToCurIG(id);
+    emitCurIGsize += paddingBytes;
     emitCurIGAlignList = id;
 }
 
@@ -2831,7 +2814,7 @@ void emitter::emitIns_Nop(unsigned size)
     id->idCodeSize(size);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += size;
 }
 
 /*****************************************************************************
@@ -2888,7 +2871,7 @@ void emitter::emitIns(instruction ins)
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 // Add an instruction with no operands, but whose encoding depends on the size
@@ -2915,7 +2898,7 @@ void emitter::emitIns(instruction ins, emitAttr attr)
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -3169,7 +3152,7 @@ void emitter::spillIntArgRegsToShadowSlots()
         id->idReg1(argReg);
         sz = emitInsSizeAM(id, insCodeMR(INS_mov));
         id->idCodeSize(sz);
-        appendToCurIG(id);
+        emitCurIGsize += sz;
     }
 }
 
@@ -3220,7 +3203,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -3297,7 +3280,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     }
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -3613,7 +3596,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     id->idCodeSize(sz);
 
                     dispIns(id);
-                    appendToCurIG(id);
+                    emitCurIGsize += sz;
 
                     return (memOp == src) ? dst->GetRegNum() : REG_NA;
                 }
@@ -3818,7 +3801,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -3869,7 +3852,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -3965,7 +3948,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -4103,7 +4086,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     if (reg == REG_ESP)
     {
@@ -4159,7 +4142,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -4196,7 +4179,7 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -4249,7 +4232,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -4265,7 +4248,6 @@ bool emitter::IsMovInstruction(instruction ins)
     switch (ins)
     {
         case INS_mov:
-        case INS_mov_eliminated:
         case INS_movapd:
         case INS_movaps:
         case INS_movd:
@@ -4369,25 +4351,14 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(ins, dstReg, srcReg, attr);
-
     if (canSkip && (dstReg == srcReg))
     {
         switch (ins)
         {
             case INS_mov:
             {
-                // These instructions might have a side effect in the form of a
-                // byref liveness update, so preserve them but emit nothing
-
-                if (!EA_IS_BYREF(attr))
-                {
-                    return;
-                }
-
-                sz  = 0;
-                ins = INS_mov_eliminated;
-                break;
+                // These instructions have no side effect and can be skipped
+                return;
             }
 
             case INS_movapd:
@@ -4398,7 +4369,6 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
             case INS_movups:
             {
                 // These instructions have no side effect and can be skipped
-                assert(!EA_IS_BYREF(attr));
                 return;
             }
 
@@ -4439,7 +4409,8 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         }
     }
 
-    insFormat fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+    UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
+    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -4449,7 +4420,7 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -4483,7 +4454,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -4542,7 +4513,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs)
@@ -4561,7 +4532,7 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -4597,7 +4568,7 @@ void emitter::emitIns_AR_R_R(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir)
@@ -4614,7 +4585,7 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, int ival)
@@ -4634,7 +4605,7 @@ void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenT
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, regNumber base, int offs, int ival)
@@ -4655,7 +4626,7 @@ void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_C_I(
@@ -4681,7 +4652,7 @@ void emitter::emitIns_R_C_I(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival)
@@ -4704,7 +4675,7 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
@@ -4725,7 +4696,7 @@ void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs)
@@ -4747,7 +4718,7 @@ void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -4815,7 +4786,7 @@ void emitter::emitIns_R_AR_R(instruction ins,
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_C(
@@ -4842,7 +4813,7 @@ void emitter::emitIns_R_R_C(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -4866,7 +4837,7 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs)
@@ -4890,7 +4861,7 @@ void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_A_I(
@@ -4912,7 +4883,7 @@ void emitter::emitIns_R_R_A_I(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_AR_I(
@@ -4935,7 +4906,7 @@ void emitter::emitIns_R_R_AR_I(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_C_I(
@@ -4962,7 +4933,7 @@ void emitter::emitIns_R_R_C_I(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /**********************************************************************************
@@ -5024,7 +4995,7 @@ void emitter::emitIns_R_R_R_I(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_S_I(
@@ -5049,7 +5020,7 @@ void emitter::emitIns_R_R_S_I(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -5106,7 +5077,7 @@ void emitter::emitIns_R_R_A_R(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -5146,7 +5117,7 @@ void emitter::emitIns_R_R_AR_R(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -5196,7 +5167,7 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 //------------------------------------------------------------------------
@@ -5235,7 +5206,7 @@ void emitter::emitIns_R_R_S_R(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_R_R_R(
@@ -5258,7 +5229,7 @@ void emitter::emitIns_R_R_R_R(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -5332,7 +5303,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     id->idAddr()->iiaFieldHnd = fldHnd;
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -5403,7 +5374,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     id->idAddr()->iiaFieldHnd = fldHnd;
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -5451,7 +5422,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
@@ -5506,7 +5477,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -5563,7 +5534,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -5624,7 +5595,7 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp)
@@ -5680,7 +5651,7 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp)
@@ -5710,7 +5681,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
@@ -5749,7 +5720,7 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm)
@@ -5765,7 +5736,7 @@ void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir,
     UNATIVE_OFFSET size = emitInsSizeAM(id, insCodeMR(ins), imm);
     id->idCodeSize(size);
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += size;
 }
 
 void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp)
@@ -5800,7 +5771,7 @@ void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -5851,7 +5822,7 @@ void emitter::emitIns_I_ARR(instruction ins, emitAttr attr, int val, regNumber r
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_ARR(instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, int disp)
@@ -5912,7 +5883,7 @@ void emitter::emitIns_I_ARX(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_ARX(
@@ -5947,7 +5918,7 @@ void emitter::emitIns_R_ARX(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_ARX_R(
@@ -5984,7 +5955,7 @@ void emitter::emitIns_ARX_R(
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -6035,7 +6006,7 @@ void emitter::emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber re
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp)
@@ -6061,7 +6032,7 @@ void emitter::emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNu
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp)
@@ -6096,7 +6067,7 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -6880,7 +6851,7 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -6910,7 +6881,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
@@ -6933,7 +6904,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
@@ -6976,7 +6947,7 @@ void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, in
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -7159,7 +7130,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -7547,7 +7518,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     id->idCodeSize(sz);
 
     dispIns(id);
-    appendToCurIG(id);
+    emitCurIGsize += sz;
 
 #if !FEATURE_FIXED_OUT_ARGS
 
@@ -8435,17 +8406,6 @@ void emitter::emitDispIns(
     const char* sstr;
 
     instruction ins = id->idIns();
-
-    if (ins == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        return;
-    }
 
     if (emitComp->verbose)
     {
@@ -11824,21 +11784,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     regNumber   reg2 = id->idReg2();
     emitAttr    size = id->idOpSize();
 
-    regNumber regFor012Bits = REG_NA;
-    regNumber regFor345Bits = REG_NA;
-    unsigned  regCode       = 0;
-
-    if (ins == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        goto UPDATE_LIVENESS;
-    }
-
     if (IsSSEOrAVXInstruction(ins))
     {
         assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
@@ -11958,9 +11903,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 
-    regFor012Bits = reg2;
-    regFor345Bits = REG_NA;
-
+    regNumber regFor012Bits = reg2;
+    regNumber regFor345Bits = REG_NA;
     if (IsBMIInstruction(ins))
     {
         regFor345Bits = getBmiRegNumber(ins);
@@ -11978,7 +11922,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 
-    regCode = insEncodeReg345(ins, regFor345Bits, size, &code);
+    unsigned regCode = insEncodeReg345(ins, regFor345Bits, size, &code);
     regCode |= insEncodeReg012(ins, regFor012Bits, size, &code);
 
     if (TakesVexPrefix(ins))
@@ -12042,8 +11986,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         dst += emitOutputWord(dst, code);
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
-
-UPDATE_LIVENESS:
 
     // Does this instruction operate on a GC ref value?
     if (id->idGCref())
