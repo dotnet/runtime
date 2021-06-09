@@ -23314,7 +23314,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
 #endif //MULTIPLE_HEAPS
     BOOL  full_p = (condemned_gen_number == max_generation);
 
-        dprintf(3,("Processing Mark overflow [%Ix %Ix]", (size_t)min_add, (size_t)max_add));
+    dprintf(3,("Processing Mark overflow [%Ix %Ix]", (size_t)min_add, (size_t)max_add));
+
+    size_t obj_count = 0;
+
 #ifdef MULTIPLE_HEAPS
     for (int hi = 0; hi < n_heaps; hi++)
     {
@@ -23323,7 +23326,6 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
 #else
     {
         gc_heap*  hp = 0;
-
 #endif //MULTIPLE_HEAPS
         int gen_limit = full_p ? total_generation_count : condemned_gen_number + 1;
 
@@ -23347,6 +23349,7 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
                     if (marked (o))
                     {
                         mark_through_object (o, TRUE THREAD_NUMBER_ARG);
+                        obj_count++;
                     }
 
                     o = o + Align (size (o), align_const);
@@ -23355,6 +23358,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
                 seg = heap_segment_next_in_range (seg);
             }
         }
+#ifndef MULTIPLE_HEAPS
+        // we should have found at least one object
+        assert (obj_count > 0);
+#endif //MULTIPLE_HEAPS
     }
 }
 
