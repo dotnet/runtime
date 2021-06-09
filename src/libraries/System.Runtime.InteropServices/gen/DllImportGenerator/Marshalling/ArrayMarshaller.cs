@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -10,12 +11,14 @@ namespace Microsoft.Interop
         private readonly IMarshallingGenerator manualMarshallingGenerator;
         private readonly TypeSyntax elementType;
         private readonly bool enablePinning;
+        private readonly AnalyzerConfigOptions options;
 
-        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning)
+        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, AnalyzerConfigOptions options)
         {
             this.manualMarshallingGenerator = manualMarshallingGenerator;
             this.elementType = elementType;
             this.enablePinning = enablePinning;
+            this.options = options;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -127,7 +130,7 @@ namespace Microsoft.Interop
                                 PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                        ParseTypeName(TypeNames.Unsafe(options)),
                                         GenericName("As").AddTypeArgumentListArguments(
                                             arrayElementType,
                                             PredefinedType(Token(SyntaxKind.ByteKeyword)))))

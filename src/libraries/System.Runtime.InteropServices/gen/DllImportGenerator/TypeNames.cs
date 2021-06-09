@@ -53,8 +53,13 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
-        // TODO: Add configuration for using Internal.Runtime.CompilerServices.Unsafe to support
-        // running against System.Private.CoreLib
-        public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
+        private const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
+
+        private const string Internal_Runtime_CompilerServices_Unsafe = "Internal.Runtime.CompilerServices.Unsafe";
+
+        public static string Unsafe(AnalyzerConfigOptions options)
+        {
+            return options.UseInternalUnsafeType() ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
+        }
     }
 }

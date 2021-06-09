@@ -15,6 +15,11 @@
         of generating a stub that handles all of the marshalling.
       -->
       <CompilerVisibleProperty Include="DllImportGenerator_GenerateForwarders" />
+      <!--
+        Use the Internal.Runtime.ComplierServices.Unsafe type instead of
+        the System.Runtime.CompilerServices.Unsafe type when emitting code.
+      -->
+    <CompilerVisibleProperty Include="DllImportGenerator_UseInternalUnsafeType" />
   </ItemGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
