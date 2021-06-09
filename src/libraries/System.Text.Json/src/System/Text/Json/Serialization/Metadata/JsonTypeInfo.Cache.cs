@@ -570,10 +570,18 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializePropCache()
         {
-            Debug.Assert(PropInitFunc != null);
-            Debug.Assert(Options._context != null);
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonPropertyInfo[] array = PropInitFunc(Options._context);
+            JsonSerializerContext? context = Options._context;
+            Debug.Assert(context != null);
+
+            if (PropInitFunc == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                return;
+            }
+
+            JsonPropertyInfo[] array = PropInitFunc(context);
             var properties = new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, array.Length);
             for (int i = 0; i < array.Length; i++)
             {
