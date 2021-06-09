@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //    but the metadata for it must be within the bubble, or the decl method is in the direct parent type
             //    of a type which is in the version bubble relative to the implType.
             // 2. If the declMethod is an interface method, we can allow it if interface type is defined within the version
-            //    bubble, or if the implementation type hierarchy is entirely within the version bubble (excluding System.Object).
+            //    bubble, or if the implementation type hierarchy is entirely within the version bubble (excluding System.Object and System.ValueType).
             // 3. At all times the declMethod must be representable as a token. That check is handled internally in the
             //    jit interface logic after the logic that executes here.
             //
@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 else
                 {
                     
-                    if (firstTypeInImplTypeHierarchyNotInVersionBubble == null || firstTypeInImplTypeHierarchyNotInVersionBubble.IsObject)
+                    if (firstTypeInImplTypeHierarchyNotInVersionBubble == null || implType.IsValueType || firstTypeInImplTypeHierarchyNotInVersionBubble.IsObject)
                         declMethodCheckFailed = false;
                     else
                         declMethodCheckFailed = true;

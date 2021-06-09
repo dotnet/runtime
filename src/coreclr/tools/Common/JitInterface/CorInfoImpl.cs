@@ -1160,17 +1160,17 @@ namespace Internal.JitInterface
                 }
             }
 
-            MethodDesc impl = _compilation.ResolveVirtualMethod(decl, objType);
+            MethodDesc originalImpl = _compilation.ResolveVirtualMethod(decl, objType);
 
-            if (impl == null)
+            if (originalImpl == null)
             {
                 return false;
             }
 
-            TypeDesc owningType = impl.OwningType;
+            TypeDesc owningType = originalImpl.OwningType;
 
             // RyuJIT expects to get the canonical form back
-            impl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc impl = originalImpl.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             bool unboxingStub = impl.OwningType.IsValueType;
 
@@ -1207,7 +1207,7 @@ namespace Internal.JitInterface
             }
             MethodWithToken methodWithTokenImpl;
 
-            if (decl == impl)
+            if (decl == originalImpl)
             {
                 methodWithTokenImpl = methodWithTokenDecl;
                 if (info->pResolvedTokenVirtualMethod != null)

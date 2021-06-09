@@ -30,7 +30,7 @@ namespace ILCompiler
         private ModuleTokenResolver _tokenResolver = null;
 
         public ReadyToRunCompilationModuleGroupBase(
-            TypeSystemContext context,
+            CompilerTypeSystemContext context,
             bool isCompositeBuildMode,
             bool isInputBubble,
             IEnumerable<EcmaModule> compilationModuleSet,
@@ -47,7 +47,11 @@ namespace ILCompiler
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
+
+            _tokenResolver = new ModuleTokenResolver(this, context);
         }
+
+        public ModuleTokenResolver Resolver => _tokenResolver;
 
         public void AssociateTokenResolver(ModuleTokenResolver tokenResolver)
         {

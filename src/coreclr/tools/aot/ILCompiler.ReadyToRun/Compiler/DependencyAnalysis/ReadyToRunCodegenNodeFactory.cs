@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TargetDetails Target { get; }
 
-        public CompilationModuleGroup CompilationModuleGroup { get; }
+        public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
         public ProfileDataManager ProfileDataManager { get; }
 
@@ -149,7 +149,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public NodeFactory(
             CompilerTypeSystemContext context,
-            CompilationModuleGroup compilationModuleGroup,
+            ReadyToRunCompilationModuleGroupBase compilationModuleGroup,
             ProfileDataManager profileDataManager,
             NameMangler nameMangler,
             CopiedCorHeaderNode corHeaderNode,
@@ -165,8 +165,7 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = new ReadyToRunTableManager(context);
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
-            Resolver = new ModuleTokenResolver(compilationModuleGroup, TypeSystemContext);
-            ((ReadyToRunCompilationModuleGroupBase)compilationModuleGroup).AssociateTokenResolver(Resolver);
+            Resolver = compilationModuleGroup.Resolver;
             Header = new GlobalHeaderNode(Target, flags);
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
