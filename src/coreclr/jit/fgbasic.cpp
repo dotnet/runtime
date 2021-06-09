@@ -764,7 +764,7 @@ public:
     }
     void PushArgument(unsigned arg)
     {
-        Push(SLOT_ARGUMENT + arg);
+        Push(static_cast<FgSlot>(SLOT_ARGUMENT + arg));
     }
     unsigned GetSlot0() const
     {
@@ -807,7 +807,7 @@ public:
     }
 
 private:
-    enum
+    enum FgSlot
     {
         SLOT_INVALID  = UINT_MAX,
         SLOT_UNKNOWN  = 0,
@@ -816,7 +816,7 @@ private:
         SLOT_ARGUMENT = 3
     };
 
-    void Push(int type)
+    void Push(FgSlot type)
     {
         switch (depth)
         {
@@ -833,8 +833,8 @@ private:
         }
     }
 
-    unsigned slot0;
-    unsigned slot1;
+    FgSlot   slot0;
+    FgSlot   slot1;
     unsigned depth;
 };
 
@@ -869,6 +869,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         if (isInlining && impInlineInfo->iciBlock->hasTryIndex())
         {
             compInlineResult->Note(InlineObservation::CALLSITE_IN_TRY_REGION);
+        }
+
+        // Determine if the call site is in a no-return block
+        if (isInlining && (impInlineInfo->iciBlock->bbJumpKind == BBJ_THROW))
+        {
+            compInlineResult->Note(InlineObservation::CALLSITE_IN_NORETURN_REGION);
         }
 
         // Determine if the call site is in a loop.
@@ -939,6 +945,32 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_PREFIXREF:
             {
                 BADCODE3("Illegal opcode", ": %02X", (int)opcode);
+            }
+
+            case CEE_THROW:
+            {
+                if (makeInlineObservations)
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_THROW_BLOCK);
+                }
+                break;
+            }
+
+            case CEE_BOX:
+            {
+                if (makeInlineObservations)
+                {
+                    int toSkip = impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, true);
+                    if (toSkip > 0)
+                    {
+                        // toSkip > 0 means we most likely will hit a pattern (e.g. box+isinst+brtrue) that
+                        // will be folded into a const
+
+                        // TODO: uncomment later
+                        // codeAddr += toSkip;
+                    }
+                }
+                break;
             }
 
             case CEE_CALL:
