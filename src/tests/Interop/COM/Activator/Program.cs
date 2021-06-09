@@ -48,11 +48,11 @@ namespace Activator
 
             if (!builtInComDisabled)
             {
-                Assert.Throws<ArgumentException>(action, "Non-root assembly path should not be valid", AssertThrowsOptions.AllowDerived);
+                Assert.Throws<ArgumentException>(action, "Non-root assembly path should not be valid");
             }
             else
             {
-                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch", AssertThrowsOptions.AllowDerived);
+                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch");
             }
         }
 
@@ -74,13 +74,13 @@ namespace Activator
 
             if (!builtInComDisabled)
             {
-                COMException e = Assert.Throws<COMException>(action, "Class should not be found", AssertThrowsOptions.AllowDerived);
+                COMException e = Assert.Throws<COMException>(action, "Class should not be found");
                 const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
                 Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
             }
             else
             {
-                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch", AssertThrowsOptions.AllowDerived);
+                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch");
             }
         }
 
