@@ -65,6 +65,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { DefaultBufferSize = 8192 } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { PropertyNameCaseInsensitive = true } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { ReadCommentHandling = JsonCommentHandling.Skip } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.AllowReadingFromString } };
         }
 
         /// <summary>
@@ -74,6 +75,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             yield return new object[] { s_compatibleOptions };
             yield return new object[] { new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.Strict } };
         }
 
         // Options with features that aren't supported in the generated serialization funcs.
