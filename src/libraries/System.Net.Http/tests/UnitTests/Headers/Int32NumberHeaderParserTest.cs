@@ -89,6 +89,14 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("-123", 0);
             CheckInvalidParsedValue("123456789012345678901234567890", 0); // value >> Int32.MaxValue
             CheckInvalidParsedValue("2147483648", 0); // value = Int32.MaxValue + 1
+            for (int i = 0; i <= char.MaxValue; i++)
+            {
+                if (char.IsWhiteSpace((char)i) && i != ' ' && i != '\t')
+                {
+                    CheckInvalidParsedValue("123" + (char)i, 0);
+                    CheckInvalidParsedValue((char)i + "123", 0);
+                }
+            }
         }
 
         [Fact]

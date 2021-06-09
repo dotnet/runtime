@@ -2,38 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
-    internal sealed class TimeSpanHeaderParser : BaseHeaderParser
+    internal sealed class TimeSpanHeaderParser : HttpHeaderParser
     {
         internal static readonly TimeSpanHeaderParser Parser = new TimeSpanHeaderParser();
 
-        private TimeSpanHeaderParser()
-            : base(false)
+        private TimeSpanHeaderParser() : base(supportsMultipleValues: false)
         {
         }
 
         public override string ToString(object value)
         {
             Debug.Assert(value is TimeSpan);
-
             return ((int)((TimeSpan)value).TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
         }
 
-        protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
-            out object? parsedValue)
+        public override bool TryParseValue(string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
         {
-            ReadOnlySpan<char> span = value.AsSpan(startIndex).Trim();
-            if (HeaderUtilities.TryParseInt32(span, out int result))
+            if (Int32NumberHeaderParser.TryParseInt32Value(value, ref index, out int result))
             {
                 parsedValue = new TimeSpan(0, 0, result);
-                return span.Length;
+                return true;
             }
 
             parsedValue = null;
-            return 0;
+            return false;
         }
     }
 }

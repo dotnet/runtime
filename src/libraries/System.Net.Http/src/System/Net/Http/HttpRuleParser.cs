@@ -119,47 +119,38 @@ namespace System.Net.Http
             return Encoding.ASCII.GetString(input);
         }
 
-        internal static int GetWhitespaceLength(string input, int startIndex)
+        internal static int GetWhitespaceLength(string input, int startIndex) =>
+            GetWhitespaceLength(input.AsSpan(startIndex));
+
+        internal static int GetWhitespaceLength(ReadOnlySpan<char> input)
         {
-            Debug.Assert(input != null);
-
-            if (startIndex >= input.Length)
+            for (int i = 0; i < input.Length; i++)
             {
-                return 0;
-            }
+                char c = input[i];
 
-            int current = startIndex;
-
-            char c;
-            while (current < input.Length)
-            {
-                c = input[current];
-
-                if ((c == ' ') || (c == '\t'))
+                if (c == ' ' || c == '\t')
                 {
-                    current++;
                     continue;
                 }
 
                 if (c == '\r')
                 {
                     // If we have a #13 char, it must be followed by #10 and then at least one SP or HT.
-                    if ((current + 2 < input.Length) && (input[current + 1] == '\n'))
+                    if (i + 2 < input.Length && input[i + 1] == '\n')
                     {
-                        char spaceOrTab = input[current + 2];
-                        if ((spaceOrTab == ' ') || (spaceOrTab == '\t'))
+                        char spaceOrTab = input[i + 2];
+                        if (spaceOrTab == ' ' || spaceOrTab == '\t')
                         {
-                            current += 3;
+                            i += 2;
                             continue;
                         }
                     }
                 }
 
-                return current - startIndex;
+                return i;
             }
 
-            // All characters between startIndex and the end of the string are LWS characters.
-            return input.Length - startIndex;
+            return input.Length;
         }
 
         internal static bool ContainsInvalidNewLine(string value)
