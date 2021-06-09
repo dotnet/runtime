@@ -36,33 +36,23 @@ namespace Activator
         {
             Console.WriteLine($"Running {nameof(NonrootedAssemblyPath)}...");
 
+            Action action = () =>
+                {
+                    var cxt = new ComActivationContext()
+                    {
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = "foo.dll"
+                    };
+                    ComActivator.GetClassFactoryForType(cxt);
+                };
+
             if (!builtInComDisabled)
             {
-                Assert.Throws<ArgumentException>(
-                    () =>
-                    {
-                        var cxt = new ComActivationContext()
-                        {
-                            InterfaceId = typeof(IClassFactory).GUID,
-                            AssemblyPath = "foo.dll"
-                        };
-                        ComActivator.GetClassFactoryForType(cxt);
-                    },
-                    "Non-root assembly path should not be valid");
+                Assert.Throws<ArgumentException>(action, "Non-root assembly path should not be valid", AssertThrowsOptions.AllowDerived);
             }
             else
             {
-                Assert.Throws<NotSupportedException>(
-                    () =>
-                    {
-                        var cxt = new ComActivationContext()
-                        {
-                            InterfaceId = typeof(IClassFactory).GUID,
-                            AssemblyPath = "foo.dll"
-                        };
-                        ComActivator.GetClassFactoryForType(cxt);
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch", AssertThrowsOptions.AllowDerived);
             }
         }
 
@@ -70,41 +60,27 @@ namespace Activator
         {
             Console.WriteLine($"Running {nameof(ClassNotRegistered)}...");
 
+            Action action = () =>
+                {
+                    var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
+                    var cxt = new ComActivationContext()
+                    {
+                        ClassId = CLSID_NotRegistered,
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = @"C:\foo.dll"
+                    };
+                    ComActivator.GetClassFactoryForType(cxt);
+                };
+
             if (!builtInComDisabled)
             {
-
-                COMException e = Assert.Throws<COMException>(
-                    () =>
-                    {
-                        var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
-                        var cxt = new ComActivationContext()
-                        {
-                            ClassId = CLSID_NotRegistered,
-                            InterfaceId = typeof(IClassFactory).GUID,
-                            AssemblyPath = @"C:\foo.dll"
-                        };
-                        ComActivator.GetClassFactoryForType(cxt);
-                    },
-                    "Class should not be found");
-
+                COMException e = Assert.Throws<COMException>(action, "Class should not be found", AssertThrowsOptions.AllowDerived);
                 const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
                 Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
             }
             else
             {
-                Assert.Throws<NotSupportedException>(
-                    () =>
-                    {
-                        var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
-                        var cxt = new ComActivationContext()
-                        {
-                            ClassId = CLSID_NotRegistered,
-                            InterfaceId = typeof(IClassFactory).GUID,
-                            AssemblyPath = @"C:\foo.dll"
-                        };
-                        ComActivator.GetClassFactoryForType(cxt);
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                Assert.Throws<NotSupportedException>(action, "Built-in COM has been disabled via a feature switch", AssertThrowsOptions.AllowDerived);
             }
         }
 
