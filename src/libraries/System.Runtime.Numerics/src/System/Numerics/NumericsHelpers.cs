@@ -46,7 +46,7 @@ namespace System.Numerics
             else
             {
                 // Normalize so that 0x0010 0000 0000 0000 is the highest bit set.
-                int cbitShift = CbitHighZero(man) - 11;
+                int cbitShift = BitOperations.LeadingZeroCount(man) - 11;
                 if (cbitShift < 0)
                     man >>= -cbitShift;
                 else
@@ -125,44 +125,6 @@ namespace System.Numerics
                 uint mask = (uint)(a >> 31);
                 return ((uint)a ^ mask) - mask;
             }
-        }
-
-        public static int CbitHighZero(uint u)
-        {
-            if (u == 0)
-                return 32;
-
-            int cbit = 0;
-            if ((u & 0xFFFF0000) == 0)
-            {
-                cbit += 16;
-                u <<= 16;
-            }
-            if ((u & 0xFF000000) == 0)
-            {
-                cbit += 8;
-                u <<= 8;
-            }
-            if ((u & 0xF0000000) == 0)
-            {
-                cbit += 4;
-                u <<= 4;
-            }
-            if ((u & 0xC0000000) == 0)
-            {
-                cbit += 2;
-                u <<= 2;
-            }
-            if ((u & 0x80000000) == 0)
-                cbit += 1;
-            return cbit;
-        }
-
-        public static int CbitHighZero(ulong uu)
-        {
-            if ((uu & 0xFFFFFFFF00000000) == 0)
-                return 32 + CbitHighZero((uint)uu);
-            return CbitHighZero((uint)(uu >> 32));
         }
     }
 }

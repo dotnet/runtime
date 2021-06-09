@@ -823,7 +823,7 @@ namespace System.Numerics
             ulong l = value._bits.Length > 2 ? value._bits[value._bits.Length - 3] : 0;
 
             // Measure the exact bit count
-            int c = NumericsHelpers.CbitHighZero((uint)h);
+            int c = BitOperations.LeadingZeroCount((uint)h);
             long b = (long)value._bits.Length * 32 - c;
 
             // Extract most significant bits
@@ -1824,7 +1824,7 @@ namespace System.Numerics
             ulong m = length > 1 ? bits[length - 2] : 0;
             ulong l = length > 2 ? bits[length - 3] : 0;
 
-            int z = NumericsHelpers.CbitHighZero((uint)h);
+            int z = BitOperations.LeadingZeroCount((uint)h);
 
             int exp = (length - 2) * 32 - z;
             ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
