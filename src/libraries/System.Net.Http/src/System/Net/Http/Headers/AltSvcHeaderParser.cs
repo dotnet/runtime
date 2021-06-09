@@ -413,7 +413,7 @@ namespace System.Net.Http.Headers
                 int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
 
                 readLength = tokenLength;
-                return HeaderUtilities.TryParseInt32(value, startIndex, tokenLength, out result);
+                return HeaderUtilities.TryParseInt32(value.AsSpan(startIndex, tokenLength), out result);
             }
 
             if (HttpRuleParser.GetQuotedStringLength(value, startIndex, out int quotedLength) == HttpParseResult.Parsed)

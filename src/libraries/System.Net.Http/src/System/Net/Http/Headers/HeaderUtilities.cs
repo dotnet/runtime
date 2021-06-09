@@ -317,30 +317,11 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static bool TryParseInt32(string value, out int result) =>
-            int.TryParse(value, NumberStyles.None, provider: null, out result);
+        internal static bool TryParseInt32(ReadOnlySpan<char> value, out int result) =>
+            int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
 
-        internal static bool TryParseInt32(string value, int offset, int length, out int result)
-        {
-            if (offset < 0 || length < 0 || offset > value.Length - length)
-            {
-                result = 0;
-                return false;
-            }
-
-            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
-        }
-
-        internal static bool TryParseInt64(string value, int offset, int length, out long result)
-        {
-            if (offset < 0 || length < 0 || offset > value.Length - length)
-            {
-                result = 0;
-                return false;
-            }
-
-            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
-        }
+        internal static bool TryParseInt64(ReadOnlySpan<char> value, out long result) =>
+            long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
         {

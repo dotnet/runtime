@@ -25,23 +25,15 @@ namespace System.Net.Http.Headers
         protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
             out object? parsedValue)
         {
+            ReadOnlySpan<char> span = value.AsSpan(startIndex).Trim();
+            if (HeaderUtilities.TryParseInt32(span, out int result))
+            {
+                parsedValue = new TimeSpan(0, 0, result);
+                return span.Length;
+            }
+
             parsedValue = null;
-
-            int numberLength = HttpRuleParser.GetNumberLength(value, startIndex, false);
-
-            if ((numberLength == 0) || (numberLength > HttpRuleParser.MaxInt32Digits))
-            {
-                return 0;
-            }
-
-            int result = 0;
-            if (!HeaderUtilities.TryParseInt32(value, startIndex, numberLength, out result))
-            {
-                return 0;
-            }
-
-            parsedValue = new TimeSpan(0, 0, result);
-            return numberLength;
+            return 0;
         }
     }
 }

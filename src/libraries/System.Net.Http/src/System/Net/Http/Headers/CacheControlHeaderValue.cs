@@ -587,20 +587,13 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(nameValue != null);
 
-            if (nameValue.Value == null)
+            if (HeaderUtilities.TryParseInt32(nameValue.Value, out int seconds))
             {
-                return false;
+                timeSpan = new TimeSpan(0, 0, seconds);
+                return true;
             }
 
-            int seconds;
-            if (!HeaderUtilities.TryParseInt32(nameValue.Value, out seconds))
-            {
-                return false;
-            }
-
-            timeSpan = new TimeSpan(0, 0, seconds);
-
-            return true;
+            return false;
         }
 
         private static void AppendValueIfRequired(StringBuilder sb, bool appendValue, string value)
