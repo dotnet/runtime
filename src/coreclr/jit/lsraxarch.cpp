@@ -2481,8 +2481,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         // When op2 is not contained or if we are producing a scalar value
                         // we need to mark it as delay free because the operand and target
                         // exist in the same register set.
-
-                        srcCount += BuildDelayFreeUses(op2);
+                        // Unless, op1 and op2 are same, in which case we can overwrite op2.
+                        if (GenTree::NodesAreEquivalentLeaves(op1, op2))
+                        {
+                            srcCount += BuildOperandUses(op2);
+                        }
+                        else
+                        {
+                            srcCount += BuildDelayFreeUses(op2);
+                        }
                     }
                     else
                     {

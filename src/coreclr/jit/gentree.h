@@ -850,6 +850,8 @@ public:
         _gtCostSz = tree->_gtCostSz;
     }
 
+    static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
+
 private:
     unsigned char _gtCostEx; // estimate of expression execution cost
     unsigned char _gtCostSz; // estimate of expression code size cost

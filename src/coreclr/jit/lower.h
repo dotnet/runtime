@@ -569,8 +569,6 @@ public:
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
 
 private:
-    static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
-
     bool AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index);
 
     // Makes 'childNode' contained in the 'parentNode'
