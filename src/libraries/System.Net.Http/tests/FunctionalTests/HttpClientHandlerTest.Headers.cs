@@ -343,11 +343,11 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53018", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
@@ -355,9 +355,14 @@ namespace System.Net.Http.Functional.Tests
                 // External servers do not support HTTP3 currently.
                 return;
             }
+            if (PlatformDetection.LocalEchoServerIsAvailable && !withPort)
+            {
+                // we always have custom port with the local echo server, so we couldn't test without it
+                return;
+            }
 
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
-            m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":443" : Configuration.Http.SecureHost;
+            m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":" + Configuration.Http.SecurePort : Configuration.Http.SecureHost;
 
             using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response = await client.SendAsync(TestAsync, m))
@@ -372,8 +377,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
