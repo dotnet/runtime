@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace SharedTypes
@@ -216,5 +218,115 @@ namespace SharedTypes
         }
 
         public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
+    }
+
+    [GenericContiguousCollectionMarshaller]
+    public unsafe ref struct ListMarshaller<T>
+    {
+        private List<T> managedList;
+        private readonly int sizeOfNativeElement;
+        private IntPtr allocatedMemory;
+
+        public ListMarshaller(int sizeOfNativeElement)
+            : this()
+        {
+            this.sizeOfNativeElement = sizeOfNativeElement;
+        }
+
+        public ListMarshaller(List<T> managed, int sizeOfNativeElement)
+        {
+            allocatedMemory = default;
+            this.sizeOfNativeElement = sizeOfNativeElement;
+            if (managed is null)
+            {
+                managedList = null;
+                NativeValueStorage = default;
+                return;
+            }
+            managedList = managed;
+            this.sizeOfNativeElement = sizeOfNativeElement;
+            // Always allocate at least one byte when the array is zero-length.
+            int spaceToAllocate = Math.Max(managed.Count * sizeOfNativeElement, 1);
+            allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+            NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
+        }
+
+        public ListMarshaller(List<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
+        {
+            allocatedMemory = default;
+            this.sizeOfNativeElement = sizeOfNativeElement;
+            if (managed is null)
+            {
+                managedList = null;
+                NativeValueStorage = default;
+                return;
+            }
+            managedList = managed;
+            // Always allocate at least one byte when the array is zero-length.
+            int spaceToAllocate = Math.Max(managed.Count * sizeOfNativeElement, 1);
+            if (spaceToAllocate <= stackSpace.Length)
+            {
+                NativeValueStorage = stackSpace[0..spaceToAllocate];
+            }
+            else
+            {
+                allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
+            }
+        }
+
+        /// <summary>
+        /// Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
+        /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
+        /// blow the stack since this is a new optimization in the code-generated interop.
+        /// </summary>
+        public const int StackBufferSize = 0x200;
+
+        public Span<T> ManagedValues => CollectionsMarshal.AsSpan(managedList);
+
+        public Span<byte> NativeValueStorage { get; private set; }
+
+        public ref byte GetPinnableReference() => ref NativeValueStorage.GetPinnableReference();
+
+        public void SetUnmarshalledCollectionLength(int length)
+        {
+            managedList = new List<T>(length);
+            for (int i = 0; i < length; i++)
+            {
+                managedList.Add(default);
+            }
+        }
+
+        public byte* Value
+        {
+            get
+            {
+                Debug.Assert(managedList is null || allocatedMemory != IntPtr.Zero);
+                return (byte*)allocatedMemory;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    managedList = null;
+                    NativeValueStorage = default;
+                }
+                else
+                {
+                    allocatedMemory = (IntPtr)value;
+                    NativeValueStorage = new Span<byte>(value, (managedList?.Count ?? 0) * sizeOfNativeElement);
+                }
+            }
+        }
+
+        public List<T> ToManaged() => managedList;
+
+        public void FreeNative()
+        {
+            if (allocatedMemory != IntPtr.Zero)
+            {
+                Marshal.FreeCoTaskMem(allocatedMemory);
+            }
+        }
     }
 }

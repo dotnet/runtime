@@ -112,7 +112,7 @@ namespace Microsoft.Interop
                                     BinaryExpression(
                                         SyntaxKind.EqualsExpression,
                                         IdentifierName(nativeIdentifier),
-                                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                                        LiteralExpression(SyntaxKind.DefaultLiteralExpression)),
                                     LiteralExpression(SyntaxKind.NullLiteralExpression),
                                     ObjectCreationExpression(
                                         PredefinedType(Token(SyntaxKind.StringKeyword)),

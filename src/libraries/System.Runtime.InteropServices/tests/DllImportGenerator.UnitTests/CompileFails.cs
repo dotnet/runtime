@@ -78,10 +78,14 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<IntPtr[]>(), 3, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr[]>(), 3, 0 };
 
-            // Array with non-integer size param
-            yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
-            yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
-            yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
+            // Collection with non-integer size param
+            yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
+
 
             // Custom type marshalling with invalid members
             yield return new object[] { CodeSnippets.CustomStructMarshallingByRefValueProperty, 3, 0 };
@@ -104,6 +108,22 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers("public"), 5, 0 };
             yield return new object[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<bool>(), 5, 0 };
             yield return new object[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>("public"), 5, 0 };
+
+            // Collection with constant and element size parameter
+            yield return new object[] { CodeSnippets.MarshalUsingCollectionWithConstantAndElementCount, 2, 0 };
+
+            // Collection with null element size parameter name
+            yield return new object[] { CodeSnippets.MarshalUsingCollectionWithNullElementName, 2, 0 };
+
+            // Generic collection marshaller has different arity than collection.
+            yield return new object[] { CodeSnippets.GenericCollectionMarshallingArityMismatch, 2, 0 };
+
+            yield return new object[] { CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
+            yield return new object[] { CodeSnippets.GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionLevel, 2, 0 };
+            yield return new object[] { CodeSnippets.GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionLevel, 1, 0 };
+            yield return new object[] { CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
+            yield return new object[] { CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
+            yield return new object[] { CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };
         }
 
         [Theory]

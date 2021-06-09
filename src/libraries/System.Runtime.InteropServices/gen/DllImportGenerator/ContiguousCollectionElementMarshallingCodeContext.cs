@@ -10,13 +10,11 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed class ArrayMarshallingCodeContext : StubCodeContext
+    internal sealed class ContiguousCollectionElementMarshallingCodeContext : StubCodeContext
     {
-        public const string LocalManagedIdentifierSuffix = "_local";
-
         private readonly string indexerIdentifier;
+        private readonly string nativeSpanIdentifier;
         private readonly StubCodeContext parentContext;
-        private readonly bool appendLocalManagedIdentifierSuffix;
 
         public override bool PinningSupported => false;
 
@@ -27,34 +25,29 @@ namespace Microsoft.Interop
         /// can be added to the stub to track additional state for the marshaller in the stub.
         /// </summary>
         /// <remarks>
-        /// Currently, array scenarios do not support declaring additional temporary variables to support
+        /// Currently, collection scenarios do not support declaring additional temporary variables to support
         /// marshalling. This can be accomplished in the future with some additional infrastructure to support
-        /// declaring arrays additional arrays in the stub to support the temporary state.
+        /// declaring additional arrays in the stub to support the temporary state.
         /// </remarks>
         public override bool CanUseAdditionalTemporaryState => false;
 
         /// <summary>
-        /// Create a <see cref="StubCodeContext"/> for marshalling elements of an array.
+        /// Create a <see cref="StubCodeContext"/> for marshalling elements of an collection.
         /// </summary>
         /// <param name="currentStage">The current marshalling stage.</param>
-        /// <param name="indexerIdentifier">The indexer in the loop to get the element to marshal from the array.</param>
+        /// <param name="indexerIdentifier">The indexer in the loop to get the element to marshal from the collection.</param>
+        /// <param name="nativeSpanIdentifier">The identifier of the native value storage cast to the target element type.</param>
         /// <param name="parentContext">The parent context.</param>
-        /// <param name="appendLocalManagedIdentifierSuffix">
-        /// For array marshalling, we sometimes cache the array in a local to avoid multithreading issues.
-        /// Set this to <c>true</c> to add the <see cref="LocalManagedIdentifierSuffix"/> to the managed identifier when
-        /// marshalling the array elements to ensure that we use the local copy instead of the managed identifier
-        /// when marshalling elements.
-        /// </param>
-        public ArrayMarshallingCodeContext(
+        public ContiguousCollectionElementMarshallingCodeContext(
             Stage currentStage,
             string indexerIdentifier,
-            StubCodeContext parentContext,
-            bool appendLocalManagedIdentifierSuffix)
+            string nativeSpanIdentifier,
+            StubCodeContext parentContext)
         {
             CurrentStage = currentStage;
             this.indexerIdentifier = indexerIdentifier;
+            this.nativeSpanIdentifier = nativeSpanIdentifier;
             this.parentContext = parentContext;
-            this.appendLocalManagedIdentifierSuffix = appendLocalManagedIdentifierSuffix;
         }
 
         /// <summary>
@@ -64,12 +57,11 @@ namespace Microsoft.Interop
         /// <returns>Managed and native identifiers</returns>
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            var (managed, native) = parentContext.GetIdentifiers(info);
-            if (appendLocalManagedIdentifierSuffix)
-            {
-                managed += LocalManagedIdentifierSuffix;
-            }
-            return ($"{managed}[{indexerIdentifier}]", $"{native}[{indexerIdentifier}]");
+            var (_, native) = parentContext.GetIdentifiers(info);
+            return (
+                $"{native}.ManagedValues[{indexerIdentifier}]",
+                $"{nativeSpanIdentifier}[{indexerIdentifier}]"
+            );
         }
 
         public override TypePositionInfo? GetTypePositionInfoForManagedIndex(int index)

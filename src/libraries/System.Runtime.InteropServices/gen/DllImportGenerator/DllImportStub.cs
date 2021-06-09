@@ -157,12 +157,15 @@ namespace Microsoft.Interop
 
             var defaultInfo = new DefaultMarshallingInfo(defaultEncoding);
 
+            var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
+
             // Determine parameter and return types
             var paramsTypeInfo = new List<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 var param = method.Parameters[i];
-                var typeInfo = TypePositionInfo.CreateForParameter(param, defaultInfo, env.Compilation, diagnostics, method.ContainingType);
+                MarshallingInfo marshallingInfo = marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
+                var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with 
                 {
                     ManagedIndex = i,
@@ -171,7 +174,7 @@ namespace Microsoft.Interop
                 paramsTypeInfo.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), defaultInfo, env.Compilation, diagnostics, method.ContainingType);
+            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, marshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,

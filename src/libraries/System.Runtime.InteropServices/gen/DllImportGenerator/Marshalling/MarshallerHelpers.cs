@@ -15,6 +15,8 @@ namespace Microsoft.Interop
 
         public static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
 
+        public static readonly TypeSyntax SystemIntPtrType = ParseTypeName("System.IntPtr");
+
         public static ForStatementSyntax GetForLoop(string collectionIdentifier, string indexerIdentifier)
         {
             // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <collectionIdentifier>.Length; ++<indexerIdentifier>)
@@ -73,6 +75,24 @@ namespace Microsoft.Interop
             };
         }
 
+        public static TypeSyntax GetCompatibleGenericTypeParameterSyntax(this TypeSyntax type)
+        {
+            TypeSyntax spanElementTypeSyntax = type;
+            if (spanElementTypeSyntax is PointerTypeSyntax)
+            {
+                // Pointers cannot be passed to generics, so use IntPtr for this case.
+                spanElementTypeSyntax = SystemIntPtrType;
+            }
+            return spanElementTypeSyntax;
+        }
+
+        private const string MarshalerLocalSuffix = "__marshaler";
+        public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            var (_, nativeIdentifier) = context.GetIdentifiers(info);
+            return nativeIdentifier + MarshalerLocalSuffix;
+        }
+
         public static class StringMarshaller
         {
             public static ExpressionSyntax AllocationExpression(CharEncoding encoding, string managedIdentifier)
@@ -111,7 +131,7 @@ namespace Microsoft.Interop
                     ArgumentList(SingletonSeparatedList(
                         Argument(
                             CastExpression(
-                                ParseTypeName("System.IntPtr"),
+                                SystemIntPtrType,
                                 IdentifierName(nativeIdentifier))))));
             }
         }

@@ -94,6 +94,8 @@ A generic collection marshaller would be required to have the following shape, i
 [GenericContiguousCollectionMarshaller]
 public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 {
+    // this constructor is required if marshalling from native to managed is supported.
+    public GenericContiguousCollectionMarshallerImpl(int nativeSizeOfElement);
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElement);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElement); // optional

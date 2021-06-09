@@ -61,7 +61,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Marshalling an array from unmanaged to managed requires either the &apos;SizeParamIndex&apos; or &apos;SizeConst&apos; fields to be set on a &apos;MarshalAsAttribute&apos;..
+        ///   Looks up a localized string similar to Marshalling an array from unmanaged to managed requires either the &apos;SizeParamIndex&apos; or &apos;SizeConst&apos; fields to be set on a &apos;MarshalAsAttribute&apos; or the &apos;ConstantElementCount&apos; or &apos;CountElementName&apos; properties to be set on a &apos;MarshalUsingAttribute&apos;..
         /// </summary>
         internal static string ArraySizeMustBeSpecified {
             get {

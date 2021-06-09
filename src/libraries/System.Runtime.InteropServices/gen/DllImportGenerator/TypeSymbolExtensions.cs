@@ -13,9 +13,9 @@ namespace Microsoft.Interop
 {
     static class TypeSymbolExtensions
     {
-        public static bool HasOnlyBlittableFields(this ITypeSymbol type) => HasOnlyBlittableFields(type, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
+        public static bool HasOnlyBlittableFields(this ITypeSymbol type) => HasOnlyBlittableFields(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default));
 
-        private static bool HasOnlyBlittableFields(this ITypeSymbol type, HashSet<ITypeSymbol> seenTypes)
+        private static bool HasOnlyBlittableFields(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes)
         {
             if (seenTypes.Contains(type))
             {
@@ -24,7 +24,7 @@ namespace Microsoft.Interop
                 // before that is detected, so we check here to avoid a stack overflow.
                 return false;
             }
-            seenTypes.Add(type);
+
             foreach (var field in type.GetMembers().OfType<IFieldSymbol>())
             {
                 if (!field.IsStatic)
@@ -39,18 +39,16 @@ namespace Microsoft.Interop
                         // We'll re-evaluate blittability for generic fields of generic types at instantation time.
                         { Type: ITypeParameterSymbol } => true,
                         { Type: { IsValueType: false } } => false,
-                        _ => IsConsideredBlittable(field.Type, seenTypes)
+                        _ => IsConsideredBlittable(field.Type, seenTypes.Add(type))
                     };
 
                     if (!fieldBlittable)
                     {
-                        seenTypes.Remove(type);
                         return false;
                     }
                 }
             }
 
-            seenTypes.Remove(type);
             return true;
         }
 
@@ -73,9 +71,9 @@ namespace Microsoft.Interop
             _ => false
          };
 
-        public static bool IsConsideredBlittable(this ITypeSymbol type) => IsConsideredBlittable(type, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
+        public static bool IsConsideredBlittable(this ITypeSymbol type) => IsConsideredBlittable(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default));
 
-        private static bool IsConsideredBlittable(this ITypeSymbol type, HashSet<ITypeSymbol> seenTypes)
+        private static bool IsConsideredBlittable(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes)
         {
             if (type.SpecialType != SpecialType.None)
             {

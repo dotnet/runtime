@@ -17,6 +17,8 @@ namespace Microsoft.Interop
 
         public const string MarshalUsingAttribute = "System.Runtime.InteropServices.MarshalUsingAttribute";
 
+        public const string GenericContiguousCollectionMarshallerAttribute = "System.Runtime.InteropServices.GenericContiguousCollectionMarshallerAttribute";
+
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
         public const string System_Span_Metadata = "System.Span`1";
@@ -36,7 +38,11 @@ namespace Microsoft.Interop
         {
             return options.UseMarshalType() ? System_Runtime_InteropServices_Marshal : System_Runtime_InteropServices_MarshalEx;
         }
-        
+
+        public const string System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.ArrayMarshaller`1";
+
+        public const string System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.PtrArrayMarshaller`1";
+
         public const string System_Runtime_InteropServices_MemoryMarshal = "System.Runtime.InteropServices.MemoryMarshal";
 
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
@@ -46,5 +52,9 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_InAttribute = "System.Runtime.InteropServices.InAttribute";
 
         public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
+
+        // TODO: Add configuration for using Internal.Runtime.CompilerServices.Unsafe to support
+        // running against System.Private.CoreLib
+        public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
     }
 }

@@ -364,9 +364,9 @@ namespace Microsoft.Interop.Analyzers
                         continue;
                     }
 
-                    hasConstructor = hasConstructor || ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type);
+                    hasConstructor = hasConstructor || ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard);
 
-                    if (!hasStackallocConstructor && ManualTypeMarshallingHelper.IsStackallocConstructor(ctor, type, SpanOfByte))
+                    if (!hasStackallocConstructor && ManualTypeMarshallingHelper.IsStackallocConstructor(ctor, type, SpanOfByte, ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard))
                     {
                         hasStackallocConstructor = true;
                         IFieldSymbol stackAllocSizeField = nativeType.GetMembers("StackBufferSize").OfType<IFieldSymbol>().FirstOrDefault();

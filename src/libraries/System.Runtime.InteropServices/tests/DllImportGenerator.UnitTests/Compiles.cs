@@ -37,39 +37,39 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
 
             // Arrays
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<byte>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<sbyte>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<short>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<ushort>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<int>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<uint>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<long>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<ulong>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<float>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<double>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<bool>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<IntPtr>() };
-            yield return new[] { CodeSnippets.ArrayParametersAndModifiers<UIntPtr>() };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<byte>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<sbyte>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<short>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<ushort>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<int>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<uint>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<long>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<ulong>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<IntPtr>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<UIntPtr>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<byte>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<sbyte>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<short>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<ushort>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<int>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<uint>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<long>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<ulong>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<IntPtr>(isByRef: true) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<UIntPtr>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<sbyte>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<short>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<ushort>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<uint>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<long>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<ulong>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<float>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<double>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<bool>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<IntPtr>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<byte>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<sbyte>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<short>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<ushort>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<int>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<uint>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<long>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<ulong>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<IntPtr>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<UIntPtr>(isByRef: false) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<byte>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<sbyte>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<short>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<ushort>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<int>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<uint>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<long>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<ulong>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<IntPtr>(isByRef: true) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<UIntPtr>(isByRef: true) };
 
             // CharSet
             yield return new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<char>(CharSet.Unicode) };
@@ -89,9 +89,9 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPTStr) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPStr) };
-            yield return new[] { CodeSnippets.ArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPWStr) };
-            yield return new[] { CodeSnippets.ArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPUTF8Str) };
-            yield return new[] { CodeSnippets.ArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPStr) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPWStr) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPUTF8Str) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPStr) };
 
             // [In, Out] attributes
             // By value non-blittable array
@@ -203,6 +203,62 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers("internal") };
             yield return new[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>() };
             yield return new[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>("internal") };
+
+            // Custom collection marshalling
+            yield return new[] { CodeSnippets.CollectionByValue<byte>() };
+            yield return new[] { CodeSnippets.CollectionByValue<sbyte>() };
+            yield return new[] { CodeSnippets.CollectionByValue<short>() };
+            yield return new[] { CodeSnippets.CollectionByValue<ushort>() };
+            yield return new[] { CodeSnippets.CollectionByValue<int>() };
+            yield return new[] { CodeSnippets.CollectionByValue<uint>() };
+            yield return new[] { CodeSnippets.CollectionByValue<long>() };
+            yield return new[] { CodeSnippets.CollectionByValue<ulong>() };
+            yield return new[] { CodeSnippets.CollectionByValue<float>() };
+            yield return new[] { CodeSnippets.CollectionByValue<double>() };
+            yield return new[] { CodeSnippets.CollectionByValue<bool>() };
+            yield return new[] { CodeSnippets.CollectionByValue<IntPtr>() };
+            yield return new[] { CodeSnippets.CollectionByValue<UIntPtr>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<sbyte[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<short[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ushort[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<int[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<uint[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<long[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ulong[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<float[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<double[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<bool[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<IntPtr[]>() };
+            yield return new[] { CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<UIntPtr[]>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<byte>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<sbyte>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<short>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<ushort>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<uint>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<long>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<ulong>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<float>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<double>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<bool>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<IntPtr>() };
+            yield return new[] { CodeSnippets.CustomCollectionDefaultMarshallerParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<byte>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<sbyte>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<short>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<ushort>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<uint>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<long>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<ulong>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<float>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<double>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<bool>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<IntPtr>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.CustomCollectionCustomMarshallerReturnValueLength<int>() };
+            yield return new[] { CodeSnippets.GenericCollectionWithCustomElementMarshalling };
         }
 
         [Theory]
