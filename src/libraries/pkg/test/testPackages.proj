@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.PackageTesting" Version="$(MicrosoftDotNetPackageTestingVersion)" />
+    <!-- Needed by packageTest.targets, could be moved into PackageTesting: https://github.com/dotnet/arcade/issues/7474. -->
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
   </ItemGroup>
 
   <PropertyGroup>
