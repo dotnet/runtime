@@ -189,6 +189,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+    <Compile Include="Utf8JsonWriterTests.WriteRaw.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
