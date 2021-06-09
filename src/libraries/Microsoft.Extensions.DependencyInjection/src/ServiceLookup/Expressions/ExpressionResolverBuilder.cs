@@ -212,6 +212,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 callSite,
                 typeof(ServiceCallSite));
 
+            // We want to directly use the callsite value if it's set and the scope is the root scope.
+            // We've already called into the RuntimeResolver and pre-computed any singletons or root scope
+            // Avoid the compilation for singletons (or promoted singletons)
             MethodCallExpression resolveRootScopeExpression = Expression.Call(
                 CallSiteRuntimeResolverInstanceExpression,
                 ResolveCallSiteAndScopeMethodInfo,
