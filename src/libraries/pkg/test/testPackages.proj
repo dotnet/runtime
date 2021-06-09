@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageTestingAssembly)"/>
+  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks"
+             AssemblyFile="$(DotNetPackageTestingAssembly)"
+             Condition="'$(DotNetPackageTestingAssembly)' != ''" />
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.PackageTesting" Version="$(MicrosoftDotNetPackageTestingVersion)" />
+  </ItemGroup>
 
   <PropertyGroup>
     <PackageNamePattern>[a-zA-z\.]*\.</PackageNamePattern>
@@ -115,7 +121,7 @@
       Overwrite="true" />
   </Target>
 
-  <Target Name="GenerateAndInvokeProjects"
+  <Target Name="InvokeProjects"
           DependsOnTargets="GenerateProjects"
           AfterTargets="Build;Test">
     <ItemGroup>
@@ -129,5 +135,7 @@
 
     <MSBuild Projects="@(TestProject)" />
   </Target>
+
+  <Target Name="Test" />
 
 </Project>
