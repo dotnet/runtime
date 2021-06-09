@@ -12,8 +12,7 @@ namespace System.IO.Tests
         [Fact]
         public void NullOptionsThrows()
         {
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new FileStream(GetTestFilePath(), options: null));
-            Assert.Equal("options", ex.ParamName);
+            AssertExtensions.Throws<ArgumentNullException>("options", () => new FileStream(GetTestFilePath(), options: null));
         }
 
         [Theory]
