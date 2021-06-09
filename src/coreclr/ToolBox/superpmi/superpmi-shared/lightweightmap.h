@@ -385,11 +385,9 @@ public:
 
         if (numItems > 0)
         {
-            for (unsigned int i = numItems; i > insert; i--)
-            {
-                pKeys[i]  = pKeys[i - 1];
-                pItems[i] = pItems[i - 1];
-            }
+            int countToMove = (numItems - insert);
+            memmove(&pKeys[insert+1], &pKeys[insert], countToMove * sizeof(pKeys[insert]));
+            memmove(&pItems[insert+1], &pItems[insert], countToMove * sizeof(pItems[insert]));
         }
 
         pKeys[insert]  = key;
