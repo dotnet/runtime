@@ -1625,6 +1625,26 @@ wasm_invoke_vlii (void *target_func, InterpMethodArguments *margs)
 
 }
 
+static void
+wasm_invoke_iiiil (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, int arg_2, gint64 arg_3);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], get_long_arg (margs, 3));
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_liiil (void *target_func, InterpMethodArguments *margs)
+{
+	typedef gint64 (*T)(int arg_0, int arg_1, int arg_2, gint64 arg_3);
+	T func = (T)target_func;
+	gint64 res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], get_long_arg (margs, 3));
+	*(gint64*)margs->retval = res;
+
+}
+
 static const char* interp_to_native_signatures [] = {
 "DD",
 "DDD",
@@ -1718,6 +1738,7 @@ static const char* interp_to_native_signatures [] = {
 "IIIIIIIIIIII",
 "IIIIIIIIIIIII",
 "IIIIIIIIIIIIII",
+"IIIIL",
 "IIIL",
 "IIILIIII",
 "IIILLI",
@@ -1732,6 +1753,7 @@ static const char* interp_to_native_signatures [] = {
 "L",
 "LI",
 "LII",
+"LIIIL",
 "LIL",
 "LILI",
 "LILII",
@@ -1888,6 +1910,7 @@ wasm_invoke_iiiiiiiiiii,
 wasm_invoke_iiiiiiiiiiii,
 wasm_invoke_iiiiiiiiiiiii,
 wasm_invoke_iiiiiiiiiiiiii,
+wasm_invoke_iiiil,
 wasm_invoke_iiil,
 wasm_invoke_iiiliiii,
 wasm_invoke_iiilli,
@@ -1902,6 +1925,7 @@ wasm_invoke_ili,
 wasm_invoke_l,
 wasm_invoke_li,
 wasm_invoke_lii,
+wasm_invoke_liiil,
 wasm_invoke_lil,
 wasm_invoke_lili,
 wasm_invoke_lilii,
