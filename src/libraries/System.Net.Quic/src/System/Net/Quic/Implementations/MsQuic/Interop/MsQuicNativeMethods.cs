@@ -588,56 +588,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             internal ushort sin_family;
             internal ushort sin_port;
-            internal byte sin_addr0;
-            internal byte sin_addr1;
-            internal byte sin_addr2;
-            internal byte sin_addr3;
-
-            internal byte[] Address
-            {
-                get
-                {
-                    return new byte[] { sin_addr0, sin_addr1, sin_addr2, sin_addr3 };
-                }
-            }
+            internal fixed byte sin_addr[4];
         }
 
         // TODO: rename to C#-like
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN6
         {
-            internal ushort _family;
-            internal ushort _port;
-            internal uint _flowinfo;
-            internal byte _addr0;
-            internal byte _addr1;
-            internal byte _addr2;
-            internal byte _addr3;
-            internal byte _addr4;
-            internal byte _addr5;
-            internal byte _addr6;
-            internal byte _addr7;
-            internal byte _addr8;
-            internal byte _addr9;
-            internal byte _addr10;
-            internal byte _addr11;
-            internal byte _addr12;
-            internal byte _addr13;
-            internal byte _addr14;
-            internal byte _addr15;
-            internal uint _scope_id;
-
-            internal byte[] Address
-            {
-                get
-                {
-                    return new byte[] {
-                    _addr0, _addr1, _addr2, _addr3,
-                    _addr4, _addr5, _addr6, _addr7,
-                    _addr8, _addr9, _addr10, _addr11,
-                    _addr12, _addr13, _addr14, _addr15 };
-                }
-            }
+            internal ushort sin6_family;
+            internal ushort sin6_port;
+            internal uint sin6_flowinfo;
+            internal fixed byte sin6_addr[16];
+            internal uint sin6_scope_id;
         }
 
         // TODO: rename to C#-like

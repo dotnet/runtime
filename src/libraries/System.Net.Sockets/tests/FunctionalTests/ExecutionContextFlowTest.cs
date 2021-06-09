@@ -335,7 +335,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Theory]
         [InlineData(false, 0)]
         [InlineData(true, 0)]
         [InlineData(false, 1)]

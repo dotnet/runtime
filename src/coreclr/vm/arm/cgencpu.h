@@ -294,7 +294,7 @@ inline void emitJump(LPBYTE pBuffer, LPVOID target)
 
     // ldr pc, [pc, #0]
     pCode[0] = 0xf000f8df;
-    pCode[1] = (DWORD)target;
+    pCode[1] = (DWORD)(size_t)target;
 }
 
 //------------------------------------------------------------------------

@@ -202,7 +202,6 @@ DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
-BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
@@ -212,12 +211,14 @@ DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,   
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
 #endif
+#endif // FEATURE_COMINTEROP
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
+#ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   IM_RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
-
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
@@ -729,7 +730,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsRefer
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
@@ -762,7 +762,8 @@ DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_P
 DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
-DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE, GetArrayDataReference, NoSig)
+DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
+DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)

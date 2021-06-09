@@ -16,7 +16,20 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual QuicImplementationProvider UseQuicImplementationProvider => null;
 
-        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
+        public static bool IsMsQuicSupported
+        {
+            get
+            {
+                try
+                {
+                    return QuicImplementationProviders.MsQuic.IsSupported;
+                }
+                catch (System.PlatformNotSupportedException)
+                {
+                    return false;
+                }
+            }
+        }
 
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null, bool allowAllHttp2Certificates = true)
         {
@@ -39,9 +52,9 @@ namespace System.Net.Http.Functional.Tests
             return handler;
         }
 
-        protected Http3LoopbackServer CreateHttp3LoopbackServer()
+        protected Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
         {
-            return new Http3LoopbackServer(UseQuicImplementationProvider);
+            return new Http3LoopbackServer(UseQuicImplementationProvider, options);
         }
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, UseQuicImplementationProvider);
@@ -65,6 +78,9 @@ namespace System.Net.Http.Functional.Tests
 
         protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion, UseQuicImplementationProvider);
 
+        protected static LoopbackServerFactory GetFactoryForVersion(string useVersion, QuicImplementationProvider quicImplementationProvider = null) =>
+            GetFactoryForVersion(Version.Parse(useVersion), quicImplementationProvider);
+
         protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion, QuicImplementationProvider quicImplementationProvider = null)
         {
             return useVersion.Major switch
@@ -84,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
     internal class VersionHttpClientHandler : HttpClientHandler
     {
         private readonly Version _useVersion;
-        
+
         public VersionHttpClientHandler(Version useVersion)
         {
             _useVersion = useVersion;
@@ -107,7 +123,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
             }
-            
+
             return base.SendAsync(request, cancellationToken);
         }
 

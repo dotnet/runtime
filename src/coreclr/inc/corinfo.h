@@ -1614,6 +1614,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
     CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS, // object not subclass of base class
     CORINFO_DEVIRTUALIZATION_FAILED_SLOT,     // virtual method installed via explicit override
     CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,   // devirtualization crossed version bubble
+    CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL,   // object has multiple implementations of interface class
     CORINFO_DEVIRTUALIZATION_COUNT,           // sentinel for maximum value
 };
 

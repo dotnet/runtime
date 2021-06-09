@@ -86,7 +86,7 @@ extern void mono_gc_set_stack_end (void *stack_end);
  * Not exported in public headers, but can be linked to (unsupported).
  */
 gboolean mono_object_is_alive (MonoObject* obj);
-gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
+MONO_COMPONENT_API gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 
 void mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj);
 

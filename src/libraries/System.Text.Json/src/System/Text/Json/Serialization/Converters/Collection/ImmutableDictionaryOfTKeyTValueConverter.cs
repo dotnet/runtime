@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -11,6 +12,11 @@ namespace System.Text.Json.Serialization.Converters
         where TCollection : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        public ImmutableDictionaryOfTKeyTValueConverter()
+        {
+        }
+
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
@@ -23,6 +29,8 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;

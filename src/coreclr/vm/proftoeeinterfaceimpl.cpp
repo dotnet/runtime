@@ -843,9 +843,9 @@ void __stdcall UpdateGenerationBounds()
             RETURN;
         newGenerationTable->count = 0;
         newGenerationTable->capacity = GenerationTable::defaultCapacity;
-        // if there is already a current table, use its count as a guess for the capacity
+        // if there is already a current table, use its capacity as a guess for the capacity
         if (s_currentGenerationTable != NULL)
-            newGenerationTable->capacity = s_currentGenerationTable->count;
+            newGenerationTable->capacity = s_currentGenerationTable->capacity;
         newGenerationTable->prev = NULL;
         newGenerationTable->genDescTable = new (nothrow) GenerationDesc[newGenerationTable->capacity];
         if (newGenerationTable->genDescTable == NULL)

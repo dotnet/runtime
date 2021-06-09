@@ -12,78 +12,77 @@
 #include <utils.h>
 #include <fx_ver.h>
 
-const pal::string_t MissingAssemblyMessage = _X(
-    "%s:\n"
-    "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
-    "    package: '%s', version: '%s'\n"
-    "    path: '%s'");
-
-const pal::string_t ManifestListMessage = _X(
-    "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
-    "    %s");
-
-const pal::string_t DuplicateAssemblyWithDifferentExtensionMessage = _X(
-    "Error:\n"
-    "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
-    "    package: '%s', version: '%s'\n"
-    "    path: '%s'\n"
-    "    previously found assembly: '%s'");
-
 namespace
 {
-// -----------------------------------------------------------------------------
-// A uniqifying append helper that doesn't let two "paths" to be identical in
-// the "output" string.
-//
-void add_unique_path(
-    deps_entry_t::asset_types asset_type,
-    const pal::string_t& path,
-    std::unordered_set<pal::string_t>* existing,
-    pal::string_t* serviced,
-    pal::string_t* non_serviced,
-    const pal::string_t& svc_dir)
-{
-    // To optimize startup time, we avoid calling realpath here.
-    // Because of this, there might be duplicates in the output
-    // whenever path is eiter non-normalized or a symbolic link.
-    if (existing->count(path))
+    const pal::char_t* MissingAssemblyMessage = _X(
+        "%s:\n"
+        "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
+        "    package: '%s', version: '%s'\n"
+        "    path: '%s'");
+
+    const pal::char_t* ManifestListMessage = _X(
+        "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
+        "    %s");
+
+    const pal::char_t* DuplicateAssemblyWithDifferentExtensionMessage = _X(
+        "Error:\n"
+        "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
+        "    package: '%s', version: '%s'\n"
+        "    path: '%s'\n"
+        "    previously found assembly: '%s'");
+
+    // -----------------------------------------------------------------------------
+    // A uniqifying append helper that doesn't let two "paths" to be identical in
+    // the "output" string.
+    //
+    void add_unique_path(
+        deps_entry_t::asset_types asset_type,
+        const pal::string_t& path,
+        std::unordered_set<pal::string_t>* existing,
+        pal::string_t* serviced,
+        pal::string_t* non_serviced,
+        const pal::string_t& svc_dir)
     {
-        return;
+        // To optimize startup time, we avoid calling realpath here.
+        // Because of this, there might be duplicates in the output
+        // whenever path is eiter non-normalized or a symbolic link.
+        if (existing->count(path))
+        {
+            return;
+        }
+
+        trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
+
+        if (starts_with(path, svc_dir, false))
+        {
+            serviced->append(path);
+            serviced->push_back(PATH_SEPARATOR);
+        }
+        else
+        {
+            non_serviced->append(path);
+            non_serviced->push_back(PATH_SEPARATOR);
+        }
+
+        existing->insert(path);
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
-
-    if (starts_with(path, svc_dir, false))
+    // Return the filename from deps path; a deps path always uses a '/' for the separator.
+    pal::string_t get_deps_filename(const pal::string_t& path)
     {
-        serviced->append(path);
-        serviced->push_back(PATH_SEPARATOR);
+        if (path.empty())
+        {
+            return path;
+        }
+
+        auto name_pos = path.find_last_of('/');
+        if (name_pos == pal::string_t::npos)
+        {
+            return path;
+        }
+
+        return path.substr(name_pos + 1);
     }
-    else
-    {
-        non_serviced->append(path);
-        non_serviced->push_back(PATH_SEPARATOR);
-    }
-
-    existing->insert(path);
-}
-
-// Return the filename from deps path; a deps path always uses a '/' for the separator.
-pal::string_t get_deps_filename(const pal::string_t& path)
-{
-    if (path.empty())
-    {
-        return path;
-    }
-
-    auto name_pos = path.find_last_of('/');
-    if (name_pos == pal::string_t::npos)
-    {
-        return path;
-    }
-
-    return path.substr(name_pos + 1);
-}
-
 } // end of anonymous namespace
 
   // -----------------------------------------------------------------------------
@@ -97,10 +96,13 @@ void deps_resolver_t::add_tpa_asset(
     name_to_resolved_asset_map_t::iterator existing = items->find(resolved_asset.asset.name);
     if (existing == items->end())
     {
-        trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-            resolved_asset.resolved_path.c_str(),
-            resolved_asset.asset.assembly_version.as_str().c_str(),
-            resolved_asset.asset.file_version.as_str().c_str());
+        if (trace::is_enabled())
+        {
+            trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
+                resolved_asset.resolved_path.c_str(),
+                resolved_asset.asset.assembly_version.as_str().c_str(),
+                resolved_asset.asset.file_version.as_str().c_str());
+        }
 
         items->emplace(resolved_asset.asset.name, resolved_asset);
     }
@@ -312,7 +314,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             trace::verbose(_X("    Skipping... not runtime asset"));
             continue;
         }
-        pal::string_t probe_dir = config.probe_dir;
+
+        const pal::string_t& probe_dir = config.probe_dir;
         uint32_t search_options = deps_entry_t::search_options::none;
         if (needs_file_existence_checks())
         {
@@ -391,32 +394,32 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
         // Treat missing resource assemblies as informational.
         continueResolving = true;
 
-        trace::info(MissingAssemblyMessage.c_str(), _X("Info"),
+        trace::info(MissingAssemblyMessage, _X("Info"),
             entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
-            trace::info(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+            trace::info(ManifestListMessage, entry.runtime_store_manifest_list.c_str());
         }
     }
     else if (continueResolving)
     {
-        trace::warning(MissingAssemblyMessage.c_str(), _X("Warning"),
+        trace::warning(MissingAssemblyMessage, _X("Warning"),
             entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
-            trace::warning(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+            trace::warning(ManifestListMessage, entry.runtime_store_manifest_list.c_str());
         }
     }
     else
     {
-        trace::error(MissingAssemblyMessage.c_str(), _X("Error"),
+        trace::error(MissingAssemblyMessage, _X("Error"),
             entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
-            trace::error(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+            trace::error(ManifestListMessage, entry.runtime_store_manifest_list.c_str());
         }
     }
 
@@ -476,7 +479,7 @@ bool deps_resolver_t::resolve_tpa_list(
             if (get_deps_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
             {
                 trace::error(
-                    DuplicateAssemblyWithDifferentExtensionMessage.c_str(),
+                    DuplicateAssemblyWithDifferentExtensionMessage,
                     entry.deps_file.c_str(),
                     entry.library_name.c_str(),
                     entry.library_version.c_str(),
@@ -599,7 +602,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Convert the paths into a string and return it 
+    // Convert the paths into a string and return it
     for (const auto& item : items)
     {
         output->append(item.second.resolved_path);
@@ -664,14 +667,14 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
         {
             if (pal::file_exists(additional_deps_path))
             {
-                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
+                trace::verbose(_X("Using specified additional deps.json: '%s'"),
                     additional_deps_path.c_str());
 
                 m_additional_deps_files.push_back(additional_deps_path);
             }
             else
             {
-                trace::warning(_X("Warning: Specified additional deps.json does not exist: '%s'"), 
+                trace::warning(_X("Warning: Specified additional deps.json does not exist: '%s'"),
                     additional_deps_path.c_str());
             }
         }
@@ -815,7 +818,7 @@ bool deps_resolver_t::resolve_probe_dirs(
             return true;
         }
 
-        trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"), 
+        trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"),
             entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         bool found_in_bundle = false;
