@@ -76,13 +76,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 lock (this)
                 {
                     StreamCount--;
+                    Debug.Assert(StreamCount >= 0);
                     releaseHandles = _closing && StreamCount == 0;
                 }
 
                 if (releaseHandles)
                 {
                     Handle?.Dispose();
-                    if (StateGCHandle.IsAllocated) StateGCHandle.Free();
+                    StateGCHandle.Free();
                 }
             }
 
@@ -117,7 +118,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             // This is called under lock from connection dispose
             public void SetClosing()
             {
-                _closing = true;
+                lock (this)
+                {
+                    _closing = true;
+                }
             }
         }
 
@@ -655,11 +659,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private async Task FlushAcceptQueue()
         {
-            try {
-                // Writer may or may not be completed.
-                _state.AcceptQueue.Writer.Complete();
-            } catch { };
-
+            _state.AcceptQueue.Writer.TryComplete();
             await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync())
             {
                 item.Dispose();
@@ -669,7 +669,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private void Dispose(bool disposing)
         {
             int disposed = Interlocked.Exchange(ref _disposed, 1);
-            if (disposed == 1)
+            if (disposed != 0)
             {
                 return;
             }
