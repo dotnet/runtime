@@ -390,12 +390,16 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </remarks>
         private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
         {
-            if (taskType.IsConstructedGenericType && taskType.GetGenericTypeDefinition() == typeof(Task<>))
+            try
             {
                 return (MethodInfo)taskType.GetMemberWithSameMetadataDefinitionAs(s_taskGetResultMethodInfo);
             }
-
-            return null;
+            catch (ArgumentException)
+            {
+                // If the taskType wasn't assignable to Task<T>, the get_Result method won't be found.
+                // Return null in that case.
+                return null;
+            }
         }
 
         public static string ObjectToString(object o)
