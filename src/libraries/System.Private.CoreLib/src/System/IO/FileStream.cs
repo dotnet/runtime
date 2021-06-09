@@ -197,7 +197,7 @@ namespace System.IO
                 }
             }
 
-            FileStreamHelpers.SerializaitonGuard(options.Access);
+            FileStreamHelpers.SerializationGuard(options.Access);
 
             _strategy = FileStreamHelpers.ChooseStrategy(
                 this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);

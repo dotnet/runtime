@@ -108,10 +108,10 @@ namespace System.IO.Strategies
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
             }
 
-            SerializaitonGuard(access);
+            SerializationGuard(access);
         }
 
-        internal static void SerializaitonGuard(FileAccess access)
+        internal static void SerializationGuard(FileAccess access)
         {
             if ((access & FileAccess.Write) == FileAccess.Write)
             {
