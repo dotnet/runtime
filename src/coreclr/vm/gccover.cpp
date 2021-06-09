@@ -809,15 +809,21 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     // instruction will not be a call instruction.
     //_ASSERTE(instructionIsACallThroughRegister ^ instructionIsACallThroughImmediate);
 
-    ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr, sizeof(DWORD));
+#if defined(TARGET_ARM)
+    size_t instrLen = sizeof(WORD);
+#else
+    size_t instrLen = sizeof(DWORD);
+#endif
+
+    ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr - instrLen, 2 * instrLen);
     if(instructionIsACallThroughRegister)
     {
         // If it is call by register then cannot know MethodDesc so replace the call instruction with illegal instruction
         // safe point will be replaced with appropriate illegal instruction at execution time when reg value is known
 #if defined(TARGET_ARM)
-        *((WORD*)instrPtrWriterHolder.GetRW() - 1) = INTERRUPT_INSTR_CALL;
+        *((WORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR_CALL;
 #elif defined(TARGET_ARM64)
-        *((DWORD*)instrPtrWriterHolder.GetRW() - 1) = INTERRUPT_INSTR_CALL;
+        *((DWORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR_CALL;
 #endif // _TARGET_XXXX_
     }
     else if(instructionIsACallThroughImmediate)
@@ -865,7 +871,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
 
                 if (fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
                 {
-                    ReplaceInstrAfterCall(instrPtrWriterHolder.GetRW(), targetMD);
+                    ReplaceInstrAfterCall(instrPtrWriterHolder.GetRW() + instrLen, targetMD);
                 }
             }
         }
