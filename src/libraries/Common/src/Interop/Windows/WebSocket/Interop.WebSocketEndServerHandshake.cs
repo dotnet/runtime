@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
-        [DllImport(Libraries.WebSocket)]
-        internal static extern int WebSocketEndServerHandshake([In] SafeHandle webSocketHandle);
+        [GeneratedDllImport(Libraries.WebSocket)]
+        internal static partial int WebSocketEndServerHandshake(SafeHandle webSocketHandle);
     }
 }
