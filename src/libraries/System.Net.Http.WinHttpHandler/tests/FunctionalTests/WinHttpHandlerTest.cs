@@ -148,14 +148,14 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
             foreach (Cookie c in cookies)
             {
-                cookieContainer.Add(Configuration.Http.Http2SecureRemoteEchoServer, c);
+                cookieContainer.Add(Configuration.Http.Http2RemoteEchoServer, c);
             }
 
             handler.CookieContainer = cookieContainer;
             handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
             handler.ServerCertificateValidationCallback = (m, cert, chain, err) => true;
             string payload = "Cookie Test";
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2SecureRemoteEchoServer) { Version = HttpVersion20.Value };
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
             request.Content = new StringContent(payload);
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.SendAsync(request))
@@ -188,14 +188,14 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             List<(Task<HttpResponseMessage> task, DelayedStream stream)> requests = new List<(Task<HttpResponseMessage> task, DelayedStream stream)>();
             for (int i = 0; i < maxActiveStreamsLimit; i++)
             {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2SecureRemoteEchoServer) { Version = HttpVersion20.Value };
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
                 byte[] payloadBytes = Encoding.UTF8.GetBytes(payloadText);
                 DelayedStream content = new DelayedStream(payloadBytes, delaySource.Task);
                 request.Content = new StreamContent(content);
                 requests.Add((client.SendAsync(request, HttpCompletionOption.ResponseContentRead), content));
             }
 
-            HttpRequestMessage aboveLimitRequest = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2SecureRemoteEchoServer) { Version = HttpVersion20.Value };
+            HttpRequestMessage aboveLimitRequest = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
             aboveLimitRequest.Content = new StringContent($"{payloadText}-{maxActiveStreamsLimit + 1}");
             Task<HttpResponseMessage> aboveLimitResponseTask = client.SendAsync(aboveLimitRequest, HttpCompletionOption.ResponseContentRead);
 
