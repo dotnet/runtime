@@ -17,23 +17,105 @@
 #include <unistd.h>
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-static struct sigaction g_origSigIntHandler, g_origSigQuitHandler; // saved signal handlers for ctrl handling
-static struct sigaction g_origSigContHandler, g_origSigChldHandler; // saved signal handlers for reinitialization
-static struct sigaction g_origSigWinchHandler; // saved signal handlers for SIGWINCH
-static volatile CtrlCallback g_ctrlCallback = NULL; // Callback invoked for SIGINT/SIGQUIT
-static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL; // Callback invoked for SIGCHLD/SIGCONT/SIGWINCH
-static volatile SigChldCallback g_sigChldCallback = NULL; // Callback invoked for SIGCHLD
+
+// Saved signal handlers
+static struct sigaction g_origSigIntHandler;
+static struct sigaction g_origSigQuitHandler;
+static struct sigaction g_origSigIntHandler;
+static struct sigaction g_origSigTermHandler;
+static struct sigaction g_origSigContHandler;
+static struct sigaction g_origSigChldHandler;
+static struct sigaction g_origSigWinchHandler;
+static struct sigaction g_origSigHupHandler;
+
+// Callback invoked for SIGCHLD/SIGCONT/SIGWINCH
+static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL;
+// Callback invoked for SIGCHLD
+static volatile SigChldCallback g_sigChldCallback = NULL;
+// Callback invoked for PosixSignal handling.
+static PosixSignalHandler g_posixSignalHandler = NULL;
+
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
+
+static volatile bool g_signalHasRegistrations[PosixSignalCount];
+
+static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+{
+    assert(posixSignal != NULL);
+
+    switch (signalCode)
+    {
+        case SIGHUP:
+            *posixSignal = PosixSignalSIGHUP;
+            return true;
+
+        case SIGINT:
+            *posixSignal = PosixSignalSIGINT;
+            return true;
+
+        case SIGQUIT:
+            *posixSignal = PosixSignalSIGQUIT;
+            return true;
+
+        case SIGTERM:
+            *posixSignal = PosixSignalSIGTERM;
+            return true;
+
+        case SIGCHLD:
+            *posixSignal = PosixSignalSIGCHLD;
+            return true;
+
+        default:
+            *posixSignal = signalCode;
+            return false;
+    }
+}
+
+static bool TryConvertPosixSignalToSignalCode(PosixSignal signal, int* signalCode)
+{
+    assert(signalCode != NULL);
+
+    switch (signal)
+    {
+        case PosixSignalSIGHUP:
+            *signalCode = SIGHUP;
+            return true;
+
+        case PosixSignalSIGINT:
+            *signalCode = SIGINT;
+            return true;
+
+        case PosixSignalSIGQUIT:
+            *signalCode = SIGQUIT;
+            return true;
+
+        case PosixSignalSIGTERM:
+            *signalCode = SIGTERM;
+            return true;
+
+        case PosixSignalSIGCHLD:
+            *signalCode = SIGCHLD;
+            return true;
+
+        case PosixSignalCount:
+            break;
+    }
+
+    *signalCode = signal;
+    return false;
+}
 
 static struct sigaction* OrigActionFor(int sig)
 {
     switch (sig)
     {
-        case SIGINT:  return &g_origSigIntHandler;
+        case SIGINT: return &g_origSigIntHandler;
+        case SIGTERM: return &g_origSigTermHandler;
         case SIGQUIT: return &g_origSigQuitHandler;
         case SIGCONT: return &g_origSigContHandler;
         case SIGCHLD: return &g_origSigChldHandler;
         case SIGWINCH: return &g_origSigWinchHandler;
+        case SIGHUP: return &g_origSigHupHandler;
     }
 
     assert(false);
@@ -106,21 +188,7 @@ static void* SignalHandlerLoop(void* arg)
             }
         }
 
-        if (signalCode == SIGQUIT || signalCode == SIGINT)
-        {
-            // We're now handling SIGQUIT and SIGINT. Invoke the callback, if we have one.
-            CtrlCallback callback = g_ctrlCallback;
-            CtrlCode ctrlCode = signalCode == SIGQUIT ? Break : Interrupt;
-            if (callback != NULL)
-            {
-                callback(ctrlCode);
-            }
-            else
-            {
-                SystemNative_RestoreAndHandleCtrl(ctrlCode);
-            }
-        }
-        else if (signalCode == SIGCHLD)
+        if (signalCode == SIGCHLD)
         {
             // When the original disposition is SIG_IGN, children that terminated did not become zombies.
             // Since we overwrote the disposition, we have become responsible for reaping those processes.
@@ -154,13 +222,25 @@ static void* SignalHandlerLoop(void* arg)
         }
         else if (signalCode == SIGCONT)
         {
+            // TODO: should this be cancelable?
 #ifdef HAS_CONSOLE_SIGNALS
             ReinitializeTerminal();
 #endif
         }
-        else if (signalCode != SIGWINCH)
+
+        PosixSignal signal;
+        if (TryConvertSignalCodeToPosixSignal(signalCode, &signal))
         {
-            assert_msg(false, "invalid signalCode", (int)signalCode);
+            bool hasManagedHandler = g_signalHasRegistrations[-signal];
+            if (hasManagedHandler)
+            {
+                assert(g_posixSignalHandler != NULL);
+                hasManagedHandler = g_posixSignalHandler(signal) != 0;
+            }
+            if (!hasManagedHandler)
+            {
+                SystemNative_HandlePosixSignal(signal);
+            }
         }
     }
 }
@@ -173,29 +253,6 @@ static void CloseSignalHandlingPipe()
     close(g_signalPipe[1]);
     g_signalPipe[0] = -1;
     g_signalPipe[1] = -1;
-}
-
-void SystemNative_RegisterForCtrl(CtrlCallback callback)
-{
-    assert(callback != NULL);
-    assert(g_ctrlCallback == NULL);
-    g_ctrlCallback = callback;
-}
-
-void SystemNative_UnregisterForCtrl()
-{
-    assert(g_ctrlCallback != NULL);
-    g_ctrlCallback = NULL;
-}
-
-void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode)
-{
-    int signalCode = ctrlCode == Break ? SIGQUIT : SIGINT;
-#ifdef HAS_CONSOLE_SIGNALS
-    UninitializeTerminal();
-#endif
-    sigaction(signalCode, OrigActionFor(signalCode), NULL);
-    kill(getpid(), signalCode);
 }
 
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
@@ -309,10 +366,14 @@ int32_t InitializeSignalHandlingCore()
     }
 
     // Finally, register our signal handlers
-    // We don't handle ignored SIGINT/SIGQUIT signals. If we'd setup a handler, our child
-    // processes would reset to the default on exec causing them to terminate on these signals.
+    // We don't handle ignored SIGINT/SIGQUIT/SIGHUP/SIGTERM signals. If we'd
+    // setup a handler, our child processes would reset to the default on exec
+    // causing them to terminate on these signals.
     InstallSignalHandler(SIGINT , /* skipWhenSigIgn */ true);
     InstallSignalHandler(SIGQUIT, /* skipWhenSigIgn */ true);
+    InstallSignalHandler(SIGHUP, /* skipWhenSigIgn */ true);
+    InstallSignalHandler(SIGTERM, /* skipWhenSigIgn */ true);
+
     InstallSignalHandler(SIGCONT, /* skipWhenSigIgn */ false);
     InstallSignalHandler(SIGCHLD, /* skipWhenSigIgn */ false);
     InstallSignalHandler(SIGWINCH, /* skipWhenSigIgn */ false);
@@ -320,10 +381,53 @@ int32_t InitializeSignalHandlingCore()
     return 1;
 }
 
+int32_t SystemNative_RegisterForPosixSignal(PosixSignal signal, PosixSignalHandler signalHandler)
+{
+    assert(signalHandler != NULL);
+    assert(g_posixSignalHandler == NULL || g_posixSignalHandler == signalHandler);
+
+    if (signal >= 0 || -signal > PosixSignalCount)
+    {
+        errno = EINVAL;
+        return 0;
+    }
+
+    g_posixSignalHandler = signalHandler;
+    g_signalHasRegistrations[-signal] = true;
+
+    return 1;
+}
+
+void SystemNative_UnregisterForPosixSignal(PosixSignal signal)
+{
+    assert(signal < 0 && -signal <= PosixSignalCount);
+
+    g_signalHasRegistrations[-signal] = false;
+}
+
+void SystemNative_HandlePosixSignal(PosixSignal signal)
+{
+    if (signal == PosixSignalSIGQUIT ||
+        signal == PosixSignalSIGINT ||
+        signal == PosixSignalSIGHUP ||
+        signal == PosixSignalSIGTERM)
+    {
+#ifdef HAS_CONSOLE_SIGNALS
+            UninitializeTerminal();
+#endif
+        // Restore the original signal handler and invoke it.
+        int signalCode;
+        TryConvertPosixSignalToSignalCode(signal, &signalCode);
+        sigaction(signalCode, OrigActionFor(signalCode), NULL);
+        kill(getpid(), signalCode);
+    }
+}
+
 #ifndef HAS_CONSOLE_SIGNALS
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling()
 {
+    errno = ENOSYS;
     return 0;
 }
 

@@ -216,10 +216,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetOSArchitecture)
     DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
-    DllImportEntry(SystemNative_RegisterForCtrl)
-    DllImportEntry(SystemNative_UnregisterForCtrl)
     DllImportEntry(SystemNative_RegisterForSigChld)
-    DllImportEntry(SystemNative_RestoreAndHandleCtrl)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
     DllImportEntry(SystemNative_SNPrintF)
@@ -251,6 +248,9 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_PWrite)
     DllImportEntry(SystemNative_PReadV)
     DllImportEntry(SystemNative_PWriteV)
+    DllImportEntry(SystemNative_RegisterForPosixSignal)
+    DllImportEntry(SystemNative_UnregisterForPosixSignal)
+    DllImportEntry(SystemNative_HandlePosixSignal)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

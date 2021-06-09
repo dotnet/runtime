@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
@@ -33,6 +33,8 @@
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignal.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignalContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
@@ -48,7 +50,23 @@
     <Compile Include="System\Security\SecureStringMarshal.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
+             Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs"
+             Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
+  </ItemGroup>
+  <ItemGroup  Condition="'$(TargetsUnix)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
 </Project>

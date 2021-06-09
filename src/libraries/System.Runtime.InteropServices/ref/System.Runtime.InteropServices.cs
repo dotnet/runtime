@@ -796,6 +796,26 @@ namespace System.Runtime.InteropServices
     {
         public OptionalAttribute() { }
     }
+    public enum PosixSignal
+    {
+        SIGHUP = -1,
+        SIGINT = -2,
+        SIGQUIT = -3,
+        SIGTERM = -4,
+        SIGCHLD = -5
+    }
+    public sealed class PosixSignalContext
+    {
+        public PosixSignal Signal { get { throw null; } }
+        public bool Cancel  { get { throw null; } set { throw null; } }
+        public PosixSignalContext(PosixSignal signal) { }
+    }
+    public sealed class PosixSignalRegistration : IDisposable
+    {
+        private PosixSignalRegistration() { throw null; }
+        public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler) { throw null; }
+        public void Dispose() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PreserveSigAttribute : System.Attribute
     {

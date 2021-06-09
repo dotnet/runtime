@@ -13,28 +13,6 @@
  */
 int32_t InitializeSignalHandlingCore(void);
 
-/**
- * Hooks up the specified callback for notifications when SIGINT or SIGQUIT is received.
- *
- * Not thread safe.  Caller must provide its owns synchronization to ensure RegisterForCtrl
- * is not called concurrently with itself or with UnregisterForCtrl.
- *
- * Should only be called when a callback is not currently registered.
- */
-PALEXPORT void SystemNative_RegisterForCtrl(CtrlCallback callback);
-
-/**
- * Unregisters the previously registered ctrlCCallback.
- *
- * Not thread safe.  Caller must provide its owns synchronization to ensure UnregisterForCtrl
- * is not called concurrently with itself or with RegisterForCtrl.
- *
- * Should only be called when a callback is currently registered. The pointer
- * previously registered must remain valid until all ctrl handling activity
- * has quiesced.
- */
-PALEXPORT void SystemNative_UnregisterForCtrl(void);
-
 typedef void (*SigChldCallback)(int reapAll);
 
 /**
@@ -59,6 +37,23 @@ typedef void (*TerminalInvalidationCallback)(void);
   *
  */
 PALEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback);
+
+typedef enum
+{
+    PosixSignalSIGHUP = -1,
+    PosixSignalSIGINT = -2,
+    PosixSignalSIGQUIT = -3,
+    PosixSignalSIGTERM = -4,
+    PosixSignalSIGCHLD = -5,
+
+    PosixSignalCount = 5
+} PosixSignal;
+
+typedef int32_t (*PosixSignalHandler)(PosixSignal signal);
+
+PALEXPORT int32_t SystemNative_RegisterForPosixSignal(PosixSignal signal, PosixSignalHandler signalHandler);
+PALEXPORT void SystemNative_UnregisterForPosixSignal(PosixSignal signal);
+PALEXPORT void SystemNative_HandlePosixSignal(PosixSignal signal);
 
 #ifndef HAS_CONSOLE_SIGNALS
 

@@ -960,7 +960,7 @@ namespace System
             Out.Write(value);
         }
 
-        internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
+        internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey, bool cancel = false)
         {
             ConsoleCancelEventHandler? handler = s_cancelCallbacks;
             if (handler == null)
@@ -969,6 +969,7 @@ namespace System
             }
 
             var args = new ConsoleCancelEventArgs(controlKey);
+            args.Cancel = cancel;
             handler(null, args);
             return args.Cancel;
         }
