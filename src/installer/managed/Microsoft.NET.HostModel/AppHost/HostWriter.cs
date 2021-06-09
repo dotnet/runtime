@@ -248,7 +248,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
             var psi = new ProcessStartInfo()
             {
-                Arguments = $"-s - {appHostPath}",
+                Arguments = $"-s - {string.Format("\"{0}\"", appHostPath)}",
                 FileName = codesign,
                 RedirectStandardError = true,
             };

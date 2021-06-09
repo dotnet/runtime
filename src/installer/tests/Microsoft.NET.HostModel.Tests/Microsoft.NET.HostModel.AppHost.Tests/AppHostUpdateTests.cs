@@ -221,11 +221,13 @@ namespace Microsoft.NET.HostModel.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public void CanCodeSignAppHostOnMacOS()
+        [InlineData("")]
+        [InlineData("dir with spaces")]
+        public void CanCodeSignAppHostOnMacOS(string subdir)
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestDirectory testDirectory = TestDirectory.Create(subdir))
             {
                 string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
@@ -241,7 +243,7 @@ namespace Microsoft.NET.HostModel.Tests
                 const string codesign = @"/usr/bin/codesign";
                 var psi = new ProcessStartInfo()
                 {
-                    Arguments = $"-d {destinationFilePath}",
+                    Arguments = $"-d \"{destinationFilePath}\"",
                     FileName = codesign,
                     RedirectStandardError = true,
                 };
@@ -436,11 +438,12 @@ namespace Microsoft.NET.HostModel.Tests
                 Directory.CreateDirectory(path);
             }
 
-            public static TestDirectory Create([CallerMemberName] string callingMethod = "")
+            public static TestDirectory Create([CallerMemberName] string callingMethod = "", string subDir = "")
             {
                 string path = System.IO.Path.Combine(
                     System.IO.Path.GetTempPath(),
-                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)));
+                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)),
+                    subDir);
                 return new TestDirectory(path);
             }
 
