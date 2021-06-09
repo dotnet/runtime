@@ -924,23 +924,17 @@ namespace System.Net.Http.Headers
                 "Header value types must not derive from List<object> since this type is used internally to store " +
                 "lists of values. So we would not be able to distinguish between a single value and a list of values.");
 
-            object? currentStoreValue = info.ParsedValue;
-            AddValueToStoreValue<object>(value, ref currentStoreValue);
-            info.ParsedValue = currentStoreValue;
+            AddValueToStoreValue<object>(value, ref info.ParsedValue);
         }
 
         private static void AddInvalidValue(HeaderStoreItemInfo info, string value)
         {
-            object? currentStoreValue = info.InvalidValue;
-            AddValueToStoreValue<string>(value, ref currentStoreValue);
-            info.InvalidValue = currentStoreValue;
+            AddValueToStoreValue<string>(value, ref info.InvalidValue);
         }
 
         private static void AddRawValue(HeaderStoreItemInfo info, string value)
         {
-            object? currentStoreValue = info.RawValue;
-            AddValueToStoreValue<string>(value, ref currentStoreValue);
-            info.RawValue = currentStoreValue;
+            AddValueToStoreValue<string>(value, ref info.RawValue);
         }
 
         private static void AddValueToStoreValue<T>(T value, ref object? currentStoreValue) where T : class
@@ -1263,9 +1257,9 @@ namespace System.Net.Http.Headers
         {
             internal HeaderStoreItemInfo() { }
 
-            internal object? RawValue { get; set; }
-            internal object? InvalidValue { get; set; }
-            internal object? ParsedValue { get; set; }
+            internal object? RawValue;
+            internal object? InvalidValue;
+            internal object? ParsedValue;
 
             internal bool CanAddParsedValue(HttpHeaderParser parser)
             {
