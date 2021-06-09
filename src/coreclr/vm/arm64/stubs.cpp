@@ -1847,6 +1847,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * p = pStart; \
+    static const size_t rxOffset = 0; \
     auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 
 #define END_DYNAMIC_HELPER_EMIT() \
