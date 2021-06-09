@@ -902,6 +902,18 @@ class SuperPMICollect:
 
         """
 
+        if coreclr_args.host_os == "OSX":
+            self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
+            self.corerun_tool_name = "corerun"
+        elif coreclr_args.host_os == "Linux":
+            self.collection_shim_name = "libsuperpmi-shim-collector.so"
+            self.corerun_tool_name = "corerun"
+        elif coreclr_args.host_os == "windows":
+            self.collection_shim_name = "superpmi-shim-collector.dll"
+            self.corerun_tool_name = "corerun.exe"
+        else:
+            raise RuntimeError("Unsupported OS.")
+
         self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
