@@ -27,11 +27,11 @@ namespace System.Numerics
             {
                 Debug.Assert(modulus != null);
 
-                // Let r = 4^k, with 2^k > m
+                // Let r = (2^32)^(2k), with (2^32)^k > m
                 uint[] r = new uint[modulus.Length * 2 + 1];
                 r[r.Length - 1] = 1;
 
-                // Let mu = 4^k / m
+                // Let mu = r / m
                 _mu = Divide(r, modulus);
                 _modulus = modulus;
 
@@ -52,15 +52,15 @@ namespace System.Numerics
                 if (length < _modulus.Length)
                     return length;
 
-                // Let q1 = v/2^(k-1) * mu
+                // Let q1 = v/(2^32)^(k-1) * mu
                 int l1 = DivMul(value, length, _mu, _muLength,
                                 _q1, _modulus.Length - 1);
 
-                // Let q2 = q1/2^(k+1) * m
+                // Let q2 = q1/(2^32)^(k+1) * m
                 int l2 = DivMul(_q1, l1, _modulus, _modulus.Length,
                                 _q2, _modulus.Length + 1);
 
-                // Let v = (v - q2) % 2^(k+1) - i*m
+                // Let v = (v - q2) % (2^32)^(k+1) - i*m
                 return SubMod(value, length, _q2, l2,
                               _modulus, _modulus.Length + 1);
             }
