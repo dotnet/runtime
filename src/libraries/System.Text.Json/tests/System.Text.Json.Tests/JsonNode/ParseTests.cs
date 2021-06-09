@@ -160,10 +160,10 @@ namespace System.Text.Json.Nodes.Tests
 
             jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(JsonNode) });
 
-            FieldInfo listField = jsonPropertyDictionaryType.GetField("_list", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(listField);
 
-            FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_propertyDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(dictionaryField);
 
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))

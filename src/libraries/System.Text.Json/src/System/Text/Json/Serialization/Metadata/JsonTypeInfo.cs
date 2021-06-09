@@ -319,8 +319,8 @@ namespace System.Text.Json.Serialization.Metadata
             JsonNumberHandling? typeNumberHandling,
             ref Dictionary<string, MemberInfo>? ignoredMembers)
         {
-            bool hasExtensionAttribute = DoesPropertyHaveAttribute(memberType, typeof(JsonExtensionDataAttribute));
-            if (hasExtensionAttribute & DataExtensionProperty != null)
+            bool hasExtensionAttribute = memberInfo.GetCustomAttribute(typeof(JsonExtensionDataAttribute)) != null;
+            if (hasExtensionAttribute && DataExtensionProperty != null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
             }
@@ -515,7 +515,6 @@ namespace System.Text.Json.Serialization.Metadata
                 (memberType.FullName == JsonObjectTypeName && ReferenceEquals(memberType.Assembly, GetType().Assembly)))
             {
                 converter = Options.GetConverterInternal(memberType);
-                Debug.Assert(converter != null);
             }
 
             if (converter == null)
@@ -524,17 +523,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             DataExtensionProperty = jsonPropertyInfo;
-        }
-
-        private bool DoesPropertyHaveAttribute(MemberInfo memberInfo, Type attributeType)
-        {
-            Attribute? attribute = memberInfo.GetCustomAttribute(attributeType);
-            if (attribute != null)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         private static JsonParameterInfo AddConstructorParameter(
