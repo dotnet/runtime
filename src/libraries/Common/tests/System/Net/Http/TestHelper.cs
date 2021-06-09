@@ -70,11 +70,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static void VerifyRequestMethod(HttpResponseMessage response, string expectedMethod)
         {
-            if(PlatformDetection.IsBrowser)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53668", TestPlatforms.Browser)] 
-                return;
-            }
            IEnumerable<string> values = response.Headers.GetValues("X-HttpRequest-Method");
            foreach (string value in values)
            {
