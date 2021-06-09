@@ -235,7 +235,8 @@ namespace Microsoft.NET.HostModel.Tests
                    sourceAppHostMock,
                    destinationFilePath,
                    appBinaryFilePath,
-                   windowsGraphicalUserInterface: false);
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
 
                 const string codesign = @"/usr/bin/codesign";
                 var psi = new ProcessStartInfo()
@@ -251,7 +252,73 @@ namespace Microsoft.NET.HostModel.Tests
                     p.StandardError.ReadToEnd()
                         .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
                     p.WaitForExit();
+                    // Successfully signed the apphost.
+                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
                 }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void ItDoesNotCodeSignAppHostByDefault()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                const string codesign = @"/usr/bin/codesign";
+                var psi = new ProcessStartInfo()
+                {
+                    Arguments = $"-d {destinationFilePath}",
+                    FileName = codesign,
+                    RedirectStandardError = true,
+                };
+
+                using (var p = Process.Start(psi))
+                {
+                    p.Start();
+                    p.StandardError.ReadToEnd()
+                        .Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
+                    p.WaitForExit();
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void CodeSigningFailuresThrow()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+
+                // Run CreateAppHost again to sign the apphost a second time,
+                // causing codesign to fail.
+                var exception = Assert.Throws<AppHostSigningException>(() =>
+                    HostWriter.CreateAppHost(
+                    sourceAppHostMock,
+                    destinationFilePath,
+                    appBinaryFilePath,
+                    windowsGraphicalUserInterface: false,
+                    enableMacOSCodeSign: true));
+                Assert.Contains($"{destinationFilePath}: is already signed", exception.ErrorMessage);
             }
         }
 
