@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$(ToolsDir)netfxreference.props" />
+  <Import Project="$(SupportFilesDir)netfxreference.props" />
 
   <PropertyGroup>
     <ShouldVerifyClosure>true</ShouldVerifyClosure>

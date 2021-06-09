@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace MockHostTypes
-{
-    public class HostBuilder : IHostBuilder
-    {
-        public IHost Build() => new Host();
-    }
-}
+//
+
+#include "stdafx.h"
+#include "threads.h"
+#include "../../shared/s390x/primitives.cpp"
+

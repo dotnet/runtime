@@ -78,6 +78,9 @@ namespace System.Net.Http.Functional.Tests
 
         protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion, UseQuicImplementationProvider);
 
+        protected static LoopbackServerFactory GetFactoryForVersion(string useVersion, QuicImplementationProvider quicImplementationProvider = null) =>
+            GetFactoryForVersion(Version.Parse(useVersion), quicImplementationProvider);
+
         protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion, QuicImplementationProvider quicImplementationProvider = null)
         {
             return useVersion.Major switch
