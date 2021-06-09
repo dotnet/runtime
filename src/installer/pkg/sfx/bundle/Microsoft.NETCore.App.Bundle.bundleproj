@@ -5,7 +5,7 @@
       Name, used to generate the bundle upgrade code. Must stay the same to allow bundles in a given
       product band to upgrade in place.
     -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
     <IsShipping Condition="'$(PgoInstrument)' == 'true'">false</IsShipping>
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
