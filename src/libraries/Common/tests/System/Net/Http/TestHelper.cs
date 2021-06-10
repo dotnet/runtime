@@ -41,8 +41,8 @@ namespace System.Net.Http.Functional.Tests
             bool chunkedUpload,
             string requestBody)
         {
-            // https://github.com/dotnet/runtime/issues/37669
-            if(!PlatformDetection.IsBrowser)
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+            if (!PlatformDetection.IsBrowser)
             {
                 // Verify that response body from the server was corrected received by comparing MD5 hash.
                 byte[] actualMD5Hash = ComputeMD5Hash(responseContent);

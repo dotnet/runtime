@@ -249,7 +249,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Compute MD5 of request body data. This will be verified by the server when it
                     // receives the request.
-                    if(PlatformDetection.IsBrowser)
+                    if (PlatformDetection.IsBrowser)
                     {
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         requestContent.Headers.Add("Content-MD5-Skip", "browser");

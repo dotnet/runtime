@@ -361,8 +361,8 @@ namespace System.Net.Http.Functional.Tests
             }
 
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
-            m.Headers.Host = !PlatformDetection.LocalEchoServerIsAvailable && withPort 
-                                ? Configuration.Http.SecureHost + ":" + Configuration.Http.SecurePort 
+            m.Headers.Host = !PlatformDetection.LocalEchoServerIsAvailable && withPort
+                                ? Configuration.Http.SecureHost + ":" + Configuration.Http.SecurePort
                                 : Configuration.Http.SecureHost;
 
             using (HttpClient client = CreateHttpClient())

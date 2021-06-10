@@ -346,7 +346,7 @@ namespace System.Net.Http.Functional.Tests
                 string data = "Test String";
                 var content = new StringContent(data, Encoding.UTF8);
 
-                if(PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -364,7 +364,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Repeat call.
                 content = new StringContent(data, Encoding.UTF8);
-                if(PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -389,7 +389,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string data = "\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb";
                 var content = new StringContent(data, Encoding.UTF8);
-                if(PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -412,7 +412,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                if(PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -711,7 +711,7 @@ namespace System.Net.Http.Functional.Tests
                 var content = new StreamContent(fs);
 
                 // Compute MD5 of request body data. This will be verified by the server when it receives the request.
-                if(PlatformDetection.IsBrowser)
+                if (PlatformDetection.IsBrowser)
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                     content.Headers.Add("Content-MD5-Skip", "browser");
@@ -737,7 +737,7 @@ namespace System.Net.Http.Functional.Tests
                     if (expectRedirectToPost)
                     {
                         // [ActiveIssue("https://github.com/dotnet/runtime/issues/53668", TestPlatforms.Browser)] 
-                        if(!PlatformDetection.IsBrowser)
+                        if (!PlatformDetection.IsBrowser)
                         {
                             IEnumerable<string> headerValue = response.Headers.GetValues("X-HttpRequest-Method");
                             Assert.Equal("POST", headerValue.First());
