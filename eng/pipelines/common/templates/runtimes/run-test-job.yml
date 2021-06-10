@@ -480,6 +480,10 @@ jobs:
           gcSimulatorTests: true
           scenarios:
           - normal
+        ${{ if in(parameters.testGroup, 'gc-simulator') }}:
+          gcSimulatorTests: true
+          scenarios:
+          - gcregions
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
           scenarios:
           - jitelthookenabled
