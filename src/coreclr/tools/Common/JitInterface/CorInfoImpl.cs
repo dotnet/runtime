@@ -1171,7 +1171,13 @@ namespace Internal.JitInterface
                 // a safe condition, and we could delete this assert. This assert exists in order to help identify
                 // cases where the virtual function resolution algorithm either does not function, or is not used
                 // correctly.
-                Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
+#if DEBUG
+                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
+                {
+                    Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targetting type {objType}");
+                    Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
+                }
+#endif
                 return false;
             }
 
