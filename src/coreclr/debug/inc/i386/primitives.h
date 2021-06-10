@@ -12,6 +12,7 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
+#include "executableallocator.h"
 
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -148,7 +149,9 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
 
-    *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
+    ExecutableWriterHolder<void> breakpointWriterHolder((LPVOID)address, CORDbg_BREAK_INSTRUCTION_SIZE);
+
+    *((unsigned char*)breakpointWriterHolder.GetRW()) = 0xCC; // int 3 (single byte patch)
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 }
 

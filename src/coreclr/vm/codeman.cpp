@@ -1901,10 +1901,6 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
 {
     CrstHolder ch(&m_CritSec);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     dwRequestedSize = ALIGN_UP(dwRequestedSize, sizeof(TADDR));
 
     // We will try to batch up allocation of small blocks into one large allocation
@@ -1982,10 +1978,6 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
     CrstHolder ch(&m_CritSec);
 
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         ExecutableWriterHolder<BYTE> memWriterHolder((BYTE*)pMem, dwSize);
         ZeroMemory(memWriterHolder.GetRW(), dwSize);
     }
@@ -2693,6 +2685,7 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdr = ((CodeHeader *)pCode) - 1;
 
         *pAllocatedSize = sizeof(CodeHeader) + totalSize;
+#define FEATURE_WXORX        
 #ifdef FEATURE_WXORX
         pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
 #else
@@ -3464,10 +3457,6 @@ void EEJitManager::CleanupCodeHeaps()
 
     HostCodeHeap *pHeap = m_cleanupList;
     m_cleanupList = NULL;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     while (pHeap)
     {
@@ -4960,10 +4949,6 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     // a size of 0 is a signal to Nirvana to flush the entire cache
     FlushInstructionCache(GetCurrentProcess(),0,0);
