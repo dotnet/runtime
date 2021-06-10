@@ -526,7 +526,8 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(VirtualResolutionFixupSignatureFixupKey other)
             {
-                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType && ImplMethod.Equals(other.ImplMethod);
+                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType && 
+                    ((ImplMethod == null && other.ImplMethod == null) || (ImplMethod != null && ImplMethod.Equals(other.ImplMethod)));
             }
 
             public override bool Equals(object obj)

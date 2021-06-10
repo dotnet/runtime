@@ -418,27 +418,8 @@ namespace ILCompiler
 
         private bool ComputeTypeReferenceVersionsWithCode(TypeDesc type)
         {
-            switch(type.Category)
-            {
-                case TypeFlags.Void:
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
-                case TypeFlags.SByte:
-                case TypeFlags.Byte:
-                case TypeFlags.Int16:
-                case TypeFlags.UInt16:
-                case TypeFlags.Int32:
-                case TypeFlags.UInt32:
-                case TypeFlags.Int64:
-                case TypeFlags.UInt64:
-                case TypeFlags.IntPtr:
-                case TypeFlags.UIntPtr:
-                case TypeFlags.Single:
-                case TypeFlags.Double:
-                    return true;
-            }
-
-            if (type.IsObject || type.IsString)
+            // Type represented by simple element type
+            if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString)
                 return true;
 
             if (VersionsWithType(type))

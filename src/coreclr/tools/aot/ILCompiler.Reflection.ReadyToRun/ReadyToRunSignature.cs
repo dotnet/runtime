@@ -1387,9 +1387,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
 
                     if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
-                        builder.Append(" (Check_VirtualFunctionOverride)");
+                        builder.Append(" (CHECK_VIRTUAL_FUNCTION_OVERRIDE)");
                     else
-                        builder.Append(" (Verify_VirtualFunctionOverride)");
+                        builder.Append(" (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)");
                     break;
 
                 case ReadyToRunFixupKind.Check_FieldOffset:

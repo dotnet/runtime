@@ -49,6 +49,9 @@ public class GitHub_51918
     public static int Main()
     {
         IGeneric<int> genInterface = new GenericClass<int, string>().GetInnerClass();
+        // Validate that two levels of inlining we don't behave incorrectly due to generic
+        // canonicalization. (Devirtualize the interface call, and then devirtualize/inline
+        // the call to ClassMethod)
         Console.WriteLine(genInterface.InterfaceMethod());
         if (genInterface.InterfaceMethod() == 0)
             return 100;

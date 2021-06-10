@@ -66,7 +66,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(":");
             sb.Append(nameMangler.GetMangledTypeName(_implType));
             sb.Append(":");
-            _implMethod.AppendMangledName(nameMangler, sb);
+            if (_implMethod == null)
+                sb.Append("(null)");
+            else
+                _implMethod.AppendMangledName(nameMangler, sb);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -83,6 +86,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             result = _declMethod.CompareTo(otherNode._declMethod, comparer);
             if (result != 0)
                 return result;
+
+            // Handle null _implMethod scenario
+            if (_implMethod == otherNode._implMethod)
+                return 0;
 
             return _implMethod.CompareTo(otherNode._implMethod, comparer);
         }

@@ -20644,6 +20644,7 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //
 // Arguments:
 //     call -- the call node to examine/modify
+//     pResolvedToken -- [IN] the resolved token used to create the call. Used for R2R.
 //     method   -- [IN/OUT] the method handle for call. Updated iff call devirtualized.
 //     methodFlags -- [IN/OUT] flags for the method to call. Updated iff call devirtualized.
 //     pContextHandle -- [IN/OUT] context handle for the call. Updated iff call devirtualized.
@@ -20682,7 +20683,6 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //     When guarded devirtualization is enabled, this method will mark
 //     calls as guarded devirtualization candidates, if the type of `this`
 //     is not exactly known, and there is a plausible guess for the type.
-//
 void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                    CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                    CORINFO_METHOD_HANDLE*  method,
@@ -21660,7 +21660,7 @@ void Compiler::considerGuardedDevirtualization(
     dvInfo.objClass                    = likelyClass;
     dvInfo.context                     = *pContextHandle;
     dvInfo.exactContext                = *pContextHandle;
-    dvInfo.pResolvedTokenVirtualMethod = NULL;
+    dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
     const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 

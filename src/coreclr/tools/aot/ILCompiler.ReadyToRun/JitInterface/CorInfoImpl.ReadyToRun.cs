@@ -221,6 +221,9 @@ namespace Internal.JitInterface
 
         public bool Equals(MethodWithToken methodWithToken)
         {
+            if (methodWithToken == null)
+                return false;
+
             bool equals = Method == methodWithToken.Method && Token.Equals(methodWithToken.Token)
                 && OwningType == methodWithToken.OwningType && ConstrainedType == methodWithToken.ConstrainedType
                 && Unboxing == methodWithToken.Unboxing;

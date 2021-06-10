@@ -137,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _virtualFunctionOverrideCache = new NodeCache<VirtualResolutionFixupSignature, ISymbolNode>(key =>
             {
-                return new PrecodeHelperImport(_codegenNodeFactory,key);
+                return new PrecodeHelperImport(_codegenNodeFactory, key);
             });
 
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>

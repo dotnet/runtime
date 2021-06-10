@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //    jit interface logic after the logic that executes here.
             //
             // ImplType checking
-            // 1. At all times the metadata definition of the implmenetation type must version with the application.
+            // 1. At all times the metadata definition of the implementation type must version with the application.
             // 2. Additionally, the exact implementation type must be representable within the R2R image (this is checked via VersionsWithTypeReference
             //
             // Result method checking
