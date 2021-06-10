@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal static readonly MethodInfo InvokeFactoryMethodInfo = GetMethodInfo<Action<Func<IServiceProvider, object>, IServiceProvider>>((a, b) => a.Invoke(b));
         internal static readonly MethodInfo CaptureDisposableMethodInfo = GetMethodInfo<Func<ServiceProviderEngineScope, object, object>>((a, b) => a.CaptureDisposable(b));
         internal static readonly MethodInfo TryGetValueMethodInfo = GetMethodInfo<Func<IDictionary<ServiceCacheKey, object>, ServiceCacheKey, object, bool>>((a, b, c) => a.TryGetValue(b, out c));
+        internal static readonly MethodInfo ResolveCallSiteAndScopeMethodInfo = GetMethodInfo<Func<CallSiteRuntimeResolver, ServiceCallSite, ServiceProviderEngineScope, object>>((a, b, c) => a.Resolve(b, c));
         internal static readonly MethodInfo AddMethodInfo = GetMethodInfo<Action<IDictionary<ServiceCacheKey, object>, ServiceCacheKey, object>>((a, b, c) => a.Add(b, c));
         internal static readonly MethodInfo MonitorEnterMethodInfo = GetMethodInfo<Action<object, bool>>((lockObj, lockTaken) => Monitor.Enter(lockObj, ref lockTaken));
         internal static readonly MethodInfo MonitorExitMethodInfo = GetMethodInfo<Action<object>>(lockObj => Monitor.Exit(lockObj));
@@ -43,6 +44,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
                     Expression.Call(ScopeParameter, CaptureDisposableMethodInfo, CaptureDisposableParameter),
                     CaptureDisposableParameter);
+
+        private static readonly ConstantExpression CallSiteRuntimeResolverInstanceExpression = Expression.Constant(
+            CallSiteRuntimeResolver.Instance,
+            typeof(CallSiteRuntimeResolver));
 
         private readonly ServiceProviderEngineScope _rootScope;
 
@@ -203,6 +208,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // Move off the main stack
         private Expression BuildScopedExpression(ServiceCallSite callSite)
         {
+            ConstantExpression callSiteExpression = Expression.Constant(
+                callSite,
+                typeof(ServiceCallSite));
+
+            // We want to directly use the callsite value if it's set and the scope is the root scope.
+            // We've already called into the RuntimeResolver and pre-computed any singletons or root scope
+            // Avoid the compilation for singletons (or promoted singletons)
+            MethodCallExpression resolveRootScopeExpression = Expression.Call(
+                CallSiteRuntimeResolverInstanceExpression,
+                ResolveCallSiteAndScopeMethodInfo,
+                callSiteExpression,
+                ScopeParameter);
+
             ConstantExpression keyExpression = Expression.Constant(
                 callSite.Cache.Key,
                 typeof(ServiceCacheKey));
@@ -254,10 +272,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             BlockExpression tryBody = Expression.Block(monitorEnter, blockExpression);
             ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
 
-            return Expression.Block(
-                typeof(object),
-                new[] { lockWasTaken },
-                Expression.TryFinally(tryBody, finallyBody));
+            return Expression.Condition(
+                    Expression.Property(
+                        ScopeParameter,
+                        typeof(ServiceProviderEngineScope)
+                            .GetProperty(nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public)),
+                    resolveRootScopeExpression,
+                    Expression.Block(
+                        typeof(object),
+                        new[] { lockWasTaken },
+                        Expression.TryFinally(tryBody, finallyBody))
+                );
         }
 
         private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
