@@ -52,8 +52,8 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
         public static extern unsafe int EnumerateGatewayAddressesForInterface(void* context, uint interfaceIndex, delegate* unmanaged<void*, IpAddressInfo*, void> onGatewayFound);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces")]
-        public static unsafe partial int GetNetworkInterfaces(ref int count, ref NetworkInterfaceInfo* addrs, ref int addressCount, ref IpAddressInfo *aa);
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces")]
+        public static unsafe extern int GetNetworkInterfaces(int* count, NetworkInterfaceInfo** addrs, int* addressCount, IpAddressInfo** aa);
 
     }
 }

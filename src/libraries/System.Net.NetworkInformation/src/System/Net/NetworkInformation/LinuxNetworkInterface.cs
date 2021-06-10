@@ -79,7 +79,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.IpAddressInfo * ai = null;
             IntPtr globalMemory = (IntPtr)null;
 
-            if (Interop.Sys.GetNetworkInterfaces(ref interfaceCount, ref nii, ref addressCount, ref ai) != 0)
+            if (Interop.Sys.GetNetworkInterfaces(&interfaceCount, &nii, &addressCount, &ai) != 0)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
                 throw new NetworkInformationException(message);
