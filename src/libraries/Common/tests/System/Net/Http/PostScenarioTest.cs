@@ -30,7 +30,6 @@ namespace System.Net.Http.Functional.Tests
 #if !NETFRAMEWORK
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
         {
             const string requestBody = "ABC";
@@ -56,7 +55,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [MemberData(nameof(RemoteServersMemberData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, null,
@@ -65,7 +63,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
@@ -74,7 +71,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
@@ -83,7 +79,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, string.Empty, new StringContent(string.Empty),
@@ -92,7 +87,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new StringContent(ExpectedContent),
@@ -101,7 +95,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new StringContent(ExpectedContent),
@@ -110,7 +103,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new SyncBlockingContent(ExpectedContent),
@@ -119,7 +111,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostRepeatedFlushContentUsingChunkedEncoding_Success(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new RepeatedFlushContent(ExpectedContent),
@@ -128,7 +119,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingUsingConflictingSemantics_UsesChunkedSemantics(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new StringContent(ExpectedContent),
@@ -137,7 +127,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Configuration.Http.RemoteServer remoteServer)
         {
             await PostHelper(remoteServer, ExpectedContent, new StringContent(ExpectedContent),
@@ -157,7 +146,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(RemoteServersAndLargeContentSizes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostLargeContentUsingContentLengthSemantics_Success(Configuration.Http.RemoteServer remoteServer, int contentLength)
         {
             var rand = new Random(42);
@@ -226,7 +214,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [MemberData(nameof(RemoteServersMemberData))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_EmptyContent_ContentTypeHeaderNotSent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -262,7 +249,15 @@ namespace System.Net.Http.Functional.Tests
 
                     // Compute MD5 of request body data. This will be verified by the server when it
                     // receives the request.
-                    requestContent.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(requestBody);
+                    if (PlatformDetection.IsBrowser)
+                    {
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                        requestContent.Headers.Add("Content-MD5-Skip", "browser");
+                    }
+                    else
+                    {
+                        requestContent.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(requestBody);
+                    }
                 }
 
                 if (useChunkedEncodingUpload)
