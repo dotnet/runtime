@@ -1286,7 +1286,10 @@ namespace Internal.JitInterface
                 result.tokenContext = jitInterface.contextFromMethod(method);
                 result.token = methodWithToken.Token.Token;
                 if (methodWithToken.Token.TokenType != CorTokenType.mdtMethodDef)
-                    throw new NotSupportedException();
+                {
+                    Debug.Assert(false); // This should never happen, but we protect against total failure with the throw below.
+                    throw new RequiresRuntimeJitException("Attempt to devirtualize and unable to create token for devirtualized method");
+                }
                 result.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod;
                 result.hClass = jitInterface.ObjectToHandle(methodWithToken.OwningType);
                 result.hMethod = jitInterface.ObjectToHandle(method);
