@@ -176,6 +176,9 @@ jobs:
         value: 180
       - name: timeoutPerTestInMinutes
         value: 30
+    - ${{ if in(parameters.testGroup, 'pgo') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -189,7 +192,7 @@ jobs:
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
