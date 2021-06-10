@@ -1039,6 +1039,9 @@ check_c_source_compiles(
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
 
+check_symbol_exists(aligned_alloc stdlib.h HAVE_ALIGNED_ALLOC)
+check_symbol_exists(posix_memalign stdlib.h HAVE_POSIX_MEMALIGN)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)
