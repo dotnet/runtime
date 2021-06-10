@@ -1,12 +1,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -62,13 +64,10 @@ namespace System.Net.Http.Functional.Tests
         public Task Download20_SpecificWindow_MegaBytes(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        [InlineData(BenchmarkServer, 64)]
+        //[InlineData(BenchmarkServer, 64)]
         [InlineData(BenchmarkServer, 128)]
         [InlineData(BenchmarkServer, 256)]
         [InlineData(BenchmarkServer, 512)]
-        [InlineData(BenchmarkServer, 1024)]
-        [InlineData(BenchmarkServer, 2048)]
-        [InlineData(BenchmarkServer, 4096)]
         public Task Download20_SpecificWindow_KiloBytes(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         private Task Download20_SpecificWindow(string hostName, int initialWindowKbytes)
@@ -235,6 +234,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public async Task TestEstimateRtt()
+        {
+            TimeSpan rtt = await EstimateRttAsync(BenchmarkServer);
+            _output.WriteLine($"RTT: {rtt.TotalMilliseconds} ms");
+        }
+
         private async Task<TimeSpan> EstimateRttAsync(string hostName)
         {
             int sep = hostName.IndexOf(':');
@@ -249,20 +255,25 @@ namespace System.Net.Http.Functional.Tests
                 addr = (await Dns.GetHostAddressesAsync(hostName)).FirstOrDefault(e => e.AddressFamily == AddressFamily.InterNetwork);
             }
 
-            Ping ping = new Ping();
+            IPAddress destAddr = (await Dns.GetHostAddressesAsync(hostName))[0];
 
             // warmup:
-            await ping.SendPingAsync(addr);
+            PingEx.Send(LocalAddress, destAddr);
 
-            PingReply reply1 = await ping.SendPingAsync(addr);
-            PingReply reply2 = await ping.SendPingAsync(addr);
-            TimeSpan rtt = TimeSpan.FromMilliseconds(reply1.RoundtripTime + reply2.RoundtripTime) / 2;
+            IPAddress local = LocalAddress != null ? LocalAddress : IPAddress.Loopback;
+
+            var reply1 = PingEx.Send(LocalAddress, destAddr).RoundTripTime;
+            var reply2 = PingEx.Send(LocalAddress, destAddr).RoundTripTime;
+
+            TimeSpan rtt = reply1 > reply2 ? reply1 : reply2;
+
             _output.WriteLine($"Estimated RTT: {rtt}");
             if (rtt < TimeSpan.FromMilliseconds(1))
             {
                 _output.WriteLine("RTT < 1 ms, changing to 1 ms!");
                 rtt = TimeSpan.FromMilliseconds(1);
             }
+
             return rtt;
         }
 
@@ -369,6 +380,253 @@ namespace System.Net.Http.Functional.Tests
             {
                 _stopProcessing.Cancel();
                 _processMessages.Wait(timeout);
+            }
+        }
+    }
+
+    // https://stackoverflow.com/a/66380228/797482
+    internal static class PingEx
+    {
+        /// <summary>
+        /// Pass in the IP you want to ping as a string along with the name of the NIC on your machine that
+        /// you want to send the ping from.
+        /// </summary>
+        /// <param name="ipToPing">The destination IP as a string ex. '10.10.10.1'</param>
+        /// <param name="nicName">The name of the NIC ex. 'LECO Hardware'.  Non-case sensitive.</param>
+        /// <returns></returns>
+        public static bool PingIpFromNic(string ipToPing, string nicName)
+        {
+            var sourceIpStr = GetIpOfNicFromName(nicName);
+
+            if (sourceIpStr == "")
+            {
+                return false;
+            }
+
+            var p = Send(
+                srcAddress: IPAddress.Parse(sourceIpStr),
+                destAddress: IPAddress.Parse(ipToPing));
+
+            return p.Status == IPStatus.Success;
+        }
+
+        /// <summary>
+        /// Pass in the name of a NIC on your machine and this method will return the IPV4 address of it.
+        /// </summary>
+        /// <param name="nicName">The name of the NIC you want the IP of ex. 'TE Hardware'</param>
+        /// <returns></returns>
+        public static string GetIpOfNicFromName(string nicName)
+        {
+            var adapters = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (var adapter in adapters)
+            {
+                // Ignoring case in NIC name
+                if (!string.Equals(adapter.Name, nicName, StringComparison.CurrentCultureIgnoreCase)) continue;
+
+                foreach (var uni in adapter.GetIPProperties().UnicastAddresses)
+                {
+                    // Return the first one found
+                    return uni.Address.ToString();
+                }
+            }
+
+            return "";
+        }
+
+        public static PingReplyEx Send(IPAddress srcAddress, IPAddress destAddress,
+            int timeout = 5000,
+            byte[] buffer = null, PingOptions po = null)
+        {
+            if (destAddress == null || destAddress.AddressFamily != AddressFamily.InterNetwork ||
+                destAddress.Equals(IPAddress.Any))
+                throw new ArgumentException();
+
+            //Defining pinvoke args
+            var source = srcAddress == null ? 0 : BitConverter.ToUInt32(srcAddress.GetAddressBytes(), 0);
+
+            var destination = BitConverter.ToUInt32(destAddress.GetAddressBytes(), 0);
+
+            var sendBuffer = buffer ?? new byte[] { };
+
+            var options = new Interop.Option
+            {
+                Ttl = (po == null ? (byte)255 : (byte)po.Ttl),
+                Flags = (po == null ? (byte)0 : po.DontFragment ? (byte)0x02 : (byte)0) //0x02
+            };
+
+            var fullReplyBufferSize =
+                Interop.ReplyMarshalLength +
+                sendBuffer.Length; //Size of Reply struct and the transmitted buffer length.
+
+            var allocSpace =
+                Marshal.AllocHGlobal(
+                    fullReplyBufferSize); // unmanaged allocation of reply size. TODO Maybe should be allocated on stack
+            try
+            {
+                var start = DateTime.Now;
+                var nativeCode = Interop.IcmpSendEcho2Ex(
+                    Interop.IcmpHandle,             //_In_      HANDLE IcmpHandle,
+                    Event: default(IntPtr),         //_In_opt_  HANDLE Event,
+                    apcRoutine: default(IntPtr),    //_In_opt_  PIO_APC_ROUTINE ApcRoutine,
+                    apcContext: default(IntPtr),    //_In_opt_  PVOID ApcContext
+                    source,                         //_In_      IPAddr SourceAddress,
+                    destination,                    //_In_      IPAddr DestinationAddress,
+                    sendBuffer,                     //_In_      LPVOID RequestData,
+                    (short)sendBuffer.Length,       //_In_      WORD RequestSize,
+                    ref options,                    //_In_opt_  PIP_OPTION_INFORMATION RequestOptions,
+                    replyBuffer: allocSpace,        //_Out_     LPVOID ReplyBuffer,
+                    fullReplyBufferSize,            //_In_      DWORD ReplySize,
+                    timeout                         //_In_      DWORD Timeout
+                );
+
+                var duration = DateTime.Now - start;
+
+                var reply = (Interop.Reply)Marshal.PtrToStructure(allocSpace,
+                    typeof(Interop.Reply)); // Parse the beginning of reply memory to reply struct
+
+                byte[] replyBuffer = null;
+                if (sendBuffer.Length != 0)
+                {
+                    replyBuffer = new byte[sendBuffer.Length];
+                    Marshal.Copy(allocSpace + Interop.ReplyMarshalLength, replyBuffer, 0,
+                        sendBuffer.Length); //copy the rest of the reply memory to managed byte[]
+                }
+
+                if (nativeCode == 0) //Means that native method is faulted.
+                    return new PingReplyEx(nativeCode, reply.Status,
+                        new IPAddress(reply.Address), duration);
+                else
+                    return new PingReplyEx(nativeCode, reply.Status,
+                        new IPAddress(reply.Address), reply.RoundTripTime,
+                        replyBuffer);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(allocSpace); //free allocated space
+            }
+        }
+
+
+        /// <summary>Interoperability Helper
+        ///     <see cref="http://msdn.microsoft.com/en-us/library/windows/desktop/bb309069(v=vs.85).aspx" />
+        /// </summary>
+        public static class Interop
+        {
+            private static IntPtr? _icmpHandle;
+            private static int? _replyStructLength;
+
+            /// <summary>Returns the application legal icmp handle. Should be close by IcmpCloseHandle
+            ///     <see cref="http://msdn.microsoft.com/en-us/library/windows/desktop/aa366045(v=vs.85).aspx" />
+            /// </summary>
+            public static IntPtr IcmpHandle
+            {
+                get
+                {
+                    if (_icmpHandle == null)
+                    {
+                        _icmpHandle = IcmpCreateFile();
+                        //TODO Close Icmp Handle appropriate
+                    }
+
+                    return _icmpHandle.GetValueOrDefault();
+                }
+            }
+
+            /// <summary>Returns the the marshaled size of the reply struct.</summary>
+            public static int ReplyMarshalLength
+            {
+                get
+                {
+                    if (_replyStructLength == null)
+                    {
+                        _replyStructLength = Marshal.SizeOf(typeof(Reply));
+                    }
+                    return _replyStructLength.GetValueOrDefault();
+                }
+            }
+
+
+            [DllImport("Iphlpapi.dll", SetLastError = true)]
+            private static extern IntPtr IcmpCreateFile();
+            [DllImport("Iphlpapi.dll", SetLastError = true)]
+            private static extern bool IcmpCloseHandle(IntPtr handle);
+            [DllImport("Iphlpapi.dll", SetLastError = true)]
+            public static extern uint IcmpSendEcho2Ex(IntPtr icmpHandle, IntPtr Event, IntPtr apcRoutine, IntPtr apcContext, uint sourceAddress, UInt32 destinationAddress, byte[] requestData, short requestSize, ref Option requestOptions, IntPtr replyBuffer, int replySize, int timeout);
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+            public struct Option
+            {
+                public byte Ttl;
+                public readonly byte Tos;
+                public byte Flags;
+                public readonly byte OptionsSize;
+                public readonly IntPtr OptionsData;
+            }
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+            public struct Reply
+            {
+                public readonly UInt32 Address;
+                public readonly int Status;
+                public readonly int RoundTripTime;
+                public readonly short DataSize;
+                public readonly short Reserved;
+                public readonly IntPtr DataPtr;
+                public readonly Option Options;
+            }
+        }
+
+        public class PingReplyEx
+        {
+            private Win32Exception _exception;
+
+            internal PingReplyEx(uint nativeCode, int replyStatus, IPAddress ipAddress, TimeSpan duration)
+            {
+                NativeCode = nativeCode;
+                IpAddress = ipAddress;
+                if (Enum.IsDefined(typeof(IPStatus), replyStatus))
+                    Status = (IPStatus)replyStatus;
+            }
+            internal PingReplyEx(uint nativeCode, int replyStatus, IPAddress ipAddress, int roundTripTime, byte[] buffer)
+            {
+                NativeCode = nativeCode;
+                IpAddress = ipAddress;
+                RoundTripTime = TimeSpan.FromMilliseconds(roundTripTime);
+                Buffer = buffer;
+                if (Enum.IsDefined(typeof(IPStatus), replyStatus))
+                    Status = (IPStatus)replyStatus;
+            }
+
+            /// <summary>Native result from <code>IcmpSendEcho2Ex</code>.</summary>
+            public uint NativeCode { get; }
+
+            public IPStatus Status { get; } = IPStatus.Unknown;
+
+            /// <summary>The source address of the reply.</summary>
+            public IPAddress IpAddress { get; }
+
+            public byte[] Buffer { get; }
+
+            public TimeSpan RoundTripTime { get; } = TimeSpan.Zero;
+
+            public Win32Exception Exception
+            {
+                get
+                {
+                    if (Status != IPStatus.Success)
+                        return _exception ?? (_exception = new Win32Exception((int)NativeCode, Status.ToString()));
+                    else
+                        return null;
+                }
+            }
+
+            public override string ToString()
+            {
+                if (Status == IPStatus.Success)
+                    return Status + " from " + IpAddress + " in " + RoundTripTime + " ms with " + Buffer.Length + " bytes";
+                else if (Status != IPStatus.Unknown)
+                    return Status + " from " + IpAddress;
+                else
+                    return Exception.Message + " from " + IpAddress;
             }
         }
     }
