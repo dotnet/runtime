@@ -180,7 +180,6 @@
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
-        $(LibrariesNativeArtifactsPath)*.a;
         $(LibrariesNativeArtifactsPath)*.so;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;

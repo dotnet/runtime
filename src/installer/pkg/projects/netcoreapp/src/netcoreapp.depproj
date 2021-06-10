@@ -29,21 +29,15 @@
   <ItemGroup>
     <_pastShimFiles Include="System.Globalization.Native.dylib" />
     <_pastShimFiles Include="System.Globalization.Native.so" />
-    <_pastShimFiles Include="System.IO.Compression.Native.a" />
     <_pastShimFiles Include="System.IO.Compression.Native.dylib" />
     <_pastShimFiles Include="System.IO.Compression.Native.so" />
-    <_pastShimFiles Include="System.Native.a" />
     <_pastShimFiles Include="System.Native.dylib" />
     <_pastShimFiles Include="System.Native.so" />
-    <_pastShimFiles Include="System.Net.Http.Native.a" />
     <_pastShimFiles Include="System.Net.Http.Native.dylib" />
     <_pastShimFiles Include="System.Net.Http.Native.so" />
-    <_pastShimFiles Include="System.Net.Security.Native.a" />
     <_pastShimFiles Include="System.Net.Security.Native.dylib" />
     <_pastShimFiles Include="System.Net.Security.Native.so" />
-    <_pastShimFiles Include="System.Security.Cryptography.Native.Apple.a" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
-    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.a" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
     <SharedFrameworkRuntimeFiles Include="@(_pastShimFiles)" TargetPath="runtimes/" />
