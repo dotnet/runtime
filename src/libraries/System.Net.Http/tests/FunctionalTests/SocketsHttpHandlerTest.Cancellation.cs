@@ -15,14 +15,14 @@ namespace System.Net.Http.Functional.Tests
     {
         protected SocketsHttpHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
-        private async Task ValidateConnectTimeout(HttpMessageInvoker invoker, Uri uri)
+        private async Task ValidateConnectTimeout(HttpMessageInvoker invoker, Uri uri, int minElapsed, int maxElapsed)
         {
             var sw = Stopwatch.StartNew();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                 invoker.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default));
             sw.Stop();
 
-            Assert.InRange(sw.ElapsedMilliseconds, 500, 85_000);
+            Assert.InRange(sw.ElapsedMilliseconds, minElapsed, maxElapsed);
         }
 
         [OuterLoop]
@@ -37,20 +37,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     handler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
-                    await ValidateConnectTimeout(invoker, new UriBuilder(uri) { Scheme = "https" }.Uri);
+                    await ValidateConnectTimeout(invoker, new UriBuilder(uri) { Scheme = "https" }.Uri, 500, 85_000);
 
                     releaseServer.SetResult();
                 }
             }, server => releaseServer.Task); // doesn't establish SSL connection
-        }
-
-        private static async Task WaitForCancellationAsync(CancellationToken token)
-        {
-            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            using (token.Register(() => tcs.SetCanceled(token)))
-            {
-                await tcs.Task;
-            }
         }
 
         [OuterLoop]
@@ -64,9 +55,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
-                    socketsHandler.ConnectCallback = async (context, token) => { await WaitForCancellationAsync(token); return null; };
+                    socketsHandler.ConnectCallback = async (context, token) => { await Task.Delay(-1, token); return null; };
 
-                    await ValidateConnectTimeout(invoker, uri);
+                    await ValidateConnectTimeout(invoker, uri, 500, 85_000);
                 }
             }, server => Task.CompletedTask); // doesn't actually connect to server
         }
