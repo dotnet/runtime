@@ -37,11 +37,13 @@ namespace System.Net.Http.Functional.Tests
         private const double LengthMb = 400;
 
         //private const string BenchmarkServer = "10.194.114.94";
+        //private const string BenchmarkServer = "169.254.132.170"; // duo1
         private const string BenchmarkServer = "192.168.0.152";
         private const string BenchmarkServerGo = "192.168.0.152:5002";
         // private const string BenchmarkServer = "127.0.0.1:5000";
 
-        private static readonly IPEndPoint LocalEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+        //private static readonly IPAddress LocalAddress = IPAddress.Parse("169.254.59.132"); // duo2
+        private static readonly IPAddress LocalAddress = IPAddress.Loopback;
 
         [Theory]
         [InlineData(BenchmarkServer)]
