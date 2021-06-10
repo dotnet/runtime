@@ -63,10 +63,10 @@ namespace System.Net.Http.Functional.Tests
             CreateHttpClientHandler(Version.Parse(useVersionString));
 
 
-        protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
+        protected static SocketsHttpHandler GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field?.GetValue(handler);
+            return (SocketsHttpHandler)field?.GetValue(handler);
         }
 
         protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
