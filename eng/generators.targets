@@ -20,6 +20,7 @@
 
   <Target Name="EnableDllImportGeneratorForNetCoreApp"
           Condition="'$(EnableDllImportGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
                         and ('$(IsNetCoreAppSrc)' == 'true' or '$(MSBuildProjectName)' == 'System.Private.CoreLib')
                         and '$(MSBuildProjectExtension)' == '.csproj'">
     <PropertyGroup>
