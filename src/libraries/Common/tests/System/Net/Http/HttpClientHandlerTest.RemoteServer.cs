@@ -736,12 +736,8 @@ namespace System.Net.Http.Functional.Tests
 
                     if (expectRedirectToPost)
                     {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/53668", TestPlatforms.Browser)] 
-                        if (!PlatformDetection.IsBrowser)
-                        {
-                            IEnumerable<string> headerValue = response.Headers.GetValues("X-HttpRequest-Method");
-                            Assert.Equal("POST", headerValue.First());
-                        }
+                        IEnumerable<string> headerValue = response.Headers.GetValues("X-HttpRequest-Method");
+                        Assert.Equal("POST", headerValue.First());
                     }
                 }
             }
