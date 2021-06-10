@@ -25,6 +25,12 @@
       "commands": [
         "slngen"
       ]
+    },
+    "dotnet-sos": {
+      "version": "5.0.227602",
+      "commands": [
+        "dotnet-sos"
+      ]
     }
   }
 }

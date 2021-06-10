@@ -36,3 +36,17 @@ Returns the number (as of this call) of references to the EVP_PKEY. Anything les
 2 is an error, because the key is already in the process of being freed.
 */
 PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
+
+/*
+* Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
+*
+* Requres a non-null buf, and len > 0.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_DecodeSubjectPublicKeyInfo(const uint8_t* buf, int32_t len, int32_t algId);
+
+/*
+* Decodes an Pkcs8PrivateKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
+*
+* Requres a non-null buf, and len > 0.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, int32_t algId);
