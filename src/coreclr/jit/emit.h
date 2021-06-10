@@ -299,11 +299,7 @@ struct insGroup
     unsigned igStkLvl; // stack level on entry
 #endif
     regMaskSmall  igGCregs; // set of registers with live GC refs
-    unsigned char igInsCnt; // # of instructions in this group
-
-#if defined(DEBUG)
-    unsigned char igZeroSzCnt; // # of zero size instructions in this group
-#endif                         // DEBUG
+    unsigned char igInsCnt; // # of instructions  in this group
 
 #else // REGMASK_BITS
 
@@ -318,11 +314,7 @@ struct insGroup
     unsigned igStkLvl; // stack level on entry
 #endif
 
-    unsigned char igInsCnt;    // # of instructions in this group
-
-#if defined(DEBUG)
-    unsigned char igZeroSzCnt; // # of zero size instructions in this group
-#endif // DEBUG
+    unsigned char igInsCnt; // # of instructions  in this group
 
 #endif // REGMASK_BITS
 
@@ -928,7 +920,7 @@ protected:
                     break;
             }
 
-            return (idIns() != INS_mov_eliminated) ? size : 0;
+            return size;
         }
 
 #elif defined(TARGET_ARM)
@@ -940,7 +932,7 @@ protected:
         unsigned idCodeSize() const
         {
             unsigned result = (_idInsSize == ISZ_16BIT) ? 2 : (_idInsSize == ISZ_32BIT) ? 4 : 6;
-            return (idIns() != INS_mov_eliminated) ? result : 0;
+            return result;
         }
         insSize idInsSize() const
         {
@@ -1801,10 +1793,6 @@ private:
     UNATIVE_OFFSET emitCurCodeOffset; // current code offset within group
     UNATIVE_OFFSET emitTotalCodeSize; // bytes of code in entire method
 
-#if defined(DEBUG) || EMITTER_STATS
-    unsigned emitCurIGZeroSzCnt; // # of zero size instr's in buffer
-#endif                           // DEBUG || EMITTER_STATS
-
     insGroup* emitFirstColdIG; // first cold instruction group
 
     void emitSetFirstColdIGCookie(void* bbEmitCookie)
@@ -1901,7 +1889,6 @@ private:
     }
 
     instrDesc* emitLastIns;
-    instrDesc* emitLastEmittedIns;
 
 #ifdef DEBUG
     void emitCheckIGoffsets();
@@ -2330,16 +2317,14 @@ public:
 
     static unsigned emitTotalInsCnt;
 
-    static unsigned emitCurPrologInsCnt;    // current number of prolog instrDescs
-    static unsigned emitCurPrologZeroSzCnt; // current number of elided prolog instrDescs
-    static size_t   emitCurPrologIGSize;    // current size of prolog instrDescs
-    static unsigned emitMaxPrologInsCnt;    // maximum number of prolog instrDescs
-    static size_t   emitMaxPrologIGSize;    // maximum size of prolog instrDescs
+    static unsigned emitCurPrologInsCnt; // current number of prolog instrDescs
+    static size_t   emitCurPrologIGSize; // current size of prolog instrDescs
+    static unsigned emitMaxPrologInsCnt; // maximum number of prolog instrDescs
+    static size_t   emitMaxPrologIGSize; // maximum size of prolog instrDescs
 
     static unsigned emitTotalIGcnt;   // total number of insGroup allocated
     static unsigned emitTotalPhIGcnt; // total number of insPlaceholderGroupData allocated
     static unsigned emitTotalIGicnt;
-    static unsigned emitTotalIGZeroSzCnt;
     static size_t   emitTotalIGsize;
     static unsigned emitTotalIGmcnt;   // total method count
     static unsigned emitTotalIGExtend; // total number of 'emitExtend' (typically overflow) groups
@@ -2374,7 +2359,6 @@ public:
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
     static unsigned emitLargeCnsCnt;
     static unsigned emitTotalDescAlignCnt;
-    static unsigned emitTotalDescZeroSzCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 

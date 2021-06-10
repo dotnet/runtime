@@ -10,6 +10,25 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     public static class SerializationLogicTests
     {
+        private static JsonSerializerOptions s_compatibleOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        [Theory]
+        [MemberData(nameof(GetOptionsUsingDeserializationOnlyFeatures))]
+        [MemberData(nameof(GetCompatibleOptions))]
+        public static void SerializationFuncInvokedWhenSupported(JsonSerializerOptions options)
+        {
+            JsonMessage message = new();
+
+            // Per context implementation, NotImplementedException thrown because the options are compatible, hence the serialization func is invoked.
+            JsonContext context = new(options);
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(message, context.JsonMessage));
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(message, typeof(JsonMessage), context));
+        }
+
         [Theory]
         [MemberData(nameof(GetOptionsUsingUnsupportedFeatures))]
         [MemberData(nameof(GetIncompatibleOptions))]
@@ -39,23 +58,58 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(DictionaryTypeContext.Default.Int32.Serialize);
         }
 
-        // Options with features that aren't supported in generated serialization funcs.
+        // Options with features that apply only to deserialization.
+        public static IEnumerable<object[]> GetOptionsUsingDeserializationOnlyFeatures()
+        {
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { AllowTrailingCommas = true } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { DefaultBufferSize = 8192 } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { PropertyNameCaseInsensitive = true } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { ReadCommentHandling = JsonCommentHandling.Skip } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.AllowReadingFromString } };
+        }
+
+        /// <summary>
+        /// Options compatible with <see cref="JsonContext.s_defaultOptions"/>.
+        /// </summary>
+        public static IEnumerable<object[]> GetCompatibleOptions()
+        {
+            yield return new object[] { s_compatibleOptions };
+            yield return new object[] { new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.Strict } };
+        }
+
+        // Options with features that aren't supported in the generated serialization funcs.
         public static IEnumerable<object[]> GetOptionsUsingUnsupportedFeatures()
         {
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { Converters = { new JsonStringEnumConverter() } } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.WriteAsString } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { ReferenceHandler = ReferenceHandler.Preserve } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { ReferenceHandler = ReferenceHandler.IgnoreCycles } };
+#pragma warning disable SYSLIB0020 // Type or member is obsolete
+            yield return new object[] { new JsonSerializerOptions { IgnoreNullValues = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase } };
+#pragma warning restore SYSLIB0020 // Type or member is obsolete
+        }
+
+        /// <summary>
+        /// Options incompatible with <see cref="JsonContext.s_defaultOptions"/>.
+        /// </summary>
+        public static IEnumerable<object[]> GetIncompatibleOptions()
+        {
+            yield return new object[] { new JsonSerializerOptions() };
             yield return new object[] { new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } } };
             yield return new object[] { new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } };
             yield return new object[] { new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString } };
             yield return new object[] { new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve } };
             yield return new object[] { new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles } };
-            yield return new object[] { new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles } };
-        }
-
-        // Options incompatible with JsonContext.s_defaultOptions below.
-        public static IEnumerable<object[]> GetIncompatibleOptions()
-        {
-            yield return new object[] { new JsonSerializerOptions() };
             yield return new object[] { new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.Never } };
             yield return new object[] { new JsonSerializerOptions { IgnoreReadOnlyFields = true } };
+            yield return new object[] { new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault } };
+            yield return new object[] { new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { DefaultIgnoreCondition = JsonIgnoreCondition.Never } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { IgnoreReadOnlyFields = true } };
         }
     }
 }

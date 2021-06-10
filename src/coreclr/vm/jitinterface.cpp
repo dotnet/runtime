@@ -11241,7 +11241,8 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
 
     if (m_CodeHeaderRW != m_CodeHeader)
     {
-        memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
+        ExecutableWriterHolder<void> codeWriterHolder((void *)m_CodeHeader, m_codeWriteBufferSize);
+        memcpy(codeWriterHolder.GetRW(), m_CodeHeaderRW, m_codeWriteBufferSize);
     }
 
     // Now that the code header was written to the final location, publish the code via the nibble map
@@ -13462,7 +13463,7 @@ void Module::LoadHelperTable()
             *curEntry = X86_INSTR_JMP_REL32;
             *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
 #else // all other platforms
-            emitJump(curEntry, (LPVOID)pfnHelper);
+            emitJump(curEntry, curEntry, (LPVOID)pfnHelper);
             _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
 #endif
 

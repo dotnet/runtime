@@ -28,7 +28,7 @@
 # | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
 # | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
 # | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
+# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
 ################################################################################
 ################################################################################
 
@@ -443,7 +443,7 @@ def main(main_args):
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
         elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855"
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
 

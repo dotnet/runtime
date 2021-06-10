@@ -1,19 +1,18 @@
-<Project>
-  <PropertyGroup>
-    <DirectoryBuildPropsPath>$(SupportFilesDir)Directory.Build.props</DirectoryBuildPropsPath>
-    <DirectoryBuildTargetsPath>$(SupportFilesDir)Directory.Build.targets</DirectoryBuildTargetsPath>
-  </PropertyGroup>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>{TargetFrameworks}</TargetFrameworks>
     <TestPackageId>{PackageId}</TestPackageId>
 
+    <!-- Restore settings -->
+    <RestorePackagesPath>{RestorePackagesPath}</RestorePackagesPath>
+    <RestoreAdditionalProjectSources>{RestoreAdditionalProjectSources}</RestoreAdditionalProjectSources>
+
     <!-- Used in targetingpacks.targets -->
     <NetCoreAppCurrentVersion>{NetCoreAppCurrentVersion}</NetCoreAppCurrentVersion>
     <NetCoreAppCurrent>{NetCoreAppCurrent}</NetCoreAppCurrent>
     <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
+    <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
 
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
@@ -24,5 +23,4 @@
     <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
   </ItemGroup>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>
