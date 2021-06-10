@@ -293,7 +293,7 @@ namespace Activator
                 ValidateAssemblyIsolation(builtInComDisabled);
                 if (!builtInComDisabled)
                 {
-                    // We don't test with builtInComDisabled since ValidateAssemblyIsolation() above covers this scenarios
+                    // We don't test this scenario with builtInComDisabled since it is covered by ValidateAssemblyIsolation() above
                     ValidateUserDefinedRegistrationCallbacks();
                 }
             }
