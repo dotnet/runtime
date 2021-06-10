@@ -210,7 +210,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 NoDelay = true
             };
-            socket.Bind(LocalEndPoint);
+            socket.Bind(new IPEndPoint(LocalAddress, 0));
 
             try
             {
