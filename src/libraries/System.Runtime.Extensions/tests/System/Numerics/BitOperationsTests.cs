@@ -388,5 +388,32 @@ namespace System.Numerics.Tests
             Assert.Equal(value, BitOperations.RotateRight(value, int.MinValue)); // % 64 = 0
             Assert.Equal(BitOperations.RotateLeft(value, 63), BitOperations.RotateRight(value, int.MaxValue)); // % 64 = 63
         }
+
+        [Theory]
+        [InlineData(0u, 0u)]
+        [InlineData(1u, 1u)]
+        [InlineData(2u, 2u)]
+        [InlineData(0x7FFF_FFFFu, 0x8000_0000u)]
+        [InlineData(0x8000_0000u, 0x8000_0000u)]
+        [InlineData(0xFFFF_FFFFu, 0)]
+        public static void BitOps_RoundUpToPow2_uint(uint value, uint expected)
+        {
+            Assert.Equal(expected, BitOperations.RoundUpToPowerOf2(value));
+        }
+
+        [Theory]
+        [InlineData(0ul, 0ul)]
+        [InlineData(1ul, 1ul)]
+        [InlineData(2ul, 2ul)]
+        [InlineData(0x7FFF_FFFFul, 0x8000_0000ul)]
+        [InlineData(0x8000_0000ul, 0x8000_0000ul)]
+        [InlineData(0xFFFF_FFFFul, 0x1_0000_0000ul)]
+        [InlineData(0x7FFF_FFFF_FFFF_FFFFul, 0x8000_0000_0000_0000ul)]
+        [InlineData(0x8000_0000_0000_0000ul, 0x8000_0000_0000_0000ul)]
+        [InlineData(0xFFFF_FFFF_FFFF_FFFFul, 0)]
+        public static void BitOps_RoundUpToPow2_ulong(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, BitOperations.RoundUpToPowerOf2(value));
+        }
     }
 }
