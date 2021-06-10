@@ -1098,7 +1098,7 @@ namespace System.Data
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Only parameterless constructors are used here but warning is about serialization constructor.")]
+            Justification = "Only parameterless constructors are used here but since nonPublic=true, all non-public constructors are being preserved causing a warning for the serialization constructors. Those constructors won't be used here.")]
         private DataSet CreateInstanceOfThisType()
         {
             return (DataSet)Activator.CreateInstance(GetType(), true)!;
