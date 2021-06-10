@@ -821,8 +821,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         case TYP_LONG:
                         case TYP_ULONG:
                         {
-                            return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_AddPairwiseScalar,
-                                                              simdBaseJitType, simdSize);
+                            op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_AddPairwiseScalar,
+                                                             simdBaseJitType, simdSize);
+                            return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
                         }
                         default:
                         {
