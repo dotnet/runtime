@@ -370,7 +370,7 @@ namespace System.Numerics
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is Complex c && Equals(c);
+            return obj is Complex other && Equals(other);
         }
 
         public bool Equals(Complex value)

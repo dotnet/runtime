@@ -1000,7 +1000,7 @@ namespace System.Numerics
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             AssertValid();
-            return obj is BigInteger bigInt && Equals(bigInt);
+            return obj is BigInteger other && Equals(other);
         }
 
         public bool Equals(long other)
