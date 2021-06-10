@@ -35,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => _listener?.Dispose();
 
         private const double LengthMb = 400;
-        private const int TestRunCount = 1;
+        private const int TestRunCount = 5;
 
         //private const string BenchmarkServer = "10.194.114.94";
         //private const string BenchmarkServer = "169.254.132.170"; // duo1
@@ -44,15 +44,14 @@ namespace System.Net.Http.Functional.Tests
         // private const string BenchmarkServer = "127.0.0.1:5000";
 
         //private static readonly IPAddress LocalAddress = IPAddress.Parse("169.254.59.132"); // duo2
-        private static readonly IPAddress LocalAddress = IPAddress.Loopback;
+        private static readonly IPAddress LocalAddress = null;
+
+        //private const string ReportDir = @"c:\_dev\WindowBenchmark";
+        private const string ReportDir = @"C:\Users\anfirszo\dev\dotnet\6.0\runtime\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
 
         [Theory]
         [InlineData(BenchmarkServer)]
-        public Task Download11_Run1(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run1", hostName, false, LengthMb);
-
-        [Theory]
-        [InlineData(BenchmarkServer)]
-        public Task Download11_Run2(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run2", hostName, false, LengthMb);
+        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run1", hostName, false, LengthMb);
 
         [Theory]
         [InlineData(BenchmarkServer, 1024)]
@@ -60,35 +59,17 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(BenchmarkServer, 4096)]
         [InlineData(BenchmarkServer, 8192)]
         [InlineData(BenchmarkServer, 16384)]
-        public Task Download20_SpecificWindow_MegaBytes_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+        public Task Download20_SpecificWindow_MegaBytes(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
+        [InlineData(BenchmarkServer, 64)]
+        [InlineData(BenchmarkServer, 128)]
+        [InlineData(BenchmarkServer, 256)]
+        [InlineData(BenchmarkServer, 512)]
         [InlineData(BenchmarkServer, 1024)]
         [InlineData(BenchmarkServer, 2048)]
         [InlineData(BenchmarkServer, 4096)]
-        [InlineData(BenchmarkServer, 8192)]
-        [InlineData(BenchmarkServer, 16384)]
-        public Task Download20_SpecificWindow_MegaBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        //[InlineData(BenchmarkServer, 64)]
-        //[InlineData(BenchmarkServer, 128)]
-        //[InlineData(BenchmarkServer, 256)]
-        //[InlineData(BenchmarkServer, 512)]
-        //[InlineData(BenchmarkServer, 1024)]
-        //[InlineData(BenchmarkServer, 2048)]
-        [InlineData(BenchmarkServer, 4096)]
-        public Task Download20_SpecificWindow_KiloBytes_Run1(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
-
-        [Theory]
-        //[InlineData(BenchmarkServer, 64)]
-        //[InlineData(BenchmarkServer, 128)]
-        //[InlineData(BenchmarkServer, 256)]
-        //[InlineData(BenchmarkServer, 512)]
-        //[InlineData(BenchmarkServer, 1024)]
-        //[InlineData(BenchmarkServer, 2048)]
-        [InlineData(BenchmarkServer, 4096)]
-        public Task Download20_SpecificWindow_KiloBytes_Run2(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
+        public Task Download20_SpecificWindow_KiloBytes(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         private Task Download20_SpecificWindow(string hostName, int initialWindowKbytes)
         {
@@ -97,7 +78,8 @@ namespace System.Net.Http.Functional.Tests
                 EnableDynamicHttp2StreamWindowSizing = false,
                 InitialStreamWindowSize = initialWindowKbytes * 1024
             };
-            return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler);
+            string details = $"SpecificWindow({initialWindowKbytes})";
+            return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler, details);
         }
 
         public static TheoryData<string, int, double> Download20_ServerAndRatio = new TheoryData<string, int, double>
@@ -117,12 +99,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_Dynamic_SingleStream_Run1(string hostName, int ratio, double magic) => Download20_Dynamic_SingleStream(hostName, ratio, magic);
-
-        [Theory]
-        [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_Dynamic_SingleStream_Run2(string hostName, int ratio, double magic) => Download20_Dynamic_SingleStream(hostName, ratio, magic);
-
         private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, double magic)
         {
             _listener.Enabled = true;
@@ -137,12 +113,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_StaticRtt_Run1(string hostName, int ratio, double magic) => Download20_StaticRtt(hostName, ratio, magic);
-
-        [Theory]
-        [MemberData(nameof(Download20_ServerAndRatio))]
-        public Task Download20_StaticRtt_Run2(string hostName, int ratio, double magic) => Download20_StaticRtt(hostName, ratio, magic);
-
         public async Task Download20_StaticRtt(string hostName, int ratio, double magic)
         {
             _listener.Enabled = true;
@@ -154,7 +124,8 @@ namespace System.Net.Http.Functional.Tests
                 StreamWindowMagicMultiplier = magic
             };
 
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler);
+            string details = $"StaticRtt_R({ratio})_M({magic})";
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler, details);
         }
 
         [Theory]
@@ -188,22 +159,35 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
         }
 
-        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null)
+        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null, string details = "")
         {
+            handler ??= new SocketsHttpHandler();
+
+            if (LocalAddress != null) handler.ConnectCallback = CustomConnect;
+
+            string reportFileName = CreateOutputFile(details);
+            _output.WriteLine("REPORT: " + reportFileName);
+            using StreamWriter report = new StreamWriter(reportFileName);
+
             for (int i = 0; i < TestRunCount; i++)
             {
                 _output.WriteLine($"############ run {i} ############");
-                await TestHandlerCore(info, hostName, http2, lengthMb, handler);
+                await TestHandlerCore(info, hostName, http2, lengthMb, handler, report);
             }
+            handler.Dispose();
         }
 
-        private async Task TestHandlerCore(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null)
+        private static string CreateOutputFile(string details)
         {
-            handler ??= new SocketsHttpHandler();
-            handler.ConnectCallback = CustomConnect;
+            if (!Directory.Exists(ReportDir)) Directory.CreateDirectory(ReportDir);
+            return Path.Combine(ReportDir, $"report_{Environment.TickCount64}_{details}.csv");
+        }
 
-            using var client = new HttpClient(handler, true);
-            client.Timeout = TimeSpan.FromMinutes(2);
+        private async Task TestHandlerCore(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler, StreamWriter report)
+        {
+            _listener.Log2.Clear();
+            using var client = new HttpClient(handler, false);
+            client.Timeout = TimeSpan.FromMinutes(3);
             var message = GenerateRequestMessage(hostName, http2, lengthMb);
             _output.WriteLine($"{info} / {lengthMb} MB from {message.RequestUri}");
             Stopwatch sw = Stopwatch.StartNew();
@@ -211,6 +195,23 @@ namespace System.Net.Http.Functional.Tests
 
             double elapsedSec = sw.ElapsedMilliseconds * 0.001;
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
+            double window = GetStreamWindowSizeInMegabytes();
+            report.WriteLine($"{elapsedSec}, {window}");
+        }
+
+        private double GetStreamWindowSizeInMegabytes()
+        {
+            const string Prefix = "Updated StreamWindowSize: ";
+            string log = _listener.Log2.ToString();
+
+            int idx = log.LastIndexOf(Prefix);
+            if (idx < 0) return 0;
+            ReadOnlySpan<char> text = log.AsSpan().Slice(idx + Prefix.Length);
+            text = text.Slice(0, text.IndexOf(','));
+
+            double size = int.Parse(text);
+            double sizeMb = size / 1024 / 1024;
+            return Math.Round(sizeMb, 3);
         }
 
         private static async ValueTask<Stream> CustomConnect(SocketsHttpConnectionContext ctx, CancellationToken cancellationToken)
@@ -299,12 +300,15 @@ namespace System.Net.Http.Functional.Tests
         private CancellationTokenSource _stopProcessing;
         private ITestOutputHelper _log;
 
+        public StringBuilder Log2 { get; }
+
         public LogHttpEventListener(ITestOutputHelper log)
         {
             _log = log;
             _messagesChannel = Channel.CreateUnbounded<string>();
             _processMessages = ProcessMessagesAsync();
             _stopProcessing = new CancellationTokenSource();
+            Log2 = new StringBuilder(1024 * 1024);
         }
 
         public bool Enabled { get; set; }
@@ -326,7 +330,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 await foreach (string message in _messagesChannel.Reader.ReadAllAsync(_stopProcessing.Token))
                 {
-                    if (Filter(message)) _log.WriteLine(message);
+                    if (Filter(message))
+                    {
+                        _log.WriteLine(message);
+                        Log2.AppendLine(message);
+                    }
                 }
             }
             catch (OperationCanceledException)
