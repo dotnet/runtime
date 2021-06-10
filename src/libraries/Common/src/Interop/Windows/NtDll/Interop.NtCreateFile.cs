@@ -116,7 +116,7 @@ internal static partial class Interop
 
         private static DesiredAccess GetDesiredAccess(FileAccess access, FileMode fileMode, FileOptions options)
         {
-            DesiredAccess result = DesiredAccess.FILE_READ_ATTRIBUTES | DesiredAccess.SYNCHRONIZE; // taken from CreateFileW implementation
+            DesiredAccess result = DesiredAccess.FILE_READ_ATTRIBUTES | DesiredAccess.SYNCHRONIZE; // default values used by CreateFileW
 
             if ((access & FileAccess.Read) != 0)
             {
@@ -182,7 +182,8 @@ internal static partial class Interop
         }
 
         private static ObjectAttributes GetObjectAttributes(FileShare share)
-            => ((share & FileShare.Inheritable) != 0 ? ObjectAttributes.OBJ_INHERIT : 0) | ObjectAttributes.OBJ_CASE_INSENSITIVE;
+            => ObjectAttributes.OBJ_CASE_INSENSITIVE | // default value used by CreateFileW
+                ((share & FileShare.Inheritable) != 0 ? ObjectAttributes.OBJ_INHERIT : 0);
 
         /// <summary>
         /// File creation disposition when calling directly to NT APIs.
