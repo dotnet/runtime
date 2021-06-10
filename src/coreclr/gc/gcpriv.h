@@ -1269,7 +1269,7 @@ public:
     PER_HEAP
     void return_free_region (heap_segment* region);
     PER_HEAP
-    heap_segment* get_free_region (int gen_number);
+    heap_segment* get_free_region (int gen_number, size_t size = 0);
     PER_HEAP
     void clear_region_info (heap_segment* region);
     PER_HEAP_ISOLATED
@@ -1333,10 +1333,10 @@ public:
     PER_HEAP
     void thread_start_region (generation* gen, heap_segment* region);
     PER_HEAP
-    heap_segment* get_new_region (int gen_number);
+    heap_segment* get_new_region (int gen_number, size_t size = 0);
     // This allocates one from region allocator and commit the mark array if needed.
     PER_HEAP_ISOLATED
-    heap_segment* allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p);
+    heap_segment* allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p, size_t size = 0);
     // When we delete a region we need to update start and tail region
     // if needed.
     PER_HEAP
@@ -5524,7 +5524,7 @@ public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
     bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction);
     bool allocate_basic_region (uint8_t** start, uint8_t** end);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction);
+    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size = 0);
     void delete_region (uint8_t* start);
     uint32_t get_va_memory_load()
     {

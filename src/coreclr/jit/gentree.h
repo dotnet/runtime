@@ -5946,6 +5946,58 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
+// GenTreeList: adapter class for forward iteration of the execution order GenTree linked list
+// using range-based `for`, normally used via Statement::TreeList(), e.g.:
+//    for (GenTree* const tree : stmt->TreeList()) ...
+//
+class GenTreeList
+{
+    GenTree* m_trees;
+
+    // Forward iterator for the execution order GenTree linked list (using `gtNext` pointer).
+    //
+    class iterator
+    {
+        GenTree* m_tree;
+
+    public:
+        iterator(GenTree* tree) : m_tree(tree)
+        {
+        }
+
+        GenTree* operator*() const
+        {
+            return m_tree;
+        }
+
+        iterator& operator++()
+        {
+            m_tree = m_tree->gtNext;
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_tree != i.m_tree;
+        }
+    };
+
+public:
+    GenTreeList(GenTree* trees) : m_trees(trees)
+    {
+    }
+
+    iterator begin() const
+    {
+        return iterator(m_trees);
+    }
+
+    iterator end() const
+    {
+        return iterator(nullptr);
+    }
+};
+
 // We use the following format when printing the Statement number: Statement->GetID()
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_STMT "STMT%05u"
@@ -5991,6 +6043,15 @@ public:
     void SetTreeList(GenTree* treeHead)
     {
         m_treeList = treeHead;
+    }
+
+    // TreeList: convenience method for enabling range-based `for` iteration over the
+    // execution order of the GenTree linked list, e.g.:
+    //    for (GenTree* const tree : stmt->TreeList()) ...
+    //
+    GenTreeList TreeList() const
+    {
+        return GenTreeList(GetTreeList());
     }
 
     InlineContext* GetInlineContext() const
@@ -6103,49 +6164,57 @@ private:
     bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
-class StatementIterator
-{
-    Statement* m_stmt;
-
-public:
-    StatementIterator(Statement* stmt) : m_stmt(stmt)
-    {
-    }
-
-    Statement* operator*() const
-    {
-        return m_stmt;
-    }
-
-    StatementIterator& operator++()
-    {
-        m_stmt = m_stmt->GetNextStmt();
-        return *this;
-    }
-
-    bool operator!=(const StatementIterator& i) const
-    {
-        return m_stmt != i.m_stmt;
-    }
-};
-
+// StatementList: adapter class for forward iteration of the statement linked list using range-based `for`,
+// normally used via BasicBlock::Statements(), e.g.:
+//    for (Statement* const stmt : block->Statements()) ...
+// or:
+//    for (Statement* const stmt : block->NonPhiStatements()) ...
+//
 class StatementList
 {
     Statement* m_stmts;
+
+    // Forward iterator for the statement linked list.
+    //
+    class iterator
+    {
+        Statement* m_stmt;
+
+    public:
+        iterator(Statement* stmt) : m_stmt(stmt)
+        {
+        }
+
+        Statement* operator*() const
+        {
+            return m_stmt;
+        }
+
+        iterator& operator++()
+        {
+            m_stmt = m_stmt->GetNextStmt();
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_stmt != i.m_stmt;
+        }
+    };
 
 public:
     StatementList(Statement* stmts) : m_stmts(stmts)
     {
     }
 
-    StatementIterator begin() const
+    iterator begin() const
     {
-        return StatementIterator(m_stmts);
+        return iterator(m_stmts);
     }
 
-    StatementIterator end() const
+    iterator end() const
     {
-        return StatementIterator(nullptr);
+        return iterator(nullptr);
     }
 };
 

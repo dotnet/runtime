@@ -293,14 +293,22 @@ mono_ios_runtime_init (void)
 
     monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
 
-#if FORCE_INTERPRETER
+#if (FORCE_INTERPRETER && !FORCE_AOT)
+    // interp w/ JIT fallback. Assumption is that your configuration can JIT
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 #elif (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST) || FORCE_AOT
     register_dllmap ();
     // register modules
     register_aot_modules ();
+
+#if (FORCE_INTERPRETER && TARGET_OS_MACCATALYST)
+    os_log_info (OS_LOG_DEFAULT, "AOT INTERP Enabled");
+    mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
+#else
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+#endif
+
 #endif
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);

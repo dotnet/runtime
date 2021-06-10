@@ -1131,7 +1131,8 @@ public:
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
-    virtual void dumpLsraStatsCsv(FILE* file) = 0;
+    virtual void dumpLsraStatsCsv(FILE* file)     = 0;
+    virtual void dumpLsraStatsSummary(FILE* file) = 0;
 #endif // TRACK_LSRA_STATS
 };
 
@@ -3568,7 +3569,7 @@ public:
     unsigned lvaFrameSize(FrameLayoutState curState);
 
     // Returns the caller-SP-relative offset for the SP/FP relative offset determined by FP based.
-    int lvaToCallerSPRelativeOffset(int offs, bool isFpBased) const;
+    int lvaToCallerSPRelativeOffset(int offs, bool isFpBased, bool forRootFrame = true) const;
 
     // Returns the caller-SP-relative offset for the local variable "varNum."
     int lvaGetCallerSPRelativeOffset(unsigned varNum);
@@ -3988,7 +3989,10 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
-    int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const BYTE* codeAddr, const BYTE* codeEndp);
+    int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                           const BYTE*             codeAddr,
+                           const BYTE*             codeEndp,
+                           bool                    makeInlineObservation = false);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
@@ -4977,6 +4981,28 @@ public:
                            bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     void fgInterBlockLocalVarLiveness();
+
+    // Blocks: convenience methods for enabling range-based `for` iteration over the function's blocks, e.g.:
+    // 1.   for (BasicBlock* const block : compiler->Blocks()) ...
+    // 2.   for (BasicBlock* const block : compiler->Blocks(startBlock)) ...
+    // 3.   for (BasicBlock* const block : compiler->Blocks(startBlock, endBlock)) ...
+    // In case (1), the block list can be empty. In case (2), `startBlock` can be nullptr. In case (3),
+    // both `startBlock` and `endBlock` must be non-null.
+    //
+    BasicBlockSimpleList Blocks() const
+    {
+        return BasicBlockSimpleList(fgFirstBB);
+    }
+
+    BasicBlockSimpleList Blocks(BasicBlock* startBlock) const
+    {
+        return BasicBlockSimpleList(startBlock);
+    }
+
+    BasicBlockRangeList Blocks(BasicBlock* startBlock, BasicBlock* endBlock) const
+    {
+        return BasicBlockRangeList(startBlock, endBlock);
+    }
 
     // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
     // of "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
@@ -6478,6 +6504,18 @@ public:
             return lpFirst->bbNum <= lpTop->bbNum && lpTop->bbNum <= lpEntry->bbNum &&
                    lpEntry->bbNum <= lpBottom->bbNum &&
                    (lpHead->bbNum < lpTop->bbNum || lpHead->bbNum > lpBottom->bbNum);
+        }
+
+        // LoopBlocks: convenience method for enabling range-based `for` iteration over all the
+        // blocks in a loop, e.g.:
+        //    for (BasicBlock* const block : loop->LoopBlocks()) ...
+        // Currently, the loop blocks are expected to be in linear, lexical, `bbNext` order
+        // from `lpFirst` through `lpBottom`, inclusive. All blocks in this range are considered
+        // to be part of the loop.
+        //
+        BasicBlockRangeList LoopBlocks() const
+        {
+            return BasicBlockRangeList(lpFirst, lpBottom);
         }
     };
 
@@ -11256,6 +11294,59 @@ public:
     }
 };
 
+// EHClauses: adapter class for forward iteration of the exception handling table using range-based `for`, e.g.:
+//    for (EHblkDsc* const ehDsc : EHClauses(compiler))
+//
+class EHClauses
+{
+    EHblkDsc* m_begin;
+    EHblkDsc* m_end;
+
+    // Forward iterator for the exception handling table entries. Iteration is in table order.
+    //
+    class iterator
+    {
+        EHblkDsc* m_ehDsc;
+
+    public:
+        iterator(EHblkDsc* ehDsc) : m_ehDsc(ehDsc)
+        {
+        }
+
+        EHblkDsc* operator*() const
+        {
+            return m_ehDsc;
+        }
+
+        iterator& operator++()
+        {
+            ++m_ehDsc;
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_ehDsc != i.m_ehDsc;
+        }
+    };
+
+public:
+    EHClauses(Compiler* comp) : m_begin(comp->compHndBBtab), m_end(comp->compHndBBtab + comp->compHndBBtabCount)
+    {
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
+    iterator begin() const
+    {
+        return iterator(m_begin);
+    }
+
+    iterator end() const
+    {
+        return iterator(m_end);
+    }
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -11469,16 +11560,6 @@ extern const BYTE genTypeAlignments[];
 extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];
 
-/*****************************************************************************/
-
-// foreach_block: An iterator over all blocks in the function.
-//    __compiler: the Compiler* object
-//    __block   : a BasicBlock*, already declared, that gets updated each iteration.
-
-#define foreach_block(__compiler, __block)                                                                             \
-    for ((__block) = (__compiler)->fgFirstBB; (__block); (__block) = (__block)->bbNext)
-
-/*****************************************************************************/
 /*****************************************************************************/
 
 #ifdef DEBUG

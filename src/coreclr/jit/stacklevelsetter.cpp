@@ -42,12 +42,12 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 //
 PhaseStatus StackLevelSetter::DoPhase()
 {
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         ProcessBlock(block);
     }
-#if !FEATURE_FIXED_OUT_ARGS
 
+#if !FEATURE_FIXED_OUT_ARGS
     if (framePointerRequired)
     {
         comp->codeGen->setFramePointerRequired(true);

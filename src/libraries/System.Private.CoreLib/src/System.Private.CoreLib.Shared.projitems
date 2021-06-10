@@ -407,9 +407,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EnumerationOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EndOfStreamException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.netcoreapp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAccess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileInfo.netcoreapp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileNotFoundException.cs" />
@@ -967,6 +969,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\NormalizationForm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Rune.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanLineEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanRuneEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.Debug.cs" Condition="'$(Configuration)' == 'Debug'" />
@@ -2166,8 +2169,10 @@
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Portable.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeRuntimeEventSource.PortableThreadPool.cs" Condition="'$(FeatureCoreCLR)' != 'true' and '$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs" Condition="'$(FeatureCoreCLR)' == 'true' or '$(FeatureMono)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeRuntimeEventSource.PortableThreadPool.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Blocking.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.GateThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.HillClimbing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.HillClimbing.Complex.cs" />

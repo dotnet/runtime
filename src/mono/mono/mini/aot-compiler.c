@@ -42,6 +42,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
@@ -6982,6 +6983,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_PATCHES;
 	if (needs_ctx && ctx)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
+	if (cfg->interp_entry_only)
+		flags |= MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY;
 	/* Saved into another table so it can be accessed without having access to this data */
 	cfg->aot_method_flags = flags;
 
@@ -10131,7 +10134,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	g_string_append_printf (acfg->llc_args, " -no-x86-call-frame-opt");
 #endif
 
-#if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC)
+#if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC) || defined(TARGET_ANDROID)
 	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
 #else
 	if (llvm_acfg->aot_opts.static_link)
@@ -14091,7 +14094,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #endif
 
 		/* required for mixed mode */
-		if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+		if (strcmp (acfg->image->assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME) == 0) {
 			add_gc_wrappers (acfg);
 
 			for (int i = 0; i < MONO_JIT_ICALL_count; ++i)
