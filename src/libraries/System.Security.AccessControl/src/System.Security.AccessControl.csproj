@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows;netstandard2.0-windows;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -9,7 +9,7 @@
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\AccessControl\ACE.cs" />
     <Compile Include="System\Security\AccessControl\ACL.cs" />
     <Compile Include="System\Security\AccessControl\CommonObjectSecurity.cs" />
@@ -79,7 +79,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx_SafeTokenHandle.cs"
              Link="Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
