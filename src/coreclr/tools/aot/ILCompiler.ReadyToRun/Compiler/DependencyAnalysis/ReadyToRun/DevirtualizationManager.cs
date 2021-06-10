@@ -25,8 +25,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _compilationModuleGroup.VersionsWithMethodBody(method) && base.IsEffectivelySealed(method);
         }
 
-        protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, ref CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
+        protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
+            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
+
             // Versioning resiliency rules here are complex
             // Decl method checking
             // 1. If the declMethod is a class method, then we do not need to check if it is within the version bubble with a VersionsWithCode check
@@ -157,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            MethodDesc resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType, ref devirtualizationDetail);
+            MethodDesc resolvedVirtualMethod = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
 
             if (resolvedVirtualMethod != null)
             {

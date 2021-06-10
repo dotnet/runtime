@@ -54,17 +54,19 @@ namespace ILCompiler
         /// Note that if <paramref name="implType"/> is a value type, the result of the resolution
         /// might have to be treated as an unboxing thunk by the caller.
         /// </remarks>
-        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, ref CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
+        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
             Debug.Assert(declMethod.IsVirtual);
 
             // We're operating on virtual methods. This means that if implType is an array, we need
             // to get the type that has all the virtual methods provided by the class library.
-            return ResolveVirtualMethod(declMethod, implType.GetClosestDefType(), ref devirtualizationDetail);
+            return ResolveVirtualMethod(declMethod, implType.GetClosestDefType(), out devirtualizationDetail);
         }
 
-        protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, ref CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
+        protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
+            devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
+
             MethodDesc impl;
 
             if (declMethod.OwningType.IsInterface)
@@ -163,11 +165,17 @@ namespace ILCompiler
                 for (checkType = implType; checkType != null && !checkType.HasSameTypeDefinition(declMethod.OwningType); checkType = checkType.BaseType)
                 { }
 
-                if (checkType == null)
+                if ((checkType == null) || (checkType.ConvertToCanonForm(CanonicalFormKind.Specific) != declMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                 {
                     // The derived class should be a subclass of the the base class.
                     devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS;
                     return null;
+                }
+                else
+                {
+                    // At this point, the decl method may be only canonically compatible, but not an exact match to a method in the type hierarchy
+                    // Convert it to an exact match. (Or if it is an exact match, the FindMethodOnTypeWithMatchingTypicalMethod will be a no-op)
+                    declMethod = checkType.FindMethodOnTypeWithMatchingTypicalMethod(declMethod);
                 }
 
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);

@@ -1138,6 +1138,7 @@ namespace Internal.JitInterface
             info->devirtualizedMethod = null;
             info->requiresInstMethodTableArg = false;
             info->exactContext = null;
+            info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1161,7 +1162,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            MethodDesc originalImpl = _compilation.ResolveVirtualMethod(decl, objType, ref info->detail);
+            MethodDesc originalImpl = _compilation.ResolveVirtualMethod(decl, objType, out info->detail);
 
             if (originalImpl == null)
             {
