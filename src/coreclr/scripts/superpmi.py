@@ -262,9 +262,8 @@ collect_parser.add_argument("collection_command", nargs='?', help=superpmi_colle
 collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command. This is a single string; quote it if necessary if the arguments contain spaces.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
-collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
-collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
@@ -906,15 +905,12 @@ class SuperPMICollect:
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
-            self.crossgen_tool_name = "crossgen"
         elif coreclr_args.host_os == "Linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.corerun_tool_name = "corerun"
-            self.crossgen_tool_name = "crossgen"
         elif coreclr_args.host_os == "windows":
             self.collection_shim_name = "superpmi-shim-collector.dll"
             self.corerun_tool_name = "corerun.exe"
-            self.crossgen_tool_name = "crossgen.exe"
         else:
             raise RuntimeError("Unsupported OS.")
 
@@ -931,9 +927,6 @@ class SuperPMICollect:
             self.pmi_location = determine_pmi_location(coreclr_args)
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
 
-        if coreclr_args.crossgen:
-            self.crossgen_tool = os.path.join(self.core_root, self.crossgen_tool_name)
-
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
             if coreclr_args.dotnet_tool_path is None:
@@ -942,7 +935,7 @@ class SuperPMICollect:
                 self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
             logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
-        if coreclr_args.pmi or coreclr_args.crossgen or coreclr_args.crossgen2:
+        if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
 
@@ -1081,7 +1074,7 @@ class SuperPMICollect:
 
             # If we need them, collect all the assemblies we're going to use for the collection(s).
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
-            if self.coreclr_args.pmi or self.coreclr_args.crossgen or self.coreclr_args.crossgen2:
+            if self.coreclr_args.pmi or self.coreclr_args.crossgen2:
                 assemblies = []
                 for item in self.assemblies:
                     assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
@@ -1179,84 +1172,6 @@ class SuperPMICollect:
                 os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
-
-            ################################################################################################ Do collection using crossgen
-            if self.coreclr_args.crossgen is True:
-                logging.debug("Starting collection using crossgen")
-
-                async def run_crossgen(print_prefix, assembly, self):
-                    """ Run crossgen over all dlls
-                    """
-
-                    root_crossgen_output_filename = make_safe_filename("crossgen_" + assembly) + ".out.dll"
-                    crossgen_output_assembly_filename = os.path.join(self.temp_location, root_crossgen_output_filename)
-                    try:
-                        if os.path.exists(crossgen_output_assembly_filename):
-                            os.remove(crossgen_output_assembly_filename)
-                    except OSError as ose:
-                        if "[WinError 32] The process cannot access the file because it is being used by another " \
-                           "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s", crossgen_output_assembly_filename, ose)
-                            return
-                        else:
-                            raise ose
-
-                    command = [self.crossgen_tool, "/Platform_Assemblies_Paths", self.core_root, "/in", assembly, "/out", crossgen_output_assembly_filename]
-                    command_string = " ".join(command)
-                    logging.debug("%s%s", print_prefix, command_string)
-
-                    # Save the stdout and stderr to files, so we can see if crossgen wrote any interesting messages.
-                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
-                    # is unique.
-                    root_output_filename = make_safe_filename("crossgen_" + assembly + "_")
-                    try:
-                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
-                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
-
-                        proc = await asyncio.create_subprocess_shell(
-                            command_string,
-                            stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
-
-                        await proc.communicate()
-
-                        os.close(stdout_file_handle)
-                        os.close(stderr_file_handle)
-
-                        # No need to keep zero-length files
-                        if is_zero_length_file(stdout_filepath):
-                            os.remove(stdout_filepath)
-                        if is_zero_length_file(stderr_filepath):
-                            os.remove(stderr_filepath)
-
-                        return_code = proc.returncode
-                        if return_code != 0:
-                            logging.debug("'%s': Error return code: %s", command_string, return_code)
-                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
-
-                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
-                    except OSError as ose:
-                        if "[WinError 32] The process cannot access the file because it is being used by another " \
-                           "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
-                        else:
-                            raise ose
-
-                # Set environment variables.
-                crossgen_command_env = env_copy.copy()
-                crossgen_complus_env = complus_env.copy()
-                crossgen_complus_env["JitName"] = self.collection_shim_name
-                set_and_report_env(crossgen_command_env, root_env, crossgen_complus_env)
-
-                old_env = os.environ.copy()
-                os.environ.update(crossgen_command_env)
-
-                helper = AsyncSubprocessHelper(assemblies, verbose=True)
-                helper.run_to_completion(run_crossgen, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
-            ################################################################################################ end of "self.coreclr_args.crossgen is True"
 
             ################################################################################################ Do collection using crossgen2
             if self.coreclr_args.crossgen2 is True:
@@ -3436,11 +3351,6 @@ def setup_args(args):
                             "Unable to set pmi")
 
         coreclr_args.verify(args,
-                            "crossgen",
-                            lambda unused: True,
-                            "Unable to set crossgen")
-
-        coreclr_args.verify(args,
                             "crossgen2",
                             lambda unused: True,
                             "Unable to set crossgen2")
@@ -3512,8 +3422,8 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set tiered_compilation")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen is False) and (args.crossgen2 is False):
-            print("Either a collection command or `--pmi` or `--crossgen` or `--crossgen2` must be specified")
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
+            print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
@@ -3524,13 +3434,13 @@ def setup_args(args):
             print("Don't specify `-exclude` if a collection command is given")
             sys.exit(1)
 
-        if ((args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
-            print("Specify `-assemblies` if `--pmi` or `--crossgen` or `--crossgen2` is given")
+        if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
+            print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
-            assert (args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)
+            assert (args.pmi is True) or (args.crossgen2 is True)
             assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:

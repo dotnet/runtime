@@ -7137,8 +7137,8 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
         else
         {
             // If the divisor is greater or equal than 2^(N - 1) then the result is either 0 or 1
-            if (((divType == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
-                ((divType == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+            if (((divType == TYP_INT) && ((UINT32)divisorValue > (UINT32_MAX / 2))) ||
+                ((divType == TYP_LONG) && ((UINT64)divisorValue > (UINT64_MAX / 2))))
             {
                 return true;
             }

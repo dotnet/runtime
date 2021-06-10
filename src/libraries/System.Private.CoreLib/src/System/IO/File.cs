@@ -264,8 +264,7 @@ namespace System.IO
 
         public static FileStream OpenWrite(string path)
         {
-            return new FileStream(path, FileMode.OpenOrCreate,
-                                  FileAccess.Write, FileShare.None);
+            return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
         }
 
         public static string ReadAllText(string path)
