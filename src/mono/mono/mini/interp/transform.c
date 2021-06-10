@@ -545,7 +545,7 @@ push_types (TransformData *td, StackInfo *types, int count)
 }
 
 static void
-mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb)
+mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *replace_bb)
 {
 	// Update IL offset to bb mapping so that offset_to_bb doesn't point to dead
 	// bblocks. This mapping can still be needed when computing clause ranges. Since
@@ -556,13 +556,13 @@ mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb)
 	// of the IL offset of bb. We can stop search when we encounter a different bblock.
 	for (int il_offset = bb->il_offset; il_offset >= 0; il_offset--) {
 		if (td->offset_to_bb [il_offset] == bb)
-			td->offset_to_bb [il_offset] = bb->next_bb;
+			td->offset_to_bb [il_offset] = replace_bb;
 		else if (td->offset_to_bb [il_offset])
 			break;
 	}
 	for (int il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
 		if (td->offset_to_bb [il_offset] == bb)
-			td->offset_to_bb [il_offset] = bb->next_bb;
+			td->offset_to_bb [il_offset] = replace_bb;
 		else if (td->offset_to_bb [il_offset])
 			break;
 	}
@@ -615,7 +615,7 @@ interp_merge_bblocks (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 		}
 	}
 
-	mark_bb_as_dead (td, bbadd);
+	mark_bb_as_dead (td, bbadd, bb);
 }
 
 // array must contain ref
@@ -659,7 +659,7 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	while (bb->out_count)
 		interp_unlink_bblocks (bb, bb->out_bb [0]);
 	prev_bb->next_bb = bb->next_bb;
-	mark_bb_as_dead (td, bb);
+	mark_bb_as_dead (td, bb, bb->next_bb);
 
 	return needs_cprop;
 }
