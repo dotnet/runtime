@@ -8,18 +8,18 @@ namespace Microsoft.Interop
 {
     internal abstract class ConditionalStackallocMarshallingGenerator : IMarshallingGenerator
     {
-        protected static string GetAllocationMarkerIdentifier(string managedIdentifier) => $"{managedIdentifier}__allocated";
+        protected static string GetAllocationMarkerIdentifier(TypePositionInfo info, StubCodeContext context) => context.GetAdditionalIdentifier(info, "allocated");
 
-        private static string GetByteLengthIdentifier(string managedIdentifier) => $"{managedIdentifier}__bytelen";
+        private static string GetByteLengthIdentifier(TypePositionInfo info, StubCodeContext context) => context.GetAdditionalIdentifier(info, "bytelen");
 
-        private static string GetStackAllocIdentifier(string managedIdentifier) => $"{managedIdentifier}__stackptr";
+        private static string GetStackAllocIdentifier(TypePositionInfo info, StubCodeContext context) => context.GetAdditionalIdentifier(info, "stackptr");
 
         protected bool UsesConditionalStackAlloc(TypePositionInfo info, StubCodeContext context)
         {
-            return context.CanUseAdditionalTemporaryState
-                && context.StackSpaceUsable
+            return context.SingleFrameSpansNativeContext
                 && (!info.IsByRef || info.RefKind == RefKind.In)
-                && !info.IsManagedReturnPosition;
+                && !info.IsManagedReturnPosition
+                && context.AdditionalTemporaryStateLivesAcrossStages;
         }
 
         protected bool TryGenerateSetupSyntax(TypePositionInfo info, StubCodeContext context, out StatementSyntax statement)
@@ -29,7 +29,7 @@ namespace Microsoft.Interop
             if (!UsesConditionalStackAlloc(info, context))
                 return false;
 
-            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(context.GetIdentifiers(info).managed);
+            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(info, context);
 
             // bool <allocationMarker> = false;
             statement = LocalDeclarationStatement(
@@ -46,11 +46,11 @@ namespace Microsoft.Interop
             StubCodeContext context,
             int stackallocMaxSize)
         {
-            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+            (_, string nativeIdentifier) = context.GetIdentifiers(info);
             
-            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(managedIdentifier);
-            string byteLenIdentifier = GetByteLengthIdentifier(managedIdentifier);
-            string stackAllocPtrIdentifier = GetStackAllocIdentifier(managedIdentifier);
+            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(info, context);
+            string byteLenIdentifier = GetByteLengthIdentifier(info, context);
+            string stackAllocPtrIdentifier = GetStackAllocIdentifier(info, context);
             // <native> = <allocationExpression>;
             var allocationStatement = ExpressionStatement(
                 AssignmentExpression(
@@ -62,7 +62,7 @@ namespace Microsoft.Interop
             var byteLenAssignment = LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
-                    SingletonSeparatedList<VariableDeclaratorSyntax>(
+                    SingletonSeparatedList(
                         VariableDeclarator(byteLenIdentifier)
                             .WithInitializer(EqualsValueClause(
                                 GenerateByteLengthCalculationExpression(info, context))))));
@@ -96,7 +96,7 @@ namespace Microsoft.Interop
                                     StackAllocArrayCreationExpression(
                                         ArrayType(
                                             PredefinedType(Token(SyntaxKind.ByteKeyword)),
-                                            SingletonList<ArrayRankSpecifierSyntax>(
+                                            SingletonList(
                                                 ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
                                                     IdentifierName(byteLenIdentifier))))))))))),
                 GenerateStackallocOnlyValueMarshalling(info, context, Identifier(byteLenIdentifier), Identifier(stackAllocPtrIdentifier)),
@@ -143,8 +143,7 @@ namespace Microsoft.Interop
             TypePositionInfo info,
             StubCodeContext context)
         {
-            (string managedIdentifier, _) = context.GetIdentifiers(info);
-            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(managedIdentifier);
+            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(info, context);
             if (!UsesConditionalStackAlloc(info, context))
             {
                 return ExpressionStatement(GenerateFreeExpression(info, context));

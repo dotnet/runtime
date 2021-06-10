@@ -58,7 +58,7 @@ namespace Microsoft.Interop
         }
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
-            return context.PinningSupported && !info.IsByRef && !info.IsManagedReturnPosition;
+            return context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition;
         }
 
         private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)

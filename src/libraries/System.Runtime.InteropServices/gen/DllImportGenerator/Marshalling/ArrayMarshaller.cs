@@ -52,7 +52,7 @@ namespace Microsoft.Interop
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            if (context.PinningSupported && enablePinning)
+            if (context.SingleFrameSpansNativeContext && enablePinning)
             {
                 return false;
             }
@@ -70,7 +70,7 @@ namespace Microsoft.Interop
 
         private bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
-            return context.PinningSupported && enablePinning && !info.IsByRef && !info.IsManagedReturnPosition;
+            return context.SingleFrameSpansNativeContext && enablePinning && !info.IsByRef && !info.IsManagedReturnPosition;
         }
 
         private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)

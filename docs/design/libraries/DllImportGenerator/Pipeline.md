@@ -120,24 +120,24 @@ Some marshalling optimizations are only available in specific scenarios. General
 
 This experiment generally is currently only focusing on two of the concepts: P/Invoke and non-blittable array marshalling (in the context of a P/Invoke).
 
-There are three categories for specialized marshalling features that may only be available in some contexts:
+There are three features for specialized marshalling features that may only be available in some contexts:
 
 - Pinning to marshal data without copying (the `fixed` statement)
 - Stack allocation across the native context (using the `stackalloc` keyword or https://github.com/dotnet/runtime/issues/25423)
 - Storing additional temporary state in extra local variables
 
-Support for these features is indicated in code by various `bool` properties on the `StubCodeContext`-derived type.
+Support for these features is indicated in code by the `abstract` `SingleFrameSpansNativeContext` and `AdditionalTemporaryStateLivesAcrossStages` properties on the `StubCodeContext` type. The `SingleFrameSpansNativeContext` property represents whether or not both pinning and stack-allocation are supported. These concepts are combined because we cannot safely support a conditional-stackalloc style API (such as https://github.com/dotnet/runtime/issues/52065) and safely get a pointer to data without also being able to pin.
 
-These various scenarios have different levels of support for these three features:
+The various scenarios mentioned above have different levels of support for these specialized features:
 
-
-| Scenarios |Pinning | Stack allocation across the native context | Storing additional temporary state in locals |
+| Scenarios |Pinning and Stack allocation across the native context | Storing additional temporary state in locals |
 |------|-----|-----|---------|
-| P/Invoke | supported | supported | supported |
-| Reverse P/Invoke | unsupported | unsupported | supported |
-| User-defined structures | unsupported | unsupported for individual members | unsupported |
-| non-blittable array marshalling in a P/Invoke | unsupported | unsupported (supportable with https://github.com/dotnet/runtime/issues/25423) | unuspported |
-| non-blittable array marshalling not in a P/Invoke | unsupported | unsupported | unuspported |
+| P/Invoke | supported | supported |
+| Reverse P/Invoke | unsupported | supported |
+| User-defined structure content marshalling | unsupported | unsupported |
+| non-blittable array marshalling | unsupported | unuspported |
+
+To help enable developers to use the full model described in the [Struct Marshalling design](./StructMarshalling.md), we declare that in contexts where `AdditionalTemporaryStateLivesAcrossStages` is false, developers can still assume that state declared in the `Setup` phase is valid in any phase, but any side effects in code emitted in a phase other than `Setup` will not be guaranteed to be visible in other phases. This enables developers to still use the identifiers declared in the `Setup` phase in their other phases, but they'll need to take care to design their generators to handle these rules.
 
 ### `SetLastError=true`
 

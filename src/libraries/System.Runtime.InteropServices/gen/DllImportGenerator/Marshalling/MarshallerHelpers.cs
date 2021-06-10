@@ -86,11 +86,10 @@ namespace Microsoft.Interop
             return spanElementTypeSyntax;
         }
 
-        private const string MarshalerLocalSuffix = "__marshaler";
+        private const string MarshalerLocalSuffix = "marshaler";
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            var (_, nativeIdentifier) = context.GetIdentifiers(info);
-            return nativeIdentifier + MarshalerLocalSuffix;
+            return context.GetAdditionalIdentifier(info, MarshalerLocalSuffix);
         }
 
         public static class StringMarshaller

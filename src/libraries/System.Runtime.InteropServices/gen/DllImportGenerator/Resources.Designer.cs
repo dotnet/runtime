@@ -637,15 +637,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Marshalling a value between managed and native with a native type with a &apos;Value&apos; property requires extra state, which is not supported in this context..
-        /// </summary>
-        internal static string ValuePropertyMarshallingRequiresAdditionalState {
-            get {
-                return ResourceManager.GetString("ValuePropertyMarshallingRequiresAdditionalState", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The native type&apos;s &apos;Value&apos; property must have a getter to support marshalling from managed to native..
         /// </summary>
         internal static string ValuePropertyMustHaveGetterDescription {

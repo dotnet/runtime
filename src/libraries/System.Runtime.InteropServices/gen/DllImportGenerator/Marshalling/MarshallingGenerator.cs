@@ -233,7 +233,7 @@ namespace Microsoft.Interop
                     return Delegate;
 
                 case { MarshallingAttributeInfo: SafeHandleMarshallingInfo }:
-                    if (!context.CanUseAdditionalTemporaryState)
+                    if (!context.AdditionalTemporaryStateLivesAcrossStages)
                     {
                         throw new MarshallingNotSupportedException(info, context);
                     }
@@ -449,14 +449,6 @@ namespace Microsoft.Interop
 
         private static void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
-            if (marshalInfo.ValuePropertyType is not null && !context.CanUseAdditionalTemporaryState)
-            {
-                throw new MarshallingNotSupportedException(info, context)
-                {
-                    NotSupportedDetails = Resources.ValuePropertyMarshallingRequiresAdditionalState
-                };
-            }
-
             // The marshalling method for this type doesn't support marshalling from native to managed,
             // but our scenario requires marshalling from native to managed.
             if ((info.RefKind == RefKind.Ref || info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
@@ -469,13 +461,9 @@ namespace Microsoft.Interop
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by value,
             // but our scenario requires marshalling from managed to native by value.
-            // Pinning is required for the stackalloc marshalling to enable users to safely pass the stackalloc Span's byref
-            // to native if we ever start using a conditional stackalloc method and cannot guarantee that the Span we provide
-            // the user with is backed by stack allocated memory.
-            else if (!info.IsByRef
-                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0
-                && !(context.PinningSupported && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.Pinning) == 0)
-                && !(context.StackSpaceUsable && context.PinningSupported && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) == 0))
+            else if (!info.IsByRef 
+                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0 
+                && (context.SingleFrameSpansNativeContext && (marshalInfo.MarshallingMethods & (SupportedMarshallingMethods.Pinning | SupportedMarshallingMethods.ManagedToNativeStackalloc)) == 0))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -485,9 +473,9 @@ namespace Microsoft.Interop
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
             // but our scenario requires marshalling from managed to native by reference.
             // "in" byref supports stack marshalling.
-            else if (info.RefKind == RefKind.In
-                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0
-                && !(context.StackSpaceUsable && context.PinningSupported && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) != 0))
+            else if (info.RefKind == RefKind.In 
+                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0 
+                && !(context.SingleFrameSpansNativeContext && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) != 0))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {

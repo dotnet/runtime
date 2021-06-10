@@ -10,7 +10,7 @@ namespace Microsoft.Interop
     {
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return ParseTypeName("global::System.IntPtr");
+            return MarshallerHelpers.SystemIntPtrType;
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
@@ -60,7 +60,10 @@ namespace Microsoft.Interop
                                         LiteralExpression(SyntaxKind.NullLiteralExpression)
                                     ),
                                     InvocationExpression(
-                                        ParseName("global::System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate"),
+                                        MemberAccessExpression(
+                                            SyntaxKind.SimpleMemberAccessExpression,
+                                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                                            IdentifierName("GetFunctionPointerForDelegate")),
                                         ArgumentList(SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))),
                                     LiteralExpression(SyntaxKind.DefaultLiteralExpression))));
                     }
@@ -81,7 +84,7 @@ namespace Microsoft.Interop
                                     InvocationExpression(
                                         MemberAccessExpression(
                                             SyntaxKind.SimpleMemberAccessExpression,
-                                            ParseName("global::System.Runtime.InteropServices.Marshal"),
+                                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
                                             GenericName(Identifier("GetDelegateForFunctionPointer"))
                                             .WithTypeArgumentList(
                                                 TypeArgumentList(

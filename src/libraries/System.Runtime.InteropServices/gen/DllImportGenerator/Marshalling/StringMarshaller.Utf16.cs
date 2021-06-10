@@ -30,7 +30,7 @@ namespace Microsoft.Interop
                         SyntaxKind.AddressOfExpression,
                         IdentifierName(identifier)));
             }
-            else if (context.PinningSupported)
+            else if (context.SingleFrameSpansNativeContext)
             {
                 // (ushort*)<pinned>
                 return Argument(
@@ -64,7 +64,7 @@ namespace Microsoft.Interop
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
-            if (context.PinningSupported && !info.IsByRef && !info.IsManagedReturnPosition)
+            if (context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition)
             {
                 if (context.CurrentStage == StubCodeContext.Stage.Pin)
                 {

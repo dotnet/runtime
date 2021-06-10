@@ -316,9 +316,6 @@
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Specified type is not supported by source-generated P/Invokes</value>
   </data>
-  <data name="ValuePropertyMarshallingRequiresAdditionalState" xml:space="preserve">
-    <value>Marshalling a value between managed and native with a native type with a 'Value' property requires extra state, which is not supported in this context.</value>
-  </data>
   <data name="ValuePropertyMustHaveGetterDescription" xml:space="preserve">
     <value>The native type's 'Value' property must have a getter to support marshalling from managed to native.</value>
   </data>

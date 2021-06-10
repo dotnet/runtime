@@ -29,7 +29,7 @@ namespace Microsoft.Interop
             {
                 return Argument(IdentifierName(info.InstanceIdentifier));
             }
-            else if (context.PinningSupported && !info.IsManagedReturnPosition)
+            else if (context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition)
             {
                 return Argument(IdentifierName(context.GetIdentifiers(info).native));
                 
@@ -47,7 +47,7 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            if (context.PinningSupported)
+            if (context.SingleFrameSpansNativeContext)
             {
                 if (context.CurrentStage == StubCodeContext.Stage.Pin)
                 {
@@ -97,7 +97,7 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return info.IsByRef && !info.IsManagedReturnPosition && !context.PinningSupported;
+            return info.IsByRef && !info.IsManagedReturnPosition && !context.SingleFrameSpansNativeContext;
         }
         
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;

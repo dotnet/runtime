@@ -85,7 +85,7 @@ namespace Microsoft.Interop
                                 ExpressionStatement(
                                     AssignmentExpression(
                                         SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName(GetAllocationMarkerIdentifier(managedIdentifier)),
+                                        IdentifierName(GetAllocationMarkerIdentifier(info, context)),
                                         LiteralExpression(SyntaxKind.TrueLiteralExpression))));
                         }
 
