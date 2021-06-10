@@ -93,8 +93,10 @@ if (typeof performance == 'undefined') {
 }
 
 try {
-	if (typeof raw_args == "undefined")
+	if (typeof arguments == "undefined")
 		raw_args = WScript.Arguments;
+	else
+		raw_args = arguments;
 	var load = WScript.LoadScriptFile;
 	var read = WScript.LoadBinaryFile;
 } catch (e) {
