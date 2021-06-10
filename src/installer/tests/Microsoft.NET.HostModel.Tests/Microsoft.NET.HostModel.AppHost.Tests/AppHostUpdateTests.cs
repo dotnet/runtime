@@ -320,7 +320,7 @@ namespace Microsoft.NET.HostModel.Tests
                     appBinaryFilePath,
                     windowsGraphicalUserInterface: false,
                     enableMacOSCodeSign: true));
-                Assert.Contains($"{destinationFilePath}: is already signed", exception.ErrorMessage);
+                Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
             }
         }
 
