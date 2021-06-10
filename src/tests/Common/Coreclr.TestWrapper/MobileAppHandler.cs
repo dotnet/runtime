@@ -21,8 +21,8 @@ namespace CoreclrTestLib
         private static void HandleMobileApp(string action, string platform, string category, string testBinaryBase, string reportBase)
         {
             //install or uninstall mobile app
-            string outputFile = System.IO.Path.Combine(reportBase, action, $"{category}_{action}.output.txt");
-            string errorFile = System.IO.Path.Combine(reportBase, action, $"{category}_{action}.error.txt");
+            string outputFile = Path.Combine(reportBase, action, $"{category}_{action}.output.txt");
+            string errorFile = Path.Combine(reportBase, action, $"{category}_{action}.error.txt");
             string dotnetCmd_raw = System.Environment.GetEnvironmentVariable("__TestDotNetCmd");
             string dotnetCmd;
             string xharnessCmd_raw = System.Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
