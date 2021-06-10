@@ -161,10 +161,10 @@ namespace System.Net.NetworkInformation
                         }, (UIntPtr)2))
                 {
                     // Try to register our pattern strings with the dynamic store instance.
-                    if (patterns.IsInvalid || !Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(
+                    if (patterns.IsInvalid || Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(
                                                 s_dynamicStoreRef.DangerousGetHandle(),
                                                 IntPtr.Zero,
-                                                patterns.DangerousGetHandle()))
+                                                patterns.DangerousGetHandle()) == 0)
                     {
                         s_dynamicStoreRef.Dispose();
                         s_dynamicStoreRef = null;

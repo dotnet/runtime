@@ -12,9 +12,11 @@ namespace System.Net.NetworkInformation
 
         private SystemTcpStatistics() { }
 
-        internal SystemTcpStatistics(AddressFamily family)
+        internal unsafe SystemTcpStatistics(AddressFamily family)
         {
-            uint result = Interop.IpHlpApi.GetTcpStatisticsEx(out _stats, family);
+            uint result;
+            fixed (Interop.IpHlpApi.MibTcpStats* pStats = &_stats)
+                result = Interop.IpHlpApi.GetTcpStatisticsEx(pStats, family);
 
             if (result != Interop.IpHlpApi.ERROR_SUCCESS)
             {

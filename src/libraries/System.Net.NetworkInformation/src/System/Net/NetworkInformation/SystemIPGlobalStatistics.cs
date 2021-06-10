@@ -12,9 +12,11 @@ namespace System.Net.NetworkInformation
 
         private SystemIPGlobalStatistics() { }
 
-        internal SystemIPGlobalStatistics(AddressFamily family)
+        internal unsafe SystemIPGlobalStatistics(AddressFamily family)
         {
-            uint result = Interop.IpHlpApi.GetIpStatisticsEx(out _stats, family);
+            uint result;
+            fixed (Interop.IpHlpApi.MibIpStats* pStats = &_stats)
+                result = Interop.IpHlpApi.GetIpStatisticsEx(pStats, family);
 
             if (result != Interop.IpHlpApi.ERROR_SUCCESS)
             {
@@ -22,7 +24,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override bool ForwardingEnabled { get { return _stats.forwardingEnabled; } }
+        public override bool ForwardingEnabled { get { return _stats.forwardingEnabled != 0; } }
 
         public override int DefaultTtl { get { return (int)_stats.defaultTtl; } }
 
