@@ -14,13 +14,13 @@ namespace System.Net.NetworkInformation
 
         internal unsafe SystemUdpStatistics(AddressFamily family)
         {
-            uint result;
             fixed (Interop.IpHlpApi.MibUdpStats* pStats = &_stats)
-                result = Interop.IpHlpApi.GetUdpStatisticsEx(pStats, family);
-
-            if (result != Interop.IpHlpApi.ERROR_SUCCESS)
             {
-                throw new NetworkInformationException((int)result);
+                uint result = Interop.IpHlpApi.GetUdpStatisticsEx(pStats, family);
+                if (result != Interop.IpHlpApi.ERROR_SUCCESS)
+                {
+                    throw new NetworkInformationException((int)result);
+                }
             }
         }
 

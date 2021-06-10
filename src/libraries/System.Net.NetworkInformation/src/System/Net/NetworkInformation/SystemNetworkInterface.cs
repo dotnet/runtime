@@ -46,12 +46,13 @@ namespace System.Net.NetworkInformation
         {
             int index;
             Internals.SocketAddress address = new Internals.SocketAddress(addr);
-            int error;
             fixed (byte* buffer = address.Buffer)
-                error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
-            if (error != 0)
             {
-                throw new NetworkInformationException(error);
+                int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
+                if (error != 0)
+                {
+                    throw new NetworkInformationException(error);
+                }
             }
 
             return index;

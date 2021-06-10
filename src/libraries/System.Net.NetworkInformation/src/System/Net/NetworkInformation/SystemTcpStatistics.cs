@@ -14,13 +14,13 @@ namespace System.Net.NetworkInformation
 
         internal unsafe SystemTcpStatistics(AddressFamily family)
         {
-            uint result;
             fixed (Interop.IpHlpApi.MibTcpStats* pStats = &_stats)
-                result = Interop.IpHlpApi.GetTcpStatisticsEx(pStats, family);
-
-            if (result != Interop.IpHlpApi.ERROR_SUCCESS)
             {
-                throw new NetworkInformationException((int)result);
+                uint result = Interop.IpHlpApi.GetTcpStatisticsEx(pStats, family);
+                if (result != Interop.IpHlpApi.ERROR_SUCCESS)
+                {
+                    throw new NetworkInformationException((int)result);
+                }
             }
         }
 
