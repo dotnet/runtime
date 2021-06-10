@@ -161,14 +161,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (resolvedVirtualMethod != null)
             {
-                // Disable devirtualizing to a default interface method as the version resilience of that
-                // has not been analyzed, and is not expected to be particularly useful.
-                if (resolvedVirtualMethod.OwningType.IsInterface)
-                {
-                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
-                    return null;
-                }
-
                 // Validate that the inheritance chain for resolution is within version bubble
                 // The rule is somewhat tricky here.
                 // If the resolved method is the declMethod, then only types which derive from the

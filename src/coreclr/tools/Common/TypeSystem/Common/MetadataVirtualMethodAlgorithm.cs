@@ -670,7 +670,7 @@ namespace Internal.TypeSystem
 
             foreach (TypeDesc iface in currentType.RuntimeInterfaces)
             {
-                if (iface.CanCastTo(interfaceType))
+                if (iface.HasSameTypeDefinition(interfaceType) && iface.CanCastTo(interfaceType))
                 {
                     implMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethod);
                     Debug.Assert(implMethod != null);

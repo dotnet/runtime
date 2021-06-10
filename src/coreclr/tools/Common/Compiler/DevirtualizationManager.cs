@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 using CORINFO_DEVIRTUALIZATION_DETAIL = Internal.JitInterface.CORINFO_DEVIRTUALIZATION_DETAIL;
 using Debug = System.Diagnostics.Debug;
@@ -97,10 +98,61 @@ namespace ILCompiler
                     return null;
                 }
 
-                impl = implType.ResolveInterfaceMethodTarget(declMethod);
+                impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod);
                 if (impl != null)
                 {
                     impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
+                }
+                else
+                {
+                    MethodDesc dimMethod = null;
+                    // This isn't the correct lookup algorithm for variant default interface methods
+                    // but as we will drop any results we find in any case, it doesn't matter much.
+                    // Non-variant dispatch can simply use ResolveInterfaceMethodToDefaultImplementationOnType
+                    // but that implemenation currently cannot handle variance.
+
+                    MethodDesc defaultInterfaceDispatchDeclMethod = null;
+                    foreach (TypeDesc iface in implType.RuntimeInterfaces)
+                    {
+                        if (iface == declMethod.OwningType)
+                        {
+                            defaultInterfaceDispatchDeclMethod = declMethod;
+                            break;
+                        }
+                        if (iface.HasSameTypeDefinition(declMethod.OwningType) && iface.CanCastTo(declMethod.OwningType))
+                        {
+                            defaultInterfaceDispatchDeclMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(declMethod);
+                            // Prefer to find the exact match, so don't break immediately
+                        }
+                    }
+
+                    if (defaultInterfaceDispatchDeclMethod != null)
+                    {
+                        switch (implType.ResolveInterfaceMethodToDefaultImplementationOnType(defaultInterfaceDispatchDeclMethod, out dimMethod))
+                        {
+                            case DefaultInterfaceMethodResolution.Diamond:
+                            case DefaultInterfaceMethodResolution.Reabstraction:
+                                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
+                                return null;
+
+                            case DefaultInterfaceMethodResolution.DefaultImplementation:
+                                if (dimMethod.OwningType.HasInstantiation || (declMethod != defaultInterfaceDispatchDeclMethod))
+                                {
+                                    // If we devirtualized into a default interface method on a generic type, we should actually return an
+                                    // instantiating stub but this is not happening.
+                                    // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
+
+                                    // In addition, we fail here for variant default interface dispatch
+                                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
+                                    return null;
+                                }
+                                else
+                                {
+                                    impl = dimMethod;
+                                }
+                                break;
+                        }
+                    }
                 }
             }
             else

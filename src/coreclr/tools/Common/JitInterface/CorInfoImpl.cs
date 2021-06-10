@@ -1165,6 +1165,12 @@ namespace Internal.JitInterface
 
             if (originalImpl == null)
             {
+                // If this assert fires, we failed to devirtualize, probably due to a failure to resolve the
+                // virtual to an exact target. This should never happen in practice if the input IL is valid,
+                // and the algorithm for virtual function resolution is correct; however, if it does, this is
+                // a safe condition, and we could delete this assert. This assert exists in order to help identify
+                // cases where the virtual function resolution algorithm either does not function, or is not used
+                // correctly.
                 Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
                 return false;
             }
