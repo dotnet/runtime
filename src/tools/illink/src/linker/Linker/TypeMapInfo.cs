@@ -166,10 +166,13 @@ namespace Mono.Linker
 				return;
 
 			foreach (MethodDefinition method in type.Methods) {
-				if (!method.IsVirtual)
+				// We do not proceed unless a method is virtual or is static
+				// A static method with a .override could be implementing a static interface method
+				if (!(method.IsStatic || method.IsVirtual))
 					continue;
 
-				MapVirtualMethod (method);
+				if (method.IsVirtual)
+					MapVirtualMethod (method);
 
 				if (method.HasOverrides)
 					MapOverrides (method);
