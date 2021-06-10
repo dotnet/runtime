@@ -3794,7 +3794,7 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
 // Arguments:
 //    srcVN - value number for the value being stored;
 //    dstIndType - type of the indirection storing the value to the memory;
-//    block - block where the assignment occurs/
+//    block - block where the assignment occurs
 //
 // Return Value:
 //    The value number corresponding to memory after the assignment.
