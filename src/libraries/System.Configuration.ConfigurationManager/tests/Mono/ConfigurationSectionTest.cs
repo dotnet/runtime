@@ -39,7 +39,6 @@ namespace MonoTests.System.Configuration
     public class ConfigurationSectionTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53960", TargetFrameworkMonikers.Netcoreapp)]
         public void TwoConfigElementsInARow() // Bug #521231
         {
             string config = @"<fooconfig><foos><foo id=""1"" /></foos><bars><bar id=""1"" /></bars></fooconfig>";
