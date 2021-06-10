@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class DependencyContextTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Theory]
         [InlineData("System.Collections.dll", "System.Collections")]
         [InlineData("System.Collections.ni.dll", "System.Collections")]
         [InlineData("mscorlib", "mscorlib")]
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assets.Should().OnlyContain(a => a.Name == expected);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void GetRuntimeAssemblyNamesReturnsRIDLessAssetsIfNoRIDSpecificAssetsInLibrary()
         {
             var context = BuildTestContext();
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assets.Should().OnlyContain(a => a.Name == "System.Collections");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void GetRuntimeAssemblyNamesReturnsMostSpecificAssetIfRIDSpecificAssetInLibrary()
         {
             var context = BuildTestContext();
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assets.Should().BeEmpty();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void GetRuntimeNativeAssetsReturnsEmptyIfNoGroupsMatch()
         {
             var context = BuildTestContext();
@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void MergeMergesRuntimeGraph()
         {
             var context = new DependencyContext(

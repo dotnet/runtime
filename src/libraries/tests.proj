@@ -237,6 +237,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory.Data/tests/System.Memory.Data.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
 
+    <!-- PNSE or Attempting to JIT compile method while running in aot-only mode https://github.com/dotnet/runtime/issues/53922 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel\tests\Microsoft.Extensions.DependencyModel.Tests.csproj" /> 
+    
     <!-- https://github.com/dotnet/runtime/issues/53922 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\Interpreter\*.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\*.Test.csproj" />

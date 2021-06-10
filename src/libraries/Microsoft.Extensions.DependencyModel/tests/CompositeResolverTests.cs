@@ -12,7 +12,6 @@ using FluentAssertions;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class CompositeResolverTests
     {
         [Fact]

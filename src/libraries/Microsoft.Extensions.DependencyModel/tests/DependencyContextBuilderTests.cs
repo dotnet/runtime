@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             lib.Serviceable.Should().BeTrue();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void FillsRuntimeLibraryProperties()
         {
             var context = Build(runtimeExports: new[]
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             asm.HashPath.Should().BeNull();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void FiltersDuplicatedDependencies()
         {
             var context = Build(runtimeExports: new[]
@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "2.0.0");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void FillsCompileLibraryProperties()
         {
             var context = Build(compilationExports: new[]
@@ -285,7 +285,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             asm.HashPath.Should().BeNull();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void FillsResources()
         {
             var context = Build(runtimeExports: new[]
@@ -303,7 +303,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             lib.ResourceAssemblies.Should().OnlyContain(l => l.Locale == "en-US" && l.Path == "resources/en-US/Pack.Age.dll");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void ReferenceAssembliesPathRelativeToDefaultRoot()
         {
             var context = Build(compilationExports: new[]
@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             asm.Assemblies.Should().OnlyContain(a => a == Path.Combine("sub", "System.Collections.dll"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
+        [Fact]
         public void SkipsBuildDependencies()
         {
             var context = Build(compilationExports: new[]
