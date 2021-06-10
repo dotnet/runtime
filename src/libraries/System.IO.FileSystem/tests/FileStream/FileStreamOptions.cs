@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.IO.Tests
@@ -133,6 +133,51 @@ namespace System.IO.Tests
             Assert.Equal(123, new FileStreamOptions { BufferSize = 123 }.BufferSize);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { BufferSize = -1 });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SettingsArePropagated(bool isAsync)
+        {
+            string filePath = GetTestFilePath();
+
+            var writeOptions = new FileStreamOptions
+            {
+                Mode = FileMode.Create,
+                Access = FileAccess.Write,
+                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
+            };
+
+            Validate(new FileStream(filePath, writeOptions), filePath, isAsync, false, true);
+            Validate(File.Open(filePath, writeOptions), filePath, isAsync, false, true);
+            Validate(new FileInfo(filePath).Open(writeOptions), filePath, isAsync, false, true);
+            Validate((FileStream)new StreamWriter(filePath, writeOptions).BaseStream, filePath, isAsync, false, true);
+            Validate((FileStream)new StreamWriter(filePath, Encoding.UTF8, writeOptions).BaseStream, filePath, isAsync, false, true);
+
+            var readOptions = new FileStreamOptions
+            {
+                Mode = FileMode.Open,
+                Access = FileAccess.Read,
+                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
+            };
+
+            Validate(new FileStream(filePath, readOptions), filePath, isAsync, true, false);
+            Validate(File.Open(filePath, readOptions), filePath, isAsync, true, false);
+            Validate(new FileInfo(filePath).Open(readOptions), filePath, isAsync, true, false);
+            Validate((FileStream)new StreamReader(filePath, readOptions).BaseStream, filePath, isAsync, true, false);
+            Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, readOptions).BaseStream, filePath, isAsync, true, false);
+
+            static void Validate(FileStream fs, string expectedPath, bool expectedAsync, bool expectedCanRead, bool expectedCanWrite)
+            {
+                using (fs)
+                {
+                    Assert.Equal(expectedPath, fs.Name);
+                    Assert.Equal(expectedAsync, fs.IsAsync);
+                    Assert.Equal(expectedCanRead, fs.CanRead);
+                    Assert.Equal(expectedCanWrite, fs.CanWrite);
+                }
+            }
         }
     }
 }
