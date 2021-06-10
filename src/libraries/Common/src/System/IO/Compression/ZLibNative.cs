@@ -283,7 +283,9 @@ namespace System.IO.Compression
                 EnsureState(State.InitializedForDeflate);
 
                 fixed (ZStream* stream = &_zStream)
+                {
                     return Interop.zlib.Deflate(stream, flush);
+                }
             }
 
 
@@ -293,7 +295,9 @@ namespace System.IO.Compression
                 EnsureState(State.InitializedForDeflate);
 
                 fixed (ZStream* stream = &_zStream)
+                {
                     return Interop.zlib.DeflateReset(stream);
+                }
             }
 
             public unsafe ErrorCode DeflateEnd()
@@ -332,7 +336,9 @@ namespace System.IO.Compression
                 EnsureState(State.InitializedForInflate);
 
                 fixed (ZStream* stream = &_zStream)
+                {
                     return Interop.zlib.Inflate(stream, flush);
+                }
             }
 
 
@@ -342,7 +348,9 @@ namespace System.IO.Compression
                 EnsureState(State.InitializedForInflate);
 
                 fixed (ZStream* stream = &_zStream)
+                {
                     return Interop.zlib.InflateReset(stream);
+                }
             }
 
             public unsafe ErrorCode InflateEnd()
