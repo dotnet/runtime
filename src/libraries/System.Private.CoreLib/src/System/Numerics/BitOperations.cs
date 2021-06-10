@@ -71,18 +71,27 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
 
-        /// <summary>Round the given integral value up to a power of 2.</summary>
+        /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
         /// <param name="value">The value.</param>
-        internal static uint RoundUpToPowerOf2(uint value)
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equals to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, return 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint RoundUpToPowerOf2(uint value)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/43135
-            // When this is exposed publicly, decide on the behavior for the boundary cases...
-            // the accelerated and fallback paths differ.
-            Debug.Assert(value > 0 && value <= (uint.MaxValue / 2) + 1);
-
             if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported)
             {
-                return 1u << (32 - LeadingZeroCount(value - 1));
+                // LeadingZeroCount is intrinsic
+#if TARGET_64BIT
+                return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
+#else
+                int shift = 32 - LeadingZeroCount(value - 1);
+                return (1u ^ (uint)(shift >> 5)) << shift;
+#endif
             }
 
             // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
