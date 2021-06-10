@@ -1049,10 +1049,14 @@ CHECK PEDecoder::CheckCorHeader() const
     if (!possiblyCompositeR2R)
         CHECK(VAL16(pCor->MajorRuntimeVersion) > 1 && VAL16(pCor->MajorRuntimeVersion) <= COR_VERSION_MAJOR);
 
+#ifdef HOST_WINDOWS
+    CHECK(CheckDirectory(&pCor->MetaData, IMAGE_SCN_MEM_WRITE, HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
+#else
     CHECK(CheckDirectory(
         &pCor->MetaData,
         possiblyCompositeR2R ? 0 : IMAGE_SCN_MEM_WRITE,
         HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
+#endif
     CHECK(CheckDirectory(&pCor->Resources, IMAGE_SCN_MEM_WRITE, NULL_OK));
     CHECK(CheckDirectory(&pCor->StrongNameSignature, IMAGE_SCN_MEM_WRITE, NULL_OK));
     CHECK(CheckDirectory(&pCor->CodeManagerTable, IMAGE_SCN_MEM_WRITE, NULL_OK));
