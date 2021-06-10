@@ -6,6 +6,18 @@ using System;
 namespace Microsoft.NET.HostModel.AppHost
 {
     /// <summary>
+    /// An instance of this exception is thrown when an AppHost binary update
+    /// fails due to known user errors.
+    /// </summary>
+    public class AppHostUpdateException : Exception
+    {
+        internal AppHostUpdateException(string message = null)
+            : base(message)
+        {
+        }
+    }
+
+    /// <summary>
     /// The application host executable cannot be customized because adding resources requires
     /// that the build be performed on Windows (excluding Nano Server).
     /// </summary>
