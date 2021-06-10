@@ -94,7 +94,7 @@ namespace System.Net.Http.Functional.Tests
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
                 EnableDynamicHttp2StreamWindowSizing = false,
-                InitialStreamWindowSize = initialWindowKbytes * 1024mó
+                InitialStreamWindowSize = initialWindowKbytes * 1024
             };
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler);
         }
