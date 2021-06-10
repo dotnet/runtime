@@ -1043,17 +1043,6 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
-    if (m_BackwardJump)
-    {
-        const bool callSiteIsInLoop = m_CallsiteFrequency == InlineCallsiteFrequency::LOOP;
-        JITDUMP("\nInline has %d backward jumps (loops?).", m_BackwardJump);
-        if (!callSiteIsInLoop)
-        {
-            JITDUMP(" And is inlined into a loop.")
-        }
-        multiplier *= 0.5;
-    }
-
     if (m_HasProfile)
     {
         // m_ProfileFrequency values:
@@ -1093,6 +1082,12 @@ double DefaultPolicy::DetermineMultiplier()
         default:
             assert(!"Unexpected callsite frequency");
             break;
+    }
+
+    if (m_BackwardJump)
+    {
+        JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump);
+        multiplier *= 0.2;
     }
 
     if (m_IsCallsiteInNoReturnRegion)
