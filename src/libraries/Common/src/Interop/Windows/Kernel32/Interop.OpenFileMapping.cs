@@ -8,7 +8,15 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "OpenFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial SafeMemoryMappedFileHandle OpenFileMapping(
+#else
         [DllImport(Libraries.Kernel32, EntryPoint = "OpenFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeMemoryMappedFileHandle OpenFileMapping(int dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, string lpName);
+        internal static extern SafeMemoryMappedFileHandle OpenFileMapping(
+#endif
+            int dwDesiredAccess,
+            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
+            string lpName);
     }
 }
