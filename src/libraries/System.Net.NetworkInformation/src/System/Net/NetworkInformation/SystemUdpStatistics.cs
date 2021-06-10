@@ -12,13 +12,15 @@ namespace System.Net.NetworkInformation
 
         private SystemUdpStatistics() { }
 
-        internal SystemUdpStatistics(AddressFamily family)
+        internal unsafe SystemUdpStatistics(AddressFamily family)
         {
-            uint result = Interop.IpHlpApi.GetUdpStatisticsEx(out _stats, family);
-
-            if (result != Interop.IpHlpApi.ERROR_SUCCESS)
+            fixed (Interop.IpHlpApi.MibUdpStats* pStats = &_stats)
             {
-                throw new NetworkInformationException((int)result);
+                uint result = Interop.IpHlpApi.GetUdpStatisticsEx(pStats, family);
+                if (result != Interop.IpHlpApi.ERROR_SUCCESS)
+                {
+                    throw new NetworkInformationException((int)result);
+                }
             }
         }
 

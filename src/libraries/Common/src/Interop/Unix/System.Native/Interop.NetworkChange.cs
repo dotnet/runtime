@@ -17,7 +17,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateNetworkChangeListenerSocket")]
-        public static extern Error CreateNetworkChangeListenerSocket(out int socket);
+        public static unsafe extern Error CreateNetworkChangeListenerSocket(int* socket);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseNetworkChangeListenerSocket")]
         public static extern Error CloseNetworkChangeListenerSocket(int socket);

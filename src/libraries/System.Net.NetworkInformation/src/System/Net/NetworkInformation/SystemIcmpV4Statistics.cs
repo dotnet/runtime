@@ -8,9 +8,11 @@ namespace System.Net.NetworkInformation
     {
         private readonly Interop.IpHlpApi.MibIcmpInfo _stats;
 
-        internal SystemIcmpV4Statistics()
+        internal unsafe SystemIcmpV4Statistics()
         {
-            uint result = Interop.IpHlpApi.GetIcmpStatistics(out _stats);
+            uint result;
+            fixed (Interop.IpHlpApi.MibIcmpInfo* pStats = &_stats)
+                result = Interop.IpHlpApi.GetIcmpStatistics(pStats);
 
             if (result != Interop.IpHlpApi.ERROR_SUCCESS)
             {
