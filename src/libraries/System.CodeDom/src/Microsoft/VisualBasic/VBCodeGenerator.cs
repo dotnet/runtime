@@ -866,7 +866,7 @@ namespace Microsoft.VisualBasic
                 Output.Write(typeName);
 
 #if NETCOREAPP
-                if (typeName.Contains('('))
+                if (!typeName.Contains('('))
 #else
                 if (typeName.IndexOf('(') == -1)
 #endif
