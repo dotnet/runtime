@@ -1469,8 +1469,11 @@ namespace System.Numerics
             }
 
             // Find highest significant byte and ensure high bit is 0 if positive, 1 if negative
-            int msb;
-            for (msb = dwords.Length - 1; msb > 0 && dwords[msb] == highDWord; msb--) ;
+            int msb = dwords.Length - 1;
+            while (msb > 0 && dwords[msb] == highDWord)
+            {
+                msb--;
+            }
             bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
 
             int length = msb + 1 + (needExtraByte ? 1 : 0);
