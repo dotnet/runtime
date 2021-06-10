@@ -41,7 +41,6 @@ bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::s
 bool multilevel_lookup_enabled();
 void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
-bool get_line_from_file(FILE* pFile, pal::string_t& line);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);
@@ -49,11 +48,11 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal:
 pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
 pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name);
 void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg);
-pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path);
+pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path);
 
 // Get a download URL for a specific framework and version
 // If no framework is specified, a download URL for the runtime is returned
-pal::string_t get_download_url(const pal::char_t *framework_name = nullptr, const pal::char_t *framework_version = nullptr);
+pal::string_t get_download_url(const pal::char_t* framework_name = nullptr, const pal::char_t* framework_version = nullptr);
 
 pal::string_t to_lower(const pal::char_t* in);
 pal::string_t to_upper(const pal::char_t* in);
@@ -67,7 +66,7 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv);
 class propagate_error_writer_t
 {
 public:
-    typedef trace::error_writer_fn(__cdecl *set_error_writer_fn)(trace::error_writer_fn error_writer);
+    typedef trace::error_writer_fn(__cdecl* set_error_writer_fn)(trace::error_writer_fn error_writer);
 
 private:
     set_error_writer_fn m_set_error_writer;

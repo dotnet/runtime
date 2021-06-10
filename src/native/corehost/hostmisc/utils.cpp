@@ -98,26 +98,6 @@ pal::string_t strip_file_ext(const pal::string_t& path)
     return path.substr(0, dot_pos);
 }
 
-bool get_line_from_file(FILE* pFile, pal::string_t& line)
-{
-    line = pal::string_t();
-    char buffer[256];
-    while (fgets(buffer, sizeof(buffer), pFile))
-    {
-        line += (pal::char_t*)buffer;
-        size_t len = line.length();
-
-        // fgets includes the newline character in the string - so remove it.
-        if (len > 0 && line[len - 1] == '\n')
-        {
-            line[len - 1] = '\0';
-            break;
-        }
-    }
-
-    return !line.empty();
-}
-
 pal::string_t get_filename_without_ext(const pal::string_t& path)
 {
     if (path.empty())
@@ -181,7 +161,7 @@ void remove_trailing_dir_seperator(pal::string_t* dir)
 
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 {
-	size_t pos = 0;
+    size_t pos = 0;
     while ((pos = path->find(match, pos)) != pal::string_t::npos)
     {
         (*path)[pos] = repl;
@@ -190,7 +170,7 @@ void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 
 pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl)
 {
-	size_t pos = path.find(match);
+    size_t pos = path.find(match);
     if (pos == pal::string_t::npos)
     {
         return path;
@@ -261,7 +241,7 @@ bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::stri
     return true;
 }
 
-bool get_global_shared_store_dirs(std::vector<pal::string_t>*  dirs, const pal::string_t& arch, const pal::string_t& tfm)
+bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
 {
     std::vector<pal::string_t> global_dirs;
     if (!pal::get_global_dotnet_dirs(&global_dirs))
@@ -386,7 +366,7 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
 
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
-    *dotnet_root_env_var_name = _X("DOTNET_ROOT");
+    * dotnet_root_env_var_name = _X("DOTNET_ROOT");
     return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
 }
 
@@ -434,7 +414,7 @@ void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& na
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), cfg->c_str(), dev_cfg->c_str());
 }
 
-pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path)
+pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path)
 {
     // If coreclr exists next to hostfxr, assume everything is local (e.g. self-contained)
     pal::string_t fxr_dir = get_directory(fxr_path);
@@ -446,7 +426,7 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path)
     return get_directory(get_directory(fxr_root));
 }
 
-pal::string_t get_download_url(const pal::char_t *framework_name, const pal::char_t *framework_version)
+pal::string_t get_download_url(const pal::char_t* framework_name, const pal::char_t* framework_version)
 {
     pal::string_t url = DOTNET_CORE_APPLAUNCH_URL _X("?");
     if (framework_name != nullptr && pal::strlen(framework_name) > 0)

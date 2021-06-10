@@ -77,7 +77,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         if (pal::get_dotnet_self_registered_dir(&default_install_location) || pal::get_default_installation_dir(&default_install_location))
         {
             trace::info(_X("Using global installation location [%s] as runtime location."), default_install_location.c_str());
-            out_dotnet_root->assign(default_install_location);
+            out_dotnet_root->assign(default_install_location.c_str());
         }
         else
         {
@@ -134,7 +134,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
 #endif // !FEATURE_APPHOST && !FEATURE_LIBHOST
 }
 
-bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t &dotnet_root, pal::string_t *out_fxr_path)
+bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t& dotnet_root, pal::string_t* out_fxr_path)
 {
     pal::string_t fxr_dir = dotnet_root;
     append_path(&fxr_dir, _X("host"));
@@ -148,7 +148,7 @@ bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t &dotnet_roo
     return get_latest_fxr(std::move(fxr_dir), out_fxr_path);
 }
 
-bool fxr_resolver::try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path)
+bool fxr_resolver::try_get_existing_fxr(pal::dll_t* out_fxr, pal::string_t* out_fxr_path)
 {
     if (!pal::get_loaded_library(LIBFXR_NAME, "hostfxr_main", out_fxr, out_fxr_path))
         return false;

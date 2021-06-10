@@ -68,7 +68,7 @@ bool pal::touch_file(const pal::string_t& path)
         trace::warning(_X("open(%s) failed in %s"), path.c_str(), _STRINGIFY(__FUNCTION__));
         return false;
     }
-    (void) close(fd);
+    (void)close(fd);
     return true;
 }
 
@@ -139,12 +139,12 @@ bool pal::getcwd(pal::string_t* recv)
 
 namespace
 {
-    bool get_loaded_library_from_proc_maps(const pal::char_t *library_name, pal::dll_t *dll, pal::string_t *path)
+    bool get_loaded_library_from_proc_maps(const pal::char_t* library_name, pal::dll_t* dll, pal::string_t* path)
     {
-        char *line = nullptr;
+        char* line = nullptr;
         size_t lineLen = 0;
         ssize_t read;
-        FILE *file = pal::file_open(_X("/proc/self/maps"), _X("r"));
+        FILE* file = pal::file_open(_X("/proc/self/maps"), _X("r"));
         if (file == nullptr)
             return false;
 
@@ -185,10 +185,10 @@ namespace
 }
 
 bool pal::get_loaded_library(
-    const char_t *library_name,
-    const char *symbol_name,
-    /*out*/ dll_t *dll,
-    /*out*/ pal::string_t *path)
+    const char_t* library_name,
+    const char* symbol_name,
+    /*out*/ dll_t* dll,
+    /*out*/ pal::string_t* path)
 {
     pal::string_t library_name_local;
 #if defined(TARGET_OSX)
@@ -333,7 +333,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 bool is_read_write_able_directory(pal::string_t& dir)
 {
     return pal::realpath(&dir) &&
-           (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
+        (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
 }
 
 bool get_extraction_base_parent_directory(pal::string_t& directory)
@@ -424,7 +424,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     pal::string_t install_location;
     bool is_first_line = true, install_location_found = false;
 
-    while (get_line_from_file(install_location_file, install_location))
+    while (pal::get_line_from_file(install_location_file, install_location))
     {
         size_t arch_sep = install_location.find(_X('='));
         if (arch_sep == pal::string_t::npos)
@@ -459,6 +459,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         is_first_line = false;
     }
 
+    fclose(install_location_file);
     if (!install_location_found)
     {
         trace::warning(_X("Did not find any install location in '%s'."), install_location_file_path.c_str());
@@ -466,7 +467,6 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
 
     trace::verbose(_X("Using install location '%s'."), recv->c_str());
-    fclose(install_location_file);
     return true;
 }
 
@@ -482,17 +482,37 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     //  ***************************
 
 #if defined(TARGET_OSX)
-     recv->assign(_X("/usr/local/share/dotnet"));
+    recv->assign(_X("/usr/local/share/dotnet"));
 #else
-     recv->assign(_X("/usr/share/dotnet"));
+    recv->assign(_X("/usr/share/dotnet"));
 #endif
-     return true;
+    return true;
+}
+
+bool pal::get_line_from_file(FILE* pFile, pal::string_t& line)
+{
+    line = pal::string_t();
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), pFile))
+    {
+        line += (pal::char_t*)buffer;
+        size_t len = line.length();
+
+        // fgets includes the newline character in the string - so remove it.
+        if (len > 0 && line[len - 1] == '\n')
+        {
+            line.pop_back();
+            break;
+        }
+    }
+
+    return !line.empty();
 }
 
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
 {
-    pal::char_t quote_array[2] = {'\"', '\''};
-    for (size_t index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
+    pal::char_t quote_array[2] = { '\"', '\'' };
+    for (size_t index = 0; index < sizeof(quote_array) / sizeof(quote_array[0]); index++)
     {
         size_t pos = stringToCleanup.find(quote_array[index]);
         while (pos != std::string::npos)
@@ -568,11 +588,11 @@ pal::string_t pal::get_current_os_rid_platform()
 
     if (ret == 0)
     {
-        char *pos = strchr(str, '.');
+        char* pos = strchr(str, '.');
         if (pos)
         {
             ridOS.append(_X("freebsd."))
-                 .append(str, pos - str);
+                .append(str, pos - str);
         }
     }
 
@@ -604,7 +624,7 @@ pal::string_t pal::get_current_os_rid_platform()
     if (strncmp(utsname_obj.version, "omnios", strlen("omnios")) == 0)
     {
         ridOS.append(_X("omnios."))
-             .append(utsname_obj.version, strlen("omnios-r"), 2); // e.g. omnios.15
+            .append(utsname_obj.version, strlen("omnios-r"), 2); // e.g. omnios.15
     }
     else if (strncmp(utsname_obj.version, "illumos-", strlen("illumos-")) == 0)
     {
@@ -613,7 +633,7 @@ pal::string_t pal::get_current_os_rid_platform()
     else if (strncmp(utsname_obj.version, "joyent_", strlen("joyent_")) == 0)
     {
         ridOS.append(_X("smartos."))
-             .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
+            .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
     }
 
     return ridOS;
@@ -636,11 +656,11 @@ pal::string_t pal::get_current_os_rid_platform()
         return ridOS;
     }
 
-    char *pos = strchr(utsname_obj.version, '.');
+    char* pos = strchr(utsname_obj.version, '.');
     if (pos)
     {
         ridOS.append(_X("solaris."))
-             .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
+            .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
     }
 
     return ridOS;
@@ -786,7 +806,7 @@ bool pal::get_own_executable_path(pal::string_t* recv)
 bool pal::get_own_module_path(string_t* recv)
 {
     Dl_info info;
-    if (dladdr((void *)&pal::get_own_module_path, &info) == 0)
+    if (dladdr((void*)&pal::get_own_module_path, &info) == 0)
         return false;
 
     recv->assign(info.dli_fname);
@@ -808,7 +828,7 @@ bool pal::get_module_path(dll_t module, string_t* recv)
     return false;
 }
 
-bool pal::get_current_module(dll_t *mod)
+bool pal::get_current_module(dll_t* mod)
 {
     return false;
 }
@@ -891,31 +911,31 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
                 }
                 break;
 
-            // Handle symlinks and file systems that do not support d_type
+                // Handle symlinks and file systems that do not support d_type
             case DT_LNK:
             case DT_UNKNOWN:
+            {
+                struct stat sb;
+
+                if (fstatat(dirfd(dir), entry->d_name, &sb, 0) == -1)
                 {
-                    struct stat sb;
-
-                    if (fstatat(dirfd(dir), entry->d_name, &sb, 0) == -1)
-                    {
-                        continue;
-                    }
-
-                    if (onlydirectories)
-                    {
-                        if (!S_ISDIR(sb.st_mode))
-                        {
-                            continue;
-                        }
-                        break;
-                    }
-                    else if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
-                break;
+
+                if (onlydirectories)
+                {
+                    if (!S_ISDIR(sb.st_mode))
+                    {
+                        continue;
+                    }
+                    break;
+                }
+                else if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
+                {
+                    continue;
+                }
+            }
+            break;
 
             default:
                 continue;

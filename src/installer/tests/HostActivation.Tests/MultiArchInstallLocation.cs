@@ -162,6 +162,32 @@ namespace HostActivation.Tests
             }
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
+        public void InstallLocationFile_ReallyLongInstallPathIsParsedCorrectly()
+        {
+            var fixture = sharedTestState.PortableAppFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
+            {
+                var reallyLongPath =
+                    "reallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreally" +
+                    "reallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreally" +
+                    "reallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongpath";
+                registeredInstallLocationOverride.SetInstallLocation((string.Empty, reallyLongPath));
+
+                Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().HaveStdErrContaining($"Found install location path '{reallyLongPath}'.")
+                    .And.HaveStdErrContaining($"Using install location '{reallyLongPath}'.");
+            }
+        }
+
         public class SharedTestState : IDisposable
         {
             public string BaseDirectory { get; }
@@ -175,7 +201,8 @@ namespace HostActivation.Tests
                 var fixture = new TestProjectFixture("PortableApp", RepoDirectories);
                 fixture
                     .EnsureRestored()
-                    .PublishProject();
+                    // App Host generation is turned off by default on macOS
+                    .PublishProject(extraArgs: "/p:UseAppHost=true");
 
                 PortableAppFixture = fixture;
                 BaseDirectory = Path.GetDirectoryName(PortableAppFixture.SdkDotnet.GreatestVersionHostFxrFilePath);
