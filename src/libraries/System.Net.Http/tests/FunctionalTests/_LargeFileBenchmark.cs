@@ -35,10 +35,13 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => _listener?.Dispose();
 
         private const double LengthMb = 400;
+
         //private const string BenchmarkServer = "10.194.114.94";
         private const string BenchmarkServer = "192.168.0.152";
         private const string BenchmarkServerGo = "192.168.0.152:5002";
         // private const string BenchmarkServer = "127.0.0.1:5000";
+
+        private static readonly IPEndPoint LocalEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
         [Theory]
         [InlineData(BenchmarkServer)]
@@ -89,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
                 EnableDynamicHttp2StreamWindowSizing = false,
-                InitialStreamWindowSize = initialWindowKbytes * 1024
+                InitialStreamWindowSize = initialWindowKbytes * 1024mó
             };
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler);
         }
@@ -101,11 +104,11 @@ namespace System.Net.Http.Functional.Tests
             { BenchmarkServer, 8, 0.125 },
             { BenchmarkServer, 4, 0.5 },
             { BenchmarkServer, 4, 0.25 },
-            { BenchmarkServerGo, 8, 0.5 },
-            { BenchmarkServerGo, 8, 0.25 },
-            { BenchmarkServerGo, 8, 0.125 },
-            { BenchmarkServerGo, 4, 0.5 },
-            { BenchmarkServerGo, 4, 0.25 },
+            //{ BenchmarkServerGo, 8, 0.5 },
+            //{ BenchmarkServerGo, 8, 0.25 },
+            //{ BenchmarkServerGo, 8, 0.125 },
+            //{ BenchmarkServerGo, 4, 0.5 },
+            //{ BenchmarkServerGo, 4, 0.25 },
         };
 
 
@@ -183,9 +186,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
 
-        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, HttpMessageHandler handler = null)
+        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null)
         {
             handler ??= new SocketsHttpHandler();
+            handler.ConnectCallback = CustomConnect;
+
             using var client = new HttpClient(handler, true);
             client.Timeout = TimeSpan.FromMinutes(2);
             var message = GenerateRequestMessage(hostName, http2, lengthMb);
@@ -195,6 +200,26 @@ namespace System.Net.Http.Functional.Tests
 
             double elapsedSec = sw.ElapsedMilliseconds * 0.001;
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
+        }
+
+        private static async ValueTask<Stream> CustomConnect(SocketsHttpConnectionContext ctx, CancellationToken cancellationToken)
+        {
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+            {
+                NoDelay = true
+            };
+            socket.Bind(LocalEndPoint);
+
+            try
+            {
+                await socket.ConnectAsync(ctx.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
         }
 
         private async Task<TimeSpan> EstimateRttAsync(string hostName)
