@@ -273,7 +273,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
                 helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
                 if (!String.IsNullOrEmpty(helixUploadRoot)) {
-                    reportBase = Path.Combine(GetFullPath(helixUploadRoot), "Reports")%3B
+                    reportBase = Path.Combine(Path.GetFullPath(helixUploadRoot), "Reports")%3B
                 }
 
                 if (String.IsNullOrEmpty(reportBase)) {
