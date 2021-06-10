@@ -480,7 +480,7 @@ jobs:
           gcSimulatorTests: true
           scenarios:
           - normal
-        ${{ if in(parameters.testGroup, 'gc-simulator') }}:
+        ${{ if in(parameters.testGroup, 'gc-regions') }}:
           gcSimulatorTests: true
           scenarios:
           - gcregions

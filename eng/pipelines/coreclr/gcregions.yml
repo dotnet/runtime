@@ -21,7 +21,7 @@ jobs:
     - windows_x64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
-      testGroup: gcregions
+      testGroup: gc-regions
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -30,7 +30,7 @@ jobs:
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
-      testGroup: gcregions
+      testGroup: gc-regions
       liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -46,6 +46,6 @@ jobs:
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      testGroup: gcregions
+      testGroup: gc-regions
       displayNameArgs: GCRegions
       liveLibrariesBuildConfig: Release
