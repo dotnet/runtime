@@ -297,7 +297,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
-                string architecture = fixture.CurrentRid.Split('-')[1];
+                string architecture = fixture.RepoDirProvider.BuildArchitecture;
                 if (useRegisteredLocation)
                 {
                     registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });

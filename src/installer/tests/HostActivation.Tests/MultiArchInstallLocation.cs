@@ -45,12 +45,16 @@ namespace HostActivation.Tests
 
             var appExe = fixture.TestProject.AppExe;
             var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
-            Command.Create(appExe)
+            var result = Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(fixture.BuiltDotnet.BinPath)
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT=");
+                .Execute();
+
+            result.Should().Pass();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X86)
+                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT(x86)=");
+            else
+                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT=");
         }
 
         [Fact]
