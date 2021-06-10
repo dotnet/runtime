@@ -1,3 +1,4 @@
+<Project>  
   <ItemGroup>
     <!-- Assembly 'System.Management' is missing dependency 'Microsoft.Win32.Registry'.
       VerifyClosure doesn't see the Microsoft.Win32.Registry compile time reference as it is
@@ -5,3 +6,4 @@
       https://github.com/dotnet/runtime/issues/53892. -->
     <IgnoredReference Include="Microsoft.Win32.Registry" />
   </ItemGroup>
+</Project>
