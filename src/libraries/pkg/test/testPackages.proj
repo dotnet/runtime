@@ -1,8 +1,23 @@
-<Project DefaultTargets="Build">
-  <Import Project="..\Directory.Build.props" />
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks"
+             AssemblyFile="$(DotNetPackageTestingAssembly)"
+             Condition="'$(DotNetPackageTestingAssembly)' != ''" />
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.PackageTesting" Version="$(MicrosoftDotNetPackageTestingVersion)" />
+    <!-- Needed by packageTest.targets, could be moved into PackageTesting: https://github.com/dotnet/arcade/issues/7474. -->
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
+  </ItemGroup>
 
   <PropertyGroup>
     <PackageNamePattern>[a-zA-z\.]*\.</PackageNamePattern>
+
+    <TestDir>$(ArtifactsBinDir)testPackages\</TestDir>
+    <TestProjectDir>$(TestDir)projects\</TestProjectDir>
+    <TestPackageDir>$(TestDir)cache\</TestPackageDir>
+    <TestProjectName>dirs.proj</TestProjectName>
+    <ProjectTemplate>project.csproj.template</ProjectTemplate>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,44 +43,28 @@
     <TargetFrameworksToExclude Include="netcoreapp2.2" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <TestDir>$(ArtifactsBinDir)testPkg\</TestDir>
-    <TestSupportDir>$(TestDir)support\</TestSupportDir>
-    <TestProjectName>test.msbuild</TestProjectName>
-    <TestProject>$(TestSupportDir)$(TestProjectName)</TestProject>
-    <TestProjectDir>$(TestDir)projects\</TestProjectDir>
-    <TestPackageDir>$(ArtifactsBinDir)testPackages</TestPackageDir>
-    <TestDotNetPath>$(DotNetRoot)dotnet</TestDotNetPath>
-
-    <ProjectTemplate>project.csproj.template</ProjectTemplate>
-  </PropertyGroup>
-
   <ItemGroup>
-    <!-- The main entry point file: test.msbuild -->
-    <TestSupportFile Include="$(TestProjectName)"
-                     DestinationFolder="$(TestSupportDir)" />
+    <!-- The main entry point file. -->
+    <TestSupportFile Include="build\$(TestProjectName)"
+                     DestinationFolder="$(TestDir)" />
     <!-- msbuild support files and the packaging VerifyClosure assembly. -->
-    <TestSupportFile Include="$(RepositoryEngineeringDir)Versions.props;
+    <TestSupportFile Include="$(RepoRoot)global.json;
+                              $(RepoRoot)NuGet.config;
+                              $(RepositoryEngineeringDir)Versions.props;
                               $(RepositoryEngineeringDir)targetingpacks.targets;
                               $(LibrariesProjectRoot)shims\netfxreference.props;
-                              packageTest.targets;
-                              Directory.Build.props;
-                              Directory.Build.targets"
-                     DestinationFolder="$(TestSupportDir)" />
+                              build\packageTest.targets;
+                              build\Directory.Build.props;
+                              build\Directory.Build.targets"
+                     DestinationFolder="$(TestDir)" />
     <TestSupportFile Include="$(PackagingTaskDir)..\..\**\*.*"
                      Exclude="$(PackagingTaskDir)..\..\*.*"
-                     DestinationFolder="$(TestSupportDir)%(RecursiveDir)" />
+                     DestinationFolder="$(TestDir)%(RecursiveDir)" />
     <!-- frameworksettings and packagesettings -->
     <TestSupportFile Include="frameworkSettings\**\*"
-                     DestinationFolder="$(TestSupportDir)frameworkSettings\%(RecursiveDir)" />
+                     DestinationFolder="$(TestDir)frameworkSettings\%(RecursiveDir)" />
     <TestSupportFile Include="packageSettings\**\*"
-                     DestinationFolder="$(TestSupportDir)packageSettings\%(RecursiveDir)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
+                     DestinationFolder="$(TestDir)packageSettings\%(RecursiveDir)" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -75,8 +74,6 @@
     <Copy SourceFiles="@(TestSupportFile)" DestinationFolder="%(TestSupportFile.DestinationFolder)" />
   </Target>
 
-  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageTestingAssembly)"/>
-
   <Target Name="GetSupportedPackages">
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)">
       <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />
@@ -84,11 +81,10 @@
 
     <ItemGroup>
       <SupportedPackage>
-        <ProjectDir>$(TestProjectDir)%(Identity)/</ProjectDir>
+        <ProjectDir>$(TestProjectDir)%(Identity)\</ProjectDir>
       </SupportedPackage>
       <SupportedPackage>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <AssetsFile>%(ProjectDir)obj/project.assets.json</AssetsFile>
       </SupportedPackage>
     </ItemGroup>
   </Target>
@@ -112,94 +108,36 @@
           Inputs="@(TestPackagesPath);$(ProjectTemplate)"
           Outputs="%(SupportedPackage.ProjectFile)">
     <PropertyGroup>
-      <_projectDir>%(SupportedPackage.ProjectDir)/</_projectDir>
+      <_projectDir>%(SupportedPackage.ProjectDir)</_projectDir>
       <_projectFile>%(SupportedPackage.ProjectFile)</_projectFile>
       <_packageId>%(SupportedPackage.Identity)</_packageId>
       <_packageVersion>%(SupportedPackage.Version)</_packageVersion>
       <_projectTFMs>@(SupportedPackage->'%(TargetFrameworkShort)')</_projectTFMs>
     </PropertyGroup>
 
+    <!-- Generate project.csproj from template. -->
     <MakeDir Directories="$(_projectDir)" />
-    <!-- Update project.csproj template -->
     <WriteLinesToFile
       File="$(_projectFile)"
-      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TargetFrameworks}', $(_projectTFMs)).Replace('{NetCoreAppCurrent}', $(NetCoreAppCurrent)).Replace('{NetCoreAppCurrentVersion}', $(NetCoreAppCurrentVersion)).Replace('{MicrosoftNetCoreAppFrameworkName}', $(MicrosoftNetCoreAppFrameworkName)))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TargetFrameworks}', $(_projectTFMs)).Replace('{NetCoreAppCurrent}', $(NetCoreAppCurrent)).Replace('{NetCoreAppCurrentVersion}', $(NetCoreAppCurrentVersion)).Replace('{MicrosoftNetCoreAppFrameworkName}', $(MicrosoftNetCoreAppFrameworkName)).Replace('{MicrosoftNetCoreAppRefPackDir}', $(MicrosoftNetCoreAppRefPackDir)).Replace('{RestoreAdditionalProjectSources}', $(ArtifactsPackagesDir)).Replace('{RestorePackagesPath}', $(TestPackageDir)))"
       Overwrite="true" />
-    <Message Text="Generated $(_projectFile)" />
   </Target>
 
-  <Target Name="CopyProducedPackages">
-    <!-- Copy over package local cache to our helix runtime path -->
-    <ItemGroup>
-     <_localPackages Include="$(ArtifactsShippingPackagesDir)*.nupkg"/>
-     <_localPackages Include="$(ArtifactsNonShippingPackagesDir)*.nupkg"/>
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_localPackages)"
-          UseHardlinksIfPossible="true"
-          DestinationFolder="$(TestSupportDir)packages" />
-  </Target>
-
-  <Target Name="ArchiveHelixItems"
-          DependsOnTargets="GenerateProjects;CopyProducedPackages"
-          Condition="'$(ArchiveTests)' == 'true'">
-
-    <MakeDir Directories="$(TestArchiveTestsRoot)" />
-    <ZipDirectory
-        SourceDirectory="$(TestProjectDir)%(SupportedPackage.Identity)"
-        DestinationFile="$(TestArchiveTestsRoot)%(SupportedPackage.Identity).zip"
-        Overwrite="true" />
-
-    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
-    <ZipDirectory
-        SourceDirectory="$(TestSupportDir)"
-        DestinationFile="$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip"
-        Overwrite="true" />
-
-  </Target>
-
-  <Target Name="RestoreProjects"
+  <Target Name="InvokeProjects"
           DependsOnTargets="GenerateProjects"
-          Condition="'$(ArchiveTests)' != 'true'">
+          AfterTargets="Build;Test">
+    <ItemGroup>
+      <TestProject Include="$(TestDir)$(TestProjectName)" Condition="'$(PackagesToTest)' == ''" />
+      <TestProject Include="%(SupportedPackage.ProjectFile)" Condition="'$(PackagesToTest)' != ''" />
+    </ItemGroup>
+    
+    <MSBuild Projects="@(TestProject)"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Targets="Restore" />
 
-    <PropertyGroup>
-      <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(ArtifactsPackagesDir)</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /p:MicrosoftNetCoreAppRefPackDir=$(MicrosoftNetCoreAppRefPackDir)</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
-      <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
-      <TestRestoreCommand  Condition="'$(PackagesToTest)' != ''">$(TestRestoreCommand) /p:PackagesToTest=$(PackagesToTest)</TestRestoreCommand>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="*** Restoring ***" />
-    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
+    <MSBuild Projects="@(TestProject)" />
   </Target>
 
-  <Target Name="BuildProjects"
-          DependsOnTargets="RestoreProjects"
-          Condition="'$(ArchiveTests)' != 'true'">
-
-    <PropertyGroup>
-      <TestBuildCommand>"$(TestDotNetPath)"</TestBuildCommand>
-      <TestBuildCommand>$(TestBuildCommand) msbuild</TestBuildCommand>
-      <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
-      <TestBuildCommand>$(TestBuildCommand) /nr:false</TestBuildCommand>
-      <TestBuildCommand>$(TestBuildCommand) /warnaserror</TestBuildCommand>
-      <TestBuildCommand>$(TestBuildCommand) /p:MicrosoftNetCoreAppRefPackDir=$(MicrosoftNetCoreAppRefPackDir)</TestBuildCommand>
-      <TestBuildCommand  Condition="'$(PackagesToTest)' != ''">$(TestBuildCommand) /p:PackagesToTest=$(PackagesToTest)</TestBuildCommand>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="*** Testing *** %(SupportedPackage.Identity)" />
-    <Message Importance="High" Text="$(TestBuildCommand) &quot;$(TestProject)&quot;" />
-    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
-  </Target>
-
-  <Target Name="Build" DependsOnTargets="BuildProjects;ArchiveHelixItems" />
-
-  <!-- define test to do nothing, for this project Build does all the testing -->
   <Target Name="Test" />
 
-  <Import Project="..\Directory.Build.targets" />
 </Project>

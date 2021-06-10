@@ -144,16 +144,11 @@ namespace System.IO
         /// </summary>
         /// <param name="path">A relative or absolute path for the file that the current <see cref="System.IO.FileStream" /> instance will encapsulate.</param>
         /// <param name="options">An object that describes optional <see cref="System.IO.FileStream" /> parameters to use.</param>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> or <paramref name="options" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
         /// -or-
         /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
         /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><see cref="System.IO.FileStreamOptions.BufferSize" /> is negative.
-        /// -or-
-        /// <see cref="System.IO.FileStreamOptions.PreallocationSize" /> is negative.
-        /// -or-
-        /// <see cref="System.IO.FileStreamOptions.Mode" />, <see cref="System.IO.FileStreamOptions.Access" />, or <see cref="System.IO.FileStreamOptions.Share" /> contain an invalid value.</exception>
         /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="System.IO.FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error, such as specifying <see langword="FileMode.CreateNew" /> when the file specified by <paramref name="path" /> already exists, occurred.
         ///  -or-
@@ -169,8 +164,37 @@ namespace System.IO
         /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <see cref="System.IO.FileStreamOptions.Options" /> , but file encryption is not supported on the current platform.</exception>
         /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
         public FileStream(string path, FileStreamOptions options)
-            : this(path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize)
         {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
+            }
+            else if (path.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            }
+            else if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            else if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
+            {
+                throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(options));
+            }
+            else if ((options.Access & FileAccess.Write) == 0)
+            {
+                if (options.Mode == FileMode.Truncate || options.Mode == FileMode.CreateNew || options.Mode == FileMode.Create || options.Mode == FileMode.Append)
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, options.Mode, options.Access), nameof(options));
+                }
+            }
+            else if ((options.Access & FileAccess.Write) == FileAccess.Write)
+            {
+                SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
+            }
+
+            _strategy = FileStreamHelpers.ChooseStrategy(
+                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
         }
 
         private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)

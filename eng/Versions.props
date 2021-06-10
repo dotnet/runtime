@@ -176,6 +176,4 @@
     <MicrosoftNETRuntimeEmscripten2021Nodewinx64Version>6.0.0-preview.6.21275.1</MicrosoftNETRuntimeEmscripten2021Nodewinx64Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2021Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
-  <!-- Override isolated build dependency versions with versions from Repo API. -->
-  <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
 </Project>
