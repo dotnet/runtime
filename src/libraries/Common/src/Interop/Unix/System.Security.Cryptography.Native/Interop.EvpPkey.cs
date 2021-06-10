@@ -20,5 +20,71 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern unsafe SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
+            byte* buf,
+            int len,
+            int algId);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern unsafe SafeEvpPKeyHandle CryptoNative_DecodePkcs8PrivateKey(
+            byte* buf,
+            int len,
+            int algId);
+
+        internal static unsafe SafeEvpPKeyHandle DecodeSubjectPublicKeyInfo(
+            ReadOnlySpan<byte> source,
+            EvpAlgorithmId algorithmId)
+        {
+            SafeEvpPKeyHandle handle;
+
+            fixed (byte* sourcePtr = source)
+            {
+                handle = CryptoNative_DecodeSubjectPublicKeyInfo(
+                    sourcePtr,
+                    source.Length,
+                    (int)algorithmId);
+            }
+
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return handle;
+        }
+
+        internal static unsafe SafeEvpPKeyHandle DecodePkcs8PrivateKey(
+            ReadOnlySpan<byte> source,
+            EvpAlgorithmId algorithmId)
+        {
+            SafeEvpPKeyHandle handle;
+
+            fixed (byte* sourcePtr = source)
+            {
+                handle = CryptoNative_DecodePkcs8PrivateKey(
+                    sourcePtr,
+                    source.Length,
+                    (int)algorithmId);
+            }
+
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return handle;
+        }
+
+        internal enum EvpAlgorithmId
+        {
+            Unknown = 0,
+            RSA = 6,
+            DSA = 116,
+            ECC = 408,
+        }
     }
 }

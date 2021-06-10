@@ -299,60 +299,34 @@ namespace System.Security.Cryptography
             ValidateParameters(ref parameters);
             ThrowIfDisposed();
 
-            SafeRsaHandle key = Interop.Crypto.RsaCreate();
-            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
-            bool imported = false;
-
-            Interop.Crypto.CheckValidOpenSslHandle(key);
-
-            try
+            if (parameters.D != null)
             {
-                if (!Interop.Crypto.SetRsaParameters(
-                    key,
-                    parameters.Modulus,
-                    parameters.Modulus != null ? parameters.Modulus.Length : 0,
-                    parameters.Exponent,
-                    parameters.Exponent != null ? parameters.Exponent.Length : 0,
-                    parameters.D,
-                    parameters.D != null ? parameters.D.Length : 0,
-                    parameters.P,
-                    parameters.P != null ? parameters.P.Length : 0,
-                    parameters.DP,
-                    parameters.DP != null ? parameters.DP.Length : 0,
-                    parameters.Q,
-                    parameters.Q != null ? parameters.Q.Length : 0,
-                    parameters.DQ,
-                    parameters.DQ != null ? parameters.DQ.Length : 0,
-                    parameters.InverseQ,
-                    parameters.InverseQ != null ? parameters.InverseQ.Length : 0))
+                AsnWriter writer = RSAKeyFormatHelper.WritePkcs8PrivateKey(parameters);
+                ArraySegment<byte> pkcs8 = writer.RentAndEncode();
+
+                try
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
                 }
-
-                imported = true;
-            }
-            finally
-            {
-                if (!imported)
+                finally
                 {
-                    key.Dispose();
+                    CryptoPool.Return(pkcs8);
                 }
             }
-
-            if (!Interop.Crypto.EvpPkeySetRsa(pkey, key))
+            else
             {
-                pkey.Dispose();
-                key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                ArraySegment<byte> spki = writer.RentAndEncode();
+
+                try
+                {
+                    ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
+                }
+                finally
+                {
+                    CryptoPool.Return(spki);
+                }
             }
-
-            key.Dispose();
-            FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
-
-            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-            // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.EvpPKeySize(pkey));
         }
 
         public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
@@ -375,27 +349,52 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
-            SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(source.Slice(0, read));
+            AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(source.Slice(0, read));
+            ArraySegment<byte> spki = writer.RentAndEncode();
 
-            Interop.Crypto.CheckValidOpenSslHandle(key);
-
-            if (!Interop.Crypto.EvpPkeySetRsa(pkey, key))
+            try
             {
-                key.Dispose();
-                pkey.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
+            }
+            finally
+            {
+                CryptoPool.Return(spki);
             }
 
-            key.Dispose();
+            bytesRead = read;
+        }
 
-            FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
+        public override void ImportSubjectPublicKeyInfo(
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            ThrowIfDisposed();
 
-            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-            // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.EvpPKeySize(pkey));
+            ImportSubjectPublicKeyInfo(source, checkAlgorithm: true, out bytesRead);
+        }
 
+        private void ImportSubjectPublicKeyInfo(
+            ReadOnlySpan<byte> source,
+            bool checkAlgorithm,
+            out int bytesRead)
+        {
+            int read;
+
+            if (checkAlgorithm)
+            {
+                read = RSAKeyFormatHelper.CheckSubjectPublicKeyInfo(source);
+            }
+            else
+            {
+                read = source.Length;
+            }
+
+            SafeEvpPKeyHandle newKey = Interop.Crypto.DecodeSubjectPublicKeyInfo(
+                source.Slice(0, read),
+                Interop.Crypto.EvpAlgorithmId.RSA);
+
+            Debug.Assert(!newKey.IsInvalid);
+            SetKey(newKey);
             bytesRead = read;
         }
 
@@ -417,6 +416,70 @@ namespace System.Security.Cryptography
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
+        public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            ThrowIfDisposed();
+
+            ImportPkcs8PrivateKey(source, checkAlgorithm: true, out bytesRead);
+        }
+
+        private void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, bool checkAlgorithm, out int bytesRead)
+        {
+            int read;
+
+            if (checkAlgorithm)
+            {
+                read = RSAKeyFormatHelper.CheckPkcs8(source);
+            }
+            else
+            {
+                read = source.Length;
+            }
+
+            SafeEvpPKeyHandle newKey = Interop.Crypto.DecodePkcs8PrivateKey(
+                source.Slice(0, read),
+                Interop.Crypto.EvpAlgorithmId.RSA);
+
+            Debug.Assert(!newKey.IsInvalid);
+            SetKey(newKey);
+            bytesRead = read;
+        }
+
+        public override void ImportRSAPrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            ThrowIfDisposed();
+
+            int read;
+
+            try
+            {
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out read);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            AsnWriter writer = RSAKeyFormatHelper.WritePkcs8PrivateKey(source.Slice(0, read));
+            ArraySegment<byte> pkcs8 = writer.RentAndEncode();
+
+            try
+            {
+                ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
+            }
+            finally
+            {
+                CryptoPool.Return(pkcs8);
+            }
+
+            bytesRead = read;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -435,6 +498,17 @@ namespace System.Security.Cryptography
                 SafeEvpPKeyHandle handle = _key.Value;
                 handle?.Dispose();
             }
+        }
+
+        private void SetKey(SafeEvpPKeyHandle newKey)
+        {
+            Debug.Assert(!newKey.IsInvalid);
+            FreeKey();
+            _key = new Lazy<SafeEvpPKeyHandle>(newKey);
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.EvpPKeySize(newKey));
         }
 
         private static void ValidateParameters(ref RSAParameters parameters)
