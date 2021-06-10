@@ -194,6 +194,7 @@ namespace System.Net.Http.Functional.Tests
             var response = await client.SendAsync(message);
 
             double elapsedSec = sw.ElapsedMilliseconds * 0.001;
+            elapsedSec = Math.Round(elapsedSec, 3);
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
             double window = GetStreamWindowSizeInMegabytes();
             report.WriteLine($"{elapsedSec}, {window}");
