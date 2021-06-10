@@ -21,7 +21,6 @@ using Xunit;
 using System.Runtime.Serialization.Tests;
 
 
-[ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
 public static partial class DataContractSerializerTests
 {
 #if ReflectionOnly
