@@ -15,22 +15,20 @@ async function load_config() {
   // NOTE: when we add nodejs make sure to include the nodejs fetch package
   if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_NODE) {
     try {
-        const configRaw = await fetch(configFile);
-        const config = await configRaw.json();
-        console.log(config);
-        callback(config);
+      const configRaw = await fetch(configFile);
+      const config = await configRaw.json();
+      callback(config);
     } catch(e) {
-      console.log(e)
-        callback({error: e});
+      callback({error: e});
     }
 
   } else { // shell or worker
-      try {
-          const config = JSON.parse(read(configFile)); // read is a v8 debugger command
-          callback(config);
-      } catch(e) {
-          callback({error: `Error loading ${configFile} file`});
-      }
+    try {
+      const config = JSON.parse(read(configFile)); // read is a v8 debugger command
+      callback(config);
+    } catch(e) {
+      callback({error: `Error loading ${configFile} file`});
+    }
   }
 }
 load_config();
