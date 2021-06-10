@@ -42,7 +42,8 @@
     <Compile Condition="'$(TargetsMacCatalyst)' == 'true'" Include="System\Net\Http\HttpClientHandler.MacCatalyst.cs" />
     <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.tvOS.cs" />
     <!--<Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs" />-->
-    <Compile Include="System\Net\Http\HttpClientHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'"
+             Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />

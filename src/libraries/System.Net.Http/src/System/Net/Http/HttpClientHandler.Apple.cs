@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Net.Security;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -16,7 +17,7 @@ namespace System.Net.Http
     {
         private static MethodInfo? _underlyingHandlerMethod;
 
-        private readonly SocketsHttpHandler _socketHandler;
+        private readonly SocketsHttpHandler? _socketHandler;
         private readonly object? _appleHandler;
 
         private readonly DiagnosticsHandler? _diagnosticsHandler;
@@ -52,11 +53,11 @@ namespace System.Net.Http
 
                 if (IsSocketHandler)
                 {
-                    _socketHandler.Dispose();
+                    _socketHandler!.Dispose();
                 }
                 else
                 {
-                    (HttpMessageHandler)_appleHandler.Dispose();
+                    ((HttpMessageHandler)_appleHandler!)!.Dispose();
                 }
             }
 
@@ -68,13 +69,14 @@ namespace System.Net.Http
         public virtual bool SupportsProxy => false;
         public virtual bool SupportsRedirectConfiguration => true;
 
+        [UnsupportedOSPlatform("browser")]
         public bool UseCookies
         {
             get
             {
                 if (IsSocketHandler)
                 {
-                    return _socketHandler.UseCookies;
+                    return _socketHandler!.UseCookies;
                 }
                 else
                 {
@@ -85,7 +87,7 @@ namespace System.Net.Http
             {
                 if (IsSocketHandler)
                 {
-                    _socketHandler.UseCookies = value;
+                    _socketHandler!.UseCookies = value;
                 }
                 else
                 {
@@ -94,13 +96,14 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public CookieContainer CookieContainer
         {
             get
             {
                 if (IsSocketHandler)
                 {
-                    return _socketHandler.CookieContainer;
+                    return _socketHandler!.CookieContainer;
                 }
                 else
                 {
@@ -116,7 +119,7 @@ namespace System.Net.Http
 
                 if (IsSocketHandler)
                 {
-                    _socketHandler.CookieContainer = value;
+                    _socketHandler!.CookieContainer = value;
                 }
                 else
                 {
@@ -125,6 +128,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public DecompressionMethods AutomaticDecompression
         {
@@ -132,6 +136,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public bool UseProxy
         {
@@ -139,6 +144,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public IWebProxy? Proxy
         {
@@ -146,6 +152,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public ICredentials? DefaultProxyCredentials
         {
@@ -153,6 +160,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public bool PreAuthenticate
         {
@@ -160,6 +168,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public bool UseDefaultCredentials
         {
             // SocketsHttpHandler doesn't have a separate UseDefaultCredentials property.  There
@@ -167,10 +176,10 @@ namespace System.Net.Http
             // Same with the native handler.
             get
             {
-                ICredentials creds;
+                ICredentials? creds;
                 if (IsSocketHandler)
                 {
-                    creds = _socketHandler.Credentials;
+                    creds = _socketHandler!.Credentials;
                 }
                 else
                 {
@@ -185,7 +194,7 @@ namespace System.Net.Http
                 {
                     if (IsSocketHandler)
                     {
-                        _socketHandler.Credentials = CredentialCache.DefaultCredentials;
+                        _socketHandler!.Credentials = CredentialCache.DefaultCredentials;
                     }
                     else
                     {
@@ -194,14 +203,18 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    if (_underlyingHandler.Credentials == CredentialCache.DefaultCredentials)
+                    if (IsSocketHandler)
                     {
-                        // Only clear out the Credentials property if it was a DefaultCredentials.
-                        if (IsSocketHandler)
+                        if (_socketHandler!.Credentials == CredentialCache.DefaultCredentials)
                         {
-                            _socketHandler.Credentials = null;
+                            _socketHandler!.Credentials = null;
                         }
-                        else
+                    }
+                    else
+                    {
+                        ICredentials? creds = (ICredentials)GetNativeHandlerProp("Credentials");
+
+                        if (creds == CredentialCache.DefaultCredentials)
                         {
                             SetNativeHandlerProp("Credentials", null);
                         }
@@ -210,25 +223,26 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public ICredentials? Credentials
         {
             get
             {
                 if (IsSocketHandler)
                 {
-                    return _socketHandler.Credentials;
+                    return _socketHandler!.Credentials;
                 }
                 else
                 {
                     return (ICredentials)GetNativeHandlerProp("Credentials");
                 }
-                
+
             }
             set
             {
                 if (IsSocketHandler)
                 {
-                    _socketHandler.Credentials = value;
+                    _socketHandler!.Credentials = value;
                 }
                 else
                 {
@@ -243,7 +257,7 @@ namespace System.Net.Http
             {
                 if (IsSocketHandler)
                 {
-                    return _socketHandler.AllowAutoRedirect;
+                    return _socketHandler!.AllowAutoRedirect;
                 }
                 else
                 {
@@ -254,7 +268,7 @@ namespace System.Net.Http
             {
                 if (IsSocketHandler)
                 {
-                    _socketHandler.AllowAutoRedirect = value;
+                    _socketHandler!.AllowAutoRedirect = value;
                 }
                 else
                 {
@@ -263,6 +277,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public int MaxAutomaticRedirections
         {
@@ -270,6 +285,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public int MaxConnectionsPerServer
         {
@@ -310,6 +326,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public int MaxResponseHeadersLength
         {
@@ -326,6 +343,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public X509CertificateCollection ClientCertificates
         {
@@ -336,6 +354,7 @@ namespace System.Net.Http
         }
 
         // this may be able to map somehow to NSUrlSessionHandlerTrustOverrideCallback?
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
@@ -343,6 +362,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public bool CheckCertificateRevocationList
         {
@@ -350,6 +370,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public SslProtocols SslProtocols
         {
@@ -360,6 +381,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("ios")]
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
@@ -377,7 +399,7 @@ namespace System.Net.Http
 
             if (IsSocketHandler)
             {
-                return _socketHandler.SendAsync(request, cancellationToken);
+                return _socketHandler!.SendAsync(request, cancellationToken);
             }
             else
             {
@@ -385,6 +407,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
             throw new PlatformNotSupportedException();
@@ -392,20 +415,18 @@ namespace System.Net.Http
         // move these to a common place
         private object GetNativeHandlerProp(string name)
         {
-            return _appleHandler!.GetType().GetProperty(name).GetValue(_appleHandler, null);
+            return _appleHandler!.GetType()!.GetProperty(name)!.GetValue(_appleHandler, null)!;
         }
 
-        private void SetNativeHandlerProp(string name, object value)
+        private void SetNativeHandlerProp(string name, object? value)
         {
-            _appleHandler!.GetType().GetProperty(name).SetValue(_appleHandler, value);
+            _appleHandler!.GetType()!.GetProperty(name)!.SetValue(_appleHandler, value!);
         }
 
         private object InvokeNativeHandlerMethod(string name, params object[] parameters)
         {
-            return _appleHandler!.Invoke(_appleHandler, parameters)!;
+            return _appleHandler!.GetType()!.GetMethod(name)!.Invoke(_appleHandler, parameters)!;
         }
-
-        private static bool IsSocketHandler => true/false;
 
         private void CheckDisposed()
         {
