@@ -26,7 +26,7 @@ namespace System.Data
     [DefaultProperty(nameof(ColumnName))]
     [Editor("Microsoft.VSDesigner.Data.Design.DataColumnEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] // needed by Clone() to preserve derived ctors
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] // needed by Clone() to preserve derived ctors
     public class DataColumn : MarshalByValueComponent
     {
         private bool _allowNull = true;
@@ -1538,8 +1538,6 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Only using parameterless constructor which is safe. Class has appropriate attribute.")]
         internal DataColumn Clone()
         {
             DataColumn clone = (DataColumn)Activator.CreateInstance(GetType())!;

@@ -30,7 +30,7 @@ namespace System.Data
     [XmlSchemaProvider(nameof(GetDataSetSchema))]
     [XmlRoot(nameof(DataSet))]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] // needed by Clone() to preserve derived ctors
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] // needed by Clone() to preserve derived ctors
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
         internal const string RequiresUnreferencedCodeMessage = "Members from serialized types may be trimmed if not referenced directly.";

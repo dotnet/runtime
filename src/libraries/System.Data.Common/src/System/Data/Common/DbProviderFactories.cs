@@ -17,12 +17,13 @@ namespace System.Data.Common
     {
         private struct ProviderRegistration
         {
-            internal ProviderRegistration(string factoryTypeAssemblyQualifiedName, DbProviderFactory? factoryInstance)
+            internal ProviderRegistration([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] string factoryTypeAssemblyQualifiedName, DbProviderFactory? factoryInstance)
             {
                 this.FactoryTypeAssemblyQualifiedName = factoryTypeAssemblyQualifiedName;
                 this.FactoryInstance = factoryInstance;
             }
 
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             internal string FactoryTypeAssemblyQualifiedName { get; }
 
             /// <summary>
@@ -38,7 +39,6 @@ namespace System.Data.Common
         private const string NameColumnName = "Name";
         private const string DescriptionColumnName = "Description";
         private const string ProviderGroupColumnName = "DbProviderFactories";
-        private const string RequiresUnreferencedCodeMessage = "Provider type and its members might be trimmed if not referenced directly.";
         private const string InstanceFieldName = "Instance";
 
         public static bool TryGetFactory(string providerInvariantName, [NotNullWhen(true)] out DbProviderFactory? factory)
@@ -52,7 +52,7 @@ namespace System.Data.Common
             return GetFactory(providerInvariantName, throwOnError: true)!;
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Provider type and its members might be trimmed if not referenced directly.")]
         public static DbProviderFactory GetFactory(DataRow providerRow)
         {
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
@@ -107,8 +107,7 @@ namespace System.Data.Common
             return _registeredFactories.Keys.ToList();
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName)
+        public static void RegisterFactory(string providerInvariantName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] string factoryTypeAssemblyQualifiedName)
         {
             ADP.CheckArgumentLength(providerInvariantName, nameof(providerInvariantName));
             ADP.CheckArgumentLength(factoryTypeAssemblyQualifiedName, nameof(factoryTypeAssemblyQualifiedName));
@@ -117,8 +116,7 @@ namespace System.Data.Common
             _registeredFactories[providerInvariantName] = new ProviderRegistration(factoryTypeAssemblyQualifiedName, null);
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        public static void RegisterFactory(string providerInvariantName, Type providerFactoryClass)
+        public static void RegisterFactory(string providerInvariantName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type providerFactoryClass)
         {
             RegisterFactory(providerInvariantName, GetFactoryInstance(providerFactoryClass));
         }
@@ -137,8 +135,6 @@ namespace System.Data.Common
             return !string.IsNullOrWhiteSpace(providerInvariantName) && _registeredFactories.TryRemove(providerInvariantName, out _);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The warning is being display when registering a factory by name or type.")]
         private static DbProviderFactory? GetFactory(string providerInvariantName, bool throwOnError)
         {
             if (throwOnError)
@@ -169,7 +165,7 @@ namespace System.Data.Common
             return toReturn;
         }
 
-        private static DbProviderFactory GetFactoryInstance(Type providerFactoryClass)
+        private static DbProviderFactory GetFactoryInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type providerFactoryClass)
         {
             ADP.CheckArgumentNull(providerFactoryClass, nameof(providerFactoryClass));
             if (!providerFactoryClass.IsSubclassOf(typeof(DbProviderFactory)))
@@ -194,8 +190,8 @@ namespace System.Data.Common
             return (DbProviderFactory)factory;
         }
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        private static Type GetProviderTypeFromTypeName(string assemblyQualifiedName)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        private static Type GetProviderTypeFromTypeName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] string assemblyQualifiedName)
         {
             Type? providerType = Type.GetType(assemblyQualifiedName);
             if (null == providerType)
