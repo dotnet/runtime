@@ -35,6 +35,7 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => _listener?.Dispose();
 
         private const double LengthMb = 400;
+        private const int TestRunCount = 1;
 
         //private const string BenchmarkServer = "10.194.114.94";
         //private const string BenchmarkServer = "169.254.132.170"; // duo1
@@ -187,8 +188,16 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
         }
 
-
         private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null)
+        {
+            for (int i = 0; i < TestRunCount; i++)
+            {
+                _output.WriteLine($"############ run {i} ############");
+                await TestHandlerCore(info, hostName, http2, lengthMb, handler);
+            }
+        }
+
+        private async Task TestHandlerCore(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null)
         {
             handler ??= new SocketsHttpHandler();
             handler.ConnectCallback = CustomConnect;
