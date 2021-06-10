@@ -1465,8 +1465,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             {
                                 compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_BRANCH);
                             }
-                            else if (FgStack::IsArgument(op1))
+                            else
                             {
+                                // E.g. brtrue is basically "if (X == 0)"
                                 compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                             }
                             break;
@@ -1485,6 +1486,36 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if (FgStack::IsArgument(pushedStack.Top()))
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS);
+                }
+                break;
+            }
+
+            case CEE_LDELEMA:
+            case CEE_LDELEM_I1:
+            case CEE_LDELEM_U1:
+            case CEE_LDELEM_I2:
+            case CEE_LDELEM_U2:
+            case CEE_LDELEM_I4:
+            case CEE_LDELEM_U4:
+            case CEE_LDELEM_I8:
+            case CEE_LDELEM_I:
+            case CEE_LDELEM_R4:
+            case CEE_LDELEM_R8:
+            case CEE_LDELEM_REF:
+            case CEE_STELEM_I:
+            case CEE_STELEM_I1:
+            case CEE_STELEM_I2:
+            case CEE_STELEM_I4:
+            case CEE_STELEM_I8:
+            case CEE_STELEM_R4:
+            case CEE_STELEM_R8:
+            case CEE_STELEM_REF:
+            case CEE_LDELEM:
+            case CEE_STELEM:
+            {
+                if (FgStack::IsArgument(pushedStack.Top()) || FgStack::IsArgument(pushedStack.Top(1)))
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                 }
                 break;
             }

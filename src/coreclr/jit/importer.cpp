@@ -18983,6 +18983,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         {
             inlineResult->Note(InlineObservation::CALLEE_CLASS_PROMOTABLE);
         }
+        inlineResult->Note(InlineObservation::CALLEE_CLASS_VALUETYPE);
     }
 
 #ifdef FEATURE_SIMD

@@ -558,10 +558,7 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_CallsiteDepth);
     XATTR_I4(m_InstructionCount);
     XATTR_I4(m_LoadStoreCount);
-    XATTR_I4(m_ArgFeedsTest);
-    XATTR_I4(m_ArgFeedsConstantTest);
     XATTR_I4(m_ArgFeedsRangeCheck);
-    XATTR_I4(m_ConstantArgFeedsConstantTest);
     XATTR_I4(m_BinaryExprWithCns);
     XATTR_I4(m_ArgCasted);
     XATTR_I4(m_ArgIsStructByValue);
@@ -849,7 +846,7 @@ double DefaultPolicy::DetermineMultiplier()
 
     if (m_IsFromValueClass)
     {
-        multiplier += 3;
+        multiplier += 5.0;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
     }
 
@@ -885,7 +882,7 @@ double DefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline
-        multiplier += 2.0;
+        multiplier += 5.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
 
@@ -912,7 +909,7 @@ double DefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 4.0 + m_FoldableBranch;
+        multiplier += 4.0 + m_FoldableBranch * 1.5;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -926,10 +923,10 @@ double DefaultPolicy::DetermineMultiplier()
 
     if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += m_ArgCasted;
+        multiplier += 2.0 + m_ArgCasted;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
-                m_ArgIsStructByValue, multiplier);
+                m_FldAccessOverArgStruct, multiplier);
     }
 
     if (m_FoldableBox > 0)
@@ -956,7 +953,7 @@ double DefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += 1.5 + m_BinaryExprWithCns;
+        multiplier += 2.5 + m_BinaryExprWithCns;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
                 m_BinaryExprWithCns, multiplier);
     }
@@ -2364,10 +2361,8 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsFromPromotableValueClass ? 1 : 0);
     fprintf(file, ",%u", m_HasSimd ? 1 : 0);
     fprintf(file, ",%u", m_LooksLikeWrapperMethod ? 1 : 0);
-    fprintf(file, ",%u", m_ArgFeedsConstantTest);
     fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
     fprintf(file, ",%u", m_ArgFeedsRangeCheck);
-    fprintf(file, ",%u", m_ConstantArgFeedsConstantTest);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);
