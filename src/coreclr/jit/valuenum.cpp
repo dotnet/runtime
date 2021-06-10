@@ -3789,7 +3789,7 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
 
 //------------------------------------------------------------------------
 // VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `srcVN`
-//    being writen using an indirection of 'dstIndType'.
+//    being written using an indirection of 'dstIndType'.
 //
 // Arguments:
 //    srcVN - value number for the value being stored;
