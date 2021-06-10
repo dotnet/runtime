@@ -39,7 +39,6 @@ namespace System.IO.Strategies
         internal static bool ShouldPreallocate(long preallocationSize, FileAccess access, FileMode mode)
             => preallocationSize > 0
                && (access & FileAccess.Write) != 0
-               && mode != FileMode.Open && mode != FileMode.Append
-               && !OperatingSystem.IsBrowser(); // WASM limitation
+               && mode != FileMode.Open && mode != FileMode.Append;
     }
 }
