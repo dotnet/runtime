@@ -19,7 +19,7 @@ internal static partial class Interop
             ref nuint availableOut, byte** nextOut, out nuint totalOut);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern unsafe bool BrotliDecoderDecompress(nuint availableInput, byte* inBytes, ref nuint availableOutput, byte* outBytes);
+        internal static extern unsafe int BrotliDecoderDecompress(nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
 
         [DllImport(Libraries.CompressionNative)]
         internal static extern void BrotliDecoderDestroyInstance(IntPtr state);
@@ -45,6 +45,6 @@ internal static partial class Interop
         internal static extern void BrotliEncoderDestroyInstance(IntPtr state);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern unsafe bool BrotliEncoderCompress(int quality, int window, int v, nuint availableInput, byte* inBytes, ref nuint availableOutput, byte* outBytes);
+        internal static extern unsafe int BrotliEncoderCompress(int quality, int window, int v, nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
     }
 }

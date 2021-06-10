@@ -117,7 +117,7 @@ namespace System.IO.Compression
             fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
             {
                 nuint availableOutput = (nuint)destination.Length;
-                bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, ref availableOutput, outBytes);
+                bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, &availableOutput, outBytes) != 0;
 
                 Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 
