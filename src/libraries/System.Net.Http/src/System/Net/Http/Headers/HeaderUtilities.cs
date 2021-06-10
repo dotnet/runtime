@@ -156,7 +156,7 @@ namespace System.Net.Http.Headers
 
             if (HttpRuleParser.GetTokenLength(value, 0) != value.Length)
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -171,7 +171,7 @@ namespace System.Net.Http.Headers
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -186,7 +186,7 @@ namespace System.Net.Http.Headers
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -318,7 +318,7 @@ namespace System.Net.Http.Headers
         }
 
         internal static bool TryParseInt32(string value, out int result) =>
-            int.TryParse(value, NumberStyles.None, provider: null, out result);
+            int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
 
         internal static bool TryParseInt32(string value, int offset, int length, out int result)
         {
@@ -328,7 +328,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
+            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
         internal static bool TryParseInt64(string value, int offset, int length, out long result)
@@ -339,7 +339,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
+            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
