@@ -1569,20 +1569,25 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> GetMemberWithSameMetadataDefinitionAsData()
         {
-            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<int>) };
-            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>) };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<int>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true};
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<int>), false };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<ClassWithMultipleConstructors>), false };
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembersClosed), false };
 
             static TypeInfo GetTypeDelegator(Type t) => new TypeDelegator(t);
-            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>) };
-            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)) };
-            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)) };
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
 
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 (Type generatedType1, Type generatedType2) = CreateGeneratedTypes();
 
-                yield return new object[] { generatedType1, generatedType2 };
-                yield return new object[] { generatedType2, generatedType1 };
+                yield return new object[] { generatedType1, generatedType2, true };
+                yield return new object[] { generatedType2, generatedType1, true };
             }
         }
 
@@ -1602,7 +1607,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
-        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType)
+        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
         {
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
@@ -1611,11 +1616,16 @@ namespace System.Reflection.Tests
                 Assert.True(closedGenericMember != null, $"'{openGenericMember.Name}' was not found");
                 Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
                 Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
-                if (openGenericMember is not Type)
+                if (checkDeclaringType && openGenericMember is not Type)
                 {
                     Assert.True(closedGenericMember.DeclaringType.Equals(closedGenericType), $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
                 }
             }
+
+            MemberInfo toString = closedGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(object).GetMethod("ToString"));
+            Assert.NotNull(toString);
+            Assert.IsAssignableFrom<MethodInfo>(toString);
+            Assert.Equal("ToString", toString.Name);
 
             Assert.Throws<ArgumentNullException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(null));
             Assert.Throws<ArgumentException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(string).GetMethod("get_Length")));
@@ -1907,6 +1917,16 @@ namespace System.Reflection.Tests
         {
             public T NestedField;
         }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembers<T> : TI_GenericTypeWithAllMembers<T>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembers(T t) : base(t) { }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembersClosed : TI_TypeDerivedFromGenericTypeWithAllMembers<int>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembersClosed(int t) : base(t) { }
     }
 
 #pragma warning restore 0067, 0169

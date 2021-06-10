@@ -1138,7 +1138,7 @@ namespace System
         }
 
         private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
-            BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         private MemberInfo? GetMethodWithSameMetadataDefinitionAs(MemberInfo methodInfo)
         {

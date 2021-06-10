@@ -243,7 +243,7 @@ namespace System
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
 
-            const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             foreach (MemberInfo myMemberInfo in GetMembers(all))
             {
                 if (myMemberInfo.HasSameMetadataDefinitionAs(member))
