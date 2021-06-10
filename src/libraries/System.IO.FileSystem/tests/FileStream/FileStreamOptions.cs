@@ -168,6 +168,21 @@ namespace System.IO.Tests
             Validate((FileStream)new StreamReader(filePath, readOptions).BaseStream, filePath, isAsync, true, false);
             Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, readOptions).BaseStream, filePath, isAsync, true, false);
 
+            var readWriteOptions = new FileStreamOptions
+            {
+                Mode = FileMode.Create,
+                Access = FileAccess.ReadWrite,
+                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
+            };
+
+            Validate(new FileStream(filePath, readWriteOptions), filePath, isAsync, true, true);
+            Validate(File.Open(filePath, readWriteOptions), filePath, isAsync, true, true);
+            Validate(new FileInfo(filePath).Open(readWriteOptions), filePath, isAsync, true, true);
+            Validate((FileStream)new StreamWriter(filePath, readWriteOptions).BaseStream, filePath, isAsync, true, true);
+            Validate((FileStream)new StreamWriter(filePath, Encoding.UTF8, readWriteOptions).BaseStream, filePath, isAsync, true, true);
+            Validate((FileStream)new StreamReader(filePath, readWriteOptions).BaseStream, filePath, isAsync, true, true);
+            Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, readWriteOptions).BaseStream, filePath, isAsync, true, true);
+
             static void Validate(FileStream fs, string expectedPath, bool expectedAsync, bool expectedCanRead, bool expectedCanWrite)
             {
                 using (fs)
