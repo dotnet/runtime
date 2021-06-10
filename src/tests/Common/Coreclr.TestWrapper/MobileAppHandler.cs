@@ -60,7 +60,7 @@ namespace CoreclrTestLib
 
             cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --app={testBinaryBase}/{category}.{appExtension} --output-directory={reportBase}/install";
 
-            System.IO.Directory.CreateDirectory(System.IO.Path.Combine(reportBase, action));
+            Directory.CreateDirectory(Path.Combine(reportBase, action));
             var outputStream = new FileStream(outputFile, FileMode.Create);
             var errorStream = new FileStream(errorFile, FileMode.Create);
 
