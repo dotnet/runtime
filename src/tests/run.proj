@@ -267,28 +267,28 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
             public _Global()
             {
-                reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
-                testBinaryBase = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
-                coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
+                reportBase = Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
+                testBinaryBase = GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
+                coreRoot = Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
-                helixUploadRoot = System.Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
+                helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
                 if (!String.IsNullOrEmpty(helixUploadRoot)) {
-                    reportBase = System.IO.Path.Combine(System.IO.Path.GetFullPath(helixUploadRoot), "Reports")%3B
+                    reportBase = Combine(GetFullPath(helixUploadRoot), "Reports")%3B
                 }
 
                 if (String.IsNullOrEmpty(reportBase)) {
-                    reportBase = System.IO.Path.Combine(testBinaryBase, %22Reports%22)%3B
+                    reportBase = Combine(testBinaryBase, %22Reports%22)%3B
                 }
                 else
                 {
-                    reportBase = System.IO.Path.GetFullPath(reportBase)%3B
+                    reportBase = GetFullPath(reportBase)%3B
                 }
 
                 if (String.IsNullOrEmpty(coreRoot)) {
                     throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
                 }
 
-                coreRoot = System.IO.Path.GetFullPath(coreRoot)%3B
+                coreRoot = GetFullPath(coreRoot)%3B
 
                 string operatingSystem = System.Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
