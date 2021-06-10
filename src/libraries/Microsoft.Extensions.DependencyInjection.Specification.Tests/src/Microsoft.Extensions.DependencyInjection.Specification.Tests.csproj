@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <!-- TODO: Remove after this package shipped as 6.0.0. -->
     <PackageValidationBaselineVersion>3.1.15</PackageValidationBaselineVersion>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>

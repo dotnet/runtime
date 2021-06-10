@@ -4078,6 +4078,23 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
                     else
                     {
                         _ASSERTE(pFuncEntry);
+#ifdef _TARGET_AMD64_
+                        // On amd64, match RtlLookupFunctionEntry behavior by resolving indirect function entries
+                        // back to the associated owning function entry.
+                        if ((functionEntry.UnwindData & RUNTIME_FUNCTION_INDIRECT) != 0)
+                        {
+                            DWORD dwRvaOfOwningFunctionEntry = (functionEntry.UnwindData & ~RUNTIME_FUNCTION_INDIRECT);
+                            taFuncEntry = peDecoder.GetRvaData(dwRvaOfOwningFunctionEntry);
+                            hr = DacReadAll(taFuncEntry, &functionEntry, sizeof(functionEntry), false);
+                            if (FAILED(hr))
+                            {
+                                return;
+                            }
+
+                            _ASSERTE((functionEntry.UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
+                        }
+#endif // _TARGET_AMD64_
+
                         *pFuncEntry = (UINT_PTR)(T_RUNTIME_FUNCTION*)PTR_RUNTIME_FUNCTION(taFuncEntry);
                         break;
                     }

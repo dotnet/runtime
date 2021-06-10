@@ -959,7 +959,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	ERROR_DECL (error);
 	MonoLMFExt ext;
 
-	interp_push_lmf (&ext, frame);
 	/*
 	 * When explicitly throwing exception we pass the ip of the instruction that throws the exception.
 	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
@@ -985,29 +984,17 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 * Since ctx.ip is 0, this will start unwinding from the LMF frame
 	 * pushed above, which points to our frames.
 	 */
-	HandleExceptionCbData cb_data = { ex, &ctx };
-	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-		gboolean thrown = FALSE;
-		/*
-		 * If the exception is uncaught in interpreter code, mono_handle_exception_internal () will rethrow it.
-		 * Catch and rethrow it here again so we can pop the LMF.
-		 */
-		mono_llvm_cpp_catch_exception (handle_exception_cb, &cb_data, &thrown);
-		if (thrown) {
-			interp_pop_lmf (&ext);
-			mono_llvm_rethrow_exception ((MonoObject*)ex);
-		}
-	} else {
-		handle_exception_cb (&cb_data);
-	}
+	interp_push_lmf (&ext, frame);
+
+	mono_handle_exception (&ctx, (MonoObject*)ex);
+
+	interp_pop_lmf (&ext);
 
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */
 		mono_restore_context (&ctx);
 		g_assert_not_reached ();
 	}
-
-	interp_pop_lmf (&ext);
 
 	g_assert (context->has_resume_state);
 }
@@ -1982,7 +1969,6 @@ interp_entry (InterpEntryData *data)
 
 	context->stack_pointer = (guchar*)sp;
 
-	g_assert (!context->has_resume_state);
 	g_assert (!context->safepoint_frame);
 
 	if (rmethod->needs_thread_attach)
@@ -1990,6 +1976,7 @@ interp_entry (InterpEntryData *data)
 
 	if (mono_llvm_only) {
 		if (context->has_resume_state)
+			/* The exception will be handled in a frame above us */
 			mono_llvm_reraise_exception ((MonoException*)mono_gchandle_get_target_internal (context->exc_gchandle));
 	} else {
 		g_assert (!context->has_resume_state);
@@ -2313,7 +2300,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 }
 
 static MONO_NEVER_INLINE void
-do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
+do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
 {
 	MonoLMFExt ext;
 	JitCallInfo *cinfo;
@@ -2370,8 +2357,14 @@ do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *r
 	}
 	interp_pop_lmf (&ext);
 	if (thrown) {
+		if (context->has_resume_state)
+			/*
+			 * This happens when interp_entry calls mono_llvm_reraise_exception ().
+			 */
+			return;
 		MonoObject *obj = mono_llvm_load_exception ();
 		g_assert (obj);
+		mono_llvm_clear_exception ();
 		mono_error_set_exception_instance (error, (MonoException*)obj);
 		return;
 	}
@@ -3536,7 +3529,7 @@ main_loop:
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				frame->state.ip = ip;
 				error_init_reuse (error);
-				do_jit_call ((stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
+				do_jit_call (context, (stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
 				if (!is_ok (error)) {
 					MonoException *ex = mono_error_convert_to_exception (error);
 					THROW_EX (ex, ip);
@@ -3631,7 +3624,7 @@ call:
 			error_init_reuse (error);
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 4;
-			do_jit_call ((stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame, rmethod, error);
+			do_jit_call (context, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame, rmethod, error);
 			if (!is_ok (error)) {
 				MonoException *ex = mono_error_convert_to_exception (error);
 				THROW_EX (ex, ip);
@@ -3649,7 +3642,7 @@ call:
 			error_init_reuse (error);
 
 			frame->state.ip = ip + 6;
-			do_jit_call ((stackval*)(locals + ip [1]), frame, rmethod, error);
+			do_jit_call (context, (stackval*)(locals + ip [1]), frame, rmethod, error);
 			if (!is_ok (error)) {
 				MonoException *ex = mono_error_convert_to_exception (error);
 				THROW_EX (ex, ip);

@@ -5888,7 +5888,7 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif // !defined(TARGET_64BIT)
 
-    for (BasicBlock* block = comp->fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */
         comp->compCurBB = block;
