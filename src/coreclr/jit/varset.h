@@ -72,7 +72,7 @@ typedef BitSetShortLongRep VARSET_TP;
 // could be measured was 512. Going to 1024 showed the first throughput regressions.
 // We anticipate the larger size will be needed to support better inlining.
 
-const unsigned       lclMAX_TRACKED = 512;
+const unsigned       lclMAX_TRACKED = 1024;
 
 #define VARSET_REP_IS_CLASS 0
 

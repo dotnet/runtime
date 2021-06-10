@@ -19056,13 +19056,9 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
 
-        if (entryWeight != 0)
-        {
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-
-            double frequency = callSiteWeight / entryWeight;
-            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
-        }
+        inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+        double frequency = entryWeight == 0.0 ? 0.0 : callSiteWeight / entryWeight;
+        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
     }
 }
 
@@ -20610,16 +20606,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Round:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
-        case NI_System_Math_FusedMultiplyAdd:
-        {
-            // AMD64/x86 has FMA3 instructions to directly compute fma. However, in
-            // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // nodes in place of the GT_INTRINSIC node.
-
-            assert(!compIsaSupportedDebugOnly(InstructionSet_FMA));
-            return false;
-        }
-
         default:
             return false;
     }
@@ -20632,16 +20618,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
-
-        case NI_System_Math_FusedMultiplyAdd:
-        {
-            // ARM64 has AdvSimd instructions to directly compute fma. However, in
-            // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // nodes in place of the GT_INTRINSIC node.
-
-            assert(!compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
-            return false;
-        }
 
         default:
             return false;

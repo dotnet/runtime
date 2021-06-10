@@ -381,7 +381,7 @@ CONFIG_INTEGER(DisplayMemStats, W("JitMemStats"), 0) // Display JIT memory usage
 
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks
-CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
+CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 5)
 
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
