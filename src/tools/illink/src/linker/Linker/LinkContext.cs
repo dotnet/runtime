@@ -72,6 +72,7 @@ namespace Mono.Linker
 		readonly CustomAttributeSource _customAttributes;
 		readonly List<MessageContainer> _cachedWarningMessageContainers;
 		readonly ILogger _logger;
+		readonly Dictionary<AssemblyDefinition, bool> _isTrimmable;
 
 		public Pipeline Pipeline {
 			get { return _pipeline; }
@@ -210,6 +211,7 @@ namespace Mono.Linker
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
 			_cachedWarningMessageContainers = new List<MessageContainer> ();
+			_isTrimmable = new Dictionary<AssemblyDefinition, bool> ();
 			FeatureSettings = new Dictionary<string, bool> (StringComparer.Ordinal);
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
@@ -424,12 +426,15 @@ namespace Mono.Linker
 			}
 		}
 
-		bool IsTrimmable (AssemblyDefinition assembly)
+		public bool IsTrimmable (AssemblyDefinition assembly)
 		{
-			if (!assembly.HasCustomAttributes)
-				return false;
+			if (_isTrimmable.TryGetValue (assembly, out bool isTrimmable))
+				return isTrimmable;
 
-			bool isTrimmable = false;
+			if (!assembly.HasCustomAttributes) {
+				_isTrimmable.Add (assembly, false);
+				return false;
+			}
 
 			foreach (var ca in assembly.CustomAttributes) {
 				if (!ca.AttributeType.IsTypeOf<AssemblyMetadataAttribute> ())
@@ -450,6 +455,7 @@ namespace Mono.Linker
 				isTrimmable = true;
 			}
 
+			_isTrimmable.Add (assembly, isTrimmable);
 			return isTrimmable;
 		}
 

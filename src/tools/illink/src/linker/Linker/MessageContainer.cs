@@ -132,22 +132,41 @@ namespace Mono.Linker
 			if (version > context.WarnVersion)
 				return Empty;
 
-			if (subcategory == MessageSubCategory.TrimAnalysis) {
-				Debug.Assert (origin.MemberDefinition != null);
-				var declaringType = origin.MemberDefinition?.DeclaringType ?? (origin.MemberDefinition as TypeDefinition);
-				var assembly = declaringType.Module.Assembly;
-				var assemblyName = assembly?.Name.Name;
-				if (assemblyName != null && context.IsSingleWarn (assemblyName)) {
-					if (context.AssembliesWithGeneratedSingleWarning.Add (assemblyName))
-						context.LogWarning ($"Assembly '{assemblyName}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries", 2104, context.GetAssemblyLocation (assembly));
-					return Empty;
-				}
-			}
+			if (TryLogSingleWarning (context, code, origin, subcategory))
+				return Empty;
 
 			if (context.IsWarningAsError (code))
 				return new MessageContainer (MessageCategory.WarningAsError, text, code, subcategory, origin);
 
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
+		}
+
+		static bool TryLogSingleWarning (LinkContext context, int code, MessageOrigin origin, string subcategory)
+		{
+			if (subcategory != MessageSubCategory.TrimAnalysis)
+				return false;
+
+			Debug.Assert (origin.MemberDefinition != null);
+			var declaringType = origin.MemberDefinition?.DeclaringType ?? (origin.MemberDefinition as TypeDefinition);
+			var assembly = declaringType.Module.Assembly;
+
+			Debug.Assert (assembly != null);
+			if (assembly == null)
+				return false;
+
+			// Any IL2026 warnings left in an assembly with an IsTrimmable attribute are considered intentional
+			// and should not be collapsed, so that the user-visible RUC message gets printed.
+			if (code == 2026 && context.IsTrimmable (assembly))
+				return false;
+
+			var assemblyName = assembly.Name.Name;
+			if (!context.IsSingleWarn (assemblyName))
+				return false;
+
+			if (context.AssembliesWithGeneratedSingleWarning.Add (assemblyName))
+				context.LogWarning ($"Assembly '{assemblyName}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries", 2104, context.GetAssemblyLocation (assembly));
+
+			return true;
 		}
 
 		/// <summary>
