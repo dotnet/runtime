@@ -801,10 +801,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                              simdSize);
                             return gtNewSimdAsHWIntrinsicNode(retType, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
                         }
-                        case TYP_LONG:
-                        case TYP_ULONG:
                         case TYP_FLOAT:
-                        case TYP_DOUBLE:
                         {
                             unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
                             int      haddCount    = genLog2(vectorLength);
@@ -819,6 +816,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                             return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
                                                               simdSize);
+                        }
+                        case TYP_DOUBLE:
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_AddPairwiseScalar,
+                                                              simdBaseJitType, simdSize);
                         }
                         default:
                         {
