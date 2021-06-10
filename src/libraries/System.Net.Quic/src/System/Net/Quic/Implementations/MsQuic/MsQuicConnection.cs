@@ -345,26 +345,17 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         unsafe
                         {
-                            ReadOnlySpan<QuicBuffer> quicBuffer;
+                            ReadOnlySpan<QuicBuffer> quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
+                            certificate = new X509Certificate2(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
+
                             if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
                             {
                                 quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle, sizeof(QuicBuffer));
                                 if (quicBuffer[0].Length != 0 && quicBuffer[0].Buffer != null)
                                 {
-                                    ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
                                     additionalCertificates = new X509Certificate2Collection();
-                                    additionalCertificates.Import(asn1);
-                                    if (additionalCertificates.Count > 0)
-                                    {
-                                        certificate = additionalCertificates[additionalCertificates.Count - 1];
-                                    }
+                                    additionalCertificates.Import(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
                                 }
-                            }
-                            else
-                            {
-                                 quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
-                                 ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
-                                 certificate = new X509Certificate2(asn1);
                             }
                         }
                     }
@@ -384,10 +375,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     if (additionalCertificates != null && additionalCertificates.Count > 1)
                     {
-                        for (int i = 0; i < additionalCertificates.Count - 1; i++)
-                        {
-                            chain.ChainPolicy.ExtraStore.Add(additionalCertificates[i]);
-                        }
+                        chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }
 
                     if (!chain.Build(certificate))
