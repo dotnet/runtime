@@ -4680,6 +4680,12 @@ extern "C"
             {
                 ETW::EnumerationLog::EnumerateForCaptureState();
             }
+
+            if (g_fEEStarted && !g_fEEShutDown)
+            {
+                // Emit the YieldProcessor measured values at the beginning of the trace
+                YieldProcessorNormalization::FireMeasurementEvents();
+            }
         }
 #ifdef FEATURE_COMINTEROP
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, CCWRefCountChange))
