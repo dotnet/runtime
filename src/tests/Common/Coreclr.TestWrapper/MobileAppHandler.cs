@@ -55,7 +55,7 @@ namespace CoreclrTestLib
             }
             else
             {
-                appExtension = "ipa";
+                appExtension = "app";
             }
 
             cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --app={testBinaryBase}/{category}.{appExtension} --output-directory={reportBase}/install";
