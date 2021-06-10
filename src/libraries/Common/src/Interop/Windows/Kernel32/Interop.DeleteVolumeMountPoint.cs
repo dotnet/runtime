@@ -12,9 +12,13 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use DeleteVolumeMountPoint.
         /// </summary>
+#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "DeleteVolumeMountPointW", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static partial bool DeleteVolumeMountPointPrivate(string mountPoint);
-
+#else
+        [DllImport(Libraries.Kernel32, EntryPoint = "DeleteVolumeMountPointW", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool DeleteVolumeMountPointPrivate(string mountPoint);
+#endif
 
         internal static bool DeleteVolumeMountPoint(string mountPoint)
         {

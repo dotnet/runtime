@@ -9,7 +9,16 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
-        internal static unsafe partial bool SetFileInformationByHandle(SafeFileHandle hFile, int FileInformationClass, void* lpFileInformation, uint dwBufferSize);
+        internal static unsafe partial bool SetFileInformationByHandle(
+#else
+        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        internal static unsafe extern bool SetFileInformationByHandle(
+#endif
+            SafeFileHandle hFile,
+            int FileInformationClass,
+            void* lpFileInformation,
+            uint dwBufferSize);
     }
 }
