@@ -1230,7 +1230,6 @@ bool emitter::IsMovInstruction(instruction ins)
     switch (ins)
     {
         case INS_mov:
-        case INS_mov_eliminated:
         case INS_sxtb:
         case INS_sxth:
         case INS_uxtb:
@@ -2066,15 +2065,8 @@ void emitter::emitIns_Mov(instruction ins,
             {
                 if (canSkip && (dstReg == srcReg))
                 {
-                    // These instructions might have a side effect in the form of a
-                    // byref liveness update, so preserve them but emit nothing
-
-                    if (!EA_IS_BYREF(attr))
-                    {
-                        return;
-                    }
-
-                    ins = INS_mov_eliminated;
+                    // These instructions have no side effect and can be skipped
+                    return;
                 }
                 fmt = IF_T1_D0;
                 sf  = INS_FLAGS_NOT_SET;
@@ -5775,18 +5767,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 
-    if (ins == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        sz = SMALL_IDSC_SIZE;
-        goto UPDATE_LIVENESS;
-    }
-
     /* What instruction format have we got? */
 
     switch (fmt)
@@ -6607,7 +6587,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
     }
 
-UPDATE_LIVENESS:
     // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
     // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
     // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
@@ -6724,9 +6703,9 @@ UPDATE_LIVENESS:
     }
 #endif
 
-    /* All instructions, except eliminated moves, are expected to generate code */
+    /* All instructions are expected to generate code */
 
-    assert((*dp != dst) || (ins == INS_mov_eliminated));
+    assert(*dp != dst);
 
     *dp = dst;
 
@@ -7122,17 +7101,6 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
-    if (id->idIns() == INS_mov_eliminated)
-    {
-        // Elideable moves are specified to have a zero size, but are carried
-        // in emit so we can still do the relevant byref liveness update
-
-        assert(id->idGCref() == GCT_BYREF);
-        assert(id->idCodeSize() == 0);
-
-        return;
-    }
-
     if (EMITVERBOSE)
     {
         unsigned idNum = id->idDebugOnlyInfo()->idNum; // Do not remove this!  It is needed for VisualStudio

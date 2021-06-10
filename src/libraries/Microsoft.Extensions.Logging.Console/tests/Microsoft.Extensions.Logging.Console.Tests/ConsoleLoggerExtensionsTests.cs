@@ -17,7 +17,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Test
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49110 ", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class ConsoleLoggerExtensionsTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

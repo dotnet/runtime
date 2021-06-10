@@ -53,41 +53,14 @@
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path, this also gives us an isolated packages folder -->
-    <NeedsDotNetSdk>true</NeedsDotNetSdk>
-    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
-
-    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
-
-    <!-- For package testing we need the live targeting pack available. -->
-    <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)" Destination="targetingpack" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
-    <HelixCommand>$(HelixCommand) /bl:%HELIX_WORKITEM_UPLOAD_ROOT%\%HELIX_WORKITEM_FRIENDLYNAME%.package.test.binlog</HelixCommand>
-    <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath=%HELIX_CORRELATION_PAYLOAD%\packages\</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:MicrosoftNetCoreAppRefPackDir=%HELIX_CORRELATION_PAYLOAD%\targetingpack\</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
@@ -297,6 +270,7 @@
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
+      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(NetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
@@ -327,6 +301,10 @@
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
@@ -408,7 +386,6 @@
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
-    <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
-    <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
+    <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 </Project>

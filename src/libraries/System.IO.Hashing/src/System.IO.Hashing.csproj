@@ -13,7 +13,6 @@ System.IO.Hashing.Crc32
 System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\IO\Hashing\BitOperations.cs" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
@@ -30,6 +29,7 @@ System.IO.Hashing.XxHash32</PackageDescription>
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\IO\Hashing\BitOperations.cs" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>

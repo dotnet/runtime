@@ -4,14 +4,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RestoreSources>
-      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;
-      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json;
-      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6-transport/nuget/v3/index.json;
-      $(LocalPackagesPath)
-    </RestoreSources>
-
     <!-- Make sure the SDK raises the runtime items so that they are passed to conflict resolution -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
@@ -38,7 +30,8 @@
   </ItemGroup>
 
   
-  <Target Name="LogBeginTest">
+  <Target Name="LogBeginTest"
+          Condition="'$(TargetFramework)' != ''">
     <Message Importance="High" Text="Testing $(TestPackageID) TFM=$(TargetFramework)" />
   </Target>
 

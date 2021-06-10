@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.IO.Hashing
+namespace System.Numerics
 {
     internal static class BitOperations
     {
