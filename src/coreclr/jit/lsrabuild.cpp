@@ -3101,6 +3101,8 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
         // However, if node == rmwNode, then we can mark node as "delayFree" only
         // none of the node/rmwNode are the last use. If either of them are last use,
         // we can safely reuse the rmwNode as destination.
+        // TODO: What happens to constants? Do they have same interval?
+        // TODO: Do we need `!use->lastUse`?
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
         {
             setDelayFree(use);

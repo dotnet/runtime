@@ -2420,9 +2420,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 // Any pair of the index, mask, or destination registers should be different
                 srcCount += BuildOperandUses(op1);
-                srcCount += BuildDelayFreeUses(op2);
-                srcCount += BuildDelayFreeUses(op3);
-                srcCount += BuildDelayFreeUses(op4);
+                srcCount += BuildDelayFreeUses(op2, op1);
+                srcCount += BuildDelayFreeUses(op3, op1);
+                srcCount += BuildDelayFreeUses(op4, op1);
 
                 // op5 should always be contained
                 assert(argList->Rest()->Current()->isContained());
@@ -2481,15 +2481,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         // When op2 is not contained or if we are producing a scalar value
                         // we need to mark it as delay free because the operand and target
                         // exist in the same register set.
-                        // Unless, op1 and op2 are same, in which case we can overwrite op2.
-                        if (GenTree::NodesAreEquivalentLeaves(op1, op2))
-                        {
-                            srcCount += BuildOperandUses(op2);
-                        }
-                        else
-                        {
-                            srcCount += BuildDelayFreeUses(op2);
-                        }
+                        srcCount += BuildDelayFreeUses(op2, op1);
                     }
                     else
                     {
@@ -2507,7 +2499,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 if (op3 != nullptr)
                 {
-                    srcCount += isRMW ? BuildDelayFreeUses(op3) : BuildOperandUses(op3);
+                    srcCount += isRMW ? BuildDelayFreeUses(op3, op1) : BuildOperandUses(op3);
                 }
             }
         }
