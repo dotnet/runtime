@@ -36,8 +36,8 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener?.Dispose();
 
-        private const double LengthMb = 400;
-        private const int TestRunCount = 5;
+        private const double LengthMb = 100;
+        private const int TestRunCount = 10;
 
         //private const string BenchmarkServer = "10.194.114.94";
         //private const string BenchmarkServer = "169.254.132.170"; // duo1
@@ -53,7 +53,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(BenchmarkServer)]
-        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run1", hostName, false, LengthMb);
+        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1 - Run1", hostName, false, LengthMb, details: "http1.1");
 
         [Theory]
         [InlineData(BenchmarkServer, 1024)]
@@ -107,6 +107,7 @@ namespace System.Net.Http.Functional.Tests
                 StreamWindowUpdateRatio = ratio,
                 StreamWindowMagicMultiplier = magic
             };
+            string details = $"Dynamic_R({ratio})_M({magic})";
             await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler);
         }
 
@@ -185,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
         private async Task TestHandlerCore(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler, StreamWriter report)
         {
             _listener.Log2.Clear();
-            using var client = new HttpClient(handler, false);
+            using var client = new HttpClient(CopyHandler(handler), true);
             client.Timeout = TimeSpan.FromMinutes(3);
             var message = GenerateRequestMessage(hostName, http2, lengthMb);
             _output.WriteLine($"{info} / {lengthMb} MB from {message.RequestUri}");
@@ -195,23 +196,54 @@ namespace System.Net.Http.Functional.Tests
             double elapsedSec = sw.ElapsedMilliseconds * 0.001;
             elapsedSec = Math.Round(elapsedSec, 3);
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
-            double window = GetStreamWindowSizeInMegabytes();
-            report.WriteLine($"{elapsedSec}, {window}");
+            report.Write(elapsedSec);
+            double? window = GetStreamWindowSizeInMegabytes();
+            if (window.HasValue) report.Write($", {window}");
+            double? rtt = GetRtt();
+            if (rtt.HasValue) report.Write($", {rtt}");
+            report.WriteLine();
         }
 
-        private double GetStreamWindowSizeInMegabytes()
+        private double? GetStreamWindowSizeInMegabytes()
         {
             const string Prefix = "Updated StreamWindowSize: ";
             string log = _listener.Log2.ToString();
 
             int idx = log.LastIndexOf(Prefix);
-            if (idx < 0) return 0;
+            if (idx < 0) return null;
             ReadOnlySpan<char> text = log.AsSpan().Slice(idx + Prefix.Length);
             text = text.Slice(0, text.IndexOf(','));
 
             double size = int.Parse(text);
             double sizeMb = size / 1024 / 1024;
             return Math.Round(sizeMb, 3);
+        }
+
+        private double? GetRtt()
+        {
+            const string Prefix = "Updated MinRtt: ";
+            string log = _listener.Log2.ToString();
+
+            int idx = log.LastIndexOf(Prefix);
+            if (idx < 0) return null;
+            ReadOnlySpan<char> text = log.AsSpan().Slice(idx + Prefix.Length);
+            text = text.Slice(0, text.IndexOf(' '));
+
+            double rtt = double.Parse(text);
+            return Math.Round(rtt, 3);
+        }
+
+        private static SocketsHttpHandler CopyHandler(SocketsHttpHandler h)
+        {
+            return new SocketsHttpHandler()
+            {
+                FakeRtt = h.FakeRtt,
+                EnableDynamicHttp2StreamWindowSizing = h.EnableDynamicHttp2StreamWindowSizing,
+                InitialStreamWindowSize = h.InitialStreamWindowSize,
+                StreamWindowUpdateRatio = h.StreamWindowUpdateRatio,
+                StreamWindowMagicMultiplier = h.StreamWindowMagicMultiplier,
+                ConnectCallback = h.ConnectCallback
+            };
         }
 
         private static async ValueTask<Stream> CustomConnect(SocketsHttpConnectionContext ctx, CancellationToken cancellationToken)
