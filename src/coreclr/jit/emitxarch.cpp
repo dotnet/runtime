@@ -4423,11 +4423,11 @@ bool emitter::IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regN
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (isFirstInstrInBlock ||                 // Don't optimize if instruction is the first instruction in IG.
-        (emitLastIns == nullptr) ||            // or if a last instruction doesn't exist
-        (emitLastIns->idIns() != ins) ||       // or if the instruction is different from the last instruction
-        (emitLastIns->idOpSize() != size) ||   // or if the operand size is different from the last instruction
-        (emitLastIns->idInsFmt() != fmt))      // or if the format is different from the last instruction
+    if (isFirstInstrInBlock ||               // Don't optimize if instruction is the first instruction in IG.
+        (emitLastIns == nullptr) ||          // or if a last instruction doesn't exist
+        (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
+        (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
     {
         return false;
     }
@@ -4445,7 +4445,8 @@ bool emitter::IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regN
     // Check if we did a switched mov in the last instruction  and don't have a side effect
     if ((lastDst == src) && (lastSrc == dst) && !hasSideEffect)
     {
-        JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src register and the mov has no side-effects.\n");
+        JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src register and the mov has "
+                "no side-effects.\n");
         return true;
     }
 
