@@ -76,8 +76,8 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>
-        /// The smallest power of 2 which is greater than or equals to <paramref name="value"/>.
-        /// If <paramref name="value"/> is 0 or the result overflows, return 0.
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -109,8 +109,8 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>
-        /// The smallest power of 2 which is greater than or equals to <paramref name="value"/>.
-        /// If <paramref name="value"/> is 0 or the result overflows, return 0.
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
