@@ -120,9 +120,10 @@ Library projects should use the following directory layout.
 
 ```
 src\<Library Name>\src - Contains the source code for the library.
-src\<Library Name>\ref - Contains any reference assembly projects for the library
+src\<Library Name>\ref - Contains any reference assembly projects for the library.
 src\<Library Name>\pkg - Contains package projects for the library.
-src\<Library Name>\tests - Contains the test code for a library
+src\<Library Name>\tests - Contains the test code for a library.
+src\<Library Name>\gen - Contains source code for the assembly's source generator.
 ```
 
 ## ref
@@ -160,6 +161,9 @@ Tests don't need to reference default references which are part of the targeting
 
 ### tests output
 All test outputs should be under
+
+## gen
+In the gen directory any source generator related to the assembly should exist. This does not mean the source generator is only used for that assembly only that it is conceptually apart of that assembly. For example, the assembly may provide attributes or low-level types the source generator uses.
 
 `bin\$(MSBuildProjectName)\$(TargetFramework)`
 
