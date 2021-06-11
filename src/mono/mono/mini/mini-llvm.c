@@ -287,6 +287,20 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 	LLVMRealUNO
 };
 
+/* See Table 3-1 ("Comparison Predicate for CMPPD and CMPPS Instructions") in
+ * Vol. 2A of the Intel SDM.
+ */
+enum {
+    SSE_eq_ord_nosignal = 0,
+    SSE_lt_ord_signal = 1,
+    SSE_le_ord_signal = 2,
+    SSE_unord_nosignal = 3,
+    SSE_neq_unord_nosignal = 4,
+    SSE_nlt_unord_signal = 5,
+    SSE_nle_unord_signal = 6,
+    SSE_ord_nosignal = 7,
+};
+
 static MonoLLVMModule aot_module;
 
 static GHashTable *intrins_id_to_intrins;
@@ -8388,30 +8402,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE_CMPSS:
 		case OP_SSE2_CMPSD: {
 			int imm = -1;
+			gboolean swap = FALSE;
 			switch (ins->inst_c0) {
-			case CMP_EQ: imm = 0; break;
-			case CMP_GT: imm = 6; break;
-			case CMP_GE: imm = 5; break;
-			case CMP_LT: imm = 1; break;
-			case CMP_LE: imm = 2; break;
-			case CMP_NE: imm = 4; break;
-			case CMP_ORD: imm = 7; break;
-			case CMP_UNORD: imm = 3; break;
+			case CMP_EQ: imm = SSE_eq_ord_nosignal; break;
+			case CMP_GT: imm = SSE_lt_ord_signal; swap = TRUE; break;
+			case CMP_GE: imm = SSE_le_ord_signal; swap = TRUE; break;
+			case CMP_LT: imm = SSE_lt_ord_signal; break;
+			case CMP_LE: imm = SSE_le_ord_signal; break;
+			case CMP_GT_UN: imm = SSE_nle_unord_signal; break;
+			case CMP_GE_UN: imm = SSE_nlt_unord_signal; break;
+			case CMP_LT_UN: imm = SSE_nle_unord_signal; swap = TRUE; break;
+			case CMP_LE_UN: imm = SSE_nlt_unord_signal; swap = TRUE; break;
+			case CMP_NE: imm = SSE_neq_unord_nosignal; break;
+			case CMP_ORD: imm = SSE_ord_nosignal; break;
+			case CMP_UNORD: imm = SSE_unord_nosignal; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef cmp = LLVMConstInt (LLVMInt8Type (), imm, FALSE);
 			LLVMValueRef args [] = { lhs, rhs, cmp };
-			switch (ins->opcode) {
-			case OP_SSE_CMPSS:
-				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSS, args, "");
-				break;
-			case OP_SSE2_CMPSD:
-				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSD, args, "");
-				break;
-			default:
-				g_assert_not_reached ();
-				break;
+			if (swap) {
+				args [0] = rhs;
+				args [1] = lhs;
 			}
+			IntrinsicId id = (IntrinsicId) 0;
+			switch (ins->opcode) {
+			case OP_SSE_CMPSS: id = INTRINS_SSE_CMPSS; break;
+			case OP_SSE2_CMPSD: id = INTRINS_SSE_CMPSD; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 		case OP_SSE_COMISS: {
