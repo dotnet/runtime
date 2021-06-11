@@ -136,3 +136,18 @@ int32_t CryptoNative_EncodePkcs8PrivateKey(EVP_PKEY* pkey, uint8_t* buf)
     PKCS8_PRIV_KEY_INFO_free(p8);
     return ret;
 }
+
+int32_t CryptoNative_GetSubjectPublicKeyInfoSize(EVP_PKEY* pkey)
+{
+    assert(pkey != NULL);
+
+    return i2d_PUBKEY(pkey, NULL);
+}
+
+int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_t* buf)
+{
+    assert(pkey != NULL);
+    assert(buf != NULL);
+
+    return i2d_PUBKEY(pkey, &buf);
+}

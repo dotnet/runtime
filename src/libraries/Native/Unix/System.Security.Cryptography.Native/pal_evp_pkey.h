@@ -64,3 +64,17 @@ buf must be big enough, or an out of bounds write may occur.
 Returns the number of bytes written.
 */
 PALEXPORT int32_t CryptoNative_EncodePkcs8PrivateKey(EVP_PKEY* pkey, uint8_t* buf);
+
+/*
+Reports the number of bytes rqeuired to encode an EVP_PKEY* as an X.509 SubjectPublicKeyInfo, or a negative value on error.
+*/
+PALEXPORT int32_t CryptoNative_GetSubjectPublicKeyInfoSize(EVP_PKEY* pkey);
+
+/*
+Encodes the EVP_PKEY* as an X.509 SubjectPublicKeyInfo, writing the encoded value to buf.
+
+buf must be big enough, or an out of bounds write may occur.
+
+Returns the number of bytes written.
+*/
+PALEXPORT int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_t* buf);
