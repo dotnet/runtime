@@ -126,6 +126,25 @@ namespace AppHost.Bundle.Tests
             Assert.Throws<ArgumentException>(()=>BundleHelper.BundleApp(fixture, options, new Version(5, 0)));
         }
 
+        [Fact]
+        public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
+        {
+            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
+            testSelfContainedFixtureComposite
+                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
+                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
+                                selfContained: true,
+                                restore: true,
+                                extraArgs: new string[] {
+                                       "/p:PublishReadyToRun=true",
+                                       "/p:PublishReadyToRunComposite=true"});
+
+            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
+
+            // Run the app
+            RunTheApp(singleFile, testSelfContainedFixtureComposite);
+        }
+
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
