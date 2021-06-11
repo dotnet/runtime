@@ -6,10 +6,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <!-- For .NET Framework we reference this package which has the same layout as the SDK, with this package,
-    tests can run in any machine without having to install .NET Framework. -->
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0-preview.2" />
-
     <!-- these are part of the targeting pack but not actual assemblies -->
     <ExcludeReference Include="System.EnterpriseServices.Thunk;System.EnterpriseServices.Wrapper" />
     

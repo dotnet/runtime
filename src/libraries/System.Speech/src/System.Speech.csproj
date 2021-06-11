@@ -1,27 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.1-windows;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;SA1129</NoWarn>
     <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
+    <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
+    <OmitResources Condition="'$(TargetsWindows)' == 'true'">true</OmitResources>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
   </PropertyGroup>
-  <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <OmitResources>true</OmitResources>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Visible>true</Visible>
-      <ManifestResourceName>ExceptionStringTable</ManifestResourceName>
-    </EmbeddedResource>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
@@ -200,6 +192,12 @@
     <Compile Include="Synthesis\TTSEngine\SAPIEngineTypes.cs" />
     <Compile Include="Synthesis\TTSEngine\TTSEngineTypes.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Visible>true</Visible>
+      <ManifestResourceName>ExceptionStringTable</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="upstable_chs.upsmap">
       <LogicalName>upstable_chs.upsmap</LogicalName>
@@ -227,6 +225,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="netstandard" Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

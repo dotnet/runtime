@@ -788,14 +788,17 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     // make sure our native stack computation in code:ComCallMethodDesc.InitNativeInfo is right
     _ASSERTE(HasMarshalError() || !pStubMD->IsILStub() || pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() == m_StackBytes);
 #else // TARGET_X86
+
+    ExecutableWriterHolder<ComCallMethodDesc> comCallMDWriterHolder(this, sizeof(ComCallMethodDesc));
+
     if (pStubMD->IsILStub())
     {
-        m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
+        comCallMDWriterHolder.GetRW()->m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
         _ASSERTE(m_StackBytes == pStubMD->SizeOfArgStack());
     }
     else
     {
-        m_StackBytes = pStubMD->SizeOfArgStack();
+        comCallMDWriterHolder.GetRW()->m_StackBytes = pStubMD->SizeOfArgStack();
     }
 #endif // TARGET_X86
 
@@ -882,10 +885,11 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     }
 
     // write the computed data into this ComCallMethodDesc
-    m_dwSlotInfo = (wSourceSlotEDX | (wStubStackSlotCount << 16));
+    ExecutableWriterHolder<ComCallMethodDesc> comCallMDWriterHolder(this, sizeof(ComCallMethodDesc));
+    comCallMDWriterHolder.GetRW()->m_dwSlotInfo = (wSourceSlotEDX | (wStubStackSlotCount << 16));
     if (pwStubStackSlotOffsets != NULL)
     {
-        if (FastInterlockCompareExchangePointer(&m_pwStubStackSlotOffsets, pwStubStackSlotOffsets.GetValue(), NULL) == NULL)
+        if (FastInterlockCompareExchangePointer(&comCallMDWriterHolder.GetRW()->m_pwStubStackSlotOffsets, pwStubStackSlotOffsets.GetValue(), NULL) == NULL)
         {
             pwStubStackSlotOffsets.SuppressRelease();
         }
@@ -895,22 +899,23 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     // Fill in return thunk with proper native arg size.
     //
 
-    BYTE *pMethodDescMemory = ((BYTE*)this) + GetOffsetOfReturnThunk();
+    BYTE *pMethodDescMemoryRX = ((BYTE*)this) + GetOffsetOfReturnThunk();
+    BYTE *pMethodDescMemoryRW = ((BYTE*)comCallMDWriterHolder.GetRW()) + GetOffsetOfReturnThunk();
 
     //
     // encodes a "ret nativeArgSize" to return and
     // pop off the args off the stack
     //
-    pMethodDescMemory[0] = 0xc2;
+    pMethodDescMemoryRW[0] = 0xc2;
 
     UINT16 nativeArgSize = GetNumStackBytes();
 
     if (!(nativeArgSize < 0x7fff))
         COMPlusThrow(kTypeLoadException, IDS_EE_SIGTOOCOMPLEX);
 
-    *(SHORT *)&pMethodDescMemory[1] = nativeArgSize;
+    *(SHORT *)&pMethodDescMemoryRW[1] = nativeArgSize;
 
-    FlushInstructionCache(GetCurrentProcess(), pMethodDescMemory, sizeof pMethodDescMemory[0] + sizeof(SHORT));
+    FlushInstructionCache(GetCurrentProcess(), pMethodDescMemoryRX, sizeof pMethodDescMemoryRX[0] + sizeof(SHORT));
 #endif // TARGET_X86
 }
 #endif //CROSSGEN_COMPILE
@@ -1436,7 +1441,8 @@ PCODE ComCall::GetComCallMethodStub(ComCallMethodDesc *pCMD)
     // Compute stack layout and prepare the return thunk on x86
     pCMD->InitRuntimeNativeInfo(pStubMD);
 
-    InterlockedCompareExchangeT<PCODE>(pCMD->GetAddrOfILStubField(), pTempILStub, NULL);
+    ExecutableWriterHolder<PCODE> addrOfILStubWriterHolder(pCMD->GetAddrOfILStubField(), sizeof(PCODE));
+    InterlockedCompareExchangeT<PCODE>(addrOfILStubWriterHolder.GetRW(), pTempILStub, NULL);
 
 #ifdef TARGET_X86
     // Finally, we need to build a stub that represents the entire call.  This

@@ -43,15 +43,21 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             break;
 
         case SlotType_Executable:
-            *(PCODE *)slot = entryPoint;
+        {
+            ExecutableWriterHolder<void> slotWriterHolder((void*)slot, sizeof(PCODE*));
+            *(PCODE *)slotWriterHolder.GetRW() = entryPoint;
             goto Flush;
+        }
 
         case SlotType_ExecutableRel32:
+        {
             // A rel32 may require a jump stub on some architectures, and is currently not supported
             _ASSERTE(sizeof(void *) <= 4);
 
-            *(PCODE *)slot = entryPoint - ((PCODE)slot + sizeof(PCODE));
+            ExecutableWriterHolder<void> slotWriterHolder((void*)slot, sizeof(PCODE*));
+            *(PCODE *)slotWriterHolder.GetRW() = entryPoint - ((PCODE)slot + sizeof(PCODE));
             // fall through
+        }
 
         Flush:
             ClrFlushInstructionCache((LPCVOID)slot, sizeof(PCODE));

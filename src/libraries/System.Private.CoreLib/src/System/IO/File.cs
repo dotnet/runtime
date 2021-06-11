@@ -21,7 +21,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public static class File
+    public static partial class File
     {
         // Don't use Array.MaxLength. MS.IO.Redist targets .NET Framework.
         private const int MaxByteArrayLength = 0x7FFFFFC7;
@@ -263,8 +263,7 @@ namespace System.IO
 
         public static FileStream OpenWrite(string path)
         {
-            return new FileStream(path, FileMode.OpenOrCreate,
-                                  FileAccess.Write, FileShare.None);
+            return new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
         }
 
         public static string ReadAllText(string path)

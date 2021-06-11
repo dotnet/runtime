@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
         // For testing only
-        internal Action<object> _captureDisposableCallback;
+        internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
 
         private bool _disposed;
         private List<object> _disposables;
@@ -49,8 +49,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal object CaptureDisposable(object service)
         {
-            _captureDisposableCallback?.Invoke(service);
-
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
                 return service;

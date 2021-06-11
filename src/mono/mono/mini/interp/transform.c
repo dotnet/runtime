@@ -545,27 +545,26 @@ push_types (TransformData *td, StackInfo *types, int count)
 }
 
 static void
-mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb)
+mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *replace_bb)
 {
 	// Update IL offset to bb mapping so that offset_to_bb doesn't point to dead
 	// bblocks. This mapping can still be needed when computing clause ranges. Since
 	// multiple IL offsets can end up pointing to same bblock after optimizations,
 	// make sure we update mapping for all of them
-	if (bb->ip >= td->header->code && bb->ip < td->il_code + td->header->code_size) {
-		// To avoid scanning the entire offset_to_bb array, we scan only in the vicinity
-		// of the IL offset of bb. We can stop search when we encounter a different bblock.
-		for (int il_offset = bb->ip - td->il_code; il_offset >= 0; il_offset--) {
-			if (td->offset_to_bb [il_offset] == bb)
-				td->offset_to_bb [il_offset] = bb->next_bb;
-			else if (td->offset_to_bb [il_offset])
-				break;
-		}
-		for (int il_offset = bb->ip - td->il_code + 1; il_offset < td->header->code_size; il_offset++) {
-			if (td->offset_to_bb [il_offset] == bb)
-				td->offset_to_bb [il_offset] = bb->next_bb;
-			else if (td->offset_to_bb [il_offset])
-				break;
-		}
+	//
+	// To avoid scanning the entire offset_to_bb array, we scan only in the vicinity
+	// of the IL offset of bb. We can stop search when we encounter a different bblock.
+	for (int il_offset = bb->il_offset; il_offset >= 0; il_offset--) {
+		if (td->offset_to_bb [il_offset] == bb)
+			td->offset_to_bb [il_offset] = replace_bb;
+		else if (td->offset_to_bb [il_offset])
+			break;
+	}
+	for (int il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
+		if (td->offset_to_bb [il_offset] == bb)
+			td->offset_to_bb [il_offset] = replace_bb;
+		else if (td->offset_to_bb [il_offset])
+			break;
 	}
 
 	bb->dead = TRUE;
@@ -616,7 +615,7 @@ interp_merge_bblocks (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 		}
 	}
 
-	mark_bb_as_dead (td, bbadd);
+	mark_bb_as_dead (td, bbadd, bb);
 }
 
 // array must contain ref
@@ -660,7 +659,7 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	while (bb->out_count)
 		interp_unlink_bblocks (bb, bb->out_bb [0]);
 	prev_bb->next_bb = bb->next_bb;
-	mark_bb_as_dead (td, bb);
+	mark_bb_as_dead (td, bb, bb->next_bb);
 
 	return needs_cprop;
 }
@@ -2884,6 +2883,14 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 		interp_link_bblocks (td, prev_cbb, td->entry_bb);
 		prev_cbb->next_bb = td->entry_bb;
+
+		// Make sure all bblocks that were added will now be offset from the original method that
+		// is being transformed.
+		InterpBasicBlock *tmp_bb = td->entry_bb;
+		while (tmp_bb != NULL) {
+			tmp_bb->il_offset = prev_ip - prev_il_code;
+			tmp_bb = tmp_bb->next_bb;
+		}
 	}
 
 	td->ip = prev_ip;
@@ -3504,7 +3511,7 @@ get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 
 	if (!bb) {
 		bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
-		bb->ip = ip;
+		bb->il_offset = offset;
 		bb->native_offset = -1;
 		bb->stack_height = -1;
 		bb->index = td->bb_count++;
@@ -4100,14 +4107,21 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 
 		// Do a load/store to this address
 		if (is_load) {
-			int opcode = (mt == MINT_TYPE_VT) ? MINT_LDOBJ_VT : interp_get_ldind_for_mt (mt);
-			interp_add_ins (td, opcode);
-			interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
-			td->sp--;
-			push_simple_type (td, stack_type [mt]);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			if (mt == MINT_TYPE_VT)
-				td->last_ins->data [0] = get_data_item_index (td, field_class);
+			if (mt == MINT_TYPE_VT) {
+				int field_size = mono_class_value_size (field_class, NULL);
+				interp_add_ins (td, MINT_LDOBJ_VT);
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+				push_type_vt (td, field_class, field_size);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->last_ins->data [0] = field_size;
+			} else {
+				interp_add_ins (td, interp_get_ldind_for_mt (mt));
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+				push_type (td, stack_type [mt], field_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			}
 		} else {
 			int opcode = (mt == MINT_TYPE_VT) ? MINT_STOBJ_VT : interp_get_stind_for_mt (mt);
 			interp_add_ins (td, opcode);

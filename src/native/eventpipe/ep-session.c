@@ -71,10 +71,10 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	EP_GCX_PREEMP_EXIT
 
+	session->streaming_thread = NULL;
+
 	if (!success)
 		ep_disable ((EventPipeSessionID)session);
-
-	session->streaming_thread = NULL;
 
 	return (ep_rt_thread_start_func_return_t)0;
 }

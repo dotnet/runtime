@@ -4,55 +4,52 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace System.Text.Json.Nodes
+namespace System.Text.Json
 {
-    public partial class JsonObject
+    internal partial class JsonPropertyDictionary<T>
     {
         private ValueCollection? _valueCollection;
 
-        private ValueCollection GetValueCollection(JsonObject jsonObject)
+        public ICollection<T?> GetValueCollection()
         {
-            CreateList();
-            return _valueCollection ??= new ValueCollection(jsonObject);
+            return _valueCollection ??= new ValueCollection(this);
         }
 
-        private sealed class ValueCollection : ICollection<JsonNode?>
+        private sealed class ValueCollection : ICollection<T?>
         {
-            private readonly JsonObject _jObject;
+            private readonly JsonPropertyDictionary<T> _parent;
 
-            public ValueCollection(JsonObject jsonObject)
+            public ValueCollection(JsonPropertyDictionary<T> jsonObject)
             {
-                _jObject = jsonObject;
+                _parent = jsonObject;
             }
 
-            public int Count => _jObject.Count;
+            public int Count => _parent.Count;
 
             public bool IsReadOnly => true;
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                foreach (KeyValuePair<string, JsonNode?> item in _jObject)
+                foreach (KeyValuePair<string, T?> item in _parent)
                 {
                     yield return item.Value;
                 }
             }
 
-            public void Add(JsonNode? jsonNode) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
-
+            public void Add(T? jsonNode) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
 
             public void Clear() => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
 
+            public bool Contains(T? jsonNode) => _parent.ContainsValue(jsonNode);
 
-            public bool Contains(JsonNode? jsonNode) => _jObject.ContainsNode(jsonNode);
-
-            public void CopyTo(JsonNode?[] nodeArray, int index)
+            public void CopyTo(T?[] nodeArray, int index)
             {
                 if (index < 0)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_NodeArrayIndexNegative(nameof(index));
                 }
 
-                foreach (KeyValuePair<string, JsonNode?> item in _jObject)
+                foreach (KeyValuePair<string, T?> item in _parent)
                 {
                     if (index >= nodeArray.Length)
                     {
@@ -63,15 +60,15 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            public IEnumerator<JsonNode?> GetEnumerator()
+            public IEnumerator<T?> GetEnumerator()
             {
-                foreach (KeyValuePair<string, JsonNode?> item in _jObject)
+                foreach (KeyValuePair<string, T?> item in _parent)
                 {
                     yield return item.Value;
                 }
             }
 
-            bool ICollection<JsonNode?>.Remove(JsonNode? node) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            bool ICollection<T?>.Remove(T? node) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
         }
     }
 }

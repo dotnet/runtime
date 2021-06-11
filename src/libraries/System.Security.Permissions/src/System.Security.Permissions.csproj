@@ -203,6 +203,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" />
+    <Reference Include="netstandard" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
