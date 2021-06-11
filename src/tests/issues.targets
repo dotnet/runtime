@@ -720,14 +720,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- MacOS arm64 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr'">
-        <!-- Tracing failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48786</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
     <!-- Note these will only be excluded for unix platforms on all runtimes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' ">
