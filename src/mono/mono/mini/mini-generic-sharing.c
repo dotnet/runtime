@@ -4319,9 +4319,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 			g_free (entry_data);
 			break;
 		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
-			for (int i = 0; i < ((MonoGSharedVtMethodInfo *) entry_data)->num_entries; ++i) {
-				g_free (&((MonoGSharedVtMethodInfo *) entry_data)->entries[i]);
-			}
+			g_free (((MonoGSharedVtMethodInfo *) entry_data)->entries);
 			g_free (entry_data);
 			break;
 		}
