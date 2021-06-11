@@ -27,5 +27,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal const uint TlsError = 0x80072B18;
         internal const uint UserCanceled = 0x80410002;
         internal const uint AlpnNegotiationFailure = 0x80410007;
+        internal const uint StreamLimit = 0x80410008;
     }
 }

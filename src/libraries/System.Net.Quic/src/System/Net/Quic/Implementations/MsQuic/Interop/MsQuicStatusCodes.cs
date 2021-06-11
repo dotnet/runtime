@@ -32,6 +32,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 TlsError => "TLS_ERROR",
                 UserCanceled => "USER_CANCELED",
                 AlpnNegotiationFailure => "ALPN_NEG_FAILURE",
+                StreamLimit => "STREAM_LIMIT_REACHED",
                 _ => $"0x{status:X8}"
             };
         }
