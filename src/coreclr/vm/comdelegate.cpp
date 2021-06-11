@@ -820,7 +820,8 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
             pShuffleThunk = pClass->m_pInstRetBuffCallStub;
         }
     }
@@ -828,7 +829,8 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
             pShuffleThunk = pClass->m_pStaticCallStub;
         }
     }
@@ -1256,7 +1258,9 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 GCX_PREEMP();
 
                 pUMThunkMarshInfo = new UMThunkMarshInfo();
-                pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
+
+                ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
                 g_IBCLogger.LogEEClassCOWTableAccess(pMT);
                 if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
@@ -1282,8 +1286,11 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
             PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
 
+            ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+
             // MethodDesc is passed in for profiling to know the method desc of target
-            pUMEntryThunk->LoadTimeInit(
+            uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(
+                pUMEntryThunk,
                 pManagedTargetForDiagnostics,
                 objhnd,
                 pUMThunkMarshInfo, pInvokeMeth);
@@ -1930,7 +1937,8 @@ PCODE COMDelegate::TheDelegateInvokeStub()
         if (InterlockedCompareExchangeT<PCODE>(&s_pInvokeStub, pCandidate->GetEntryPoint(), NULL) != NULL)
         {
             // if we are here someone managed to set the stub before us so we release the current
-            pCandidate->DecRef();
+            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
+            candidateWriterHolder.GetRW()->DecRef();
         }
     }
 
@@ -2349,7 +2357,9 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
 
             Stub *pWinner = m_pMulticastStubCache->AttemptToSetStub(hash,pCandidate);
-            pCandidate->DecRef();
+            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
+            candidateWriterHolder.GetRW()->DecRef();
+
             if (!pWinner)
                 COMPlusThrowOM();
 

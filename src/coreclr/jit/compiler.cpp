@@ -9743,6 +9743,21 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "devirtualization crossed version bubble";
         case CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL:
             return "object class has multiple implementations of interface";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL:
+            return "decl method is defined on class and decl method not in version bubble, and decl method not in "
+                   "type closest to version bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL:
+            return "decl method is defined on interface and not in version bubble, and implementation type not "
+                   "entirely defined in bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL:
+            return "object class not defined within version bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE:
+            return "object class cannot be referenced from R2R code due to missing tokens";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE:
+            return "crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate "
+                   "interface implementations";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE:
+            return "Decl method cannot be represented in R2R image";
         default:
             return "undefined";
     }

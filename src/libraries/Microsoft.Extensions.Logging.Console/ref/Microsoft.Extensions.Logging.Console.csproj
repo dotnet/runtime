@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.Console.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
@@ -16,5 +19,12 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\ref\Microsoft.Extensions.Logging.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <Reference Include="netstandard" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

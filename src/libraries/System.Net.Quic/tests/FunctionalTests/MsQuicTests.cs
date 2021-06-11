@@ -442,7 +442,6 @@ namespace System.Net.Quic.Tests
             await (new[] { t1, t2 }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
         [Fact]
         public async Task ManagedAVE_MinimalFailingTest()
         {
@@ -459,6 +458,32 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(0, clientStream.StreamId);
 
                 // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
+            }
+
+            await GetStreamIdWithoutStartWorks().WaitAsync(TimeSpan.FromSeconds(15));
+
+            GC.Collect();
+        }
+
+        [Fact]
+        public async Task DisposingConnection_OK()
+        {
+            async Task GetStreamIdWithoutStartWorks()
+            {
+                using QuicListener listener = CreateQuicListener();
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+                ValueTask clientTask = clientConnection.ConnectAsync();
+                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await clientTask;
+
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Assert.Equal(0, clientStream.StreamId);
+
+                // Dispose all connections before the streams;
+                clientConnection.Dispose();
+                serverConnection.Dispose();
+                listener.Dispose();
             }
 
             await GetStreamIdWithoutStartWorks();

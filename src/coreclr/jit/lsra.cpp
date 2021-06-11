@@ -11258,13 +11258,36 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        float currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
-#ifdef TARGET_ARM
-        if (currentInterval->registerType == TYP_DOUBLE)
+        float        currentSpillWeight = 0;
+        RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
+                                             ? spillCandidateRegRecord->assignedInterval->recentRefPosition
+                                             : nullptr;
+        if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional()) &&
+            !(currentInterval->isLocalVar && recentRefPosition->IsActualRef()))
         {
-            currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+            // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+            // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+            // For such cases, consider the spill cost of next refposition.
+            // See notes in "spillInterval()".
+            RefPosition* reloadRefPosition = spillCandidateRegRecord->assignedInterval->getNextRefPosition();
+            if (reloadRefPosition != nullptr)
+            {
+                currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+            }
         }
+
+        // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
+        if (currentSpillWeight == 0)
+        {
+            currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
+#ifdef TARGET_ARM
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+            }
 #endif
+        }
+
         if (currentSpillWeight < bestSpillWeight)
         {
             bestSpillWeight    = currentSpillWeight;

@@ -1981,11 +1981,14 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 {
     CrstHolder ch(&m_CritSec);
 
+    {
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
-    ZeroMemory((BYTE *)pMem, dwSize);
+        ExecutableWriterHolder<BYTE> memWriterHolder((BYTE*)pMem, dwSize);
+        ZeroMemory(memWriterHolder.GetRW(), dwSize);
+    }
 
     //
     // Try to coalesce blocks if possible
@@ -2300,7 +2303,8 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          ));
 
 #ifdef TARGET_64BIT
-    emitJump(pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
+    ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
+    emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
 #endif // TARGET_64BIT
 
     pCodeHeap.SuppressRelease();
@@ -3001,13 +3005,13 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
     requestInfo.setThrowOnOutOfMemoryWithinRange(throwOnOutOfMemoryWithinRange);
 
     TADDR                  mem;
-    JumpStubBlockHeader *  pBlock;
+    ExecutableWriterHolder<JumpStubBlockHeader> blockWriterHolder;
 
     // Scope the lock
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
+        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
         if (mem == NULL)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
@@ -3016,27 +3020,28 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
-        pCodeHdr->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
+        ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
+        codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
         NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
-        pBlock = (JumpStubBlockHeader *)mem;
+        blockWriterHolder = ExecutableWriterHolder<JumpStubBlockHeader>((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
-        _ASSERTE(IS_ALIGNED(pBlock, CODE_SIZE_ALIGN));
+        _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
     }
 
-    pBlock->m_next            = NULL;
-    pBlock->m_used            = 0;
-    pBlock->m_allocated       = numJumps;
+    blockWriterHolder.GetRW()->m_next            = NULL;
+    blockWriterHolder.GetRW()->m_used            = 0;
+    blockWriterHolder.GetRW()->m_allocated       = numJumps;
     if (pMD && pMD->IsLCGMethod())
-        pBlock->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
+        blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
     else
-        pBlock->SetLoaderAllocator(pLoaderAllocator);
+        blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
 
     LOG((LF_JIT, LL_INFO1000, "Allocated new JumpStubBlockHeader for %d stubs at" FMT_ADDR " in loader allocator " FMT_ADDR "\n",
-         numJumps, DBG_ADDR(pBlock) , DBG_ADDR(pLoaderAllocator) ));
+         numJumps, DBG_ADDR(mem) , DBG_ADDR(pLoaderAllocator) ));
 
-    RETURN(pBlock);
+    RETURN((JumpStubBlockHeader*)mem);
 }
 
 void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind)
@@ -3067,7 +3072,8 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
-        pCodeHdr->SetStubCodeBlockKind(kind);
+        ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
+        codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(kind);
 
         NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
 
@@ -3574,10 +3580,6 @@ void EEJitManager::DeleteCodeHeap(HeapList *pHeapList)
                               (const BYTE*)pHeapList->startAddress,
                               (const BYTE*)pHeapList->endAddress     ));
 
-    // pHeapList is allocated in pHeap, so only need to delete the CodeHeap itself
-    // !!! For SoC, compiler inserts code to write a special cookie at pHeapList->pHeap after delete operator, at least for debug code.
-    // !!! Since pHeapList is deleted at the same time as pHeap, this causes AV.
-    // delete pHeapList->pHeap;
     CodeHeap* pHeap = pHeapList->pHeap;
     delete pHeap;
     delete pHeapList;
@@ -5130,9 +5132,18 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
         POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
     } CONTRACT_END;
 
-    DWORD            numJumpStubs   = DEFAULT_JUMPSTUBS_PER_BLOCK;  // a block of 32 JumpStubs
     BYTE *           jumpStub       = NULL;
+    BYTE *           jumpStubRW     = NULL;
     bool             isLCG          = pMD && pMD->IsLCGMethod();
+    // For LCG we request a small block of 4 jumpstubs, because we can not share them
+    // with any other methods and very frequently our method only needs one jump stub.
+    // Using 4 gives a request size of (32 + 4*12) or 80 bytes.
+    // Also note that request sizes are rounded up to a multiples of 16.
+    // The request size is calculated into 'blockSize' in allocJumpStubBlock.
+    // For x64 the value of BACK_TO_BACK_JUMP_ALLOCATE_SIZE is 12 bytes
+    // and the sizeof(JumpStubBlockHeader) is 32.
+    //
+    DWORD            numJumpStubs   = isLCG ? 4 : DEFAULT_JUMPSTUBS_PER_BLOCK;
     JumpStubCache *  pJumpStubCache = (JumpStubCache *) pLoaderAllocator->m_pJumpStubCache;
 
     if (isLCG)
@@ -5144,6 +5155,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
 
     JumpStubBlockHeader ** ppHead   = &(pJumpStubCache->m_pBlocks);
     JumpStubBlockHeader *  curBlock = *ppHead;
+    ExecutableWriterHolder<JumpStubBlockHeader> curBlockWriterHolder;
 
     // allocate a new jumpstub from 'curBlock' if it is not fully allocated
     //
@@ -5158,6 +5170,9 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
             if ((loAddr <= jumpStub) && (jumpStub <= hiAddr))
             {
                 // We will update curBlock->m_used at "DONE"
+                size_t blockSize = sizeof(JumpStubBlockHeader) + (size_t) numJumpStubs * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+                curBlockWriterHolder = ExecutableWriterHolder<JumpStubBlockHeader>(curBlock, blockSize);
+                jumpStubRW = (BYTE *)((TADDR)jumpStub + (TADDR)curBlockWriterHolder.GetRW() - (TADDR)curBlock);
                 goto DONE;
             }
         }
@@ -5168,17 +5183,6 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
 
     if (isLCG)
     {
-        // For LCG we request a small block of 4 jumpstubs, because we can not share them
-        // with any other methods and very frequently our method only needs one jump stub.
-        // Using 4 gives a request size of (32 + 4*12) or 80 bytes.
-        // Also note that request sizes are rounded up to a multiples of 16.
-        // The request size is calculated into 'blockSize' in allocJumpStubBlock.
-        // For x64 the value of BACK_TO_BACK_JUMP_ALLOCATE_SIZE is 12 bytes
-        // and the sizeof(JumpStubBlockHeader) is 32.
-        //
-
-        numJumpStubs = 4;
-
 #ifdef TARGET_AMD64
         // Note this these values are not requirements, instead we are
         // just confirming the values that are mentioned in the comments.
@@ -5207,11 +5211,14 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
         RETURN(NULL);
     }
 
+    curBlockWriterHolder = ExecutableWriterHolder<JumpStubBlockHeader>(curBlock, sizeof(JumpStubBlockHeader) + ((size_t) (curBlock->m_used + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE));
+
+    jumpStubRW = (BYTE *) curBlockWriterHolder.GetRW() + sizeof(JumpStubBlockHeader) + ((size_t) curBlock->m_used * BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
     jumpStub = (BYTE *) curBlock + sizeof(JumpStubBlockHeader) + ((size_t) curBlock->m_used * BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
 
     _ASSERTE((loAddr <= jumpStub) && (jumpStub <= hiAddr));
 
-    curBlock->m_next = *ppHead;
+    curBlockWriterHolder.GetRW()->m_next = *ppHead;
     *ppHead = curBlock;
 
 DONE:
@@ -5223,7 +5230,7 @@ DONE:
     _ASSERTE(((UINT_PTR)jumpStub & 7) == 0);
 #endif
 
-    emitBackToBackJump(jumpStub, (void*) target);
+    emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
 
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
@@ -5240,7 +5247,7 @@ DONE:
 
     pJumpStubCache->m_Table.Add(entry);
 
-    curBlock->m_used++;    // record that we have used up one more jumpStub in the block
+    curBlockWriterHolder.GetRW()->m_used++;    // record that we have used up one more jumpStub in the block
 
     // Every time we create a new jumpStub thunk one of these counters is incremented
     if (isLCG)

@@ -93,6 +93,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            if (!connectionState.TryAddStream(this))
+            {
+                _stateHandle.Free();
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
@@ -131,6 +137,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle?.Dispose();
                 _stateHandle.Free();
                 throw;
+            }
+
+            if (!connectionState.TryAddStream(this))
+            {
+                _state.Handle?.Dispose();
+                _stateHandle.Free();
+                throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -321,7 +334,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         shouldComplete = true;
                     }
-
                     state.ReadState = ReadState.Aborted;
                 }
 
@@ -557,6 +569,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
+            Debug.Assert(_state.ConnectionState != null);
+            _state.ConnectionState?.RemoveStream(this);
 
             if (NetEventSource.Log.IsEnabled())
             {
