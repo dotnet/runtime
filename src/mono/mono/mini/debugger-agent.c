@@ -369,17 +369,24 @@ static gboolean buffer_replies;
 
 
 #ifndef TARGET_WASM
-#define GET_TLS_DATA(thread) \
+#define GET_TLS_DATA_FROM_THREAD(thread) \
 	DebuggerTlsData *tls; \
 	mono_loader_lock(); \
 	tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread); \
 	mono_loader_unlock();
+#define GET_DEBUGGER_TLS() \
+	DebuggerTlsData *tls; \
+	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id); 
 #else
-#define GET_TLS_DATA(thread) \
+#define GET_TLS_DATA_FROM_THREAD(thread) \
+	DebuggerTlsData *tls; \
+	tls = &debugger_wasm_thread;
+#define GET_DEBUGGER_TLS() \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
 #endif
 
+//mono_native_tls_get_value (debugger_tls_id);
 
 #define dbg_lock mono_de_lock
 #define dbg_unlock mono_de_unlock
@@ -3440,15 +3447,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 
 	return events;
 }
-static void mono_stop_timer_watch (int debugger_tls_id)
-{
-#ifndef TARGET_WASM
-	DebuggerTlsData *tls;
-	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
-	g_assert (tls);
-	mono_stopwatch_stop (&tls->step_time);
-#endif	
-}
+
 /*
  * process_event:
  *
@@ -3570,7 +3569,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			break;
 		case EVENT_KIND_BREAKPOINT:
 		case EVENT_KIND_STEP: {
-			mono_stop_timer_watch (debugger_tls_id);
+			GET_DEBUGGER_TLS();
+			g_assert (tls);
+			mono_stopwatch_stop (&tls->step_time);
 			MonoMethod *method = (MonoMethod *)arg;
 			buffer_add_methodid (&buf, domain, method);
 			buffer_add_long (&buf, il_offset);
@@ -3603,15 +3604,12 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			break;
 		}
 		case EVENT_KIND_USER_BREAK: {
-#ifndef TARGET_WASM
-			DebuggerTlsData *tls;
-			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
+			GET_DEBUGGER_TLS();
 			g_assert (tls);
 			// We are already processing a breakpoint event
 			if (tls->disable_breakpoints)
 				return;
 			mono_stopwatch_stop (&tls->step_time);
-#endif			
 			break;
 		}
 		case EVENT_KIND_USER_LOG: {
@@ -4516,7 +4514,7 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	StackFrame **frames = NULL;
 	int nframes = 0;
 	
-	GET_TLS_DATA (ss_req->thread);
+	GET_TLS_DATA_FROM_THREAD (ss_req->thread);
 	
 	g_assert (tls);
 	if (!tls->context.valid) {
@@ -4773,7 +4771,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 	GSList *events;
 	MonoJitInfo *ji, *catch_ji;
 	EventInfo ei;
-	GET_TLS_DATA (mono_thread_internal_current ());
+	GET_TLS_DATA_FROM_THREAD (mono_thread_internal_current ());
 	if (tls != NULL) {
 		if (tls->abort_requested)
 			return;
@@ -7164,7 +7162,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			GET_TLS_DATA (THREAD_TO_INTERNAL(step_thread));
+			GET_TLS_DATA_FROM_THREAD (THREAD_TO_INTERNAL(step_thread));
 			
 			g_assert (tls);
 		
@@ -8890,7 +8888,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		start_frame = decode_int (p, &p, end);
 
-		GET_TLS_DATA (thread);
+		GET_TLS_DATA_FROM_THREAD (thread);
 		if (tls == NULL)
 			return ERR_UNLOADED;
 
@@ -8923,7 +8921,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (start_frame != 0 || length != -1)
 			return ERR_NOT_IMPLEMENTED;
-		GET_TLS_DATA (thread);
+		GET_TLS_DATA_FROM_THREAD (thread);
 		if (tls == NULL)
 			return ERR_UNLOADED;
 
@@ -9111,7 +9109,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	id = decode_id (p, &p, end);
 
-	GET_TLS_DATA (thread);
+	GET_TLS_DATA_FROM_THREAD (thread);
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {

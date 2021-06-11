@@ -484,55 +484,61 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId)) {
                 return false;
             }
-            if (objectId.Scheme == "scope")
+            switch (objectId.Scheme)
             {
-                SendResponse(id,
+                case "object":
+                    args["details"]  = await sdbHelper.GetObjectProxy(id, int.Parse(objectId.Value), token);
+                    break;
+                case "valuetype":
+                    args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
+                    break;
+                case "pointer":
+                    args["details"]  = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token);
+                    break;
+                case "array":
+                    args["details"]  = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
+                    break;
+                case "cfo_res":
+                {
+                    Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+                    cfo_res = Result.OkFromObject(new { result = cfo_res.Value?["result"]?["value"]});
+                    SendResponse(id, cfo_res, token);
+                    return true;
+                }
+                case "scope":
+                {
+                    SendResponse(id,
                     Result.Exception(new ArgumentException(
                         $"Runtime.callFunctionOn not supported with scope ({objectId}).")),
-                    token);
-                return true;
+                        token);
+                    return true;
+                }
+                default:
+                    return false;
             }
-            if (objectId.Scheme == "object" || objectId.Scheme == "valuetype" || objectId.Scheme == "pointer" || objectId.Scheme == "array")
+            Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
+            if (res.IsErr)
             {
-                if (objectId.Scheme == "object")
-                    args["details"]  = await sdbHelper.GetObjectProxy(id, int.Parse(objectId.Value), token);
-                if (objectId.Scheme == "valuetype")
-                    args["details"]  = await sdbHelper.GetValueTypeProxy(id, int.Parse(objectId.Value), token);
-                if (objectId.Scheme == "pointer")
-                    args["details"]  = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token);
-                if (objectId.Scheme == "array")
-                    args["details"]  = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
-                Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                if (res.IsErr)
-                {
-                    SendResponse(id, res, token);
-                    return true;
-                }
-                if (res.Value?["result"]?["value"]?["type"] == null) //it means that is not a buffer returned from the debugger-agent
-                {
-                    byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
-                    var ret_debugger_cmd = new MemoryStream(newBytes);
-                    var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
-                    ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
-                    var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, -1, token);
-                    /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
-                    res = Result.OkFromObject(new { result = obj["value"]});
-                    SendResponse(id, res, token);
-                    return true;
-                }
-                res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
                 SendResponse(id, res, token);
                 return true;
             }
-            if (objectId.Scheme == "cfo_res")
+            if (res.Value?["result"]?["value"]?["type"] == null) //it means that is not a buffer returned from the debugger-agent
             {
-                Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(args), token);
-                res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+                byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+                var ret_debugger_cmd = new MemoryStream(newBytes);
+                var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
+                ret_debugger_cmd_reader.ReadByte(); //number of objects returned.
+                var obj = await sdbHelper.CreateJObjectForVariableValue(id, ret_debugger_cmd_reader, "ret", false, -1, token);
+                /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
+                res = Result.OkFromObject(new { result = obj["value"]});
                 SendResponse(id, res, token);
                 return true;
             }
-            return false;
+            res = Result.OkFromObject(new { result = res.Value?["result"]?["value"]});
+            SendResponse(id, res, token);
+            return true;
         }
+
         private async Task<bool> OnSetVariableValue(MessageId id, int scopeId, string varName, JToken varValue, CancellationToken token)
         {
             ExecutionContext ctx = GetContext(id);
@@ -566,59 +572,32 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             //Console.WriteLine($"RuntimeGetProperties - {args}");
             try {
-                if (objectId.Scheme == "scope")
+                switch (objectId.Scheme)
                 {
-                    return await GetScopeProperties(id, int.Parse(objectId.Value), token);
-                }
-                if (objectId.Scheme == "valuetype")
-                {
-                    var ret = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), accessorPropertiesOnly, token);
-                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
-                    return res2;
-                }
-                if (objectId.Scheme == "array")
-                {
-                    var ret = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
-                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
-                    return res2;
-                }
-                if (objectId.Scheme == "object")
-                {
-                    var ret = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token);
-                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
-                    return res2;
-                }
-                if (objectId.Scheme == "pointer")
-                {
-                    var ret = new JArray(await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token));
-                    Result res2 = Result.Ok(JObject.FromObject(new { result = ret }));
-                    return res2;
-                }
-                if (objectId.Scheme == "cfo_res")
-                {
-                    Result res2 = await SendMonoCommand(id, MonoCommands.GetDetails(int.Parse(objectId.Value), args), token);
-                    // Runtime.callFunctionOn result object
-                    string value_json_str = res2.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
-                    if (value_json_str != null)
+                    case "scope":
+                        return await GetScopeProperties(id, int.Parse(objectId.Value), token);
+                    case "valuetype":
+                        return Result.OkFromObject(new { result = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), accessorPropertiesOnly, token)});
+                    case "array":
+                        return Result.OkFromObject(new { result = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token)});
+                    case "object":
+                        return Result.OkFromObject(new { result = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token) });
+                    case "pointer":
+                        return Result.OkFromObject(new { result = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)});
+                    case "cfo_res":
                     {
-                        res2 = Result.OkFromObject(new
-                        {
-                            result = JArray.Parse(value_json_str)
-                        });
+                        Result res = await SendMonoCommand(id, MonoCommands.GetDetails(int.Parse(objectId.Value), args), token);
+                        string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
+                        return Result.OkFromObject(new { result = value_json_str != null ? (object) JArray.Parse(value_json_str) : new {} });
                     }
-                    else
-                    {
-                        res2 = Result.OkFromObject(new { result = new { } });
-                    }
-                    return res2;
+                    default:
+                        return Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
+
                 }
             }
             catch (Exception e) {
-                Result res2 = Result.Err($"Unable to RuntimeGetProperties '{objectId}' - {e}");
-                return res2;
+                return Result.Err($"Unable to RuntimeGetProperties '{objectId}' - {e}");
             }
-            Result res = Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
-            return res;
         }
 
         private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, Frame mono_frame, Breakpoint bp, CancellationToken token)
@@ -661,7 +640,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             command_params_writer.Write(thread_id);
             command_params_writer.Write(0);
             command_params_writer.Write(-1);
-            var ret_debugger_cmd_reader = await sdbHelper.SendDebuggerAgentCommand(sessionId, (int) CommandSet.THREAD, (int) CmdThread.GET_FRAME_INFO, command_params, token);
+            var ret_debugger_cmd_reader = await sdbHelper.SendDebuggerAgentCommand<CmdThread>(sessionId, CmdThread.GetFrameInfo, command_params, token);
             var frame_count = ret_debugger_cmd_reader.ReadInt32();
             //Console.WriteLine("frame_count - " + frame_count);
             for (int j = 0; j < frame_count; j++) {
@@ -805,12 +784,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             for (int i = 0 ; i < number_of_events; i++) {
                 var event_kind = (EventKind)ret_debugger_cmd_reader.ReadByte(); //event kind
                 var request_id = ret_debugger_cmd_reader.ReadInt32(); //request id
-                if (event_kind == EventKind.STEP)
+                if (event_kind == EventKind.Step)
                     await sdbHelper.ClearSingleStep(sessionId, request_id, token);
                 int thread_id = ret_debugger_cmd_reader.ReadInt32();
                 switch (event_kind)
                 {
-                    case EventKind.EXCEPTION:
+                    case EventKind.Exception:
                     {
                         string reason = "exception";
                         int object_id = ret_debugger_cmd_reader.ReadInt32();
@@ -830,14 +809,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args?["callFrames"]?.Values<JObject>(), token);
                         return ret;
                     }
-                    case EventKind.USER_BREAK:
-                    case EventKind.STEP:
-                    case EventKind.BREAKPOINT:
+                    case EventKind.UserBreak:
+                    case EventKind.Step:
+                    case EventKind.Breakpoint:
                     {
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
                         string reason = "other";//other means breakpoint
                         int method_id = 0;
-                        if (event_kind != EventKind.USER_BREAK)
+                        if (event_kind != EventKind.UserBreak)
                             method_id = ret_debugger_cmd_reader.ReadInt32();
                         var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args?["callFrames"]?.Values<JObject>(), token);
                         return ret;
@@ -1163,7 +1142,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return await context.ready.Task;
 
             var command_params = new MemoryStream();
-            var ret_debugger_cmd_reader = await sdbHelper.SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.CLEAR_ALL_BREAKPOINTS, command_params, token);
+            var ret_debugger_cmd_reader = await sdbHelper.SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.ClearAllBreakpoints, command_params, token);
             if (ret_debugger_cmd_reader == null)
             {
                 Log("verbose", $"Failed to clear breakpoints");
