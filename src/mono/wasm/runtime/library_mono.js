@@ -62,6 +62,7 @@ var MonoSupportLib = {
 		mono_wasm_deregister_root: undefined,
 		mono_text_decoder: undefined,
 		mono_clear_bps: undefined,
+		mono_set_timeout_exec: undefined,
 		mono_wasm_current_bp_id: undefined,
 		mono_wasm_enum_frames: undefined,
 		mono_wasm_set_bp: undefined,
@@ -2350,8 +2351,6 @@ var MonoSupportLib = {
 			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
 	},
-	
-	mono_set_timeout_exec: undefined,
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
 		MONO.mono_wasm_add_typed_value (type, str_value, value);
@@ -2486,17 +2485,17 @@ var MonoSupportLib = {
 	},
 
 	mono_set_timeout: function (timeout, id) {
-		if (!this.mono_set_timeout_exec)
-			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
+		if (!MONO.mono_set_timeout_exec)
+			MONO.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
 			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_set_timeout_exec (id);
 			})
 		}
 	},
