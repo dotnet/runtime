@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         //private static readonly IPAddress LocalAddress = IPAddress.Parse("169.254.59.132"); // duo2
         private static readonly IPAddress LocalAddress = null;
 
-        //private const string ReportDir = @"c:\_dev\WindowBenchmark";
+        //private const string ReportDir = @"C:\_dev\r6r\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
         private const string ReportDir = @"C:\Users\anfirszo\dev\dotnet\6.0\runtime\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
 
         [Theory]
@@ -81,13 +81,15 @@ namespace System.Net.Http.Functional.Tests
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler, details);
         }
 
-        public static TheoryData<string, int, double> Download20_ServerAndRatio = new TheoryData<string, int, double>
+        public static TheoryData<string, int, int> Download20_Data = new TheoryData<string, int, int>
         {
-            { BenchmarkServer, 8, 0.5 },
-            { BenchmarkServer, 8, 0.25 },
-            { BenchmarkServer, 8, 0.125 },
-            { BenchmarkServer, 4, 0.5 },
-            { BenchmarkServer, 4, 0.25 },
+            { BenchmarkServer, 8, 1 },
+            { BenchmarkServer, 8, 2 },
+            { BenchmarkServer, 8, 4 },
+            { BenchmarkServer, 8, 8 },
+            { BenchmarkServer, 4, 1 },
+            { BenchmarkServer, 4, 2 },
+            { BenchmarkServer, 4, 4 },
             //{ BenchmarkServerGo, 8, 0.5 },
             //{ BenchmarkServerGo, 8, 0.25 },
             //{ BenchmarkServerGo, 8, 0.125 },
@@ -95,37 +97,38 @@ namespace System.Net.Http.Functional.Tests
             //{ BenchmarkServerGo, 4, 0.25 },
         };
 
+        [Theory]
+        [MemberData(nameof(Download20_Data))]
+        public async Task Download20_StaticRtt(string hostName, int ratio, int correction)
+        {
+            _listener.Enabled = true;
+            _listener.Filter = m => m.Contains("[FlowControl]") && m.Contains("Updated");
+            var handler = new SocketsHttpHandler
+            {
+                FakeRtt = await EstimateRttAsync(hostName),
+                StreamWindowUpdateRatio = ratio,
+                StreamWindowMagicMultiplier = 1.0 / correction
+            };
+
+            string details = $"StaticRtt_R({ratio})_C({correction})";
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} magic={handler.StreamWindowMagicMultiplier}",
+                hostName, true, LengthMb, handler, details);
+        }
 
         [Theory]
-        [MemberData(nameof(Download20_ServerAndRatio))]
-        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, double magic)
+        [MemberData(nameof(Download20_Data))]
+        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, int correction)
         {
             _listener.Enabled = true;
             _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
             var handler = new SocketsHttpHandler()
             {
                 StreamWindowUpdateRatio = ratio,
-                StreamWindowMagicMultiplier = magic
+                StreamWindowMagicMultiplier = 1.0/correction
             };
-            string details = $"Dynamic_R({ratio})_M({magic})";
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler);
-        }
-
-        [Theory]
-        [MemberData(nameof(Download20_ServerAndRatio))]
-        public async Task Download20_StaticRtt(string hostName, int ratio, double magic)
-        {
-            _listener.Enabled = true;
-            _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
-            var handler = new SocketsHttpHandler
-            {
-                FakeRtt = await EstimateRttAsync(hostName),
-                StreamWindowUpdateRatio = ratio,
-                StreamWindowMagicMultiplier = magic
-            };
-
-            string details = $"StaticRtt_R({ratio})_M({magic})";
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} magic={magic}", hostName, true, LengthMb, handler, details);
+            string details = $"Dynamic_R({ratio})_C({correction})";
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} magic={handler.StreamWindowMagicMultiplier}",
+                hostName, true, LengthMb, handler, details);
         }
 
         [Theory]
