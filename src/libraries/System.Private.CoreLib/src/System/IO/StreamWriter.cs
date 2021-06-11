@@ -105,13 +105,13 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
-            else if (bufferSize == -1 || bufferSize == 0)
+            if (bufferSize == -1)
             {
                 bufferSize = DefaultBufferSize;
             }
-            else if (bufferSize < -1)
+            else if (bufferSize <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
             _stream = stream;
@@ -183,11 +183,8 @@ namespace System.IO
         private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
         {
             ValidateArgs(path, encoding);
-
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
             return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
         }
@@ -195,17 +192,11 @@ namespace System.IO
         private static void ValidateArgs(string path, Encoding encoding)
         {
             if (path == null)
-            {
                 throw new ArgumentNullException(nameof(path));
-            }
             if (encoding == null)
-            {
                 throw new ArgumentNullException(nameof(encoding));
-            }
             if (path.Length == 0)
-            {
                 throw new ArgumentException(SR.Argument_EmptyPath);
-            }
         }
 
         public override void Close()
