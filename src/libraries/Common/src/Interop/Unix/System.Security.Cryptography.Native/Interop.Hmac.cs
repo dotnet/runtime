@@ -32,7 +32,7 @@ internal static partial class Interop
         internal static partial int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
-        private static unsafe extern int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, ref int mdSize);
+        private static unsafe extern int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, int* mdSize);
 
         internal static unsafe int HmacOneShot(IntPtr type, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
@@ -43,7 +43,7 @@ internal static partial class Interop
             fixed (byte* pSource = source)
             fixed (byte* pDestination = destination)
             {
-                int result = HmacOneShot(type, pKey, key.Length, pSource, source.Length, pDestination, ref size);
+                int result = HmacOneShot(type, pKey, key.Length, pSource, source.Length, pDestination, &size);
 
                 if (result != Success)
                 {

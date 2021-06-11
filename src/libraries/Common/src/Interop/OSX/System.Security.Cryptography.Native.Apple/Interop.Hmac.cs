@@ -45,7 +45,7 @@ internal static partial class Interop
             int cbData,
             byte* pOutput,
             int cbOutput,
-            out int cbDigest);
+            int* cbDigest);
     }
 }
 
