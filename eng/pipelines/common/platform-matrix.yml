@@ -40,7 +40,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm_win
       container:
-        image: windowsservercore-ltsc2019-webassembly-amd64-20210610160329-38b311c
+        image: windowsservercore-ltsc2019-webassembly-amd64-20210610225303-20fd2db
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
