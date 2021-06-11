@@ -6,12 +6,12 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Optional service used to determine if the specified type is resolvable by the <see cref="IServiceProvider"/>.
+    /// Optional service used to determine if the specified type is available from the <see cref="IServiceProvider"/>.
     /// </summary>
     public interface IServiceProviderIsService
     {
         /// <summary>
-        /// Determines if the specified service type is resolvable by the <see cref="IServiceProvider"/>.
+        /// Determines if the specified service type is available from the <see cref="IServiceProvider"/>.
         /// </summary>
         /// <param name="serviceType">An object that specifies the type of service object to test.</param>
         /// <returns>true if the specified service is a resolvable, false if it is not.</returns>
