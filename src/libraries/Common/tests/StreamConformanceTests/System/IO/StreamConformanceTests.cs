@@ -2365,7 +2365,7 @@ namespace System.IO.Tests
         public virtual async Task CopyToAsync_AllDataCopied_Large(bool useAsync) =>
             await CopyToAsync_AllDataCopied(1024 * 1024, useAsync);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidAOT))] // System.NotSupportedException : Specified method is not supported.
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync)
