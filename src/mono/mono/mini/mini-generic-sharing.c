@@ -4314,13 +4314,9 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 	if (!did_register)
 		switch (entry->data->type) {
 		case MONO_PATCH_INFO_GSHAREDVT_CALL:
-			g_free ((MonoJumpInfoGSharedVtCall *) entry_data);
-			break;
 		case MONO_PATCH_INFO_VIRT_METHOD:
-			g_free ((MonoJumpInfoVirtMethod *) entry_data);
-			break;
 		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-			g_free ((MonoDelegateClassMethodPair *) entry_data);
+			g_free (entry_data);
 			break;
 		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
 			for (int i = 0; i < ((MonoGSharedVtMethodInfo *) entry_data)->num_entries; ++i) {
