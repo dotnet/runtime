@@ -42,6 +42,7 @@ namespace System.Net.Http.Functional.Tests
         //private const string BenchmarkServer = "10.194.114.94";
         //private const string BenchmarkServer = "169.254.132.170"; // duo1
         private const string BenchmarkServer = "192.168.0.152";
+        //private const string BenchmarkServer = "127.0.0.1";
         private const string BenchmarkServerGo = "192.168.0.152:5002";
         // private const string BenchmarkServer = "127.0.0.1:5000";
 
@@ -64,7 +65,7 @@ namespace System.Net.Http.Functional.Tests
         public Task Download20_SpecificWindow_MegaBytes(string hostName, int initialWindowKbytes) => Download20_SpecificWindow(hostName, initialWindowKbytes);
 
         [Theory]
-        //[InlineData(BenchmarkServer, 64)]
+        [InlineData(BenchmarkServer, 64)]
         [InlineData(BenchmarkServer, 128)]
         [InlineData(BenchmarkServer, 256)]
         [InlineData(BenchmarkServer, 512)]
@@ -97,9 +98,31 @@ namespace System.Net.Http.Functional.Tests
             //{ BenchmarkServerGo, 4, 0.25 },
         };
 
+        public static TheoryData<string, int, int> Download20_Data8 = new TheoryData<string, int, int>
+        {
+            { BenchmarkServer, 8, 1 },
+            { BenchmarkServer, 8, 2 },
+            { BenchmarkServer, 8, 4 },
+            { BenchmarkServer, 8, 8 },
+        };
+
+
+        public static TheoryData<string, int, int> Download20_Data4 = new TheoryData<string, int, int>
+        {
+            { BenchmarkServer, 4, 1 },
+            { BenchmarkServer, 4, 2 },
+            { BenchmarkServer, 4, 4 },
+        };
+
         [Theory]
-        [MemberData(nameof(Download20_Data))]
-        public async Task Download20_StaticRtt(string hostName, int ratio, int correction)
+        [MemberData(nameof(Download20_Data8))]
+        public Task Download20_StaticRtt_8(string hostName, int ratio, int correction) => Download20_StaticRtt(hostName, ratio, correction);
+
+        [Theory]
+        [MemberData(nameof(Download20_Data4))]
+        public Task Download20_StaticRtt_4(string hostName, int ratio, int correction) => Download20_StaticRtt(hostName, ratio, correction);
+
+        private async Task Download20_StaticRtt(string hostName, int ratio, int correction)
         {
             _listener.Enabled = true;
             _listener.Filter = m => m.Contains("[FlowControl]") && m.Contains("Updated");
@@ -116,7 +139,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Download20_Data))]
+        [MemberData(nameof(Download20_Data8))]
+        public Task Download20_Dynamic_SingleStream_8(string hostName, int ratio, int correction) => Download20_Dynamic_SingleStream(hostName, ratio, correction);
+
+        [Theory]
+        [MemberData(nameof(Download20_Data4))]
+        public Task Download20_Dynamic_SingleStream_4(string hostName, int ratio, int correction) => Download20_Dynamic_SingleStream(hostName, ratio, correction);
+
         private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, int correction)
         {
             _listener.Enabled = true;
