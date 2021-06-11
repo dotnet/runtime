@@ -136,52 +136,46 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void SettingsArePropagated(bool isAsync)
+        [InlineData(FileMode.Create, FileAccess.Write, FileOptions.None)]
+        [InlineData(FileMode.Create, FileAccess.Write, FileOptions.Asynchronous)]
+        [InlineData(FileMode.Open, FileAccess.Read, FileOptions.None)]
+        [InlineData(FileMode.Open, FileAccess.Read, FileOptions.Asynchronous)]
+        [InlineData(FileMode.Create, FileAccess.ReadWrite, FileOptions.None)]
+        [InlineData(FileMode.Create, FileAccess.ReadWrite, FileOptions.Asynchronous)]
+        public void SettingsArePropagated(FileMode mode, FileAccess access, FileOptions fileOptions)
         {
             string filePath = GetTestFilePath();
-
-            var writeOptions = new FileStreamOptions
+            if (mode == FileMode.Open)
             {
-                Mode = FileMode.Create,
-                Access = FileAccess.Write,
-                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
+                File.Create(filePath).Dispose();
+            }
+
+            bool canRead = (access & FileAccess.Read) != 0;
+            bool canWrite = (access & FileAccess.Write) != 0;
+            bool isAsync = (fileOptions & FileOptions.Asynchronous) != 0;
+
+            var options = new FileStreamOptions
+            {
+                Mode = mode,
+                Access = access,
+                Options = fileOptions
             };
 
-            Validate(new FileStream(filePath, writeOptions), filePath, isAsync, false, true);
-            Validate(File.Open(filePath, writeOptions), filePath, isAsync, false, true);
-            Validate(new FileInfo(filePath).Open(writeOptions), filePath, isAsync, false, true);
-            Validate((FileStream)new StreamWriter(filePath, writeOptions).BaseStream, filePath, isAsync, false, true);
-            Validate((FileStream)new StreamWriter(filePath, Encoding.UTF8, writeOptions).BaseStream, filePath, isAsync, false, true);
+            Validate(new FileStream(filePath, options), filePath, isAsync, canRead, canWrite);
+            Validate(File.Open(filePath, options), filePath, isAsync, canRead, canWrite);
+            Validate(new FileInfo(filePath).Open(options), filePath, isAsync, canRead, canWrite);
 
-            var readOptions = new FileStreamOptions
+            if (canWrite)
             {
-                Mode = FileMode.Open,
-                Access = FileAccess.Read,
-                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
-            };
+                Validate((FileStream)new StreamWriter(filePath, options).BaseStream, filePath, isAsync, canRead, canWrite);
+                Validate((FileStream)new StreamWriter(filePath, Encoding.UTF8, options).BaseStream, filePath, isAsync, canRead, canWrite);
+            }
 
-            Validate(new FileStream(filePath, readOptions), filePath, isAsync, true, false);
-            Validate(File.Open(filePath, readOptions), filePath, isAsync, true, false);
-            Validate(new FileInfo(filePath).Open(readOptions), filePath, isAsync, true, false);
-            Validate((FileStream)new StreamReader(filePath, readOptions).BaseStream, filePath, isAsync, true, false);
-            Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, readOptions).BaseStream, filePath, isAsync, true, false);
-
-            var readWriteOptions = new FileStreamOptions
+            if (canRead)
             {
-                Mode = FileMode.Create,
-                Access = FileAccess.ReadWrite,
-                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
-            };
-
-            Validate(new FileStream(filePath, readWriteOptions), filePath, isAsync, true, true);
-            Validate(File.Open(filePath, readWriteOptions), filePath, isAsync, true, true);
-            Validate(new FileInfo(filePath).Open(readWriteOptions), filePath, isAsync, true, true);
-            Validate((FileStream)new StreamWriter(filePath, readWriteOptions).BaseStream, filePath, isAsync, true, true);
-            Validate((FileStream)new StreamWriter(filePath, Encoding.UTF8, readWriteOptions).BaseStream, filePath, isAsync, true, true);
-            Validate((FileStream)new StreamReader(filePath, readWriteOptions).BaseStream, filePath, isAsync, true, true);
-            Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, readWriteOptions).BaseStream, filePath, isAsync, true, true);
+                Validate((FileStream)new StreamReader(filePath, options).BaseStream, filePath, isAsync, canRead, canWrite);
+                Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, options).BaseStream, filePath, isAsync, canRead, canWrite);
+            }
 
             static void Validate(FileStream fs, string expectedPath, bool expectedAsync, bool expectedCanRead, bool expectedCanWrite)
             {
