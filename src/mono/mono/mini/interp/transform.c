@@ -2435,9 +2435,20 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_INTRINS_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetType")) {
 			if (constrained_class && m_class_is_valuetype (constrained_class)) {
-				// We still need the implicit boxing added by the runtime
-				// FIXME resolve this to actual type constant
-				*op = MINT_INTRINS_GET_TYPE;
+				// If constrained_class is valuetype we already know its type.
+				// Resolve GetType to a constant so we can fold type comparisons
+				ERROR_DECL(error);
+				gpointer systype = mono_type_get_object_checked (m_class_get_byval_arg (constrained_class), error);
+				return_val_if_nok (error, FALSE);
+
+				td->sp--;
+				interp_add_ins (td, MINT_MONO_LDPTR);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->last_ins->data [0] = get_data_item_index (td, systype);
+
+				td->ip += 5;
+				return TRUE;
 			} else {
 				if (constrained_class) {
 					// deref the managed pointer to get the object
