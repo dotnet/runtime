@@ -1097,56 +1097,6 @@ simd_ins_to_intrins (int opcode)
 {
 	switch (opcode) {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-	case OP_MINPD:
-		return INTRINS_SSE_MINPD;
-	case OP_MINPS:
-		return INTRINS_SSE_MINPS;
-	case OP_MAXPD:
-		return INTRINS_SSE_MAXPD;
-	case OP_MAXPS:
-		return INTRINS_SSE_MAXPS;
-	case OP_HADDPD:
-		return INTRINS_SSE_HADDPD;
-	case OP_HADDPS:
-		return INTRINS_SSE_HADDPS;
-	case OP_HSUBPD:
-		return INTRINS_SSE_HSUBPD;
-	case OP_HSUBPS:
-		return INTRINS_SSE_HSUBPS;
-	case OP_ADDSUBPS:
-		return INTRINS_SSE_ADDSUBPS;
-	case OP_ADDSUBPD:
-		return INTRINS_SSE_ADDSUBPD;
-	case OP_EXTRACT_MASK:
-		return INTRINS_SSE_PMOVMSKB;
-	case OP_PSHRW:
-	case OP_PSHRW_REG:
-		return INTRINS_SSE_PSRLI_W;
-	case OP_PSHRD:
-	case OP_PSHRD_REG:
-		return INTRINS_SSE_PSRLI_D;
-	case OP_PSHRQ:
-	case OP_PSHRQ_REG:
-		return INTRINS_SSE_PSRLI_Q;
-	case OP_PSHLW:
-	case OP_PSHLW_REG:
-		return INTRINS_SSE_PSLLI_W;
-	case OP_PSHLD:
-	case OP_PSHLD_REG:
-		return INTRINS_SSE_PSLLI_D;
-	case OP_PSHLQ:
-	case OP_PSHLQ_REG:
-		return INTRINS_SSE_PSLLI_Q;
-	case OP_PSARW:
-	case OP_PSARW_REG:
-		return INTRINS_SSE_PSRAI_W;
-	case OP_PSARD:
-	case OP_PSARD_REG:
-		return INTRINS_SSE_PSRAI_D;
-	case OP_RSQRTPS:
-		return INTRINS_SSE_RSQRT_PS;
-	case OP_RCPPS:
-		return INTRINS_SSE_RCP_PS;
 	case OP_CVTPD2DQ:
 		return INTRINS_SSE_CVTPD2DQ;
 	case OP_CVTPS2DQ:
@@ -1157,28 +1107,10 @@ simd_ins_to_intrins (int opcode)
 		return INTRINS_SSE_CVTTPD2DQ;
 	case OP_CVTTPS2DQ:
 		return INTRINS_SSE_CVTTPS2DQ;
-	case OP_PACKW:
-		return INTRINS_SSE_PACKSSWB;
-	case OP_PACKD:
-		return INTRINS_SSE_PACKSSDW;
-	case OP_PACKW_UN:
-		return INTRINS_SSE_PACKUSWB;
-	case OP_PACKD_UN:
-		return INTRINS_SSE_PACKUSDW;
-	case OP_PMULW_HIGH:
-		return INTRINS_SSE_PMULHW;
-	case OP_PMULW_HIGH_UN:
-		return INTRINS_SSE_PMULHU;
-	case OP_DPPS:
-		return INTRINS_SSE_DPPS;
 	case OP_SSE_SQRTSS:
 		return INTRINS_SSE_SQRT_SS;
 	case OP_SSE2_SQRTSD:
 		return INTRINS_SSE_SQRT_SD;
-	case OP_SQRTPS:
-		return INTRINS_SSE_SQRT_PS;
-	case OP_SQRTPD:
-		return INTRINS_SSE_SQRT_PD;
 #endif
 	default:
 		g_assert_not_reached ();
@@ -1219,11 +1151,8 @@ simd_op_to_llvm_type (int opcode)
 	case OP_CVTPS2DQ:
 	case OP_CVTTPS2DQ:
 		return sse_r4_t;
-	case OP_EXTRACT_MASK:
-		return sse_i1_t;
 	case OP_SQRTPS:
 	case OP_RSQRTPS:
-	case OP_RCPPS:
 	case OP_DUPPS_LOW:
 	case OP_DUPPS_HIGH:
 		return sse_r4_t;
@@ -7740,30 +7669,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
 			break;
 		}
-		case OP_MINPD:
-		case OP_MINPS:
-		case OP_MAXPD:
-		case OP_MAXPS:
-		case OP_ADDSUBPD:
-		case OP_ADDSUBPS:
-		case OP_HADDPD:
-		case OP_HADDPS:
-		case OP_HSUBPD:
-		case OP_HSUBPS:
-		case OP_PACKW:
-		case OP_PACKD:
-		case OP_PACKW_UN:
-		case OP_PACKD_UN:
-		case OP_PMULW_HIGH:
-		case OP_PMULW_HIGH_UN: {
-			LLVMValueRef args [2];
-
-			args [0] = lhs;
-			args [1] = rhs;
-
-			values [ins->dreg] = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), args, "");
-			break;
-		}
 		case OP_PAVGB_UN:
 		case OP_PAVGW_UN: {
 			LLVMValueRef ones_vec;
@@ -7931,12 +7836,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_CVTPD2DQ:
 		case OP_CVTPS2DQ:
 		case OP_CVTPD2PS:
-		case OP_CVTTPD2DQ:
-		case OP_EXTRACT_MASK:
-		case OP_SQRTPS:
-		case OP_SQRTPD:
-		case OP_RSQRTPS:
-		case OP_RCPPS: {
+		case OP_CVTTPD2DQ: {
 			LLVMValueRef v;
 
 			v = convert (ctx, values [ins->sreg1], simd_op_to_llvm_type (ins->opcode));
@@ -7988,40 +7888,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* This is only used for implementing shifts by non-immediate */
 			values [ins->dreg] = lhs;
 			break;
-
-		case OP_PSHRW:
-		case OP_PSHRD:
-		case OP_PSHRQ:
-		case OP_PSARW:
-		case OP_PSARD:
-		case OP_PSHLW:
-		case OP_PSHLD:
-		case OP_PSHLQ: {
-			LLVMValueRef args [3];
-
-			args [0] = lhs;
-			args [1] = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
-
-			values [ins->dreg] = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), args, dname);
-			break;
-		}
-
-		case OP_PSHRW_REG:
-		case OP_PSHRD_REG:
-		case OP_PSHRQ_REG:
-		case OP_PSARW_REG:
-		case OP_PSARD_REG:
-		case OP_PSHLW_REG:
-		case OP_PSHLD_REG:
-		case OP_PSHLQ_REG: {
-			LLVMValueRef args [3];
-
-			args [0] = lhs;
-			args [1] = values [ins->sreg2];
-
-			values [ins->dreg] = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), args, dname);
-			break;
-		}
 
 		case OP_SHUFPS:
 		case OP_SHUFPD:
@@ -8205,18 +8071,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			val = LLVMBuildInsertElement (builder, val, v2, LLVMConstInt (LLVMInt32Type (), 3, FALSE), "");
 			
 			values [ins->dreg] = val;
-			break;
-		}
-
-		case OP_DPPS: {
-			LLVMValueRef args [3];
-
-			args [0] = lhs;
-			args [1] = rhs;
-			/* 0xf1 == multiply all 4 elements, add them together, and store the result to the lowest element */
-			args [2] = LLVMConstInt (LLVMInt8Type (), 0xf1, FALSE);
-
-			values [ins->dreg] = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), args, dname);
 			break;
 		}
 
