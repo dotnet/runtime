@@ -3787,27 +3787,43 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
     return elem;
 }
 
-ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block)
+//------------------------------------------------------------------------
+// VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `srcVN`
+//    being written using an indirection of 'dstIndType'.
+//
+// Arguments:
+//    srcVN - value number for the value being stored;
+//    dstIndType - type of the indirection storing the value to the memory;
+//    block - block where the assignment occurs
+//
+// Return Value:
+//    The value number corresponding to memory after the assignment.
+//
+// Notes: It may insert a cast to dstIndType or return a unique value number for an incompatible indType.
+//
+ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum srcVN, var_types dstIndType, BasicBlock* block)
 {
-    var_types elemTyp = TypeOfVN(elem);
+    var_types srcType = TypeOfVN(srcVN);
 
-    // Check if the elemTyp is matching/compatible
+    ValueNum dstVN;
 
-    if (indType != elemTyp)
+    // Check if the elemTyp is matching/compatible.
+    if (dstIndType != srcType)
     {
-        bool isConstant = IsVNConstant(elem);
-        if (isConstant && (elemTyp == genActualType(indType)))
+        bool isConstant = IsVNConstant(srcVN);
+        if (isConstant && (srcType == genActualType(dstIndType)))
         {
             // (i.e. We recorded a constant of TYP_INT for a TYP_BYTE field)
+            dstVN = srcVN;
         }
         else
         {
             // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
-            if (varTypeIsStruct(indType))
+            if (varTypeIsStruct(dstIndType))
             {
                 // return a new unique value number
-                elem = VNMakeNormalUnique(elem);
+                dstVN = VNMakeNormalUnique(srcVN);
 
                 JITDUMP("    *** Mismatched types in VNApplySelectorsAssignTypeCoerce (indType is TYP_STRUCT)\n");
             }
@@ -3816,14 +3832,18 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_type
                 // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
                 // insert a cast of elem to 'indType'
-                elem = VNForCast(elem, indType, elemTyp);
+                dstVN = VNForCast(srcVN, dstIndType, srcType);
 
                 JITDUMP("    Cast to %s inserted in VNApplySelectorsAssignTypeCoerce (elemTyp is %s)\n",
-                        varTypeName(indType), varTypeName(elemTyp));
+                        varTypeName(dstIndType), varTypeName(srcType));
             }
         }
     }
-    return elem;
+    else
+    {
+        dstVN = srcVN;
+    }
+    return dstVN;
 }
 
 //------------------------------------------------------------------------
@@ -7409,18 +7429,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         //
                         if (lcl->gtVNPair.GetLiberal() == ValueNumStore::NoVN)
                         {
-                            // So far, we know about two of these cases:
+#ifdef DEBUG
+
+                            // So far, we know about three of these cases:
                             // Case 1) We have a local var who has never been defined but it's seen as a use.
                             //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
                             //         take the address of the variable, this doesn't mean it's a use nor we have to
-                            //         initialize it, so in this very rare case, we fabricate a value number.
-                            // Case 2) Local variables that represent structs which are assigned using CpBlk.
+                            //         initialize it, so in this very rare case, we fabricate a value number;
+                            // Case 2) Local variables that represent structs which are assigned using CpBlk;
+                            // Case 3) Local variable was written using a partial write,
+                            //         for example, BLK<1>(ADDR(LCL_VAR int)) = 1, it will change only the first byte.
+                            //         Check that there was ld-addr-op on the local.
                             //
-                            // Make sure we have either case 1 or case 2
+                            // Make sure we have one of these cases.
                             //
-                            GenTree* nextNode = lcl->gtNext;
+                            const GenTree*   nextNode = lcl->gtNext;
+                            const LclVarDsc* varDsc   = lvaGetDesc(lcl);
+
                             assert((nextNode->gtOper == GT_ADDR && nextNode->AsOp()->gtOp1 == lcl) ||
-                                   varTypeIsStruct(lcl->TypeGet()));
+                                   varTypeIsStruct(lcl->TypeGet()) || varDsc->lvHasLdAddrOp);
+#endif // DEBUG
 
                             // We will assign a unique value number for these
                             //
@@ -7887,8 +7915,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                                     if (fieldSeq == FieldSeqStore::NotAField())
                                     {
+                                        assert(!isEntire && "did not expect an entire NotAField write.");
                                         // We don't know where we're storing, so give the local a new, unique VN.
                                         // Do this by considering it an "entire" assignment, with an unknown RHS.
+                                        isEntire = true;
+                                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
+                                    }
+                                    else if ((fieldSeq == nullptr) && !isEntire)
+                                    {
+                                        // It is a partial store of a LCL_VAR without using LCL_FLD.
+                                        // Generate a unique VN.
                                         isEntire = true;
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                                     }

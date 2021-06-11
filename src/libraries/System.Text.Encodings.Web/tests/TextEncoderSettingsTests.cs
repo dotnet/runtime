@@ -31,6 +31,7 @@ namespace System.Text.Encodings.Web.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/50965", TestPlatforms.Browser)]
     public class TextEncoderSettingsTests
     {
         [Fact]

@@ -49,6 +49,9 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyDictionary.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyDictionary.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyDictionary.ValueCollection.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
@@ -61,8 +64,6 @@
     <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonObject.KeyCollection.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonObject.ValueCollection.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />

@@ -572,20 +572,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
-            <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Ldfld_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/53561</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Ldfld_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/53561</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -726,14 +717,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashWorkerThreads/*">
             <Issue>https://github.com/dotnet/runtime/issues/47096</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- MacOS arm64 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr'">
-        <!-- Tracing failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48786</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -930,7 +913,7 @@
     </ItemGroup>
 
     <!-- Crossgen2 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
             <Issue>https://github.com/dotnet/runtime/issues/38291</Issue>
         </ExcludeList>
@@ -996,6 +979,15 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dev10_715437/dev10_715437/*">
             <Issue>https://github.com/dotnet/runtime/issues/43498</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Ldfld_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53561</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Ldfld_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53561</Issue>
         </ExcludeList>
     </ItemGroup>
 
