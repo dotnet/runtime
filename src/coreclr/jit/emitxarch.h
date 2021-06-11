@@ -95,6 +95,7 @@ code_t AddRexPrefix(instruction ins, code_t code);
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
 static bool IsMovInstruction(instruction ins);
+bool IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 
 bool AreUpper32BitsZero(regNumber reg);
 
