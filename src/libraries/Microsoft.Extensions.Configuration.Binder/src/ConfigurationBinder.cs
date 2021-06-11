@@ -218,14 +218,14 @@ namespace Microsoft.Extensions.Configuration
 
                     var missingPropertyNames = configuration.GetChildren()
                         .Where(cs => !propertyNames.Contains(cs.Key))
-                        .Select(mp => mp.Key)
+                        .Select(mp => $"'{mp.Key}'")
                         .ToList();
 
                     if (missingPropertyNames.Any())
                     {
-                        throw new InvalidOperationException(
-                            $"\"{nameof(options.ErrorOnUnknownConfiguration)}\" was set on the provided {nameof(BinderOptions)}, but the following properties were not found on the instance of {instance.GetType()}:" +
-                            Environment.NewLine + string.Join($"{Environment.NewLine}\t", missingPropertyNames));
+                        throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
+                            nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
+                            string.Join(", ", missingPropertyNames)));
                     }
                 }
 
