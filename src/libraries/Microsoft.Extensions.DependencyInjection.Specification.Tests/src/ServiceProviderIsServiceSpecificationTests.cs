@@ -80,5 +80,23 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.True(serviceProviderIsService.IsService(typeof(IEnumerable<FakeService>)));
             Assert.False(serviceProviderIsService.IsService(typeof(IEnumerable<>)));
         }
+
+        [Fact]
+        public void BuiltInServicesWithIsServiceReturnsTrue()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeService), typeof(FakeService));
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
+
+            // Assert
+            Assert.NotNull(serviceProviderIsService);
+            Assert.True(serviceProviderIsService.IsService(typeof(IServiceProvider)));
+            Assert.True(serviceProviderIsService.IsService(typeof(IServiceScopeFactory)));
+            Assert.True(serviceProviderIsService.IsService(typeof(IServiceProviderIsService)));
+        }
     }
 }

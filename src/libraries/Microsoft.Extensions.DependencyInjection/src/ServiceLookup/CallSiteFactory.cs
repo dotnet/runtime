@@ -466,7 +466,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(genericDefinition);
             }
 
-            return false;
+            // These are the built in service types that aren't part of the list of service descriptors
+            // If you update these make sure to also update the code in ServiceProvider.ctor
+            return serviceType == typeof(IServiceProvider) ||
+                   serviceType == typeof(IServiceScopeFactory) ||
+                   serviceType == typeof(IServiceProviderIsService);
         }
 
         private struct ServiceDescriptorCacheItem
