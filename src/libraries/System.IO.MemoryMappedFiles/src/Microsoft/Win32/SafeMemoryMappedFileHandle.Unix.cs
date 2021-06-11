@@ -62,10 +62,10 @@ namespace Microsoft.Win32.SafeHandles
             if (fileStream != null)
             {
                 bool ignored = false;
-                fileStream.SafeFileHandle.DangerousAddRef(ref ignored);
-
-                _fileStreamHandle = fileStream.SafeFileHandle;
-                handlePtr = _fileStreamHandle.DangerousGetHandle();
+                SafeFileHandle handle = fileStream.SafeFileHandle;
+                handle.DangerousAddRef(ref ignored);
+                _fileStreamHandle = handle;
+                handlePtr = handle.DangerousGetHandle();
             }
             else
             {
