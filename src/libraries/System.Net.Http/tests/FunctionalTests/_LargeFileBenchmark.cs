@@ -172,6 +172,9 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine("REPORT: " + reportFileName);
             using StreamWriter report = new StreamWriter(reportFileName);
 
+            _output.WriteLine($"############ Warmup Run ############");
+            await TestHandlerCore(info, hostName, http2, lengthMb, handler, null);
+
             for (int i = 0; i < TestRunCount; i++)
             {
                 _output.WriteLine($"############ run {i} ############");
@@ -199,12 +202,16 @@ namespace System.Net.Http.Functional.Tests
             double elapsedSec = sw.ElapsedMilliseconds * 0.001;
             elapsedSec = Math.Round(elapsedSec, 3);
             _output.WriteLine($"{info}: completed in {elapsedSec} sec");
-            report.Write(elapsedSec);
-            double? window = GetStreamWindowSizeInMegabytes();
-            if (window.HasValue) report.Write($", {window}");
-            double? rtt = GetRtt();
-            if (rtt.HasValue) report.Write($", {rtt}");
-            report.WriteLine();
+
+            if (report != null)
+            {
+                report.Write(elapsedSec);
+                double? window = GetStreamWindowSizeInMegabytes();
+                if (window.HasValue) report.Write($", {window}");
+                double? rtt = GetRtt();
+                if (rtt.HasValue) report.Write($", {rtt}");
+                report.WriteLine();
+            }
         }
 
         private double? GetStreamWindowSizeInMegabytes()
