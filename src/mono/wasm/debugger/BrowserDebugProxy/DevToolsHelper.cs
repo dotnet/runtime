@@ -295,6 +295,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; set; }
         public object AuxData { get; set; }
 
+        public bool PauseOnUncaught { get; set; }
+        public bool PauseOnCaught { get; set; }
+
         public List<Frame> CallStack { get; set; }
 
         public string[] LoadedFiles { get; set; }

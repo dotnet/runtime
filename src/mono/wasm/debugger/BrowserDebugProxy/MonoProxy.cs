@@ -120,8 +120,40 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return true;
                     }
 
+                case "Runtime.exceptionThrown":
+                    {
+                        if (!GetContext(sessionId).IsRuntimeReady)
+                        {
+                            string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
+                            if (exceptionError == "pause_on_uncaught")
+                            {
+                                GetContext(sessionId).PauseOnUncaught = true;
+                                return true;
+                            }
+                            if (exceptionError == "pause_on_caught")
+                            {
+                                GetContext(sessionId).PauseOnCaught = true;
+                                return true;
+                            }
+                        }
+                        break;
+                    }
+
                 case "Debugger.paused":
                     {
+                        if (!GetContext(sessionId).IsRuntimeReady)
+                        {
+                            string reason = args?["reason"]?.Value<string>();
+                            if (reason == "exception")
+                            {
+                                string exceptionError = args?["data"]?["value"]?.Value<string>();
+                                if (exceptionError == "pause_on_uncaught" || exceptionError == "pause_on_caught")
+                                {
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    return true;
+                                }
+                            }
+                        }
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
                         switch (top_func) {
@@ -1078,6 +1110,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Log("verbose", $"Failed to clear breakpoints due to {clear_result}");
             }
 
+            if (context.PauseOnCaught && context.PauseOnUncaught)
+                await SendMonoCommand(sessionId, MonoCommands.SetPauseOnExceptions("all"), token);
+            if (context.PauseOnUncaught)
+                await SendMonoCommand(sessionId, MonoCommands.SetPauseOnExceptions("uncaught"), token);
+
             DebugStore store = await LoadStore(sessionId, token);
 
             context.ready.SetResult(store);
@@ -1214,10 +1251,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
             {
+                string checkUncaughtExceptions = "throw \"pause_on_uncaught\";";
+                string checkCaughtExceptions = "try {throw \"pause_on_caught\";} catch {}";
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
-                    JObject.FromObject(new { source = "globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver" }),
+                    JObject.FromObject(new { source = $"globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver; {checkUncaughtExceptions} {checkCaughtExceptions}" }),
                     token);
 
                 if (sessionId != SessionId.Null && !res.IsOk)
