@@ -316,8 +316,11 @@ namespace Microsoft.Extensions.Caching.Memory
         private static void ScanForExpiredItems(MemoryCache cache)
         {
             DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
-            foreach (CacheEntry entry in cache._entries.Values)
+
+            foreach (KeyValuePair<object, CacheEntry> item in cache._entries)
             {
+                CacheEntry entry = item.Value;
+
                 if (entry.CheckExpired(now))
                 {
                     cache.RemoveEntry(entry);
@@ -399,8 +402,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Sort items by expired & priority status
             DateTimeOffset now = _options.Clock.UtcNow;
-            foreach (CacheEntry entry in _entries.Values)
+            foreach (KeyValuePair<object, CacheEntry> item in _entries)
             {
+                CacheEntry entry = item.Value;
                 if (entry.CheckExpired(now))
                 {
                     entriesToRemove.Add(entry);

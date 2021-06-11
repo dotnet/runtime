@@ -32,7 +32,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task AltSvc_Header_Upgrade_Success(Version fromVersion)
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
-            if (fromVersion == HttpVersion.Version20 && UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
             {
                 return;
             }

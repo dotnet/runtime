@@ -107,6 +107,7 @@ typedef struct {
 	GPtrArray *callsite_list;
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
+	LLVMValueRef gc_safe_point_flag_var;
 	void *di_builder, *cu;
 	GHashTable *objc_selector_to_var;
 	GPtrArray *cfgs;
@@ -1954,6 +1955,15 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 {
 	guint32 got_offset;
 	LLVMValueRef load;
+
+	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
+		const char *symbol = "mono_polling_required";
+		if (!module->gc_safe_point_flag_var) {
+			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
+		}
+		return module->gc_safe_point_flag_var;
+	}
 
 	MonoJumpInfo tmp_ji;
 	tmp_ji.type = type;

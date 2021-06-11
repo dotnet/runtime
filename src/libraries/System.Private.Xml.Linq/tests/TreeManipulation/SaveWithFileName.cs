@@ -256,11 +256,6 @@ namespace XLinqTests
             return s;
         }
 
-        private static string NormalizeNewLines(string s)
-        {
-            s = s.Replace("\n", "");
-            s = s.Replace("\r", "");
-            return s;
-        }
+        private static string NormalizeNewLines(string s) => s.ReplaceLineEndings("");
     }
 }

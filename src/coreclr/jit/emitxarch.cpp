@@ -161,7 +161,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 //
 bool emitter::DoesWriteZeroFlag(instruction ins)
 {
-    return (CodeGenInterface::instInfo[ins] & INS_FLAGS_WritesZF) != 0;
+    return (CodeGenInterface::instInfo[ins] & Writes_ZF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -176,7 +176,7 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 //
 bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
 {
-    return (CodeGenInterface::instInfo[ins] & INS_FLAGS_Resets_CF_OF_Flags) != 0;
+    return (CodeGenInterface::instInfo[ins] & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
 }
 
 //------------------------------------------------------------------------

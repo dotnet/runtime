@@ -29,6 +29,7 @@ parameters:
   variables: {}
   pool: ''
   runTests: false
+  useHelix: true
   testScope: ''
   testBuildPlatforms: []
 
@@ -66,6 +67,7 @@ jobs:
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
         - _subset: libs
+        - _buildAction: ''
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
 
@@ -73,7 +75,10 @@ jobs:
         # If platform is in testBuildPlatforms we build tests as well.
         - ${{ if or(eq(parameters.runTests, true), containsValue(parameters.testBuildPlatforms, parameters.platform)) }}:
           - _subset: libs+libs.tests
-          - _additionalBuildArguments: /p:ArchiveTests=true
+          - ${{ if eq(parameters.useHelix, false) }}:
+            - _buildAction: -restore -build -test
+          - ${{ if eq(parameters.useHelix, true) }}:
+            - _additionalBuildArguments: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -92,6 +97,7 @@ jobs:
 
         - script: $(_buildScript)
                 -subset $(_subset)
+                $(_buildAction)
                 $(_buildArguments)
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
@@ -136,7 +142,7 @@ jobs:
               parameters:
                 name: Libraries_AllConfigurations
 
-        - ${{ if eq(parameters.runTests, true) }}:
+        - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, true)) }}:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
               osGroup: ${{ parameters.osGroup }}

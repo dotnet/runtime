@@ -4246,7 +4246,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
     JITDUMP("\n*** %s local variables in block " FMT_BB " (weight=%s)\n", isRecompute ? "recomputing" : "marking",
             block->bbNum, refCntWtd2str(block->getBBWeight(this)));
 
-    for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
         DISPSTMT(stmt);
@@ -4514,7 +4514,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -6273,15 +6273,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     // Inlining done under OSR may introduce new reporting, in which case the OSR frame
     // must allocate a slot.
-    if (!opts.IsOSR() && lvaReportParamTypeArg())
+    if (lvaReportParamTypeArg())
     {
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed());
 #endif
-        // For CORINFO_CALLCONV_PARAMTYPE (if needed)
-        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-        stkOffs -= TARGET_POINTER_SIZE;
-        lvaCachedGenericContextArgOffs = stkOffs;
+        if (opts.IsOSR())
+        {
+            PatchpointInfo* ppInfo = info.compPatchpointInfo;
+            assert(ppInfo->HasGenericContextArgOffset());
+            const int originalOffset       = ppInfo->GenericContextArgOffset();
+            lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
+        }
+        else
+        {
+            // For CORINFO_CALLCONV_PARAMTYPE (if needed)
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs -= TARGET_POINTER_SIZE;
+            lvaCachedGenericContextArgOffs = stkOffs;
+        }
     }
 #ifndef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis())
@@ -6292,7 +6302,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             PatchpointInfo* ppInfo = info.compPatchpointInfo;
             if (ppInfo->HasKeptAliveThis())
             {
-                int originalOffset             = ppInfo->KeptAliveThisOffset();
+                const int originalOffset       = ppInfo->KeptAliveThisOffset();
                 lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
                 canUseExistingSlot             = true;
             }
@@ -7753,24 +7763,23 @@ int Compiler::lvaGetCallerSPRelativeOffset(unsigned varNum)
     return lvaToCallerSPRelativeOffset(varDsc->GetStackOffset(), varDsc->lvFramePointerBased);
 }
 
-int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
+//-----------------------------------------------------------------------------
+// lvaToCallerSPRelativeOffset: translate a frame offset into an offset from
+//    the caller's stack pointer.
+//
+// Arguments:
+//    offset - frame offset
+//    isFpBase - if true, offset is from FP, otherwise offset is from SP
+//    forRootFrame - if the current method is an OSR method, adjust the offset
+//      to be relative to the SP for the root method, instead of being relative
+//      to the SP for the OSR method.
+//
+// Returins:
+//    suitable offset
+//
+int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRootFrame) const
 {
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
-
-    // TODO-Cleanup
-    //
-    // This current should not be called for OSR as caller SP relative
-    // offsets computed below do not reflect the extra stack space
-    // taken up by the original method frame.
-    //
-    // We should make it work.
-    //
-    // Instead we record the needed offsets in the patchpoint info
-    // when doing the original method compile(see special offsets
-    // in generatePatchpointInfo) and consume those values in the OSR
-    // compile. If we fix this we may be able to reduce the size
-    // of the patchpoint info and have less special casing for these
-    // frame slots.
 
     if (isFpBased)
     {
@@ -7780,6 +7789,30 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
     {
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
+
+#ifdef TARGET_AMD64
+    if (forRootFrame && opts.IsOSR())
+    {
+        // The offset computed above already includes the OSR frame adjustment, plus the
+        // pop of the "pseudo return address" from the OSR frame.
+        //
+        // To get to root method caller-SP, we need to subtract off the original frame
+        // size and the pushed return address and RBP for that frame (which we know is an
+        // RPB frame).
+        //
+        // ppInfo's FpToSpDelta also accounts for the popped pseudo return address
+        // between the original method frame and the OSR frame. So the net adjustment
+        // is simply FpToSpDelta plus one register.
+        //
+
+        const PatchpointInfo* const ppInfo     = info.compPatchpointInfo;
+        const int                   adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;
+        offset -= adjustment;
+    }
+#else
+    // OSR NYI for other targets.
+    assert(!opts.IsOSR());
+#endif
 
     return offset;
 }
