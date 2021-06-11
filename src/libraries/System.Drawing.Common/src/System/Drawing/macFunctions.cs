@@ -31,6 +31,7 @@
 #undef DEBUG_CLIPPING
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -49,6 +50,9 @@ namespace System.Drawing
         internal static int debug_threshold = 1;
 #endif
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicFields, "System.Windows.Forms.XplatUICarbon", "System.Windows.Forms")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "DynamicDependency attribute will ensure that the required field is not trimmed.")]
         private static Delegate? GetHwndDelegate()
         {
             foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())

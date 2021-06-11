@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
@@ -102,6 +103,7 @@ namespace System.Drawing
             return null;
         }
 
+        [RequiresUnreferencedCode("The attributes types cannot be statically discovered and their members may be trimmed.")]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)
         {
             return TypeDescriptor.GetProperties(typeof(Image), attributes);
