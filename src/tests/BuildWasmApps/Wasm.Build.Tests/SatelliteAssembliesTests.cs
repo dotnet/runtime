@@ -23,7 +23,7 @@ namespace Wasm.Build.Tests
                     .Multiply(
                         new object?[] { relinking, "es-ES", "got: hola" },
                         new object?[] { relinking, null,    "got: hello" },
-                        new object?[] { relinking, "ja-JP", "got: こんにちは" })
+                        new object?[] { relinking, "ja-JP", "got: \u3053\u3093\u306B\u3061\u306F" })
                     .WithRunHosts(host)
                     .UnwrapItemsAsArrays();
 
