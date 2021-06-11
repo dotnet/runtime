@@ -768,8 +768,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     int likelihood = best.Count() * 100 / totalCount;
                     // The threshold is different for interfaces and classes.
                     // A flag in the Other field of the TypeHandleHistogram*Count entry indicates which kind of call site this is.
-                    const int INTERFACE_FLAG = 0x40000000;
-                    bool isInterface = (elem.Other & INTERFACE_FLAG) != 0;
+                    bool isInterface = (elem.Other & (uint)ClassProfileFlags.IsInterface) != 0;
                     int threshold = isInterface ? 25 : 30;
                     return new GetLikelyClassResult
                     {
