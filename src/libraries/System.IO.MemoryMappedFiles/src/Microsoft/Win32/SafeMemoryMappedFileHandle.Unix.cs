@@ -85,7 +85,8 @@ namespace Microsoft.Win32.SafeHandles
             base.Dispose(disposing);
         }
 
-        protected override bool ReleaseHandle() {
+        protected override bool ReleaseHandle()
+        {
             if (_fileStreamHandle != null) {
                 SetHandle((IntPtr) (-1));
                 _fileStreamHandle.DangerousRelease();
