@@ -88,7 +88,8 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            if (_fileStreamHandle != null) {
+            if (_fileStreamHandle != null)
+            {
                 SetHandle((IntPtr) (-1));
                 _fileStreamHandle.DangerousRelease();
                 _fileStreamHandle = null;
