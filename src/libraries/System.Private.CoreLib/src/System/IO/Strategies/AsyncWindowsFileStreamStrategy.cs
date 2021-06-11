@@ -43,68 +43,27 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            SafeFileHandle.ValueTaskSource vts = _fileHandle.GetValueTaskSource();
-            try
+            long positionBefore = _filePosition;
+            if (CanSeek)
             {
-                long positionBefore = _filePosition;
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(destination, positionBefore);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
-
-                // Calculate position in the file we should be at after the read is done
-                if (CanSeek)
+                long len = Length;
+                if (positionBefore + destination.Length > len)
                 {
-                    long len = Length;
-
-                    if (positionBefore + destination.Length > len)
-                    {
-                        destination = positionBefore <= len ?
-                            destination.Slice(0, (int)(len - positionBefore)) :
-                            default;
-                    }
-
-                    // When using overlapped IO, the OS is not supposed to
-                    // touch the file pointer location at all.  We will adjust it
-                    // ourselves, but only in memory. This isn't threadsafe.
-                    _filePosition += destination.Length;
+                    destination = positionBefore <= len ?
+                        destination.Slice(0, (int)(len - positionBefore)) :
+                        default;
                 }
 
-                // Queue an async ReadFile operation.
-                if (Interop.Kernel32.ReadFile(_fileHandle, (byte*)vts._memoryHandle.Pointer, destination.Length, IntPtr.Zero, nativeOverlapped) == 0)
-                {
-                    // The operation failed, or it's pending.
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(_fileHandle);
-                    switch (errorCode)
-                    {
-                        case Interop.Errors.ERROR_IO_PENDING:
-                            // Common case: IO was initiated, completion will be handled by callback.
-                            // Register for cancellation now that the operation has been initiated.
-                            vts.RegisterForCancellation(cancellationToken);
-                            break;
-
-                        case Interop.Errors.ERROR_BROKEN_PIPE:
-                            // EOF on a pipe. Callback will not be called.
-                            // We clear the overlapped status bit for this special case (failure
-                            // to do so looks like we are freeing a pending overlapped later).
-                            nativeOverlapped->InternalLow = IntPtr.Zero;
-                            vts.Dispose();
-                            return ValueTask.FromResult(0);
-
-                        default:
-                            // Error. Callback will not be called.
-                            vts.Dispose();
-                            return ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
-                    }
-                }
-            }
-            catch
-            {
-                vts.Dispose();
-                throw;
+                // When using overlapped IO, the OS is not supposed to
+                // touch the file pointer location at all.  We will adjust it
+                // ourselves, but only in memory. This isn't threadsafe.
+                _filePosition += destination.Length;
             }
 
-            // Completion handled by callback.
-            vts.FinishedScheduling();
-            return new ValueTask<int>(vts, vts.Version);
+            (SafeFileHandle.ValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
+            return vts != null
+                ? new ValueTask<int>(vts, vts.Version)
+                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -123,52 +82,20 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            SafeFileHandle.ValueTaskSource vts = _fileHandle.GetValueTaskSource();
-            try
+            long positionBefore = _filePosition;
+            if (CanSeek)
             {
-                long positionBefore = _filePosition;
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(source, positionBefore);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
-
-                if (CanSeek)
-                {
-                    // When using overlapped IO, the OS is not supposed to
-                    // touch the file pointer location at all.  We will adjust it
-                    // ourselves, but only in memory.  This isn't threadsafe.
-                    _filePosition += source.Length;
-                    UpdateLengthOnChangePosition();
-                }
-
-                // Queue an async WriteFile operation.
-                if (Interop.Kernel32.WriteFile(_fileHandle, (byte*)vts._memoryHandle.Pointer, source.Length, IntPtr.Zero, nativeOverlapped) == 0)
-                {
-                    // The operation failed, or it's pending.
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(_fileHandle);
-                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
-                    {
-                        // Common case: IO was initiated, completion will be handled by callback.
-                        // Register for cancellation now that the operation has been initiated.
-                        vts.RegisterForCancellation(cancellationToken);
-                    }
-                    else
-                    {
-                        // Error. Callback will not be invoked.
-                        vts.Dispose();
-                        return errorCode == Interop.Errors.ERROR_NO_DATA ? // EOF on a pipe. IO callback will not be called.
-                            ValueTask.CompletedTask :
-                            ValueTask.FromException(HandleIOError(positionBefore, errorCode));
-                    }
-                }
-            }
-            catch
-            {
-                vts.Dispose();
-                throw;
+                // When using overlapped IO, the OS is not supposed to
+                // touch the file pointer location at all.  We will adjust it
+                // ourselves, but only in memory.  This isn't threadsafe.
+                _filePosition += source.Length;
+                UpdateLengthOnChangePosition();
             }
 
-            // Completion handled by callback.
-            vts.FinishedScheduling();
-            return new ValueTask(vts, vts.Version);
+            (SafeFileHandle.ValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
+            return vts != null
+                ? new ValueTask(vts, vts.Version)
+                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(positionBefore, errorCode));
         }
 
         private Exception HandleIOError(long positionBefore, int errorCode)

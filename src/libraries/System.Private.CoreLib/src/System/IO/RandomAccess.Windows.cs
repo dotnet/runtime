@@ -146,7 +146,16 @@ namespace System.IO
             }
         }
 
-        private static unsafe ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+            => Map(QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken));
+
+        private static ValueTask<int> Map((SafeFileHandle.ValueTaskSource? vts, int errorCode) tuple)
+            => tuple.vts != null
+                ? new ValueTask<int>(tuple.vts, tuple.vts.Version)
+                : tuple.errorCode == 0 ? ValueTask.FromResult(0) : ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(tuple.errorCode));
+
+        internal static unsafe (SafeFileHandle.ValueTaskSource? vts, int errorCode) QueueAsyncReadFile(
+            SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
             SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
             try
@@ -174,12 +183,12 @@ namespace System.IO
                             // to do so looks like we are freeing a pending overlapped later).
                             nativeOverlapped->InternalLow = IntPtr.Zero;
                             vts.Dispose();
-                            return ValueTask.FromResult(0);
+                            return (null, 0);
 
                         default:
                             // Error. Callback will not be called.
                             vts.Dispose();
-                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                            return (null, errorCode);
                     }
                 }
             }
@@ -191,10 +200,14 @@ namespace System.IO
 
             // Completion handled by callback.
             vts.FinishedScheduling();
-            return new ValueTask<int>(vts, vts.Version);
+            return (vts, -1);
         }
 
-        private static unsafe ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+           => Map(QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken));
+
+        internal static unsafe (SafeFileHandle.ValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(
+            SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
             SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
             try
@@ -207,19 +220,20 @@ namespace System.IO
                 {
                     // The operation failed, or it's pending.
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                    switch (errorCode)
                     {
-                        // Common case: IO was initiated, completion will be handled by callback.
-                        // Register for cancellation now that the operation has been initiated.
-                        vts.RegisterForCancellation(cancellationToken);
-                    }
-                    else
-                    {
-                        // Error. Callback will not be invoked.
-                        vts.Dispose();
-                        return errorCode == Interop.Errors.ERROR_NO_DATA // EOF on a pipe. IO callback will not be called.
-                            ? ValueTask.FromResult<int>(0)
-                            : ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            vts.RegisterForCancellation(cancellationToken);
+                            break;
+                        case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe. IO callback will not be called.
+                            vts.Dispose();
+                            return (null, 0);
+                        default:
+                            // Error. Callback will not be invoked.
+                            vts.Dispose();
+                            return (null, errorCode);
                     }
                 }
             }
@@ -231,7 +245,7 @@ namespace System.IO
 
             // Completion handled by callback.
             vts.FinishedScheduling();
-            return new ValueTask<int>(vts, vts.Version);
+            return (vts, -1);
         }
 
         private static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
