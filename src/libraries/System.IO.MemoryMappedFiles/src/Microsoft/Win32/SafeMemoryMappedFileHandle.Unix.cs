@@ -17,6 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         /// (e.g. deleting the file for DeleteOnClose) happens at the appropriate time.
         /// </summary>
         private readonly FileStream? _fileStream;
+        /// <summary>The FileStream's handle, cached to avoid repeated accesses to FileStream.SafeFileHandle that could, in theory, change.</summary>
         internal SafeFileHandle? _fileStreamHandle;
 
         /// <summary>Whether this SafeHandle owns the _fileStream and should Dispose it when disposed.</summary>
