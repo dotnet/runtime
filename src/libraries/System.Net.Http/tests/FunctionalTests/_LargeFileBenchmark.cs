@@ -128,7 +128,7 @@ namespace System.Net.Http.Functional.Tests
             };
             string details = $"Dynamic_R({ratio})_C({correction})";
             await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} magic={handler.StreamWindowMagicMultiplier}",
-                hostName, true, LengthMb, handler, details);
+                hostName, true, LengthMb, handler);
         }
 
         [Theory]
