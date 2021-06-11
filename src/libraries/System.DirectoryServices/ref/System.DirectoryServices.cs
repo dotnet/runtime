@@ -419,7 +419,7 @@ namespace System.DirectoryServices
         public void CopyTo(System.DirectoryServices.PropertyValueCollection[] array, int index) { }
         public System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         void System.Collections.IDictionary.Clear() { }
         bool System.Collections.IDictionary.Contains(object value) { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
