@@ -375,7 +375,7 @@ var App = {
 		}
 	},
 	call_test_method: function (method_name, args, signature) {
-		if ((raw_args.length > 2) && (typeof (signature) !== "string"))
+		if ((args.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
 		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
