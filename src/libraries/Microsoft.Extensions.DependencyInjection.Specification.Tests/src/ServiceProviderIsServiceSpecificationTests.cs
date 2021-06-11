@@ -9,13 +9,18 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    public abstract class ServiceProviderIsServiceSpecificationTests
+    public abstract partial class DependencyInjectionSpecificationTests
     {
-        protected abstract IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection);
+        public virtual bool SupportsIServiceProviderIsService => true;
 
         [Fact]
         public void ExplictServiceRegisterationWithIsService()
         {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
             // Arrange
             var collection = new TestServiceCollection();
             collection.AddTransient(typeof(IFakeService), typeof(FakeService));
@@ -33,6 +38,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [Fact]
         public void OpenGenericsWithIsService()
         {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
             // Arrange
             var collection = new TestServiceCollection();
             collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
@@ -50,6 +60,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [Fact]
         public void ClosedGenericsWithIsService()
         {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
             // Arrange
             var collection = new TestServiceCollection();
             collection.AddTransient(typeof(IFakeOpenGenericService<IFakeService>), typeof(FakeOpenGenericService<IFakeService>));
@@ -66,6 +81,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [Fact]
         public void IEnumerableWithIsServiceAlwaysReturnsTrue()
         {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
             // Arrange
             var collection = new TestServiceCollection();
             collection.AddTransient(typeof(IFakeService), typeof(FakeService));
@@ -84,6 +104,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [Fact]
         public void BuiltInServicesWithIsServiceReturnsTrue()
         {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
             // Arrange
             var collection = new TestServiceCollection();
             collection.AddTransient(typeof(IFakeService), typeof(FakeService));
