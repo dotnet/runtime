@@ -4237,6 +4237,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 {
 	gpointer entry_data = NULL;
 	gboolean did_register = FALSE;
+	guint32 result = -1;
 
 	switch (entry->data->type) {
 	case MONO_PATCH_INFO_CLASS:
@@ -4307,9 +4308,9 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	if (entry->in_mrgctx)
-		return lookup_or_register_info (jit_mm->mem_manager, entry->d.method->klass, entry->d.method, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_method_get_context (entry->d.method));
+		result = lookup_or_register_info (jit_mm->mem_manager, entry->d.method->klass, entry->d.method, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_method_get_context (entry->d.method));
 	else
-		return lookup_or_register_info (jit_mm->mem_manager, entry->d.klass, NULL, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_class_get_context (entry->d.klass));
+		result = lookup_or_register_info (jit_mm->mem_manager, entry->d.klass, NULL, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_class_get_context (entry->d.klass));
 
 	if (!did_register)
 		switch (entry->data->type) {
@@ -4327,6 +4328,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 			break;
 		}
 
+	return result;
 }
 
 static gboolean gsharedvt_supported;
