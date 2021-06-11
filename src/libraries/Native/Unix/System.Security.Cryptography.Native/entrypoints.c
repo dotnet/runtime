@@ -23,7 +23,6 @@
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
 #include "pal_pkcs7.h"
-#include "pal_rsa.h"
 #include "pal_ssl.h"
 #include "pal_x509.h"
 #include "pal_x509ext.h"
@@ -58,7 +57,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_DecodeOcspResponse)
     DllImportEntry(CryptoNative_DecodePkcs7)
     DllImportEntry(CryptoNative_DecodePkcs8PrivateKey)
-    DllImportEntry(CryptoNative_DecodeRsaPublicKey)
     DllImportEntry(CryptoNative_DecodeSubjectPublicKeyInfo)
     DllImportEntry(CryptoNative_DecodeX509)
     DllImportEntry(CryptoNative_DecodeX509BasicConstraints2Extension)
@@ -180,7 +178,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_GetPkcs7DerSize)
     DllImportEntry(CryptoNative_GetPkcs8PrivateKeySize)
     DllImportEntry(CryptoNative_GetRandomBytes)
-    DllImportEntry(CryptoNative_GetRsaParameters)
     DllImportEntry(CryptoNative_GetSubjectPublicKeyInfoSize)
     DllImportEntry(CryptoNative_GetX509CrlNextUpdate)
     DllImportEntry(CryptoNative_GetX509DerSize)
@@ -232,16 +229,11 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_ReadX509AsDerFromBio)
     DllImportEntry(CryptoNative_RecursiveFreeX509Stack)
     DllImportEntry(CryptoNative_RegisterLegacyAlgorithms)
-    DllImportEntry(CryptoNative_RsaCreate)
     DllImportEntry(CryptoNative_RsaDecrypt)
-    DllImportEntry(CryptoNative_RsaDestroy)
     DllImportEntry(CryptoNative_RsaEncrypt)
     DllImportEntry(CryptoNative_RsaGenerateKey)
     DllImportEntry(CryptoNative_RsaSignHash)
-    DllImportEntry(CryptoNative_RsaSize)
-    DllImportEntry(CryptoNative_RsaUpRef)
     DllImportEntry(CryptoNative_RsaVerifyHash)
-    DllImportEntry(CryptoNative_SetRsaParameters)
     DllImportEntry(CryptoNative_UpRefEvpPkey)
     DllImportEntry(CryptoNative_X509ChainBuildOcspRequest)
     DllImportEntry(CryptoNative_X509ChainGetCachedOcspStatus)

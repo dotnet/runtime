@@ -5,7 +5,6 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
-#include "pal_rsa.h"
 #include "pal_x509.h"
 
 #include <assert.h>
