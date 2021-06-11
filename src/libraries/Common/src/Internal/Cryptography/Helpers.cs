@@ -40,7 +40,7 @@ namespace Internal.Cryptography
             return algorithm.BlockSize / 8;
         }
 
-        internal static bool TryCopyToDestination(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        internal static bool TryCopyToDestination(this ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             if (source.TryCopyTo(destination))
             {

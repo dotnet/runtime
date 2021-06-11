@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
+using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
@@ -278,12 +279,87 @@ namespace System.Security.Cryptography
             return true;
         }
 
+        private delegate T ExportPrivateKeyFunc<T>(ReadOnlyMemory<byte> pkcs8, ReadOnlyMemory<byte> pkcs1);
+
+        private delegate ReadOnlyMemory<byte> TryExportPrivateKeySelector(
+            ReadOnlyMemory<byte> pkcs8,
+            ReadOnlyMemory<byte> pkcs1);
+
+        private T ExportPrivateKey<T>(ExportPrivateKeyFunc<T> exporter)
+        {
+            // It's entirely possible that this line will cause the key to be generated in the first place.
+            SafeEvpPKeyHandle key = GetKey();
+
+            ArraySegment<byte> p8 = Interop.Crypto.RentEncodePkcs8PrivateKey(key);
+
+            try
+            {
+                ReadOnlyMemory<byte> pkcs1 = VerifyPkcs8(p8);
+                return exporter(p8, pkcs1);
+            }
+            finally
+            {
+                CryptoPool.Return(p8);
+            }
+        }
+
+        private bool TryExportPrivateKey(TryExportPrivateKeySelector selector, Span<byte> destination, out int bytesWritten)
+        {
+            // It's entirely possible that this line will cause the key to be generated in the first place.
+            SafeEvpPKeyHandle key = GetKey();
+
+            ArraySegment<byte> p8 = Interop.Crypto.RentEncodePkcs8PrivateKey(key);
+
+            try
+            {
+                ReadOnlyMemory<byte> pkcs1 = VerifyPkcs8(p8);
+                ReadOnlyMemory<byte> selected = selector(p8, pkcs1);
+                return selected.Span.TryCopyToDestination(destination, out bytesWritten);
+            }
+            finally
+            {
+                CryptoPool.Return(p8);
+            }
+        }
+
+        public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            return TryExportPrivateKey(static (pkcs8, pkcs1) => pkcs8, destination, out bytesWritten);
+        }
+
+        public override byte[] ExportPkcs8PrivateKey()
+        {
+            return ExportPrivateKey(static (pkcs8, pkcs1) => pkcs8.ToArray());
+        }
+
+        public override bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            return TryExportPrivateKey(static (pkcs8, pkcs1) => pkcs1, destination, out bytesWritten);
+        }
+
+        public override byte[] ExportRSAPrivateKey()
+        {
+            return ExportPrivateKey(static (pkcs8, pkcs1) => pkcs1.ToArray());
+        }
+
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
             // It's entirely possible that this line will cause the key to be generated in the first place.
             SafeEvpPKeyHandle key = GetKey();
 
-            RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
+            if (includePrivateParameters)
+            {
+                return ExportPrivateKey(
+                    static (pkcs8, pkcs1) =>
+                    {
+                        AlgorithmIdentifierAsn algId = default;
+                        RSAParameters ret;
+                        RSAKeyFormatHelper.FromPkcs1PrivateKey(pkcs1, in algId, out ret);
+                        return ret;
+                    });
+            }
+
+            RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, false);
             bool hasPrivateKey = rsaParameters.D != null;
 
             if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
@@ -718,6 +794,26 @@ namespace System.Security.Cryptography
                 digestAlgorithm,
                 hash,
                 signature);
+        }
+
+        private static ReadOnlyMemory<byte> VerifyPkcs8(ReadOnlyMemory<byte> pkcs8)
+        {
+            // OpenSSL 1.1.1 will export RSA public keys as a PKCS#8, but this makes a broken structure.
+            //
+            // So, crack it back open.  If we can walk the payload it's valid, otherwise throw the
+            // "there's no private key" exception.
+
+            try
+            {
+                ReadOnlyMemory<byte> pkcs1Priv = RSAKeyFormatHelper.ReadPkcs8(pkcs8, out int read);
+                Debug.Assert(read == pkcs8.Length);
+                _ = RSAPrivateKeyAsn.Decode(pkcs1Priv, AsnEncodingRules.BER);
+                return pkcs1Priv;
+            }
+            catch (CryptographicException)
+            {
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
         }
 
         private static void ValidatePadding(RSAEncryptionPadding padding)

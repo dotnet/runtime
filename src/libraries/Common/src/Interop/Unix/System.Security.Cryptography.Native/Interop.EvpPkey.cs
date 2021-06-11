@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -77,6 +78,57 @@ internal static partial class Interop
             }
 
             return handle;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_GetPkcs8PrivateKeySize(IntPtr pkey);
+
+        private static int GetPkcs8PrivateKeySize(IntPtr pkey)
+        {
+            int ret = CryptoNative_GetPkcs8PrivateKeySize(pkey);
+
+            if (ret < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return ret;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern unsafe int CryptoNative_EncodePkcs8PrivateKey(IntPtr pkey, byte* buf);
+
+        internal static ArraySegment<byte> RentEncodePkcs8PrivateKey(SafeEvpPKeyHandle pkey)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                pkey.DangerousAddRef(ref addedRef);
+                IntPtr handle = pkey.DangerousGetHandle();
+
+                int size = GetPkcs8PrivateKeySize(handle);
+                byte[] rented = CryptoPool.Rent(size);
+                int written;
+
+                unsafe
+                {
+                    fixed (byte* buf = rented)
+                    {
+                        written = CryptoNative_EncodePkcs8PrivateKey(handle, buf);
+                    }
+                }
+
+                Debug.Assert(written == size);
+                return new ArraySegment<byte>(rented, 0, written);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    pkey.DangerousRelease();
+                }
+            }
         }
 
         internal enum EvpAlgorithmId
