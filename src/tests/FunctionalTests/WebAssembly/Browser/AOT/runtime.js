@@ -17,6 +17,12 @@ var Module = {
     },
 
     onRuntimeInitialized: function () {
+        if (!Module.config || Module.config.error){
+            console.log("No config found");
+            test_exit(1);
+            throw(Module.config.error);
+        }
+
         Module.config.loaded_cb = function () {
             try {
                 App.init ();
