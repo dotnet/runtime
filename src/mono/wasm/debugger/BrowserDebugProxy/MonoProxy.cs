@@ -583,7 +583,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "object":
                         return Result.OkFromObject(new { result = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token) });
                     case "pointer":
-                        return Result.OkFromObject(new { result = await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)});
+                        return Result.OkFromObject(new { result = new JArray{await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)}});
                     case "cfo_res":
                     {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(int.Parse(objectId.Value), args), token);
