@@ -4107,14 +4107,21 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 
 		// Do a load/store to this address
 		if (is_load) {
-			int opcode = (mt == MINT_TYPE_VT) ? MINT_LDOBJ_VT : interp_get_ldind_for_mt (mt);
-			interp_add_ins (td, opcode);
-			interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
-			td->sp--;
-			push_simple_type (td, stack_type [mt]);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			if (mt == MINT_TYPE_VT)
-				td->last_ins->data [0] = get_data_item_index (td, field_class);
+			if (mt == MINT_TYPE_VT) {
+				int field_size = mono_class_value_size (field_class, NULL);
+				interp_add_ins (td, MINT_LDOBJ_VT);
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+				push_type_vt (td, field_class, field_size);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->last_ins->data [0] = field_size;
+			} else {
+				interp_add_ins (td, interp_get_ldind_for_mt (mt));
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+				push_type (td, stack_type [mt], field_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			}
 		} else {
 			int opcode = (mt == MINT_TYPE_VT) ? MINT_STOBJ_VT : interp_get_stind_for_mt (mt);
 			interp_add_ins (td, opcode);
