@@ -6193,19 +6193,73 @@ bool Lowering::IndirsAreEquivalent(GenTree* candidate, GenTree* storeInd)
         case GT_LCL_VAR_ADDR:
         case GT_CLS_VAR_ADDR:
         case GT_CNS_INT:
-            return GenTree::NodesAreEquivalentLeaves(pTreeA, pTreeB);
+            return NodesAreEquivalentLeaves(pTreeA, pTreeB);
 
         case GT_LEA:
         {
             GenTreeAddrMode* gtAddr1 = pTreeA->AsAddrMode();
             GenTreeAddrMode* gtAddr2 = pTreeB->AsAddrMode();
-            return GenTree::NodesAreEquivalentLeaves(gtAddr1->Base(), gtAddr2->Base()) &&
-                   GenTree::NodesAreEquivalentLeaves(gtAddr1->Index(), gtAddr2->Index()) &&
+            return NodesAreEquivalentLeaves(gtAddr1->Base(), gtAddr2->Base()) &&
+                   NodesAreEquivalentLeaves(gtAddr1->Index(), gtAddr2->Index()) &&
                    (gtAddr1->gtScale == gtAddr2->gtScale) && (gtAddr1->Offset() == gtAddr2->Offset());
         }
         default:
             // We don't handle anything that is not either a constant,
             // a local var or LEA.
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// NodesAreEquivalentLeaves: Check whether the two given nodes are the same leaves.
+//
+// Arguments:
+//      tree1 and tree2 are nodes to be checked.
+// Return Value:
+//    Returns true if they are same leaves, false otherwise.
+//
+// static
+bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
+{
+    if (tree1 == tree2)
+    {
+        return true;
+    }
+
+    if (tree1 == nullptr || tree2 == nullptr)
+    {
+        return false;
+    }
+
+    tree1 = tree1->gtSkipReloadOrCopy();
+    tree2 = tree2->gtSkipReloadOrCopy();
+
+    if (tree1->TypeGet() != tree2->TypeGet())
+    {
+        return false;
+    }
+
+    if (tree1->OperGet() != tree2->OperGet())
+    {
+        return false;
+    }
+
+    if (!tree1->OperIsLeaf() || !tree2->OperIsLeaf())
+    {
+        return false;
+    }
+
+    switch (tree1->OperGet())
+    {
+        case GT_CNS_INT:
+            return tree1->AsIntCon()->IconValue() == tree2->AsIntCon()->IconValue() &&
+                   tree1->IsIconHandle() == tree2->IsIconHandle();
+        case GT_LCL_VAR:
+        case GT_LCL_VAR_ADDR:
+            return tree1->AsLclVarCommon()->GetLclNum() == tree2->AsLclVarCommon()->GetLclNum();
+        case GT_CLS_VAR_ADDR:
+            return tree1->AsClsVar()->gtClsVarHnd == tree2->AsClsVar()->gtClsVarHnd;
+        default:
             return false;
     }
 }
