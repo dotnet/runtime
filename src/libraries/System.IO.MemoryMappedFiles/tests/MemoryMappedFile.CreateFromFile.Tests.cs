@@ -964,6 +964,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 );
                 SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
                 Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
+                mmf.Dispose();
             }
         }
     }
