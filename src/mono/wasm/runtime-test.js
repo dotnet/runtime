@@ -206,10 +206,13 @@ function loadScript (url)
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
-
 	config: null,
 	print,
 	printErr,
+
+    preInit: async function() {
+        await loadMonoConfig("./mono-config.json");
+    },
 
 	onAbort: function(x) {
 		print ("ABORT: " + x);

@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Loads the config file located in the root of the project
-// Not meant to be used outside of this class (TODO make private to this file when project converted to TS)
-async function load_config() {
+// Loads the config file
+async function loadMonoConfig(configFile) {
   // In some cases there may be no Module object (such as in some tests)
   // so we no-op during the callback
   const callback = typeof Module !== "undefined" ? Module['onConfigLoaded'] : (_) => {};
-  const configFile = "./mono-config.json";
 
   const ENVIRONMENT_IS_NODE = typeof process === "object";
   const ENVIRONMENT_IS_WEB = typeof window === "object";
@@ -31,4 +29,3 @@ async function load_config() {
     }
   }
 }
-load_config();

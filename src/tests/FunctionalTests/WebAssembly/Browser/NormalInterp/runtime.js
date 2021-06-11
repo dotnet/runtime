@@ -5,6 +5,10 @@ var Module = {
 
     config: null,
 
+    preInit: async function() {
+        await loadMonoConfig("./mono-config.json");
+    },
+
     // Called once the config file is loaded. The contents of the config file
     // are passed as a JS object within the config parameter
     onConfigLoaded: function (config) {
