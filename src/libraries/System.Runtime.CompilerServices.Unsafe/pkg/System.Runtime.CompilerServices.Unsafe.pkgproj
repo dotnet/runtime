@@ -3,13 +3,9 @@
   <ItemGroup>
     <PackageIndex Include="$(PkgDir)baseline\packageBaseline.1.1.json" />
     <ProjectReference Include="..\ref\System.Runtime.CompilerServices.Unsafe.csproj">
-      <SupportedFramework>net45;netcoreapp1.0;netcore50;netcore45;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-
-    <!-- this package is part of the implementation closure of NETStandard.Library
-         therefore it cannot reference NETStandard.Library -->
-    <SuppressMetaPackage Include="NETStandard.Library" />
 
     <!-- Since UAP and .NETCoreApp are package based we still want to enable
          OOBing libraries that happen to overlap with their framework package.
@@ -19,6 +15,10 @@
     <ValidatePackageSuppression Include="TreatAsOutOfBox">
       <Value>.NETCoreApp;UAP</Value>
     </ValidatePackageSuppression>
+
+    <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
+    <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore45;netcore451;netcore50;uap10.0;wp8;wpa81;net45;net451;net46" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

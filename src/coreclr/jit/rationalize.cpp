@@ -139,7 +139,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
         BlockRange().Remove(indir);
 
-        var_types lclType = comp->lvaGetDesc(addr->AsLclVar())->TypeGet();
+        const GenTreeLclVar* lclAddr = addr->AsLclVar();
+        const unsigned       lclNum  = lclAddr->GetLclNum();
+        LclVarDsc*           varDsc  = comp->lvaGetDesc(lclNum);
+
+        var_types lclType = varDsc->TypeGet();
 
         if (lclType == simdType)
         {
@@ -156,7 +160,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
                 addr->gtFlags |= GTF_VAR_USEASG;
             }
 
-            comp->lvaSetVarDoNotEnregister(addr->AsLclFld()->GetLclNum() DEBUGARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LocalField));
+        }
+        if (varDsc->lvPromotedStruct())
+        {
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_IsStructArg));
         }
 
         addr->gtType = simdType;
@@ -294,14 +302,13 @@ void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
 void Rationalizer::SanityCheck()
 {
     // TODO: assert(!IsLIR());
-    BasicBlock* block;
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* statement : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            ValidateStatement(statement, block);
+            ValidateStatement(stmt, block);
 
-            for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
                 assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
@@ -426,7 +433,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     {
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_PHI_ARG:
             RewriteAssignmentIntoStoreLclCore(assignment, location, value, locationOp);
             BlockRange().Remove(location);
             break;
@@ -926,7 +932,7 @@ PhaseStatus Rationalizer::DoPhase()
     comp->fgOrder   = Compiler::FGOrderLinear;
 
     RationalizeVisitor visitor(*this);
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         comp->compCurBB = block;
         m_block         = block;
@@ -942,27 +948,30 @@ PhaseStatus Rationalizer::DoPhase()
             continue;
         }
 
-        for (Statement* statement : StatementList(firstStatement))
+        for (Statement* const statement : block->Statements())
         {
             assert(statement->GetTreeList() != nullptr);
             assert(statement->GetTreeList()->gtPrev == nullptr);
             assert(statement->GetRootNode() != nullptr);
             assert(statement->GetRootNode()->gtNext == nullptr);
 
-            BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
-
-            // If this statement has correct offset information, change it into an IL offset
-            // node and insert it into the LIR.
-            if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+            if (!statement->IsPhiDefnStmt()) // Note that we get rid of PHI nodes here.
             {
-                assert(!statement->IsPhiDefnStmt());
-                GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
-                BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
-            }
+                BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
-            m_block = block;
-            visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+                // If this statement has correct offset information, change it into an IL offset
+                // node and insert it into the LIR.
+                if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+                {
+                    assert(!statement->IsPhiDefnStmt());
+                    GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
+                        GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
+                    BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
+                }
+
+                m_block = block;
+                visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+            }
         }
 
         block->bbStmtList = nullptr;

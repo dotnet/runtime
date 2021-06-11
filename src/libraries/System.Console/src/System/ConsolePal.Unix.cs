@@ -919,25 +919,15 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static unsafe void EnsureInitializedCore()
         {
-            // Initialization is only needed when input isn't redirected.
-            if (Console.IsInputRedirected)
-            {
-                s_initialized = true;
-                return;
-            }
-
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
                 {
+                    // Do this even when redirected to make CancelKeyPress works.
                     if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                     {
                         throw new Win32Exception();
                     }
-
-                    // Register a callback for signals that may invalidate our cached terminal settings.
-                    // This includes: SIGCONT, SIGCHLD, SIGWINCH.
-                    Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -951,20 +941,27 @@ namespace System
                         }
                     }
 
-                    // Load special control character codes used for input processing
-                    var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                    if (!Console.IsInputRedirected)
                     {
-                        Interop.Sys.ControlCharacterNames.VERASE,
-                        Interop.Sys.ControlCharacterNames.VEOL,
-                        Interop.Sys.ControlCharacterNames.VEOL2,
-                        Interop.Sys.ControlCharacterNames.VEOF
-                    };
-                    var controlCharacterValues = new byte[controlCharacterNames.Length];
-                    Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
-                    s_veraseCharacter = controlCharacterValues[0];
-                    s_veolCharacter = controlCharacterValues[1];
-                    s_veol2Character = controlCharacterValues[2];
-                    s_veofCharacter = controlCharacterValues[3];
+                        // Register a callback for signals that may invalidate our cached terminal settings.
+                        // This includes: SIGCONT, SIGCHLD, SIGWINCH.
+                        Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
+
+                        // Load special control character codes used for input processing
+                        var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                        {
+                            Interop.Sys.ControlCharacterNames.VERASE,
+                            Interop.Sys.ControlCharacterNames.VEOL,
+                            Interop.Sys.ControlCharacterNames.VEOL2,
+                            Interop.Sys.ControlCharacterNames.VEOF
+                        };
+                        var controlCharacterValues = new byte[controlCharacterNames.Length];
+                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                        s_veraseCharacter = controlCharacterValues[0];
+                        s_veolCharacter = controlCharacterValues[1];
+                        s_veol2Character = controlCharacterValues[2];
+                        s_veofCharacter = controlCharacterValues[3];
+                    }
 
                     // Mark us as initialized
                     s_initialized = true;
@@ -1451,7 +1448,7 @@ namespace System
 
             internal unsafe void Register()
             {
-                EnsureConsoleInitialized();
+                Debug.Assert(s_initialized); // by CancelKeyPress add.
 
                 Debug.Assert(!_handlerRegistered);
                 Interop.Sys.RegisterForCtrl(&OnBreakEvent);

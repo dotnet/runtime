@@ -106,6 +106,8 @@
              Link="ProductionCode\System\Net\Http\Headers\GenericHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\HeaderDescriptor.cs"
              Link="ProductionCode\System\Net\Http\Headers\HeaderDescriptor.cs" />
+    <Compile Include="..\..\src\System\Net\Http\Headers\HeaderStringValues.cs"
+             Link="ProductionCode\System\Net\Http\Headers\HeaderStringValues.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\HeaderUtilities.cs"
              Link="ProductionCode\System\Net\Http\Headers\HeaderUtilities.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpContentHeaders.cs"
@@ -116,6 +118,8 @@
              Link="ProductionCode\System\Net\Http\Headers\HttpHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaders.cs"
              Link="ProductionCode\System\Net\Http\Headers\HttpHeaders.cs" />
+    <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeadersNonValidated.cs"
+             Link="ProductionCode\System\Net\Http\Headers\HttpHeadersNonValidated.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaderType.cs"
              Link="ProductionCode\System\Net\Http\Headers\HttpHeaderType.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\HttpHeaderValueCollection.cs"

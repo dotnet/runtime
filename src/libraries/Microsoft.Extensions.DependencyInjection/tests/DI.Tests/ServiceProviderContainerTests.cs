@@ -1103,6 +1103,54 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        [Theory]
+        [InlineData(ServiceProviderMode.Default)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        private void ScopedServiceResolvedFromSingletonAfterCompilation2(ServiceProviderMode mode)
+        {
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<A>()
+                                .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>()
+                                .BuildServiceProvider(mode);
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
+        }
+        
+        [Theory]
+        [InlineData(ServiceProviderMode.Default)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        private void ScopedServiceResolvedFromSingletonAfterCompilation3(ServiceProviderMode mode)
+        {
+            // Singleton IFakeX<A> -> Scoped A -> Scoped Aa
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<Aa>()
+                                .AddScoped<A>()
+                                .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>()
+                                .BuildServiceProvider(mode);
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
+        }
+
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
             var types = new Type[]
@@ -1150,5 +1198,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private class H { }
         private class I { }
         private class J { }
+        private class Aa
+        {
+            public Aa(A a)
+            {
+                PropertyA = a;
+            }
+            public A PropertyA { get; }
+        }
     }
 }

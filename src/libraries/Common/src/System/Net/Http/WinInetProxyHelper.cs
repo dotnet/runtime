@@ -118,8 +118,9 @@ namespace System.Net.Http
             //
             // We match behavior of WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY and ignore errors.
 
-            string destination = uri.AbsoluteUri;
+#pragma warning disable CA1845 // file is shared with a build that lacks string.Concat for spans
             // Underlying code does not understand WebSockets so we need to convert it to http or https.
+            string destination = uri.AbsoluteUri;
             if (uri.Scheme == UriScheme.Wss)
             {
                 destination = UriScheme.Https + destination.Substring(UriScheme.Wss.Length);
@@ -128,6 +129,7 @@ namespace System.Net.Http
             {
                 destination = UriScheme.Http + destination.Substring(UriScheme.Ws.Length);
             }
+#pragma warning restore CA1845
 
             var repeat = false;
             do

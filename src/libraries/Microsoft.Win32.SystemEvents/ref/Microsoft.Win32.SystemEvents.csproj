@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Condition="'$(TargetFramework)' != 'net461'" Include="Microsoft.Win32.SystemEvents.cs" />
     <Compile Condition="'$(TargetFramework)' == 'net461'" Include="Microsoft.Win32.SystemEvents.net461.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

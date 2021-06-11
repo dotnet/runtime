@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Data.Common;
 using System.Data.SqlTypes;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -26,16 +27,19 @@ namespace System.Data
             _right.Bind(table, list);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return Eval(null, DataRowVersion.Default);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             return EvalUnaryOp(_op, _right.Eval(row, version));
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             return _right.Eval(recordNos);
@@ -170,7 +174,8 @@ namespace System.Data
             return (_right.DependsOn(column));
         }
 
-
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Evaluating constant expression is safe")]
         internal override ExpressionNode Optimize()
         {
             _right = _right.Optimize();

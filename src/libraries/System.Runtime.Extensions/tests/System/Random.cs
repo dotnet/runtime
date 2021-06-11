@@ -470,11 +470,11 @@ namespace System.Tests
                     Assert.InRange(Random.Shared.NextSingle(), 0.0f, 1.0f);
                     Assert.InRange(Random.Shared.NextDouble(), 0.0, 1.0);
 
-                    Array.Clear(buffer, 0, buffer.Length);
+                    Array.Clear(buffer);
                     Random.Shared.NextBytes(buffer);
                     Assert.Contains(buffer, b => b != 0);
 
-                    Array.Clear(buffer, 0, buffer.Length);
+                    Array.Clear(buffer);
                     Random.Shared.NextBytes((Span<byte>)buffer);
                     Assert.Contains(buffer, b => b != 0);
                 }

@@ -657,7 +657,7 @@ namespace System.Runtime.Loader
             // Derived type's Load implementation is expected to use one of the LoadFrom* methods to get the assembly
             // which is a RuntimeAssembly instance. However, since Assembly type can be used build any other artifact (e.g. AssemblyBuilder),
             // we need to check for RuntimeAssembly.
-            RuntimeAssembly? rtLoadedAssembly = assembly as RuntimeAssembly;
+            RuntimeAssembly? rtLoadedAssembly = GetRuntimeAssembly(assembly);
             if (rtLoadedAssembly != null)
             {
                 loadedSimpleName = rtLoadedAssembly.GetSimpleName();
@@ -780,7 +780,7 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            bool exists = Internal.IO.File.InternalExists(assemblyPath);
+            bool exists = System.IO.FileSystem.FileExists(assemblyPath);
             if (!exists && Path.IsCaseSensitive)
             {
 #if CORECLR
@@ -790,7 +790,7 @@ namespace System.Runtime.Loader
                 }
 #endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-                exists = Internal.IO.File.InternalExists(assemblyPath);
+                exists = System.IO.FileSystem.FileExists(assemblyPath);
             }
 
             Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;

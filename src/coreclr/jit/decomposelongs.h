@@ -33,6 +33,8 @@ private:
         return *m_range;
     }
 
+    void PromoteLongVars();
+
     // Driver functions
     void     DecomposeRangeHelper();
     GenTree* DecomposeNode(GenTree* tree);

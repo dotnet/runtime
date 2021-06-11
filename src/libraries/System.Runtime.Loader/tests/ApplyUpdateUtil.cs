@@ -133,5 +133,26 @@ namespace System.Reflection.Metadata
                 testBody(arg1);
             }
         }
+
+
+        public static void ClearAllReflectionCaches()
+        {
+            // TODO: Implement for Mono, see https://github.com/dotnet/runtime/issues/50978
+            if (IsMonoRuntime)
+                return;
+            var clearCacheMethod = GetClearCacheMethod();
+            clearCacheMethod (null);
+        }
+
+        // CoreCLR only
+        private static Action<Type[]> GetClearCacheMethod()
+        {
+            // TODO: Unify with src/libraries/System.Runtime/tests/System/Reflection/ReflectionCacheTests.cs
+            Type updateHandler = typeof(Type).Assembly.GetType("System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler", throwOnError: true, ignoreCase: false);
+            MethodInfo clearCache = updateHandler.GetMethod("ClearCache", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, new[] { typeof(Type[]) });
+            Assert.NotNull(clearCache);
+            return clearCache.CreateDelegate<Action<Type[]>>();
+        }
+        
     }
 }
