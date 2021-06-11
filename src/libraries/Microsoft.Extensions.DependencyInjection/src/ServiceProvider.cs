@@ -40,6 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
             CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(Root));
+            CallSiteFactory.Add(typeof(IServiceProviderIsService), new ConstantCallSite(typeof(IServiceProviderIsService), CallSiteFactory));
 
             if (options.ValidateScopes)
             {
