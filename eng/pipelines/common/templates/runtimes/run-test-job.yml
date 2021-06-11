@@ -481,6 +481,7 @@ jobs:
           scenarios:
           - normal
         ${{ if in(parameters.testGroup, 'gc-regions') }}:
+          longRunningGcTests: true
           gcSimulatorTests: true
           scenarios:
           - gcregions
