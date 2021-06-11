@@ -23,7 +23,7 @@ namespace System.Collections.Immutable
         /// Additional instances representing the empty queue may exist on deserialized instances.
         /// Actually since this queue is a struct, instances don't even apply and there are no singletons.
         /// </remarks>
-        private static readonly ImmutableQueue<T> s_EmptyField = new ImmutableQueue<T>(ImmutableStack<T>.Empty, ImmutableStack<T>.Empty);
+        private static readonly ImmutableQueue<T> s_EmptyField = new ImmutableQueue<T>(LazyStack.Empty, ImmutableStack<T>.Empty, LazyStack.Empty);
 
         /// <summary>
         /// The end of the queue that enqueued elements are pushed onto.
@@ -33,25 +33,36 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The end of the queue from which elements are dequeued.
         /// </summary>
-        private readonly ImmutableStack<T> _forwards;
+        private readonly LazyStack _forwards;
+
+        /// <summary>
+        /// The status for lazy initialization
+        /// </summary>
+        private readonly LazyStack _lazy;
 
         /// <summary>
         /// Backing field for the <see cref="BackwardsReversed"/> property.
         /// </summary>
         private ImmutableStack<T>? _backwardsReversed;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableQueue{T}"/> class.
-        /// </summary>
-        /// <param name="forwards">The forwards stack.</param>
-        /// <param name="backwards">The backwards stack.</param>
-        internal ImmutableQueue(ImmutableStack<T> forwards, ImmutableStack<T> backwards)
+        private ImmutableQueue(LazyStack forwards, ImmutableStack<T> backwards, LazyStack lazy)
         {
-            Debug.Assert(forwards != null);
-            Debug.Assert(backwards != null);
+            Debug.Assert(forwards is not null);
+            Debug.Assert(backwards is not null);
+            Debug.Assert(lazy is not null);
 
             _forwards = forwards;
             _backwards = backwards;
+            _lazy = lazy;
+        }
+        internal static ImmutableQueue<T> Create(LazyStack forwards, ImmutableStack<T> backwards, LazyStack lazy)
+        {
+            if (!lazy.IsEmpty)
+            {
+                return new ImmutableQueue<T>(forwards, backwards, lazy.Pop());
+            }
+            var stack = new LazyStack(forwards, backwards, LazyStack.Empty);
+            return new ImmutableQueue<T>(stack, ImmutableStack<T>.Empty, stack);
         }
 
         /// <summary>
@@ -156,14 +167,7 @@ namespace System.Collections.Immutable
         /// </returns>
         public ImmutableQueue<T> Enqueue(T value)
         {
-            if (this.IsEmpty)
-            {
-                return new ImmutableQueue<T>(ImmutableStack.Create(value), ImmutableStack<T>.Empty);
-            }
-            else
-            {
-                return new ImmutableQueue<T>(_forwards, _backwards.Push(value));
-            }
+            return Create(_forwards, _backwards.Push(value), _lazy);
         }
 
         /// <summary>
@@ -189,20 +193,12 @@ namespace System.Collections.Immutable
             {
                 throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
-
-            ImmutableStack<T> f = _forwards.Pop();
-            if (!f.IsEmpty)
-            {
-                return new ImmutableQueue<T>(f, _backwards);
-            }
-            else if (_backwards.IsEmpty)
+            var nextForwards = _forwards.Pop();
+            if (nextForwards.IsEmpty && _backwards.IsEmpty)
             {
                 return ImmutableQueue<T>.Empty;
             }
-            else
-            {
-                return new ImmutableQueue<T>(this.BackwardsReversed, ImmutableStack<T>.Empty);
-            }
+            return Create(nextForwards, _backwards, _lazy);
         }
 
         /// <summary>

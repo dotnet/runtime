@@ -22,7 +22,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The remaining forwards stack of the queue being enumerated.
             /// </summary>
-            private ImmutableStack<T>? _remainingForwardsStack;
+            private ImmutableQueue<T>.LazyStack? _remainingForwardsStack;
 
             /// <summary>
             /// The remaining backwards stack of the queue being enumerated.
@@ -111,7 +111,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The remaining forwards stack of the queue being enumerated.
             /// </summary>
-            private ImmutableStack<T>? _remainingForwardsStack;
+            private ImmutableQueue<T>.LazyStack? _remainingForwardsStack;
 
             /// <summary>
             /// The remaining backwards stack of the queue being enumerated.

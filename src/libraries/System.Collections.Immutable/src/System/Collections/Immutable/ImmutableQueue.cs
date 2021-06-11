@@ -53,15 +53,14 @@ namespace System.Collections.Immutable
                     return ImmutableQueue<T>.Empty;
                 }
 
-                var forwards = ImmutableStack.Create(e.Current);
-                var backwards = ImmutableStack<T>.Empty;
+                var queue = ImmutableQueue<T>.Empty.Enqueue(e.Current);
 
                 while (e.MoveNext())
                 {
-                    backwards = backwards.Push(e.Current);
+                    queue = queue.Enqueue(e.Current);
                 }
 
-                return new ImmutableQueue<T>(forwards: forwards, backwards: backwards);
+                return queue;
             }
         }
 
@@ -75,19 +74,14 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            if (items.Length == 0)
+            var queue = ImmutableQueue<T>.Empty;
+
+            for (int i = 0; i < items.Length; i++)
             {
-                return ImmutableQueue<T>.Empty;
+                queue = queue.Enqueue(items[i]);
             }
 
-            var forwards = ImmutableStack<T>.Empty;
-
-            for (int i = items.Length - 1; i >= 0; i--)
-            {
-                forwards = forwards.Push(items[i]);
-            }
-
-            return new ImmutableQueue<T>(forwards: forwards, backwards: ImmutableStack<T>.Empty);
+            return queue;
         }
 
         /// <summary>
