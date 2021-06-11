@@ -1695,8 +1695,8 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (method_name, false);
-		if (!js_name) {
+		var js_name = BINDING.unbox_mono_obj (method_name);
+		if (!js_name || (typeof(js_name) !== "string")) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
 		}
