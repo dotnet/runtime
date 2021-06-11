@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
+using System.Buffers;
 
 #if MS_IO_REDIST
 namespace Microsoft.IO
@@ -185,7 +186,7 @@ namespace System.IO
             }
 
             Interop.Kernel32.WIN32_FIND_DATA findData = default;
-            GetFindData(fullPath, ref findData);
+            GetFindData(fullPath, isDirectory: true, ref findData);
             if (IsNameSurrogateReparsePoint(ref findData))
             {
                 // Don't recurse
@@ -199,18 +200,16 @@ namespace System.IO
             RemoveDirectoryRecursive(fullPath, ref findData, topLevel: true);
         }
 
-        private static void GetFindData(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData)
+        private static void GetFindData(string fullPath, bool isDirectory, ref Interop.Kernel32.WIN32_FIND_DATA findData)
         {
-            using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.TrimEndingDirectorySeparator(fullPath), ref findData))
+            using SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.TrimEndingDirectorySeparator(fullPath), ref findData);
+            if (handle.IsInvalid)
             {
-                if (handle.IsInvalid)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    // File not found doesn't make much sense coming from a directory delete.
-                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
-                        errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
-                }
+                int errorCode = Marshal.GetLastWin32Error();
+                // File not found doesn't make much sense coming from a directory.
+                if (isDirectory && errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
         }
 
@@ -408,18 +407,175 @@ namespace System.IO
         public static string[] GetLogicalDrives()
             => DriveInfoInternal.GetLogicalDrives();
 
-        internal static string? GetLinkTarget(string linkPath)
-        {
-            return null;
-        }
-
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            FillAttributeInfo(pathToTarget, ref data, returnErrorOnNotFound: false);
+            if (data.dwFileAttributes != -1 &&
+                isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
+            {
+                throw new IOException(SR.IO_InconsistentLinkType);
+            }
+
+            bool result = Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
+            if (!result)
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+            }
         }
 
-        internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
+        internal static unsafe FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            return null;
+            string? targetPath = returnFinalTarget ?
+                GetFinalLinkTarget(linkPath, isDirectory) :
+                GetImmediateLinkTarget(linkPath, isDirectory, throwOnNotFound: true, normalize: true);
+
+            return targetPath == null ? null :
+                isDirectory ? new DirectoryInfo(targetPath) : new FileInfo(targetPath);
+        }
+
+        internal static string? GetLinkTarget(string linkPath, bool isDirectory)
+            => GetImmediateLinkTarget(linkPath, isDirectory, throwOnNotFound: false, normalize: false);
+
+        /// <summary>
+        /// Gets reparse point information associated to <paramref name="linkPath"/>.
+        /// </summary>
+        /// <returns>The immediate link target, absolute or relative or null if the file is not a supported link.</returns>
+        internal static unsafe string? GetImmediateLinkTarget(string linkPath, bool isDirectory, bool throwOnNotFound, bool normalize)
+        {
+            using SafeFileHandle handle = OpenSafeFileHandle(linkPath,
+                    Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS |
+                    Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
+
+            if (handle.IsInvalid)
+            {
+                int error = Marshal.GetLastWin32Error();
+                switch (error)
+                {
+                    case Interop.Errors.ERROR_FILE_NOT_FOUND:
+                    case Interop.Errors.ERROR_PATH_NOT_FOUND:
+                        if (throwOnNotFound)
+                        {
+                            throw Win32Marshal.GetExceptionForWin32Error(
+                                // File not found doesn't make much sense coming from a directory.
+                                isDirectory ? Interop.Errors.ERROR_PATH_NOT_FOUND : error, linkPath);
+                        }
+                        return null;
+                    default:
+                        throw Win32Marshal.GetExceptionForWin32Error(error, linkPath);
+                }
+            }
+
+            byte[]? buffer = null;
+            try
+            {
+                buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+                bool success = Interop.Kernel32.DeviceIoControl(
+                    handle,
+                    dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
+                    lpInBuffer: IntPtr.Zero,
+                    nInBufferSize: 0,
+                    lpOutBuffer: buffer,
+                    nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+                    out _,
+                    IntPtr.Zero);
+
+                if (!success)
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    // The file or directory is not a reparse point.
+                    if (error == Interop.Errors.ERROR_NOT_A_REPARSE_POINT)
+                    {
+                        return null;
+                    }
+
+                    throw Win32Marshal.GetExceptionForWin32Error(error, linkPath);
+                }
+
+                ReadOnlySpan<byte> bufferSpan = new(buffer);
+                ref readonly Interop.Kernel32.REPARSE_DATA_BUFFER rdb = ref MemoryMarshal.AsRef<Interop.Kernel32.REPARSE_DATA_BUFFER>(bufferSpan);
+
+                // Only symbolic links are supported at the moment.
+                if ((rdb.ReparseTag & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0)
+                {
+                    return null;
+                }
+
+                int substituteNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.SubstituteNameOffset;
+                int substituteNameLength = rdb.ReparseBufferSymbolicLink.SubstituteNameLength;
+
+                ReadOnlySpan<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(substituteNameOffset, substituteNameLength));
+
+                // Target path is relative, we need to append the link directory.
+                if (normalize && (rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
+                {
+                    return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
+                }
+
+                return targetPath.ToString();
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+        }
+
+        private static unsafe string? GetFinalLinkTarget(string linkPath, bool isDirectory)
+        {
+            Interop.Kernel32.WIN32_FIND_DATA data = default;
+            GetFindData(linkPath, isDirectory, ref data);
+
+            // The file or directory is not a reparse point.
+            if ((data.dwFileAttributes & (uint)FileAttributes.ReparsePoint) == 0 ||
+                // Only symbolic links are supported at the moment.
+                (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0)
+            {
+                return null;
+            }
+
+            using SafeFileHandle handle = OpenSafeFileHandle(linkPath,
+                    Interop.Kernel32.FileOperations.OPEN_EXISTING |
+                    Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);
+
+            if (handle.IsInvalid)
+            {
+                Win32Marshal.GetExceptionForLastWin32Error(linkPath);
+            }
+
+            char* buffer = stackalloc char[Interop.Kernel32.MAX_PATH];
+            uint res = Interop.Kernel32.GetFinalPathNameByHandle(handle, buffer, Interop.Kernel32.MAX_PATH, Interop.Kernel32.FILE_NAME_NORMALIZED);
+
+            // If the function fails because lpszFilePath is too small to hold the string plus the terminating null character,
+            // the return value is the required buffer size, in TCHARs. This value includes the size of the terminating null character.
+            // .NET dev note: This should never happen.
+            Debug.Assert(res <= Interop.Kernel32.MAX_PATH);
+
+            // If the function fails for any other reason, the return value is zero.
+            if (res == 0)
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(linkPath);
+            }
+
+            // If the function succeeds, the return value is the length of the string received by lpszFilePath, in TCHARs.
+            // This value does not include the size of the terminating null character.
+            return new string(buffer, 0, (int)res);
+        }
+
+        private static unsafe SafeFileHandle OpenSafeFileHandle(string path, int flags)
+        {
+            SafeFileHandle handle = Interop.Kernel32.CreateFile(
+                path,
+                dwDesiredAccess: 0,
+                FileShare.ReadWrite | FileShare.Delete,
+                lpSecurityAttributes: (Interop.Kernel32.SECURITY_ATTRIBUTES*)IntPtr.Zero,
+                FileMode.Open,
+                dwFlagsAndAttributes: flags,
+                hTemplateFile: IntPtr.Zero);
+
+            return handle;
         }
     }
 }

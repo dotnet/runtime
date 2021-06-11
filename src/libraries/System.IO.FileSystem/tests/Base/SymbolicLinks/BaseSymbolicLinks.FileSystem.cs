@@ -21,6 +21,32 @@ namespace System.IO.Tests
         /// <summary>Calls the actual public API for resolving the symbolic link target.</summary>
         protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, string? expectedLinkTarget, bool returnFinalTarget = false);
 
+        /// <summary>
+        /// Appends \??\ to the absolute path
+        /// </summary>
+        protected void AssertPathEquals(string expected, string actual)
+        {
+#if WINDOWS // Windows implementation has a couple nuances compared to Unix.
+            // If the link target path is absolute, the following occurs:
+            // ResolveLinkTarget(), which uses DeviceIoControl, will return the path with the DOS Device prefix (\??\).
+            // ResolveLinkTarget(returnFinalTarget: true), which uses GetFinalPathNameByHandleW, will return with the extended prefix (\\?\).
+            // For testing, we will ignore this prefix.
+            if (PathInternal.IsExtended(actual))
+            {
+                actual = actual.Substring(4);
+            }
+
+            // Windows syscalls remove the redundant segments in the link target path.
+            // We will remove them from the expected path when testing Windows but keep them when testing Unix, which doesn't remove them.
+            int rootLength = PathInternal.GetRootLength(expected);
+            if (rootLength > 0)
+            {
+                expected = PathInternal.RemoveRelativeSegments(expected, rootLength);
+            }      
+#endif
+            Assert.Equal(expected, actual);
+        }
+
         [Fact]
         public void CreateSymbolicLink_NullPathToTarget()
         {
@@ -70,7 +96,6 @@ namespace System.IO.Tests
         public void CreateSymbolicLink_AbsoluteTargetPath_TargetExists()
         {
             // /path/to/link -> /path/to/existingtarget
-
             string linkPath = GetRandomLinkPath();
             string targetPath = GetRandomFilePath();
             VerifySymbolicLinkAndResolvedTarget(
@@ -287,29 +312,29 @@ namespace System.IO.Tests
             Assert.True(link2.Exists);
             Assert.True(link2.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertIsCorrectTypeAndDirectoryAttribute(link2);
-            Assert.Equal(link2.LinkTarget, expectedLink2Target);
+            AssertPathEquals(expectedLink2Target, link2.LinkTarget);
 
             // link1 to link2
             FileSystemInfo link1 = CreateSymbolicLink(link1Path, expectedLink1Target);
             Assert.True(link1.Exists);
             Assert.True(link1.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertIsCorrectTypeAndDirectoryAttribute(link1);
-            Assert.Equal(link1.LinkTarget, expectedLink1Target);
+            AssertPathEquals(expectedLink1Target, link1.LinkTarget );
 
             // link1: do not follow symlinks
             FileSystemInfo link1Target = ResolveLinkTarget(link1Path, expectedLink1Target);
             Assert.True(link1Target.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(link1Target);
             Assert.True(link1Target.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            Assert.Equal(link1Target.FullName, link2Path);
-            Assert.Equal(link1Target.LinkTarget, expectedLink2Target);
+            AssertPathEquals(link2Path, link1Target.FullName);
+            AssertPathEquals(expectedLink2Target, link1Target.LinkTarget);
 
             // link2: do not follow symlinks
             FileSystemInfo link2Target = ResolveLinkTarget(link2Path, expectedLink2Target);
             Assert.True(link2Target.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(link2Target);
             Assert.False(link2Target.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            Assert.Equal(link2Target.FullName, filePath);
+            AssertPathEquals(filePath, link2Target.FullName);
             Assert.Null(link2Target.LinkTarget);
 
             // link1: follow symlinks
@@ -317,7 +342,7 @@ namespace System.IO.Tests
             Assert.True(finalTarget.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(finalTarget);
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            Assert.Equal(finalTarget.FullName, filePath);
+            AssertPathEquals(filePath, finalTarget.FullName);
         }
     }
 }

@@ -333,6 +333,8 @@ namespace System.IO
         /// An I/O error occurred.</exception>
         public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
         {
+            FileSystem.VerifyValidPath(path, nameof(path));
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
             FileSystem.CreateSymbolicLink(path, pathToTarget, isDirectory: true);
             return new DirectoryInfo(path);
         }
@@ -343,7 +345,10 @@ namespace System.IO
         /// <param name="linkPath">The path of the directory link.</param>
         /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
         /// <returns>A <see cref="DirectoryInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> does not exist.</returns>
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) =>
-            FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: true);
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+        {
+            FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
+            return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: true);
+        }
     }
 }

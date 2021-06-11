@@ -1,15 +1,15 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-
+#if MS_IO_REDIST
+namespace Microsoft.IO
+#else
 namespace System.IO
+#endif
 {
-    /// <summary>Provides a platform independent implementation of FileSystem.</summary>
     internal static partial class FileSystem
     {
-        private static void VerifyValidPath(string path, string argName)
+        internal static void VerifyValidPath(string path, string argName)
         {
             if (path == null)
             {

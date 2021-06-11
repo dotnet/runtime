@@ -539,7 +539,7 @@ namespace System.IO
         /// <param name="linkPath">A path to a link file.</param>
         /// <returns>If linkPath represents a link file and it exists, returns the link's target path.
         /// If linkPath is not a link or the target does not exist, returns null.</returns>
-        internal static string? GetLinkTarget(string linkPath) => Interop.Sys.ReadLink(linkPath);
+        internal static string? GetLinkTarget(string linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
 
         /// <summary>
         /// Creates a file symbolic link identified by path that points to pathToTarget..
@@ -549,9 +549,6 @@ namespace System.IO
         /// <param name="isDirectory">True if the pathToTarget represents a directory or a symlink to a directory.</param>
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            VerifyValidPath(path, nameof(path));
-            VerifyValidPath(pathToTarget, nameof(pathToTarget));
-
             // Fail if the target exists but is not consistent with the expected filesystem entry type
             if (Interop.Sys.LStat(pathToTarget, out Interop.Sys.FileStatus targetInfo) == 0)
             {
@@ -577,8 +574,6 @@ namespace System.IO
         /// If the specified linkPath is not a link file or it does not exist, returns null.</returns>
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            VerifyValidPath(linkPath, nameof(linkPath));
-
             // throws if the current link file does not exist
             Interop.CheckIo(Interop.Sys.LStat(linkPath, out _), linkPath, isDirectory);
 

@@ -30,7 +30,7 @@ namespace System.IO.Tests
             }
             else
             {
-                Assert.Equal(link.LinkTarget, expectedLinkTarget);
+                AssertPathEquals(expectedLinkTarget, link.LinkTarget);
             }
 
             FileSystemInfo? target = link.ResolveLinkTarget(returnFinalTarget);
