@@ -793,7 +793,6 @@ struct _MonoMetadataUpdateData {
 	int has_updates;
 };
 
-
 #ifndef ENABLE_METADATA_UPDATE
 static inline gboolean
 mono_metadata_has_updates (void)
