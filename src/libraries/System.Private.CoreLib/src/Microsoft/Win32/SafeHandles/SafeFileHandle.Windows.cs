@@ -66,7 +66,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             else
             {
-                var vsb = new ValueStringBuilder(stackalloc char[1024]);
+                var vsb = new ValueStringBuilder(stackalloc char[256]);
                 vsb.Append(MandatoryNtPrefix);
 
                 if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"

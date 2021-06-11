@@ -326,10 +326,27 @@ namespace System.IO
                 return await ReadAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken).ConfigureAwait(false);
             }
 
-            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) = PrepareMemorySegments(buffers);
+            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
+            long[] fileSegments = new long[buffers.Count + 1];
+            fileSegments[buffers.Count] = 0;
+
+            MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
+            MemoryHandle pinnedSegments = fileSegments.AsMemory().Pin();
 
             try
             {
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    Memory<byte> buffer = buffers[i];
+                    MemoryHandle memoryHandle = buffer.Pin();
+                    memoryHandles[i] = memoryHandle;
+
+                    unsafe // async method can't be unsafe
+                    {
+                        fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
+                    }
+                }
+
                 return await ReadFileScatterAsync(handle, pinnedSegments, totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
             finally
@@ -458,10 +475,27 @@ namespace System.IO
                 return await WriteAtOffsetAsync(handle, buffers[0], fileOffset, cancellationToken).ConfigureAwait(false);
             }
 
-            (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) = PrepareMemorySegments(buffers);
+            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
+            long[] fileSegments = new long[buffers.Count + 1];
+            fileSegments[buffers.Count] = 0;
+
+            MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
+            MemoryHandle pinnedSegments = fileSegments.AsMemory().Pin();
 
             try
             {
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    ReadOnlyMemory<byte> buffer = buffers[i];
+                    MemoryHandle memoryHandle = buffer.Pin();
+                    memoryHandles[i] = memoryHandle;
+
+                    unsafe // async method can't be unsafe
+                    {
+                        fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
+                    }
+                }
+
                 return await WriteFileGatherAsync(handle, pinnedSegments, totalBytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
             finally
@@ -513,42 +547,6 @@ namespace System.IO
             // Completion handled by callback.
             vts.FinishedScheduling();
             return new ValueTask<int>(vts, vts.Version);
-        }
-
-        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) PrepareMemorySegments(IReadOnlyList<Memory<byte>> buffers)
-        {
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long[] fileSegments = new long[buffers.Count + 1];
-            fileSegments[buffers.Count] = 0;
-
-            MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
-            for (int i = 0; i < buffers.Count; i++)
-            {
-                Memory<byte> buffer = buffers[i];
-                MemoryHandle memoryHandle = buffer.Pin();
-                memoryHandles[i] = memoryHandle;
-                fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
-            }
-
-            return (fileSegments.AsMemory().Pin(), memoryHandles);
-        }
-
-        private static unsafe (MemoryHandle pinnedSegments, MemoryHandle[] memoryHandles) PrepareMemorySegments(IReadOnlyList<ReadOnlyMemory<byte>> buffers)
-        {
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long[] fileSegments = new long[buffers.Count + 1];
-            fileSegments[buffers.Count] = 0;
-
-            MemoryHandle[] memoryHandles = new MemoryHandle[buffers.Count];
-            for (int i = 0; i < buffers.Count; i++)
-            {
-                ReadOnlyMemory<byte> buffer = buffers[i];
-                MemoryHandle memoryHandle = buffer.Pin();
-                memoryHandles[i] = memoryHandle;
-                fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
-            }
-
-            return (fileSegments.AsMemory().Pin(), memoryHandles);
         }
 
         private static NativeOverlapped GetNativeOverlapped(long fileOffset)

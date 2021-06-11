@@ -22,11 +22,6 @@ namespace System.IO.Tests
             this.length = length;
         }
 
-        ~SectorAlignedMemory()
-        {
-            Dispose(false);
-        }
-
         public static unsafe SectorAlignedMemory<T> Allocate(int length)
         {
             void* memory = VirtualAlloc(

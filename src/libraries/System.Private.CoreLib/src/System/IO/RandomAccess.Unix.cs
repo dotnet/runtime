@@ -39,17 +39,17 @@ namespace System.IO
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count];
 
-            for (int i = 0; i < buffers.Count; i++)
-            {
-                Memory<byte> buffer = buffers[i];
-                MemoryHandle memoryHandle = buffer.Pin();
-                vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
-                handles[i] = memoryHandle;
-            }
-
             long result;
             try
             {
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    Memory<byte> buffer = buffers[i];
+                    MemoryHandle memoryHandle = buffer.Pin();
+                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                    handles[i] = memoryHandle;
+                }
+
                 fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
                 {
                     result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
@@ -79,7 +79,7 @@ namespace System.IO
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<long>(Task.Factory.StartNew(state =>
+            return new ValueTask<long>(Task.Factory.StartNew(static state =>
             {
                 var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state!;
                 return ReadScatterAtOffset(args.handle, args.buffers, args.fileOffset);
@@ -101,17 +101,17 @@ namespace System.IO
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count ];
 
-            for (int i = 0; i < buffers.Count; i++)
-            {
-                ReadOnlyMemory<byte> buffer = buffers[i];
-                MemoryHandle memoryHandle = buffer.Pin();
-                vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
-                handles[i] = memoryHandle;
-            }
-
             long result;
             try
             {
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    ReadOnlyMemory<byte> buffer = buffers[i];
+                    MemoryHandle memoryHandle = buffer.Pin();
+                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                    handles[i] = memoryHandle;
+                }
+
                 fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
                 {
                     result = Interop.Sys.PWriteV(handle, pinnedVectors, buffers.Count, fileOffset);
@@ -131,7 +131,7 @@ namespace System.IO
         private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
             CancellationToken cancellationToken)
         {
-            return new ValueTask<int>(Task.Factory.StartNew(state =>
+            return new ValueTask<int>(Task.Factory.StartNew(static state =>
             {
                 var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state!;
                 return WriteAtOffset(args.handle, args.buffer.Span, args.fileOffset);
@@ -141,7 +141,7 @@ namespace System.IO
         private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<long>(Task.Factory.StartNew(state =>
+            return new ValueTask<long>(Task.Factory.StartNew(static state =>
             {
                 var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state!;
                 return WriteGatherAtOffset(args.handle, args.buffers, args.fileOffset);
