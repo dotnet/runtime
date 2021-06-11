@@ -79,6 +79,14 @@ namespace Internal.Pgo
                             ((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.EightByte)));
     }
 
+    // Flags stored in 'Other' field of TypeHandleHistogram*Count entries.
+    [Flags]
+    public enum ClassProfileFlags : uint
+    {
+        IsInterface = 0x40000000,
+        IsClass = 0x80000000,
+    }
+
     public class PgoProcessor
     {
         private enum InstrumentationDataProcessingState
