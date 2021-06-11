@@ -72,11 +72,12 @@ namespace System.IO
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
                         buffer.CopyTo(tmp);
-                        if (rentedArray != null)
-                        {
-                            ArrayPool<byte>.Shared.Return(rentedArray);
-                        }
+                        byte[]? oldRentedArray = rentedArray;
                         buffer = rentedArray = tmp;
+                        if (oldRentedArray != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(oldRentedArray);
+                        }
                     }
 
                     Debug.Assert(bytesRead < buffer.Length);

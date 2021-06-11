@@ -69,7 +69,7 @@ namespace System.IO
         private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
             CancellationToken cancellationToken)
         {
-            return new ValueTask<int>(Task.Factory.StartNew(state =>
+            return new ValueTask<int>(Task.Factory.StartNew(static state =>
             {
                 var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state!;
                 return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
