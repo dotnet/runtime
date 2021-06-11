@@ -67,7 +67,8 @@ namespace Microsoft.Win32.SafeHandles
                 _fileStreamHandle = fileStream.SafeFileHandle;
                 handlePtr = _fileStreamHandle.DangerousGetHandle();
             }
-            else {
+            else
+            {
                 handlePtr = IntPtr.MaxValue;
             }
 
