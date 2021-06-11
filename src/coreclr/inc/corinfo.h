@@ -1604,18 +1604,24 @@ struct CORINFO_CALL_INFO
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
 {
-    CORINFO_DEVIRTUALIZATION_UNKNOWN,         // no details available
-    CORINFO_DEVIRTUALIZATION_SUCCESS,         // devirtualization was successful
-    CORINFO_DEVIRTUALIZATION_FAILED_CANON,    // object class was canonical
-    CORINFO_DEVIRTUALIZATION_FAILED_COM,      // object class was com
-    CORINFO_DEVIRTUALIZATION_FAILED_CAST,     // object class could not be cast to interface class
-    CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,   // interface method could not be found
-    CORINFO_DEVIRTUALIZATION_FAILED_DIM,      // interface method was default interface method
-    CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS, // object not subclass of base class
-    CORINFO_DEVIRTUALIZATION_FAILED_SLOT,     // virtual method installed via explicit override
-    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,   // devirtualization crossed version bubble
-    CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL,   // object has multiple implementations of interface class
-    CORINFO_DEVIRTUALIZATION_COUNT,           // sentinel for maximum value
+    CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
+    CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
+    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+    CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
+    CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
+    CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
+    CORINFO_DEVIRTUALIZATION_FAILED_DIM,                           // interface method was default interface method
+    CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS,                      // object not subclass of base class
+    CORINFO_DEVIRTUALIZATION_FAILED_SLOT,                          // virtual method installed via explicit override
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,                        // devirtualization crossed version bubble
+    CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL,                        // object has multiple implementations of interface class
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL,             // decl method is defined on class and decl method not in version bubble, and decl method not in closest to version bubble
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL,         // decl method is defined on interface and not in version bubble, and implementation type not entirely defined in bubble
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL,                   // object class not defined within version bubble
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
+    CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
+    CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+    CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
 };
 
 struct CORINFO_DEVIRTUALIZATION_INFO
@@ -1626,6 +1632,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_METHOD_HANDLE       virtualMethod;
     CORINFO_CLASS_HANDLE        objClass;
     CORINFO_CONTEXT_HANDLE      context;
+    CORINFO_RESOLVED_TOKEN     *pResolvedTokenVirtualMethod;
 
     //
     // [Out] results of resolveVirtualMethod.
@@ -1634,11 +1641,15 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
     // - details on the computation done by the jit host
+    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targetting an R2R image
+    //   use it as the parameter to getCallInfo
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     bool                            requiresInstMethodTableArg;
     CORINFO_CONTEXT_HANDLE          exactContext;
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
+    CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
+    CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
 };
 
 //----------------------------------------------------------------------------

@@ -349,6 +349,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
             <Issue>https://github.com/dotnet/runtime/issues/8034 The test causes OutOfMemory exception in crossgen mode.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test3/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53559</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/asurt150271/test3/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53559</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
@@ -716,41 +722,9 @@
 
     <!-- MacOS arm64 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr'">
-        <!-- Hard failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_35000/test35000/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
-        </ExcludeList>
         <!-- Tracing failures -->
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/48786</Issue>
-        </ExcludeList>
-        <!-- Intermittent failures disable to improve pass rate -->
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/runtime_32848/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Coverage/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)Loader/classloader/TypeGeneratorTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
-            <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)readytorun/crossgen2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/49365</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)readytorun/determinism/crossgen2determinism/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52529</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -947,7 +921,7 @@
     </ItemGroup>
 
     <!-- Crossgen2 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
             <Issue>https://github.com/dotnet/runtime/issues/38291</Issue>
         </ExcludeList>
@@ -1013,6 +987,15 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dev10_715437/dev10_715437/*">
             <Issue>https://github.com/dotnet/runtime/issues/43498</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Ldfld_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53561</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Ldfld_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/53561</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -1227,6 +1210,9 @@
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/LeakWheel/leakwheel/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/SingLinkList/singlinkgen/**">
@@ -1693,9 +1679,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/Emit/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/GetInterfaceMapConsumer/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34389</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/InvokeConsumer/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1724,6 +1707,9 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/22021/consumer/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/jittingstarted/JittingStarted/**">

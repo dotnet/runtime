@@ -135,16 +135,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+            
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceC = (DisposableServiceC)compiledCallSite(provider.Root);
 
-            Assert.Equal(3, disposables.Count);
+            Assert.Equal(3, provider.Root.Disposables.Count);
         }
 
         [Theory]
@@ -161,16 +158,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceC = (DisposableServiceC)compiledCallSite(provider.Root);
 
-            Assert.Equal(3, disposables.Count);
+            Assert.Equal(3, provider.Root.Disposables.Count);
         }
 
         [Theory]
@@ -190,16 +184,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+            
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceC = (ServiceC)compiledCallSite(provider.Root);
 
-            Assert.Empty(disposables);
+            Assert.Empty(provider.Root.Disposables);
         }
 
         [Theory]
@@ -215,16 +206,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceD), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceD = (ServiceD)compiledCallSite(provider.Root);
 
-            Assert.Empty(disposables);
+            Assert.Empty(provider.Root.Disposables);
         }
 
         [Fact]

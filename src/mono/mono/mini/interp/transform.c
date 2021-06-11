@@ -27,6 +27,7 @@
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
+#include <mono/mini/aot-runtime.h>
 
 #include "mintops.h"
 #include "interp-internals.h"
@@ -1145,11 +1146,18 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
-		gpointer addr = mono_jit_compile_method_jit_only (method, error);
-		if (addr && is_ok (error))
-			return TRUE;
+		gpointer addr = mono_aot_get_method (method, error);
+		if (addr && is_ok (error)) {
+			MonoAotMethodFlags flags = mono_aot_get_method_flags (addr);
+			if (!(flags & MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY))
+				return TRUE;
+		}
 	}
 
 	for (l = mono_interp_jit_classes; l; l = l->next) {
@@ -2153,7 +2161,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.InteropServices") && !strcmp (klass_name, "MemoryMarshal")) {
 		if (!strcmp (tm, "GetArrayDataReference"))
-			*op = MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF;
+			*op = MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF; // valid for both SZARRAY and MDARRAY
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Text.Unicode") && !strcmp (klass_name, "Utf16Utility")) {
 		if (!strcmp (tm, "ConvertAllAsciiCharsInUInt32ToUppercase"))
 			*op = MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE;

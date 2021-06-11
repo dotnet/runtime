@@ -352,7 +352,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
 #ifdef DEBUG
     // No label flags should be set before this.
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert((block->bbFlags & BBF_HAS_LABEL) == 0);
     }
@@ -372,7 +372,7 @@ void CodeGen::genMarkLabelsForCodegen()
         compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
     }
 
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         switch (block->bbJumpKind)
         {
@@ -384,15 +384,11 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-                do
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    JITDUMP("  " FMT_BB " : branch target\n", (*jumpTab)->bbNum);
-                    (*jumpTab)->bbFlags |= BBF_HAS_LABEL;
-                } while (++jumpTab, --jumpCnt);
+                    JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
+                    bTarget->bbFlags |= BBF_HAS_LABEL;
+                }
                 break;
 
             case BBJ_CALLFINALLY:
@@ -439,11 +435,7 @@ void CodeGen::genMarkLabelsForCodegen()
         add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
     }
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-         HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
         HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
@@ -2411,11 +2403,19 @@ void CodeGen::genEmitMachineCode()
     if (compiler->opts.disAsm || verbose)
     {
         printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
-               "code %d (MethodHash=%08x) for "
-               "method %s\n",
+               "code %d",
                codeSize, prologSize, compiler->info.compPerfScore, instrCount,
-               GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize,
-               compiler->info.compMethodHash(), compiler->info.compFullName);
+               GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
+
+#if TRACK_LSRA_STATS
+        if (JitConfig.DisplayLsraStats() == 3)
+        {
+            compiler->m_pLinearScan->dumpLsraStatsSummary(jitstdout);
+        }
+#endif // TRACK_LSRA_STATS
+
+        printf(" (MethodHash=%08x) for method %s\n", compiler->info.compMethodHash(), compiler->info.compFullName);
+
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
     }
@@ -2623,9 +2623,7 @@ void CodeGen::genReportEH()
     }
 #endif // DEBUG
 
-    unsigned  XTnum;
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
+    unsigned XTnum;
 
     bool isCoreRTABI = compiler->IsTargetAbi(CORINFO_CORERT_ABI);
 
@@ -2664,8 +2662,7 @@ void CodeGen::genReportEH()
         // clauses. If there aren't, we don't need to look for BBJ_CALLFINALLY.
 
         bool anyFinallys = false;
-        for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-             HBtab < HBtabEnd; HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(compiler))
         {
             if (HBtab->HasFinallyHandler())
             {
@@ -2675,7 +2672,7 @@ void CodeGen::genReportEH()
         }
         if (anyFinallys)
         {
-            for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+            for (BasicBlock* const block : compiler->Blocks())
             {
                 if (block->bbJumpKind == BBJ_CALLFINALLY)
                 {
@@ -2715,8 +2712,7 @@ void CodeGen::genReportEH()
 
     XTnum = 0; // This is the index we pass to the VM
 
-    for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-         HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
 
@@ -2908,8 +2904,9 @@ void CodeGen::genReportEH()
 
     if (duplicateClauseCount > 0)
     {
-        unsigned reportedDuplicateClauseCount = 0; // How many duplicated clauses have we reported?
-        unsigned XTnum2;
+        unsigned  reportedDuplicateClauseCount = 0; // How many duplicated clauses have we reported?
+        unsigned  XTnum2;
+        EHblkDsc* HBtab;
         for (XTnum2 = 0, HBtab = compiler->compHndBBtab; XTnum2 < compiler->compHndBBtabCount; XTnum2++, HBtab++)
         {
             unsigned enclosingTryIndex;
@@ -3001,7 +2998,7 @@ void CodeGen::genReportEH()
     if (clonedFinallyCount > 0)
     {
         unsigned reportedClonedFinallyCount = 0;
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             if (block->bbJumpKind == BBJ_CALLFINALLY)
             {
@@ -10843,7 +10840,7 @@ void CodeGen::genIPmappingGen()
         //
         //It turns out that the only thing we really have to assert is that the first statement in each basic
         //block has an IL offset and appears in eeBoundaries.
-        for (BasicBlock * block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             Statement* stmt = block->firstStmt();
             if ((block->bbRefs > 1) && (stmt != nullptr))

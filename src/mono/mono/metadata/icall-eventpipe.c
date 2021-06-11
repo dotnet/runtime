@@ -321,6 +321,130 @@ guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounter
 	}
 }
 
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_start (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_stop (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_wait (
+		active_thread_count,
+		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
+	double throughput,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_adjustment_sample (
+		throughput,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_adjustment_adjustment (
+		average_throughput,
+		networker_thread_count,
+		reason,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_worker_thread_adjustment_stats (
+		duration,
+		throughput,
+		threadpool_worker_thread_wait,
+		throughput_wave,
+		throughput_error_estimate,
+		average_throughput_error_estimate,
+		throughput_ratio,
+		confidence,
+		new_control_setting,
+		new_thread_wave_magnitude,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	MonoBoolean multi_dequeues,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_enqueue (
+		native_overlapped,
+		overlapped,
+		multi_dequeues,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIODequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_dequeue (
+		native_overlapped,
+		overlapped,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (
+	uint16_t count,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_working_thread_count (
+		count,
+		clr_instance_id);
+}
+
 #else /* ENABLE_PERFTRACING */
 
 gconstpointer
@@ -450,6 +574,113 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue (g
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetRuntimeCounterValue");
 	mono_error_set_pending_exception (error);
 	return 0;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadStart");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadStop");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadWait");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
+	double throughput,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadAdjustmentSample");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadAdjustmentAdjustment");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadAdjustmentStats");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOEnqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	MonoBoolean multi_dequeues,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIOEnqueue");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIODequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIODequeue");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (
+	uint16_t count,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkingThreadCount");
+	mono_error_set_pending_exception (error);
 }
 
 #endif /* ENABLE_PERFTRACING */

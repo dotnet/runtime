@@ -1524,20 +1524,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
             BuildMethodTableThrowException(IDS_CLASSLOAD_COMIMPCANNOTHAVELAYOUT);
         }
 
-        if (pMTParent == g_pObjectClass)
-        {
-            // ComImport classes ultimately extend from our __ComObject or RuntimeClass class
-            MethodTable *pCOMMT = g_pBaseCOMObject;
-
-            _ASSERTE(pCOMMT);
-
-            // We could have had COM interop classes derive from System._ComObject,
-            // but instead we have them derive from System.Object, have them set the
-            // ComImport bit in the type attributes, and then we swap out the parent
-            // type under the covers.
-            bmtInternal->pType->SetParentType(CreateTypeChain(pCOMMT, Substitution()));
-            bmtInternal->pParentMT = pCOMMT;
-        }
+        // We could have had COM interop classes derive from System._ComObject,
+        // but instead we have them derive from System.Object, have them set the
+        // ComImport bit in the type attributes, and then we swap out the parent
+        // type under the covers.
+        bmtInternal->pType->SetParentType(CreateTypeChain(g_pBaseCOMObject, Substitution()));
+        bmtInternal->pParentMT = g_pBaseCOMObject;
 #endif
         // if the current class is imported
         bmtProp->fIsComObjectType = true;

@@ -53,37 +53,14 @@
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
-    <NeedsDotNetSdk>true</NeedsDotNetSdk>
-    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
-
-    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
-    <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
@@ -260,7 +237,7 @@
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <!-- Create work items for test apps -->
       <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
-        <Targets>$(AppleTestTarget)</Targets>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
       </XHarnessAppBundleToTest>
       <!-- Create work items for run-only apps -->
       <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
@@ -268,7 +245,7 @@
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
-        <Targets>$(AppleTestTarget)</Targets>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
@@ -293,12 +270,16 @@
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
+      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(NetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</MonoAotCrossCompilerPath>
-      <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+      <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+      <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
     </PropertyGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+    </ItemGroup>
 
     <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
@@ -322,6 +303,10 @@
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
@@ -331,6 +316,7 @@
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
@@ -400,7 +386,6 @@
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
-    <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
-    <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
+    <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 </Project>

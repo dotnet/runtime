@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ServiceProcess.ServiceController.cs" Condition="'$(TargetFramework)' != 'net461'" />
     <Compile Include="System.ServiceProcess.ServiceController.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
   </ItemGroup>
 </Project>

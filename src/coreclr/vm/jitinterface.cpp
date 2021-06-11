@@ -7228,7 +7228,7 @@ bool getILIntrinsicImplementationForMemoryMarshal(MethodDesc * ftn,
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE)->GetMemberDef())
+    if (tk == CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_SZARRAY)->GetMemberDef())
     {
         mdToken tokRawSzArrayData = CoreLibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
 
@@ -8904,6 +8904,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->devirtualizedMethod = NULL;
     info->requiresInstMethodTableArg = false;
     info->exactContext = NULL;
+    memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
+    memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -11241,7 +11243,8 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
 
     if (m_CodeHeaderRW != m_CodeHeader)
     {
-        memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
+        ExecutableWriterHolder<void> codeWriterHolder((void *)m_CodeHeader, m_codeWriteBufferSize);
+        memcpy(codeWriterHolder.GetRW(), m_CodeHeaderRW, m_codeWriteBufferSize);
     }
 
     // Now that the code header was written to the final location, publish the code via the nibble map
@@ -12734,83 +12737,6 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
     return ret;
 }
 
-CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
-                                CEEInfo *comp,
-                                struct CORINFO_METHOD_INFO *info,
-                                CORJIT_FLAGS flags,
-                                BYTE **nativeEntry,
-                                uint32_t *nativeSizeOfCode,
-                                NativeCodeVersion nativeCodeVersion)
-{
-    // no dynamic contract here because SEH is used, with a finally clause
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
-
-    LOG((LF_CORDB, LL_EVERYTHING, "CallCompileMethodWithSEHWrapper called...\n"));
-
-    struct Param
-    {
-        EEJitManager *jitMgr;
-        CEEInfo *comp;
-        struct CORINFO_METHOD_INFO *info;
-        CORJIT_FLAGS flags;
-        BYTE **nativeEntry;
-        uint32_t *nativeSizeOfCode;
-        MethodDesc *ftn;
-        CorJitResult res;
-    }; Param param;
-    param.jitMgr = jitMgr;
-    param.comp = comp;
-    param.info = info;
-    param.flags = flags;
-    param.nativeEntry = nativeEntry;
-    param.nativeSizeOfCode = nativeSizeOfCode;
-    param.ftn = ftn;
-    param.res = CORJIT_INTERNALERROR;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        //
-        // Call out to the JIT-compiler
-        //
-
-        pParam->res = invokeCompileMethod( pParam->jitMgr,
-                                           pParam->comp,
-                                           pParam->info,
-                                           pParam->flags,
-                                           pParam->nativeEntry,
-                                           pParam->nativeSizeOfCode);
-    }
-    PAL_FINALLY
-    {
-#if defined(DEBUGGING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
-        if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
-            !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
-#ifdef FEATURE_STACK_SAMPLING
-            && !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)
-#endif // FEATURE_STACK_SAMPLING
-           )
-        {
-            //
-            // Notify the debugger that we have successfully jitted the function
-            //
-            if (g_pDebugInterface)
-            {
-                if (param.res == CORJIT_OK && !((CEEJitInfo*)param.comp)->JitAgain())
-                {
-                    g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)*nativeEntry);
-                }
-            }
-        }
-#endif // DEBUGGING_SUPPORTED && !CROSSGEN_COMPILE
-    }
-    PAL_ENDTRY
-
-    return param.res;
-}
-
 /*********************************************************************/
 // Figures out the compile flags that are used by both JIT and NGen
 
@@ -13309,17 +13235,16 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                 QueryPerformanceCounter (&methodJitTimeStart);
 
 #endif
-            // Note on debuggerTrackInfo arg: if we're only importing (ie, verifying/
-            // checking to make sure we could JIT, but not actually generating code (
-            // eg, for inlining), then DON'T TELL THE DEBUGGER about this.
-            res = CallCompileMethodWithSEHWrapper(jitMgr,
-                                                  &jitInfo,
-                                                  &methodInfo,
-                                                  flags,
-                                                  &nativeEntry,
-                                                  &sizeOfCode,
-                                                  nativeCodeVersion);
-            LOG((LF_CORDB, LL_EVERYTHING, "Got through CallCompile MethodWithSEHWrapper\n"));
+            LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
+
+            res = invokeCompileMethod(jitMgr,
+                                      &jitInfo,
+                                      &methodInfo,
+                                      flags,
+                                      &nativeEntry,
+                                      &sizeOfCode);
+
+            LOG((LF_CORDB, LL_EVERYTHING, "Got through invokeCompileMethod\n"));
 
 #if FEATURE_PERFMAP
             // Save the code size so that it can be reported to the perfmap.
@@ -13355,6 +13280,29 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (SUCCEEDED(res))
         {
             jitInfo.WriteCode(jitMgr);
+#if defined(DEBUGGING_SUPPORTED)
+            // Note: if we're only importing (ie, verifying/
+            // checking to make sure we could JIT, but not actually generating code (
+            // eg, for inlining), then DON'T TELL THE DEBUGGER about this.
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+                !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
+#ifdef FEATURE_STACK_SAMPLING
+                && !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)
+#endif // FEATURE_STACK_SAMPLING
+               )
+            {
+                //
+                // Notify the debugger that we have successfully jitted the function
+                //
+                if (g_pDebugInterface)
+                {
+                    if (!jitInfo.JitAgain())
+                    {
+                        g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
+                    }
+                }
+            }
+#endif // DEBUGGING_SUPPORTED
         }
         else
         {
@@ -13517,7 +13465,7 @@ void Module::LoadHelperTable()
             *curEntry = X86_INSTR_JMP_REL32;
             *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
 #else // all other platforms
-            emitJump(curEntry, (LPVOID)pfnHelper);
+            emitJump(curEntry, curEntry, (LPVOID)pfnHelper);
             _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
 #endif
 
@@ -13598,7 +13546,7 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
 // - Alignment
 // - Position of GC references
 //
-BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
+BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13608,13 +13556,28 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
     uint32_t dwFlags;
     IfFailThrow(p.GetData(&dwFlags));
 
+    BOOL result = TRUE;
+
     // Size is checked unconditionally
     uint32_t dwExpectedSize;
     IfFailThrow(p.GetData(&dwExpectedSize));
 
     DWORD dwActualSize = pMT->GetNumInstanceFieldBytes();
     if (dwExpectedSize != dwActualSize)
-        return FALSE;
+    {
+        if (printDiff)
+        {
+            result = FALSE;
+
+            DefineFullyQualifiedNameForClassW();
+            wprintf(W("Type %s: expected size 0x%08x, actual size 0x%08x\n"),
+                GetFullyQualifiedNameForClassW(pMT), dwExpectedSize, dwActualSize);
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
 
 #ifdef FEATURE_HFA
     if (dwFlags & READYTORUN_LAYOUT_HFA)
@@ -13624,12 +13587,38 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
         DWORD dwActualHFAType = pMT->GetHFAType();
         if (dwExpectedHFAType != dwActualHFAType)
-            return FALSE;
+        {
+            if (printDiff)
+            {
+                result = FALSE;
+
+                DefineFullyQualifiedNameForClassW();
+                wprintf(W("Type %s: expected HFA type %08x, actual %08x\n"),
+                    GetFullyQualifiedNameForClassW(pMT), dwExpectedHFAType, dwActualHFAType);
+            }
+            else
+            {
+                return FALSE;
+            }
+        }
     }
     else
     {
         if (pMT->IsHFA())
-            return FALSE;
+        {
+            if (printDiff)
+            {
+                result = FALSE;
+
+                DefineFullyQualifiedNameForClassW();
+                wprintf(W("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n"),
+                    GetFullyQualifiedNameForClassW(pMT));
+            }
+            else
+            {
+                return FALSE;
+            }
+        }
     }
 #else
     _ASSERTE(!(dwFlags & READYTORUN_LAYOUT_HFA));
@@ -13645,7 +13634,20 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
         DWORD dwActualAlignment = CEEInfo::getClassAlignmentRequirementStatic(pMT);
         if (dwExpectedAlignment != dwActualAlignment)
-            return FALSE;
+        {
+            if (printDiff)
+            {
+                result = FALSE;
+
+                DefineFullyQualifiedNameForClassW();
+                wprintf(W("Type %s: expected alignment 0x%08x, actual 0x%08x\n"),
+                    GetFullyQualifiedNameForClassW(pMT), dwExpectedAlignment, dwActualAlignment);
+            }
+            else
+            {
+                return FALSE;
+            }
+        }
 
     }
 
@@ -13654,7 +13656,20 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
         if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
         {
             if (pMT->ContainsPointers())
-                return FALSE;
+            {
+                if (printDiff)
+                {
+                    result = FALSE;
+
+                    DefineFullyQualifiedNameForClassW();
+                    wprintf(W("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n"),
+                        GetFullyQualifiedNameForClassW(pMT));
+                }
+                else
+                {
+                    return FALSE;
+                }
+            }
         }
         else
         {
@@ -13666,11 +13681,24 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
             ComputeGCRefMap(pMT, pGCRefMap, cbGCRefMap);
 
             if (memcmp(pGCRefMap, p.GetPtr(), cbGCRefMap) != 0)
-                return FALSE;
+            {
+                if (printDiff)
+                {
+                    result = FALSE;
+
+                    DefineFullyQualifiedNameForClassW();
+                    wprintf(W("Type %s: GC refmap content doesn't match\n"),
+                        GetFullyQualifiedNameForClassW(pMT));
+                }
+                else
+                {
+                    return FALSE;
+                }
+            }
         }
     }
 
-    return TRUE;
+    return result;
 }
 
 #endif // FEATURE_READYTORUN
@@ -14123,7 +14151,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(pMT->IsValueType());
 
-            if (!TypeLayoutCheck(pMT, pBlob))
+            if (!TypeLayoutCheck(pMT, pBlob, /* printDiff */ kind == ENCODE_VERIFY_TYPE_LAYOUT))
             {
                 if (kind == ENCODE_CHECK_TYPE_LAYOUT)
                 {
@@ -14142,7 +14170,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         StackScratchBuffer buf;
                         _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
                         // Run through the type layout logic again, after the assert, makes debugging easy
-                        TypeLayoutCheck(pMT, pBlob);
+                        TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
                     }
 #endif
 
@@ -14227,6 +14255,130 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                 return FALSE;
             }
+            result = 1;
+        }
+        break;
+
+    case ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE:
+    case ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE:
+        {
+            PCCOR_SIGNATURE updatedSignature = pBlob;
+
+            ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)CorSigUncompressData(updatedSignature);
+
+            SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
+            ZapSig::Context zapSigContext(pInfoModule, (void *)currentModule, ZapSig::NormalTokens);
+            MethodDesc *pDeclMethod = ZapSig::DecodeMethod(pInfoModule, updatedSignature, &typeContext, &zapSigContext, NULL, NULL, NULL, &updatedSignature, TRUE);
+            TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature);
+
+            MethodDesc *pImplMethodCompiler = NULL;
+            
+            if ((flags & READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden) != 0)
+            {
+                pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature);
+            }
+
+            MethodDesc *pImplMethodRuntime;
+            if (pDeclMethod->IsInterface())
+            {
+                if (!thImpl.CanCastTo(pDeclMethod->GetMethodTable()))
+                {
+                    MethodTable *pInterfaceTypeCanonical = pDeclMethod->GetMethodTable()->GetCanonicalMethodTable();
+
+                    // Its possible for the decl method to need to be found on the only canonically compatible interface on the owning type
+                    MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
+                    while (it.Next())
+                    {
+                        if (pInterfaceTypeCanonical == it.GetInterface()->GetCanonicalMethodTable())
+                        {
+                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, it.GetInterface(), FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
+                            break;
+                        }
+                    }
+                }
+                DispatchSlot slot = thImpl.GetMethodTable()->FindDispatchSlotForInterfaceMD(pDeclMethod, /*throwOnConflict*/ FALSE);
+                pImplMethodRuntime = slot.GetMethodDesc();
+            }
+            else
+            {
+                MethodTable *pCheckMT = thImpl.GetMethodTable();
+                MethodTable *pBaseMT = pDeclMethod->GetMethodTable();
+                WORD slot = pDeclMethod->GetSlot();
+
+                while (pCheckMT != nullptr)
+                {
+                    if (pCheckMT->HasSameTypeDefAs(pBaseMT))
+                    {
+                        break;
+                    }
+
+                    pCheckMT = pCheckMT->GetParentMethodTable();
+                }
+
+                if (pCheckMT == nullptr)
+                {
+                    pImplMethodRuntime = NULL;
+                }
+                else if (IsMdFinal(pDeclMethod->GetAttrs()))
+                {
+                    pImplMethodRuntime = pDeclMethod;
+                }
+                else
+                {
+                    _ASSERTE(slot < pBaseMT->GetNumVirtuals());
+                    pImplMethodRuntime = thImpl.GetMethodTable()->GetMethodDescForSlot(slot);
+                }
+            }
+
+            if (pImplMethodRuntime != pImplMethodCompiler)
+            {
+                if (kind == ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE)
+                {
+                    return FALSE;
+                }
+                else
+                {
+                    // Verification failures are failfast events
+                    DefineFullyQualifiedNameForClassW();
+                    SString methodNameDecl;
+                    SString methodNameImplRuntime(W("(NULL)"));
+                    SString methodNameImplCompiler(W("(NULL)"));
+
+                    pDeclMethod->GetFullMethodInfo(methodNameDecl);
+
+                    if (pImplMethodRuntime != NULL)
+                    {
+                        methodNameImplRuntime.Clear();
+                        pImplMethodRuntime->GetFullMethodInfo(methodNameImplRuntime);
+                    }
+
+                    if (pImplMethodCompiler != NULL)
+                    {
+                        methodNameImplCompiler.Clear();
+                        pImplMethodCompiler->GetFullMethodInfo(methodNameImplCompiler);
+                    }
+
+                    SString fatalErrorString;
+                    fatalErrorString.Printf(W("Verify_VirtualFunctionOverride Decl Method '%s' on type '%s' is '%s'(actual) instead of expected '%s'(from compiler)"),
+                        methodNameDecl.GetUnicode(),
+                        GetFullyQualifiedNameForClassW(thImpl.GetMethodTable()),
+                        methodNameImplRuntime.GetUnicode(),
+                        methodNameImplCompiler.GetUnicode());
+
+#ifdef _DEBUG
+                    {
+                        StackScratchBuffer buf;
+                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                    }
+#endif
+                    _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
+
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                    return FALSE;
+
+                }
+            }
+
             result = 1;
         }
         break;

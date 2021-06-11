@@ -18,9 +18,6 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-bool g_debugRec = false;
-bool g_debugRep = false;
-
 // static variable initialization
 Hash MethodContext::m_hash;
 
@@ -3170,12 +3167,20 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     key.virtualMethod  = CastHandle(info->virtualMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
+
+    ZeroMemory(&key.pResolvedTokenVirtualMethod, sizeof(key.pResolvedTokenVirtualMethod)); // Zero token including any struct padding
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
     Agnostic_ResolveVirtualMethodResult result;
     result.returnValue = returnValue;
     result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
     result.exactContext = CastHandle(info->exactContext);
     result.detail = (DWORD) info->detail;
+    result.resolvedTokenDevirtualizedMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedMethod, ResolveToken);
+    result.resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
     ResolveVirtualMethod->Add(key, result);
     DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
@@ -3194,6 +3199,11 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
+    ZeroMemory(&key.pResolvedTokenVirtualMethod, sizeof(key.pResolvedTokenVirtualMethod)); // Zero token including any struct padding
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
     AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
 
     Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
@@ -3203,6 +3213,8 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
+    info->resolvedTokenDevirtualizedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedMethod, ResolveToken);
+    info->resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
     return result.returnValue;
 }
 
@@ -4807,6 +4819,7 @@ void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
     printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
         GetStringLiteral->GetBuffer(value.B), value.A);
+    GetStringLiteral->Unlock();
 }
 
 const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
@@ -5468,6 +5481,7 @@ void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agno
             printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
         }
+        AllocPgoInstrumentationBySchema->Unlock();
     }
     printf("}");
 }
@@ -5637,6 +5651,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 
             printf("}\n");
         }
+        GetPgoInstrumentationResults->Unlock();
     }
     printf("} data_index-%u", value.data_index);
 }
@@ -7120,4 +7135,31 @@ void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
         isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
     }
 
+}
+
+
+bool g_debugRec = false;
+bool g_debugRep = false;
+
+void SetDebugDumpVariables()
+{
+    static WCHAR* g_debugRecStr = nullptr;
+    static WCHAR* g_debugRepStr = nullptr;
+    if (g_debugRecStr == nullptr)
+    {
+        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
+    }
+    if (g_debugRepStr == nullptr)
+    {
+        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+    }
+
+    if (0 == wcscmp(g_debugRecStr, W("1")))
+    {
+        g_debugRec = true;
+    }
+    if (0 == wcscmp(g_debugRepStr, W("1")))
+    {
+        g_debugRep = true;
+    }
 }

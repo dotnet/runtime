@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Primitives.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
-                        '$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <!-- PrivateAssets=all is a workaround to issue: https://github.com/NuGet/Home/issues/10617 -->
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>
