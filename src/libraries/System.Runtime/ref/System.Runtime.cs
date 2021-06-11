@@ -8196,6 +8196,10 @@ namespace System.Numerics
         public static uint RotateRight(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateRight(ulong value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint RoundUpToPowerOf2(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
