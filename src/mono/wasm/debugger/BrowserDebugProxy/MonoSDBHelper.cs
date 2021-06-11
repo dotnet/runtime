@@ -1506,6 +1506,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ret["isOwn"] = true;
             return ret;
         }
+
         public async Task<bool> IsAsyncMethod(SessionId sessionId, int methodId, CancellationToken token)
         {
             var command_params = new MemoryStream();
@@ -1563,6 +1564,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return locals;
 
         }
+
         public async Task<JArray> GetValueTypeValues(SessionId sessionId, int valueTypeId, bool accessorPropertiesOnly, CancellationToken token)
         {
             if (valueTypes[valueTypeId].valueTypeJsonProps == null)
