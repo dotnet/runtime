@@ -388,6 +388,10 @@ typedef MonoInst * (* EmitIntrinsicFn) (
 	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
 	gboolean is_64bit);
 
+static const IntrinGroup unsupported_intrin_group [] = {
+	{ "", 0, unsupported, sizeof (unsupported) },
+};
+
 static MonoInst *
 emit_hardware_intrinsics (
 	MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
@@ -395,9 +399,8 @@ emit_hardware_intrinsics (
 	EmitIntrinsicFn custom_emit)
 {
 	MonoClass *klass = cmethod->klass;
-	const IntrinGroup *intrin_group = NULL;
+	const IntrinGroup *intrin_group = unsupported_intrin_group;
 	gboolean is_64bit = FALSE;
-	int id = -1;
 	int groups_size = groups_size_bytes / sizeof (groups [0]);
 	for (int i = 0; i < groups_size; ++i) {
 		const IntrinGroup *group = &groups [i];
@@ -407,31 +410,30 @@ emit_hardware_intrinsics (
 		}
 	}
 
-	const SimdIntrinsic *info = NULL;
-	MonoInst *ins = NULL;
 	gboolean supported = FALSE;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	int id = -1;
 	uint16_t op = 0;
 	uint16_t c0 = 0;
-	if (intrin_group) {
-		const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
-		int intrinsics_size = intrin_group->intrinsics_size;
-		MonoCPUFeatures feature = intrin_group->feature;
-
+	const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
+	int intrinsics_size = intrin_group->intrinsics_size;
+	MonoCPUFeatures feature = intrin_group->feature;
+	const SimdIntrinsic *info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
+	{
+		if (!info)
+			goto support_probe_complete;
+		id = info->id;
 		// Hardware intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg) && !intrin_group->jit_supported)
 			goto support_probe_complete;
 
-		info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
-		if (!info)
-			goto support_probe_complete;
-
-		if (feature)
-			supported = ((mini_get_cpu_features (cfg) & feature) != 0) && (intrin_group->intrinsics != unsupported);
+		if (intrin_group->intrinsics == unsupported)
+			supported = FALSE;
+		else if (feature)
+			supported = (mini_get_cpu_features (cfg) & feature) != 0;
 		else
 			supported = TRUE;
 
-		id = info->id;
 
 		op = info->default_op;
 		c0 = info->default_instc0;
@@ -457,16 +459,16 @@ emit_hardware_intrinsics (
 			op = info->floating_op;
 			c0 = info->floating_instc0;
 		}
-
 	}
 support_probe_complete:
 	if (id == SN_get_IsSupported) {
+		MonoInst *ins = NULL;
 		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 		return ins;
 	}
 	if (!supported) {
 		// Can't emit non-supported llvm intrinsics
-		if (!intrin_group || cfg->method != cmethod) {
+		if (cfg->method != cmethod) {
 			// Keep the original call so we end up in the intrinsic method
 			return NULL;
 		} else {
