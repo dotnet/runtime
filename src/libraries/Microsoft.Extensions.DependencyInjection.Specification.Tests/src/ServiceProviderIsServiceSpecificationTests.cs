@@ -78,6 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotNull(serviceProviderIsService);
             Assert.True(serviceProviderIsService.IsService(typeof(IEnumerable<IFakeService>)));
             Assert.True(serviceProviderIsService.IsService(typeof(IEnumerable<FakeService>)));
+            Assert.False(serviceProviderIsService.IsService(typeof(IEnumerable<>)));
         }
     }
 }
