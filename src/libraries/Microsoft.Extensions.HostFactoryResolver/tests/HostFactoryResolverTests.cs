@@ -5,6 +5,7 @@ using MockHostTypes;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -148,6 +149,73 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 Assert.NotNull(factory);
                 Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPatternHostBuilderConfigureHostBuilderCallbackIsCalled()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                bool called = false;
+                void ConfigureHostBuilder(object hostBuilder)
+                {
+                    Assert.IsAssignableFrom<IHostBuilder>(hostBuilder);
+                    called = true;
+                }
+
+                var factory = HostFactoryResolver.ResolveHostFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, waitTimeout: s_WaitTimeout, configureHostBuilder: ConfigureHostBuilder);
+
+                Assert.NotNull(factory);
+                Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+                Assert.True(called);
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallback()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var wait = new ManualResetEventSlim(false);
+                Exception? entryPointException = null;
+                void EntryPointCompleted(Exception? exception)
+                {
+                    entryPointException = exception;
+                    wait.Set();
+                }
+
+                var factory = HostFactoryResolver.ResolveHostFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, waitTimeout: s_WaitTimeout, stopApplication: false, entrypointCompleted: EntryPointCompleted);
+
+                Assert.NotNull(factory);
+                Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+                Assert.True(wait.Wait(s_WaitTimeout));
+                Assert.Null(entryPointException);
+            });
+        }
+
+        [ConditionalFact(nameof(RequirementsMet))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternBuildsThenThrows.Program))]
+        public void NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallbackWithException()
+        {
+            using var _ = RemoteExecutor.Invoke(() => 
+            {
+                var wait = new ManualResetEventSlim(false);
+                Exception? entryPointException = null;
+                void EntryPointCompleted(Exception? exception)
+                {
+                    entryPointException = exception;
+                    wait.Set();
+                }
+
+                var factory = HostFactoryResolver.ResolveHostFactory(typeof(NoSpecialEntryPointPatternBuildsThenThrows.Program).Assembly, waitTimeout: s_WaitTimeout, stopApplication: false, entrypointCompleted: EntryPointCompleted);
+
+                Assert.NotNull(factory);
+                Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+                Assert.True(wait.Wait(s_WaitTimeout));
+                Assert.NotNull(entryPointException);
             });
         }
 
