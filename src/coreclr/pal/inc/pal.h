@@ -2760,14 +2760,14 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_OSX)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // defined(HOST_OSX)
 
 PALIMPORT
 BOOL
