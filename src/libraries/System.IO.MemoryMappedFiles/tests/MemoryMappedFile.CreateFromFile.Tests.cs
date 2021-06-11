@@ -957,7 +957,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Fact]
         public void MapHandleMatchesFileStreamHandle()
         {
-            using (FileStream fs = File.OpenWrite(GetTestFilePath())) {
+            using (FileStream fs = File.OpenWrite(GetTestFilePath()))
+            {
                 MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(
                     fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false
                 );
