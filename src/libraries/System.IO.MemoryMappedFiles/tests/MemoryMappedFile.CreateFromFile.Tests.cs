@@ -963,8 +963,8 @@ namespace System.IO.MemoryMappedFiles.Tests
                     fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false
                 );
                 SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
-                Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
                 mmf.Dispose();
+                Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
             }
         }
     }
