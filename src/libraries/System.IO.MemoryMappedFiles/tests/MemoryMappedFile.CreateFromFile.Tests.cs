@@ -959,7 +959,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             using (FileStream fs = File.OpenWrite(GetTestFilePath()))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
                 {
                     SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
                     Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
