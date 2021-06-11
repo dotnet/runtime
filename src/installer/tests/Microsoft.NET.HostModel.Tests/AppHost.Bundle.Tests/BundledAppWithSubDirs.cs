@@ -129,119 +129,11 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
         {
-            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
-            testSelfContainedFixtureComposite
-                .EnsureRestoredForRid(testSelfContainedFixtureComposite.CurrentRid)
-                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
-                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
-                                selfContained: true,
-                                restore: true,
-                                extraArgs: new string[] {
-                                       "/p:PublishReadyToRun=true",
-                                       "/p:PublishReadyToRunComposite=true"});
-
-            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
+            var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None, disableCompression: true);
 
             // Run the app
-            RunTheApp(singleFile, testSelfContainedFixtureComposite);
-        }
-
-        [Fact]
-        public void Bundled_Self_Contained_Composite_App_Run_Succeeds1()
-        {
-            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
-            testSelfContainedFixtureComposite
-                .EnsureRestoredForRid(testSelfContainedFixtureComposite.CurrentRid)
-                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
-                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
-                                selfContained: true,
-                                restore: true,
-                                extraArgs: new string[] {
-                                       "",
-                                       ""});
-
-            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
-
-            // Run the app
-            RunTheApp(singleFile, testSelfContainedFixtureComposite);
-        }
-
-        [Fact]
-        public void Bundled_Self_Contained_Composite_App_Run_Succeeds2()
-        {
-            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
-            testSelfContainedFixtureComposite
-                .EnsureRestoredForRid(testSelfContainedFixtureComposite.CurrentRid)
-                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
-                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
-                                selfContained: true,
-                                restore: true,
-                                extraArgs: new string[] {
-                                       "/p:PublishReadyToRun=true",
-                                       ""});
-
-            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
-
-            // Run the app
-            RunTheApp(singleFile, testSelfContainedFixtureComposite);
-        }
-
-        [Fact]
-        public void Bundled_Self_Contained_Composite_App_Run_Succeeds3()
-        {
-            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
-            testSelfContainedFixtureComposite
-                .EnsureRestoredForRid(testSelfContainedFixtureComposite.CurrentRid)
-                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
-                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
-                                selfContained: true,
-                                restore: true,
-                                extraArgs: new string[] {
-                                       "",
-                                       "/p:PublishReadyToRunComposite=true"});
-
-            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
-
-            // Run the app
-            RunTheApp(singleFile, testSelfContainedFixtureComposite);
-        }
-
-        [Fact]
-        public void Bundled_Self_Contained_Composite_App_Run_Succeeds4()
-        {
-            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
-            testSelfContainedFixtureComposite
-                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
-                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
-                                selfContained: true,
-                                restore: true,
-                                extraArgs: new string[] {
-                                       "/p:PublishReadyToRun=true",
-                                       "/p:PublishReadyToRunComposite=true"});
-
-            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
-
-            // Run the app
-            RunTheApp(singleFile, testSelfContainedFixtureComposite);
-        }
-
-        [Fact]
-        public void Bundled_Self_Contained_Composite_App_Run_Succeeds5()
-        {
-            using var testSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", new RepoDirectoriesProvider());
-            testSelfContainedFixtureComposite
-                .PublishProject(runtime: testSelfContainedFixtureComposite.CurrentRid,
-                                outputDirectory: BundleHelper.GetPublishPath(testSelfContainedFixtureComposite),
-                                selfContained: true,
-                                restore: true,
-                                extraArgs: new string[] {
-                                       "",
-                                       ""});
-
-            var singleFile = BundleSelfContainedApp(testSelfContainedFixtureComposite, BundleOptions.None, disableCompression: true);
-
-            // Run the app
-            RunTheApp(singleFile, testSelfContainedFixtureComposite);
+            RunTheApp(singleFile, fixture);
         }
 
         [InlineData(BundleOptions.None)]
@@ -262,6 +154,7 @@ namespace AppHost.Bundle.Tests
             public TestProjectFixture TestFrameworkDependentFixture { get; set; }
             public TestProjectFixture TestSelfContainedFixture { get; set; }
             public TestProjectFixture TestAppWithEmptyFileFixture { get; set; }
+            public TestProjectFixture TestSelfContainedFixtureComposite { get; set; }
 
             public SharedTestState()
             {
@@ -287,6 +180,17 @@ namespace AppHost.Bundle.Tests
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
+
+                TestSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixtureComposite);
+                TestSelfContainedFixtureComposite
+                    .EnsureRestoredForRid(TestSelfContainedFixtureComposite.CurrentRid)
+                    .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,
+                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite),
+                                    extraArgs: new string[] {
+                                       "/p:PublishReadyToRun=true",
+                                       "/p:PublishReadyToRunComposite=true" });
+
             }
 
             public void Dispose()
@@ -294,6 +198,7 @@ namespace AppHost.Bundle.Tests
                 TestFrameworkDependentFixture.Dispose();
                 TestSelfContainedFixture.Dispose();
                 TestAppWithEmptyFileFixture.Dispose();
+                TestSelfContainedFixtureComposite.Dispose();
             }
         }
     }
