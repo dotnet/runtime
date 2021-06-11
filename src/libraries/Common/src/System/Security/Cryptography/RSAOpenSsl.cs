@@ -322,6 +322,50 @@ namespace System.Security.Cryptography
             }
         }
 
+        private T ExportPublicKey<T>(Func<ReadOnlyMemory<byte>, T> exporter)
+        {
+            // It's entirely possible that this line will cause the key to be generated in the first place.
+            SafeEvpPKeyHandle key = GetKey();
+
+            ArraySegment<byte> spki = Interop.Crypto.RentEncodeSubjectPublicKeyInfo(key);
+
+            try
+            {
+                return exporter(spki);
+            }
+            finally
+            {
+                CryptoPool.Return(spki);
+            }
+        }
+
+        private bool TryExportPublicKey(
+            Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>>? transform,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            // It's entirely possible that this line will cause the key to be generated in the first place.
+            SafeEvpPKeyHandle key = GetKey();
+
+            ArraySegment<byte> spki = Interop.Crypto.RentEncodeSubjectPublicKeyInfo(key);
+
+            try
+            {
+                ReadOnlyMemory<byte> data = spki;
+
+                if (transform != null)
+                {
+                    data = transform(data);
+                }
+
+                return data.Span.TryCopyToDestination(destination, out bytesWritten);
+            }
+            finally
+            {
+                CryptoPool.Return(spki);
+            }
+        }
+
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
             return TryExportPrivateKey(static (pkcs8, pkcs1) => pkcs8, destination, out bytesWritten);
@@ -342,11 +386,44 @@ namespace System.Security.Cryptography
             return ExportPrivateKey(static (pkcs8, pkcs1) => pkcs1.ToArray());
         }
 
+        public override byte[] ExportRSAPublicKey()
+        {
+            return ExportPublicKey(
+                static spki =>
+                {
+                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
+                    Debug.Assert(read == spki.Length);
+                    return pkcs1.ToArray();
+                });
+        }
+
+        public override bool TryExportRSAPublicKey(Span<byte> destination, out int bytesWritten)
+        {
+            return TryExportPublicKey(
+                spki =>
+                {
+                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
+                    Debug.Assert(read == spki.Length);
+                    return pkcs1;
+                },
+                destination,
+                out bytesWritten);
+        }
+
+        public override byte[] ExportSubjectPublicKeyInfo()
+        {
+            return ExportPublicKey(static spki => spki.ToArray());
+        }
+        public override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
+        {
+            return TryExportPublicKey(
+                transform: null,
+                destination,
+                out bytesWritten);
+        }
+
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
-            // It's entirely possible that this line will cause the key to be generated in the first place.
-            SafeEvpPKeyHandle key = GetKey();
-
             if (includePrivateParameters)
             {
                 return ExportPrivateKey(
@@ -359,15 +436,18 @@ namespace System.Security.Cryptography
                     });
             }
 
-            RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, false);
-            bool hasPrivateKey = rsaParameters.D != null;
+            return ExportPublicKey(
+                static spki =>
+                {
+                    RSAParameters ret;
+                    RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                        spki.Span,
+                        out int read,
+                        out ret);
 
-            if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
-            {
-                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-            }
-
-            return rsaParameters;
+                    Debug.Assert(read == spki.Length);
+                    return ret;
+                });
         }
 
         public override void ImportParameters(RSAParameters parameters)

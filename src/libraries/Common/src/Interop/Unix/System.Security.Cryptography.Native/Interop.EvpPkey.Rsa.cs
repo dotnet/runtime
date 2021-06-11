@@ -171,16 +171,5 @@ internal static partial class Interop
             Debug.Assert(ret == -1);
             throw CreateOpenSslCryptographicException();
         }
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetRsa")]
-        internal static extern SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, IntPtr rsa);
     }
 }

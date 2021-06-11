@@ -131,6 +131,57 @@ internal static partial class Interop
             }
         }
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_GetSubjectPublicKeyInfoSize(IntPtr pkey);
+
+        private static int GetSubjectPublicKeyInfoSize(IntPtr pkey)
+        {
+            int ret = CryptoNative_GetSubjectPublicKeyInfoSize(pkey);
+
+            if (ret < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return ret;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern unsafe int CryptoNative_EncodeSubjectPublicKeyInfo(IntPtr pkey, byte* buf);
+
+        internal static ArraySegment<byte> RentEncodeSubjectPublicKeyInfo(SafeEvpPKeyHandle pkey)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                pkey.DangerousAddRef(ref addedRef);
+                IntPtr handle = pkey.DangerousGetHandle();
+
+                int size = GetSubjectPublicKeyInfoSize(handle);
+                byte[] rented = CryptoPool.Rent(size);
+                int written;
+
+                unsafe
+                {
+                    fixed (byte* buf = rented)
+                    {
+                        written = CryptoNative_EncodeSubjectPublicKeyInfo(handle, buf);
+                    }
+                }
+
+                Debug.Assert(written == size);
+                return new ArraySegment<byte>(rented, 0, written);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    pkey.DangerousRelease();
+                }
+            }
+        }
+
         internal enum EvpAlgorithmId
         {
             Unknown = 0,
