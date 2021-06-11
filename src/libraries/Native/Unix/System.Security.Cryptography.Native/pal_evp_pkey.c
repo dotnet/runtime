@@ -103,3 +103,36 @@ EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, in
 
     return key;
 }
+
+int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey)
+{
+    assert(pkey != NULL);
+
+    PKCS8_PRIV_KEY_INFO* p8 = EVP_PKEY2PKCS8(pkey);
+
+    if (p8 == NULL)
+    {
+        return -1;
+    }
+
+    int ret = i2d_PKCS8_PRIV_KEY_INFO(p8, NULL);
+    PKCS8_PRIV_KEY_INFO_free(p8);
+    return ret;
+}
+
+int32_t CryptoNative_EncodePkcs8PrivateKey(EVP_PKEY* pkey, uint8_t* buf)
+{
+    assert(pkey != NULL);
+    assert(buf != NULL);
+
+    PKCS8_PRIV_KEY_INFO* p8 = EVP_PKEY2PKCS8(pkey);
+
+    if (p8 == NULL)
+    {
+        return -1;
+    }
+
+    int ret = i2d_PKCS8_PRIV_KEY_INFO(p8, &buf);
+    PKCS8_PRIV_KEY_INFO_free(p8);
+    return ret;
+}

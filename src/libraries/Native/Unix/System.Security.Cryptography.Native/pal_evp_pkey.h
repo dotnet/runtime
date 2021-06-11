@@ -38,15 +38,29 @@ Returns the number (as of this call) of references to the EVP_PKEY. Anything les
 PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
 
 /*
-* Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
-*
-* Requres a non-null buf, and len > 0.
+Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
+
+Requres a non-null buf, and len > 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_DecodeSubjectPublicKeyInfo(const uint8_t* buf, int32_t len, int32_t algId);
 
 /*
-* Decodes an Pkcs8PrivateKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
-*
-* Requres a non-null buf, and len > 0.
+Decodes an Pkcs8PrivateKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
+
+Requres a non-null buf, and len > 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, int32_t algId);
+
+/*
+Reports the number of bytes rqeuired to encode an EVP_PKEY* as a Pkcs8PrivateKeyInfo, or a negative value on error.
+*/
+PALEXPORT int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey);
+
+/*
+Encodes the EVP_PKEY* as a Pkcs8PrivateKeyInfo, writing the encoded value to buf.
+
+buf must be big enough, or an out of bounds write may occur.
+
+Returns the number of bytes written.
+*/
+PALEXPORT int32_t CryptoNative_EncodePkcs8PrivateKey(EVP_PKEY* pkey, uint8_t* buf);
