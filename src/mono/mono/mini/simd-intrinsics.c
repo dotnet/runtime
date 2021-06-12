@@ -2466,13 +2466,15 @@ emit_x86_intrinsics (
 
 	if (feature == MONO_CPU_X86_SSE41) {
 		switch (id) {
-		case SN_DotProduct:
-			if (args [2]->opcode == OP_ICONST && arg0_type == MONO_TYPE_R4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_DPPS_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			else if (args [2]->opcode == OP_ICONST && arg0_type == MONO_TYPE_R8)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_DPPD_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant control byte (generate a switch)
-			return emit_invalid_operation (cfg, "control byte in Sse41.DotProduct must be constant");
+		case SN_DotProduct: {
+			int op = 0;
+			switch (arg0_type) {
+			case MONO_TYPE_R4: op = OP_SSE41_DPPS; break;
+			case MONO_TYPE_R8: op = OP_SSE41_DPPD; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+		}
 		case SN_MultipleSumAbsoluteDifferences:
 			if (args [2]->opcode == OP_ICONST)
 				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_MPSADBW_IMM, args [2]->inst_c0, arg0_type, fsig, args);

@@ -482,6 +482,12 @@ const_int1 (int v)
 }
 
 static LLVMValueRef
+const_int8 (int v)
+{
+	return LLVMConstInt (LLVMInt8Type (), v, FALSE);
+}
+
+static LLVMValueRef
 const_int32 (int v)
 {
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
@@ -8928,15 +8934,51 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_DPPS_IMM: {
-			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_DPPS, args, dname);
-			break;
-		}
-
-		case OP_SSE41_DPPD_IMM: {
-			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_DPPD, args, dname);
+		case OP_SSE41_DPPS:
+		case OP_SSE41_DPPD: {
+			/* Bits 0, 1, 4, 5 are meaningful for the control mask
+			 * in dppd; all bits are meaningful for dpps.
+			 */
+			LLVMTypeRef ret_t = NULL;
+			LLVMValueRef mask = NULL;
+			int mask_bits = 0;
+			int high_shift = 0;
+			int low_mask = 0;
+			IntrinsicId iid = (IntrinsicId) 0;
+			const char *oname = "";
+			switch (ins->opcode) {
+			case OP_SSE41_DPPS:
+				ret_t = v128_r4_t;
+				mask = const_int8 (0xff); // 0b11111111
+				mask_bits = 8;
+				high_shift = 4;
+				low_mask = 0xf;
+				iid = INTRINS_SSE_DPPS;
+				oname = "sse41_dpps";
+				break;
+			case OP_SSE41_DPPD:
+				ret_t = v128_r8_t;
+				mask = const_int8 (0x33); // 0b00110011
+				mask_bits = 4;
+				high_shift = 2;
+				low_mask = 0x3;
+				iid = INTRINS_SSE_DPPD;
+				oname = "sse41_dppd";
+				break;
+			}
+			LLVMValueRef args [] = { lhs, rhs, NULL };
+			LLVMValueRef index = LLVMBuildAnd (builder, convert (ctx, arg3, i1_t), mask, oname);
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 1 << mask_bits, index, ret_t, oname);
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int imm = ((i >> high_shift) << 4) | (i & low_mask);
+				args [2] = const_int8 (imm);
+				LLVMValueRef result = call_intrins (ctx, iid, args, dname);
+				immediate_unroll_commit (&ictx, imm, result);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (ret_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
