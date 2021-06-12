@@ -209,14 +209,14 @@ namespace Microsoft.Extensions.Configuration
         {
             if (instance != null)
             {
-                var modelProperties = GetAllProperties(instance.GetType()).ToList();
+                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType()).ToList();
 
                 if (options.ErrorOnUnknownConfiguration)
                 {
                     HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
                         StringComparer.OrdinalIgnoreCase);
 
-                    var missingPropertyNames = configuration.GetChildren()
+                    List<string> missingPropertyNames = configuration.GetChildren()
                         .Where(cs => !propertyNames.Contains(cs.Key))
                         .Select(mp => $"'{mp.Key}'")
                         .ToList();

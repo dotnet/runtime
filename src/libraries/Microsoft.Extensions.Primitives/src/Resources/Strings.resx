@@ -132,4 +132,7 @@
   <data name="Capacity_NotUsedEntirely" xml:space="preserve">
     <value>Entire reserved capacity was not used. Capacity: '{0}', written '{1}'.</value>
   </data>
+  <data name="Error_MissingConfig" xml:space="preserve">
+    <value>'{0}' was set on the provided {1}, but the following properties were not found on the instance of {2}: {3}</value>
+  </data>
 </root>

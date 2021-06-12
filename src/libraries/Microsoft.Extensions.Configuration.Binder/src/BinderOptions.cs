@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Configuration
         public bool BindNonPublicProperties { get; set; }
 
         /// <summary>
-        /// When false (the default), no exceptios are thrown when a configuration key is found for which the
+        /// When false (the default), no exceptions are thrown when a configuration key is found for which the
         /// provided model object does not have an appropriate property which matches the key's name.
         /// When true, an <see cref="System.InvalidOperationException"/> is thrown with a description
         /// of the missing properties.
