@@ -150,6 +150,8 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->inst_c1 = MONO_TYPE_R4;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xround);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_R4;
 				return ins;
 			}
 #endif

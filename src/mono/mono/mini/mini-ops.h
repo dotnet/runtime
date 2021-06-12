@@ -787,16 +787,19 @@ MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
 
-MINI_OP(OP_EXTRACT_I4, "extract_i4", IREG, XREG, NONE)
 MINI_OP(OP_ICONV_TO_R4_RAW, "iconv_to_r4_raw", FREG, IREG, NONE)
 
-MINI_OP(OP_EXTRACT_I2, "extract_i2", IREG, XREG, NONE)
-MINI_OP(OP_EXTRACT_U2, "extract_u2", IREG, XREG, NONE)
+/* Extract an element from a vector with a constant lane index.
+ * inst_c0 is the lane index.
+ * inst_c1 is a MonoTypeEnum representing the element type.
+ */
 MINI_OP(OP_EXTRACT_I1, "extract_i1", IREG, XREG, NONE)
-MINI_OP(OP_EXTRACT_U1, "extract_u1", IREG, XREG, NONE)
+MINI_OP(OP_EXTRACT_I2, "extract_i2", IREG, XREG, NONE)
+MINI_OP(OP_EXTRACT_I4, "extract_i4", IREG, XREG, NONE)
+MINI_OP(OP_EXTRACT_I8, "extract_i8", LREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_R4, "extract_r4", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_R8, "extract_r8", FREG, XREG, NONE)
-MINI_OP(OP_EXTRACT_I8, "extract_i8", LREG, XREG, NONE)
+MINI_OP(OP_EXTRACTX_U2, "extractx_u2", IREG, XREG, NONE)
 
 /* Used by LLVM */
 MINI_OP(OP_INSERT_I1, "insert_i1", XREG, XREG, IREG)
@@ -805,8 +808,6 @@ MINI_OP(OP_INSERT_I4, "insert_i4", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I8, "insert_i8", XREG, XREG, LREG)
 MINI_OP(OP_INSERT_R4, "insert_r4", XREG, XREG, FREG)
 MINI_OP(OP_INSERT_R8, "insert_r8", XREG, XREG, FREG)
-
-MINI_OP(OP_EXTRACTX_U2, "extractx_u2", IREG, XREG, NONE)
 
 /*these slow ops are modeled around the availability of a fast 2 bytes insert op*/
 /*insertx_u1_slow takes old value and new value as source regs */
@@ -1563,14 +1564,17 @@ MINI_OP(OP_XOP_OVR_BYSCALAR_X_X_X, "xop_ovr_byscalar_x_x_x", XREG, XREG, XREG)
 MINI_OP(OP_XCONCAT, "xconcat", XREG, XREG, XREG)
 
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
-/* Extract element of vector */
-/* The index is assumed to be in range */
-/* inst_i0 is the element type */
-MINI_OP(OP_XEXTRACT_I32, "xextract_i32", IREG, XREG, IREG)
-MINI_OP(OP_XEXTRACT_I64, "xextract_i64", LREG, XREG, IREG)
-MINI_OP(OP_XEXTRACT_R8, "xextract_r8", FREG, XREG, IREG)
-/* Return an R4 */
+
+/* Extract an element from a vector with a variable lane index.
+ * The index is assumed to be in range.
+ * inst_c1 is a MonoTypeEnum representing the element type.
+ */
+MINI_OP(OP_XEXTRACT_I1, "xextract_i1", IREG, XREG, IREG)
+MINI_OP(OP_XEXTRACT_I2, "xextract_i2", IREG, XREG, IREG)
+MINI_OP(OP_XEXTRACT_I4, "xextract_i4", IREG, XREG, IREG)
+MINI_OP(OP_XEXTRACT_I8, "xextract_i8", LREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_R4, "xextract_r4", FREG, XREG, IREG)
+MINI_OP(OP_XEXTRACT_R8, "xextract_r8", FREG, XREG, IREG)
 
 /* Insert element into a vector */
 /* sreg1 is the vector, sreg2 is the value, sreg3 is the index */
@@ -1732,15 +1736,6 @@ MINI_OP(OP_ARM64_UQXTN2, "arm64_uqxtn2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SQXTUN2, "arm64_sqxtun2", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SELECT_SCALAR, "arm64_select_scalar", XREG, XREG, IREG)
-
-MINI_OP(OP_EXTRACT_VAR_I1, "extract_var_i1", IREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_U1, "extract_var_u1", IREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_I2, "extract_var_i2", IREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_U2, "extract_var_u2", IREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_I4, "extract_var_i4", IREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_R4, "extract_var_r4", FREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_R8, "extract_var_r8", FREG, XREG, IREG)
-MINI_OP(OP_EXTRACT_VAR_I8, "extract_var_i8", LREG, XREG, IREG)
 
 MINI_OP(OP_ARM64_FCVTZU, "arm64_fcvtzu", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTZS, "arm64_fcvtzs", XREG, XREG, NONE)
