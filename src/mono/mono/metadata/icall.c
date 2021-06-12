@@ -6635,7 +6635,7 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
-	return mono_compile_method_checked (method, error);
+	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
 
 MonoBoolean
