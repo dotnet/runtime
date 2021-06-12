@@ -162,12 +162,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("NTLM")]
-        [InlineData("Negotiate")]
-        public async Task AuthTest(string authType)
+        [InlineData("NTLM", "emclientntlm.westus.cloudapp.azure.com")]
+        [InlineData("Negotiate", "emclientntlm.westus.cloudapp.azure.com")]
+        [InlineData("NTLM", "emclientntlm")]
+        [InlineData("Negotiate", "emclientntlm")]
+        public async Task AuthTest(string authType, string domain)
         {
             var testUri = new Uri("http://emclientntlm.westus.cloudapp.azure.com/");
-            var networkCredential = new NetworkCredential("user1", "PLACEHOLDERcorrect20", "emclientntlm.westus.cloudapp.azure.com");
+            var networkCredential = new NetworkCredential("user1", "PLACEHOLDERcorrect20", domain);
 
             using var socketsHandler = new SocketsHttpHandler();
             var credentialCache = new CredentialCache();
