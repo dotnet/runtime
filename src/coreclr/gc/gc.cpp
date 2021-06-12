@@ -2188,6 +2188,7 @@ size_t      gc_heap::g_bpromoted;
 
 #endif //MULTIPLE_HEAPS
 
+size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
 #ifdef USE_REGIONS
 uint8_t*    gc_heap::bookkeeping_data = nullptr;
 uint8_t*    gc_heap::bookkeeping_data_committed = nullptr;
@@ -2304,8 +2305,6 @@ uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
 size_t      gc_heap::region_count = 0;
 
 #endif //USE_REGIONS
-
-size_t card_table_element_layout[total_bookkeeping_elements + 1];
 
 #ifdef BACKGROUND_GC
 GCEvent     gc_heap::bgc_start_event;
@@ -8529,27 +8528,22 @@ void destroy_card_table (uint32_t* c_table)
 
 void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t sizes[total_bookkeeping_elements])
 {
+    memset (sizes, 0, sizeof(size_t) * total_bookkeeping_elements);
     sizes[card_table_element] = size_card_of (start, end);
     sizes[brick_table_element] = size_brick_of (start, end);
-
-    sizes[brick_table_element + 1] = 0;
 #ifdef CARD_BUNDLE
     if (can_use_write_watch_for_card_table())
     {
         sizes[card_bundle_table_element] = size_card_bundle_of (start, end);
     }
 #endif //CARD_BUNDLE
-
-    sizes[seg_mapping_table_element - 1] = 0;
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     if (gc_can_use_concurrent)
     {
         sizes[software_write_watch_table_element] = SoftwareWriteWatch::GetTableByteSize(start, end);
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
     sizes[seg_mapping_table_element] = size_seg_mapping_table_of (start, end);
-
     sizes[mark_array_element] = 0;
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
@@ -8561,36 +8555,30 @@ void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t
 
 void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1])
 {
-    size_t last;
     size_t sizes[total_bookkeeping_elements];
     get_card_table_element_sizes(start, end, sizes);
 
-    layout[card_table_element] = last = sizeof(card_table_info);
-    layout[brick_table_element] = last = last + sizes[card_table_element];
-    int missed_element = brick_table_element + 1;
+    layout[card_table_element] = sizeof(card_table_info);
+    layout[brick_table_element] = layout[card_table_element] + sizes[card_table_element];
 #ifdef CARD_BUNDLE
-    layout[card_bundle_table_element] = last = last + sizes[brick_table_element];
+    layout[card_bundle_table_element] = layout[brick_table_element] + sizes[brick_table_element];    
 #else
-#ifdef DEBUG
-    layout[missed_element] = 0xdead;
+    layout[brick_table_element - 1] = layout[brick_table_element] + sizes[brick_table_element];    
 #endif
-#endif
-    missed_element++;
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    layout[software_write_watch_table_element] = last = last + sizes[missed_element - 1];
+    layout[software_write_watch_table_element] = layout[software_write_watch_table_element - 1] + sizes[software_write_watch_table_element - 1];
     if (gc_can_use_concurrent)
     {
-        layout[software_write_watch_table_element] = last = SoftwareWriteWatch::GetTableStartByteOffset(layout[software_write_watch_table_element]);
+        layout[software_write_watch_table_element] = SoftwareWriteWatch::GetTableStartByteOffset(layout[software_write_watch_table_element]);
     }
 #else
-#ifdef DEBUG
-    layout[missed_element] = 0xdead;
-#endif
+    layout[seg_mapping_table_element - 1] = layout[seg_mapping_table_element - 2] + sizes[seg_mapping_table_element - 2];
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    layout[seg_mapping_table_element] = last = align_for_seg_mapping_table (last + sizes[missed_element]);
-    layout[mark_array_element] = last = align_on_page (last + sizes[seg_mapping_table_element]);
-    layout[total_bookkeeping_elements] = align_on_page (last + sizes[mark_array_element]);
+    layout[seg_mapping_table_element] = align_for_seg_mapping_table (layout[seg_mapping_table_element - 1] + sizes[seg_mapping_table_element - 1]);
+    layout[mark_array_element] = align_on_page (layout[seg_mapping_table_element] + sizes[seg_mapping_table_element]);
+    layout[total_bookkeeping_elements] = align_on_page (layout[mark_array_element] + sizes[mark_array_element]);
 }
+
 
 #ifdef USE_REGIONS
 bool gc_heap::on_used_changed (uint8_t* new_used)
