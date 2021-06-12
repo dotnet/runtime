@@ -218,7 +218,7 @@ namespace System.Collections.Specialized
 
             public static string ToString(Section value)
             {
-                return "Section{0x" + Convert.ToString(value.Mask, 16) + ", 0x" + Convert.ToString(value.Offset, 16) + "}";
+                return $"Section{{0x{value.Mask:x}, 0x{value.Offset:x}}}";
             }
 
             public override string ToString()
