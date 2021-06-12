@@ -699,11 +699,11 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
                     // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
                     // or have Profile Data.
                     basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
-                    if (m_HasProfile && (m_ProfileFrequency > 0.5))
+                    if (m_HasProfile)
                     {
-                        basicBlockLimit += 3;
+                        basicBlockLimit += static_cast<unsigned>(clamp(m_ProfileFrequency, 0.0, 1.0) * 3.0);
                     }
-                    basicBlockLimit = min(12, basicBlockCount);
+                    basicBlockLimit = min(14, basicBlockCount);
                 }
                 if (basicBlockCount > basicBlockLimit)
                 {
@@ -1039,7 +1039,7 @@ double DefaultPolicy::DetermineMultiplier()
     {
         // E.g. callee has "x / arg0" where arg0 is a const at the call site -
         // we'll avoid a very expensive DIV instruction after inlining.
-        multiplier += 3.0 + m_DivByCns;
+        //multiplier += 3.0 + m_DivByCns;
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
@@ -1050,7 +1050,7 @@ double DefaultPolicy::DetermineMultiplier()
         //   1    -- the callsite is as hot as its method's first block
         //   ~= 0 -- the callsite is cold.
         //
-        multiplier *= min(0.5 + m_ProfileFrequency * 5.0, 5.0);
+        multiplier *= min(0.4 + m_ProfileFrequency * 11.0, 5.0);
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
 
