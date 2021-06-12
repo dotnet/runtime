@@ -927,7 +927,12 @@ namespace System.ServiceProcess
         /// <param name="stopDependentServices">
         /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
         /// </param>
-        public unsafe void Stop(bool stopDependentServices)
+#if NETCOREAPP3_1_OR_GREATER
+        public
+#else
+        private
+#endif
+            unsafe void Stop(bool stopDependentServices)
         {
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_STOP);
             if (stopDependentServices)
