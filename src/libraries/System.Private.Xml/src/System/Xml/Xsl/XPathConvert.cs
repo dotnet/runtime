@@ -2853,112 +2853,17 @@ namespace System.Xml.Xsl
         */
         public static string DoubleToString(double dbl)
         {
-            Debug.Assert(('0' & 0xF) == 0, "We use (char)(d |'0') to convert digit to char");
-            int maxSize, sizeInt, sizeFract, cntDigits, ib;
-            int iVal;
-
-            if (IsInteger(dbl, out iVal))
+            if (double.IsPositiveInfinity(dbl))
             {
-                return iVal.ToString(CultureInfo.InvariantCulture);
+                return "Infinity";
             }
-
-            // Handle NaN and infinity
-            if (IsSpecial(dbl))
+            else if (double.IsNegativeInfinity(dbl))
             {
-                if (double.IsNaN(dbl))
-                {
-                    return "NaN";
-                }
-
-                Debug.Assert(double.IsInfinity(dbl));
-                return dbl < 0 ? "-Infinity" : "Infinity";
+                return "-Infinity";
             }
+            // NaN is "NaN" in InvariantCulture
 
-            // Get decimal digits
-            FloatingDecimal dec = new FloatingDecimal(dbl);
-            Debug.Assert(0 != dec.MantissaSize);
-
-            // If exponent is negative, size of fraction increases
-            sizeFract = dec.MantissaSize - dec.Exponent;
-
-            if (sizeFract > 0)
-            {
-                // Decimal consists of a fraction part + possible integer part
-                sizeInt = (dec.Exponent > 0) ? dec.Exponent : 0;
-            }
-            else
-            {
-                // Decimal consists of just an integer part
-                sizeInt = dec.Exponent;
-                sizeFract = 0;
-            }
-
-            // Sign + integer + fraction + decimal point + leading zero + terminating null
-            maxSize = sizeInt + sizeFract + 4;
-
-            unsafe
-            {
-                // Allocate output memory
-                char* pBuf = stackalloc char[maxSize];
-                char* pch = pBuf;
-
-                if (dec.Sign < 0)
-                {
-                    *pch++ = '-';
-                }
-
-                cntDigits = dec.MantissaSize;
-                ib = 0;
-
-                if (0 != sizeInt)
-                {
-                    do
-                    {
-                        if (0 != cntDigits)
-                        {
-                            // Still mantissa digits left to consume
-                            Debug.Assert(dec[ib] >= 0 && dec[ib] <= 9);
-                            *pch++ = (char)(dec[ib++] | '0');
-                            cntDigits--;
-                        }
-                        else
-                        {
-                            // Add trailing zeros
-                            *pch++ = '0';
-                        }
-                    } while (0 != --sizeInt);
-                }
-                else
-                {
-                    *pch++ = '0';
-                }
-
-                if (0 != sizeFract)
-                {
-                    Debug.Assert(0 != cntDigits);
-                    Debug.Assert(sizeFract == cntDigits || sizeFract > cntDigits && pch[-1] == '0');
-                    *pch++ = '.';
-
-                    while (sizeFract > cntDigits)
-                    {
-                        // Add leading zeros
-                        *pch++ = '0';
-                        sizeFract--;
-                    }
-
-                    Debug.Assert(sizeFract == cntDigits);
-                    while (0 != cntDigits)
-                    {
-                        // Output remaining mantissa digits
-                        Debug.Assert(dec[ib] >= 0 && dec[ib] <= 9);
-                        *pch++ = (char)(dec[ib++] | '0');
-                        cntDigits--;
-                    }
-                }
-
-                Debug.Assert(0 == sizeInt && 0 == cntDigits);
-                return new string(pBuf, 0, (int)(pch - pBuf));
-            }
+            return dbl.ToString(CultureInfo.InvariantCulture);
         }
 
         private static bool IsAsciiDigit(char ch)
