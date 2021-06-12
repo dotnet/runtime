@@ -180,6 +180,7 @@ namespace Microsoft.Extensions.Hosting
             private IDisposable? _disposable;
             private Action<object>? _configure;
             private Action<Exception?>? _entrypointCompleted;
+            private static readonly AsyncLocal<HostingListener> _currentListener = new();
 
             public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure, Action<Exception?>? entrypointCompleted)
             {
@@ -193,6 +194,10 @@ namespace Microsoft.Extensions.Hosting
 
             public object CreateHost()
             {
+                // Set the async local to the instance of the HostingListener so we can filter events that
+                // aren't scoped to this execution of the entry point.
+                _currentListener.Value = this;
+
                 using var subscription = DiagnosticListener.AllListeners.Subscribe(this);
 
                 // Kick off the entry point on a new thread so we don't block the current one
@@ -279,6 +284,12 @@ namespace Microsoft.Extensions.Hosting
 
             public void OnNext(DiagnosticListener value)
             {
+                if (_currentListener.Value != this)
+                {
+                    // Ignore events that aren't for this listener
+                    return;
+                }
+
                 if (value.Name == "Microsoft.Extensions.Hosting")
                 {
                     _disposable = value.Subscribe(this);
@@ -287,6 +298,12 @@ namespace Microsoft.Extensions.Hosting
 
             public void OnNext(KeyValuePair<string, object?> value)
             {
+                if (_currentListener.Value != this)
+                {
+                    // Ignore events that aren't for this listener
+                    return;
+                }
+
                 if (value.Key == "HostBuilding")
                 {
                     _configure?.Invoke(value.Value!);
