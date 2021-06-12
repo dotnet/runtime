@@ -14,6 +14,12 @@
 #include "mono/metadata/components.h"
 #include "mono/component/hot_reload.h"
 
+gboolean
+mono_metadata_update_available (void)
+{
+        return mono_component_hot_reload ()->component.available ();
+}
+
 #ifdef ENABLE_METADATA_UPDATE
 
 MonoMetadataUpdateData mono_metadata_update_data_private;

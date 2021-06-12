@@ -21,6 +21,9 @@ enum MonoModifiableAssemblies {
 
 typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);
 
+gboolean
+mono_metadata_update_available (void);
+
 #ifdef ENABLE_METADATA_UPDATE
 
 gboolean

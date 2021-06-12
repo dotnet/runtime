@@ -5757,7 +5757,7 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 
 gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
 {
-        return mono_metadata_update_enabled (NULL) ? 1 : 0;
+        return mono_metadata_update_available ();
 }
 #endif
 
