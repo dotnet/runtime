@@ -159,7 +159,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21308.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21310.3</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.6.21307.1</MicrosoftNETCoreRuntimeICUTransportVersion>
