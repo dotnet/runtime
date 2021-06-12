@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Xml.XPath;
 
@@ -306,89 +307,57 @@ namespace System.Xml.Xsl.Runtime
 
         private static string ConvertToDecimal(double val, int minLen, char zero, string groupSeparator, int groupSize)
         {
-            Debug.Assert(val >= 0 && val == Math.Round(val), "ConvertToArabic operates on non-negative integer numbers only");
-            string str = XPathConvert.DoubleToString(val);
-            int shift = zero - '0';
+            Debug.Assert(val >= 0 && val == Math.Round(val), "ConvertToDecimal operates on non-negative integer numbers only");
 
-            // Figure out new string length without separators
-            int oldLen = str.Length;
-            int newLen = Math.Max(oldLen, minLen);
-
-            // Calculate length of string with separators
-            if (groupSize != 0)
+            // Costful for non-default numbers.
+            string[] nativeDigits = null;
+            if (zero != '0')
             {
-                Debug.Assert(groupSeparator.Length == 1);
-                checked { newLen += (newLen - 1) / groupSize; }
+                nativeDigits = new string[10];
+                for (int i = 0; i < 10; i++)
+                    nativeDigits[i] = ((char)(zero + i)).ToString();
             }
 
-            // If the new number of characters equals the old one, no changes need to be made
-            if (newLen == oldLen && shift == 0)
+            if (groupSize == 0)
             {
+                NumberFormatInfo info = nativeDigits == null
+                    ? NumberFormatInfo.InvariantInfo
+                    : new NumberFormatInfo
+                    {
+                        NativeDigits = nativeDigits
+                    };
+                string str = val.ToString("F0", info);
+                if (str.Length < minLen)
+                {
+                    str = str.PadLeft(minLen, zero);
+                }
                 return str;
             }
-
-            // If grouping is not needed, add zero padding only
-            if (groupSize == 0 && shift == 0)
+            else
             {
-                return str.PadLeft(newLen, zero);
-            }
-
-            // Add both grouping separators and zero padding to the string representation of a number
-#if true
-            unsafe
-            {
-                char* result = stackalloc char[newLen];
-                char separator = (groupSeparator.Length > 0) ? groupSeparator[0] : ' ';
-
-                fixed (char* pin = str)
+                NumberFormatInfo info = NumberFormatInfo.InvariantInfo;
+                if (groupSeparator != "," || groupSize != 3 || nativeDigits != null)
                 {
-                    char* pOldEnd = pin + oldLen - 1;
-                    char* pNewEnd = result + newLen - 1;
-                    int cnt = groupSize;
-
-                    while (true)
+                    info = new NumberFormatInfo
                     {
-                        // Move digit to its new location (zero if we've run out of digits)
-                        *pNewEnd-- = (pOldEnd >= pin) ? (char)(*pOldEnd-- + shift) : zero;
-                        if (pNewEnd < result)
-                        {
-                            break;
-                        }
-                        if (/*groupSize > 0 && */--cnt == 0)
-                        {
-                            // Every groupSize digits insert the separator
-                            *pNewEnd-- = separator;
-                            cnt = groupSize;
-                            Debug.Assert(pNewEnd >= result, "Separator cannot be the first character");
-                        }
-                    }
+                        NumberGroupSeparator = groupSeparator,
+                        NumberGroupSizes = new[] { groupSize },
+                        NativeDigits = nativeDigits ?? NumberFormatInfo.InvariantInfo.NativeDigits
+                    };
                 }
-                return new string(result, 0, newLen);
-            }
-#else
-            // Safe version is about 20% slower after NGEN
-            char[] result = new char[newLen];
-            char separator = (groupSeparator.Length > 0) ? groupSeparator[0] : ' ';
 
-            int oldEnd = oldLen - 1;
-            int newEnd = newLen - 1;
-            int cnt = groupSize;
+                string format = "N0";
+                if (minLen > 1 && val < Math.Pow(10, minLen - 1))
+                {
+                    format = string.Create(minLen + 1, (object)null, (span, _) =>
+                    {
+                        span.Fill('0');
+                        span[^2] = ',';
+                    });
+                }
 
-            while (true) {
-                // Move digit to its new location (zero if we've run out of digits)
-                result[newEnd--] = (oldEnd >= 0) ? (char)(str[oldEnd--] + shift) : zero;
-                if (newEnd < 0) {
-                    break;
-                }
-                if (/*groupSize > 0 && */--cnt == 0) {
-                    // Every groupSize digits insert the separator
-                    result[newEnd--] = separator;
-                    cnt = groupSize;
-                    Debug.Assert(newEnd >= 0, "Separator cannot be the first character");
-                }
+                return val.ToString(format, info);
             }
-            return new string(result, 0, newLen);
-#endif
         }
     }
 }
