@@ -95,16 +95,6 @@ namespace System.Xml.Xsl.Runtime
             return ToBoolean(listItems[0]);
         }
 
-
-        //------------------------------------------------------------------------
-        // ToDouble (internal type to internal type)
-        //------------------------------------------------------------------------
-
-        public static double ToDouble(string value)
-        {
-            return XPathConvert.StringToDouble(value);
-        }
-
         public static double ToDouble(XPathItem item)
         {
             XsltLibrary.CheckXsltValue(item);
