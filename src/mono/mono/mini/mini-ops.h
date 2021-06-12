@@ -1003,10 +1003,6 @@ MINI_OP(OP_CVTPS2PD, "cvtps2pd", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPD2DQ, "cvttpd2dq", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPS2DQ, "cvttps2dq", XREG, XREG, NONE)
 
-/* r4 dot product */
-/* multiply all 4 single precision float elements, add them together, and store the result to the lowest element */
-MINI_OP(OP_DPPS, "dpps", XREG, XREG, XREG)
-
 /* sse 1 */
 /* inst_c1 is target type */
 MINI_OP(OP_SSE_LOADU, "sse_loadu", XREG, XREG, NONE)
