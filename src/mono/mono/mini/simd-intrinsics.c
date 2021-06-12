@@ -2481,10 +2481,7 @@ emit_x86_intrinsics (
 			// FIXME: handle non-constant control byte (generate a switch)
 			return emit_invalid_operation (cfg, "control byte in Sse41.MultipleSumAbsoluteDifferences must be constant");
 		case SN_Blend:
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_BLEND_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant control byte (generate a switch)
-			return emit_invalid_operation (cfg, "control byte in Sse41.Blend must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_BLEND, 0, arg0_type, fsig, args);
 		case SN_BlendVariable:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_BLENDV, -1, arg0_type, fsig, args);
 		case SN_Extract: {

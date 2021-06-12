@@ -9009,19 +9009,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_BLEND_IMM: {
-			int nelem = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			g_assert(nelem >= 2 && nelem <= 8); // I2, U2, R4, R8
-			
-			int mask_values [8];
-			for (int i = 0; i < nelem; i++) {
-				// n-bit in inst_c0 (control byte) is set to 1
-				gboolean bit_set = ((ins->inst_c0 & ( 1 << i )) >> i);
-				mask_values [i] = i + (bit_set ? 1 : 0) * nelem;
+		case OP_SSE41_BLEND: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			int nelem = LLVMGetVectorSize (ret_t);
+			g_assert (nelem >= 2 && nelem <= 8); // I2, U2, R4, R8
+			int unique_ctl_patterns = 1 << nelem;
+			int ctlmask = unique_ctl_patterns - 1;
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			ctl = LLVMBuildAnd (builder, ctl, const_int8 (ctlmask), "sse41_blend");
+
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, unique_ctl_patterns, ctl, ret_t, "sse41_blend");
+			int i = 0;
+			int mask_values [MAX_VECTOR_ELEMS] = { 0 };
+			while (immediate_unroll_next (&ictx, &i)) {
+				for (int lane = 0; lane < nelem; ++lane) {
+					// n-bit in inst_c0 (control byte) is set to 1
+					gboolean bit_set = (i & (1 << lane)) >> lane;
+					mask_values [lane] = lane + (bit_set ? nelem : 0);
+				}
+				LLVMValueRef mask = create_const_vector_i32 (mask_values, nelem);
+				LLVMValueRef result = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "sse41_blend");
+				immediate_unroll_commit (&ictx, i, result);
 			}
-			
-			LLVMValueRef mask = create_const_vector_i32 (mask_values, nelem);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "");
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (ret_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
