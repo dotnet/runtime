@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIPGlobalProperties : UnixIPGlobalProperties
+    internal sealed class BsdIPGlobalProperties : UnixIPGlobalProperties
     {
         private unsafe TcpConnectionInformation[] GetTcpConnections(bool listeners)
         {

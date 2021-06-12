@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 namespace System.Security.Permissions
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public enum WebBrowserPermissionLevel
@@ -12,7 +12,7 @@ namespace System.Security.Permissions
         Unrestricted
     }
 
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class WebBrowserPermission : CodeAccessPermission, IUnrestrictedPermission
@@ -30,7 +30,7 @@ namespace System.Security.Permissions
         public WebBrowserPermissionLevel Level { get { return WebBrowserPermissionLevel.Unrestricted; } set { } }
     }
 
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]

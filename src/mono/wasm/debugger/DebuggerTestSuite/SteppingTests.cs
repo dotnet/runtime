@@ -92,14 +92,14 @@ namespace DebuggerTests
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var dep_cs_loc = "dotnet://debugger-test.dll/dependency.cs";
-            await SetBreakpoint(dep_cs_loc, 33, 8);
+            await SetBreakpoint(dep_cs_loc, 35, 8);
 
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
 
             // Will stop in Complex.DoEvenMoreStuff
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_use_complex (); }, 1);",
-                dep_cs_loc, 33, 8, "DoEvenMoreStuff",
+                dep_cs_loc, 35, 8, "DoEvenMoreStuff",
                 locals_fn: (locals) =>
                 {
                     Assert.Single(locals);
@@ -108,7 +108,7 @@ namespace DebuggerTests
             );
 
             var props = await GetObjectOnFrame(pause_location["callFrames"][0], "this");
-            Assert.Equal(3, props.Count());
+            Assert.Equal(4, props.Count());
             CheckNumber(props, "A", 10);
             CheckString(props, "B", "xx");
             CheckString(props, "c", "20_xx");
@@ -126,12 +126,12 @@ namespace DebuggerTests
             CheckNumber(locals_m1, "f", 0);
 
             props = await GetObjectOnFrame(pause_location["callFrames"][3], "complex");
-            Assert.Equal(3, props.Count());
+            Assert.Equal(4, props.Count());
             CheckNumber(props, "A", 10);
             CheckString(props, "B", "xx");
             CheckString(props, "c", "20_xx");
 
-            pause_location = await StepAndCheck(StepKind.Over, dep_cs_loc, 23, 8, "DoStuff", times: 2);
+            pause_location = await StepAndCheck(StepKind.Over, dep_cs_loc, 25, 8, "DoStuff", times: 2);
             // Check UseComplex frame again
             locals_m1 = await GetLocalsForFrame(pause_location["callFrames"][1], debugger_test_loc, 23, 8, "UseComplex");
             Assert.Equal(7, locals_m1.Count());
@@ -145,7 +145,7 @@ namespace DebuggerTests
             CheckNumber(locals_m1, "f", 0);
 
             props = await GetObjectOnFrame(pause_location["callFrames"][1], "complex");
-            Assert.Equal(3, props.Count());
+            Assert.Equal(4, props.Count());
             CheckNumber(props, "A", 10);
             CheckString(props, "B", "xx");
             CheckString(props, "c", "20_xx");

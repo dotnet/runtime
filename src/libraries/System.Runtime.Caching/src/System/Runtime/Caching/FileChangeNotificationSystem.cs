@@ -15,12 +15,12 @@ namespace System.Runtime.Caching
         private readonly Hashtable _dirMonitors;
         private readonly object _lock;
 
-        internal class DirectoryMonitor
+        internal sealed class DirectoryMonitor
         {
             internal FileSystemWatcher Fsw;
         }
 
-        internal class FileChangeEventTarget
+        internal sealed class FileChangeEventTarget
         {
             private readonly string _fileName;
             private readonly OnChangedCallback _onChangedCallback;

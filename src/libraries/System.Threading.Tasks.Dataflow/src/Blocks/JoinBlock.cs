@@ -100,13 +100,11 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2>)state!)._sharedResources.CompleteEachTarget(), this);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
@@ -187,15 +185,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, OutputCount={1}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -328,13 +320,11 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2, T3>)state!)._sharedResources.CompleteEachTarget(), this);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
@@ -420,15 +410,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0} OutputCount={1}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)} OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -961,10 +945,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayJoin = _sharedResources._ownerJoin as IDebuggerDisplay;
-                return string.Format("{0} InputCount={1}, Join=\"{2}\"",
-                    Common.GetNameForDebugger(this),
-                    InputCountForDebugger,
-                    displayJoin != null ? displayJoin.Content : _sharedResources._ownerJoin);
+                return $"{Common.GetNameForDebugger(this)} InputCount={InputCountForDebugger}, Join=\"{(displayJoin != null ? displayJoin.Content : _sharedResources._ownerJoin)}\"";
             }
         }
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -1288,7 +1269,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             _taskForInputProcessing = new Task(thisSharedResources => ((JoinBlockTargetSharedResources)thisSharedResources!).ProcessMessagesLoopCore(), this,
                                                 Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -1296,7 +1276,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     _ownerJoin, _taskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
                     _targets.Max(t => t.NumberOfMessagesAvailableOrPostponed));
             }
-#endif
 
             // Start the task handling scheduling exceptions
             Exception? exception = Common.StartTaskSafe(_taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -1456,8 +1435,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayJoin = _ownerJoin as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displayJoin != null ? displayJoin.Content : _ownerJoin);
+                return $"Block=\"{(displayJoin != null ? displayJoin.Content : _ownerJoin)}\"";
             }
         }
     }

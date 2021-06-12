@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -14,7 +15,6 @@ namespace System.Net.NetworkInformation
         private static volatile int s_socket;
         // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
         private static readonly object s_gate = new object();
-        private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
         // The "leniency" window for NetworkAvailabilityChanged socket events.
         // All socket events received within this duration will be coalesced into a
@@ -170,14 +170,15 @@ namespace System.Net.NetworkInformation
             s_socket = 0;
         }
 
-        private static void LoopReadSocket(int socket)
+        private static unsafe void LoopReadSocket(int socket)
         {
             while (socket == s_socket)
             {
-                Interop.Sys.ReadEvents(socket, s_networkChangeCallback);
+                Interop.Sys.ReadEvents(socket, &ProcessEvent);
             }
         }
 
+        [UnmanagedCallersOnly]
         private static void ProcessEvent(int socket, Interop.Sys.NetworkChangeKind kind)
         {
             if (kind != Interop.Sys.NetworkChangeKind.None)

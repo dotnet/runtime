@@ -126,6 +126,10 @@ void Phase::PrePhase()
         }
     }
 #endif // DEBUG
+
+#if DUMP_FLOWGRAPHS
+    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PrePhase);
+#endif // DUMP_FLOWGRAPHS
 }
 
 //------------------------------------------------------------------------
@@ -197,10 +201,6 @@ void Phase::PostPhase(PhaseStatus status)
             printf("Trees after %s\n", m_name);
             comp->fgDispBasicBlocks(true);
         }
-
-#if DUMP_FLOWGRAPHS
-        comp->fgDumpFlowGraph(m_phase);
-#endif // DUMP_FLOWGRAPHS
     }
 
     if (doPostPhase)
@@ -229,6 +229,10 @@ void Phase::PostPhase(PhaseStatus status)
     }
 
 #endif // DEBUG
+
+#if DUMP_FLOWGRAPHS
+    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
+#endif // DUMP_FLOWGRAPHS
 
     comp->EndPhase(m_phase);
 }

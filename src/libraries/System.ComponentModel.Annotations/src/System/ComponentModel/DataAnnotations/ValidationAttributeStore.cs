@@ -18,7 +18,7 @@ namespace System.ComponentModel.DataAnnotations
     ///     It exists both to help performance as well as to abstract away the differences between
     ///     Reflection and TypeDescriptor.
     /// </remarks>
-    internal class ValidationAttributeStore
+    internal sealed class ValidationAttributeStore
     {
         private readonly Dictionary<Type, TypeStoreItem> _typeStoreItems = new Dictionary<Type, TypeStoreItem>();
 
@@ -148,9 +148,6 @@ namespace System.ComponentModel.DataAnnotations
 
         internal static bool IsPublic(PropertyInfo p) =>
             (p.GetMethod != null && p.GetMethod.IsPublic) || (p.SetMethod != null && p.SetMethod.IsPublic);
-
-        internal static bool IsStatic(PropertyInfo p) =>
-            (p.GetMethod != null && p.GetMethod.IsStatic) || (p.SetMethod != null && p.SetMethod.IsStatic);
 
         /// <summary>
         ///     Private abstract class for all store items

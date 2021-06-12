@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class NullableConverter<T> : JsonConverter<T?> where T : struct
+    internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal override T? ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling numberHandling)
+        internal override T? ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling numberHandling, JsonSerializerOptions options)
         {
             // We do not check _converter.HandleNull, as the underlying struct cannot be null.
             // A custom converter for some type T? can handle null.
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Converters
                 return null;
             }
 
-            T value = _converter.ReadNumberWithCustomHandling(ref reader, numberHandling);
+            T value = _converter.ReadNumberWithCustomHandling(ref reader, numberHandling, options);
             return value;
         }
 

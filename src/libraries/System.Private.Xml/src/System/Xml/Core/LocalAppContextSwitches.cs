@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    internal partial class LocalAppContextSwitches
+    internal static partial class LocalAppContextSwitches
     {
         private static int s_dontThrowOnInvalidSurrogatePairs;
         public static bool DontThrowOnInvalidSurrogatePairs

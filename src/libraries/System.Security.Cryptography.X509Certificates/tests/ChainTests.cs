@@ -210,10 +210,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         /// <summary>
         /// Tests that when a certificate chain has a root certification which is not trusted by the trust provider,
-        /// Build returns false and a ChainStatus returns UntrustedRoot
+        /// Build returns false and a ChainStatus returns UntrustedRoot.
+        /// Android does not support the detailed status in this test. It always validates time
+        /// and trusted root. It will fail to build any chain if those are not valid.
         /// </summary>
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android.")]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
@@ -267,7 +270,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.False(chain.Build(microsoftDotCom));
 
                     // Linux and Windows do not search the default system root stores when CustomRootTrust is enabled
-                    if (OperatingSystem.IsMacOS())
+                    if (PlatformDetection.UsesAppleCrypto)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                         Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
@@ -633,6 +636,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
         [OuterLoop(/* Modifies user certificate store */)]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
             // Verifies that when the same root cert is placed in both a user and machine root certificate store,
@@ -765,7 +769,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 expectedFlags = X509ChainStatusFlags.NotSignatureValid;
             }
-            else if (OperatingSystem.IsMacOS())
+            else if (PlatformDetection.UsesAppleCrypto)
             {
                 // For OSX alone expectedFlags here means OR instead of AND.
                 // Because the error code changed in 10.13.4 from UntrustedRoot to PartialChain
@@ -803,7 +807,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                if (OperatingSystem.IsMacOS())
+                if (PlatformDetection.UsesAppleCrypto)
                 {
                     // If we're on 10.13.3 or older we get UntrustedRoot.
                     // If we're on 10.13.4 or newer we get PartialChain.
@@ -822,7 +826,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         // Android does not support the detailed status in this test. It always validates time
         // and trusted root. It will fail to build any chain if those are not valid.
-        [PlatformSpecific(~TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android.")]
         public static void ChainErrorsAtMultipleLayers()
         {
             // These certificates were generated for this test using CertificateRequest
@@ -907,7 +911,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)] // Chain building on Android fails with an empty subject
+        [SkipOnPlatform(TestPlatforms.Android, "Chain building on Android fails with an empty subject")]
         public static void ChainWithEmptySubject()
         {
             using (var cert = new X509Certificate2(TestData.EmptySubjectCertificate))
@@ -954,7 +958,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                     bool valid = chain.Build(cert);
                     X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                    if (OperatingSystem.IsMacOS())
+                    if (PlatformDetection.UsesAppleCrypto)
                     {
                         // OSX considers this to be valid because it doesn't report NotSignatureValid,
                         // just PartialChain ("I couldn't find an issuer that made the signature work"),
@@ -1002,7 +1006,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void BuildChainForFraudulentCertificate()
         {
             // This certificate is a misissued certificate for a "high-value"
@@ -1063,7 +1067,6 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
                 else
                 {
                     X509ChainElement certElement = chain.ChainElements
-                        .OfType<X509ChainElement>()
                         .Single(e => e.Certificate.Subject == cert.Subject);
 
                     const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;
@@ -1074,7 +1077,7 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void BuildChainForCertificateSignedWithDisallowedKey()
         {
             // The intermediate certificate is from the now defunct CA DigiNotar.
@@ -1150,7 +1153,6 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                 else
                 {
                     X509ChainElement certElement = chain.ChainElements
-                        .OfType<X509ChainElement>()
                         .Single(e => e.Certificate.Subject == intermediateCert.Subject);
 
                     const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;

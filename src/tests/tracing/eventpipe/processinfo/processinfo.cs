@@ -62,7 +62,7 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
             // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && normalizedCommandLine.StartsWith("/tmp/"))
+            if (OperatingSystem.IsMacOS() && normalizedCommandLine.StartsWith("/tmp/"))
                 normalizedCommandLine = "/private" + normalizedCommandLine;
 
             return normalizedCommandLine;
@@ -146,15 +146,15 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             // see eventpipeeventsource.cpp for these values
             string expectedOSValue = null;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 expectedOSValue = "Windows";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 expectedOSValue = "macOS";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsLinux())
             {
                 expectedOSValue = "Linux";
             }

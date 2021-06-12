@@ -45,12 +45,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         protected override string GetDisplayName()
         {
             ParameterInfo parameter = ImportingLazyParameter.GetNotNullValue("parameter");
-            return string.Format(
-                CultureInfo.CurrentCulture,
-                "{0} (Parameter=\"{1}\", ContractName=\"{2}\")",  // NOLOC
-                parameter.Member.GetDisplayName(),
-                parameter.Name,
-                ContractName);
+            return $"{parameter.Member.GetDisplayName()} (Parameter=\"{parameter.Name}\", ContractName=\"{ContractName}\")";  // NOLOC
         }
     }
 }

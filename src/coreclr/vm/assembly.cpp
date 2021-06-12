@@ -1251,7 +1251,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     CONTRACTL_END
 
     ReleaseHolder<FriendAssemblyDescriptor> pOldFriendAssemblyDescriptor;
-    
+
     {
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
         if (m_pFriendAssemblyDescriptor != NULL)
@@ -1559,7 +1559,7 @@ static void RunMainPre()
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(GetThread() != 0);
+    _ASSERTE(GetThreadNULLOk() != 0);
     g_fWeControlLifetime = TRUE;
 }
 
@@ -1571,7 +1571,7 @@ static void RunMainPost()
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(GetThread()));
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     }
     CONTRACTL_END
 
@@ -1656,9 +1656,17 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             AppDomain * pDomain = pThread->GetDomain();
             pDomain->SetRootAssembly(pMeth->GetAssembly());
 
+            // Perform additional managed thread initialization.
+            // This would is normally done in the runtime when a managed
+            // thread is started, but is done here instead since the
+            // Main thread wasn't started by the runtime.
+            Thread::InitializationForManagedThreadInNative(pThread);
+
             RunStartupHooks();
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+
+            Thread::CleanUpForManagedThreadInNative(pThread);
         }
     }
 
@@ -1986,7 +1994,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
 // Add an assembly to the assemblyref list. pAssemEmitter specifies where
 // the AssemblyRef is emitted to.
 //***********************************************************
-mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter, BOOL fUsePublicKeyToken)
+mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter)
 {
     CONTRACT(mdAssemblyRef)
     {
@@ -2014,7 +2022,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     }
 
     mdAssemblyRef ar;
-    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar, fUsePublicKeyToken));
+    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar));
 
     RETURN ar;
 }   // Assembly::AddAssemblyRef

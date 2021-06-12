@@ -2786,8 +2786,18 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
     detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
-    detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
-    detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
+    if (g_gcDacGlobals->saved_sweep_ephemeral_seg != nullptr)
+    {
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
+        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
+    }
+    else
+    {
+        // with regions, we don't have these variables anymore
+        // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)-1;
+        detailsData->saved_sweep_ephemeral_start = 0;
+    }
     detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
     detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_highest_address;
 
@@ -3272,9 +3282,12 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
                             HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
-#ifdef FEATURE_COMINTEROP
-                            HNDTYPE_REFCOUNTED, HNDTYPE_WEAK_NATIVE_COM
-#endif
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
+                            HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+                            HNDTYPE_WEAK_NATIVE_COM
+#endif // FEATURE_COMINTEROP
                             };
 
     return GetHandleEnumForTypes(types, _countof(types), ppHandleEnum);
@@ -3310,9 +3323,12 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
                             HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
-#ifdef FEATURE_COMINTEROP
-                            HNDTYPE_REFCOUNTED, HNDTYPE_WEAK_NATIVE_COM
-#endif
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
+                            HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+                            HNDTYPE_WEAK_NATIVE_COM
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                             };
 
     DacHandleWalker *walker = new DacHandleWalker();
@@ -3465,7 +3481,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
         TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
         size_t size = block->dwVirtualSize;
 
-        BOOL bCurrentBlock = (block == pLoaderHeap->m_pCurBlock);
+        BOOL bCurrentBlock = (block == pLoaderHeap->m_pFirstBlock);
 
         pFunc(addr,size,bCurrentBlock);
 
@@ -3522,7 +3538,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
                 TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
                 size_t size = block->dwVirtualSize;
 
-                BOOL bCurrentBlock = (block == pLoaderHeap->m_pCurBlock);
+                BOOL bCurrentBlock = (block == pLoaderHeap->m_pFirstBlock);
                 pFunc(addr, size, bCurrentBlock);
 
                 block = block->pNext;
@@ -4133,7 +4149,8 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface);
+    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
+        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
@@ -4838,7 +4855,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
                 {
                     comWrappers.Push(TO_CDADDR(iter->Value()));
                     ++iter;
-                
+
                 }
             }
 
@@ -4874,7 +4891,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     return E_NOTIMPL;
 #endif // FEATURE_COMWRAPPERS
 }
-    
+
 HRESULT ClrDataAccess::IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW)
 {
 #ifdef FEATURE_COMWRAPPERS
@@ -4884,12 +4901,12 @@ HRESULT ClrDataAccess::IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappers
     }
 
     SOSDacEnter();
-    
+
     if (isComWrappersCCW != NULL)
     {
         TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccw);
         *isComWrappersCCW = managedObjectWrapperPtr != NULL;
-        hr = *isComWrappersCCW ? S_OK : S_FALSE; 
+        hr = *isComWrappersCCW ? S_OK : S_FALSE;
     }
 
     SOSDacLeave();
@@ -4908,12 +4925,12 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
     }
 
     SOSDacEnter();
-    
+
     TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccw);
     if (managedObjectWrapperPtr != NULL)
     {
         PTR_ManagedObjectWrapper pMOW(managedObjectWrapperPtr);
-        
+
         if (managedObject != NULL)
         {
             OBJECTREF managedObjectRef;
@@ -4954,7 +4971,7 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
     }
 
     SOSDacEnter();
-    
+
     if (isComWrappersRCW != NULL)
     {
         PTR_ExternalObjectContext pRCW(TO_TADDR(rcw));
@@ -4977,7 +4994,7 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
 
         PTR_InteropSyncBlockInfo pInfo = NULL;
         if (stillValid)
-        {   
+        {
             pInfo = pSyncBlk->GetInteropInfoNoCreate();
             if(pInfo == NULL)
             {
@@ -4991,11 +5008,11 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
         }
 
         *isComWrappersRCW = stillValid;
-        hr = *isComWrappersRCW ? S_OK : S_FALSE; 
+        hr = *isComWrappersRCW ? S_OK : S_FALSE;
     }
 
     SOSDacLeave();
-    return hr;    
+    return hr;
 #else // FEATURE_COMWRAPPERS
     return E_NOTIMPL;
 #endif // FEATURE_COMWRAPPERS
@@ -5010,7 +5027,7 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
     }
 
     SOSDacEnter();
-    
+
     PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
     if (identity != NULL)
     {

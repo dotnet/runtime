@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.ComponentModel
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.ConversionResolution
@@ -47,6 +48,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Private Sub New()
             End Sub
 
+            <RequiresUnreferencedCode("Calls ClassifyConversion")>
             Private Shared Function GetWidestType(ByVal type1 As System.Type, ByVal type2 As System.Type) As Type
                 If type1 Is Nothing OrElse type2 Is Nothing Then Return Nothing
 
@@ -72,11 +74,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return Nothing
             End Function
 
+            <RequiresUnreferencedCode("Calls GetWidestType")>
             Private Shared Function GetWidestType(ByVal type1 As System.Type, ByVal type2 As System.Type, ByVal type3 As System.Type) As Type
                 Return GetWidestType(type1, GetWidestType(type2, type3))
             End Function
 
-            Private Shared Function ConvertLoopElement(ByVal elementName As String, ByVal value As Object, ByVal sourceType As Type, ByVal targetType As Type) As Object
+            <RequiresUnreferencedCode("Calls Conversions.ChangeType")>
+            Private Shared Function ConvertLoopElement(
+                    ByVal elementName As String,
+                    ByVal value As Object,
+                    ByVal sourceType As Type,
+                    <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)>
+                    ByVal targetType As Type) As Object
                 Try
                     Return Conversions.ChangeType(value, targetType)
                 Catch ex As OutOfMemoryException
@@ -86,6 +95,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End Try
             End Function
 
+            <RequiresUnreferencedCode("Calls Operators.GetCallableUserDefinedOperator")>
             Private Shared Function VerifyForLoopOperator(
                 ByVal op As UserDefinedOperator,
                 ByVal forLoopArgument As Object,
@@ -130,6 +140,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return operatorMethod
             End Function
 
+            <RequiresUnreferencedCode("The types of the parameters cannot be statically analyzed and may be trimmed")>
             Public Shared Function ForLoopInitObj(ByVal Counter As Object, ByVal Start As Object, ByVal Limit As Object, ByVal StepValue As Object, ByRef LoopForResult As Object, ByRef CounterResult As Object) As Boolean
                 Dim loopFor As ForLoopControl
 
@@ -236,6 +247,7 @@ NotEnumType:
                 Return CheckContinueLoop(loopFor)
             End Function
 
+            <RequiresUnreferencedCode("The types of the parameters cannot be statically analyzed and may be trimmed")>
             Public Shared Function ForNextCheckObj(ByVal Counter As Object, ByVal LoopObj As Object, ByRef CounterResult As Object) As Boolean
 
                 Dim loopFor As ForLoopControl
@@ -289,9 +301,9 @@ NotEnumType:
                     Dim resultTypeCode As TypeCode = loopFor._counter.GetType.GetTypeCode ' CType(LoopFor.Counter, IConvertible).GetTypeCode()
 
                     If Not loopFor._enumType Is Nothing Then
-                        counterResult = System.Enum.ToObject(loopFor._enumType, loopFor._counter)
+                        CounterResult = System.Enum.ToObject(loopFor._enumType, loopFor._counter)
                     Else
-                        counterResult = loopFor._counter
+                        CounterResult = loopFor._counter
                     End If
 
                     If resultTypeCode <> loopFor._widestTypeCode Then
@@ -313,7 +325,7 @@ NotEnumType:
                         loopFor._counter = ConvertLoopElement("Start", loopFor._counter, loopFor._counter.GetType(), loopFor._widestType)
                     End If
 
-                    counterResult = loopFor._counter
+                    CounterResult = loopFor._counter
                 End If
 
                 Return CheckContinueLoop(loopFor)
@@ -346,6 +358,7 @@ NotEnumType:
                 End If
             End Function
 
+            <RequiresUnreferencedCode("Calls Operators.InvokeUserDefinedOperator")>
             Private Shared Function CheckContinueLoop(ByVal loopFor As ForLoopControl) As Boolean
 
                 If Not loopFor._useUserDefinedOperators Then

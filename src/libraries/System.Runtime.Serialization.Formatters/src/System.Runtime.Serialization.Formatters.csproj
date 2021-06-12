@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android;</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- When we replace implementations with PNSE, need to suppress some "field is never assigned to" warnings. -->
-    <NoWarn Condition="'$(TargetsBrowser)' == 'true'">$(NoWarn);CS0649</NoWarn>
+    <NoWarn Condition="'$(TargetsMobile)' == 'true'">$(NoWarn);CS0649</NoWarn>
   </PropertyGroup>
   <!-- ILLinker settings -->
   <PropertyGroup>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.NonBrowser.xml" />
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.NonMobile.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
@@ -67,14 +67,14 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" />
     <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>

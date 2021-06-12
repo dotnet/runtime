@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class JsonConsoleFormatter : ConsoleFormatter, IDisposable
+    internal sealed class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
         private IDisposable _optionsReloadToken;
 

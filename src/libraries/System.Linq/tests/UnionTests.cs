@@ -413,5 +413,126 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { "A", "a" }, input2.Union(input1, EqualityComparer<string>.Default));
             Assert.Equal(new[] { "A" }, input2.Union(input1, StringComparer.OrdinalIgnoreCase));
         }
+
+        [Fact]
+        public void UnionBy_FirstNull_ThrowsArgumentNullException()
+        {
+            string[] first = null;
+            string[] second = { "bBo", "shriC" };
+
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.UnionBy(second, x => x));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.UnionBy(second, x => x, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void UnionBy_SecondNull_ThrowsArgumentNullException()
+        {
+            string[] first = { "Bob", "Tim", "Robert", "Chris" };
+            string[] second = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.UnionBy(second, x => x));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.UnionBy(second, x => x, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void UnionBy_KeySelectorNull_ThrowsArgumentNullException()
+        {
+            string[] first = { "Bob", "Tim", "Robert", "Chris" };
+            string[] second = { "bBo", "shriC" };
+            Func<string, string> keySelector = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => first.UnionBy(second, keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => first.UnionBy(second, keySelector, new AnagramEqualityComparer()));
+        }
+
+        [Theory]
+        [MemberData(nameof(UnionBy_TestData))]
+        public static void UnionBy_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+        {
+            Assert.Equal(expected, first.UnionBy(second, keySelector, comparer));
+        }
+
+        [Theory]
+        [MemberData(nameof(UnionBy_TestData))]
+        public static void UnionBy_RunOnce_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+        {
+            Assert.Equal(expected, first.RunOnce().UnionBy(second.RunOnce(), keySelector, comparer));
+        }
+
+        public static IEnumerable<object[]> UnionBy_TestData()
+        {
+            yield return WrapArgs(
+                first: Enumerable.Range(0, 7),
+                second: Enumerable.Range(3, 7),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Range(0, 10));
+
+            yield return WrapArgs(
+                first: Enumerable.Range(0, 10),
+                second: Enumerable.Range(10, 10),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Range(0, 20));
+
+            yield return WrapArgs(
+                first: Enumerable.Empty<int>(),
+                second: Enumerable.Range(0, 5),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Range(0, 5));
+
+            yield return WrapArgs(
+                first: Enumerable.Repeat(5, 20),
+                second: Enumerable.Empty<int>(),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Repeat(5, 1));
+
+            yield return WrapArgs(
+                first: Enumerable.Repeat(5, 20),
+                second: Enumerable.Repeat(5, 3),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Repeat(5, 1));
+
+            yield return WrapArgs(
+                first: new string[] { "Bob", "Tim", "Robert", "Chris" },
+                second: new string[] { "bBo", "shriC" },
+                keySelector: x => x,
+                null,
+                expected: new string[] { "Bob", "Tim", "Robert", "Chris", "bBo", "shriC" });
+
+            yield return WrapArgs(
+                first: new string[] { "Bob", "Tim", "Robert", "Chris" },
+                second: new string[] { "bBo", "shriC" },
+                keySelector: x => x,
+                new AnagramEqualityComparer(),
+                expected: new string[] { "Bob", "Tim", "Robert", "Chris" });
+
+            yield return WrapArgs(
+                first: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40), ("Martin", 20) },
+                second: new (string Name, int Age)[] { ("Peter", 21), ("John", 30), ("Toby", 33) },
+                keySelector: x => x.Age,
+                comparer: null,
+                expected: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40), ("Peter", 21), ("Toby", 33) });
+
+            yield return WrapArgs(
+                first: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40), ("Martin", 20) },
+                second: new (string Name, int Age)[] { ("Toby", 33), ("Harry", 35), ("tom", 67) },
+                keySelector: x => x.Name,
+                comparer: null,
+                expected: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40), ("Martin", 20), ("Toby", 33), ("tom", 67) });
+
+            yield return WrapArgs(
+                first: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40), ("Martin", 20) },
+                second: new (string Name, int Age)[] { ("Toby", 33), ("Harry", 35), ("tom", 67) },
+                keySelector: x => x.Name,
+                comparer: StringComparer.OrdinalIgnoreCase,
+                expected: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40), ("Martin", 20), ("Toby", 33) });
+
+            object[] WrapArgs<TSource, TKey>(IEnumerable<TSource> first, IEnumerable<TSource> second, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+                => new object[] { first, second, keySelector, comparer, expected };
+        }
     }
 }

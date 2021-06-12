@@ -114,13 +114,15 @@ NativeImage *NativeImage::Open(
     Module *componentModule,
     LPCUTF8 nativeImageFileName,
     AssemblyLoadContext *pAssemblyLoadContext,
-    LoaderAllocator *pLoaderAllocator)
+    LoaderAllocator *pLoaderAllocator,
+    /* out */ bool *isNewNativeImage)
 {
     STANDARD_VM_CONTRACT;
 
     NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
     if (pExistingImage != nullptr)
     {
+        *isNewNativeImage = false;
         return pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr;
     }
 
@@ -216,10 +218,12 @@ NativeImage *NativeImage::Open(
     if (pExistingImage == nullptr)
     {
         // No pre-existing image, new image has been stored in the map
+        *isNewNativeImage = true;
         amTracker.SuppressRelease();
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
+    *isNewNativeImage = false;
     return (pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr);
 }
 #endif
@@ -286,7 +290,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
 
     SString message;
     message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-        assembly->GetSimpleName(),
+        SString(SString::Utf8, assembly->GetSimpleName()).GetUnicode(),
         assemblyMvidText,
         SString(SString::Utf8, GetFileName()).GetUnicode(),
         componentMvidText);

@@ -83,6 +83,16 @@ namespace System.Net.Quic.Tests
 
     public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
+        public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
+        {
+            return new SslServerAuthenticationOptions()
+            {
+                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
+                // TODO: use a cert. MsQuic currently only allows certs that are trusted.
+                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
+            };
+        }
+
         protected abstract QuicImplementationProvider Provider { get; }
 
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
@@ -93,8 +103,7 @@ namespace System.Net.Quic.Tests
             var listener = new QuicListener(
                 provider,
                 new IPEndPoint(IPAddress.Loopback, 0),
-                new SslServerAuthenticationOptions { ApplicationProtocols = new List<SslApplicationProtocol> { protocol } });
-            listener.Start();
+                GetSslServerAuthenticationOptions());
 
             QuicConnection connection1 = null, connection2 = null;
             QuicStream stream1 = null, stream2 = null;

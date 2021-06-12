@@ -306,7 +306,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Credentials = new NetworkCredential("unused", "unused");
+                handler.Credentials = new NetworkCredential("unused", "PLACEHOLDER");
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
@@ -630,7 +630,7 @@ namespace System.Net.Http.Functional.Tests
                 $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
                 $"Accept-Ranges:{fold} bytes{newline}" +
                 $"Age: {fold}12{newline}" +
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy authorization.")]
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy authorization.")]
                 $"Authorization: Bearer 63123a47139a49829bcd8d03005ca9d7{newline}" +
                 $"Allow: {fold}GET, HEAD{newline}" +
                 $"Alt-Svc:{fold} http/1.1=\"http2.example.com:8001\"; ma=7200{newline}" +
@@ -892,6 +892,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
                 // Chunking is not supported on HTTP/2 and later.
+                return;
+            }
+
+            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
                 return;
             }
 
@@ -1229,7 +1235,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29424")]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
@@ -1809,7 +1815,7 @@ namespace System.Net.Http.Functional.Tests
         }
 #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsNotBrowserDomSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDomSupported))]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
             string invalidUri = $"http://nosuchhost.invalid";

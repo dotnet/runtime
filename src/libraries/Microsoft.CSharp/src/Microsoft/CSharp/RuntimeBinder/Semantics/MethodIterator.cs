@@ -3,11 +3,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class CMemberLookupResults
+    internal sealed partial class CMemberLookupResults
     {
         public class CMethodIterator
         {
@@ -55,6 +56,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             public bool CanUseCurrentSymbol
             {
+                [RequiresUnreferencedCode(Binder.TrimmerWarning)]
                 get
                 {
                     // Make sure that whether we're seeing a ctor is consistent with the flag.

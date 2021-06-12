@@ -2,10 +2,10 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Context.csproj">
-      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net45</SupportedFramework>
+      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Context.csproj" />
-    <InboxOnTargetFramework Include="net45">
+    <InboxOnTargetFramework Include="net461">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
     <!-- Since UAP are package based we still want to enable
@@ -17,7 +17,9 @@
       <Value>UAP</Value>
     </ValidatePackageSuppression>
 
-    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50;ref/portable-net45+win8;lib/portable-net45+win8" />
+    <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
+    <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore45;netcore451;netcore50;uap10.0;wpa81;net45;net451;net46" />
   </ItemGroup>
+  
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

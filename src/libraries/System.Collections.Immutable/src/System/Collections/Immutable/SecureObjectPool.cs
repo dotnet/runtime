@@ -38,7 +38,7 @@ namespace System.Collections.Immutable
         }
     }
 
-    internal class SecureObjectPool<T, TCaller>
+    internal sealed class SecureObjectPool<T, TCaller>
         where TCaller : ISecurePooledObjectUser
     {
         public void TryAdd(TCaller caller, SecurePooledObject<T> item)
@@ -79,7 +79,7 @@ namespace System.Collections.Immutable
         int PoolUserId { get; }
     }
 
-    internal class SecurePooledObject<T>
+    internal sealed class SecurePooledObject<T>
     {
         private readonly T _value;
         private int _owner;

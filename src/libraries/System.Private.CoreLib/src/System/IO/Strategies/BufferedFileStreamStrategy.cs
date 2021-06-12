@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -215,7 +217,7 @@ namespace System.IO.Strategies
                 }
 
                 EnsureBufferAllocated();
-                n = _strategy.Read(_buffer!, 0, _bufferSize);
+                n = _strategy.Read(_buffer, 0, _bufferSize);
 
                 if (n == 0)
                 {
@@ -231,7 +233,7 @@ namespace System.IO.Strategies
             {
                 n = destination.Length;
             }
-            new ReadOnlySpan<byte>(_buffer!, _readPos, n).CopyTo(destination);
+            new ReadOnlySpan<byte>(_buffer, _readPos, n).CopyTo(destination);
             _readPos += n;
 
             // We may have read less than the number of bytes the user asked
@@ -290,7 +292,7 @@ namespace System.IO.Strategies
             }
 
             EnsureBufferAllocated();
-            _readLen = _strategy.Read(_buffer!, 0, _bufferSize);
+            _readLen = _strategy.Read(_buffer, 0, _bufferSize);
             _readPos = 0;
 
             if (_readLen == 0)
@@ -298,7 +300,7 @@ namespace System.IO.Strategies
                 return -1;
             }
 
-            return _buffer![_readPos++];
+            return _buffer[_readPos++];
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -352,17 +354,18 @@ namespace System.IO.Strategies
                 bool releaseTheLock = true;
                 try
                 {
-                    if (_readLen - _readPos >= buffer.Length)
+                    if (_readLen == _readPos && buffer.Length >= _bufferSize)
                     {
-                        // hot path #1: there is enough data in the buffer
+                        // hot path #1: the read buffer is empty and buffering would not be beneficial
+                        // To find out why we are bypassing cache here, please see WriteAsync comments.
+                        return _strategy.ReadAsync(buffer, cancellationToken);
+                    }
+                    else if (_readLen - _readPos >= buffer.Length)
+                    {
+                        // hot path #2: there is enough data in the buffer
                         _buffer.AsSpan(_readPos, buffer.Length).CopyTo(buffer.Span);
                         _readPos += buffer.Length;
                         return new ValueTask<int>(buffer.Length);
-                    }
-                    else if (_readLen == _readPos && buffer.Length >= _bufferSize)
-                    {
-                        // hot path #2: the read buffer is empty and buffering would not be beneficial
-                        return _strategy.ReadAsync(buffer, cancellationToken);
                     }
 
                     releaseTheLock = false;
@@ -539,6 +542,10 @@ namespace System.IO.Strategies
                         source.Slice(0, numBytes).CopyTo(_buffer!.AsSpan(_writePos));
                         _writePos += numBytes;
                         source = source.Slice(numBytes);
+                        if (arraySegment.Array != null)
+                        {
+                            arraySegment = arraySegment.Slice(numBytes);
+                        }
                     }
                 }
 
@@ -573,7 +580,7 @@ namespace System.IO.Strategies
 
             // Copy remaining bytes into buffer, to write at a later date.
             EnsureBufferAllocated();
-            source.CopyTo(_buffer!.AsSpan(_writePos));
+            source.CopyTo(_buffer.AsSpan(_writePos));
             _writePos = source.Length;
         }
 
@@ -598,8 +605,9 @@ namespace System.IO.Strategies
                 ClearReadBufferBeforeWrite();
                 EnsureBufferAllocated();
             }
-            else if (_writePos == _bufferSize - 1)
+            else
             {
+                Debug.Assert(_writePos <= _bufferSize);
                 FlushWrite();
             }
 
@@ -643,18 +651,28 @@ namespace System.IO.Strategies
                 bool releaseTheLock = true;
                 try
                 {
-                    // hot path #1 if the write completely fits into the buffer, we can complete synchronously:
-                    if (_bufferSize - _writePos >= buffer.Length)
+                    // hot path #1: the write buffer is empty and buffering would not be beneficial
+                    if (_writePos == 0 && buffer.Length >= _bufferSize)
                     {
+                        // The fact that Strategy can be wrapped by BufferedFileStreamStrategy
+                        // is transparent to every Strategy implementation. It means, that
+                        // every Strategy must work fine no matter if buffering is enabled or not.
+                        // In case of AsyncWindowsFileStreamStrategy.WriteAsync,
+                        // it updates it's private position BEFORE it enqueues the IO request.
+                        // This combined with the fact that BufferedFileStreamStrategy state
+                        // is not modified here, allows us to NOT await the call
+                        // and release the lock BEFORE the IO request completes.
+                        // It improves the performance of common scenario, where buffering is enabled (default)
+                        // but the user provides buffers larger (or equal) to the internal buffer size.
+                        return _strategy.WriteAsync(buffer, cancellationToken);
+                    }
+                    else if (_bufferSize - _writePos >= buffer.Length)
+                    {
+                        // hot path #2 if the write completely fits into the buffer, we can complete synchronously:
                         EnsureBufferAllocated();
                         buffer.Span.CopyTo(_buffer.AsSpan(_writePos));
                         _writePos += buffer.Length;
                         return default;
-                    }
-                    else if (_writePos == 0 && buffer.Length >= _bufferSize)
-                    {
-                        // hot path #2: the write buffer is empty and buffering would not be beneficial
-                        return _strategy.WriteAsync(buffer, cancellationToken);
                     }
 
                     releaseTheLock = false;
@@ -715,13 +733,13 @@ namespace System.IO.Strategies
                     {
                         if (spaceLeft >= source.Length)
                         {
-                            source.Span.CopyTo(_buffer!.AsSpan(_writePos));
+                            source.Span.CopyTo(_buffer.AsSpan(_writePos));
                             _writePos += source.Length;
                             return;
                         }
                         else
                         {
-                            source.Span.Slice(0, spaceLeft).CopyTo(_buffer!.AsSpan(_writePos));
+                            source.Span.Slice(0, spaceLeft).CopyTo(_buffer.AsSpan(_writePos));
                             _writePos += spaceLeft;
                             source = source.Slice(spaceLeft);
                         }
@@ -745,7 +763,7 @@ namespace System.IO.Strategies
 
                 // Copy remaining bytes into buffer, to write at a later date.
                 EnsureBufferAllocated();
-                source.Span.CopyTo(_buffer!.AsSpan(_writePos));
+                source.Span.CopyTo(_buffer.AsSpan(_writePos));
                 _writePos = source.Length;
             }
             finally
@@ -1053,18 +1071,21 @@ namespace System.IO.Strategies
             }
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void EnsureBufferAllocated()
         {
-            // BufferedFileStreamStrategy is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
-            if (_buffer == null)
+            if (_buffer is null)
             {
                 AllocateBuffer();
             }
+        }
 
-            void AllocateBuffer() // logic kept in a separate method to get EnsureBufferAllocated() inlined
-            {
-                _strategy.OnBufferAllocated(_buffer = new byte[_bufferSize]);
-            }
+        // TODO https://github.com/dotnet/roslyn/issues/47896: should be local function in EnsureBufferAllocated above.
+        [MemberNotNull(nameof(_buffer))]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllocateBuffer()
+        {
+            Interlocked.CompareExchange(ref _buffer, GC.AllocateUninitializedArray<byte>(_bufferSize), null);
         }
 
         [Conditional("DEBUG")]

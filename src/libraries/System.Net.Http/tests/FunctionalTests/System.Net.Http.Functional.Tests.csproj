@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <DefineConstants Condition="'$(TargetsWindows)'=='true'">$(DefineConstants);TargetsWindows</DefineConstants>
@@ -8,6 +8,19 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+  </PropertyGroup>
+
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
@@ -25,8 +38,12 @@
              Link="Common\System\Diagnostics\Tracing\ConsoleEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ByteLoggingStream.cs"
              Link="Common\System\IO\ByteLoggingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs"
+             Link="CommonTest\System\IO\DelegateDelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
              Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
+             Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
              Link="Common\System\Net\RemoteServerQuery.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
@@ -107,7 +124,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
-    <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
     <Compile Include="HttpClientHandlerTest.Connect.cs" />
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
@@ -120,6 +137,7 @@
     <Compile Include="HttpClientHandlerTest.Http3.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.RemoteServer.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.RemoteServer.cs" />
+    <Compile Include="HttpClientHandlerTest.RequestRetry.cs" />
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs" />
@@ -136,8 +154,6 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpRetryProtocolTests.cs"
-             Link="Common\System\Net\Http\HttpRetryProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs"
              Link="Common\System\Net\Http\IdnaProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs"
@@ -227,6 +243,8 @@
              Link="Common\System\Net\Http\HuffmanDecoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs"
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
+    <Compile Include="LoopbackSocksServer.cs" />
+    <Compile Include="SocksProxyTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="SelectedSitesTest.txt">

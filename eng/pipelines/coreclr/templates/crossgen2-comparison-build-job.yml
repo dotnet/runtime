@@ -156,6 +156,7 @@ jobs:
             --result_dir  $(workItemDirectory)/log
             --target_os   $(target_crossgen2_os)
             --target_arch $(archType)
+            --compiler_arch_os $(target_crossgen2_os)_x64
         ${{ if eq(parameters.osGroup, 'windows') }}:
           arguments:
             crossgen_framework
@@ -165,6 +166,7 @@ jobs:
             --result_dir  $(workItemDirectory)\log
             --target_os   $(target_crossgen2_os)
             --target_arch $(archType)
+            --compiler_arch_os $(target_crossgen2_os)_x64
 
     - task: PublishPipelineArtifact@1
       displayName: Publish cross compiled component

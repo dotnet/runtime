@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -18,8 +19,6 @@ namespace System.Reflection
         private CultureInfo? _cultureInfo;
         private string? _codeBase;
         private Version? _version;
-
-        private StrongNameKeyPair? _strongNameKeyPair;
 
         private AssemblyHashAlgorithm _hashAlgorithm;
 
@@ -61,10 +60,12 @@ namespace System.Reflection
 
         public string? CodeBase
         {
+            [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
             get => _codeBase;
             set => _codeBase = value;
         }
 
+        [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase
         {
             get
@@ -200,20 +201,19 @@ namespace System.Reflection
             set => _versionCompatibility = value;
         }
 
+        [Obsolete(Obsoletions.StrongNameKeyPairMessage, DiagnosticId = Obsoletions.StrongNameKeyPairDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public StrongNameKeyPair? KeyPair
         {
-            get => _strongNameKeyPair;
-            set => _strongNameKeyPair = value;
+            get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
+            set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
         }
 
         public string FullName
         {
             get
             {
-                if (this.Name == null)
+                if (string.IsNullOrEmpty(this.Name))
                     return string.Empty;
-                if (this.Name == string.Empty)
-                    throw new System.IO.FileLoadException();
 
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
                 byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();
@@ -261,6 +261,7 @@ namespace System.Reflection
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
 
+        [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
         internal static string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)

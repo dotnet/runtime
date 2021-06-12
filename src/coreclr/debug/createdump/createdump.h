@@ -11,11 +11,13 @@
 #endif
 
 extern void trace_printf(const char* format, ...);
+extern void trace_verbose_printf(const char* format, ...);
 extern bool g_diagnostics;
+extern bool g_diagnosticsVerbose;
 
 #ifdef HOST_UNIX
 #define TRACE(args...) trace_printf(args)
-#define TRACE_VERBOSE(args...)
+#define TRACE_VERBOSE(args...) trace_verbose_printf(args)
 #else
 #define TRACE(args, ...)
 #define TRACE_VERBOSE(args, ...)
@@ -82,7 +84,8 @@ typedef int T_CONTEXT;
 #include <string>
 #ifdef HOST_UNIX
 #ifdef __APPLE__
-#include "mac.h"
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
 #endif
 #include "datatarget.h"
 #include "threadinfo.h"

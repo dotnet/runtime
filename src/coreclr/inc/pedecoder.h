@@ -81,6 +81,8 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_ARMNT
 #elif defined(TARGET_ARM64)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_ARM64
+#elif defined(TARGET_S390X)
+#define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_UNKNOWN
 #else
 #error "port me"
 #endif
@@ -236,7 +238,7 @@ class PEDecoder
     BOOL IsILOnly() const;
     CHECK CheckILOnly() const;
 
-    void LayoutILOnly(void *base, BOOL allowFullPE = FALSE) const;
+    void LayoutILOnly(void *base, bool enableExecution) const;
 
     // Strong name & hashing support
 
@@ -353,7 +355,7 @@ class PEDecoder
     void *GetNativeEntryPoint() const;
 
     // Look up a named symbol in the export directory
-    void *GetExport(LPCSTR exportName) const;
+    PTR_VOID GetExport(LPCSTR exportName) const;
 
 #ifdef _DEBUG
     // Stress mode for relocations

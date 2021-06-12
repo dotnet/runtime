@@ -32,7 +32,6 @@ c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY == X509_V_ERR_U
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE);
 c_static_assert(PAL_X509_V_ERR_CERT_CHAIN_TOO_LONG == X509_V_ERR_CERT_CHAIN_TOO_LONG);
 c_static_assert(PAL_X509_V_ERR_CERT_REVOKED == X509_V_ERR_CERT_REVOKED);
-c_static_assert(PAL_X509_V_ERR_INVALID_CA == X509_V_ERR_INVALID_CA);
 c_static_assert(PAL_X509_V_ERR_PATH_LENGTH_EXCEEDED == X509_V_ERR_PATH_LENGTH_EXCEEDED);
 c_static_assert(PAL_X509_V_ERR_INVALID_PURPOSE == X509_V_ERR_INVALID_PURPOSE);
 c_static_assert(PAL_X509_V_ERR_CERT_UNTRUSTED == X509_V_ERR_CERT_UNTRUSTED);
@@ -47,6 +46,26 @@ c_static_assert(PAL_X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE == X509_V_ERR_KEYUS
 c_static_assert(PAL_X509_V_ERR_INVALID_EXTENSION == X509_V_ERR_INVALID_EXTENSION);
 c_static_assert(PAL_X509_V_ERR_INVALID_POLICY_EXTENSION == X509_V_ERR_INVALID_POLICY_EXTENSION);
 c_static_assert(PAL_X509_V_ERR_NO_EXPLICIT_POLICY == X509_V_ERR_NO_EXPLICIT_POLICY);
+c_static_assert(PAL_X509_V_ERR_DIFFERENT_CRL_SCOPE == X509_V_ERR_DIFFERENT_CRL_SCOPE);
+c_static_assert(PAL_X509_V_ERR_UNSUPPORTED_EXTENSION_FEATURE == X509_V_ERR_UNSUPPORTED_EXTENSION_FEATURE);
+c_static_assert(PAL_X509_V_ERR_UNNESTED_RESOURCE == X509_V_ERR_UNNESTED_RESOURCE);
+c_static_assert(PAL_X509_V_ERR_PERMITTED_VIOLATION == X509_V_ERR_PERMITTED_VIOLATION);
+c_static_assert(PAL_X509_V_ERR_EXCLUDED_VIOLATION == X509_V_ERR_EXCLUDED_VIOLATION);
+c_static_assert(PAL_X509_V_ERR_SUBTREE_MINMAX == X509_V_ERR_SUBTREE_MINMAX);
+c_static_assert(PAL_X509_V_ERR_APPLICATION_VERIFICATION == X509_V_ERR_APPLICATION_VERIFICATION);
+c_static_assert(PAL_X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE == X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE);
+c_static_assert(PAL_X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX == X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX);
+c_static_assert(PAL_X509_V_ERR_UNSUPPORTED_NAME_SYNTAX == X509_V_ERR_UNSUPPORTED_NAME_SYNTAX);
+c_static_assert(PAL_X509_V_ERR_CRL_PATH_VALIDATION_ERROR == X509_V_ERR_CRL_PATH_VALIDATION_ERROR);
+c_static_assert(PAL_X509_V_ERR_SUITE_B_INVALID_VERSION == X509_V_ERR_SUITE_B_INVALID_VERSION);
+c_static_assert(PAL_X509_V_ERR_SUITE_B_INVALID_ALGORITHM == X509_V_ERR_SUITE_B_INVALID_ALGORITHM);
+c_static_assert(PAL_X509_V_ERR_SUITE_B_INVALID_CURVE == X509_V_ERR_SUITE_B_INVALID_CURVE);
+c_static_assert(PAL_X509_V_ERR_SUITE_B_INVALID_SIGNATURE_ALGORITHM == X509_V_ERR_SUITE_B_INVALID_SIGNATURE_ALGORITHM);
+c_static_assert(PAL_X509_V_ERR_SUITE_B_LOS_NOT_ALLOWED == X509_V_ERR_SUITE_B_LOS_NOT_ALLOWED);
+c_static_assert(PAL_X509_V_ERR_SUITE_B_CANNOT_SIGN_P_384_WITH_P_256 == X509_V_ERR_SUITE_B_CANNOT_SIGN_P_384_WITH_P_256);
+c_static_assert(PAL_X509_V_ERR_HOSTNAME_MISMATCH == X509_V_ERR_HOSTNAME_MISMATCH);
+c_static_assert(PAL_X509_V_ERR_EMAIL_MISMATCH == X509_V_ERR_EMAIL_MISMATCH);
+c_static_assert(PAL_X509_V_ERR_IP_ADDRESS_MISMATCH == X509_V_ERR_IP_ADDRESS_MISMATCH);
 
 EVP_PKEY* CryptoNative_GetX509EvpPublicKey(X509* x509)
 {
@@ -283,9 +302,9 @@ X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx)
     return NULL;
 }
 
-X509VerifyStatusCode CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx)
+int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx)
 {
-    return (unsigned int)X509_STORE_CTX_get_error(ctx);
+    return (int32_t)X509_STORE_CTX_get_error(ctx);
 }
 
 int32_t CryptoNative_X509StoreCtxReset(X509_STORE_CTX* ctx)
@@ -318,7 +337,7 @@ int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx)
     return X509_STORE_CTX_get_error_depth(ctx);
 }
 
-const char* CryptoNative_X509VerifyCertErrorString(X509VerifyStatusCode n)
+const char* CryptoNative_X509VerifyCertErrorString(int32_t n)
 {
     return X509_verify_cert_error_string((long)n);
 }
@@ -930,11 +949,11 @@ static time_t GetIssuanceWindowStart()
     return t;
 }
 
-X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth)
+int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth)
 {
     if (storeCtx == NULL || cachePath == NULL)
     {
-        return (X509VerifyStatusCode)-1;
+        return -1;
     }
 
     X509* subject;
@@ -942,7 +961,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
 
     if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
-        return (X509VerifyStatusCode)-2;
+        return -2;
     }
 
     X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
@@ -950,7 +969,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
 
     if (fullPath == NULL)
     {
-        return ret;
+        return (int32_t)ret;
     }
 
     BIO* bio = BIO_new_file(fullPath, "rb");
@@ -1012,7 +1031,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
         OCSP_RESPONSE_free(resp);
     }
 
-    return ret;
+    return (int32_t)ret;
 }
 
 OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
@@ -1060,12 +1079,12 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, i
     return req;
 }
 
-X509VerifyStatusCode
+int32_t
 CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath, int chainDepth)
 {
     if (storeCtx == NULL || req == NULL || resp == NULL)
     {
-        return (X509VerifyStatusCode)-1;
+        return -1;
     }
 
     X509* subject;
@@ -1073,7 +1092,7 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
 
     if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
-        return (X509VerifyStatusCode)-2;
+        return -2;
     }
 
     X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
@@ -1081,7 +1100,7 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
 
     if (certId == NULL)
     {
-        return (X509VerifyStatusCode)-3;
+        return -3;
     }
 
     ASN1_GENERALIZEDTIME* thisUpdate = NULL;
@@ -1115,7 +1134,10 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
 
                     if (bio != NULL)
                     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
                         if (i2d_OCSP_RESPONSE_bio(bio, resp))
+#pragma clang diagnostic pop
                         {
                             clearErr = 0;
                         }
@@ -1145,5 +1167,5 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
         ASN1_GENERALIZEDTIME_free(thisUpdate);
     }
 
-    return ret;
+    return (int32_t)ret;
 }

@@ -99,30 +99,28 @@ PhaseStatus Compiler::fgInline()
                                                                         &info.compMethodInfo->args);
 #endif // DEBUG
 
-    BasicBlock* block       = fgFirstBB;
-    bool        madeChanges = false;
-    noway_assert(block != nullptr);
+    noway_assert(fgFirstBB != nullptr);
 
     // Set the root inline context on all statements
     InlineContext* rootContext = m_inlineStrategy->GetRootContext();
 
-    for (; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
         }
     }
 
-    // Reset block back to start for inlining
-    block = fgFirstBB;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
 
     do
     {
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
 
 #ifdef DEBUG
@@ -212,7 +210,7 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             // Call Compiler::fgDebugCheckInlineCandidates on each node
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
@@ -520,10 +518,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         // This folding may uncover more GT_RET_EXPRs, so we loop around
         // until we've got something distinct.
         //
-        unsigned __int64 bbFlags         = 0;
-        GenTree*         inlineCandidate = tree->gtRetExprVal(&bbFlags);
-        inlineCandidate                  = comp->gtFoldExpr(inlineCandidate);
-        var_types retType                = tree->TypeGet();
+        BasicBlockFlags bbFlags         = BBF_EMPTY;
+        GenTree*        inlineCandidate = tree->gtRetExprVal(&bbFlags);
+        inlineCandidate                 = comp->gtFoldExpr(inlineCandidate);
+        var_types retType               = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -618,56 +616,8 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 #endif // FEATURE_MULTIREG_RET
 
             case SPK_EnclosingType:
-            {
-                // For enclosing type returns, we must return the call value to a temp since
-                // the return type is larger than the struct type.
-                if (!tree->IsCall())
-                {
-                    break;
-                }
-
-                GenTreeCall* call = tree->AsCall();
-
-                assert(call->gtReturnType == TYP_STRUCT);
-
-                if (call->gtReturnType != TYP_STRUCT)
-                {
-                    break;
-                }
-
-                JITDUMP("\nCall returns small struct via enclosing type, retyping. Before:\n");
-                DISPTREE(call);
-
-                // Create new struct typed temp for return value
-                const unsigned tmpNum =
-                    comp->lvaGrabTemp(true DEBUGARG("small struct return temp for rejected inline"));
-                comp->lvaSetStruct(tmpNum, retClsHnd, false);
-                GenTree* assign = comp->gtNewTempAssign(tmpNum, call);
-
-                // Modify assign tree and call return types to the primitive return type
-                call->gtReturnType = returnType;
-                call->gtType       = returnType;
-                assign->gtType     = returnType;
-
-                // Modify the temp reference in the assign as a primitive reference via GT_LCL_FLD
-                GenTree* tempAsPrimitive = assign->AsOp()->gtOp1;
-                assert(tempAsPrimitive->gtOper == GT_LCL_VAR);
-                tempAsPrimitive->gtType = returnType;
-                tempAsPrimitive->ChangeOper(GT_LCL_FLD);
-
-                // Return temp as value of call tree via comma
-                GenTree* tempAsStruct = comp->gtNewLclvNode(tmpNum, TYP_STRUCT);
-                GenTree* comma        = comp->gtNewOperNode(GT_COMMA, TYP_STRUCT, assign, tempAsStruct);
-                parent->ReplaceOperand(pTree, comma);
-
-                JITDUMP("\nAfter:\n");
-                DISPTREE(comma);
-            }
-            break;
-
             case SPK_PrimitiveType:
-                // We should have already retyped the call as a primitive type
-                // when we first imported the call
+                // No work needs to be done, the call has struct type and should keep it.
                 break;
 
             case SPK_ByReference:
@@ -779,7 +729,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
             bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
+            comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
         }
     }
@@ -787,11 +737,11 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         // If we're assigning to a ref typed local that has one definition,
         // we may be able to sharpen the type for the local.
-        GenTree* lhs = tree->gtGetOp1()->gtEffectiveVal();
+        GenTree* const effLhs = tree->gtGetOp1()->gtEffectiveVal();
 
-        if ((lhs->OperGet() == GT_LCL_VAR) && (lhs->TypeGet() == TYP_REF))
+        if ((effLhs->OperGet() == GT_LCL_VAR) && (effLhs->TypeGet() == TYP_REF))
         {
-            const unsigned lclNum = lhs->AsLclVarCommon()->GetLclNum();
+            const unsigned lclNum = effLhs->AsLclVarCommon()->GetLclNum();
             LclVarDsc*     lcl    = comp->lvaGetDesc(lclNum);
 
             if (lcl->lvSingleDef)
@@ -806,6 +756,20 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                     comp->lvaUpdateClass(lclNum, newClass, isExact);
                 }
             }
+        }
+
+        // If we created a self-assignment (say because we are sharing return spill temps)
+        // we can remove it.
+        //
+        GenTree* const lhs = tree->gtGetOp1();
+        GenTree* const rhs = tree->gtGetOp2();
+        if (lhs->OperIs(GT_LCL_VAR) && GenTree::Compare(lhs, rhs))
+        {
+            comp->gtUpdateNodeSideEffects(tree);
+            assert((tree->gtFlags & GTF_SIDE_EFFECT) == GTF_ASG);
+            JITDUMP("... removing self-assignment\n");
+            DISPTREE(tree);
+            tree->gtBashToNOP();
         }
     }
     else if (tree->OperGet() == GT_JTRUE)
@@ -915,8 +879,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
-    inlineInfo.profileScaleState      = InlineInfo::ProfileScaleState::UNDETERMINED;
-    inlineInfo.profileScaleFactor     = 0.0;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -1131,7 +1093,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     GenTreeCall* iciCall  = pInlineInfo->iciCall;
     Statement*   iciStmt  = pInlineInfo->iciStmt;
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
-    BasicBlock*  block;
 
     noway_assert(iciBlock->bbStmtList != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
@@ -1154,9 +1115,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Create a new inline context and mark the inlined statements with it
     InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
 
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
         }
@@ -1194,7 +1155,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
-            const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+            const BasicBlockFlags inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
@@ -1242,7 +1203,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     // Update block flags
     {
-        const unsigned __int64 originalFlags = topBlock->bbFlags;
+        const BasicBlockFlags originalFlags = topBlock->bbFlags;
         noway_assert((originalFlags & BBF_SPLIT_NONEXIST) == 0);
         topBlock->bbFlags &= ~(BBF_SPLIT_LOST);
         bottomBlock->bbFlags |= originalFlags & BBF_SPLIT_GAINED;
@@ -1308,11 +1269,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // Set the try and handler index and fix the jump types of inlinee's blocks.
     //
-
-    bool inheritWeight;
-    inheritWeight = true; // The firstBB does inherit the weight from the iciBlock
-
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
         noway_assert(!block->hasTryIndex());
         noway_assert(!block->hasHndIndex());
@@ -1333,46 +1290,19 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         if (block->bbJumpKind == BBJ_RETURN)
         {
-            inheritWeight = true; // A return block does inherit the weight from the iciBlock
             noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
             if (block->bbNext)
             {
+                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                        bottomBlock->bbNum);
                 block->bbJumpKind = BBJ_ALWAYS;
                 block->bbJumpDest = bottomBlock;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
-                           bottomBlock->bbNum);
-                }
-#endif // DEBUG
             }
             else
             {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                }
-#endif // DEBUG
+                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
                 block->bbJumpKind = BBJ_NONE;
             }
-        }
-
-        // Update profile weight for callee blocks, if we didn't do it already.
-        if (pInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
-        {
-            continue;
-        }
-
-        if (inheritWeight)
-        {
-            block->inheritWeight(iciBlock);
-            inheritWeight = false;
-        }
-        else
-        {
-            block->modifyBBWeight(iciBlock->bbWeight / 2);
         }
     }
 
@@ -1410,7 +1340,6 @@ _Done:
     compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
-    compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
@@ -1426,7 +1355,30 @@ _Done:
     // Update unmanaged call details
     info.compUnmanagedCallCountWithGCTransition += InlineeCompiler->info.compUnmanagedCallCountWithGCTransition;
 
-// Update optMethodFlags
+    // Update stats for inlinee PGO
+    //
+    if (InlineeCompiler->fgPgoSchema != nullptr)
+    {
+        fgPgoInlineePgo++;
+    }
+    else if (InlineeCompiler->fgPgoFailReason != nullptr)
+    {
+        // Single block inlinees may not have probes
+        // when we've ensabled minimal profiling (which
+        // is now the default).
+        //
+        if (InlineeCompiler->fgBBcount == 1)
+        {
+            fgPgoInlineeNoPgoSingleBlock++;
+        }
+        else
+        {
+            fgPgoInlineeNoPgo++;
+        }
+    }
+
+    // Update optMethodFlags
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;
@@ -1441,6 +1393,15 @@ _Done:
                 InlineeCompiler->optMethodFlags, optMethodFlags);
     }
 #endif
+
+    // If an inlinee needs GS cookie we need to make sure that the cookie will not be allocated at zero stack offset.
+    // Note that if the root method needs GS cookie then this has already been taken care of.
+    if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
+    {
+        setNeedsGSSecurityCookie();
+        const unsigned dummy   = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+        lvaTable[dummy].lvType = TYP_INT;
+    }
 
     // If there is non-NULL return, replace the GT_CALL with its return value expression,
     // so later it will be picked up by the GT_RET_EXPR node.
@@ -1566,9 +1527,9 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             GenTree*          argNode        = inlArgInfo[argNum].argNode;
             const bool        argHasPutArg   = argNode->OperIs(GT_PUTARG_TYPE);
 
-            unsigned __int64 bbFlags = 0;
-            argNode                  = argNode->gtSkipPutArgType();
-            argNode                  = argNode->gtRetExprVal(&bbFlags);
+            BasicBlockFlags bbFlags = BBF_EMPTY;
+            argNode                 = argNode->gtSkipPutArgType();
+            argNode                 = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
             {

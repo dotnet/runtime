@@ -373,7 +373,7 @@ namespace System.Net
             DontLogParameter = 0x8
         }
 
-        internal class PipelineEntry
+        internal sealed class PipelineEntry
         {
             internal PipelineEntry(string command)
             {
@@ -678,7 +678,7 @@ namespace System.Net
     /// <summary>
     /// Contains the parsed status line from the server
     /// </summary>
-    internal class ResponseDescription
+    internal sealed class ResponseDescription
     {
         internal const int NoStatus = -1;
         internal bool Multiline;
@@ -699,7 +699,7 @@ namespace System.Net
     /// <summary>
     /// State information that is used during ReceiveCommandResponse()'s async operations
     /// </summary>
-    internal class ReceiveState
+    internal sealed class ReceiveState
     {
         private const int bufferSize = 1024;
 

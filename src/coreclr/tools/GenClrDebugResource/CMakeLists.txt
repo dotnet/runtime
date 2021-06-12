@@ -6,4 +6,4 @@ target_link_libraries(GenClrDebugResource
     ${STATIC_MT_VCRT_LIB}
 )
 
-install(TARGETS GenClrDebugResource EXPORT dactabletools DESTINATION dactabletools)
+install(TARGETS GenClrDebugResource EXPORT dactabletools DESTINATION dactabletools COMPONENT crosscomponents)

@@ -81,6 +81,8 @@ internal partial class VectorTest
         if (VectorSubTest<sbyte>.VectorSub(3, -2, (sbyte)(3 + 2)) != Pass) returnVal = Fail;
         if (VectorSubTest<uint>.VectorSub(0x42000000u, 0x41000000u, 0x42000000u - 0x41000000u) != Pass) returnVal = Fail;
         if (VectorSubTest<ulong>.VectorSub(0x42000000ul, 0x41000000ul, 0x42000000ul - 0x41000000ul) != Pass) returnVal = Fail;
+        if (VectorSubTest<nint>.VectorSub(3, 2, (nint)(3 - 2)) != Pass) returnVal = Fail;
+        if (VectorSubTest<nuint>.VectorSub(0x42000000u, 0x41000000u, 0x42000000u - 0x41000000u) != Pass) returnVal = Fail;
         return returnVal;
     }
 }

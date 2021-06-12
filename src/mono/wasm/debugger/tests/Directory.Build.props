@@ -5,7 +5,7 @@
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration>Release</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>219</NoWarn>

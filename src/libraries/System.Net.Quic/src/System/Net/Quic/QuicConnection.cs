@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Quic.Implementations;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,7 +54,7 @@ namespace System.Net.Quic
         /// </summary>
         public bool Connected => _provider.Connected;
 
-        public IPEndPoint LocalEndPoint => _provider.LocalEndPoint;
+        public IPEndPoint? LocalEndPoint => _provider.LocalEndPoint;
 
         public EndPoint RemoteEndPoint => _provider.RemoteEndPoint;
 
@@ -67,6 +66,18 @@ namespace System.Net.Quic
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public ValueTask ConnectAsync(CancellationToken cancellationToken = default) => _provider.ConnectAsync(cancellationToken);
+
+        /// <summary>
+        /// Waits for available unidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
+        /// </summary>
+        /// <returns></returns>
+        public ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableUnidirectionalStreamsAsync(cancellationToken);
+
+        /// <summary>
+        /// Waits for available bidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
+        /// </summary>
+        /// <returns></returns>
+        public ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
 
         /// <summary>
         /// Create an outbound unidirectional stream.
@@ -96,11 +107,11 @@ namespace System.Net.Quic
         /// <summary>
         /// Gets the maximum number of bidirectional streams that can be made to the peer.
         /// </summary>
-        public long GetRemoteAvailableUnidirectionalStreamCount() => _provider.GetRemoteAvailableUnidirectionalStreamCount();
+        public int GetRemoteAvailableUnidirectionalStreamCount() => _provider.GetRemoteAvailableUnidirectionalStreamCount();
 
         /// <summary>
         /// Gets the maximum number of unidirectional streams that can be made to the peer.
         /// </summary>
-        public long GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
+        public int GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
     }
 }

@@ -243,9 +243,9 @@ namespace System.Runtime.InteropServices
                 // Save last error from P/Invoke in case the implementation of ReleaseHandle
                 // trashes it (important because this ReleaseHandle could occur implicitly
                 // as part of unmarshaling another P/Invoke).
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 ReleaseHandle();
-                Marshal.SetLastWin32Error(lastError);
+                Marshal.SetLastPInvokeError(lastError);
             }
         }
     }

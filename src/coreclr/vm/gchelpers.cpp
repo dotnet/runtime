@@ -342,13 +342,11 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 #endif // FEATURE_EVENT_TRACE
 }
 
-inline SIZE_T MaxArrayLength(SIZE_T componentSize)
+inline SIZE_T MaxArrayLength()
 {
-    // Impose limits on maximum array length in each dimension to allow efficient
-    // implementation of advanced range check elimination in future. We have to allow
-    // higher limit for array of bytes (or one byte structs) for backward compatibility.
-    // Keep in sync with Array.MaxArrayLength in BCL.
-    return (componentSize == 1) ? 0X7FFFFFC7 : 0X7FEFFFFF;
+    // Impose limits on maximum array length to prevent corner case integer overflow bugs
+    // Keep in sync with Array.MaxLength in BCL.
+    return 0X7FFFFFC7;
 }
 
 OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS flags)
@@ -388,11 +386,11 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (cElements < 0)
         COMPlusThrow(kOverflowException);
 
-    SIZE_T componentSize = pArrayMT->GetComponentSize();
-    if ((SIZE_T)cElements > MaxArrayLength(componentSize))
+    if ((SIZE_T)cElements > MaxArrayLength())
         ThrowOutOfMemoryDimensionsExceeded();
 
     // Allocate the space from the GC heap
+    SIZE_T componentSize = pArrayMT->GetComponentSize();
 #ifdef TARGET_64BIT
     // POSITIVE_INT32 * UINT16 + SMALL_CONST
     // this cannot overflow on 64bit
@@ -568,7 +566,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     // Calculate the total number of elements in the array
     UINT32 cElements;
-    SIZE_T componentSize = pArrayMT->GetComponentSize();
     bool maxArrayDimensionLengthOverflow = false;
     bool providedLowerBounds = false;
 
@@ -599,7 +596,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             int length = pArgs[i];
             if (length < 0)
                 COMPlusThrow(kOverflowException);
-            if ((SIZE_T)length > MaxArrayLength(componentSize))
+            if ((SIZE_T)length > MaxArrayLength())
                 maxArrayDimensionLengthOverflow = true;
             if ((length > 0) && (lowerBound + (length - 1) < lowerBound))
                 COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_ArrayLBAndLength"));
@@ -615,7 +612,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         int length = pArgs[0];
         if (length < 0)
             COMPlusThrow(kOverflowException);
-        if ((SIZE_T)length > MaxArrayLength(componentSize))
+        if ((SIZE_T)length > MaxArrayLength())
             maxArrayDimensionLengthOverflow = true;
         cElements = length;
     }
@@ -625,6 +622,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         ThrowOutOfMemoryDimensionsExceeded();
 
     // Allocate the space from the GC heap
+    SIZE_T componentSize = pArrayMT->GetComponentSize();
 #ifdef TARGET_64BIT
     // POSITIVE_INT32 * UINT16 + SMALL_CONST
     // this cannot overflow on 64bit

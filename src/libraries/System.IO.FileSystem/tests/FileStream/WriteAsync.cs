@@ -227,7 +227,7 @@ namespace System.IO.Tests
                         // The side effect of this is that the Position of FileStream is not updated until
                         // the lock is released by a previous operation.
                         // So now all WriteAsync calls should be awaited before starting another async file operation.
-                        if (PlatformDetection.IsLegacyFileStreamEnabled)
+                        if (PlatformDetection.IsNet5CompatFileStreamEnabled)
                         {
                             Assert.Equal((i + 1) * writeSize, fs.Position);
                         }

@@ -104,6 +104,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         public PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
@@ -159,11 +160,6 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
         // WinHttp on Win7 does not support IDNA
         protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
-    }
-
-    public sealed class PlatformHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
-    {
-        public PlatformHandler_HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class PlatformHandlerTest_Cookies : HttpClientHandlerTest_Cookies
@@ -265,6 +261,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http2_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;
@@ -338,13 +335,6 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_IdnaProtocol_Http2_Tests(ITestOutputHelper output) : base(output) { }
         // WinHttp on Win7 does not support IDNA
         protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
-    }
-
-    public sealed class PlatformHandler_HttpRetryProtocol_Http2_Tests : HttpRetryProtocolTests
-    {
-        protected override Version UseVersion => HttpVersion20.Value;
-
-        public PlatformHandler_HttpRetryProtocol_Http2_Tests(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class PlatformHandlerTest_Cookies_Http11_Http2 : HttpClientHandlerTest_Cookies_Http11

@@ -33,13 +33,9 @@ class CeeFileGenWriter : public CCeeGen
 
     LPWSTR m_outputFileName;
     LPWSTR m_resourceFileName;
-    LPWSTR m_libraryName;
-    GUID   m_libraryGuid;
     bool   m_dllSwitch;
 
     ULONG m_iatOffset;
-    DWORD m_dwMacroDefinitionRVA;
-    DWORD m_dwMacroDefinitionSize;
 
     DWORD m_dwManifestRVA;
     DWORD m_dwManifestSize;
@@ -69,15 +65,6 @@ class CeeFileGenWriter : public CCeeGen
     CeeSection *m_iDataSectionIAT;
     int m_iDataOffsetIAT;
     char *m_iDataIAT;
-
-#ifdef EMIT_FIXUPS
-
-    CeeSection * m_sectionFixups;
-    IMAGE_DEBUG_DIRECTORY * m_pDebugDir;
-    bool m_fFixupsUpdated;
-    bool m_fEmitFixups;
-
-#endif
 
     HRESULT allocateIAT();
 public:
@@ -116,9 +103,6 @@ public:
     HRESULT setResourceFileName(__in LPWSTR resourceFileName);
     LPWSTR getResourceFileName();
 
-    HRESULT setLibraryName(__in LPWSTR libraryName);
-    LPWSTR getLibraryName();
-
     HRESULT setDirectoryEntry(CeeSection &section, ULONG entry, ULONG size, ULONG offset=0);
     HRESULT computeSectionOffset(CeeSection &section, __in char *ptr,
                                  unsigned *offset);
@@ -128,21 +112,12 @@ public:
 
     HRESULT getFileTimeStamp(DWORD *pTimeStamp);
 
-//<TODO>@FUTURE: this entry point is only here so that down level clients of this interface
-// can import the method by name in the exports table using the original name.
-// These things really ought to be exported through a v-table so there is no
-// name mangling issues.  It would make the export table much smaller as well.</TODO>
-    HRESULT emitLibraryName(IMetaDataEmit *emitter);
     HRESULT setLibraryGuid(__in LPWSTR libraryGuid);
 
     HRESULT setDllSwitch(bool dllSwitch);
     bool getDllSwitch();
-    HRESULT setObjSwitch(bool objSwitch);
-    bool getObjSwitch();
-    HRESULT EmitMacroDefinitions(void *pData, DWORD cData);
     HRESULT setManifestEntry(ULONG size, ULONG offset);
     HRESULT setStrongNameEntry(ULONG size, ULONG offset);
-    HRESULT setEnCRvaBase(ULONG dataBase, ULONG rdataBase);
     HRESULT setVTableEntry(ULONG size, ULONG offset);
     HRESULT setVTableEntry64(ULONG size, void* ptr);
 
@@ -157,20 +132,6 @@ protected:
 
     HRESULT MapTokens(CeeGenTokenMapper *pMapper, IMetaDataImport *pImport);
     HRESULT MapTokensForMethod(CeeGenTokenMapper *pMapper,BYTE *pCode, LPCWSTR szMethodName);
-
-#ifdef EMIT_FIXUPS
-
-    HRESULT InitFixupSection();
-    HRESULT UpdateFixups();
-    HRESULT setEmitFixups();
-
-#ifdef TEST_EMIT_FIXUPS
-    HRESULT TestEmitFixups();
-#endif
-
-public:
-    HRESULT addFixup(CeeSection& secFixups, unsigned offset, CeeSectionRelocType reloc, CeeSection * relativeTo = NULL, CeeSectionRelocExtra *extra = 0);
-#endif
 };
 
 
@@ -188,29 +149,12 @@ inline LPWSTR CeeFileGenWriter::getResourceFileName() {
 }
 
 inline HRESULT CeeFileGenWriter::setDllSwitch(bool dllSwitch) {
-    if((m_dllSwitch = dllSwitch))
-        m_objSwitch = FALSE;
-
+    m_dllSwitch = dllSwitch;
     return S_OK;
 }
 
 inline bool CeeFileGenWriter::getDllSwitch() {
     return m_dllSwitch;
-}
-
-inline HRESULT CeeFileGenWriter::setObjSwitch(bool objSwitch) {
-    if((m_objSwitch = objSwitch))
-        m_dllSwitch = FALSE;
-
-    return S_OK;
-}
-
-inline bool CeeFileGenWriter::getObjSwitch() {
-    return m_objSwitch;
-}
-
-inline LPWSTR CeeFileGenWriter::getLibraryName() {
-    return m_libraryName;
 }
 
 inline mdMethodDef CeeFileGenWriter::getEntryPoint() {

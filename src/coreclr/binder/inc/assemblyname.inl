@@ -14,7 +14,7 @@
 #ifndef __BINDER__ASSEMBLY_NAME_INL__
 #define __BINDER__ASSEMBLY_NAME_INL__
 
-SString &AssemblyName::GetSimpleName()
+const SString &AssemblyName::GetSimpleName()
 {
     return m_simpleName;
 }
@@ -123,11 +123,6 @@ void AssemblyName::SetIsDefinition(BOOL fIsDefinition)
     {
         m_dwNameFlags &= ~NAME_FLAG_DEFINITION;
     }
-}
-
-void AssemblyName::SetHave(DWORD dwIdentityFlags)
-{
-    AssemblyIdentity::SetHave(dwIdentityFlags);
 }
 
 #endif

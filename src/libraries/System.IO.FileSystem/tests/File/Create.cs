@@ -150,7 +150,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Browser platform volume does not limit segments
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser platform volume does not limit segments")]
         public void LongPathSegment()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -188,6 +188,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void CaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

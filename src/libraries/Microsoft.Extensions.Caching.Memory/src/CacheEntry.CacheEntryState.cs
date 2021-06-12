@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
-    internal partial class CacheEntry
+    internal sealed partial class CacheEntry
     {
         // this type exists just to reduce CacheEntry size by replacing many enum & boolean fields with one of a size of Int32
         private struct CacheEntryState

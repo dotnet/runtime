@@ -4,12 +4,12 @@
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
-    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Xml.XPath;
     using System.Xml.Xsl.XsltOld.Debugger;
 
-    internal class DbgData
+    internal sealed class DbgData
     {
         private VariableAction[] _variables;
         public XPathNavigator StyleSheet { get; }
@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
         public static DbgData Empty { get { return s_nullDbgData; } }
     }
 
-    internal class DbgCompiler : Compiler
+    internal sealed class DbgCompiler : Compiler
     {
         private readonly IXsltDebugger _debugger;
 
@@ -50,30 +50,30 @@ namespace System.Xml.Xsl.XsltOld
         //          Duplicated globals from different stilesheets are replaced (by import presidence)
         // Locals:  Visible only in scope and after it was defined.
         //          No duplicates posible.
-        private readonly ArrayList _globalVars = new ArrayList();
-        private readonly ArrayList _localVars = new ArrayList();
+        private readonly List<VariableAction> _globalVars = new List<VariableAction>();
+        private readonly List<VariableAction> _localVars = new List<VariableAction>();
         private VariableAction[]? _globalVarsCache, _localVarsCache;
 
-        public virtual VariableAction[] GlobalVariables
+        public VariableAction[] GlobalVariables
         {
             get
             {
                 Debug.Assert(this.Debugger != null);
                 if (_globalVarsCache == null)
                 {
-                    _globalVarsCache = (VariableAction[])_globalVars.ToArray(typeof(VariableAction));
+                    _globalVarsCache = _globalVars.ToArray();
                 }
                 return _globalVarsCache;
             }
         }
-        public virtual VariableAction[] LocalVariables
+        public VariableAction[] LocalVariables
         {
             get
             {
                 Debug.Assert(this.Debugger != null);
                 if (_localVarsCache == null)
                 {
-                    _localVarsCache = (VariableAction[])_localVars.ToArray(typeof(VariableAction));
+                    _localVarsCache = _localVars.ToArray();
                 }
                 return _localVarsCache;
             }

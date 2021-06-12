@@ -4,6 +4,7 @@
     <TargetFrameworks>netstandard2.1;netstandard2.0;net461</TargetFrameworks>
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <PackageDescription>Hosting and startup abstractions for applications.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

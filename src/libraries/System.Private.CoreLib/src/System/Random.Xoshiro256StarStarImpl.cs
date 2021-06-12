@@ -112,7 +112,7 @@ namespace System
 
             public override int Next(int minValue, int maxValue)
             {
-                ulong exclusiveRange = (ulong)(maxValue - minValue);
+                ulong exclusiveRange = (ulong)((long)maxValue - minValue);
 
                 if (exclusiveRange > 1)
                 {

@@ -89,6 +89,14 @@
 #include "mono/metadata/debug-mono-ppdb.h"
 #include "mono/metadata/custom-attrs-internals.h"
 
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
+
+#ifdef HOST_WIN32
+#include <windows.h>
+#endif
+
 /*
  * On iOS we can't use System.Environment.Exit () as it will do the wrong
  * shutdown sequence.
@@ -300,6 +308,9 @@ typedef struct {
 #define CHECK_PROTOCOL_VERSION(major,minor) \
 	(protocol_version_set && (major_version > (major) || (major_version == (major) && minor_version >= (minor))))
 
+#define CHECK_ICORDBG(status) \
+	(protocol_version_set && using_icordbg == status)
+
 /*
  * Globals
  */
@@ -373,6 +384,9 @@ static MonoCoopMutex debugger_thread_exited_mutex;
 
 /* The protocol version of the client */
 static int major_version, minor_version;
+
+/* If the debugger is using icordbg interface */
+static gboolean using_icordbg;
 
 /* Whenever the variables above are set by the client */
 static gboolean protocol_version_set;
@@ -507,7 +521,10 @@ parse_address (char *address, char **host, int *port)
 	memcpy (*host, address, len);
 	(*host) [len] = '\0';
 
-	*port = atoi (pos + 1);
+	if (!strcmp(pos + 1, "pid_based"))
+		*port = -1;
+	else
+		*port = atoi (pos + 1);
 
 	return 0;
 }
@@ -719,7 +736,6 @@ debugger_agent_init (void)
 	mono_coop_cond_init (&debugger_thread_exited_cond);
 
 	MonoProfilerHandle prof = mono_profiler_create (NULL);
-	mono_profiler_set_runtime_shutdown_end_callback (prof, runtime_shutdown);
 	mono_profiler_set_runtime_initialized_callback (prof, runtime_initialized);
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_domain_unloading_callback (prof, appdomain_start_unload);
@@ -885,7 +901,7 @@ socket_transport_recv (void *buf, int len)
 	static gint64 last_keepalive;
 	gint64 msecs;
 
-	MONO_ENTER_GC_SAFE;
+	MONO_REQ_GC_SAFE_MODE;
 
 	do {
 	again:
@@ -905,13 +921,13 @@ socket_transport_recv (void *buf, int len)
 				}
 			}
 			if (need_keepalive) {
+				MONO_ENTER_GC_UNSAFE;
 				process_profiler_event (EVENT_KIND_KEEPALIVE, NULL);
+				MONO_EXIT_GC_UNSAFE;
 				goto again;
 			}
 		}
 	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
-
-	MONO_EXIT_GC_SAFE;
 
 	return total;
 }
@@ -935,9 +951,8 @@ set_keepalive (void)
 static int
 socket_transport_accept (int socket_fd)
 {
-	MONO_ENTER_GC_SAFE;
+	MONO_REQ_GC_SAFE_MODE;
 	conn_fd = accept (socket_fd, NULL, NULL);
-	MONO_EXIT_GC_SAFE;
 
 	if (conn_fd == -1) {
 		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d\n", socket_fd);
@@ -953,13 +968,11 @@ socket_transport_send (void *data, int len)
 {
 	int res;
 
-	MONO_ENTER_GC_SAFE;
+	MONO_REQ_GC_SAFE_MODE;
 
 	do {
 		res = send (conn_fd, (const char*)data, len, 0);
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-
-	MONO_EXIT_GC_SAFE;
 
 	if (res != len)
 		return FALSE;
@@ -981,6 +994,8 @@ socket_transport_connect (const char *address)
 	char *host;
 	int port;
 
+	MONO_REQ_GC_SAFE_MODE;
+
 	if (agent_config.address) {
 		res = parse_address (agent_config.address, &host, &port);
 		g_assert (res == 0);
@@ -989,8 +1004,16 @@ socket_transport_connect (const char *address)
 		port = 0;
 	}
 
+	if (port == -1) {
+		port = 56000 + (mono_process_current_pid () % 1000);
+	}
+
 	conn_fd = -1;
 	listen_fd = -1;
+	
+	MONO_ENTER_GC_UNSAFE;
+	mono_networking_init();
+	MONO_EXIT_GC_UNSAFE;
 
 	if (host) {
 		int hints[] = {
@@ -999,11 +1022,11 @@ socket_transport_connect (const char *address)
 			MONO_HINT_UNSPECIFIED
 		};
 
-		mono_networking_init ();
-
 		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
+			MONO_ENTER_GC_UNSAFE;
 			s = mono_get_address_info (host, port, hints[i], &result);
+			MONO_EXIT_GC_UNSAFE;
 			if (s == 0)
 				break;
 		}
@@ -1052,7 +1075,9 @@ socket_transport_connect (const char *address)
 				socklen_t sock_len;
 				int n = 1;
 
+				MONO_ENTER_GC_UNSAFE;
 				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
 				if (sfd == -1)
@@ -1072,7 +1097,9 @@ socket_transport_connect (const char *address)
 				break;
 			}
 
+			MONO_ENTER_GC_UNSAFE;
 			mono_free_address_info (result);
+			MONO_EXIT_GC_UNSAFE;
 		}
 
 		if (agent_config.defer)
@@ -1089,9 +1116,7 @@ socket_transport_connect (const char *address)
 			FD_ZERO (&readfds);
 			FD_SET (sfd, &readfds);
 
-			MONO_ENTER_GC_SAFE;
 			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
-			MONO_EXIT_GC_SAFE;
 
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
@@ -1110,32 +1135,34 @@ socket_transport_connect (const char *address)
 		uint32_t startTime = time(NULL);
 		uint32_t elapsedTime;
 		do {
-			PRINT_DEBUG_MSG (1, "Trying to connect.\n");
+			PRINT_DEBUG_MSG (1, "Trying to connect - %d.\n", port);
 			for (rp = result->entries; rp != NULL; rp = rp->next) {
 				MonoSocketAddress sockaddr;
 				socklen_t sock_len;
 
+				MONO_ENTER_GC_UNSAFE;
 				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype,
 							rp->protocol);
-				if (sfd == -1)
+				if (sfd == -1) {
+					perror("socket");
+					fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+					PRINT_DEBUG_MSG(1, "socket() failed: %s\n", strerror(errno));
 					continue;
+				}
 
-				MONO_ENTER_GC_SAFE;
 				res = connect (sfd, &sockaddr.addr, sock_len);
-				MONO_EXIT_GC_SAFE;
 
 				if (res != -1)
 					break;       /* Success */
 				
-				MONO_ENTER_GC_SAFE;
 	#ifdef HOST_WIN32
 				closesocket (sfd);
 	#else
 				close (sfd);
 	#endif
-				MONO_EXIT_GC_SAFE;
 			}
 			elapsedTime = difftime (time (NULL), startTime) * 1000;
 			if (rp == 0)
@@ -1150,10 +1177,16 @@ socket_transport_connect (const char *address)
 
 		conn_fd = sfd;
 
+		MONO_ENTER_GC_UNSAFE;
 		mono_free_address_info (result);
+		MONO_EXIT_GC_UNSAFE;
 	}
 	
-	if (!transport_handshake ())
+	gboolean handshake_ok;
+	MONO_ENTER_GC_UNSAFE;
+	handshake_ok = transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
+	if (!handshake_ok)
 		exit (1);
 }
 
@@ -1171,9 +1204,7 @@ socket_transport_close1 (void)
 #else
 	shutdown (conn_fd, SHUT_RD);
 	shutdown (listen_fd, SHUT_RDWR);
-	MONO_ENTER_GC_SAFE;
 	close (listen_fd);
-	MONO_EXIT_GC_SAFE;
 #endif
 }
 
@@ -1211,13 +1242,19 @@ socket_fd_transport_connect (const char *address)
 {
 	int res;
 
+	MONO_REQ_GC_SAFE_MODE;
+
 	res = sscanf (address, "%d", &conn_fd);
 	if (res != 1) {
 		PRINT_ERROR_MSG ("debugger-agent: socket-fd transport address is invalid: '%s'\n", address);
 		exit (1);
 	}
 
-	if (!transport_handshake ())
+	gboolean handshake_ok;
+	MONO_ENTER_GC_UNSAFE;
+	handshake_ok = transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
+	if (!handshake_ok)
 		exit (1);
 }
 
@@ -1295,37 +1332,55 @@ transport_init (void)
 void
 transport_connect (const char *address)
 {
+	MONO_ENTER_GC_SAFE;
 	transport->connect (address);
+	MONO_EXIT_GC_SAFE;
 }
 
 static void
 transport_close1 (void)
 {
+	MONO_ENTER_GC_SAFE;
 	transport->close1 ();
+	MONO_EXIT_GC_SAFE;
 }
 
 static void
 transport_close2 (void)
 {
+	MONO_ENTER_GC_SAFE;
 	transport->close2 ();
+	MONO_EXIT_GC_SAFE;
 }
 
 static int
 transport_send (void *buf, int len)
 {
-	return transport->send (buf, len);
+	int result;
+	MONO_ENTER_GC_SAFE;
+	result = transport->send (buf, len);
+	MONO_EXIT_GC_SAFE;
+	return result;
 }
 
 static int
 transport_recv (void *buf, int len)
 {
-	return transport->recv (buf, len);
+	int result;
+	MONO_ENTER_GC_SAFE;
+	result = transport->recv (buf, len);
+	MONO_EXIT_GC_SAFE;
+	return result;
 }
 
 gboolean
 mono_debugger_agent_transport_handshake (void)
 {
-	return transport_handshake ();
+	gboolean result;
+	MONO_ENTER_GC_UNSAFE;
+	result = transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 static gboolean
@@ -1335,6 +1390,8 @@ transport_handshake (void)
 	guint8 buf [128];
 	int res;
 	
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	disconnected = TRUE;
 	
 	/* Write handshake message */
@@ -1359,6 +1416,7 @@ transport_handshake (void)
 	 */
 	major_version = MAJOR_VERSION;
 	minor_version = MINOR_VERSION;
+	using_icordbg = FALSE;
 	protocol_version_set = FALSE;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
@@ -1367,6 +1425,7 @@ transport_handshake (void)
 	 * Set TCP_NODELAY on the socket so the client receives events/command
 	 * results immediately.
 	 */
+	MONO_ENTER_GC_SAFE;
 	if (conn_fd) {
 		int flag = 1;
 		int result = setsockopt (conn_fd,
@@ -1378,6 +1437,7 @@ transport_handshake (void)
 	}
 
 	set_keepalive ();
+	MONO_EXIT_GC_SAFE;
 #endif
 	
 	disconnected = FALSE;
@@ -2158,6 +2218,7 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
+		data->domain = mono_get_root_domain ();
 		return TRUE;
 	}
 }
@@ -2299,7 +2360,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 		/* not attached */
 		ji = NULL;
 	} else {
-		ji = mono_jit_info_table_find_internal (domain, MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
 	}
 
 	/* This is signal safe */
@@ -3882,33 +3943,30 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set_fast (domain, TRUE);
+	mono_domain_set_fast (domain);
 	
 	mono_loader_lock ();
 	g_hash_table_foreach (info->loaded_classes, emit_type_load, NULL);
 	mono_loader_unlock ();
 
-	mono_domain_set_fast (old_domain, TRUE);
+	mono_domain_set_fast (old_domain);
 }
 
 static void
 send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
-	GSList *tmp;
 	MonoDomain* old_domain;
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set_fast (domain, TRUE);
+	mono_domain_set_fast (domain);
 
-	mono_domain_assemblies_lock (domain);
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly* ass = (MonoAssembly *)tmp->data;
-		emit_assembly_load (ass, NULL);
-	}
-	mono_domain_assemblies_unlock (domain);
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+	for (int i = 0; i < assemblies->len; ++i)
+		emit_assembly_load ((MonoAssembly*)g_ptr_array_index (assemblies, i), NULL);
+	g_ptr_array_free (assemblies, TRUE);
 
-	mono_domain_set_fast (old_domain, TRUE);
+	mono_domain_set_fast (old_domain);
 }
 
 static void
@@ -4965,7 +5023,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		return;
 	}
 
-	if (agent_config.using_icordbg) {
+	if (CHECK_ICORDBG (TRUE)) {
 		switch (t->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -5055,7 +5113,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				buffer_add_byte (buf, m_class_get_byval_arg (obj->vtable->klass)->type);
 			}
 			buffer_add_objid (buf, obj);
-			if (agent_config.using_icordbg)
+			if (CHECK_ICORDBG (TRUE))
 				buffer_add_long (buf, (gssize) addr);
 		}
 		break;
@@ -5678,24 +5736,6 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 }
 
 static void
-set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
-{
-	int size;
-
-	if (t->byref) {
-		addr = *(gpointer*)addr;
-		g_assert (addr);
-	}
-
-	if (MONO_TYPE_IS_REFERENCE (t))
-		size = sizeof (gpointer);
-	else
-		size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
-
-	memcpy (addr, val_buf, size);
-}
-
-static void
 clear_event_request (int req_id, int etype)
 {
 	int i;
@@ -6313,15 +6353,14 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	MonoAssembly *ass;
 	gboolean type_resolve;
 	MonoType *t;
-	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
-	mono_domain_assemblies_lock (domain);
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = (MonoAssembly *)tmp->data;
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+	for (int i = 0; i < assemblies->len; ++i) {
+		ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 
 		if (ass->image) {
 			ERROR_DECL (probe_type_error);
@@ -6334,7 +6373,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 			}
 		}
 	}
-	mono_domain_assemblies_unlock (domain);
+	g_ptr_array_free (assemblies, TRUE);
 }
 
 typedef struct {
@@ -6422,8 +6461,8 @@ module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoAr
 	int32_t dmeta_len = mono_array_length_internal (dmeta);
 	gpointer dil_bytes = (gpointer)mono_array_addr_internal (dil, char, 0);
 	int32_t dil_len = mono_array_length_internal (dil);
-	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
-	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
+	gpointer dpdb_bytes G_GNUC_UNUSED = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
+	int32_t dpdb_len G_GNUC_UNUSED = !dpdb ? 0 : mono_array_length_internal (dpdb);
 	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	return is_ok (error);
 #else
@@ -6566,6 +6605,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_SET_PROTOCOL_VERSION: {
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
+		if (p < end)
+			using_icordbg = decode_byte (p, &p, end);
 		protocol_version_set = TRUE;
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
@@ -6889,11 +6930,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case MDBGPROT_CMD_VM_READ_MEMORY: {
 		guint8* memory = (guint8*) decode_long (p, &p, end);
 		int size = decode_int (p, &p, end);
+		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
-		break;
-	}
-	case MDBGPROT_CMD_VM_SET_USING_ICORDBG: {
-		agent_config.using_icordbg = TRUE;
 		break;
 	}
 	default:
@@ -7100,7 +7138,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_ASSEMBLY_LOAD:
 				/* Emit load events for currently loaded assemblies */
-				mono_domain_foreach (send_assemblies_for_domain, NULL);
+				send_assemblies_for_domain (mono_get_root_domain (), NULL);
 				break;
 			case EVENT_KIND_THREAD_START:
 				/* Emit start events for currently started threads */
@@ -7108,7 +7146,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_TYPE_LOAD:
 				/* Emit type load events for currently loaded types */
-				mono_domain_foreach (send_types_for_domain, NULL);
+				send_types_for_domain (mono_get_root_domain (), NULL);
 				break;
 			default:
 				break;
@@ -7175,24 +7213,17 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_APPDOMAIN_GET_ASSEMBLIES: {
-		GSList *tmp;
-		MonoAssembly *ass;
-		int count;
-
 		domain = decode_domainid (p, &p, end, NULL, &err);
 		if (err != ERR_NONE)
 			return err;
-		mono_domain_assemblies_lock (domain);
-		count = 0;
-		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			count ++;
-		}
-		buffer_add_int (buf, count);
-		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			ass = (MonoAssembly *)tmp->data;
+
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		buffer_add_int (buf, assemblies->len);
+		for (int i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 			buffer_add_assemblyid (buf, domain, ass);
 		}
-		mono_domain_assemblies_unlock (domain);
+		g_ptr_array_free (assemblies, TRUE);
 		break;
 	}
 	case CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY: {
@@ -7359,13 +7390,12 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		gboolean ignorecase = decode_byte (p, &p, end);
 		MonoTypeNameParse info;
 		MonoType *t;
-		gboolean type_resolve, res;
+		gboolean type_resolve;
 		MonoDomain *d = mono_domain_get ();
 		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 		/* This is needed to be able to find referenced assemblies */
-		res = mono_domain_set_fast (domain, FALSE);
-		g_assert (res);
+		mono_domain_set_fast (domain);
 
 		if (!mono_reflection_parse_type_checked (s, &info, error)) {
 			mono_error_cleanup (error);
@@ -7374,7 +7404,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (info.assembly.name) {
 				mono_reflection_free_type_info (&info);
 				g_free (s);
-				mono_domain_set_fast (d, TRUE);
+				mono_domain_set_fast (d);
 				char* error_msg =  g_strdup_printf ("Unexpected assembly-qualified type %s was provided", original_s);
 				add_error_string (buf, error_msg);
 				g_free (error_msg);
@@ -7386,7 +7416,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				mono_error_cleanup (error); /* FIXME don't swallow the error */
 				mono_reflection_free_type_info (&info);
 				g_free (s);
-				mono_domain_set_fast (d, TRUE);
+				mono_domain_set_fast (d);
 				char* error_msg =  g_strdup_printf ("Invalid type name %s", original_s);
 				add_error_string (buf, error_msg);
 				g_free (error_msg);
@@ -7398,7 +7428,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		mono_reflection_free_type_info (&info);
 		g_free (s);
 		g_free (original_s);
-		mono_domain_set_fast (d, TRUE);
+		mono_domain_set_fast (d);
 
 		break;
 	}
@@ -7505,14 +7535,19 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS: {
-        MonoImage* image = ass->image;
-        if (ass->dynamic) {
-            return ERR_NOT_IMPLEMENTED;
-        }
-		buffer_add_long (buf, (guint64)(gsize)image->raw_data);
-        buffer_add_int (buf, image->raw_data_len);
+		MonoImage* image = ass->image;
+		if (ass->dynamic) {
+		    return ERR_NOT_IMPLEMENTED;
+		}
+
+		// Mdbg uses arithmetics with this pointer and RVA to get information using readmemory, 
+		// but it doesn't work on mono, it should call mono_cli_rva_image_map to get the right offset and don't use pure RVA.
+		// To run the tests I changed mdbg but maybe in future we may need to find another solution
+		// PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS - [%p] - %d\n", module_handle, image->raw_data_len);
+		buffer_add_long (buf, (gssize)image->raw_data);
+		buffer_add_int (buf, image->raw_data_len);
         break;
-    }
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7625,6 +7660,70 @@ collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
 	}
 }
 
+static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomain* domain, MonoInternalThread* thread, Buffer* buf)
+{
+	MonoStringHandle string_handle = MONO_HANDLE_NEW(MonoString, NULL); // FIXME? Not always needed.
+	ERROR_DECL(error);
+	guint8* val;
+	MonoVTable* vtable;
+	MonoClass* k;
+	guint32 special_static_type;
+	gboolean found;
+
+	if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		return -1;
+
+	special_static_type = mono_class_field_get_special_static_type(f);
+	if (special_static_type != SPECIAL_STATIC_NONE) {
+		if (!(thread && special_static_type == SPECIAL_STATIC_THREAD))
+			return -1;
+	}
+
+	/* Check that the field belongs to the object */
+	found = FALSE;
+	for (k = klass; k; k = m_class_get_parent(k)) {
+		if (k == f->parent) {
+			found = TRUE;
+			break;
+		}
+	}
+	if (!found)
+		return -1;
+
+	vtable = mono_class_vtable_checked(f->parent, error);
+	if (!is_ok(error))
+		return -1;
+
+	if (CHECK_ICORDBG (TRUE))
+	{
+		void *src;
+		if (f->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
+			return -1;
+		}
+
+		if (f->offset == -1) {
+			/* Special static */
+			gpointer addr = mono_special_static_field_get_offset (f, error);
+			mono_error_assert_ok (error);
+			src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
+		} else {
+			src = (char*)mono_vtable_get_static_field_data (vtable) + f->offset;
+		}
+		buffer_add_value(buf, f->type, src, domain);
+	}
+	else
+	{
+		val = (guint8*)g_malloc(mono_class_instance_size(mono_class_from_mono_type_internal(f->type)));
+		mono_field_static_get_value_for_thread(thread ? thread : mono_thread_internal_current(), vtable, f, val, string_handle, error);
+		if (!is_ok(error))
+			return -1;
+
+		buffer_add_value(buf, f->type, val, domain);
+		g_free(val);
+	}
+	return 1;
+}
+
 static ErrorCode
 type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7638,7 +7737,6 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	int nnested;
 	ErrorCode err;
 	char *name;
-	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
 	switch (command) {
 	case CMD_TYPE_GET_INFO: {
@@ -7846,17 +7944,25 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			goto exit;
 		break;
 	}
+	case MDBGPROT_CMD_TYPE_GET_VALUES_ICORDBG: {
+		MonoClass *dummy_class;
+		int field_token =  decode_int (p, &p, end);
+		MonoClassField *f = mono_field_from_token_checked (m_class_get_image (klass), field_token, &dummy_class, NULL, error);
+		PRINT_DEBUG_MSG (1, "Getting value of field %s\n", f->name);
+		if (f) {
+			if (get_static_field_value(f, klass, domain, NULL, buf) == -1)
+				goto invalid_fieldid;
+		}
+		else
+			goto invalid_fieldid;
+		break;
+	}
 	case CMD_TYPE_GET_VALUES:
 	case CMD_TYPE_GET_VALUES_2: {
-		guint8 *val;
 		MonoClassField *f;
-		MonoVTable *vtable;
-		MonoClass *k;
 		int len, i;
-		gboolean found;
 		MonoThread *thread_obj;
 		MonoInternalThread *thread = NULL;
-		guint32 special_static_type;
 
 		if (command == CMD_TYPE_GET_VALUES_2) {
 			int objid = decode_objid (p, &p, end);
@@ -7873,36 +7979,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			f = decode_fieldid (p, &p, end, NULL, &err);
 			if (err != ERR_NONE)
 				goto exit;
-
-			if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			if (get_static_field_value(f, klass, domain, thread, buf) == -1)
 				goto invalid_fieldid;
-
-			special_static_type = mono_class_field_get_special_static_type (f);
-			if (special_static_type != SPECIAL_STATIC_NONE) {
-				if (!(thread && special_static_type == SPECIAL_STATIC_THREAD))
-					goto invalid_fieldid;
-			}
-
-			/* Check that the field belongs to the object */
-			found = FALSE;
-			for (k = klass; k; k = m_class_get_parent (k)) {
-				if (k == f->parent) {
-					found = TRUE;
-					break;
-				}
-			}
-			if (!found)
-				goto invalid_fieldid;
-
-			vtable = mono_class_vtable_checked (f->parent, error);
-			goto_if_nok (error, invalid_fieldid);
-
-			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
-			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val, string_handle, error);
-			goto_if_nok (error, invalid_fieldid);
-
-			buffer_add_value (buf, f->type, val, domain);
-			g_free (val);
 		}
 		break;
 	}
@@ -8146,11 +8224,11 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set_fast (domain, TRUE);
+	mono_domain_set_fast (domain);
 
 	err = type_commands_internal (command, klass, domain, p, end, buf);
 
-	mono_domain_set_fast (old_domain, TRUE);
+	mono_domain_set_fast (old_domain);
 
 	return err;
 }
@@ -8165,6 +8243,9 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	case CMD_METHOD_GET_NAME: {
 		buffer_add_string (buf, method->name);
 		break;			
+	}
+	case MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN: {
+		buffer_add_int (buf, m_class_get_type_token (method->klass));
 	}
 	case CMD_METHOD_GET_DECLARING_TYPE: {
 		buffer_add_typeid (buf, domain, method->klass);
@@ -8280,7 +8361,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			return ERR_INVALID_ARGUMENT;
 		}
 
-		locals = mono_debug_lookup_locals (method);
+		locals = mono_debug_lookup_locals (method, FALSE);
 		if (!locals) {
 			if (CHECK_PROTOCOL_VERSION (2, 43)) {
 				/* Scopes */
@@ -8621,11 +8702,11 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set_fast (domain, TRUE);
+	mono_domain_set_fast (domain);
 
 	err = method_commands_internal (command, method, domain, p, end, buf);
 
-	mono_domain_set_fast (old_domain, TRUE);
+	mono_domain_set_fast (old_domain);
 
 	return err;
 }
@@ -8655,6 +8736,55 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, len);
 			buffer_add_data (buf, (guint8*)s, len);
 			g_free (s);
+		}
+		break;
+	}
+	case MDBGPROT_CMD_THREAD_SET_CONTEXT: {
+		DebuggerTlsData* tls;
+		while (!is_suspended()) {
+			if (suspend_count)
+				wait_for_suspend();
+		}
+		int64_t sp_received = m_dbgprot_decode_long(p, &p, end);
+
+		mono_loader_lock();
+		tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread);
+		mono_loader_unlock();
+		if (tls == NULL)
+			return ERR_UNLOADED;
+
+		compute_frame_info(thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
+
+		for (int i = 0; i < tls->frame_count; i++)
+		{
+			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%lld] - [%lld]\n", i, (uint64_t) MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx), sp_received);
+			if (sp_received == (uint64_t)MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx)) {
+				buffer_add_int(buf, i);
+				break;
+			}
+		}
+		break;
+	}
+	case MDBGPROT_CMD_THREAD_GET_CONTEXT: {
+		DebuggerTlsData *tls;
+		int start_frame;
+		while (!is_suspended ()) {
+			if (suspend_count)
+				wait_for_suspend ();
+		}
+		start_frame = decode_int (p, &p, end);
+
+		mono_loader_lock ();
+		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
+		mono_loader_unlock ();
+		if (tls == NULL)
+			return ERR_UNLOADED;
+
+		compute_frame_info (thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
+
+		if (start_frame < tls->frame_count)
+		{
+			buffer_add_long(buf, (uint64_t)MONO_CONTEXT_GET_SP (&tls->frames [start_frame]->ctx));
 		}
 		break;
 	}
@@ -8914,6 +9044,16 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return ERR_ABSENT_INFORMATION;
 
 	switch (command) {
+	case MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENTS: {
+		int i = 0;
+		buffer_add_int(buf, sig->hasthis ? sig->param_count + 1 : sig->param_count);
+		if (sig->hasthis)
+			cmd_stack_frame_get_this (frame, sig, buf, jit);
+		for (i = 0 ; i < sig->param_count; i++) {
+			cmd_stack_frame_get_parameter (frame, sig, i, buf, jit);
+		}
+		break;
+	}
 	case CMD_STACK_FRAME_GET_ARGUMENT: {
 		pos = decode_int (p, &p, end);
 		if (sig->hasthis) {
@@ -8923,7 +9063,6 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				pos--;
 		}
 		len = 1;		
-		header = mono_method_get_header_checked (frame->actual_method, error);
 		cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
 		break;
 	}
@@ -8941,7 +9080,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			} else {
 				MonoDebugLocalsInfo *locals;
 
-				locals = mono_debug_lookup_locals (frame->de.method);
+				locals = mono_debug_lookup_locals (frame->de.method, TRUE);
 				if (locals) {
 					g_assert (pos < locals->num_locals);
 					pos = locals->locals [pos].index;
@@ -8995,7 +9134,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			} else {
 				MonoDebugLocalsInfo *locals;
 
-				locals = mono_debug_lookup_locals (frame->de.method);
+				locals = mono_debug_lookup_locals (frame->de.method, TRUE);
 				if (locals) {
 					g_assert (pos < locals->num_locals);
 					pos = locals->locals [pos].index;
@@ -9022,7 +9161,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
 				else
 					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
-				set_interp_var (t, addr, val_buf);
+				err = mono_de_set_interp_var (t, addr, val_buf);
+				if (err != ERR_NONE)
+					return err;
 			} else {
 				set_var (t, var, &frame->ctx, frame->de.domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
 			}
@@ -9053,7 +9194,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			guint8 *addr;
 
 			addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
-			set_interp_var (m_class_get_this_arg (frame->actual_method->klass), addr, val_buf);
+			err = mono_de_set_interp_var (m_class_get_this_arg (frame->actual_method->klass), addr, val_buf);
+			if (err != ERR_NONE)
+				return err;			
 		} else {
 			var = jit->this_var;
 			if (!var) {
@@ -9507,7 +9650,9 @@ static const char* vm_cmds_str [] = {
 	"GET_TYPES",
 	"INVOKE_METHODS",
 	"START_BUFFERING",
-	"STOP_BUFFERING"
+	"STOP_BUFFERING",
+	"READ_MEMORY",
+	"WRITE_MEMORY"
 };
 
 static const char* thread_cmds_str[] = {
@@ -9517,7 +9662,11 @@ static const char* thread_cmds_str[] = {
 	"GET_INFO",
 	"GET_ID",
 	"GET_TID",
-	"SET_IP"
+	"SET_IP",
+	"ELAPSED_TIME",
+	"GET_APPDOMAIN",
+	"GET_CONTEXT",
+	"SET_CONTEXT"
 };
 
 static const char* event_cmds_str[] = {
@@ -9713,6 +9862,8 @@ cmd_to_string (CommandSet set, int command)
 static gboolean
 wait_for_attach (void)
 {
+	MONO_REQ_GC_SAFE_MODE;
+
 #ifndef DISABLE_SOCKET_TRANSPORT
 	if (listen_fd == -1) {
 		PRINT_DEBUG_MSG (1, "[dbg] Invalid listening socket\n");
@@ -9732,7 +9883,10 @@ wait_for_attach (void)
 #endif
 
 	/* Handshake */
+
+	MONO_ENTER_GC_UNSAFE;
 	disconnected = !transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
 	if (disconnected) {
 		PRINT_DEBUG_MSG (1, "Transport handshake failed!\n");
 		return FALSE;

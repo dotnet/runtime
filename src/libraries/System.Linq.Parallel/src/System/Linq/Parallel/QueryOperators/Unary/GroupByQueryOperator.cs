@@ -328,7 +328,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -390,7 +390,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -557,7 +557,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -632,7 +632,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -676,7 +676,7 @@ namespace System.Linq.Parallel
     // key-to-many-values mapping.
     //
 
-    internal class GroupByGrouping<TGroupKey, TElement> : IGrouping<TGroupKey, TElement>
+    internal sealed class GroupByGrouping<TGroupKey, TElement> : IGrouping<TGroupKey, TElement>
     {
         private readonly KeyValuePair<Wrapper<TGroupKey>, ListChunk<TElement>> _keyValues; // A key value pair.
 
@@ -722,7 +722,7 @@ namespace System.Linq.Parallel
     /// An ordered version of the grouping data structure. Represents an ordered group of elements that
     /// have the same grouping key.
     /// </summary>
-    internal class OrderedGroupByGrouping<TGroupKey, TOrderKey, TElement> : IGrouping<TGroupKey, TElement>
+    internal sealed class OrderedGroupByGrouping<TGroupKey, TOrderKey, TElement> : IGrouping<TGroupKey, TElement>
     {
         private const int INITIAL_CHUNK_SIZE = 2;
 

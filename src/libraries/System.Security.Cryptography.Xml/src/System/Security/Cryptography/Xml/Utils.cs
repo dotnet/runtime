@@ -423,7 +423,7 @@ namespace System.Security.Cryptography.Xml
             StringBuilder sb = new StringBuilder();
             sb.Append(data);
             Utils.SBReplaceCharWithString(sb, (char)13, "&#xD;");
-            return sb.ToString(); ;
+            return sb.ToString();
         }
 
         internal static string EscapeTextData(string data)
@@ -434,7 +434,7 @@ namespace System.Security.Cryptography.Xml
             sb.Replace("<", "&lt;");
             sb.Replace(">", "&gt;");
             SBReplaceCharWithString(sb, (char)13, "&#xD;");
-            return sb.ToString(); ;
+            return sb.ToString();
         }
 
         internal static string EscapeCData(string data)

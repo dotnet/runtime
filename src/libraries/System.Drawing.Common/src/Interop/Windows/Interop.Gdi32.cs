@@ -101,7 +101,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal class DOCINFO
+        internal sealed class DOCINFO
         {
             internal int cbSize = 20;
             internal string? lpszDocName;

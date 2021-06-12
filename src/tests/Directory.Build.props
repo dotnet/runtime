@@ -92,7 +92,7 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
-    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,SYSLIB0004,SYSLIB0011,SYSLIB0012</NoWarn>
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>

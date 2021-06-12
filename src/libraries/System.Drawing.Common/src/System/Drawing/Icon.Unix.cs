@@ -101,7 +101,7 @@ namespace System.Drawing
         };
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class IconImage : ImageData
+        internal sealed class IconImage : ImageData
         {
             internal BitmapInfoHeader iconHeader;   //image header
             internal uint[]? iconColors; //colors table
@@ -110,7 +110,7 @@ namespace System.Drawing
         };
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class IconDump : ImageData
+        internal sealed class IconDump : ImageData
         {
             internal byte[]? data;
         };

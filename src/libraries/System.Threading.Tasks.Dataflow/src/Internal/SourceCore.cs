@@ -753,14 +753,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _taskForOutputProcessing = new Task(thisSourceCore => ((SourceCore<TOutput>)thisSourceCore!).OfferMessagesLoopCore(), this,
                                                      Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
                         _owningSource, _taskForOutputProcessing, DataflowEtwProvider.TaskLaunchedReason.OfferingOutputMessages, _messages.Count);
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -968,13 +966,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(_owningSource);
             }
-#endif
         }
 
         /// <summary>Gets the object to display in the debugger display attribute.</summary>
@@ -983,8 +979,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displaySource = _owningSource as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displaySource != null ? displaySource.Content : _owningSource);
+                return $"Block=\"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
             }
         }
 

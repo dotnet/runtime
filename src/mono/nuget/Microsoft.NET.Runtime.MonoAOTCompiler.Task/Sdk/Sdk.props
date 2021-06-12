@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-    <MonoAOTCompilerTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\net472\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 </Project>

@@ -12,17 +12,19 @@
 // ============================================================
 
 #include "assemblyname.hpp"
-#include "assembly.hpp"
 #include "utils.hpp"
-#include "variables.hpp"
-
-#include "fusionassemblyname.hpp"
 
 #include "textualidentityparser.hpp"
 
 #include "corpriv.h"
 
 #include "ex.h"
+
+namespace
+{
+    // See https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names#specifying-assembly-names
+    const WCHAR* s_neutralCulture = W("neutral");
+}
 
 namespace BINDER_SPACE
 {
@@ -33,11 +35,6 @@ namespace BINDER_SPACE
         // Default values present in every assembly name
         SetHave(AssemblyIdentity::IDENTITY_FLAG_CULTURE |
                 AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL);
-    }
-
-    AssemblyName::~AssemblyName()
-    {
-        //  Nothing to do here
     }
 
     HRESULT AssemblyName::Init(IMDInternalImport       *pIMetaDataAssemblyImport,
@@ -166,138 +163,34 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT AssemblyName::Init(SString &assemblyDisplayName)
+    HRESULT AssemblyName::Init(const AssemblyNameData &data)
     {
-        return TextualIdentityParser::Parse(assemblyDisplayName, this);
-    }
+        DWORD flags = data.IdentityFlags;
+        m_simpleName.SetUTF8(data.Name);
+        m_version.SetFeatureVersion(data.MajorVersion, data.MinorVersion);
+        m_version.SetServiceVersion(data.BuildNumber, data.RevisionNumber);
+        m_cultureOrLanguage.SetUTF8(data.Culture);
 
-    HRESULT AssemblyName::Init(IAssemblyName *pIAssemblyName)
-    {
-        HRESULT hr = S_OK;
-
-        _ASSERTE(pIAssemblyName != NULL);
-
-        EX_TRY
+        m_publicKeyOrTokenBLOB.Set(data.PublicKeyOrToken, data.PublicKeyOrTokenLength);
+        if ((flags & BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY) != 0)
         {
-            {
-                // Set the simpleName
-                StackSString simpleName;
-                hr = fusion::util::GetSimpleName(pIAssemblyName, simpleName);
-                IF_FAIL_GO(hr);
-                SetSimpleName(simpleName);
-                SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME);
-            }
+            // Convert public key to token
+            SBuffer publicKeyToken;
+            HRESULT hr = GetTokenFromPublicKey(m_publicKeyOrTokenBLOB, publicKeyToken);
+            if (FAILED(hr))
+                return hr;
 
-            // Display version
-            DWORD dwVersionParts[4] = {0,0,0,0};
-            DWORD cbVersionSize = sizeof(dwVersionParts[0]);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_MAJOR_VERSION, static_cast<PVOID>(&dwVersionParts[0]), &cbVersionSize);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbVersionSize != 0))
-            {
-                // Property is present - loop to get the individual version details
-                for(DWORD i = 0; i < 4; i++)
-                {
-                    cbVersionSize = sizeof(dwVersionParts[i]);
-                    hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_MAJOR_VERSION+i, static_cast<PVOID>(&dwVersionParts[i]), &cbVersionSize);
-                    IF_FAIL_GO(hr);
-                }
-
-                m_version.SetFeatureVersion(dwVersionParts[0], dwVersionParts[1]);
-                m_version.SetServiceVersion(dwVersionParts[2], dwVersionParts[3]);
-                SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_VERSION);
-            }
-
-            {
-                // Display culture
-                StackSString culture;
-                hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_CULTURE, culture);
-                IF_FAIL_GO(hr);
-                if (hr == S_OK)
-                {
-                    SetCulture(culture);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE);
-                }
-            }
-
-            {
-                // Display public key token
-                NewArrayHolder<BYTE> pPublicKeyToken;
-                DWORD cbPublicKeyToken = 0;
-                hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_PUBLIC_KEY_TOKEN, static_cast<PBYTE*>(&pPublicKeyToken), &cbPublicKeyToken);
-                IF_FAIL_GO(hr);
-                if ((hr == S_OK) && (cbPublicKeyToken != 0))
-                {
-                    m_publicKeyOrTokenBLOB.Set(pPublicKeyToken, cbPublicKeyToken);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
-                }
-                else
-                {
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL);
-                }
-            }
-
-            // Display processor architecture
-            DWORD peKind = 0;
-            DWORD cbPeKind = sizeof(peKind);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_ARCHITECTURE, static_cast<PVOID>(&peKind), &cbPeKind);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbPeKind != 0))
-            {
-                PEKIND PeKind = (PEKIND)peKind;
-                if (PeKind != peNone)
-                {
-                    SetArchitecture(PeKind);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE);
-                }
-            }
-
-            // Display retarget flag
-            BOOL fRetarget = FALSE;
-            DWORD cbRetarget = sizeof(fRetarget);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_RETARGET, static_cast<PVOID>(&fRetarget), &cbRetarget);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbRetarget != 0))
-            {
-                if (fRetarget)
-                {
-                    SetIsRetargetable(fRetarget);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE);
-                }
-            }
-
-            // Display content type
-            DWORD dwContentType = AssemblyContentType_Default;
-            DWORD cbContentType = sizeof(dwContentType);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_CONTENT_TYPE, static_cast<PVOID>(&dwContentType), &cbContentType);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbContentType != 0))
-            {
-                if (dwContentType != AssemblyContentType_Default)
-                {
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE);
-                    SetContentType((AssemblyContentType)dwContentType);
-                }
-            }
-
-            {
-                // Display custom flag. Dont set it if it is not present since that will end up adding the "Custom=null" attribute
-                // in the displayname of the assembly that maybe generated using this AssemblyName instance. This could create conflict when
-                // the displayname is generated from the assembly directly as that will not have a "Custom" field set.
-                NewArrayHolder<BYTE> pCustomBLOB;
-                DWORD cbCustomBLOB = 0;
-                hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_CUSTOM, static_cast<PBYTE*>(&pCustomBLOB), &cbCustomBLOB);
-                IF_FAIL_GO(hr);
-                if ((hr == S_OK) && (cbCustomBLOB != 0))
-                {
-                    m_customBLOB.Set(pCustomBLOB, cbCustomBLOB);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CUSTOM);
-                }
-            }
+            m_publicKeyOrTokenBLOB.Set(publicKeyToken);
+            flags &= ~BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY;
+            flags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
         }
-        EX_CATCH_HRESULT(hr);
-Exit:
-        return hr;
+
+        m_kProcessorArchitecture = data.ProcessorArchitecture;
+        m_kContentType = data.ContentType;
+
+        SetHave(flags);
+
+        return S_OK;
     }
 
     ULONG AssemblyName::AddRef()
@@ -318,7 +211,13 @@ Exit:
     BOOL AssemblyName::IsCoreLib()
     {
         // TODO: Is this simple comparison enough?
-        return EqualsCaseInsensitive(GetSimpleName(), g_BinderVariables->corelib);
+        return SString::_wcsicmp(GetSimpleName().GetUnicode(), CoreLibName_W) == 0;
+    }
+
+    bool AssemblyName::IsNeutralCulture()
+    {
+        return m_cultureOrLanguage.IsEmpty()
+            || SString::_wcsicmp(m_cultureOrLanguage.GetUnicode(), s_neutralCulture) == 0;
     }
 
     ULONG AssemblyName::Hash(DWORD dwIncludeFlags)
@@ -353,7 +252,7 @@ Exit:
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CULTURE;
         }
 
-        dwHash ^= static_cast<DWORD>(HashCaseInsensitive(GetSimpleName()));
+        dwHash ^= static_cast<DWORD>(GetSimpleName().HashCaseInsensitive());
         dwHash = _rotl(dwHash, 4);
 
         if (AssemblyIdentity::Have(dwUseIdentityFlags,
@@ -386,7 +285,7 @@ Exit:
 
         if (AssemblyIdentity::Have(dwUseIdentityFlags, AssemblyIdentity::IDENTITY_FLAG_CULTURE))
         {
-            dwHash ^= static_cast<DWORD>(HashCaseInsensitive(GetNormalizedCulture()));
+            dwHash ^= static_cast<DWORD>(GetNormalizedCulture().HashCaseInsensitive());
             dwHash = _rotl(dwHash, 4);
         }
 
@@ -424,14 +323,14 @@ Exit:
             return (GetContentType() == pAssemblyName->GetContentType());
         }
 
-        if (EqualsCaseInsensitive(GetSimpleName(), pAssemblyName->GetSimpleName()) &&
+        if (GetSimpleName().EqualsCaseInsensitive(pAssemblyName->GetSimpleName()) &&
             (GetContentType() == pAssemblyName->GetContentType()))
         {
             fEquals = TRUE;
 
             if ((dwIncludeFlags & EXCLUDE_CULTURE) == 0)
             {
-                fEquals = EqualsCaseInsensitive(GetNormalizedCulture(), pAssemblyName->GetNormalizedCulture());
+                fEquals = GetNormalizedCulture().EqualsCaseInsensitive(pAssemblyName->GetNormalizedCulture());
             }
 
             if (fEquals && (dwIncludeFlags & INCLUDE_PUBLIC_KEY_TOKEN) != 0)
@@ -490,7 +389,7 @@ Exit:
 
         if (culture.IsEmpty())
         {
-            culture = g_BinderVariables->cultureNeutral;
+            culture.SetLiteral(s_neutralCulture);
         }
 
         return culture;

@@ -2311,10 +2311,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	 *   in 1 or 2 integer registers.
 	 */
 	switch (cinfo->ret.storage) {
-	case RegTypeGeneral:
 	case RegTypeNone:
+		linfo->ret.storage = LLVMArgNone;
+		break;
+	case RegTypeGeneral:
 	case RegTypeFP:
 	case RegTypeIRegPair:
+		linfo->ret.storage = LLVMArgNormal;
 		break;
 	case RegTypeStructByAddr:
 		if (sig->pinvoke) {
@@ -3772,7 +3775,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static void
-handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 {
 	MonoJitInfo *ji = NULL;
 	MonoThunkJitInfo *info;
@@ -3780,9 +3783,6 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 	int thunks_size;
 	guint8 *orig_target;
 	guint8 *target_thunk;
-
-	if (!domain)
-		domain = mono_domain_get ();
 
 	if (cfg) {
 		/*
@@ -3855,7 +3855,7 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 }
 
 static void
-arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+arm_patch_general (MonoCompile *cfg, guchar *code, const guchar *target)
 {
 	guint32 *code32 = (guint32*)code;
 	guint32 ins = *code32;
@@ -3901,7 +3901,7 @@ arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guc
 			}
 		}
 		
-		handle_thunk (cfg, domain, code, target);
+		handle_thunk (cfg, code, target);
 		return;
 	}
 
@@ -4004,7 +4004,7 @@ arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guc
 void
 arm_patch (guchar *code, const guchar *target)
 {
-	arm_patch_general (NULL, NULL, code, target);
+	arm_patch_general (NULL, code, target);
 }
 
 /* 
@@ -6078,7 +6078,6 @@ void
 mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_SWITCH: {
@@ -6125,7 +6124,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 		/* everything is dealt with at epilog output time */
 		break;
 	default:
-		arm_patch_general (cfg, domain, ip, (const guchar*)target);
+		arm_patch_general (cfg, ip, (const guchar*)target);
 		break;
 	}
 }
@@ -6939,6 +6938,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	char * cond;
 #endif
 	GSList *unwind_ops;
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	size = BASE_SIZE;
 	constant_pool_starts = g_new0 (guint32*, count);
@@ -6980,7 +6980,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 	if (fail_tramp) {
 		code = (arminstr_t *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size);
 	}
 	start = code;
@@ -7158,7 +7157,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 
 	g_assert (DISTANCE (start, code) <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, (guint8*)start, DISTANCE (start, code), NULL, unwind_ops), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, (guint8*)start, DISTANCE (start, code), NULL, unwind_ops), mem_manager);
 
 	return start;
 }

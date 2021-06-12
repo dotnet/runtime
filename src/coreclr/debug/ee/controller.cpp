@@ -3249,7 +3249,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
     // Either this is the helper thread, or we're manipulating our own context.
     _ASSERTE(
         ThisIsHelperThreadWorker() ||
-        (thread == ::GetThread())
+        (thread == ::GetThreadNULLOk())
     );
 
     CONTEXT *context = GetManagedStoppedCtx(thread);
@@ -3324,7 +3324,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
         MODE_ANY;
 
         // Filter context not set yet b/c we can only set it in COOP, and this may be in preemptive.
-        PRECONDITION(thread == ::GetThread());
+        PRECONDITION(thread == ::GetThreadNULLOk());
         PRECONDITION((g_pEEInterface->GetThreadFilterContext(thread) == NULL));
         PRECONDITION(CheckPointer(pException));
     }
@@ -4409,8 +4409,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         }
         else
         {
+            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, SharedPatchBypassBuffer::cbBufferBypass);
+            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
             if (m_instrAttrib.m_fIsWrite)
             {
@@ -4537,7 +4538,7 @@ void DebuggerPatchSkip::DebuggerDetachClean()
    // 2. Create a "stack walking" implementation for native code and use it to get the current IP and
    // set the IP to the right place.
 
-    Thread *thread = GetThread();
+    Thread *thread = GetThreadNULLOk();
     if (thread != NULL)
     {
         BYTE *patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
@@ -4672,7 +4673,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
         // toggled the GC mode underneath us.
         MODE_ANY;
 
-        PRECONDITION(GetThread() == thread);
+        PRECONDITION(GetThreadNULLOk() == thread);
         PRECONDITION(thread != NULL);
         PRECONDITION(CheckPointer(context));
     }
@@ -6597,8 +6598,6 @@ void DebuggerStepper::StepOut(FramePointer fp, StackTraceTicket ticket)
         "\n", fp.GetSPValue(), this ));
 
     Thread *thread = GetThread();
-
-
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
     ControllerStackInfo info;
 
@@ -7711,7 +7710,7 @@ bool DebuggerStepper::SendEvent(Thread *thread, bool fIpChanged)
     LOG((LF_CORDB, LL_INFO10000, "DS::SE m_fpStepInto:0x%x\n", m_fpStepInto.GetSPValue()));
 
     _ASSERTE(m_fReadyToSend);
-    _ASSERTE(GetThread() == thread);
+    _ASSERTE(GetThreadNULLOk() == thread);
 
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
     _ASSERTE(!ISREDIRECTEDTHREAD(thread));

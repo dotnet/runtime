@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -21,12 +22,12 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            if (state.Current.JsonClassInfo.CreateObject == null)
+            if (state.Current.JsonTypeInfo.CreateObject == null)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonClassInfo.Type);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
             }
 
-            state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
         }
 
         protected internal override bool OnWriteResume(
@@ -50,9 +51,9 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            _keyConverter ??= GetConverter<TKey>(classInfo.KeyClassInfo!);
-            _valueConverter ??= GetConverter<TValue>(classInfo.ElementClassInfo!);
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
+            _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
 
             if (!state.SupportContinuation && _valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {

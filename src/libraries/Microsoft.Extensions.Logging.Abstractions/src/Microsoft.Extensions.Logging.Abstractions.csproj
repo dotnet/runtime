@@ -2,12 +2,21 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <Nullable>enable</Nullable>
+    <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
+
+Commonly Used Types:
+Microsoft.Extensions.Logging.ILogger
+Microsoft.Extensions.Logging.ILoggerFactory
+Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;
+Microsoft.Extensions.Logging.LogLevel
+Microsoft.Extensions.Logging.Logger&lt;T&gt;
+Microsoft.Extensions.Logging.LoggerMessage
+Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +33,10 @@
   <ItemGroup>
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+  <ItemGroup> 
+    <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.csproj" />
   </ItemGroup>
 
 </Project>

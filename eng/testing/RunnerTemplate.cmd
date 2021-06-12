@@ -59,10 +59,11 @@ echo ----- end %DATE% %TIME% ----- exit code %ERRORLEVEL% ----------------------
 :: The helix work item should not exit with non-zero if tests ran and produced results
 :: The special console runner for runtime returns 1 when tests fail
 if %ERRORLEVEL%==1 (
-  exit /b 0
-) else (
-  exit /b %ERRORLEVEL%
+  if not "%HELIX_WORKITEM_PAYLOAD%"=="" (
+    exit /b 0
+  )
 )
+exit /b %ERRORLEVEL%
 :: ========================= END Test Execution =================================
 
 :usage

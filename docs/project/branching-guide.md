@@ -1,7 +1,7 @@
 Branching Guide
 ===============
 
-We will have the following branches in the corefx repository:
+We will have the following branches in the runtime repository:
 
 * **main**
  * Where most development happens

@@ -55,7 +55,7 @@ public:
         EnableFinalization();
 
         // Do not wait for FinalizerThread if the current one is FinalizerThread.
-        if (GetThread() != GetFinalizerThread())
+        if (GetThreadNULLOk() != GetFinalizerThread())
         {
             // This wait must be alertable to handle cases where the current
             // thread's context is needed (i.e. RCW cleanup)

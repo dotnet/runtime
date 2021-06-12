@@ -22,6 +22,11 @@ namespace Internal.TypeSystem
             ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, Format.Type(@namespace, name), Format.Module(module));
         }
 
+        public static void ThrowTypeLoadException(string @namespace, string name, string moduleName)
+        {
+            ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, Format.Type(@namespace, name), moduleName);
+        }
+
         [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(TypeDesc type)
         {

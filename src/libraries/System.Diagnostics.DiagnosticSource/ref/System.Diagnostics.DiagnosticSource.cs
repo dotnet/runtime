@@ -19,6 +19,7 @@ namespace System.Diagnostics
         public virtual System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object?>> observer, System.Func<string, object?, object?, bool>? isEnabled) { throw null; }
         public virtual System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object?>> observer, System.Predicate<string>? isEnabled) { throw null; }
         public override string ToString() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
         public override void Write(string name, object? value) { }
     }
     public abstract partial class DiagnosticSource
@@ -26,6 +27,7 @@ namespace System.Diagnostics
         protected DiagnosticSource() { }
         public abstract bool IsEnabled(string name);
         public virtual bool IsEnabled(string name, object? arg1, object? arg2 = null) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
         public abstract void Write(string name, object? value);
     }
 }

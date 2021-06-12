@@ -522,8 +522,6 @@ namespace System.Collections.Generic
             }
         }
 
-        private const int MaxArrayLength = 0X7FEFFFFF;
-
         // Ensures that the capacity of this sorted list is at least the given
         // minimum value. The capacity is increased to twice the current capacity
         // or to min, whichever is larger.
@@ -532,7 +530,7 @@ namespace System.Collections.Generic
             int newCapacity = keys.Length == 0 ? DefaultCapacity : keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
             if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }

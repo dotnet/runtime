@@ -87,5 +87,11 @@ namespace System.IO.Pipelines
                 ArrayPool<byte>.Shared.Return(localBuffer);
             }
         }
+
+        public static Task CopyToAsync(this Stream source, Stream destination, CancellationToken cancellationToken = default)
+        {
+            const int DefaultBufferSize = 81920;
+            return source.CopyToAsync(destination, DefaultBufferSize, cancellationToken);
+        }
     }
 }

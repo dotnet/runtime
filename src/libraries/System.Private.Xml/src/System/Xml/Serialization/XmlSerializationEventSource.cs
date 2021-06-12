@@ -8,7 +8,7 @@ namespace System.Xml.Serialization
     [EventSource(
         Name = "System.Xml.Serialzation.XmlSerialization",
         LocalizationResources = "FxResources.System.Private.Xml.SR")]
-    internal class XmlSerializationEventSource : EventSource
+    internal sealed class XmlSerializationEventSource : EventSource
     {
         internal static XmlSerializationEventSource Log = new XmlSerializationEventSource();
 

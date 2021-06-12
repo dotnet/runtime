@@ -7,27 +7,13 @@ namespace System.IO.Strategies
 {
     internal static partial class FileStreamHelpers
     {
-        // It's enabled by default. We are going to change that once we fix #16354, #25905 and #24847.
-        internal static bool UseLegacyStrategy { get; } = GetLegacyFileStreamSetting();
-
-        private static bool GetLegacyFileStreamSetting()
-        {
-            if (AppContext.TryGetSwitch("System.IO.UseNet5CompatFileStream", out bool fileConfig))
-            {
-                return fileConfig;
-            }
-
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
-            return envVar is null
-                ? true // legacy is currently enabled by default;
-                : bool.IsTrueStringIgnoreCase(envVar) || envVar.Equals("1");
-        }
+        internal static bool UseNet5CompatStrategy { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
             => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, share, bufferSize, isAsync));
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => WrapIfDerivedType(fileStream, ChooseStrategyCore(path, mode, access, share, bufferSize, options));
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+            => WrapIfDerivedType(fileStream, ChooseStrategyCore(path, mode, access, share, bufferSize, options, preallocationSize));
 
         private static FileStreamStrategy WrapIfDerivedType(FileStream fileStream, FileStreamStrategy strategy)
             => fileStream.GetType() == typeof(FileStream)
@@ -49,5 +35,10 @@ namespace System.IO.Strategies
             e is UnauthorizedAccessException ||
             e is NotSupportedException ||
             (e is ArgumentException && !(e is ArgumentNullException));
+
+        internal static bool ShouldPreallocate(long preallocationSize, FileAccess access, FileMode mode)
+            => preallocationSize > 0
+               && (access & FileAccess.Write) != 0
+               && mode != FileMode.Open && mode != FileMode.Append;
     }
 }

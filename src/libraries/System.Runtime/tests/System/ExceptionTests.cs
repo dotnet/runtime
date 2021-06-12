@@ -61,7 +61,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Exception_TargetSite_Jit()
+        public static void Exception_TargetSite()
         {
             bool caught = false;
 
@@ -77,6 +77,32 @@ namespace System.Tests
             }
 
             Assert.True(caught);
+        }
+        
+        static void RethrowException()
+        {
+            try
+            {
+                ThrowException();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [Fact]
+        public static void Exception_TargetSite_OtherMethod()
+        {
+            Exception ex = Assert.ThrowsAny<Exception>(() => ThrowException());
+            Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
+        }
+
+        [Fact]
+        public static void Exception_TargetSite_Rethrow()
+        {
+            Exception ex = Assert.ThrowsAny<Exception>(() => RethrowException());
+            Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
         }
 
         [Fact]
@@ -207,6 +233,7 @@ namespace System.Tests
             return "DerivedException.ToString()";
         }
 
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
         [Fact]
         public static void Exception_SerializeObjectState()
         {
@@ -214,6 +241,7 @@ namespace System.Tests
             Assert.Throws<PlatformNotSupportedException>(() => excp.SerializeObjectState += (exception, eventArgs) => eventArgs.AddSerializedState(null));
             Assert.Throws<PlatformNotSupportedException>(() => excp.SerializeObjectState -= (exception, eventArgs) => eventArgs.AddSerializedState(null));
         }
+#pragma warning restore SYSLIB0011
 
         [Fact]
         public static void Exception_OverriddenToStringOnInnerException()

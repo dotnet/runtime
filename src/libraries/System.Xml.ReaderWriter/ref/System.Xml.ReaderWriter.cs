@@ -1479,11 +1479,17 @@ namespace System.Xml.Schema
         public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.Xml.XmlReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.Stream stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.Stream stream, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.TextWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.TextWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.Xml.XmlWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
     }
     public partial class XmlSchemaAll : System.Xml.Schema.XmlSchemaGroupBase
@@ -2817,9 +2823,11 @@ namespace System.Xml.Xsl
     {
         public XsltArgumentList() { }
         public event System.Xml.Xsl.XsltMessageEncounteredEventHandler XsltMessageEncountered { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The stylesheet may have calls to methods of the extension object passed in which cannot be statically analyzed by the trimmer. Ensure all methods that may be called are preserved.")]
         public void AddExtensionObject(string namespaceUri, object extension) { }
         public void AddParam(string name, string namespaceUri, object parameter) { }
         public void Clear() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The stylesheet may have calls to methods of the extension object passed in which cannot be statically analyzed by the trimmer. Ensure all methods that may be called are preserved.")]
         public object? GetExtensionObject(string namespaceUri) { throw null; }
         public object? GetParam(string name, string namespaceUri) { throw null; }
         public object? RemoveExtensionObject(string namespaceUri) { throw null; }

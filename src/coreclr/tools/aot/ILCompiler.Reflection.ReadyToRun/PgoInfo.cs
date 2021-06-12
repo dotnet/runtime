@@ -61,12 +61,20 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             if (_pgoData == null)
             {
-                var compressedIntParser = new PgoProcessor.PgoEncodedCompressedIntParser(Image, Offset);
+                if (Image == null)
+                {
+                    _pgoData = Array.Empty<PgoSchemaElem>();
+                    _size = 0;
+                }
+                else
+                {
+                    var compressedIntParser = new PgoProcessor.PgoEncodedCompressedIntParser(Image, Offset);
 
-                SignatureFormattingOptions formattingOptions = new SignatureFormattingOptions();
+                    SignatureFormattingOptions formattingOptions = new SignatureFormattingOptions();
 
-                _pgoData = PgoProcessor.ParsePgoData<string>(new PgoDataLoader(_r2rReader, formattingOptions), compressedIntParser, true).ToArray();
-                _size = compressedIntParser.Offset - Offset;
+                    _pgoData = PgoProcessor.ParsePgoData<string>(new PgoDataLoader(_r2rReader, formattingOptions), compressedIntParser, true).ToArray();
+                    _size = compressedIntParser.Offset - Offset;
+                }
             }
         }
 
@@ -100,9 +108,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 else
                 {
-                    foreach (object o in elem.DataObject)
+                    if (elem.DataObject != null)
                     {
-                        sb.AppendLine(o.ToString());
+                        foreach (object o in elem.DataObject)
+                        {
+                            sb.AppendLine(o.ToString());
+                        }
                     }
                 }
             }

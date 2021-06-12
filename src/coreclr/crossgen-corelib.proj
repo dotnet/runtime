@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <!-- NoTargets SDK needs a TFM set. So we used the latest .NETCoreApp supported one. -->
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-  </PropertyGroup>
 
   <Target Name="PrepareForCrossgen">
     <PropertyGroup>
@@ -45,6 +41,10 @@
       <CrossGen2DllFiles Condition="'$(CrossDir)' != ''" Include="$(BinDir)/$(CrossDir)/crossgen2/*" />
     </ItemGroup>
 
+    <ItemGroup>
+      <OptimizationMibcFiles Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
+    </ItemGroup>
+
     <PropertyGroup>
       <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
       <CoreLibInputPath>$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).dll'))</CoreLibInputPath>
@@ -53,12 +53,28 @@
       <CoreLibPerfMapPath></CoreLibPerfMapPath>
       <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
       <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).perf.map'))</CoreLibPerfMapPath>
+      <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
     </PropertyGroup>
   </Target>
 
-  <Target Name="InvokeCrossgen"
+  <Target Name="CreateMergedMibcFile"
           DependsOnTargets="PrepareForCrossgen"
-          Inputs="$(CoreLibInputPath);@(CrossGen2DllFiles)"
+          Inputs="@(OptimizationMibcFiles)"
+          Outputs="$(MergedMibcPath)">
+
+    <PropertyGroup>
+      <DotNetPgoCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', 'dotnet-pgo', 'dotnet-pgo.dll')) merge</DotNetPgoCmd>
+      <DotNetPgoCmd>$(DotNetPgoCmd) -o:$(MergedMibcPath)</DotNetPgoCmd>
+      <DotNetPgoCmd>$(DotNetPgoCmd) @(OptimizationMibcFiles->'-i:%(Identity)', ' ')</DotNetPgoCmd>
+    </PropertyGroup>
+
+    <Message Condition="'$(DotNetBuildFromSource)' != 'true'" Importance="High" Text="$(DotNetPgoCmd)"/>
+    <Exec Condition="'$(DotNetBuildFromSource)' != 'true'" Command="$(DotNetPgoCmd)" />
+  </Target>
+
+  <Target Name="InvokeCrossgen"
+          DependsOnTargets="PrepareForCrossgen;CreateMergedMibcFile"
+          Inputs="$(CoreLibInputPath);@(CrossGen2DllFiles);$(MergedMibcPath)"
           Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath)"
           AfterTargets="Build">
 
@@ -75,18 +91,14 @@
     <Message Importance="High"
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
-    <ItemGroup>
-      <OptimizationMibcFiles Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
-    </ItemGroup>
-
     <PropertyGroup>
       <CrossGenDllCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen2', 'crossgen2.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <MibcArgs>@(OptimizationMibcFiles->'-m:%(Identity)', ' ')</MibcArgs>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(Configuration)' == 'Release'">$(CrossGenDllCmd) $(MibcArgs) --embed-pgo-data</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
+      <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) $(CoreLibInputPath)</CrossGenDllCmd>
     </PropertyGroup>
 

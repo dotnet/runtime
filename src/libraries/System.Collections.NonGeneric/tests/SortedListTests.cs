@@ -255,7 +255,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void EnsureCapacity_NewCapacityLessThanMin_CapsToMaxArrayLength()
+        public void EnsureCapacity_NewCapacityLessThanMin_CapsToArrayMaxLength()
         {
             // A situation like this occurs for very large lengths of SortedList.
             // To avoid allocating several GBs of memory and making this test run for a very

@@ -300,6 +300,9 @@ static guint64 time_major_sweep = 0;
 static guint64 time_major_fragment_creation = 0;
 
 static guint64 time_max = 0;
+static guint64 time_last = 0;
+static guint64 time_since_last = 0;
+static guint64 timestamp_last_start = 0;
 
 static int sgen_max_pause_time = SGEN_DEFAULT_MAX_PAUSE_TIME;
 static float sgen_max_pause_margin = SGEN_DEFAULT_MAX_PAUSE_MARGIN;
@@ -2698,7 +2701,19 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	}
 
 	TV_GETTIME (gc_total_end);
-	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
+
+	time_last = TV_ELAPSED (gc_total_start, gc_total_end);
+
+	// Long running timers start/stop on different threads might not be correct an all platforms
+	// using mono_100ns_ticks, use mono_100ns_datetime for long running timers.
+	gint64 timestamp_last_end = mono_100ns_datetime ();
+
+	// Elapsed time since ending last GC.
+	time_since_last = TV_ELAPSED (timestamp_last_start, timestamp_last_end);
+
+	timestamp_last_start = timestamp_last_end;
+
+	time_max = MAX (time_max, time_last);
 
 	if (stw)
 		sgen_restart_world (oldest_generation_collected, forced_serial || !sgen_major_collector.is_concurrent);
@@ -3237,6 +3252,16 @@ sgen_gc_get_used_size (void)
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
 	return tot;
+}
+
+void sgen_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
+{
+	*time_last_gc_100ns = time_last;
+	*time_since_last_gc_100ns = time_since_last;
+	*time_max_gc_100ns = time_max;
 }
 
 void

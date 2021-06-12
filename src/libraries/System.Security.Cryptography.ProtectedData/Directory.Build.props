@@ -2,7 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides access to Windows Data Protection Api.
 
 Commonly Used Types:

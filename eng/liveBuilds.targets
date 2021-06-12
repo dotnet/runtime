@@ -25,7 +25,7 @@
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
     <CoreCLRCrossgen2Dir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))</CoreCLRCrossgen2Dir>
 
-    <MonoCrossAOTDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross'))</MonoCrossAOTDir>
+    <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
 
     <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
     <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
@@ -71,6 +71,7 @@
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
       <RuntimeFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
+      <RuntimeFiles Condition="'$(PgoInstrument)' == 'true'" Include="$(CoreCLRSharedFrameworkDir)PGD/*" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
       <RuntimeFiles>
@@ -108,8 +109,6 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
-        Include="$(MonoArtifactsPath)\cross\**\*.*" />
       <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
@@ -176,8 +175,8 @@
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
-        $(LibrariesNativeArtifactsPath)src\emcc-flags.txt;
-        $(LibrariesNativeArtifactsPath)src\emcc-version.txt;"
+        $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
+        $(LibrariesNativeArtifactsPath)src\Emcc.props;"
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
@@ -192,7 +191,6 @@
   </Target>
 
   <PropertyGroup>
-    <LiveRuntimeIdentifierGraphPath>$(RuntimeIdGraphDefinitionFile)</LiveRuntimeIdentifierGraphPath>
-    <BundledRuntimeIdentifierGraphFile>$(LiveRuntimeIdentifierGraphPath)</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile>$(RuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
 </Project>

@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.ToArrayTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
     <Compile Include="StreamReader\StreamReader.cs" />
     <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />

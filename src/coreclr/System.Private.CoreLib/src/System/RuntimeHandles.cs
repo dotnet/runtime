@@ -8,10 +8,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
+    [NonVersionable]
     public unsafe struct RuntimeTypeHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -209,8 +212,13 @@ namespace System
             return outHandles;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
@@ -224,8 +232,14 @@ namespace System
             return instantiatedObject!;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter1,
+            RuntimeType genericParameter2)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr* pTypeHandles = stackalloc IntPtr[]
@@ -422,6 +436,9 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetNumVirtualsAndStaticVirtuals(RuntimeType type);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void VerifyInterfaceIsImplemented(QCallTypeHandle handle, QCallTypeHandle interfaceHandle);
@@ -786,6 +803,7 @@ namespace System
         }
     }
 
+    [NonVersionable]
     public unsafe struct RuntimeMethodHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -952,7 +970,7 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeMethod(object? target, object[]? arguments, Signature sig, bool constructor, bool wrapExceptions);
+        internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
@@ -1110,6 +1128,7 @@ namespace System
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
     }
 
+    [NonVersionable]
     public unsafe struct RuntimeFieldHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -1286,8 +1305,11 @@ namespace System
         }
 
         // SQL-CLR LKG9 Compiler dependency
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle GetRuntimeTypeHandleFromMetadataToken(int typeToken) { return ResolveTypeHandle(typeToken); }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken) => ResolveTypeHandle(typeToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             RuntimeModule module = GetRuntimeModule();
@@ -1340,8 +1362,11 @@ namespace System
                                                             ObjectHandleOnStack type);
 
         // SQL-CLR LKG9 Compiler dependency
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle GetRuntimeMethodHandleFromMetadataToken(int methodToken) { return ResolveMethodHandle(methodToken); }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken) => ResolveMethodHandle(methodToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             RuntimeModule module = GetRuntimeModule();
@@ -1388,8 +1413,11 @@ namespace System
                                                         int methodInstCount);
 
         // SQL-CLR LKG9 Compiler dependency
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle GetRuntimeFieldHandleFromMetadataToken(int fieldToken) { return ResolveFieldHandle(fieldToken); }
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken) => ResolveFieldHandle(fieldToken, null, null);
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             RuntimeModule module = GetRuntimeModule();

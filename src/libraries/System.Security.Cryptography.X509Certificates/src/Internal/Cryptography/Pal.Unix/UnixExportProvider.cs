@@ -475,43 +475,34 @@ namespace Internal.Cryptography.Pal
             return new ArraySegment<byte>(authSafe, 0, authSafeLength);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is required for compat with other platforms")]
         private static unsafe byte[] MacAndEncode(
             AsnWriter tmpWriter,
             ReadOnlyMemory<byte> encodedAuthSafe,
             ReadOnlySpan<char> passwordSpan)
         {
-            // Windows/macOS compatibility: Use HMAC-SHA-1,
-            // other algorithms may not be understood
-            byte[] macKey = new byte[20];
-            Span<byte> macSalt = stackalloc byte[20];
-            Span<byte> macSpan = stackalloc byte[20];
-            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
+            const int MacSize = 160 / 8; // HMAC-SHA1 is 160 bits.
+            Span<byte> macKey = stackalloc byte[MacSize];
+            Span<byte> macSalt = stackalloc byte[MacSize];
+            Span<byte> macSpan = stackalloc byte[MacSize];
             RandomNumberGenerator.Fill(macSalt);
 
-            fixed (byte* macKeyPtr = macKey)
+            Pkcs12Kdf.DeriveMacKey(
+                passwordSpan,
+                HashAlgorithmName.SHA1,
+                s_windowsPbe.IterationCount,
+                macSalt,
+                macKey);
+
+            int bytesWritten = HMACSHA1.HashData(macKey, encodedAuthSafe.Span, macSpan);
+
+            if (bytesWritten != MacSize)
             {
-                Span<byte> macKeySpan = macKey;
-
-                Pkcs12Kdf.DeriveMacKey(
-                    passwordSpan,
-                    hashAlgorithm,
-                    s_windowsPbe.IterationCount,
-                    macSalt,
-                    macKeySpan);
-
-                using (IncrementalHash mac = IncrementalHash.CreateHMAC(hashAlgorithm, macKey))
-                {
-                    mac.AppendData(encodedAuthSafe.Span);
-
-                    if (!mac.TryGetHashAndReset(macSpan, out int bytesWritten) || bytesWritten != macSpan.Length)
-                    {
-                        Debug.Fail($"TryGetHashAndReset wrote {bytesWritten} of {macSpan.Length} bytes");
-                        throw new CryptographicException();
-                    }
-                }
-
-                CryptographicOperations.ZeroMemory(macKeySpan);
+                Debug.Fail($"HMACSHA1.HashData wrote {bytesWritten} of {MacSize} bytes");
+                throw new CryptographicException();
             }
+
+            CryptographicOperations.ZeroMemory(macKey);
 
             // https://tools.ietf.org/html/rfc7292#section-4
             //

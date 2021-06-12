@@ -16,7 +16,24 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual QuicImplementationProvider UseQuicImplementationProvider => null;
 
-        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
+        public static bool IsMsQuicSupported
+        {
+            get
+            {
+                try
+                {
+                    return QuicImplementationProviders.MsQuic.IsSupported;
+                }
+                catch (System.PlatformNotSupportedException)
+                {
+                    return false;
+                }
+            }
+        }
+
+        // This should correspond to platforms on which System.Net.Quic is supported. See also HttpConnectionPool.IsHttp3Supported().
+        public static bool IsMockQuicSupported
+            => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null, bool allowAllHttp2Certificates = true)
         {
@@ -33,14 +50,15 @@ namespace System.Net.Http.Functional.Tests
             {
                 SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHttpHandler.QuicImplementationProvider = quicImplementationProvider;
+                socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
             }
 
             return handler;
         }
 
-        protected Http3LoopbackServer CreateHttp3LoopbackServer()
+        protected Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
         {
-            return new Http3LoopbackServer(UseQuicImplementationProvider);
+            return new Http3LoopbackServer(UseQuicImplementationProvider, options);
         }
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, UseQuicImplementationProvider);
@@ -49,10 +67,10 @@ namespace System.Net.Http.Functional.Tests
             CreateHttpClientHandler(Version.Parse(useVersionString));
 
 
-        protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
+        protected static SocketsHttpHandler GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field?.GetValue(handler);
+            return (SocketsHttpHandler)field?.GetValue(handler);
         }
 
         protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
@@ -63,6 +81,9 @@ namespace System.Net.Http.Functional.Tests
             };
 
         protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion, UseQuicImplementationProvider);
+
+        protected static LoopbackServerFactory GetFactoryForVersion(string useVersion, QuicImplementationProvider quicImplementationProvider = null) =>
+            GetFactoryForVersion(Version.Parse(useVersion), quicImplementationProvider);
 
         protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion, QuicImplementationProvider quicImplementationProvider = null)
         {
@@ -83,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
     internal class VersionHttpClientHandler : HttpClientHandler
     {
         private readonly Version _useVersion;
-        
+
         public VersionHttpClientHandler(Version useVersion)
         {
             _useVersion = useVersion;
@@ -106,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
             }
-            
+
             return base.SendAsync(request, cancellationToken);
         }
 

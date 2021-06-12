@@ -87,7 +87,7 @@ namespace BINDER_SPACE
         DWORD               m_dwIdentityFlags;
     };
 
-    class AssemblyIdentityUTF8 : public AssemblyIdentity
+    class AssemblyIdentityUTF8 final : public AssemblyIdentity
     {
     public:
         AssemblyIdentityUTF8()

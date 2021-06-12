@@ -198,6 +198,9 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.Int16> AsVectorInt16<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int32> AsVectorInt32<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int64> AsVectorInt64<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        public static System.Numerics.Vector<nint> AsVectorNInt<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> AsVectorNUInt<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.SByte> AsVectorSByte<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Single> AsVectorSingle<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
@@ -297,6 +300,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
     {
@@ -511,6 +515,9 @@ namespace System.Numerics
         public static explicit operator System.Numerics.Vector<System.Int16> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Int32> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Int64> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<nint> (System.Numerics.Vector<T> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Vector<nuint> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator System.Numerics.Vector<System.SByte> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Single> (System.Numerics.Vector<T> value) { throw null; }

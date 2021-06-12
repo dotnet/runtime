@@ -69,6 +69,27 @@ VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
     END_QCALL;
 }
 
+// IsBuiltInComSupported
+// Built-in COM support is only checked from the native side to ensure the runtime
+// is in a consistent state
+BOOL QCALLTYPE MarshalNative::IsBuiltInComSupported()
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = TRUE;
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_COMINTEROP
+    ret = g_pConfig->IsBuiltInCOMSupported();
+#else // FEATURE_COMINTEROP
+    ret = FALSE;
+#endif // FEATURE_COMINTEROP
+
+    END_QCALL;
+
+    return ret;
+}
 
 FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld)
 {
@@ -404,10 +425,35 @@ FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* re
 }
 FCIMPLEND
 
+#ifdef _DEBUG
+namespace
+{
+    BOOL STDMETHODCALLTYPE IsInCooperativeGCMode()
+    {
+        return GetThread()->PreemptiveGCDisabled();
+    }
+}
+
+MarshalNative::IsInCooperativeGCMode_fn QCALLTYPE MarshalNative::GetIsInCooperativeGCModeFunctionPointer()
+{
+    QCALL_CONTRACT;
+
+    MarshalNative::IsInCooperativeGCMode_fn ret = NULL;
+
+    BEGIN_QCALL;
+
+    ret = IsInCooperativeGCMode;
+
+    END_QCALL;
+
+    return ret;
+}
+#endif
+
 /************************************************************************
- * PInvoke.GetLastWin32Error
+ * Marshal.GetLastPInvokeError
  */
-FCIMPL0(int, MarshalNative::GetLastWin32Error)
+FCIMPL0(int, MarshalNative::GetLastPInvokeError)
 {
     FCALL_CONTRACT;
 
@@ -415,18 +461,16 @@ FCIMPL0(int, MarshalNative::GetLastWin32Error)
 }
 FCIMPLEND
 
-
 /************************************************************************
- * PInvoke.SetLastWin32Error
+ * Marshal.SetLastPInvokeError
  */
-FCIMPL1(void, MarshalNative::SetLastWin32Error, int error)
+FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
 {
     FCALL_CONTRACT;
 
     GetThread()->m_dwLastError = (DWORD)error;
 }
 FCIMPLEND
-
 
 /************************************************************************
  * Support for the GCHandle class.
@@ -823,7 +867,7 @@ FCIMPL2(Object*, MarshalNative::GetTypedObjectForIUnknown, IUnknown* pUnk, Refle
 }
 FCIMPLEND
 
-FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObject, IUnknown* pOuter, Object* refObjUNSAFE)
+FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE)
 {
     CONTRACTL
     {
@@ -1096,7 +1140,7 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
 }
 FCIMPLEND
 
-FCIMPL2(void, MarshalNative::GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant)
+FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant)
 {
     CONTRACTL
     {
@@ -1128,7 +1172,7 @@ FCIMPL2(void, MarshalNative::GetNativeVariantForObject, Object* ObjUNSAFE, LPVOI
 }
 FCIMPLEND
 
-FCIMPL1(Object*, MarshalNative::GetObjectForNativeVariant, LPVOID pSrcNativeVariant)
+FCIMPL1(Object*, MarshalNative::GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant)
 {
     CONTRACTL
     {
@@ -1150,7 +1194,7 @@ FCIMPL1(Object*, MarshalNative::GetObjectForNativeVariant, LPVOID pSrcNativeVari
 }
 FCIMPLEND
 
-FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars)
+FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars)
 {
     CONTRACTL
     {

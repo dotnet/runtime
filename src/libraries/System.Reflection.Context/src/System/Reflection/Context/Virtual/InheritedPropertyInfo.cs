@@ -7,7 +7,7 @@ using System.Reflection.Context.Delegation;
 namespace System.Reflection.Context.Virtual
 {
     // Represents a inherited property which is identical to the base property except for its ReflectedType.
-    internal partial class InheritedPropertyInfo : DelegatingPropertyInfo
+    internal sealed partial class InheritedPropertyInfo : DelegatingPropertyInfo
     {
         private readonly Type _reflectedType;
 

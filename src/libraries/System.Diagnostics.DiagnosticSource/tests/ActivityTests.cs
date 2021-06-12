@@ -889,7 +889,7 @@ namespace System.Diagnostics.Tests
 
                 Activity parent = new Activity("parent").Start();
                 Activity activity = new Activity("child").Start();
-                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString()); ;
+                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
             }).Dispose();
         }
 
@@ -1547,7 +1547,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestTagObjects()
         {
             Activity activity = new Activity("TagObjects");
@@ -1608,7 +1607,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestGetTagItem()
         {
             Activity a = new Activity("GetTagItem");
@@ -1765,7 +1763,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+            // Note: This test verifies the presence of the struct Enumerator on DiagLinkedList<T> used by customers dynamically to avoid allocations.
 
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());

@@ -139,7 +139,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
                 EntityHandle owningTypeHandle = memberRef.Parent;
-                AddModuleTokenForType(method.OwningType, new ModuleToken(token.Module, owningTypeHandle));
+                TypeDesc owningType = (TypeDesc)token.Module.GetObject(owningTypeHandle, NotFoundBehavior.Throw);
+                AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
                 memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
             }
         }

@@ -85,8 +85,10 @@ mono_metadata_update_enabled (int *modifiable_assemblies_out)
 
 	if (!inited) {
 		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (val && !g_strcasecmp (val, "debug"))
+		if (val && !g_strcasecmp (val, "debug")) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
 			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		}
 		g_free (val);
 		inited = TRUE;
 	}
@@ -246,12 +248,6 @@ mono_metadata_update_init (void)
 	mono_metadata_update_has_updates_private = 0;
 	table_to_image_init ();
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
-}
-
-void
-mono_metadata_update_cleanup (void)
-{
-	mono_native_tls_free (exposed_generation_id);
 }
 
 /* Inform the execution engine that updates are coming */
@@ -427,6 +423,17 @@ mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gco
 	mono_image_append_delta (base_image, dmeta_image);
 
 	return dmeta_image;
+}
+
+static gpointer
+open_dil_data (MonoImage *base_image G_GNUC_UNUSED, gconstpointer dil_src, uint32_t dil_length)
+{
+	/* TODO: find a better memory manager.  But this way we at least won't lose the IL data. */
+	MonoMemoryManager *mem_manager = (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
+
+	gpointer dil_copy = mono_mem_manager_alloc (mem_manager, dil_length);
+	memcpy (dil_copy, dil_src, dil_length);
+	return dil_copy;
 }
 
 static const char *
@@ -635,11 +642,17 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 	g_assert (delta_info);
 
 	int index_map = delta_info->enc_recs [table];
+	int encmap_rows = table_info_get_rows (encmap);
+
+	/* if the table didn't have any updates in this generation and the
+	 * table index is bigger than the last table that got updates,
+	 * enc_recs will point past the last row */
+	if (index_map - 1 == encmap_rows)
+		return -1;
 	guint32 cols[MONO_ENCMAP_SIZE];
 	mono_metadata_decode_row (encmap, index_map - 1, cols, MONO_ENCMAP_SIZE);
 	int map_entry = cols [MONO_ENCMAP_TOKEN];
 
-	int encmap_rows = table_info_get_rows (encmap);
 	while (mono_metadata_token_table (map_entry) == table && mono_metadata_token_index (map_entry) < index && index_map < encmap_rows) {
 		mono_metadata_decode_row (encmap, ++index_map - 1, cols, MONO_ENCMAP_SIZE);
 		map_entry = cols [MONO_ENCMAP_TOKEN];
@@ -814,11 +827,58 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
-		if (token_table == MONO_TABLE_ASSEMBLYREF) {
+		switch (token_table) {
+		case MONO_TABLE_ASSEMBLYREF:
 			/* okay, supported */
-		} else if (token_table == MONO_TABLE_METHOD) {
+			break;
+		case MONO_TABLE_METHOD:
 			/* handled above */
-		} else {
+			break;
+		case MONO_TABLE_PROPERTY: {
+			/* modifying a property, ok */
+			if (token_index <= table_info_get_rows (&image_base->tables [token_table]))
+				break;
+			/* adding a property */
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
+			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new properties. token=0x%08x", log_token);
+			unsupported_edits = TRUE;
+			continue;
+		}
+		case MONO_TABLE_METHODSEMANTICS: {
+			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
+				/* new rows are fine, as long as they point at existing methods */
+				guint32 sema_cols [MONO_METHOD_SEMA_SIZE];
+				int mapped_token = mono_image_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+				g_assert (mapped_token != -1);
+				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_METHODSEMANTICS], mapped_token - 1, sema_cols, MONO_METHOD_SEMA_SIZE);
+
+				switch (sema_cols [MONO_METHOD_SEMA_SEMANTICS]) {
+				case METHOD_SEMANTIC_GETTER:
+				case METHOD_SEMANTIC_SETTER: {
+					int prop_method_index = sema_cols [MONO_METHOD_SEMA_METHOD];
+					/* ok, if it's pointing to an existing getter/setter */
+					if (prop_method_index < table_info_get_rows (&image_base->tables [MONO_TABLE_METHOD]))
+						break;
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new getter/setter method 0x%08x to a property is not supported", i, log_token, prop_method_index);
+					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding a new getter or setter to a property, token=0x%08x", log_token);
+					unsupported_edits = TRUE;
+					continue;
+				}
+				default:
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new non-getter/setter property or event methods is not supported.", i, log_token);
+					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new non-getter/setter property or event methods. token=0x%08x", log_token);
+					unsupported_edits = TRUE;
+					continue;
+				}
+			} else {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
+				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
+				unsupported_edits = TRUE;
+				continue;
+			}
+		}
+		default:
+			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
 			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
@@ -849,6 +909,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 static void
 set_update_method (MonoImage *image_base, uint32_t generation, MonoImage *image_dmeta, uint32_t token_index, const char* il_address)
 {
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "setting method 0x%08x in g=%d IL=%p", token_index, generation, (void*)il_address);
 	/* FIXME: this is a race if other threads are doing a lookup. */
 	g_hash_table_insert (image_base->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
 	g_hash_table_insert (image_dmeta->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);
@@ -883,7 +944,8 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 				break;
 		}
 
-		if (token_table == MONO_TABLE_ASSEMBLYREF) {
+		switch (token_table) {
+		case MONO_TABLE_ASSEMBLYREF: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 
 			if (assemblyref_updated)
@@ -915,7 +977,9 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 			mono_image_unlock (image_base);
 
 			g_free (old_array);
-		} else if (token_table == MONO_TABLE_METHOD) {
+			break;
+		}
+		case MONO_TABLE_METHOD: {
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 				g_error ("EnC: new method added, should be caught by pass1");
 			}
@@ -934,16 +998,28 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
-		} else if (token_table == MONO_TABLE_TYPEDEF) {
+			break;
+		}
+		case MONO_TABLE_TYPEDEF: {
 			/* TODO: throw? */
 			/* TODO: happens changing the class (adding field or method). we ignore it, but dragons are here */
 
 			/* existing entries are supposed to be patched */
 			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
-		} else {
+			break;
+		}
+		case MONO_TABLE_PROPERTY: {
+			/* allow updates to existing properties. */
+			/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
+			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			/* assuming that property attributes and type haven't changed. */
+			break;
+		}
+		default: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 				g_print ("todo: do something about this table index: 0x%02x\n", token_table);
+		}
 		}
 	}
 	return TRUE;
@@ -954,7 +1030,7 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
  * LOCKING: Takes the publish_lock
  */
 void
-mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
+mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, MonoError *error)
 {
 	mono_metadata_update_ee_init (error);
 	if (!is_ok (error))
@@ -966,16 +1042,12 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	}
 
 	const char *basename = image_base->filename;
-	/* FIXME:
-	 * (1) do we need to memcpy dmeta_bytes ? (maybe)
-	 * (2) do we need to memcpy dil_bytes ? (pretty sure, yes)
-	 */
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
-		g_print ("LOADING basename=%s delta update.\ndelta image=%p & dil=%p\n", basename, dmeta_bytes, dil_bytes);
+		g_print ("LOADING basename=%s delta update.\ndelta image=%p & dil=%p\n", basename, dmeta_bytes, dil_bytes_orig);
 		/* TODO: add a non-async version of mono_dump_mem */
 		mono_dump_mem (dmeta_bytes, dmeta_length);
-		mono_dump_mem (dil_bytes, dil_length);
+		mono_dump_mem (dil_bytes_orig, dil_length);
 	}
 
 	uint32_t generation = mono_metadata_update_prepare ();
@@ -986,6 +1058,7 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap size: 0x%08x", image_base->heap_blob.size);
 
 	MonoImageOpenStatus status;
+	/* makes a copy of dmeta_bytes */
 	MonoImage *image_dmeta = mono_image_open_dmeta_from_data (image_base, generation, dmeta_bytes, dmeta_length, &status);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image string size: 0x%08x", image_dmeta->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image user string size: 0x%08x", image_dmeta->heap_us.size);
@@ -993,6 +1066,10 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image blob heap size: 0x%08x", image_dmeta->heap_blob.size);
 	g_assert (image_dmeta);
 	g_assert (status == MONO_IMAGE_OK);
+
+	/* makes a copy of dil_bytes_orig */
+	gpointer dil_bytes = open_dil_data (image_base, dil_bytes_orig, dil_length);
+	/* TODO: make a copy of the dpdb bytes, once we consume them */
 
 	if (image_dmeta->minimal_delta) {
 		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE], 0, MONO_MODULE_NAME);
@@ -1015,6 +1092,14 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 		return;
 	}
 
+	/* Process EnCMap and compute number of added/modified rows from this
+	 * delta.  This enables computing row indexes relative to the delta.
+	 * We use it in pass1 to bail out early if the EnCLog has unsupported
+	 * edits.
+	 */
+	delta_info_init (image_dmeta, image_base);
+
+
 	if (!apply_enclog_pass1 (image_base, image_dmeta, dil_bytes, dil_length, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		mono_metadata_update_cancel (generation);
@@ -1024,8 +1109,6 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	/* if there are updates, start tracking the tables of the base image, if we weren't already. */
 	if (table_info_get_rows (table_enclog))
 		table_to_image_add (image_base);
-
-	delta_info_init (image_dmeta, image_base);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  guid: %s", image_base->guid);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);

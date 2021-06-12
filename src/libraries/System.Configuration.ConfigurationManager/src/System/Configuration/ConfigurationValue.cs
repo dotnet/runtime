@@ -3,7 +3,7 @@
 
 namespace System.Configuration
 {
-    internal class ConfigurationValue
+    internal sealed class ConfigurationValue
     {
         internal PropertySourceInfo SourceInfo;
         internal object Value;

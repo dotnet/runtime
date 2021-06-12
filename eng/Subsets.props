@@ -42,15 +42,18 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.runtime+clr.jit+clr.alljits+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.iltools+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
-
-    <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
+     
+    <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
+                                        '$(BuildTargetFramework)' == '' or
+                                        '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
     <DefaultHostSubsets>host.native+host.pkg+host.tools+host.tests</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono'"></DefaultHostSubsets>
@@ -81,8 +84,9 @@
     <SubsetName Include="Clr.DacTools" Description="Managed tools that support building a runtime that supports debugging (such as DacTableGen)." />
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
-    <SubsetName Include="Clr.PalTests" Description="The CoreCLR PAL tests." />
-    <SubsetName Include="Clr.PalTestList" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
+    <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools." />
+    <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
+    <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Jit" Description="The JIT for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJits" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.CoreLib" Description="The managed System.Private.CoreLib library for CoreCLR." />
@@ -146,14 +150,18 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')))">
+  <ItemGroup Condition="'$(TargetOS)' == 'windows' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')) or $(_subset.Contains('+clr.native+')))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)ToolBox\SOS\DacTableGen\DacTableGen.csproj;
                              $(CoreClrProjectRoot)ToolBox\SOS\DIALib\DIALib.ilproj"
                     Category="clr"/>
   </ItemGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.runtime+'))">
-    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrRuntimeSubset=true;ClrJitSubset=true</ClrRuntimeBuildSubsets>
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrRuntimeSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(_subset.Contains('+clr.native+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrFullNativeBuild=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.jit+'))">
@@ -165,7 +173,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.alljits+'))">
-    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrAllJitsSubset=true;ClrJitSubset=true</ClrRuntimeBuildSubsets>
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrAllJitsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.iltools+'))">
@@ -199,22 +207,25 @@
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
                              $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
 
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
       Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj;
-                             $(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
+    <!-- Build crossgen2 that will be used to compile System.Private.CoreLib library for CoreCLR -->
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="!('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64')" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
+  <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(PgoInstrument)' != 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 
@@ -255,7 +266,7 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.packages+'))">
+  <ItemGroup Condition="$(_subset.Contains('+libs.packages+')) and '$(PgoInstrument)' != 'true'">
     <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 
@@ -274,7 +285,7 @@
     <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(PgoInstrument)' != 'true'">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" BuildInParallel="false" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
@@ -292,6 +303,10 @@
 
   <Choose>
     <When Condition="$(_subset.Contains('+packs.product+'))">
+      <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+        <SharedFrameworkProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Composite.sfxproj" />
+        <SharedFrameworkProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Composite.Bundle.bundleproj" />
+      </ItemGroup>
       <ItemGroup Condition="'$(PgoInstrument)' != 'true'">
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" />
@@ -300,10 +315,10 @@
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
-        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" />
       </ItemGroup>
       <ItemGroup>
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" />
         <ProjectToBuild Include="@(SharedFrameworkProjectToBuild)" Category="packs" />
       </ItemGroup>
     </When>

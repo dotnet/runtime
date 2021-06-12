@@ -13,7 +13,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// for this is so the cache can easily Dispose the metadata object without worrying
     /// about who is using it.
     /// </summary>
-    internal class ProviderMetadataCachedInformation
+    internal sealed class ProviderMetadataCachedInformation
     {
         private readonly Dictionary<ProviderMetadataId, CacheItem> _cache;
         private readonly int _maximumCacheSize;

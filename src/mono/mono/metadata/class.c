@@ -1116,6 +1116,37 @@ mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContex
 	return mono_class_inflate_generic_method_full_checked (method, NULL, context, error);
 }
 
+static gboolean
+inflated_method_equal (gconstpointer a, gconstpointer b)
+{
+	const MonoMethodInflated *ma = (const MonoMethodInflated *)a;
+	const MonoMethodInflated *mb = (const MonoMethodInflated *)b;
+	if (ma->declaring != mb->declaring)
+		return FALSE;
+	return mono_metadata_generic_context_equal (&ma->context, &mb->context);
+}
+
+static guint
+inflated_method_hash (gconstpointer a)
+{
+	const MonoMethodInflated *ma = (const MonoMethodInflated *)a;
+	return (mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring));
+}
+
+static void
+free_inflated_method (MonoMethodInflated *imethod)
+{
+	MonoMethod *method = (MonoMethod*)imethod;
+
+	if (method->signature)
+		mono_metadata_free_inflated_signature (method->signature);
+
+	if (method->wrapper_type)
+		g_free (((MonoMethodWrapper*)method)->method_data);
+
+	g_free (method);
+}
+
 /**
  * mono_class_inflate_generic_method_full_checked:
  * Instantiate method \p method with the generic context \p context.
@@ -1178,12 +1209,14 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	if (!mono_class_is_gtd (iresult->declaring->klass) && !mono_class_is_ginst (iresult->declaring->klass))
 		iresult->context.class_inst = NULL;
 
-	MonoImageSet *set = mono_metadata_get_image_set_for_method (iresult);
+	MonoMemoryManager *mm = mono_metadata_get_mem_manager_for_method (iresult);
 
 	// check cache
-	mono_image_set_lock (set);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (set->gmethod_cache, iresult);
-	mono_image_set_unlock (set);
+	mono_mem_manager_lock (mm);
+	if (!mm->gmethod_cache)
+		mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
+	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+	mono_mem_manager_unlock (mm);
 
 	if (cached) {
 		g_free (iresult);
@@ -1276,14 +1309,14 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	 */
 
 	// check cache
-	mono_image_set_lock (set);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (set->gmethod_cache, iresult);
+	mono_mem_manager_lock (mm);
+	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
 	if (!cached) {
-		g_hash_table_insert (set->gmethod_cache, iresult, iresult);
-		iresult->owner = set;
+		g_hash_table_insert (mm->gmethod_cache, iresult, iresult);
+		iresult->owner = mm;
 		cached = iresult;
 	}
-	mono_image_set_unlock (set);
+	mono_mem_manager_unlock (mm);
 
 	return (MonoMethod*)cached;
 

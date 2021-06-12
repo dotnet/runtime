@@ -103,7 +103,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         PRECONDITION(IsProtectedByGCFrame(pComObj));
         PRECONDITION(!m_typeHandle.IsNull());
         PRECONDITION(m_typeHandle.IsComObjectType());
-        PRECONDITION(m_pThread == GetThread());
+        PRECONDITION(m_pThread == GetThreadNULLOk());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }
     CONTRACTL_END;
@@ -306,7 +306,7 @@ OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRefInternal(IUnknown **ppInco
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(m_pThread == GetThread());
+        PRECONDITION(m_pThread == GetThreadNULLOk());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }
     CONTRACTL_END;
@@ -400,6 +400,7 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
         // This was previously provided by IProvideClassinfo. If the type handle isn't
         // set fallback to the opaque __ComObject type.
         m_typeHandle = TypeHandle(g_pBaseCOMObject);
+        _ASSERTE(!m_typeHandle.IsNull());
     }
 }
 

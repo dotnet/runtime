@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// <summary>
     /// A logger that writes messages to Windows Event Log.
     /// </summary>
-    internal class EventLogLogger : ILogger
+    internal sealed class EventLogLogger : ILogger
     {
         private readonly string _name;
         private readonly EventLogSettings _settings;

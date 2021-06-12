@@ -25,7 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{32A31E04-255
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D9FB1730-B750-4C0D-8D24-8C992DEB6034}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Legacy.Tests", "tests\LegacyTests\System.IO.FileSystem.Legacy.Tests.csproj", "{48E07F12-8597-40DE-8A37-CCBEB9D54012}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Net5Compat.Tests", "tests\Net5CompatTests\System.IO.FileSystem.Net5Compat.Tests.csproj", "{48E07F12-8597-40DE-8A37-CCBEB9D54012}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamConformanceTests", "..\Common\tests\StreamConformanceTests\StreamConformanceTests.csproj", "{FEF03BCC-509F-4646-9132-9DE27FA3DA6F}"
 EndProject

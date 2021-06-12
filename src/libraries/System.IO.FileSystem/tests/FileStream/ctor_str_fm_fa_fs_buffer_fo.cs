@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
@@ -23,7 +21,9 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidFileOptionsThrow()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("options"),
+                () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -47,6 +47,8 @@ namespace System.IO.Tests
 
             using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, option))
             {
+                Assert.Equal((option & FileOptions.Asynchronous) != 0, fs.IsAsync);
+
                 // make sure we can write, seek, and read data with this option set
                 fs.Write(data, 0, data.Length);
                 fs.Position = 0;
@@ -87,6 +89,5 @@ namespace System.IO.Tests
             }
             Assert.False(File.Exists(path));
         }
-
     }
 }

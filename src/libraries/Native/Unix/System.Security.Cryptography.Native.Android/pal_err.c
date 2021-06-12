@@ -27,7 +27,15 @@ const char* CryptoNative_ErrReasonErrorString(uint64_t error)
     return "See logcat for more details.";
 }
 
+static const char see_logcat_message[] = "See logcat for more details.";
+#define SEE_LOGCAT_MESSAGE_LEN (int32_t)(sizeof(see_logcat_message))
+
 void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
-    buf = "See logcat for more details.";
+    abort_if_invalid_pointer_argument (buf);
+    if (len <= 0) {
+        return;
+    }
+
+    memcpy (buf, see_logcat_message, len < SEE_LOGCAT_MESSAGE_LEN ? (size_t)len : SEE_LOGCAT_MESSAGE_LEN);
 }

@@ -28,7 +28,7 @@ namespace System.DirectoryServices.Interop
 
     internal static class UnsafeNativeMethods
     {
-        [DllImport(ExternDll.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         private static extern int IntADsOpenObject(string path, string? userName, string? password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
 
         public static int ADsOpenObject(string path, string? userName, string? password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)

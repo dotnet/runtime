@@ -51,12 +51,13 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        internal static void ApplyUpdateSdb(Assembly assembly, byte[] metadataDelta, byte[] ilDelta, byte[]? pdbDelta)
+        internal static string GetApplyUpdateCapabilities()
         {
-            ReadOnlySpan<byte> md = metadataDelta;
-            ReadOnlySpan<byte> il = ilDelta;
-            ReadOnlySpan<byte> dpdb = pdbDelta == null ? default : pdbDelta;
-            ApplyUpdate (assembly, md, il, dpdb);
+#if !FEATURE_METADATA_UPDATE
+            return string.Empty;
+#else
+            return "Baseline";
+#endif
         }
 
 #if FEATURE_METADATA_UPDATE

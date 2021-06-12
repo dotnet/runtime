@@ -295,6 +295,10 @@ namespace System.Linq
         /// <typeparam name="TAccumulate">The type of the accumulated value.</typeparam>
         /// <typeparam name="TResult">The type of result returned by the result selector.</typeparam>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray">An immutable array to aggregate over.</param>
+        /// <param name="seed">The initial accumulator value.</param>
+        /// <param name="func">An accumulator function to be invoked on each element.</param>
+        /// <param name="resultSelector">A function to transform the final accumulator value into the result type.</param>
         public static TResult Aggregate<TAccumulate, TResult, T>(this ImmutableArray<T> immutableArray, TAccumulate seed, Func<TAccumulate, T, TAccumulate> func, Func<TAccumulate, TResult> resultSelector)
         {
             Requires.NotNull(resultSelector, nameof(resultSelector));
@@ -468,6 +472,8 @@ namespace System.Linq
         /// Returns the only element of a sequence that satisfies a specified condition, and throws an exception if more than one such element exists.
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
+        /// <param name="immutableArray">The immutable array to return a single element from.</param>
+        /// <param name="predicate">The function to test whether an element should be returned.</param>
         public static T Single<T>(this ImmutableArray<T> immutableArray, Func<T, bool> predicate)
         {
             Requires.NotNull(predicate, nameof(predicate));
@@ -613,7 +619,7 @@ namespace System.Linq
         /// Copies the contents of this array to a mutable array.
         /// </summary>
         /// <typeparam name="T">The type of element contained by the collection.</typeparam>
-        /// <param name="immutableArray"></param>
+        /// <param name="immutableArray">The immutable array to copy into a mutable one.</param>
         /// <returns>The newly instantiated array.</returns>
         public static T[] ToArray<T>(this ImmutableArray<T> immutableArray)
         {

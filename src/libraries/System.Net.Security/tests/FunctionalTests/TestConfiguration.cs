@@ -41,8 +41,8 @@ namespace System.Net.Security.Tests
                 return true;
             }
 
-            // On macOS, the null cipher (no encryption) is not supported.
-            if (OperatingSystem.IsMacOS())
+            // On macOS and Android, the null cipher (no encryption) is not supported.
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsAndroid())
             {
                 return false;
             }

@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace System.Composition.TypedParts.Discovery
 {
-    internal class TypeInspector
+    internal sealed class TypeInspector
     {
         private static readonly IDictionary<string, object> s_noMetadata = new Dictionary<string, object>();
 

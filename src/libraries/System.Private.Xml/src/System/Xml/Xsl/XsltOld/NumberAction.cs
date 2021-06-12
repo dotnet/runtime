@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.XsltOld
 {
     internal class NumberAction : ContainerAction
     {
-        internal class FormatInfo
+        internal sealed class FormatInfo
         {
             public bool isSeparator;      // False for alphanumeric strings of chars
             public NumberingSequence numSequence;      // Specifies numbering sequence

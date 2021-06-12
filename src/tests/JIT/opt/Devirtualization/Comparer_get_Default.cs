@@ -90,15 +90,21 @@ class Program
 
     public static int Main(string[] args)
     {
-        long[] values = Enumerable.Range(1000, 2000)
-            .Select(i => (long)i)
-            .Concat(new[]
+        long[] values = 
             {
-                short.MinValue, short.MinValue + 1, short.MaxValue - 1, short.MaxValue, short.MaxValue + 1,
-                int.MinValue, int.MinValue + 1, int.MaxValue, int.MaxValue - 1,
-                long.MinValue, long.MinValue + 1, long.MaxValue, long.MaxValue - 1,
-            })
-            .ToArray();
+                -2, -1, 0, 1, 2,
+                sbyte.MinValue - 1, sbyte.MinValue, sbyte.MinValue + 1, 
+                sbyte.MaxValue - 1, sbyte.MaxValue, sbyte.MaxValue + 1,
+                byte.MaxValue - 1, byte.MaxValue, byte.MaxValue + 1,
+                short.MinValue, short.MinValue + 1, 
+                short.MaxValue - 1, short.MaxValue, short.MaxValue + 1,
+                ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1,
+                int.MinValue, int.MinValue + 1, 
+                int.MaxValue - 1, int.MaxValue, int.MaxValue + 1L,
+                uint.MaxValue - 1, uint.MaxValue, uint.MaxValue + 1L,
+                long.MinValue, long.MinValue + 1, 
+                long.MaxValue - 1, long.MaxValue
+            };
 
         for (var i = 0; i < values.Length; i++)
         {

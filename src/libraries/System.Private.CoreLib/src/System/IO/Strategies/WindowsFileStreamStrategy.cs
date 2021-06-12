@@ -4,20 +4,12 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.CompilerServices;
 
 namespace System.IO.Strategies
 {
     // this type serves some basic functionality that is common for Async and Sync Windows File Stream Strategies
     internal abstract class WindowsFileStreamStrategy : FileStreamStrategy
     {
-        // Error codes (not HRESULTS), from winerror.h
-        internal const int ERROR_BROKEN_PIPE = 109;
-        internal const int ERROR_NO_DATA = 232;
-        protected const int ERROR_HANDLE_EOF = 38;
-        protected const int ERROR_INVALID_PARAMETER = 87;
-        protected const int ERROR_IO_PENDING = 997;
-
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
@@ -28,6 +20,7 @@ namespace System.IO.Strategies
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
         private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
+        private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
@@ -37,13 +30,14 @@ namespace System.IO.Strategies
             // but we can't as they're readonly.
             _access = access;
             _share = share;
+            _exposedHandle = true;
 
             // As the handle was passed in, we must set the handle field at the very end to
             // avoid the finalizer closing the handle when we throw errors.
             _fileHandle = handle;
         }
 
-        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -51,7 +45,7 @@ namespace System.IO.Strategies
             _access = access;
             _share = share;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
+            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {
@@ -77,15 +71,29 @@ namespace System.IO.Strategies
 
         // When the file is locked for writes we can cache file length in memory
         // and avoid subsequent native calls which are expensive.
-        public unsafe sealed override long Length => _share > FileShare.Read ?
-            FileStreamHelpers.GetFileLength(_fileHandle, _path) :
-            _length < 0 ? _length = FileStreamHelpers.GetFileLength(_fileHandle, _path) : _length;
+        public unsafe sealed override long Length
+        {
+            get
+            {
+                if (_share > FileShare.Read || _exposedHandle)
+                {
+                    return FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                }
+
+                if (_length < 0)
+                {
+                    _length = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                }
+
+                return _length;
+            }
+        }
 
         protected void UpdateLengthOnChangePosition()
         {
             // Do not update the cached length if the file is not locked
             // or if the length hasn't been fetched.
-            if (_share > FileShare.Read || _length < 0)
+            if (_share > FileShare.Read || _length < 0 || _exposedHandle)
             {
                 Debug.Assert(_length < 0);
                 return;
@@ -120,6 +128,10 @@ namespace System.IO.Strategies
                     // in memory position is out-of-sync with the actual file position.
                     FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
                 }
+
+                _exposedHandle = true;
+                _length = -1; // invalidate cached length
+
                 return _fileHandle;
             }
         }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Packaging
 {
-    internal class ZipStreamManager : IDisposable
+    internal sealed class ZipStreamManager : IDisposable
     {
         private readonly ZipArchive _zipArchive;
         private readonly FileAccess _packageFileAccess;
@@ -100,7 +100,7 @@ namespace System.IO.Packaging
         }
 
         // Protected implementation of Dispose pattern.
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;

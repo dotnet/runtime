@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    internal class NamespaceCache
+    internal sealed class NamespaceCache
     {
         private readonly MetadataReader _metadataReader;
         private readonly object _namespaceTableAndListLock = new object();
