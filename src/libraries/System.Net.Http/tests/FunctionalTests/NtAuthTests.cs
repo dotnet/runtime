@@ -160,23 +160,5 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
-        [Theory]
-        [InlineData("NTLM")]
-        [InlineData("Negotiate")]
-        public async Task AuthTest(string authType)
-        {
-            var testUri = new Uri("http://emclientntlm.westus.cloudapp.azure.com/");
-            var networkCredential = new NetworkCredential("user1", "PLACEHOLDERcorrect20", "emclientntlm");
-
-            using var socketsHandler = new SocketsHttpHandler();
-            var credentialCache = new CredentialCache();
-            credentialCache.Add(testUri, authType, networkCredential);
-            socketsHandler.Credentials = credentialCache;
-
-            using var client = new HttpClient(socketsHandler);
-            var result = await client.GetAsync(testUri);
-            Assert.True(result.IsSuccessStatusCode);
-        }
     }
 }
