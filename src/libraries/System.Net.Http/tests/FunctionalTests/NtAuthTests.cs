@@ -167,7 +167,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task AuthTest(string authType)
         {
             var testUri = new Uri("http://emclientntlm.westus.cloudapp.azure.com/");
-            var networkCredential = new NetworkCredential("user1", "PLACEHOLDERcorrect20", "emclientntlm");
+            var networkCredential = new NetworkCredential("user1", "PLACEHOLDERcorrect20", "emclientntlm.westus.cloudapp.azure.com");
 
             using var socketsHandler = new SocketsHttpHandler();
             var credentialCache = new CredentialCache();
