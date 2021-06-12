@@ -10,11 +10,6 @@ namespace System.Xml.Xsl
     */
     internal static class XPathConvert
     {
-        public static string DoubleToString(double dbl)
-        {
-            return dbl.ToString(CultureInfo.InvariantCulture);
-        }
-
         public static double StringToDouble(string s)
         {
             if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))

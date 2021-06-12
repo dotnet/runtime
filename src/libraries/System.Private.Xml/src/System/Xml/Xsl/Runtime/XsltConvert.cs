@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable disable
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml.XPath;
-using System.Xml.Xsl;
-using System.Xml.Schema;
-using System.Diagnostics;
 using System.ComponentModel;
-using System.Reflection;
+using System.Diagnostics;
+using System.Globalization;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -198,22 +196,13 @@ namespace System.Xml.Xsl.Runtime
         }
 
 
-        //------------------------------------------------------------------------
-        // ToString (internal type to internal type)
-        //------------------------------------------------------------------------
-
-        public static string ToString(double value)
-        {
-            return XPathConvert.DoubleToString(value);
-        }
-
         public static string ToString(XPathItem item)
         {
             XsltLibrary.CheckXsltValue(item);
 
             // Use XPath 1.0 rules to convert double to string
             if (!item.IsNode && item.ValueType == DoubleType)
-                return XPathConvert.DoubleToString(item.ValueAsDouble);
+                return item.ValueAsDouble.ToString(CultureInfo.InvariantCulture);
 
             return item.Value;
         }

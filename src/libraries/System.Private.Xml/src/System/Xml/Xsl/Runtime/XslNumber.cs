@@ -193,7 +193,7 @@ namespace System.Xml.Xsl.Runtime
                     // Errata E24: It is an error if the number is NaN, infinite or less than 0.5; an XSLT processor may signal
                     // the error; if it does not signal the error, it must recover by converting the number to a string as if
                     // by a call to the 'string' function and inserting the resulting string into the result tree.
-                    return XPathConvert.DoubleToString(dblVal);
+                    return dblVal.ToString(CultureInfo.InvariantCulture);
                 }
             }
 
