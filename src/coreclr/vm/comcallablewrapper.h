@@ -503,7 +503,8 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
 
-        return InterlockedIncrement(&m_cbRefCount);
+        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+        return InterlockedIncrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
     }
 
     LONG Release()
@@ -517,9 +518,10 @@ struct ComMethodTable
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
         // use a different var here becuase cleanup will delete the object
         // so can no longer make member refs
-        LONG cbRef = InterlockedDecrement(&m_cbRefCount);
+        LONG cbRef = InterlockedDecrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
         if (cbRef == 0)
             Cleanup();
 
@@ -759,8 +761,9 @@ struct ComMethodTable
         // Generate the IClassX IID if it hasn't been generated yet.
         if (!(m_Flags & enum_GuidGenerated))
         {
-            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
-            m_Flags |= enum_GuidGenerated;
+            ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+            GenerateClassItfGuid(TypeHandle(m_pMT), &comMTWriterHolder.GetRW()->m_IID);
+            comMTWriterHolder.GetRW()->m_Flags |= enum_GuidGenerated;
         }
 
         return m_IID;

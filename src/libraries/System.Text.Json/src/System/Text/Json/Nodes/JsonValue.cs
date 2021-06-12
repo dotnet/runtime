@@ -13,6 +13,8 @@ namespace System.Text.Json.Nodes
     /// </summary>
     public abstract partial class JsonValue : JsonNode
     {
+        internal const string CreateUnreferencedCodeMessage = "Creating JsonValue instances with non-primitive types is not compatible with trimming. It can result in non-primitive types being serialized, which may have their members trimmed.";
+
         private protected JsonValue(JsonNodeOptions? options = null) : base(options) { }
 
         /// <summary>
@@ -25,8 +27,8 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The value to create.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        public static JsonValue? Create<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)]T>(T? value, JsonNodeOptions? options = null)
+        [RequiresUnreferencedCode(CreateUnreferencedCodeMessage + " Use the overload that takes a JsonTypeInfo, or make sure all of the required types are preserved.")]
+        public static JsonValue? Create<T>(T? value, JsonNodeOptions? options = null)
         {
             if (value == null)
             {
@@ -41,6 +43,8 @@ namespace System.Text.Json.Nodes
                 }
 
                 VerifyJsonElementIsNotArrayOrObject(ref element);
+
+                return new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
             }
 
             return new JsonValueNotTrimmable<T>(value, options);
@@ -54,7 +58,7 @@ namespace System.Text.Json.Nodes
         /// </returns>
         /// <typeparam name="T">The type of value to create.</typeparam>
         /// <param name="value">The value to create.</param>
-        /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> that is later used to serialize the value.</param>
+        /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> that will be used to serialize the value.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create<T>(T? value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)

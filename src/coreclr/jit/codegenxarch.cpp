@@ -1987,7 +1987,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     // and needs to be assembled into a single xmm register,
     // note we can't check reg0=EAX, reg1=EDX because they could be already moved.
 
-    inst_RV_RV(ins_Copy(reg0, TYP_FLOAT), targetReg, reg0, TYP_INT);
+    inst_Mov(TYP_FLOAT, targetReg, reg0, /* canSkip */ false);
     const emitAttr size = emitTypeSize(TYP_SIMD8);
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
@@ -1996,7 +1996,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     else
     {
         regNumber tempXmm = lclNode->GetSingleTempReg();
-        inst_RV_RV(ins_Copy(reg1, TYP_FLOAT), tempXmm, reg1, TYP_INT);
+        inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
         GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
     }
 #elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
@@ -2332,7 +2332,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
-    unsigned stackAdjustment = 0;
+    target_size_t stackAdjustment     = 0;
+    target_size_t locAllocStackOffset = 0;
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
@@ -2410,6 +2411,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
     }
 
+    bool initMemOrLargeAlloc; // Declaration must be separate from initialization to avoid clang compiler error.
+    initMemOrLargeAlloc = compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
+
 #if FEATURE_FIXED_OUT_ARGS
     // If we have an outgoing arg area then we must adjust the SP by popping off the
     // outgoing arg area. We will restore it right before we return from this method.
@@ -2425,8 +2429,22 @@ void CodeGen::genLclHeap(GenTree* tree)
     {
         assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
                                                                         // aligned
+
+        // If the localloc amount is a small enough constant, and we're not initializing the allocated
+        // memory, then don't bother popping off the ougoing arg space first; just allocate the amount
+        // of space needed by the allocation, and call the bottom part the new outgoing arg space.
+
+        if ((amount > 0) && !initMemOrLargeAlloc)
+        {
+            lastTouchDelta      = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, REG_NA);
+            stackAdjustment     = 0;
+            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+            goto ALLOC_DONE;
+        }
+
         inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
-        stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
+        stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+        locAllocStackOffset = stackAdjustment;
     }
 #endif
 
@@ -2450,9 +2468,6 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             goto ALLOC_DONE;
         }
-
-        bool initMemOrLargeAlloc =
-            compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
 
 #ifdef TARGET_X86
         bool needRegCntRegister = true;
@@ -2552,7 +2567,7 @@ ALLOC_DONE:
         assert(lastTouchDelta >= -1);
 
         if ((lastTouchDelta == (target_ssize_t)-1) ||
-            (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
+            (stackAdjustment + (target_size_t)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
              compiler->eeGetPageSize()))
         {
             genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, REG_NA);
@@ -2564,8 +2579,8 @@ ALLOC_DONE:
     }
 
     // Return the stackalloc'ed address in result register.
-    // TargetReg = RSP + stackAdjustment.
-    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, targetReg, REG_SPBASE, stackAdjustment);
+    // TargetReg = RSP + locAllocStackOffset
+    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, targetReg, REG_SPBASE, (int)locAllocStackOffset);
 
     if (endLabel != nullptr)
     {
@@ -5414,7 +5429,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 // A Vector3 return value is stored in xmm0 and xmm1.
                 // RyuJIT assumes that the upper unused bits of xmm1 are cleared but
                 // the native compiler doesn't guarantee it.
-                if (returnType == TYP_SIMD12)
+                if (call->IsUnmanaged() && (returnType == TYP_SIMD12))
                 {
                     returnReg = retTypeDesc->GetABIReturnReg(1);
                     // Clear the upper 32 bits by two shift instructions.
@@ -6035,8 +6050,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    bool needsOCFlags = !tree->OperIs(GT_EQ, GT_NE);
-    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), needsOCFlags))
+    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
     }
@@ -6376,7 +6390,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (treeNode->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     noway_assert(!varTypeIsGC(srcType));

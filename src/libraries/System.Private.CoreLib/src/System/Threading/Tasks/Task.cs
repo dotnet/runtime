@@ -2973,14 +2973,36 @@ namespace System.Threading.Tasks
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44622
                     if (infiniteWait)
                     {
-                        returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
+                        bool notifyWhenUnblocked = ThreadPool.NotifyThreadBlocked();
+                        try
+                        {
+                            returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
+                        }
+                        finally
+                        {
+                            if (notifyWhenUnblocked)
+                            {
+                                ThreadPool.NotifyThreadUnblocked();
+                            }
+                        }
                     }
                     else
                     {
                         uint elapsedTimeTicks = ((uint)Environment.TickCount) - startTimeTicks;
                         if (elapsedTimeTicks < millisecondsTimeout)
                         {
-                            returnValue = mres.Wait((int)(millisecondsTimeout - elapsedTimeTicks), cancellationToken);
+                            bool notifyWhenUnblocked = ThreadPool.NotifyThreadBlocked();
+                            try
+                            {
+                                returnValue = mres.Wait((int)(millisecondsTimeout - elapsedTimeTicks), cancellationToken);
+                            }
+                            finally
+                            {
+                                if (notifyWhenUnblocked)
+                                {
+                                    ThreadPool.NotifyThreadUnblocked();
+                                }
+                            }
                         }
                     }
 #pragma warning restore CA1416
@@ -5480,7 +5502,8 @@ namespace System.Threading.Tasks
         /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">
-        /// The provided <paramref name="cancellationToken"/> has already been disposed.
+        /// The <see cref="CancellationTokenSource"/> associated
+        /// with <paramref name="cancellationToken"/> has already been disposed.
         /// </exception>
         /// <remarks>
         /// If the cancellation token is signaled before the specified time delay, then the Task is completed in
@@ -5513,7 +5536,8 @@ namespace System.Threading.Tasks
         /// The <paramref name="millisecondsDelay"/> is less than -1.
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">
-        /// The provided <paramref name="cancellationToken"/> has already been disposed.
+        /// The <see cref="CancellationTokenSource"/> associated
+        /// with <paramref name="cancellationToken"/> has already been disposed.
         /// </exception>
         /// <remarks>
         /// If the cancellation token is signaled before the specified time delay, then the Task is completed in

@@ -480,6 +480,12 @@ public:
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
     }
 
+    UINT GetErrorResourceId()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_resID;
+    }
+
 private:
 
     UINT16                      GetNativeSize(MarshalType mtype);

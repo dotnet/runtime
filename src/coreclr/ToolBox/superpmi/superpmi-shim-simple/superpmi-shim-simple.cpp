@@ -97,6 +97,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
 {
     SetDefaultPaths();
     SetLibName();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
@@ -125,6 +126,7 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
 
     SetDefaultPaths();
     SetLibName();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

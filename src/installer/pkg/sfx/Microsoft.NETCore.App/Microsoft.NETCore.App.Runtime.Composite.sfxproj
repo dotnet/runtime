@@ -20,6 +20,7 @@
     <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Composite.r2r.dll" IsNative="true" />
     <PublishReadyToRunCompositeExclusions Include="System.Reflection.Metadata.dll" />
     <PublishReadyToRunCompositeExclusions Include="System.Collections.Immutable.dll" />
+    <PublishReadyToRunCompositeExclusions Include="System.Runtime.CompilerServices.Unsafe.dll" />
   </ItemGroup>
 
  <ItemGroup>

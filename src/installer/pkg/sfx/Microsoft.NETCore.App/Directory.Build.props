@@ -180,16 +180,16 @@
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
     <!-- Mono components specific files -->
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.lib" IsNative="true" />
@@ -217,8 +217,8 @@
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
-    <PlatformManifestFileEntry Include="emcc-flags.txt" IsNative="true" />
-    <PlatformManifestFileEntry Include="emcc-version.txt" IsNative="true" />
+    <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
+    <PlatformManifestFileEntry Include="Emcc.props" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
@@ -256,5 +256,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
     <_hostArch>amd64</_hostArch>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
   </PropertyGroup>
 </Project>

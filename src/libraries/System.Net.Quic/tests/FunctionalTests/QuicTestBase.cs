@@ -53,15 +53,29 @@ namespace System.Net.Quic.Tests
             return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
         }
 
-        internal QuicListener CreateQuicListener()
+        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
-            return CreateQuicListener(new IPEndPoint(IPAddress.Loopback, 0));
+            var options = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
+                MaxUnidirectionalStreams = maxUnidirectionalStreams,
+                MaxBidirectionalStreams = maxBidirectionalStreams
+            };
+            return CreateQuicListener(options);
         }
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            return new QuicListener(ImplementationProvider, endpoint, GetSslServerAuthenticationOptions());
+            var options = new QuicListenerOptions()
+            {
+                ListenEndPoint = endpoint,
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+            };
+            return CreateQuicListener(options);
         }
+
+        private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
 
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
         {

@@ -460,7 +460,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // regCnt will be the total number of bytes to locAlloc
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, TYP_INT);
     }
     else
     {
@@ -1451,7 +1451,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (treeNode->gtFlags & GTF_UNSIGNED)
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
     }
 
     // We only expect a srcType whose size is EA_4BYTE.

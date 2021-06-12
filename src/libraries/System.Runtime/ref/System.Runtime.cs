@@ -68,15 +68,18 @@ namespace System
     public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
     public static partial class Activator
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, bool nonPublic) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, params object?[]? args) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, object?[]? args, object?[]? activationAttributes) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture) { throw null; }
-        public static object? CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+        public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
@@ -322,6 +325,7 @@ namespace System
         public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static int BinarySearch<T>(T[] array, T value) { throw null; }
         public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
+        public static void Clear(System.Array array) { }
         public static void Clear(System.Array array, int index, int length) { }
         public object Clone() { throw null; }
         public static void ConstrainedCopy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
@@ -596,6 +600,18 @@ namespace System
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong DoubleToUInt64Bits(double value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static double UInt64BitsToDouble(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint SingleToUInt32Bits(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static float UInt32BitsToSingle(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Half UInt16BitsToHalf(ushort value) { throw null; }
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static bool ToBoolean(System.ReadOnlySpan<byte> value) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
@@ -1344,14 +1360,14 @@ namespace System
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.DateOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
-        public static bool TryParse(string s, out System.DateOnly result) { throw null; }
-        public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(string s, string format, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(string s, string[] formats, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.DateOnly result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
         public string ToLongDateString() { throw null; }
         public string ToShortDateString() { throw null; }
         public override string ToString() { throw null; }
@@ -3015,16 +3031,25 @@ namespace System
         public bool Equals(System.ModuleHandle handle) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeFieldHandle GetRuntimeFieldHandleFromMetadataToken(int fieldToken) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeMethodHandle GetRuntimeMethodHandleFromMetadataToken(int methodToken) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeTypeHandle GetRuntimeTypeHandleFromMetadataToken(int typeToken) { throw null; }
         public static bool operator ==(System.ModuleHandle left, System.ModuleHandle right) { throw null; }
         public static bool operator !=(System.ModuleHandle left, System.ModuleHandle right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeFieldHandle ResolveFieldHandle(int fieldToken) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeFieldHandle ResolveFieldHandle(int fieldToken, System.RuntimeTypeHandle[]? typeInstantiationContext, System.RuntimeTypeHandle[]? methodInstantiationContext) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeMethodHandle ResolveMethodHandle(int methodToken) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeMethodHandle ResolveMethodHandle(int methodToken, System.RuntimeTypeHandle[]? typeInstantiationContext, System.RuntimeTypeHandle[]? methodInstantiationContext) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeTypeHandle ResolveTypeHandle(int typeToken) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
         public System.RuntimeTypeHandle ResolveTypeHandle(int typeToken, System.RuntimeTypeHandle[]? typeInstantiationContext, System.RuntimeTypeHandle[]? methodInstantiationContext) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
@@ -3620,6 +3645,7 @@ namespace System
         [System.ObsoleteAttribute("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
         public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
+        public void CopyTo(System.Span<char> destination) { }
         public static System.String Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(System.String value) { throw null; }
@@ -3703,6 +3729,8 @@ namespace System
         public System.String Replace(System.String oldValue, System.String? newValue) { throw null; }
         public System.String Replace(System.String oldValue, System.String? newValue, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public System.String Replace(System.String oldValue, System.String? newValue, System.StringComparison comparisonType) { throw null; }
+        public System.String ReplaceLineEndings() { throw null; }
+        public System.String ReplaceLineEndings(System.String replacementText) { throw null; }
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[]? separator) { throw null; }
@@ -3755,6 +3783,7 @@ namespace System
         public System.String TrimStart() { throw null; }
         public System.String TrimStart(char trimChar) { throw null; }
         public System.String TrimStart(params char[]? trimChars) { throw null; }
+        public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string?>, System.Collections.Generic.IEqualityComparer<string?>, System.Collections.IComparer, System.Collections.IEqualityComparer
     {
@@ -3861,14 +3890,14 @@ namespace System
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.TimeOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
-        public static bool TryParse(string s, out System.TimeOnly result) { throw null; }
-        public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(string s, string format, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(string s, string[] formats, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.TimeOnly result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public string ToLongTimeString() { throw null; }
         public string ToShortTimeString() { throw null; }
         public override string ToString() { throw null; }
@@ -7354,9 +7383,10 @@ namespace System.IO
         public override void Flush() { }
         public virtual void Flush(bool flushToDisk) { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual void Lock(long position, long length) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
@@ -7365,15 +7395,258 @@ namespace System.IO
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual void Unlock(long position, long length) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
+    }
+    public static partial class Directory
+    {
+        public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
+        public static void Delete(string path) { }
+        public static void Delete(string path, bool recursive) { }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static System.DateTime GetCreationTime(string path) { throw null; }
+        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
+        public static string GetCurrentDirectory() { throw null; }
+        public static string[] GetDirectories(string path) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string GetDirectoryRoot(string path) { throw null; }
+        public static string[] GetFiles(string path) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string[] GetFileSystemEntries(string path) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.DateTime GetLastAccessTime(string path) { throw null; }
+        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
+        public static System.DateTime GetLastWriteTime(string path) { throw null; }
+        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        public static string[] GetLogicalDrives() { throw null; }
+        public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
+        public static void Move(string sourceDirName, string destDirName) { }
+        public static void SetCreationTime(string path, System.DateTime creationTime) { }
+        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
+        public static void SetCurrentDirectory(string path) { }
+        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
+        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
+        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
+        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+    }
+    public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
+    {
+        protected string FullPath;
+        protected string OriginalPath;
+        protected FileSystemInfo() { }
+        protected FileSystemInfo(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public System.IO.FileAttributes Attributes { get { throw null; } set { } }
+        public System.DateTime CreationTime { get { throw null; } set { } }
+        public System.DateTime CreationTimeUtc { get { throw null; } set { } }
+        public abstract bool Exists { get; }
+        public string Extension { get { throw null; } }
+        public virtual string FullName { get { throw null; } }
+        public System.DateTime LastAccessTime { get { throw null; } set { } }
+        public System.DateTime LastAccessTimeUtc { get { throw null; } set { } }
+        public System.DateTime LastWriteTime { get { throw null; } set { } }
+        public System.DateTime LastWriteTimeUtc { get { throw null; } set { } }
+        public abstract string Name { get; }
+        public abstract void Delete();
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public void Refresh() { }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class DirectoryInfo : System.IO.FileSystemInfo
+    {
+        public DirectoryInfo(string path) { }
+        public override bool Exists { get { throw null; } }
+        public override string Name { get { throw null; } }
+        public System.IO.DirectoryInfo? Parent { get { throw null; } }
+        public System.IO.DirectoryInfo Root { get { throw null; } }
+        public void Create() { }
+        public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
+        public override void Delete() { }
+        public void Delete(bool recursive) { }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories() { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.FileInfo[] GetFiles() { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern) { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos() { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public void MoveTo(string destDirName) { }
+        public override string ToString() { throw null; }
+    }
+    public enum MatchCasing
+    {
+        PlatformDefault = 0,
+        CaseSensitive = 1,
+        CaseInsensitive = 2,
+    }
+    public enum MatchType
+    {
+        Simple = 0,
+        Win32 = 1,
+    }
+    public enum SearchOption
+    {
+        TopDirectoryOnly = 0,
+        AllDirectories = 1,
+    }
+    public partial class EnumerationOptions
+    {
+        public EnumerationOptions() { }
+        public System.IO.FileAttributes AttributesToSkip { get { throw null; } set { } }
+        public int BufferSize { get { throw null; } set { } }
+        public bool IgnoreInaccessible { get { throw null; } set { } }
+        public System.IO.MatchCasing MatchCasing { get { throw null; } set { } }
+        public System.IO.MatchType MatchType { get { throw null; } set { } }
+        public int MaxRecursionDepth { get { throw null; } set { } }
+        public bool RecurseSubdirectories { get { throw null; } set { } }
+        public bool ReturnSpecialDirectories { get { throw null; } set { } }
+    }
+    public static partial class File
+    {
+        public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
+        public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void AppendAllText(string path, string? contents) { }
+        public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.IO.StreamWriter AppendText(string path) { throw null; }
+        public static void Copy(string sourceFileName, string destFileName) { }
+        public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
+        public static System.IO.FileStream Create(string path) { throw null; }
+        public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
+        public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
+        public static System.IO.StreamWriter CreateText(string path) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static void Decrypt(string path) { }
+        public static void Delete(string path) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static void Encrypt(string path) { }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static System.IO.FileAttributes GetAttributes(string path) { throw null; }
+        public static System.DateTime GetCreationTime(string path) { throw null; }
+        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
+        public static System.DateTime GetLastAccessTime(string path) { throw null; }
+        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
+        public static System.DateTime GetLastWriteTime(string path) { throw null; }
+        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        public static void Move(string sourceFileName, string destFileName) { }
+        public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
+        public static System.IO.FileStream OpenRead(string path) { throw null; }
+        public static System.IO.StreamReader OpenText(string path) { throw null; }
+        public static System.IO.FileStream OpenWrite(string path) { throw null; }
+        public static byte[] ReadAllBytes(string path) { throw null; }
+        public static System.Threading.Tasks.Task<byte[]> ReadAllBytesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static string[] ReadAllLines(string path) { throw null; }
+        public static string[] ReadAllLines(string path, System.Text.Encoding encoding) { throw null; }
+        public static System.Threading.Tasks.Task<string[]> ReadAllLinesAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<string[]> ReadAllLinesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static string ReadAllText(string path) { throw null; }
+        public static string ReadAllText(string path, System.Text.Encoding encoding) { throw null; }
+        public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> ReadLines(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
+        public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
+        public static void SetCreationTime(string path, System.DateTime creationTime) { }
+        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
+        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
+        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
+        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
+        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+        public static void WriteAllBytes(string path, byte[] bytes) { }
+        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
+        public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
+        public static void WriteAllLines(string path, string[] contents) { }
+        public static void WriteAllLines(string path, string[] contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void WriteAllText(string path, string? contents) { }
+        public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class FileInfo : System.IO.FileSystemInfo
+    {
+        public FileInfo(string fileName) { }
+        public System.IO.DirectoryInfo? Directory { get { throw null; } }
+        public string? DirectoryName { get { throw null; } }
+        public override bool Exists { get { throw null; } }
+        public bool IsReadOnly { get { throw null; } set { } }
+        public long Length { get { throw null; } }
+        public override string Name { get { throw null; } }
+        public System.IO.StreamWriter AppendText() { throw null; }
+        public System.IO.FileInfo CopyTo(string destFileName) { throw null; }
+        public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
+        public System.IO.FileStream Create() { throw null; }
+        public System.IO.StreamWriter CreateText() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void Decrypt() { }
+        public override void Delete() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void Encrypt() { }
+        public void MoveTo(string destFileName) { }
+        public void MoveTo(string destFileName, bool overwrite) { }
+        public System.IO.FileStream Open(System.IO.FileMode mode) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileStreamOptions options) { throw null; }
+        public System.IO.FileStream OpenRead() { throw null; }
+        public System.IO.StreamReader OpenText() { throw null; }
+        public System.IO.FileStream OpenWrite() { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
+        public override string ToString() { throw null; }
     }
     public enum HandleInheritability
     {
@@ -7564,10 +7837,12 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
+        public StreamReader(string path, System.IO.FileStreamOptions options) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.Text.Encoding encoding) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }
@@ -7597,9 +7872,11 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
+        public StreamWriter(string path, System.IO.FileStreamOptions options) { }
         public StreamWriter(string path, bool append) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(string path, System.Text.Encoding encoding, System.IO.FileStreamOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public override System.Text.Encoding Encoding { get { throw null; } }
@@ -7816,6 +8093,59 @@ namespace System.IO
         public override void WriteByte(byte value) { }
     }
 }
+namespace System.IO.Enumeration
+{
+    public ref partial struct FileSystemEntry
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.IO.FileAttributes Attributes { get { throw null; } }
+        public System.DateTimeOffset CreationTimeUtc { get { throw null; } }
+        public readonly System.ReadOnlySpan<char> Directory { get { throw null; } }
+        public System.ReadOnlySpan<char> FileName { get { throw null; } }
+        public bool IsDirectory { get { throw null; } }
+        public bool IsHidden { get { throw null; } }
+        public System.DateTimeOffset LastAccessTimeUtc { get { throw null; } }
+        public System.DateTimeOffset LastWriteTimeUtc { get { throw null; } }
+        public long Length { get { throw null; } }
+        public readonly System.ReadOnlySpan<char> OriginalRootDirectory { get { throw null; } }
+        public readonly System.ReadOnlySpan<char> RootDirectory { get { throw null; } }
+        public System.IO.FileSystemInfo ToFileSystemInfo() { throw null; }
+        public string ToFullPath() { throw null; }
+        public string ToSpecifiedFullPath() { throw null; }
+    }
+    public partial class FileSystemEnumerable<TResult> : System.Collections.Generic.IEnumerable<TResult>, System.Collections.IEnumerable
+    {
+        public FileSystemEnumerable(string directory, System.IO.Enumeration.FileSystemEnumerable<TResult>.FindTransform transform, System.IO.EnumerationOptions? options = null) { }
+        public System.IO.Enumeration.FileSystemEnumerable<TResult>.FindPredicate? ShouldIncludePredicate { get { throw null; } set { } }
+        public System.IO.Enumeration.FileSystemEnumerable<TResult>.FindPredicate? ShouldRecursePredicate { get { throw null; } set { } }
+        public System.Collections.Generic.IEnumerator<TResult> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public delegate bool FindPredicate(ref System.IO.Enumeration.FileSystemEntry entry);
+        public delegate TResult FindTransform(ref System.IO.Enumeration.FileSystemEntry entry);
+    }
+    public abstract partial class FileSystemEnumerator<TResult> : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.Collections.Generic.IEnumerator<TResult>, System.Collections.IEnumerator, System.IDisposable
+    {
+        public FileSystemEnumerator(string directory, System.IO.EnumerationOptions? options = null) { }
+        public TResult Current { get { throw null; } }
+        object? System.Collections.IEnumerator.Current { get { throw null; } }
+        protected virtual bool ContinueOnError(int error) { throw null; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public bool MoveNext() { throw null; }
+        protected virtual void OnDirectoryFinished(System.ReadOnlySpan<char> directory) { }
+        public void Reset() { }
+        protected virtual bool ShouldIncludeEntry(ref System.IO.Enumeration.FileSystemEntry entry) { throw null; }
+        protected virtual bool ShouldRecurseIntoEntry(ref System.IO.Enumeration.FileSystemEntry entry) { throw null; }
+        protected abstract TResult TransformEntry(ref System.IO.Enumeration.FileSystemEntry entry);
+    }
+    public static partial class FileSystemName
+    {
+        public static bool MatchesSimpleExpression(System.ReadOnlySpan<char> expression, System.ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
+        public static bool MatchesWin32Expression(System.ReadOnlySpan<char> expression, System.ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
+        public static string TranslateWin32Expression(string? expression) { throw null; }
+    }
+}
 namespace System.Net
 {
     public static partial class WebUtility
@@ -7866,6 +8196,10 @@ namespace System.Numerics
         public static uint RotateRight(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateRight(ulong value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint RoundUpToPowerOf2(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -9637,10 +9971,26 @@ namespace System.Runtime.CompilerServices
         public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
-    public ref struct InterpolatedStringBuilder
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    public sealed class InterpolatedStringHandlerAttribute : System.Attribute
+    {
+        public InterpolatedStringHandlerAttribute() { }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class InterpolatedStringHandlerArgumentAttribute : System.Attribute
+    {
+        public InterpolatedStringHandlerArgumentAttribute(string argument) { }
+        public InterpolatedStringHandlerArgumentAttribute(params string[] arguments) { }
+        public string[] Arguments { get { throw null; } }
+    }
+    [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
+    public ref struct DefaultInterpolatedStringHandler
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
+        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount) { throw null; }
+        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
+        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> initialBuffer) { throw null; }
         public void AppendLiteral(string value) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
@@ -9651,10 +10001,6 @@ namespace System.Runtime.CompilerServices
         public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
         public void AppendFormatted(string? value) { throw null; }
         public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount) { throw null; }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.Span<char> scratchBuffer) { throw null; }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> scratchBuffer) { throw null; }
         public override string ToString() { throw null; }
         public string ToStringAndClear() { throw null; }
     }
@@ -10552,6 +10898,7 @@ namespace System.Security
         public string? Attribute(string name) { throw null; }
         public System.Security.SecurityElement Copy() { throw null; }
         public bool Equal([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.SecurityElement? other) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("str")]
         public static string? Escape(string? str) { throw null; }
         public static System.Security.SecurityElement? FromString(string xml) { throw null; }
         public static bool IsValidAttributeName([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? name) { throw null; }

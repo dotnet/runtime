@@ -36,16 +36,16 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static new DSA Create()
         {
             return CreateCore();
         }
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static DSA Create(int keySizeInBits)
         {
             DSA dsa = CreateCore();
@@ -63,8 +63,8 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static DSA Create(DSAParameters parameters)
         {
             DSA dsa = CreateCore();

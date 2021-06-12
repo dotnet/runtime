@@ -2459,94 +2459,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     }
 }
 
-#if !defined(TARGET_64BIT)
-//------------------------------------------------------------------------
-// lvaPromoteLongVars: "Struct promote" all register candidate longs as if they are structs of two ints.
-//
-// Arguments:
-//    None.
-//
-// Return Value:
-//    None.
-//
-void Compiler::lvaPromoteLongVars()
-{
-    if ((opts.compFlags & CLFLG_REGVAR) == 0)
-    {
-        return;
-    }
-
-    // The lvaTable might grow as we grab temps. Make a local copy here.
-    unsigned startLvaCount = lvaCount;
-    for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
-    {
-        LclVarDsc* varDsc = &lvaTable[lclNum];
-        if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || (varDsc->lvRefCnt() == 0) ||
-            varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
-        {
-            continue;
-        }
-
-        assert(!varDsc->lvIsMultiRegArgOrRet());
-        varDsc->lvFieldCnt      = 2;
-        varDsc->lvFieldLclStart = lvaCount;
-        varDsc->lvPromoted      = true;
-        varDsc->lvContainsHoles = false;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nPromoting long local V%02u:", lclNum);
-        }
-#endif
-
-        bool isParam = varDsc->lvIsParam;
-
-        for (unsigned index = 0; index < 2; ++index)
-        {
-            // Grab the temp for the field local.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-            char buf[200];
-            sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
-                      index * 4);
-
-            // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-            size_t len  = strlen(buf) + 1;
-            char*  bufp = getAllocator(CMK_DebugOnly).allocate<char>(len);
-            strcpy_s(bufp, len, buf);
-#endif
-
-            unsigned varNum = lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
-                                                                 // they are long lifetime temps.
-
-            LclVarDsc* fieldVarDsc       = &lvaTable[varNum];
-            fieldVarDsc->lvType          = TYP_INT;
-            fieldVarDsc->lvExactSize     = genTypeSize(TYP_INT);
-            fieldVarDsc->lvIsStructField = true;
-            fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
-            fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
-            fieldVarDsc->lvParentLcl     = lclNum;
-            // Currently we do not support enregistering incoming promoted aggregates with more than one field.
-            if (isParam)
-            {
-                fieldVarDsc->lvIsParam = true;
-                lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LongParamField));
-            }
-        }
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nlvaTable after lvaPromoteLongVars\n");
-        lvaTableDump();
-    }
-#endif // DEBUG
-}
-#endif // !defined(TARGET_64BIT)
-
 //--------------------------------------------------------------------------------------------
 // lvaGetFieldLocal - returns the local var index for a promoted field in a promoted struct var.
 //
@@ -2722,6 +2634,9 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 #if !defined(TARGET_64BIT)
         case DNER_LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
+            break;
+        case DNER_LongParamVar:
+            JITDUMP("it is a long parameter\n");
             break;
 #endif
         default:
@@ -4331,7 +4246,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
     JITDUMP("\n*** %s local variables in block " FMT_BB " (weight=%s)\n", isRecompute ? "recomputing" : "marking",
             block->bbNum, refCntWtd2str(block->getBBWeight(this)));
 
-    for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
         DISPSTMT(stmt);
@@ -4599,14 +4514,14 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
             assert(isRecompute);
 
             const BasicBlock::weight_t weight = block->getBBWeight(this);
-            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            for (GenTree* node : LIR::AsRange(block))
             {
                 switch (node->OperGet())
                 {
@@ -6358,15 +6273,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     // Inlining done under OSR may introduce new reporting, in which case the OSR frame
     // must allocate a slot.
-    if (!opts.IsOSR() && lvaReportParamTypeArg())
+    if (lvaReportParamTypeArg())
     {
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed());
 #endif
-        // For CORINFO_CALLCONV_PARAMTYPE (if needed)
-        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-        stkOffs -= TARGET_POINTER_SIZE;
-        lvaCachedGenericContextArgOffs = stkOffs;
+        if (opts.IsOSR())
+        {
+            PatchpointInfo* ppInfo = info.compPatchpointInfo;
+            assert(ppInfo->HasGenericContextArgOffset());
+            const int originalOffset       = ppInfo->GenericContextArgOffset();
+            lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
+        }
+        else
+        {
+            // For CORINFO_CALLCONV_PARAMTYPE (if needed)
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs -= TARGET_POINTER_SIZE;
+            lvaCachedGenericContextArgOffs = stkOffs;
+        }
     }
 #ifndef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis())
@@ -6377,7 +6302,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             PatchpointInfo* ppInfo = info.compPatchpointInfo;
             if (ppInfo->HasKeptAliveThis())
             {
-                int originalOffset             = ppInfo->KeptAliveThisOffset();
+                const int originalOffset       = ppInfo->KeptAliveThisOffset();
                 lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
                 canUseExistingSlot             = true;
             }
@@ -7838,24 +7763,23 @@ int Compiler::lvaGetCallerSPRelativeOffset(unsigned varNum)
     return lvaToCallerSPRelativeOffset(varDsc->GetStackOffset(), varDsc->lvFramePointerBased);
 }
 
-int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
+//-----------------------------------------------------------------------------
+// lvaToCallerSPRelativeOffset: translate a frame offset into an offset from
+//    the caller's stack pointer.
+//
+// Arguments:
+//    offset - frame offset
+//    isFpBase - if true, offset is from FP, otherwise offset is from SP
+//    forRootFrame - if the current method is an OSR method, adjust the offset
+//      to be relative to the SP for the root method, instead of being relative
+//      to the SP for the OSR method.
+//
+// Returins:
+//    suitable offset
+//
+int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRootFrame) const
 {
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
-
-    // TODO-Cleanup
-    //
-    // This current should not be called for OSR as caller SP relative
-    // offsets computed below do not reflect the extra stack space
-    // taken up by the original method frame.
-    //
-    // We should make it work.
-    //
-    // Instead we record the needed offsets in the patchpoint info
-    // when doing the original method compile(see special offsets
-    // in generatePatchpointInfo) and consume those values in the OSR
-    // compile. If we fix this we may be able to reduce the size
-    // of the patchpoint info and have less special casing for these
-    // frame slots.
 
     if (isFpBased)
     {
@@ -7865,6 +7789,30 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
     {
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
+
+#ifdef TARGET_AMD64
+    if (forRootFrame && opts.IsOSR())
+    {
+        // The offset computed above already includes the OSR frame adjustment, plus the
+        // pop of the "pseudo return address" from the OSR frame.
+        //
+        // To get to root method caller-SP, we need to subtract off the original frame
+        // size and the pushed return address and RBP for that frame (which we know is an
+        // RPB frame).
+        //
+        // ppInfo's FpToSpDelta also accounts for the popped pseudo return address
+        // between the original method frame and the OSR frame. So the net adjustment
+        // is simply FpToSpDelta plus one register.
+        //
+
+        const PatchpointInfo* const ppInfo     = info.compPatchpointInfo;
+        const int                   adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;
+        offset -= adjustment;
+    }
+#else
+    // OSR NYI for other targets.
+    assert(!opts.IsOSR());
+#endif
 
     return offset;
 }

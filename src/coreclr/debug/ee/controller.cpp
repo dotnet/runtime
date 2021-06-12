@@ -4409,8 +4409,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         }
         else
         {
+            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, SharedPatchBypassBuffer::cbBufferBypass);
+            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
             if (m_instrAttrib.m_fIsWrite)
             {

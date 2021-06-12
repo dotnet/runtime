@@ -21,7 +21,6 @@ using Xunit.Sdk;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class ProcessTests : ProcessTestBase
     {
         private class FinalizingProcess : Process
@@ -2096,6 +2095,7 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
         public void LongProcessNamesAreSupported()
         {
             string sleepPath;

@@ -360,7 +360,8 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     }
 
     Precode* pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(size, AlignOf(t)));
-    pPrecode->Init(t, pMD, pLoaderAllocator);
+    ExecutableWriterHolder<Precode> precodeWriterHolder(pPrecode, size);
+    precodeWriterHolder.GetRW()->Init(pPrecode, t, pMD, pLoaderAllocator);
 
 #ifndef CROSSGEN_COMPILE
     ClrFlushInstructionCache(pPrecode, size);
@@ -369,22 +370,22 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     return pPrecode;
 }
 
-void Precode::Init(PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     LIMITED_METHOD_CONTRACT;
 
     switch (t) {
     case PRECODE_STUB:
-        ((StubPrecode*)this)->Init(pMD, pLoaderAllocator);
+        ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
         break;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     case PRECODE_NDIRECT_IMPORT:
-        ((NDirectImportPrecode*)this)->Init(pMD, pLoaderAllocator);
+        ((NDirectImportPrecode*)this)->Init((NDirectImportPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
         break;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
-        ((FixupPrecode*)this)->Init(pMD, pLoaderAllocator);
+        ((FixupPrecode*)this)->Init((FixupPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
         break;
 #endif // HAS_FIXUP_PRECODE
 #ifdef HAS_THISPTR_RETBUF_PRECODE
@@ -482,7 +483,21 @@ void Precode::Reset()
     WRAPPER_NO_CONTRACT;
 
     MethodDesc* pMD = GetMethodDesc();
-    Init(GetType(), pMD, pMD->GetLoaderAllocator());
+    SIZE_T size;
+    PrecodeType t = GetType();
+#ifdef HAS_FIXUP_PRECODE_CHUNKS
+    if (t == PRECODE_FIXUP)
+    {
+        size = sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
+    }
+    else
+#endif
+    {
+        size = Precode::SizeOf(t);
+    }
+
+    ExecutableWriterHolder<Precode> precodeWriterHolder(this, size);
+    precodeWriterHolder.GetRW()->Init(this, GetType(), pMD, pMD->GetLoaderAllocator());
     ClrFlushInstructionCache(this, SizeOf());
 }
 
@@ -566,28 +581,34 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 #endif
 
     TADDR temporaryEntryPoints = (TADDR)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(totalSize, AlignOf(t)));
+    ExecutableWriterHolder<void> entryPointsWriterHolder((void*)temporaryEntryPoints, totalSize);
 
 #ifdef HAS_FIXUP_PRECODE_CHUNKS
     if (t == PRECODE_FIXUP)
     {
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        PCODE precodeFixupJumpStubRW = NULL;
         PCODE precodeFixupJumpStub = NULL;
         if (preallocateJumpStubs)
         {
             // Emit the jump for the precode fixup jump stub now. This jump stub immediately follows the MethodDesc (see
             // GetDynamicMethodPrecodeFixupJumpStub()).
             precodeFixupJumpStub = temporaryEntryPoints + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
+            // TODO: how to get the size?
 #ifndef CROSSGEN_COMPILE
-            emitBackToBackJump((LPBYTE)precodeFixupJumpStub, (LPVOID)GetEEFuncEntryPoint(PrecodeFixupThunk));
+            precodeFixupJumpStubRW = (TADDR)entryPointsWriterHolder.GetRW() + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
+            emitBackToBackJump((BYTE*)precodeFixupJumpStub, (BYTE*)precodeFixupJumpStubRW, (LPVOID)GetEEFuncEntryPoint(PrecodeFixupThunk));
 #endif // !CROSSGEN_COMPILE
         }
 #endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
 
         TADDR entryPoint = temporaryEntryPoints;
+        TADDR entryPointRW = (TADDR)entryPointsWriterHolder.GetRW();
+
         MethodDesc * pMD = pChunk->GetFirstMethodDesc();
         for (int i = 0; i < count; i++)
         {
-            ((FixupPrecode *)entryPoint)->Init(pMD, pLoaderAllocator, pMD->GetMethodDescIndex(), (count - 1) - i);
+            ((FixupPrecode *)entryPointRW)->Init((FixupPrecode*)entryPoint, pMD, pLoaderAllocator, pMD->GetMethodDescIndex(), (count - 1) - i);
 
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
             _ASSERTE(
@@ -598,6 +619,7 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 
             _ASSERTE((Precode *)entryPoint == GetPrecodeForTemporaryEntryPoint(temporaryEntryPoints, i));
             entryPoint += sizeof(FixupPrecode);
+            entryPointRW += sizeof(FixupPrecode);
 
             pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
         }
@@ -613,13 +635,15 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 
     SIZE_T oneSize = SizeOfTemporaryEntryPoint(t);
     TADDR entryPoint = temporaryEntryPoints;
+    TADDR entryPointRW = (TADDR)entryPointsWriterHolder.GetRW();
     MethodDesc * pMD = pChunk->GetFirstMethodDesc();
     for (int i = 0; i < count; i++)
     {
-        ((Precode *)entryPoint)->Init(t, pMD, pLoaderAllocator);
+        ((Precode *)entryPointRW)->Init((Precode *)entryPoint, t, pMD, pLoaderAllocator);
 
         _ASSERTE((Precode *)entryPoint == GetPrecodeForTemporaryEntryPoint(temporaryEntryPoints, i));
         entryPoint += oneSize;
+        entryPointRW += oneSize;
 
         pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
     }
@@ -763,7 +787,7 @@ void Precode::SaveChunk::Save(DataImage* image, MethodDesc * pMD)
 
     SIZE_T size = Precode::SizeOf(precodeType);
     Precode* pPrecode = (Precode *)new (image->GetHeap()) BYTE[size];
-    pPrecode->Init(precodeType, pMD, NULL);
+    pPrecode->Init(pPrecode, precodeType, pMD, NULL);
     pPrecode->Save(image);
 
     // Alias the temporary entrypoint

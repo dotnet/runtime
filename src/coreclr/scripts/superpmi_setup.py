@@ -28,7 +28,7 @@
 # | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
 # | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
 # | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
+# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
 ################################################################################
 ################################################################################
 
@@ -443,7 +443,7 @@ def main(main_args):
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
         elif arch == "arm64":
-            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855"
+            helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
 
@@ -464,7 +464,7 @@ def main(main_args):
     # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
     # Reflection errors, just copy everything to CORE_ROOT so for all individual partitions, the
     # references will be present in CORE_ROOT.
-    if coreclr_args.collection_name == "tests_libraries":
+    if coreclr_args.collection_name == "libraries_tests":
         print('Copying {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
 
         def make_readable(folder_name):
@@ -546,15 +546,15 @@ def main(main_args):
         # payload
         pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
         input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "coreclr_tests" else []
         exclude_files = native_binaries_to_ignore
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
             exclude_files += ["Microsoft.Build.dll"]
 
-        if coreclr_args.collection_name == "tests_libraries":
-            # tests_libraries artifacts contains files from core_root folder. Exclude them.
+        if coreclr_args.collection_name == "libraries_tests":
+            # libraries_tests artifacts contains files from core_root folder. Exclude them.
             core_root_dir = coreclr_args.core_root_directory
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if isfile(join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]

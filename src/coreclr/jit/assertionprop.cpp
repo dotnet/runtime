@@ -3585,7 +3585,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
     // force the fromType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
     {
-        fromType = genUnsignedType(fromType);
+        fromType = varTypeToUnsigned(fromType);
     }
 
     // If we have a cast involving floating point types, then bail.
@@ -4818,15 +4818,15 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 {
     ASSERT_TP* jumpDestGen = fgAllocateTypeForEachBlk<ASSERT_TP>();
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         ASSERT_TP valueGen = BitVecOps::MakeEmpty(apTraits);
         GenTree*  jtrue    = nullptr;
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->gtOper == GT_JTRUE)
                 {
@@ -4930,7 +4930,7 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 
     // Initially estimate the OUT sets to everything except killed expressions
     // Also set the IN sets to 1, so that we can perform the intersection.
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbAssertionIn      = BitVecOps::MakeCopy(apTraits, apValidFull);
         block->bbAssertionGen     = BitVecOps::MakeEmpty(apTraits);
@@ -4992,6 +4992,9 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         bool ignoreRoot = true;
 
         gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
+
+        JITDUMP("Extracted side effects from a constant tree [%06u]:\n", tree->gtTreeID);
+        DISPTREE(sideEffList);
     }
 
     return sideEffList;
@@ -5335,7 +5338,7 @@ void Compiler::optAssertionPropMain()
     noway_assert(optAssertionCount == 0);
 
     // First discover all value assignments and record them in the table.
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
 
@@ -5372,7 +5375,7 @@ void Compiler::optAssertionPropMain()
             }
 
             // Perform assertion gen for control flow based assertions.
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 optAssertionGen(tree);
             }
@@ -5387,7 +5390,7 @@ void Compiler::optAssertionPropMain()
         // Zero out the bbAssertionIn values, as these can be referenced in RangeCheck::MergeAssertion
         // and this is sharedstate with the CSE phase: bbCseIn
         //
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
         }
@@ -5407,7 +5410,7 @@ void Compiler::optAssertionPropMain()
     AssertionPropFlowCallback ap(this, bbJtrueAssertionOut, jumpDestGen);
     flow.ForwardAnalysis(ap);
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Compute any implied non-Null assertions for block->bbAssertionIn
         optImpliedByTypeOfAssertions(block->bbAssertionIn);
@@ -5417,7 +5420,7 @@ void Compiler::optAssertionPropMain()
     if (verbose)
     {
         printf("\n");
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             printf("\n" FMT_BB, block->bbNum);
             printf(" valueIn  = %s", BitVecOps::ToString(apTraits, block->bbAssertionIn));
@@ -5435,7 +5438,7 @@ void Compiler::optAssertionPropMain()
     ASSERT_TP assertions = BitVecOps::MakeEmpty(apTraits);
 
     // Perform assertion propagation (and constant folding)
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BitVecOps::Assign(apTraits, assertions, block->bbAssertionIn);
 
