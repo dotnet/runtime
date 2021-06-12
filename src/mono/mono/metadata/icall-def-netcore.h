@@ -246,7 +246,8 @@ HANDLES(FILEDI_1, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_
 HANDLES(FILEDI_2, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type, MonoReflectionField, 2, (MonoClassField_ref, MonoType_ref))
 
 #ifdef ENABLE_METADATA_UPDATE
-ICALL_TYPE(ASSMEXT, "System.Reflection.Metadata.AssemblyExtensions", ASSMEXT_1)
+ICALL_TYPE(ASSMEXT, "System.Reflection.Metadata.AssemblyExtensions", ASSMEXT_2)
+NOHANDLES(ICALL(ASSMEXT_2, "ApplyUpdateEnabled", ves_icall_AssemblyExtensions_ApplyUpdateEnabled))
 NOHANDLES(ICALL(ASSMEXT_1, "ApplyUpdate_internal", ves_icall_AssemblyExtensions_ApplyUpdate))
 #endif
 
