@@ -9603,9 +9603,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	error_init (error);
 
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_thread_expose_published ();
-#endif
 
 	if (mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
 		mono_error_set_invalid_operation (error, "%s", "Could not execute the method because the containing type is not fully instantiated.");

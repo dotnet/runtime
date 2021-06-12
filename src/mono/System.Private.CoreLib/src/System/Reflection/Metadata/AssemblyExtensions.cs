@@ -37,9 +37,6 @@ namespace System.Reflection.Metadata
             if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
                 throw new InvalidOperationException (SR.InvalidOperation_AssemblyNotEditable);
 
-#if !FEATURE_METADATA_UPDATE
-            throw new NotSupportedException (SR.NotSupported_MethodBodyReplacement);
-#else
             unsafe
             {
                 IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle ();
@@ -48,7 +45,6 @@ namespace System.Reflection.Metadata
                     ApplyUpdate_internal(monoAssembly, metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length);
                 }
             }
-#endif
         }
 
         private static Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(() => InitializeApplyUpdateCapabilities());
@@ -57,21 +53,14 @@ namespace System.Reflection.Metadata
 
         private static string InitializeApplyUpdateCapabilities()
         {
-#if !FEATURE_METADATA_UPDATE
-            return string.Empty;
-#else
             return ApplyUpdateEnabled() != 0 ? "Baseline" : string.Empty ;
-#endif
         }
 
 
-#if FEATURE_METADATA_UPDATE
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static extern int ApplyUpdateEnabled ();
 
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static unsafe extern void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
-#endif
-
     }
 }

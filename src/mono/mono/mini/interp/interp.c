@@ -7330,7 +7330,6 @@ copy_imethod_for_frame (InterpFrame *frame)
 	 */
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 static void
 metadata_update_backup_frames (MonoThreadInfo *info, InterpFrame *frame)
 {
@@ -7376,12 +7375,6 @@ metadata_update_prepare_to_invalidate (void)
 
 	/* (2) invalidate all the registered imethods */
 }
-#else
-static void
-metadata_update_prepare_to_invalidate (void)
-{
-}
-#endif
 
 
 static void

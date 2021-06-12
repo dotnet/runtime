@@ -12,15 +12,9 @@
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
-    <WasmEnableMetadataUpdate Condition="'$(MonoMetadataUpdate)' == 'true'">true</WasmEnableMetadataUpdate>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- TODO: set to "false" for publishing/production builds -->
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">true</MonoMetadataUpdate>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -87,8 +81,6 @@
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <_EmccFlags Include="--profiling-funcs" />
       <_EmccFlags Include="@(_EmccCommonFlags)" />
-
-      <_EmccFlags Include="-DENABLE_METADATA_UPDATE=1" Condition="'$(WasmEnableMetadataUpdate)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -245,7 +237,7 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       runtime/binding_support.js; 
+                       runtime/binding_support.js;
                        runtime/dotnet_support.js;
                        runtime/library_mono.js;
                        $(SystemNativeDir)\pal_random.js;"

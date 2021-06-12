@@ -793,19 +793,6 @@ struct _MonoMetadataUpdateData {
 	int has_updates;
 };
 
-#ifndef ENABLE_METADATA_UPDATE
-static inline gboolean
-mono_metadata_has_updates (void)
-{
-	return FALSE;
-}
-
-static inline void
-mono_image_effective_table (const MonoTableInfo **t, int *idx)
-{
-}
-#else /* ENABLE_METADATA_UPDATE */
-
 extern MonoMetadataUpdateData mono_metadata_update_data_private;
 
 /* returns TRUE if there's at least one update */
@@ -833,7 +820,6 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 void
 mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
-#endif /* ENABLE_METADATA_UPDATE */
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
@@ -863,14 +849,6 @@ mono_metadata_get_shared_type (MonoType *type);
 void
 mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
-#ifndef ENABLE_METADATA_UPDATE
-static inline gboolean
-mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
-{
-	/* token_index is 1-based. TRUE means the token is out of bounds */
-	return token_index > image->tables [table_index].rows_;
-}
-#else
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
 
@@ -885,7 +863,6 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
                 return TRUE;
 	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
 }
-#endif
 
 MONO_COMPONENT_API
 const char *   mono_meta_table_name              (int table);
