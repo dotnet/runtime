@@ -313,6 +313,12 @@ namespace Microsoft.Interop.Analyzers
 
             private void AnalyzeNativeMarshalerType(SymbolAnalysisContext context, ITypeSymbol type, AttributeData nativeMarshalerAttributeData, bool validateManagedGetPinnableReference, bool validateAllScenarioSupport)
             {
+                if (nativeMarshalerAttributeData.ConstructorArguments.Length == 0)
+                {
+                    // This is a MarshalUsing with just count information.
+                    return;
+                }
+
                 if (nativeMarshalerAttributeData.ConstructorArguments[0].IsNull)
                 {
                     context.ReportDiagnostic(

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Interop
 {
@@ -81,6 +82,11 @@ namespace Microsoft.Interop
         /// When this property is <c>false</c>, any additional variables can only be considered to have the state they had immediately after the Setup phase.
         /// </remarks>
         public abstract bool AdditionalTemporaryStateLivesAcrossStages { get; }
+
+        /// <summary>
+        /// If this context is a nested context, return the parent context. Otherwise, return <c>null</c>.
+        /// </summary>
+        public StubCodeContext? ParentContext { get; protected set; }
 
         protected const string GeneratedNativeIdentifierSuffix = "_gen_native";
 

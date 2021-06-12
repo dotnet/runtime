@@ -1331,5 +1331,82 @@ partial class Test
     );
 }
 ";
+
+        public static string CollectionsOfCollectionsStress => @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]
+        [MarshalUsing(CountElementName=""arr5"", ElementIndirectionLevel = 5)]
+        [MarshalUsing(CountElementName=""arr6"", ElementIndirectionLevel = 6)]
+        [MarshalUsing(CountElementName=""arr7"", ElementIndirectionLevel = 7)]
+        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionLevel = 8)]
+        [MarshalUsing(CountElementName=""arr9"", ElementIndirectionLevel = 9)]
+        [MarshalUsing(CountElementName=""arr10"", ElementIndirectionLevel = 10)] ref int[][][][][][][][][][][] arr11,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]
+        [MarshalUsing(CountElementName=""arr5"", ElementIndirectionLevel = 5)]
+        [MarshalUsing(CountElementName=""arr6"", ElementIndirectionLevel = 6)]
+        [MarshalUsing(CountElementName=""arr7"", ElementIndirectionLevel = 7)]
+        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionLevel = 8)]
+        [MarshalUsing(CountElementName=""arr9"", ElementIndirectionLevel = 9)]ref int[][][][][][][][][][] arr10,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]
+        [MarshalUsing(CountElementName=""arr5"", ElementIndirectionLevel = 5)]
+        [MarshalUsing(CountElementName=""arr6"", ElementIndirectionLevel = 6)]
+        [MarshalUsing(CountElementName=""arr7"", ElementIndirectionLevel = 7)]
+        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionLevel = 8)]ref int[][][][][][][][][] arr9,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]
+        [MarshalUsing(CountElementName=""arr5"", ElementIndirectionLevel = 5)]
+        [MarshalUsing(CountElementName=""arr6"", ElementIndirectionLevel = 6)]
+        [MarshalUsing(CountElementName=""arr7"", ElementIndirectionLevel = 7)]ref int[][][][][][][][][] arr8,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]
+        [MarshalUsing(CountElementName=""arr5"", ElementIndirectionLevel = 5)]
+        [MarshalUsing(CountElementName=""arr6"", ElementIndirectionLevel = 6)]ref int[][][][][][][] arr7,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]
+        [MarshalUsing(CountElementName=""arr5"", ElementIndirectionLevel = 5)]ref int[][][][][][] arr6,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]
+        [MarshalUsing(CountElementName=""arr4"", ElementIndirectionLevel = 4)]ref int[][][][][] arr5,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]
+        [MarshalUsing(CountElementName=""arr3"", ElementIndirectionLevel = 3)]ref int[][][][] arr4,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]
+        [MarshalUsing(CountElementName=""arr2"", ElementIndirectionLevel = 2)]ref int[][][] arr3,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]
+        [MarshalUsing(CountElementName=""arr1"", ElementIndirectionLevel = 1)]ref int[][] arr2,
+        [MarshalUsing(CountElementName=""arr0"", ElementIndirectionLevel = 0)]ref int[] arr1,
+        ref int arr0
+    );
+}
+";
     }
 }

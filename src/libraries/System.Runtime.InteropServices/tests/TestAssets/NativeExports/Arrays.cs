@@ -154,6 +154,22 @@ namespace NativeExports
             return (byte)(result ? 1 : 0);
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "transpose_matrix")]
+        public static int** TransposeMatrix(int** matrix, int* numRows, int numColumns)
+        {
+            int** newRows = (int**)Marshal.AllocCoTaskMem(numColumns * sizeof(int*));
+            for (int i = 0; i < numColumns; i++)
+            {
+                newRows[i] = (int*)Marshal.AllocCoTaskMem(numRows[i] * sizeof(int));
+                for (int j = 0; j < numRows[i]; j++)
+                {
+                    newRows[i][j] = matrix[j][i];
+                }
+            }
+
+            return newRows;
+        }
+
         private static int* CreateRangeImpl(int start, int end, int* numValues)
         {
             if (start >= end)

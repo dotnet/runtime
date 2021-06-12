@@ -79,15 +79,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The specified array size parameter for an array must be an integer type..
-        /// </summary>
-        internal static string ArraySizeParamTypeMustBeIntegral {
-            get {
-                return ResourceManager.GetString("ArraySizeParamTypeMustBeIntegral", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to A type marked with &apos;BlittableTypeAttribute&apos; must be blittable..
         /// </summary>
         internal static string BlittableTypeMustBeBlittableDescription {
@@ -120,6 +111,15 @@ namespace Microsoft.Interop {
         internal static string CannotHaveMultipleMarshallingAttributesMessage {
             get {
                 return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element..
+        /// </summary>
+        internal static string CollectionSizeParamTypeMustBeIntegral {
+            get {
+                return ResourceManager.GetString("CollectionSizeParamTypeMustBeIntegral", resourceCulture);
             }
         }
         
@@ -336,6 +336,15 @@ namespace Microsoft.Interop {
         internal static string GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage {
             get {
                 return ResourceManager.GetString("GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The provided graph has cycles and cannot be topologically sorted..
+        /// </summary>
+        internal static string GraphHasCycles {
+            get {
+                return ResourceManager.GetString("GraphHasCycles", resourceCulture);
             }
         }
         

@@ -53,6 +53,7 @@ namespace Microsoft.Interop
         private readonly IEnumerable<TypePositionInfo> paramsTypeInfo;
         private readonly List<(TypePositionInfo TypeInfo, IMarshallingGenerator Generator)> paramMarshallers;
         private readonly (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) retMarshaller;
+        private readonly List<(TypePositionInfo TypeInfo, IMarshallingGenerator Generator)> sortedMarshallers;
 
         public StubCodeGenerator(
             IMethodSymbol stubMethod,
@@ -76,6 +77,38 @@ namespace Microsoft.Interop
             // Get marshaller for return
             this.retMarshaller = CreateGenerator(retTypeInfo);
 
+
+            List<(TypePositionInfo TypeInfo, IMarshallingGenerator Generator)> allMarshallers = new(this.paramMarshallers);
+            allMarshallers.Add(retMarshaller);
+
+            // We are doing a topological sort of our marshallers to ensure that each parameter/return value's
+            // dependencies are unmarshalled before their dependents. This comes up in the case of contiguous
+            // collections, where the number of elements in a collection are provided via another parameter/return value.
+            // When using nested collections, the parameter that represents the number of elements of each element of the
+            // outer collection is another collection. As a result, there are two options on how to retrieve the size.
+            // Either we partially unmarshal the collection of counts while unmarshalling the collection of elements,
+            // or we unmarshal our parameters and return value in an order such that we can use the managed identifiers
+            // for our lengths.
+            // Here's an example signature where the dependency shows up:
+            //
+            // [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
+            // [return: MarshalUsing(CountElementName = "numColumns")]
+            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            // public static partial int[][] TransposeMatrix(
+            //  int[][] matrix,
+            //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,
+            //  int numColumns);
+            //
+            // In this scenario, we'd traditionally unmarshal the return value and then each parameter. However, since
+            // the return value has dependencies on numRows and numColumns and numRows has a dependency on numColumns,
+            // we want to unmarshal numColumns, then numRows, then the return value.
+            // A topological sort ensures we get this order correct.
+            this.sortedMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
+                allMarshallers,
+                static m => GetInfoIndex(m.TypeInfo),
+                static m => GetInfoDependencies(m.TypeInfo))
+                .ToList();
+
             (TypePositionInfo info, IMarshallingGenerator gen) CreateGenerator(TypePositionInfo p)
             {
                 try
@@ -87,6 +120,28 @@ namespace Microsoft.Interop
                     this.diagnostics.ReportMarshallingNotSupported(this.stubMethod, p, e.NotSupportedDetails);
                     return (p, MarshallingGenerators.Forwarder);
                 }
+            }
+
+            static IEnumerable<int> GetInfoDependencies(TypePositionInfo info)
+            {
+                // A parameter without a managed index cannot have any dependencies.
+                if (info.ManagedIndex == TypePositionInfo.UnsetIndex)
+                {
+                    return Array.Empty<int>();
+                }
+                return MarshallerHelpers.GetDependentElementsOfMarshallingInfo(info.MarshallingAttributeInfo)
+                    .Select(static info => GetInfoIndex(info)).ToList();
+            }
+
+            static int GetInfoIndex(TypePositionInfo info)
+            {
+                if (info.ManagedIndex == TypePositionInfo.UnsetIndex)
+                {
+                    // A TypePositionInfo needs to have either a managed or native index.
+                    // We use negative values of the native index to distinguish them from the managed index.
+                    return -info.NativeIndex;
+                }
+                return info.ManagedIndex;
             }
         }
 
@@ -202,39 +257,52 @@ namespace Microsoft.Interop
                 int initialCount = statements.Count;
                 this.CurrentStage = stage;
 
-                if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Unmarshal or Stage.GuaranteedUnmarshal or Stage.Cleanup))
+                if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Cleanup))
                 {
                     // Handle setup and unmarshalling for return
                     var retStatements = retMarshaller.Generator.Generate(retMarshaller.TypeInfo, this);
                     statements.AddRange(retStatements);
                 }
 
-                // Generate code for each parameter for the current stage
-                foreach (var marshaller in paramMarshallers)
+                if (stage is Stage.Unmarshal or Stage.GuaranteedUnmarshal)
                 {
-                    if (stage == Stage.Invoke)
-                    {
-                        // Get arguments for invocation
-                        ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, this);
-                        invoke = invoke.AddArgumentListArguments(argSyntax);
-                    }
-                    else
-                    {
-                        var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
-                        if (stage == Stage.Pin)
-                        {
-                            // Collect all the fixed statements. These will be used in the Invoke stage.
-                            foreach (var statement in generatedStatements)
-                            {
-                                if (statement is not FixedStatementSyntax fixedStatement)
-                                    continue;
+                    // For Unmarshal and GuaranteedUnmarshal stages, use the topologically sorted
+                    // marshaller list to generate the marshalling statements
 
-                                fixedStatements.Add(fixedStatement);
-                            }
+                    foreach (var marshaller in sortedMarshallers)
+                    {
+                        statements.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, this));
+                    }
+                }
+                else
+                {
+                    // Generate code for each parameter for the current stage
+                    foreach (var marshaller in paramMarshallers)
+                    {
+                        if (stage == Stage.Invoke)
+                        {
+                            // Get arguments for invocation
+                            ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, this);
+                            invoke = invoke.AddArgumentListArguments(argSyntax);
                         }
                         else
                         {
-                            statements.AddRange(generatedStatements);
+                            var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
+                            if (stage == Stage.Pin)
+                            {
+                                // Collect all the fixed statements. These will be used in the Invoke stage.
+                                foreach (var statement in generatedStatements)
+                                {
+                                    if (statement is not FixedStatementSyntax fixedStatement)
+                                        continue;
+
+                                    fixedStatements.Add(fixedStatement);
+                                }
+                            }
+                            else
+                            {
+                                statements.AddRange(generatedStatements);
+                            }
                         }
                     }
                 }

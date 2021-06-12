@@ -62,6 +62,11 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return:MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers(BoolStruct[] pArray, int length);
+
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
+            [return: MarshalUsing(CountElementName = "numColumns")]
+            [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            public static partial int[][] TransposeMatrix(int[][] matrix, int[] numRows, int numColumns);
         }
     }
 
@@ -271,6 +276,36 @@ namespace DllImportGenerator.IntegrationTests
             };
 
             Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(boolValues, boolValues.Length));
+        }
+
+        [Fact]
+        public void ArraysOfArrays()
+        {
+            var random = new Random(42);
+            int numRows = random.Next(1, 5);
+            int numColumns = random.Next(1, 5);
+            int[][] matrix = new int[numRows][];
+            for (int i = 0; i < numRows; i++)
+            {
+                matrix[i] = new int[numColumns];
+                for (int j = 0; j < numColumns; j++)
+                {
+                    matrix[i][j] = random.Next();
+                }
+            }
+
+            int[] numRowsArray = new int[numColumns];
+            numRowsArray.AsSpan().Fill(numRows);
+
+            int[][] transposed = NativeExportsNE.Arrays.TransposeMatrix(matrix, numRowsArray, numColumns);
+            
+            for (int i = 0; i < numRows; i++)
+            {
+                for (int j = 0; j < numColumns; j++)
+                {
+                    Assert.Equal(matrix[i][j], transposed[j][i]);
+                }
+            }
         }
 
         private static string ReverseChars(string value)

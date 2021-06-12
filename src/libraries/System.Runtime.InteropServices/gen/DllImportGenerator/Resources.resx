@@ -123,9 +123,6 @@
   <data name="ArraySizeParamIndexOutOfRange" xml:space="preserve">
     <value>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</value>
   </data>
-  <data name="ArraySizeParamTypeMustBeIntegral" xml:space="preserve">
-    <value>The specified array size parameter for an array must be an integer type.</value>
-  </data>
   <data name="BlittableTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A type marked with 'BlittableTypeAttribute' must be blittable.</value>
   </data>
@@ -137,6 +134,9 @@
   </data>
   <data name="CannotHaveMultipleMarshallingAttributesMessage" xml:space="preserve">
     <value>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</value>
+  </data>
+  <data name="CollectionSizeParamTypeMustBeIntegral" xml:space="preserve">
+    <value>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</value>
   </data>
   <data name="ConfigurationNotSupportedDescription" xml:space="preserve">
     <value>Source-generated P/Invokes will ignore any configuration that is not supported.</value>
@@ -210,6 +210,9 @@
   </data>
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
+  </data>
+  <data name="GraphHasCycles" xml:space="preserve">
+    <value>The provided graph has cycles and cannot be topologically sorted.</value>
   </data>
   <data name="InAttributeNotSupportedWithoutOut" xml:space="preserve">
     <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
