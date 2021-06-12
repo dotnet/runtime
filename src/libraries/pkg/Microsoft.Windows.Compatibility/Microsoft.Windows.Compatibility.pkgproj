@@ -15,7 +15,6 @@
     </NS21PrereleaseLibraryPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry" />
     <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry.AccessControl" />
     <PrereleaseLibraryPackage Include="Microsoft.Win32.SystemEvents" />
     <PrereleaseLibraryPackage Include="System.CodeDom" />
@@ -29,18 +28,14 @@
     <PrereleaseLibraryPackage Include="System.DirectoryServices" />
     <PrereleaseLibraryPackage Include="System.DirectoryServices.AccountManagement" />
     <PrereleaseLibraryPackage Include="System.DirectoryServices.Protocols" />
-    <PrereleaseLibraryPackage Include="System.IO.FileSystem.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Packaging" />
-    <PrereleaseLibraryPackage Include="System.IO.Pipes.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Ports" />
     <PrereleaseLibraryPackage Include="System.Management" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
-    <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Pkcs" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.ProtectedData" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Xml" />
     <PrereleaseLibraryPackage Include="System.Security.Permissions" />
-    <PrereleaseLibraryPackage Include="System.Security.Principal.Windows" />
     <PrereleaseLibraryPackage Include="System.ServiceModel.Syndication" />
     <PrereleaseLibraryPackage Include="System.ServiceProcess.ServiceController" />
     <PrereleaseLibraryPackage Include="System.Speech" />
@@ -51,12 +46,17 @@
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
     <!-- Packages we don't build in main anymore -->
+    <LibraryPackage Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <LibraryPackage Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <LibraryPackage Include="System.Data.SqlClient" Version="4.8.2" />
+    <LibraryPackage Include="System.IO.FileSystem.AccessControl" Version="5.0.0" />
+    <LibraryPackage Include="System.IO.Pipes.AccessControl" Version="5.0.0" />
     <LibraryPackage Include="System.Reflection.Emit" Version="4.7.0" />
     <LibraryPackage Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
     <LibraryPackage Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+    <LibraryPackage Include="System.Security.AccessControl" Version="5.0.0" />
     <LibraryPackage Include="System.Security.Cryptography.Cng" Version="5.0.0" />
+    <LibraryPackage Include="System.Security.Principal.Windows" Version="5.0.0" />
 
     <!-- Service model packages -->
     <ExternalLibraryPackage Include="System.ServiceModel.Primitives">

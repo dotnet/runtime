@@ -72,6 +72,9 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>6.0.0-preview.6.21314.1</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
+    <MicrosoftBclAsyncInterfacesVersion>1.1.1</MicrosoftBclAsyncInterfacesVersion>
+    <MicrosoftWin32PrimitivesVersion>4.3.0</MicrosoftWin32PrimitivesVersion>
+    <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
     <StyleCopAnalyzersVersion>1.2.0-beta.304</StyleCopAnalyzersVersion>
     <SystemAppContextVersion>4.3.0</SystemAppContextVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
@@ -84,6 +87,7 @@
     <SystemDiagnosticsToolsVersion>4.3.0</SystemDiagnosticsToolsVersion>
     <SystemDiagnosticsTracingVersion>4.3.0</SystemDiagnosticsTracingVersion>
     <SystemDynamicRuntimeVersion>4.3.0</SystemDynamicRuntimeVersion>
+    <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemLinqExpressionsVersion>4.3.0</SystemLinqExpressionsVersion>
     <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
     <SystemNetHttpVersion>4.3.4</SystemNetHttpVersion>
@@ -97,17 +101,17 @@
     <SystemRuntimeInteropServicesVersion>4.3.0</SystemRuntimeInteropServicesVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion>4.3.0</SystemRuntimeInteropServicesRuntimeInformationVersion>
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
+    <SystemSecurityAccessControlVersion>5.0.0</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemSecurityCryptographyCngVersion>4.7.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>4.7.0</SystemSecurityCryptographyOpenSslVersion>
-    <SystemTextJsonVersion>6.0.0-preview.6.21314.1</SystemTextJsonVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0-preview.6.21314.1</SystemRuntimeCompilerServicesUnsafeVersion>
+    <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
+    <SystemTextJsonVersion>6.0.0-preview.6.21307.1</SystemTextJsonVersion>
+    <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0-preview.6.21307.1</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingVersion>4.3.0</SystemThreadingVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <MicrosoftBclAsyncInterfacesVersion>1.1.1</MicrosoftBclAsyncInterfacesVersion>
-    <MicrosoftWin32PrimitivesVersion>4.3.0</MicrosoftWin32PrimitivesVersion>
-    <runtimenativeSystemIOPortsVersion>6.0.0-preview.6.21314.1</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>6.0.0-preview.6.21307.1</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.21307.1</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDrawingCommonTestDataVersion>6.0.0-beta.21307.1</SystemDrawingCommonTestDataVersion>
