@@ -9330,10 +9330,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64)
 		case OP_LZCNT32:
 		case OP_LZCNT64: {
-			LLVMValueRef args [2];
-			args [0] = lhs;
-			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
+			IntrinsicId iid = ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
+			LLVMValueRef args [] = { lhs, const_int1 (FALSE) };
+			values [ins->dreg] = call_intrins (ctx, iid, args, "");
 			break;
 		}
 #endif

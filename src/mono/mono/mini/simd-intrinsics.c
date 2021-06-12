@@ -2594,12 +2594,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_LZCNT) {
 		switch (id) {
 		case SN_LeadingZeroCount:
-			MONO_INST_NEW (cfg, ins, is_64bit ? OP_LZCNT64 : OP_LZCNT32);
-			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-			ins->sreg1 = args [0]->dreg;
-			ins->type = is_64bit ? STACK_I8 : STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ins);
-			return ins;
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_LZCNT64 : OP_LZCNT32, 0, arg0_type, fsig, args);
 		default:
 			return NULL;
 		}
