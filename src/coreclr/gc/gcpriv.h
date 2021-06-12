@@ -4807,6 +4807,9 @@ public:
 protected:
     PER_HEAP
     void update_collection_counts ();
+    
+    PER_HEAP_ISOLATED
+    size_t card_table_element_layout[total_bookkeeping_elements + 1];
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
