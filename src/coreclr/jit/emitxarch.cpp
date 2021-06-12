@@ -4243,6 +4243,20 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
 // Arguments:
 //    ins       -- The instruction being checked
 //
+// Return Value:
+//    true if the instruction is a qualifying move instruction; otherwise, false
+//
+// Remarks:
+//    This methods covers most kinds of two operand move instructions that copy a
+//    value between two registers. It does not cover all move-like instructions
+//    and so doesn't currently cover things like movsb/movsw/movsd/movsq or cmovcc
+//    and doesn't currently cover cases where a value is read/written from memory.
+//
+//    The reason it doesn't cover all instructions was namely to limit the scope
+//    of the initial change to that which was impactful to move elision so that
+//    it could be centrally managed and optimized. It may be beneficial to support
+//    the other move instructions in the future but that may require more extensive
+//    changes to ensure relevant codegen/emit paths flow and check things correctly.
 bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
@@ -4299,28 +4313,30 @@ bool emitter::IsMovInstruction(instruction ins)
 //         mov rbx, rax  # <-- current instruction can be omitted.
 //
 // Arguments:
-//    ins  - The current instruction
-//    fmt  - The current format
-//    size - Operand size of current instruction
-//    dst  - The current destination
-//    src  - The current source
-// canSkip - The move can be skipped as it doesn't represent special semantics
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 dst  - The current destination
+//                 src  - The current source
+// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
 //
 // Return Value:
 //    true if the move instruction is redundant; otherwise, false.
 
-bool emitter::IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canSkip)
+bool emitter::IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
 {
     assert(IsMovInstruction(ins));
 
-    if (canSkip && (dst == src))
+    if (canIgnoreSideEffects && (dst == src))
     {
         // These elisions used to be explicit even when optimizations were disabled
 
         // Some instructions have a side effect and shouldn't be skipped
         // however existing codepaths were skipping these instructions in
         // certain scenarios and so we skip them as well for back-compat
-        // when canSkip is true (see below for which have a side effect).
+        // when canIgnoreSideEffects is true (see below for which have a
+        // side effect).
         //
         // Long term, these paths should be audited and should likely be
         // replaced with copies rather than extensions.
@@ -4339,8 +4355,8 @@ bool emitter::IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regN
     // This differs from cases like HWIntrinsics that deal with the entire vector and so
     // they need to be "aware" that a given move impacts the upper-bits.
     //
-    // Ideally we can detect this difference, likely via canSkip, and allow the below
-    // optimizations for those scenarios as well.
+    // Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
+    // the below optimizations for those scenarios as well.
 
     // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
     bool hasSideEffect = false;
