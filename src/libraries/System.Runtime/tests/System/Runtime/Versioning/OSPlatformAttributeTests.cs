@@ -40,5 +40,27 @@ namespace System.Runtime.Versioning.Tests
 
             Assert.Equal(platformName, tpa.PlatformName);
         }
+
+        [Theory]
+        [InlineData("Windows8.0")]
+        [InlineData("Android4.1")]
+        [InlineData("")]
+        public void TestUnsupportedOSPlatformGuardAttribute(string platformName)
+        {
+            var uopga = new UnsupportedOSPlatformGuardAttribute(platformName);
+
+            Assert.Equal(platformName, uopga.PlatformName);
+        }
+
+        [Theory]
+        [InlineData("Windows10.0")]
+        [InlineData("OSX")]
+        [InlineData("")]
+        public void TestSupportedOSPlatformGuargAttribute(string platformName)
+        {
+            var sopga = new SupportedOSPlatformGuardAttribute(platformName);
+
+            Assert.Equal(platformName, sopga.PlatformName);
+        }
     }
 }

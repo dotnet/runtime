@@ -39,7 +39,6 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
-        internal const bool DecryptsInPlace = true;
 
         public static void VerifyPackageInfo()
         {
@@ -109,6 +108,14 @@ namespace System.Net.Security
 
             outputBuffer = resultBuffer.token;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
+        }
+
+        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer )
+        {
+            byte[]? output = Array.Empty<byte>();
+            SecurityStatusPal status =  AcceptSecurityContext(ref credentialsHandle, ref context, Span<byte>.Empty, ref output, sslAuthenticationOptions);
+            outputBuffer = output;
+            return status;
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
@@ -306,16 +313,16 @@ namespace System.Net.Security
             }
         }
 
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, ReadOnlySpan<byte> input, Span<byte> output, out int outputOffset, out int outputCount)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, Span<byte> buffer, out int offset, out int count)
         {
             const int NumSecBuffers = 4; // data + empty + empty + empty
-            fixed (byte* bufferPtr = input)
+            fixed (byte* bufferPtr = buffer)
             {
                 Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
                 Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[0];
                 dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                 dataBuffer->pvBuffer = (IntPtr)bufferPtr;
-                dataBuffer->cbBuffer = input.Length;
+                dataBuffer->cbBuffer = buffer.Length;
 
                 for (int i = 1; i < NumSecBuffers; i++)
                 {
@@ -333,8 +340,8 @@ namespace System.Net.Security
 
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
-                outputCount = 0;
-                outputOffset = 0;
+                count = 0;
+                offset = 0;
                 for (int i = 0; i < NumSecBuffers; i++)
                 {
                     // Successfully decoded data and placed it at the following position in the buffer,
@@ -342,12 +349,12 @@ namespace System.Net.Security
                         // or we failed to decode the data, here is the encoded data.
                         || (errorCode != Interop.SECURITY_STATUS.OK && unmanagedBuffer[i].BufferType == SecurityBufferType.SECBUFFER_EXTRA))
                     {
-                        outputOffset = (int)((byte*)unmanagedBuffer[i].pvBuffer - bufferPtr);
-                        outputCount = unmanagedBuffer[i].cbBuffer;
+                        offset = (int)((byte*)unmanagedBuffer[i].pvBuffer - bufferPtr);
+                        count = unmanagedBuffer[i].cbBuffer;
 
                         // output is ignored on Windows. We always decrypt in place and we set outputOffset to indicate where the data start.
-                        Debug.Assert(outputOffset >= 0 && outputCount >= 0, $"Expected offset and count greater than 0, got {outputOffset} and {outputCount}");
-                        Debug.Assert(checked(outputOffset + outputCount) <= input.Length, $"Expected offset+count <= buffer.Length, got {outputOffset}+{outputCount}>={input.Length}");
+                        Debug.Assert(offset >= 0 && count >= 0, $"Expected offset and count greater than 0, got {offset} and {count}");
+                        Debug.Assert(checked(offset + count) <= buffer.Length, $"Expected offset+count <= buffer.Length, got {offset}+{count}>={buffer.Length}");
 
                         break;
                     }

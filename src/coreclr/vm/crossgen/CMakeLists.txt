@@ -7,6 +7,7 @@ set(VM_CROSSGEN_SOURCES
   ../baseassemblyspec.cpp
   ../binder.cpp
   ../bundle.cpp
+  ../callconvbuilder.cpp
   ../castcache.cpp
   ../ceeload.cpp
   ../ceemain.cpp
@@ -226,18 +227,23 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   list(APPEND VM_CROSSGEN_SOURCES
     ../${ARCH_SOURCES_DIR}/stubs.cpp
   )
+elseif(CLR_CMAKE_TARGET_ARCH_S390X)
+  list(APPEND VM_CROSSGEN_SOURCES
+    # Not supported as VM target
+  )
 else()
   clr_unknown_arch()
 endif()
 
 if (CLR_CMAKE_TARGET_WIN32)
+
+  # COM interop scenarios
   list(APPEND VM_CROSSGEN_SOURCES
     ../classcompat.cpp
     ../comtoclrcall.cpp
     ../clrtocomcall.cpp
     ../runtimecallablewrapper.cpp
   )
-
   list(APPEND VM_CROSSGEN_HEADERS
     ../classcompat.h
     ../clrtocomcall.h

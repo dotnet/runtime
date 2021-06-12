@@ -4,10 +4,12 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
+    [UnsupportedOSPlatform("tvos")]
     internal sealed partial class NTAuthentication
     {
         internal string? AssociatedName

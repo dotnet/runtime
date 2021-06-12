@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -45,11 +46,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System.Text.Json.Serialization;
             using ReferencedAssembly;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-            [assembly: JsonSerializable(typeof(ReferencedAssembly.ReferencedType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                [JsonSerializable(typeof(ReferencedAssembly.ReferencedType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     public void MyMethod() { }
@@ -71,7 +75,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(newCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
 
             // Should find both types since compilation above was successful.
-            Assert.Equal(2, generator.SerializableTypes.Count);
+            Assert.Equal(2, generator.GetSerializableTypes().Count);
         }
 
         [Fact]
@@ -81,10 +85,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System;
             using System.Text.Json.Serialization;
 
-            [assembly: JsonSerializable(typeof(HelloWorld.MyType))]
-
             namespace HelloWorld
             {
+                [JsonSerializable(typeof(HelloWorld.MyType))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
                 public class MyType
                 {
                     [JsonInclude]
@@ -128,8 +135,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation outCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
 
             // Check base functionality of found types.
-            Assert.Equal(1, generator.SerializableTypes.Count);
-            Type foundType = generator.SerializableTypes.First().Value;
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+            Assert.Equal(1, types.Count);
+            Type foundType = types.First().Value;
 
             Assert.Equal("HelloWorld.MyType", foundType.FullName);
 

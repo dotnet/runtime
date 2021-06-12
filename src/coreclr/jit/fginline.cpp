@@ -99,30 +99,28 @@ PhaseStatus Compiler::fgInline()
                                                                         &info.compMethodInfo->args);
 #endif // DEBUG
 
-    BasicBlock* block       = fgFirstBB;
-    bool        madeChanges = false;
-    noway_assert(block != nullptr);
+    noway_assert(fgFirstBB != nullptr);
 
     // Set the root inline context on all statements
     InlineContext* rootContext = m_inlineStrategy->GetRootContext();
 
-    for (; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
         }
     }
 
-    // Reset block back to start for inlining
-    block = fgFirstBB;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
 
     do
     {
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
 
 #ifdef DEBUG
@@ -212,7 +210,7 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             // Call Compiler::fgDebugCheckInlineCandidates on each node
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
@@ -520,10 +518,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         // This folding may uncover more GT_RET_EXPRs, so we loop around
         // until we've got something distinct.
         //
-        unsigned __int64 bbFlags         = 0;
-        GenTree*         inlineCandidate = tree->gtRetExprVal(&bbFlags);
-        inlineCandidate                  = comp->gtFoldExpr(inlineCandidate);
-        var_types retType                = tree->TypeGet();
+        BasicBlockFlags bbFlags         = BBF_EMPTY;
+        GenTree*        inlineCandidate = tree->gtRetExprVal(&bbFlags);
+        inlineCandidate                 = comp->gtFoldExpr(inlineCandidate);
+        var_types retType               = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -731,7 +729,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
             bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
+            comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
         }
     }
@@ -1095,7 +1093,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     GenTreeCall* iciCall  = pInlineInfo->iciCall;
     Statement*   iciStmt  = pInlineInfo->iciStmt;
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
-    BasicBlock*  block;
 
     noway_assert(iciBlock->bbStmtList != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
@@ -1118,9 +1115,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Create a new inline context and mark the inlined statements with it
     InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
 
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
         }
@@ -1158,7 +1155,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
-            const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+            const BasicBlockFlags inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
@@ -1206,7 +1203,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     // Update block flags
     {
-        const unsigned __int64 originalFlags = topBlock->bbFlags;
+        const BasicBlockFlags originalFlags = topBlock->bbFlags;
         noway_assert((originalFlags & BBF_SPLIT_NONEXIST) == 0);
         topBlock->bbFlags &= ~(BBF_SPLIT_LOST);
         bottomBlock->bbFlags |= originalFlags & BBF_SPLIT_GAINED;
@@ -1272,7 +1269,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // Set the try and handler index and fix the jump types of inlinee's blocks.
     //
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
         noway_assert(!block->hasTryIndex());
         noway_assert(!block->hasHndIndex());
@@ -1343,7 +1340,6 @@ _Done:
     compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
-    compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
@@ -1397,6 +1393,15 @@ _Done:
                 InlineeCompiler->optMethodFlags, optMethodFlags);
     }
 #endif
+
+    // If an inlinee needs GS cookie we need to make sure that the cookie will not be allocated at zero stack offset.
+    // Note that if the root method needs GS cookie then this has already been taken care of.
+    if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
+    {
+        setNeedsGSSecurityCookie();
+        const unsigned dummy   = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+        lvaTable[dummy].lvType = TYP_INT;
+    }
 
     // If there is non-NULL return, replace the GT_CALL with its return value expression,
     // so later it will be picked up by the GT_RET_EXPR node.
@@ -1522,9 +1527,9 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             GenTree*          argNode        = inlArgInfo[argNum].argNode;
             const bool        argHasPutArg   = argNode->OperIs(GT_PUTARG_TYPE);
 
-            unsigned __int64 bbFlags = 0;
-            argNode                  = argNode->gtSkipPutArgType();
-            argNode                  = argNode->gtRetExprVal(&bbFlags);
+            BasicBlockFlags bbFlags = BBF_EMPTY;
+            argNode                 = argNode->gtSkipPutArgType();
+            argNode                 = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
             {

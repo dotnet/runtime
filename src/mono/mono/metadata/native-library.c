@@ -82,9 +82,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (dllimportsearchpath_attribute, "System
  * LOCKING: Assumes the relevant lock is held.
  * For the global DllMap, this is `global_loader_data_mutex`, and for images it's their internal lock.
  */
-static int
+static gboolean
 mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func, const char **rdll, const char **rfunc) {
-	int found = 0;
+	gboolean found = FALSE;
 
 	*rdll = dll;
 	*rfunc = func;
@@ -106,7 +106,7 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 
 		if (!found && dll_map->target) {
 			*rdll = dll_map->target;
-			found = 1;
+			found = TRUE;
 			/* we don't quit here, because we could find a full
 			 * entry that also matches the function, which takes priority.
 			 */
@@ -119,8 +119,6 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 	}
 
 exit:
-	*rdll = g_strdup (*rdll);
-	*rfunc = g_strdup (*rfunc);
 	return found;
 }
 
@@ -128,10 +126,10 @@ exit:
  * The locking and GC state transitions here are wonky due to the fact the image lock is a coop lock
  * and the global loader data lock is an OS lock.
  */
-static int
+static gboolean
 mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, const char **rdll, const char **rfunc)
 {
-	int res;
+	gboolean res;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -140,7 +138,7 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 		res = mono_dllmap_lookup_list (assembly->dll_map, dll, func, rdll, rfunc);
 		mono_image_unlock (assembly);
 		if (res)
-			return res;
+			goto leave;
 	}
 
 	MONO_ENTER_GC_SAFE;
@@ -150,6 +148,10 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 	mono_global_loader_data_unlock ();
 
 	MONO_EXIT_GC_SAFE;
+
+leave:
+	*rdll = g_strdup (*rdll);
+	*rfunc = g_strdup (*rfunc);
 
 	return res;
 }
@@ -628,6 +630,9 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
+	if (!mono_gchandle_get_target_internal (alc->gchandle))
+		return NULL;
+
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
@@ -689,6 +694,9 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 		return NULL;
 
 	if (mono_runtime_get_no_exec ())
+		return NULL;
+
+	if (!mono_gchandle_get_target_internal (alc->gchandle))
 		return NULL;
 
 	HANDLE_FUNCTION_ENTER ();

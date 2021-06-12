@@ -313,6 +313,36 @@ namespace Internal.JitInterface
         public int Other;
     }
 
+    public enum PgoSource
+    {
+        Unknown = 0,
+        Static = 1,
+        Dynamic = 2,
+        Blend = 3,
+        Text = 4,
+        IBC = 5,
+        Sampling = 6,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AllocMemArgs
+    {
+        // Input arguments
+        public uint hotCodeSize;
+        public uint coldCodeSize;
+        public uint roDataSize;
+        public uint xcptnsCount;
+        public CorJitAllocMemFlag flag;
+
+        // Output arguments
+        public void* hotCodeBlock;
+        public void* hotCodeBlockRW;
+        public void* coldCodeBlock;
+        public void* coldCodeBlockRW;
+        public void* roDataBlock;
+        public void* roDataBlockRW;
+    }
+
     // Flags computed by a runtime compiler
     public enum CorInfoMethodRuntimeFlags
     {
@@ -409,22 +439,14 @@ namespace Internal.JitInterface
 
     public enum CorInfoIntrinsics
     {
-        CORINFO_INTRINSIC_GetChar,              // fetch character out of string
-        CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
         CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
         CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-        CORINFO_INTRINSIC_StringGetChar,        // fetch character out of string
-        CORINFO_INTRINSIC_StringLength,         // get the length
         CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-        CORINFO_INTRINSIC_GetTypeFromHandle,
         CORINFO_INTRINSIC_RTH_GetValueInternal,
-        CORINFO_INTRINSIC_TypeEQ,
-        CORINFO_INTRINSIC_TypeNEQ,
         CORINFO_INTRINSIC_Object_GetType,
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,
         CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-        CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
         CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
         CORINFO_INTRINSIC_InterlockedAdd32,
         CORINFO_INTRINSIC_InterlockedAdd64,
@@ -438,8 +460,6 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_MemoryBarrierLoad,
         CORINFO_INTRINSIC_ByReference_Ctor,
         CORINFO_INTRINSIC_ByReference_Value,
-        CORINFO_INTRINSIC_Span_GetItem,
-        CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
         CORINFO_INTRINSIC_GetRawHandle,
 
         CORINFO_INTRINSIC_Count,
@@ -1050,6 +1070,28 @@ namespace Internal.JitInterface
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
+    public enum CORINFO_DEVIRTUALIZATION_DETAIL
+    {
+        CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
+        CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
+        CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
+        CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
+        CORINFO_DEVIRTUALIZATION_FAILED_DIM,                           // interface method was default interface method
+        CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS,                      // object not subclass of base class
+        CORINFO_DEVIRTUALIZATION_FAILED_SLOT,                          // virtual method installed via explicit override
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,                        // devirtualization crossed version bubble
+        CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL,                        // object has multiple implementations of interface class
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL,             // decl method is defined on class and decl method not in version bubble, and decl method not in closest to version bubble
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL,         // decl method is defined on interface and not in version bubble, and implementation type not entirely defined in bubble
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL,                   // object class not defined within version bubble
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
+        CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
+        CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+        CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
+    }
+
     public unsafe struct CORINFO_DEVIRTUALIZATION_INFO
     {
         //
@@ -1058,6 +1100,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* virtualMethod;
         public CORINFO_CLASS_STRUCT_* objClass;
         public CORINFO_CONTEXT_STRUCT* context;
+        public CORINFO_RESOLVED_TOKEN* pResolvedTokenVirtualMethod;
 
         //
         // [Out] results of resolveVirtualMethod.
@@ -1065,11 +1108,15 @@ namespace Internal.JitInterface
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
         // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        // - detail describes the computation done by the jit host
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public byte _requiresInstMethodTableArg;
         public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
+        public CORINFO_DEVIRTUALIZATION_DETAIL detail;
+        public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
+        public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
     }
 
     //----------------------------------------------------------------------------

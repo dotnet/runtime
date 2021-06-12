@@ -16,7 +16,7 @@ public class DecimalTest
         {
             RunDecimalTests();
             RunLPDecimalTests();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 RunCurrencyTests();
             }

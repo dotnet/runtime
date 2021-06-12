@@ -222,6 +222,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 }
 
 static BOOL s_FinalizerThreadOK = FALSE;
+static BOOL s_InitializedFinalizerThreadForPlatform = FALSE;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
@@ -289,6 +290,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                 bPriorityBoosted = TRUE;
         }
 
+        // The Finalizer thread is started very early in EE startup. We deferred
+        // some initialization until a point we are sure the EE is up and running. At
+        // this point we make a single attempt and if it fails won't try again.
+        if (!s_InitializedFinalizerThreadForPlatform)
+        {
+            s_InitializedFinalizerThreadForPlatform = TRUE;
+            Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
+        }
+
         JitHost::Reclaim();
 
         GetFinalizerThread()->DisablePreemptiveGC();
@@ -330,6 +340,9 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // acceptable.
         SignalFinalizationDone(TRUE);
     }
+
+    if (s_InitializedFinalizerThreadForPlatform)
+        Thread::CleanUpForManagedThreadInNative(GetFinalizerThread());
 }
 
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)

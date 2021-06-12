@@ -1,0 +1,4 @@
+<Project>
+  <Import Project="targetingpacks.targets" />
+  <Import Project="packageTest.targets" />
+</Project>

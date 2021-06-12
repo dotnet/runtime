@@ -285,7 +285,7 @@ mono_jit_info_get_unwind_info (MonoJitInfo *ji);
 typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoImage *image, gpointer addr);
 void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
 
-MonoJitInfo* mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean allow_trampolines);
+MONO_PROFILER_API MonoJitInfo* mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 
 typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
 

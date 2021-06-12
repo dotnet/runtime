@@ -831,9 +831,8 @@ namespace System.Reflection
                     else if (right == null)
                         return false;
 
-                    // This assembly should work in netstandard1.3,
-                    // so we cannot use MemberInfo.MetadataToken here.
-                    // Therefore, it compares honestly referring ECMA-335 I.8.6.1.6 Signature Matching.
+                    // TODO: switch to use MemberInfo.MetadataToken here.
+                    // It compares honestly referring ECMA-335 I.8.6.1.6 Signature Matching.
                     if (!Equals(left.DeclaringType, right.DeclaringType))
                         return false;
 

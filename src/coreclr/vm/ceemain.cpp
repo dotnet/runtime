@@ -489,15 +489,9 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef TARGET_UNIX
-    // On Unix, the GS cookie is stored in a read only data segment
-    DWORD newProtection = PAGE_READWRITE;
-#else // TARGET_UNIX
-    DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !TARGET_UNIX
-
+    // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
+    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
@@ -709,6 +703,11 @@ void EEStartupHelper()
         }
 #endif
 
+#ifdef PROFILING_SUPPORTED
+        // The diagnostics server might register a profiler for delayed startup, indicate here that 
+        // it is not currently set. This will be set to TRUE if a profiler is registered.
+       g_profControlBlock.fIsStoredProfilerRegistered = FALSE;
+#endif // PROFILING_SUPPORTED
 #ifdef FEATURE_PERFTRACING
         DiagnosticServerAdapter::Initialize();
         DiagnosticServerAdapter::PauseForDiagnosticsMonitor();
@@ -1030,7 +1029,7 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#endif // CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -1056,7 +1055,6 @@ void EEStartupHelper()
 
         // Perform CoreLib consistency check if requested
         g_CoreLib.CheckExtended();
-
 #endif // _DEBUG
 
 #endif // !CROSSGEN_COMPILE

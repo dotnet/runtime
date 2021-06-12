@@ -17,6 +17,14 @@ namespace GitHub_21546
         static Point checkC;
         static int   returnVal;
 
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void check(Point a, Point b, Point c)
         {
@@ -59,7 +67,7 @@ namespace GitHub_21546
         static int Main()
         {
             returnVal     = 100;
-            Random random = new Random(13);
+            Random random = new Random(Seed);
             List<Point> p = new List<Point>();
 
             checkA = NextPoint(random);

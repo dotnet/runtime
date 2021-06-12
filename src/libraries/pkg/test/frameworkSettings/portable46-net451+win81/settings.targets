@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile44</TargetFrameworkProfile>
-  </PropertyGroup>
-</Project>

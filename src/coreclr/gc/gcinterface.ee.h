@@ -197,15 +197,15 @@ public:
     virtual
     void GcStartWork(int condemned, int max_gen) = 0;
 
+    // Callback from the GC informing the EE that the scanning of roots is about
+    // to begin.
+    virtual
+    void BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent) = 0;
+
     // Callback from the GC informing the EE that it has completed the managed stack
     // scan. User threads are still suspended at this point.
     virtual
     void AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc) = 0;
-
-    // Callback from the GC informing the EE that the background sweep phase of a BGC is
-    // about to begin.
-    virtual
-    void GcBeforeBGCSweepWork() = 0;
 
     // Callback from the GC informing the EE that a GC has completed.
     virtual
@@ -426,6 +426,9 @@ public:
 
     virtual
     void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg) = 0;
+
+    virtual
+    uint32_t GetCurrentProcessCpuCount() = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

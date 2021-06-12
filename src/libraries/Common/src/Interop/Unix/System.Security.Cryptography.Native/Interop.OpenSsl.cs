@@ -345,7 +345,7 @@ internal static partial class Interop
             return retVal;
         }
 
-        internal static int Decrypt(SafeSslHandle context, ReadOnlySpan<byte> input, Span<byte> output, out Ssl.SslErrorCode errorCode)
+        internal static int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
@@ -353,28 +353,15 @@ internal static partial class Interop
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
-            int retVal = BioWrite(context.InputBio!, input);
-            Exception? innerError = null;
+            BioWrite(context.InputBio!, buffer);
 
-            if (retVal == input.Length)
+            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+            if (retVal > 0)
             {
-                unsafe
-                {
-                    fixed (byte* fixedBuffer = output)
-                    {
-                        retVal = Ssl.SslRead(context, fixedBuffer, output.Length);
-                    }
-                }
-
-                if (retVal > 0)
-                {
-                    return retVal;
-                }
+                return retVal;
             }
 
-            errorCode = GetSslError(context, retVal, out innerError);
-            retVal = 0;
-
+            errorCode = GetSslError(context, retVal, out Exception? innerError);
             switch (errorCode)
             {
                 // indicate end-of-file
@@ -389,10 +376,10 @@ internal static partial class Interop
                     break;
 
                 default:
-                     throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
+                    throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
             }
 
-            return retVal;
+            return 0;
         }
 
         internal static SafeX509Handle GetPeerCertificate(SafeSslHandle context)
@@ -497,22 +484,13 @@ internal static partial class Interop
             return bytes;
         }
 
-        private static int BioWrite(SafeBioHandle bio, ReadOnlySpan<byte> buffer)
+        private static void BioWrite(SafeBioHandle bio, ReadOnlySpan<byte> buffer)
         {
-            int bytes;
-            unsafe
-            {
-                fixed (byte* bufPtr = buffer)
-                {
-                    bytes = Ssl.BioWrite(bio, bufPtr, buffer.Length);
-                }
-            }
-
+            int bytes = Ssl.BioWrite(bio, ref MemoryMarshal.GetReference(buffer), buffer.Length);
             if (bytes != buffer.Length)
             {
                 throw CreateSslException(SR.net_ssl_write_bio_failed_error);
             }
-            return bytes;
         }
 
         private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, out Exception? innerError)

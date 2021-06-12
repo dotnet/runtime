@@ -375,7 +375,7 @@ public:
 #endif // DEBUG
     }
 
-    // Morph promoted struct fields and count implict byref argument occurrences.
+    // Morph promoted struct fields and count implicit byref argument occurrences.
     // Also create and push the value produced by the visited node. This is done here
     // rather than in PostOrderVisit because it makes it easy to handle nodes with an
     // arbitrary number of operands - just pop values until the value corresponding
@@ -641,7 +641,7 @@ private:
             if (Compiler::gtHasCallOnStack(&m_ancestors))
             {
                 varDsc->lvQuirkToLong = true;
-                JITDUMP("Adding a quirk for the storage size of V%02u of type %s", val.LclNum(),
+                JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
                         varTypeName(varDsc->TypeGet()));
             }
         }
@@ -834,7 +834,7 @@ private:
 
         if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
         {
-            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
             // they require additional changes in subsequent phases.
             return;
         }
@@ -872,7 +872,7 @@ private:
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
-        addr->gtFlags = 0;
+        addr->gtFlags = GTF_EMPTY;
 
         INDEBUG(m_stmtModified = true;)
     }
@@ -917,14 +917,14 @@ private:
             // a variable into a LCL_FLD but that blocks enregistration so we need to
             // detect those case where we can use LCL_VAR instead, perhaps in conjuction
             // with CAST and/or BITCAST.
-            // Also skip SIMD variables for now, fgMorphFieldAssignToSIMDIntrinsicSet and
+            // Also skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
             // others need to be updated to recognize LCL_FLDs.
             return;
         }
 
         if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
         {
-            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
             // they require additional changes in subsequent phases
             // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
             return;
@@ -958,7 +958,7 @@ private:
         if (varTypeIsSIMD(indir->TypeGet()))
         {
             // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
-            // but there are exceptions - fgMorphFieldAssignToSIMDIntrinsicSet for example.
+            // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
             // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
             return;
         }
@@ -1044,7 +1044,7 @@ private:
             return;
         }
 
-        unsigned flags = 0;
+        GenTreeFlags flags = GTF_EMPTY;
 
         if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
         {
@@ -1130,7 +1130,7 @@ private:
         }
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implict by-ref V%02d\n",
+        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implicit by-ref V%02d\n",
                 varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
         varDsc->incLvRefCnt(1, RCS_EARLY);
 
@@ -1185,7 +1185,7 @@ private:
         if (isArgToCall)
         {
             JITDUMP("LocalAddressVisitor incrementing weighted ref count from %d to %d"
-                    " for implict by-ref V%02d arg passed to call\n",
+                    " for implicit by-ref V%02d arg passed to call\n",
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);
         }
@@ -1212,12 +1212,12 @@ void Compiler::fgMarkAddressExposedLocals()
 
     LocalAddressVisitor visitor(this);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             visitor.VisitStmt(stmt);
         }

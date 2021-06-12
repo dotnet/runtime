@@ -26,6 +26,8 @@ static char *bundle_path;
 
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
+#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
 const char *
 get_bundle_path (void)
 {
@@ -205,6 +207,13 @@ register_dllmap (void)
 //%DllMap%
 }
 
+void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
+{
+    free (args);
+    free (user_data);
+}
+
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
 void mono_jit_set_aot_mode (MonoAotMode mode);
 void register_aot_modules (void);
@@ -220,6 +229,13 @@ mono_ios_runtime_init (void)
 #if ENABLE_RUNTIME_LOGGING
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);
+#endif
+
+    // build using DiagnosticPorts property in AppleAppBuilder
+    // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents=diagnostics_tracing
+#ifdef DIAGNOSTIC_PORTS
+    setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
 
     id args_array = [[NSProcessInfo processInfo] arguments];
@@ -246,28 +262,53 @@ mono_ios_runtime_init (void)
     const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER", 
         "APP_CONTEXT_BASE_DIRECTORY",
-#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
+#if !defined(INVARIANT_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
 #endif
     };
     const char *appctx_values [] = {
         APPLE_RUNTIME_IDENTIFIER,
         bundle,
-#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
+#if !defined(INVARIANT_GLOBALIZATION)
         icu_dat_path
 #endif
     };
 
+    char *file_name = RUNTIMECONFIG_BIN_FILE;
+    int str_len = strlen (bundle) + strlen (file_name) + 2;
+    char *file_path = (char *)malloc (sizeof (char) * str_len);
+    int num_char = snprintf (file_path, str_len, "%s/%s", bundle, file_name);
+    struct stat buffer;
+
+    assert (num_char > 0 && num_char < str_len);
+
+    if (stat (file_path, &buffer) == 0) {
+        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+        arg->kind = 0;
+        arg->runtimeconfig.name.path = file_path;
+        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+    } else {
+        free (file_path);
+    }
+
     monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
 
-#if FORCE_INTERPRETER
+#if (FORCE_INTERPRETER && !FORCE_AOT)
+    // interp w/ JIT fallback. Assumption is that your configuration can JIT
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 #elif (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST) || FORCE_AOT
     register_dllmap ();
     // register modules
     register_aot_modules ();
+
+#if (FORCE_INTERPRETER && TARGET_OS_MACCATALYST)
+    os_log_info (OS_LOG_DEFAULT, "AOT INTERP Enabled");
+    mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
+#else
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+#endif
+
 #endif
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
@@ -282,7 +323,9 @@ mono_ios_runtime_init (void)
         char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
         mono_jit_parse_options (1, options);
     }
-    mono_jit_init_version ("dotnet.ios", "mobile");
+
+    MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
+    assert (domain);
 
 #if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
     // device runtimes are configured to use lazy gc thread creation
@@ -299,6 +342,8 @@ mono_ios_runtime_init (void)
     res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
+
+    mono_jit_cleanup (domain);
 
     exit (res);
 }

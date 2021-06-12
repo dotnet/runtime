@@ -830,6 +830,15 @@ namespace System.Net.Security
             return status;
         }
 
+        internal SecurityStatusPal Renegotiate(out byte[]? output)
+        {
+            return SslStreamPal.Renegotiate(
+                                      ref _credentialsHandle!,
+                                      ref _securityContext,
+                                      _sslAuthenticationOptions,
+                                      out output);
+        }
+
         /*++
             ProcessHandshakeSuccess -
                Called on successful completion of Handshake -
@@ -894,12 +903,12 @@ namespace System.Net.Security
             return secStatus;
         }
 
-        internal SecurityStatusPal Decrypt(ReadOnlySpan<byte> input, Span<byte> output, out int outputOffset, out int outputCount)
+        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
         {
-            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, input, output, out outputOffset, out outputCount);
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                NetEventSource.DumpBuffer(this, output.Slice(outputOffset, outputCount));
+                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
             }
 
             return status;

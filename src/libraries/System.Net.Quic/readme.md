@@ -1,7 +1,7 @@
 # MsQuic
 
 `System.Net.Quic` depends on [MsQuic](https://github.com/microsoft/msquic), Microsoft, cross-platform, native implementation of the [QUIC](https://datatracker.ietf.org/wg/quic/about/) protocol.
-Currently, `System.Net.Quic` depends on [**msquic@7b31e149a9d1ed7a6850e8253ba3d0af707150e5**](https://github.com/microsoft/msquic/commit/7b31e149a9d1ed7a6850e8253ba3d0af707150e5) revision.
+Currently, `System.Net.Quic` depends on [**msquic@26cff1a8de7890cf7ff77709ee14b51bc84e330e**](https://github.com/microsoft/msquic/commit/26cff1a8de7890cf7ff77709ee14b51bc84e330e) revision.
 
 ## Usage
 
@@ -23,10 +23,10 @@ Prerequisites:
 
 Run inside the msquic directory (for **Debug** build with logging on):
 ```bash
-# build msquic in debug with logging and stub tls
+# build msquic in debug with logging
 rm -rf build
 mkdir build
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=on -DQUIC_TLS=stub
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=on
 cd build
 cmake --build . --config Debug
 

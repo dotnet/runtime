@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
                     // If useSecretAsKey is false then hmacKey is owned by the caller, not ours to clear.
                     if (useSecretAsKey)
                     {
-                        Array.Clear(hmacKey, 0, hmacKey.Length);
+                        Array.Clear(hmacKey);
                     }
                 }
             }
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(secretAgreement, 0, secretAgreement.Length);
+                    Array.Clear(secretAgreement);
                 }
             }
         }
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography
             //
             // This is called via PRF, which turns (label || seed) into seed.
 
-#if NETFRAMEWORK || NETCOREAPP3_0
+#if !NET5_0_OR_GREATER
             byte[] secretTmp = new byte[secret.Length];
 
             // Keep secretTmp pinned the whole time it has a secret in it, so it
@@ -251,11 +251,11 @@ namespace System.Security.Cryptography
                             }
                         }
                     }
-#if NETFRAMEWORK || NETCOREAPP3_0
+#if !NET5_0_OR_GREATER
                 }
                 finally
                 {
-                    Array.Clear(secretTmp, 0, secretTmp.Length);
+                    Array.Clear(secretTmp);
                 }
             }
 #endif

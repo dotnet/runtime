@@ -482,6 +482,42 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(0, dst, 0, 6));
         }
 
+        [Theory]
+        [InlineData("", 0)]
+        [InlineData("", 1)]
+        [InlineData("a", 1)]
+        [InlineData("a", 0)]
+        [InlineData("a", 2)]
+        [InlineData("abc", 2)]
+        [InlineData("abc", 3)]
+        [InlineData("abc", 4)]
+        [InlineData("Hello world", 20)]
+        public static void CopyTo_Span(string s, int destinationLength)
+        {
+            char[] destination = new char[destinationLength];
+
+            if (s.Length > destinationLength)
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () => s.CopyTo(destination));
+                Assert.All(destination, c => Assert.Equal(0, c));
+
+                Assert.False(s.TryCopyTo(destination));
+                Assert.All(destination, c => Assert.Equal(0, c));
+            }
+            else
+            {
+                s.CopyTo(destination);
+                Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
+                Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
+
+                Array.Clear(destination);
+
+                Assert.True(s.TryCopyTo(destination));
+                Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
+                Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
+            }
+        }
+
         public static IEnumerable<object[]> Compare_TestData()
         {
             // CurrentCulture
@@ -7300,6 +7336,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static unsafe void NormalizationTest() // basic test; more tests in globalization tests
         {
             // U+0063  LATIN SMALL LETTER C

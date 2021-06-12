@@ -95,6 +95,7 @@ struct _MonoMethod {
 struct _MonoMethodWrapper {
 	MonoMethod method;
 	MonoMethodHeader *header;
+	MonoMemoryManager *mem_manager;
 	void *method_data;
 };
 
@@ -403,6 +404,7 @@ struct _MonoMethodInflated {
 	union {
 		MonoMethod method;
 		MonoMethodPInvoke pinvoke;
+		MonoMethodWrapper wrapper;
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
@@ -960,6 +962,7 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+	MonoClass *autoreleasepool_class;
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
@@ -1433,7 +1436,7 @@ mono_class_get_dim_conflicts (MonoClass *klass);
 MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_method_has_no_body (MonoMethod *method);
 
 // FIXME Replace all internal callers of mono_method_get_header_checked with
@@ -1442,7 +1445,7 @@ mono_method_has_no_body (MonoMethod *method);
 // And then mark mono_method_get_header_checked as MONO_RT_EXTERNAL_ONLY MONO_API.
 //
 // Internal callers expected to use ERROR_DECL. External callers are not.
-MonoMethodHeader*
+MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
 
 MonoType*
@@ -1547,7 +1550,10 @@ mono_mem_manager_get_ambient (void)
 static inline MonoMemoryManager*
 m_image_get_mem_manager (MonoImage *image)
 {
-	return (MonoMemoryManager*)mono_image_get_alc (image)->memory_manager;
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
+	if (!alc)
+		alc = mono_alc_get_default ();
+	return alc->memory_manager;
 }
 
 static inline void *
@@ -1565,10 +1571,13 @@ m_image_alloc0 (MonoImage *image, guint size)
 static inline MonoMemoryManager*
 m_class_get_mem_manager (MonoClass *klass)
 {
-	// FIXME: Generics
+	if (m_class_get_class_kind (klass) == MONO_CLASS_GINST)
+		return mono_class_get_generic_class (klass)->owner;
+	if (m_class_get_rank (klass))
+		return m_class_get_mem_manager (m_class_get_element_class (klass));
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (m_class_get_image (klass));
 	if (alc)
-		return (MonoMemoryManager*)alc->memory_manager;
+		return alc->memory_manager;
 	else
 		/* Dynamic assemblies */
 		return mono_mem_manager_get_ambient ();
@@ -1589,8 +1598,12 @@ m_class_alloc0 (MonoClass *klass, guint size)
 static inline MonoMemoryManager*
 m_method_get_mem_manager (MonoMethod *method)
 {
-	// FIXME:
-	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
+	if (method->is_inflated)
+		return ((MonoMethodInflated*)method)->owner;
+	else if (method->wrapper_type && ((MonoMethodWrapper*)method)->mem_manager)
+		return ((MonoMethodWrapper*)method)->mem_manager;
+	else
+		return m_class_get_mem_manager (method->klass);
 }
 
 static inline void *

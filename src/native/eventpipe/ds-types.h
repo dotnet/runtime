@@ -16,9 +16,12 @@
  */
 
 typedef struct _DiagnosticsAttachProfilerCommandPayload DiagnosticsAttachProfilerCommandPayload;
+typedef struct _DiagnosticsStartupProfilerCommandPayload DiagnosticsStartupProfilerCommandPayload;
 typedef struct _DiagnosticsConnectPort DiagnosticsConnectPort;
 typedef struct _DiagnosticsEnvironmentInfoPayload DiagnosticsEnvironmentInfoPayload;
 typedef struct _DiagnosticsGenerateCoreDumpCommandPayload DiagnosticsGenerateCoreDumpCommandPayload;
+typedef struct _DiagnosticsSetEnvironmentVariablePayload DiagnosticsSetEnvironmentVariablePayload;
+typedef struct _DiagnosticsGetEnvironmentVariablePayload DiagnosticsGetEnvironmentVariablePayload;
 typedef struct _DiagnosticsIpcHeader DiagnosticsIpcHeader;
 typedef struct _DiagnosticsIpcMessage DiagnosticsIpcMessage;
 typedef struct _DiagnosticsListenPort DiagnosticsListenPort;
@@ -26,6 +29,7 @@ typedef struct _DiagnosticsPort DiagnosticsPort;
 typedef struct _DiagnosticsPortBuilder DiagnosticsPortBuilder;
 typedef struct _DiagnosticsPortVtable DiagnosticsPortVtable;
 typedef struct _DiagnosticsProcessInfoPayload DiagnosticsProcessInfoPayload;
+typedef struct _DiagnosticsProcessInfo2Payload DiagnosticsProcessInfo2Payload;
 typedef struct _EventPipeCollectTracingCommandPayload EventPipeCollectTracingCommandPayload;
 typedef struct _EventPipeCollectTracing2CommandPayload EventPipeCollectTracing2CommandPayload;
 typedef struct _EventPipeStopTracingCommandPayload EventPipeStopTracingCommandPayload;
@@ -63,6 +67,8 @@ typedef enum {
 	DS_PROCESS_COMMANDID_GET_PROCESS_INFO = 0x00,
 	DS_PROCESS_COMMANDID_RESUME_RUNTIME = 0x01,
 	DS_PROCESS_COMMANDID_GET_PROCESS_ENV = 0x02,
+	DS_PROCESS_COMMANDID_SET_ENV_VAR = 0x03,
+	DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2 = 0x04
 	// future
 } DiagnosticsProcessCommandId;
 
@@ -70,6 +76,7 @@ typedef enum {
 typedef enum {
 	DS_PROFILER_COMMANDID_RESERVED = 0x00,
 	DS_PROFILER_COMMANDID_ATTACH_PROFILER = 0x01,
+	DS_PROFILER_COMMANDID_STARTUP_PROFILER = 0x02,
 	// future
 } DiagnosticsProfilerCommandId;
 
@@ -125,6 +132,8 @@ typedef int32_t ds_ipc_result_t;
 #define DS_IPC_E_NOT_YET_AVAILABLE ((ds_ipc_result_t)(0x8013135bL))
 #define DS_IPC_E_RUNTIME_UNINITIALIZED ((ds_ipc_result_t)(0x80131371L))
 #define DS_IPC_E_INVALIDARG ((ds_ipc_result_t)(0x80070057L))
+#define DS_IPC_E_INSUFFICIENT_BUFFER ((ds_ipc_result_t)(0x8007007A))
+#define DS_IPC_E_ENVVAR_NOT_FOUND ((ds_ipc_result_t)(0x800000CB))
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_TYPES_H__ */

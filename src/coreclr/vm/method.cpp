@@ -1140,7 +1140,7 @@ BOOL MethodDesc::IsVarArg()
 
     Signature signature = GetSignature();
     _ASSERTE(!signature.IsEmpty());
-    return MetaSig::IsVarArg(GetModule(), signature);
+    return MetaSig::IsVarArg(signature);
 }
 
 //*******************************************************************************
@@ -2581,8 +2581,7 @@ void MethodDesc::Save(DataImage *image)
     {
         EX_TRY
         {
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this);
         }
         EX_CATCH
         {
@@ -4169,10 +4168,10 @@ static const struct CentralJumpCode {
     BYTE m_jmp[1];
     INT32 m_rel32;
 
-    inline void Setup(MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
+    inline void Setup(CentralJumpCode* pCodeRX, MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
         WRAPPER_NO_CONTRACT;
         m_pBaseMD = pMD;
-        m_rel32 = rel32UsingJumpStub(&m_rel32, target, pMD, pLoaderAllocator);
+        m_rel32 = rel32UsingJumpStub(&pCodeRX->m_rel32, target, pMD, pLoaderAllocator);
     }
 
     inline BOOL CheckTarget(TADDR target) {
@@ -4201,10 +4200,10 @@ static const struct CentralJumpCode {
     BYTE m_jmp[1];
     INT32 m_rel32;
 
-    inline void Setup(MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
+    inline void Setup(CentralJumpCode* pCodeRX, MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
         WRAPPER_NO_CONTRACT;
         m_pBaseMD = pMD;
-        m_rel32 = rel32UsingJumpStub(&m_rel32, target, pMD, pLoaderAllocator);
+        m_rel32 = rel32UsingJumpStub(&pCodeRX->m_rel32, target, pMD, pLoaderAllocator);
     }
 
     inline BOOL CheckTarget(TADDR target) {
@@ -4489,15 +4488,17 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
     SIZE_T size = SizeOfCompactEntryPoints(count);
 
     TADDR temporaryEntryPoints = (TADDR)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(size, sizeof(TADDR)));
+    ExecutableWriterHolder<void> temporaryEntryPointsWriterHolder((void *)temporaryEntryPoints, size);
+    size_t rxOffset = temporaryEntryPoints - (TADDR)temporaryEntryPointsWriterHolder.GetRW();
 
 #ifdef TARGET_ARM
-    BYTE* p = (BYTE*)temporaryEntryPoints + COMPACT_ENTRY_ARM_CODE;
+    BYTE* p = (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + COMPACT_ENTRY_ARM_CODE;
     int relOffset        = count * TEP_ENTRY_SIZE - TEP_ENTRY_SIZE; // relative offset for the short jump
 
     _ASSERTE (relOffset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
 #else // TARGET_ARM
     // make the temporary entrypoints unaligned, so they are easy to identify
-    BYTE* p = (BYTE*)temporaryEntryPoints + 1;
+    BYTE* p = (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + 1;
     int indexInBlock     = TEP_MAX_BLOCK_INDEX;         // recompute relOffset in first iteration
     int relOffset        = 0;                           // relative offset for the short jump
 #endif // TARGET_ARM
@@ -4542,10 +4543,11 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
         if (relOffset == 0)
         {
             CentralJumpCode* pCode = (CentralJumpCode*)p;
+            CentralJumpCode* pCodeRX = (CentralJumpCode*)(p + rxOffset);
 
             memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
 
-            pCode->Setup(pBaseMD, GetPreStubEntryPoint(), pLoaderAllocator);
+            pCode->Setup(pCodeRX, pBaseMD, GetPreStubEntryPoint(), pLoaderAllocator);
 
             p += TEP_CENTRAL_JUMP_SIZE;
 
@@ -4566,11 +4568,11 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
     memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
     pCode->Setup (GetPreStubCompactARMEntryPoint(), this);
 
-    _ASSERTE(p + TEP_CENTRAL_JUMP_SIZE == (BYTE*)temporaryEntryPoints + size);
+    _ASSERTE(p + TEP_CENTRAL_JUMP_SIZE == (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + size);
 
 #else // TARGET_ARM
 
-    _ASSERTE(p == (BYTE*)temporaryEntryPoints + size);
+    _ASSERTE(p == (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + size);
 
 #endif // TARGET_ARM
 
@@ -5425,6 +5427,38 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
+BOOL MethodDesc::HasUnmanagedCallConvAttribute()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    MethodDesc* tgt = this;
+    if (IsILStub())
+    {
+        // From the IL stub, determine if the actual target has been
+        // marked with UnmanagedCallConv.
+        PTR_DynamicMethodDesc ilStubMD = AsDynamicMethodDesc();
+        PTR_ILStubResolver ilStubResolver = ilStubMD->GetILStubResolver();
+        tgt = ilStubResolver->GetStubTargetMethodDesc();
+        if (tgt == nullptr)
+            return FALSE;
+    }
+
+    _ASSERTE(tgt != nullptr);
+    HRESULT hr = tgt->GetCustomAttribute(
+        WellKnownAttribute::UnmanagedCallConv,
+        nullptr,
+        nullptr);
+
+    return (hr == S_OK) ? TRUE : FALSE;
+}
+
+//*******************************************************************************
 BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 {
     CONTRACTL
@@ -5461,9 +5495,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -5491,11 +5525,9 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     }
 
     _ASSERTE(tgt != nullptr);
-    HRESULT hr = tgt->GetCustomAttribute(
-        WellKnownAttribute::SuppressGCTransition,
-        nullptr,
-        nullptr);
-    return (hr == S_OK) ? TRUE : FALSE;
+    bool suppressGCTransition;
+    NDirect::GetCallingConvention_IgnoreErrors(tgt, NULL /*callConv*/, &suppressGCTransition);
+    return suppressGCTransition ? TRUE : FALSE;
 }
 
 #ifdef FEATURE_COMINTEROP

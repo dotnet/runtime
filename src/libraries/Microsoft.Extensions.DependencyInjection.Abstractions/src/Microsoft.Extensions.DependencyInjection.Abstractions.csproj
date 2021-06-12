@@ -4,6 +4,10 @@
     <TargetFrameworks>netstandard2.1;netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>enable</Nullable>
+    <PackageDescription>Abstractions for dependency injection.
+
+Commonly Used Types:
+Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

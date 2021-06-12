@@ -38,6 +38,8 @@ typedef struct MonoCompileArch {
 	int	    fpSize;		/** Size of floating point save area */
 	MonoInst    *ss_tramp_var;	/** Single-step variable */
 	MonoInst    *bp_tramp_var;	/** Breakpoint variable */
+	guint8 	    *thunks;		/** Thunking area */
+	int 	    thunks_size;	/** Size of thunking area */
 } MonoCompileArch;
 
 typedef struct
@@ -89,6 +91,17 @@ struct SeqPointInfo {
 #define S390_LAST_FPARG_REG 		s390_f6
 
 #define S390_FP_SAVE_MASK		0xf0
+
+/* Thunk: 8 byte pointer */
+#define THUNK_SIZE			8
+
+/* Relocation types */
+#define MONO_R_S390_RELINS	1	/* JGxx - relative jump */
+#define MONO_R_S390_THUNKED	2	/* Thunked call */
+#define MONO_R_S390_DIRECT 	3	/* Direct call */
+#define MONO_R_S390_ADDR	4	/* Address */
+#define MONO_R_S390_SWITCH	5	/* Switch */
+#define MONO_R_S390_REL		6	/* Relative displacement */
 
 /*===============================================*/
 /* Definitions used by mini-codegen.c            */
@@ -166,13 +179,13 @@ struct SeqPointInfo {
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- s390_patch_rel                                    */
-/*                                                                  */
-/* Function	- Patch the code with a given offset. 		    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Patch the code with a given offset
+ * @param[in] @code - Area to patch
+ * @param[in] @target - Value to patch with
+ *
+ */
 
 static void inline
 s390_patch_rel (guchar *code, guint64 target)
@@ -186,13 +199,13 @@ s390_patch_rel (guchar *code, guint64 target)
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- s390_patch_addr                                   */
-/*                                                                  */
-/* Function	- Patch the code with a given address.		    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Patch the code with a given address
+ * @param[in] @code - Area to patch
+ * @param[in] @target - Address to patch with
+ *
+ */
 
 static void inline
 s390_patch_addr (guchar *code, guint64 target)
@@ -247,5 +260,93 @@ s390_patch_addr (guchar *code, guint64 target)
 } while (0)
 
 /*========================= End of Function ========================*/
+
+#define S390_SET(loc, dr, v)					\
+	do {							\
+		guint64 val = (guint64) v;			\
+		if (s390_is_imm16(val)) {			\
+			s390_lghi(loc, dr, val);		\
+		} else if (s390_is_uimm16(val)) {		\
+			s390_llill(loc, dr, val);		\
+		} else if (s390_is_imm32(val)) {		\
+			s390_lgfi(loc, dr, val);		\
+		} else if (s390_is_uimm32(val)) {		\
+			s390_llilf(loc, dr, val);		\
+		} else {					\
+			guint32 hi = (val) >> 32;		\
+			guint32 lo = (val) & 0xffffffff;	\
+			s390_iihf(loc, dr, hi);			\
+			s390_iilf(loc, dr, lo);			\
+		}						\
+	} while (0)
+
+#define S390_LONG(loc, opy, op, r, ix, br, off)				\
+	if (s390_is_imm20(off)) {					\
+		s390_##opy (loc, r, ix, br, off);			\
+	} else {							\
+		if (ix == 0) {						\
+			S390_SET(loc, s390_r13, off);			\
+			s390_la (loc, s390_r13, s390_r13, br, 0);	\
+		} else {						\
+			s390_la   (loc, s390_r13, ix, br, 0);		\
+			S390_SET  (loc, s390_r0, off);			\
+			s390_agr  (loc, s390_r13, s390_r0);		\
+		}							\
+		s390_##op (loc, r, 0, s390_r13, 0);			\
+	}
+
+#define S390_SET_MASK(loc, dr, v)				\
+	do {							\
+		if (s390_is_imm16 (v)) {			\
+			s390_lghi (loc, dr, v);			\
+		} else if (s390_is_imm32 (v)) {			\
+			s390_lgfi (loc, dr, v);			\
+		} else {					\
+			gint64 val = (gint64) v;		\
+			guint32 hi = (val) >> 32;		\
+			guint32 lo = (val) & 0xffffffff;	\
+			s390_iilf(loc, dr, lo);			\
+			s390_iihf(loc, dr, hi);			\
+		}						\
+	} while (0)
+
+#define S390_CALL_TEMPLATE(loc, r)				\
+	do {							\
+		s390_lgrl (loc, r, 0);				\
+		s390_basr (loc, s390_r14, r);			\
+	} while (0)
+
+#define S390_BR_TEMPLATE(loc, r)				\
+	do {							\
+		s390_lgrl (loc, r, 0);				\
+		s390_br   (loc, r);				\
+	} while (0)
+
+#define S390_LOAD_TEMPLATE(loc, r)				\
+	do {							\
+		s390_iihf (loc, r, 0);				\
+		s390_iilf (loc, r, 0);				\
+	} while (0)
+
+#define S390_EMIT_CALL(loc, t)					\
+	do {							\
+		uintptr_t rel;					\
+		uintptr_t p = (uintptr_t) loc;			\
+		rel = ((uintptr_t) t - (uintptr_t) loc) >> 1;	\
+		p += 2;						\
+		*(guint32 *) p = rel;				\
+	} while (0)
+
+#define S390_EMIT_LOAD(loc, v)					\
+	do {							\
+		gint64 val = (gint64) v;			\
+		guint32 hi = (val) >> 32;			\
+		guint32 lo = (val) & 0xffffffff;		\
+		uintptr_t p = (uintptr_t) loc;			\
+		p += 2;						\
+		*(guint32 *) p = hi;				\
+		p += 6;						\
+		*(guint32 *) p = lo;				\
+	} while (0)
 
 #endif /* __MONO_MINI_S390X_H__ */  

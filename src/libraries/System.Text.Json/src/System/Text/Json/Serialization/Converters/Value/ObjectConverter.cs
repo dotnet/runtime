@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(value != null);
 
             Type runtimeType = value.GetType();
-            JsonConverter runtimeConverter = options.GetConverter(runtimeType);
+            JsonConverter runtimeConverter = options.GetConverterInternal(runtimeType);
             if (runtimeConverter == this)
             {
                 ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType, this);

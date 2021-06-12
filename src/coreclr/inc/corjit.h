@@ -16,7 +16,7 @@
 //
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
-// The JIT/EE interface is versioned. By "interface", we mean mean any and all communication between the
+// The JIT/EE interface is versioned. By "interface", we mean any and all communication between the
 // JIT and the EE. Any time a change is made to the interface, the JIT/EE interface version identifier
 // must be updated. See code:JITEEVersionIdentifier for more information.
 //
@@ -112,7 +112,7 @@ enum CorJitResult
 // to guide the memory allocation for the code, readonly data, and read-write data
 enum CorJitAllocMemFlag
 {
-    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
+    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will use the normal alignment
     CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN   = 0x00000001, // The code will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
@@ -140,6 +140,24 @@ enum CheckedWriteBarrierKinds {
     CWBKind_ByRefArg,        // Store through a by-ref argument (not an implicit return buffer).
     CWBKind_OtherByRefLocal, // Store through a by-ref local variable.
     CWBKind_AddrOfLocal,     // Store through the address of a local (arguably a bug that this happens at all).
+};
+
+struct AllocMemArgs
+{
+    // Input arguments
+    uint32_t hotCodeSize;
+    uint32_t coldCodeSize;
+    uint32_t roDataSize;
+    uint32_t xcptnsCount;
+    CorJitAllocMemFlag flag;
+
+    // Output arguments
+    void* hotCodeBlock;
+    void* hotCodeBlockRW;
+    void* coldCodeBlock;
+    void* coldCodeBlockRW;
+    void* roDataBlock;
+    void* roDataBlockRW;
 };
 
 #include "corjithost.h"
@@ -212,14 +230,7 @@ class ICorJitInfo : public ICorDynamicInfo
 public:
     // get a block of memory for the code, readonly data, and read-write data
     virtual void allocMem (
-            uint32_t               hotCodeSize,    /* IN */
-            uint32_t               coldCodeSize,   /* IN */
-            uint32_t               roDataSize,     /* IN */
-            uint32_t               xcptnsCount,    /* IN */
-            CorJitAllocMemFlag  flag,           /* IN */
-            void **             hotCodeBlock,   /* OUT */
-            void **             coldCodeBlock,  /* OUT */
-            void **             roDataBlock     /* OUT */
+            AllocMemArgs *pArgs
             ) = 0;
 
     // Reserve memory for the method/funclet's unwind information.
@@ -308,7 +319,8 @@ public:
         uint32_t ExecutionCount;
     };
 
-    // Data structure for a single class probe.
+
+    // Data structure for a single class probe using 32-bit count.
     //
     // CLASS_FLAG and INTERFACE_FLAG are placed into the Other field in the schema
     //
@@ -319,7 +331,7 @@ public:
     // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
     // gives the average number of calls between table updates.
     // 
-    struct ClassProfile
+    struct ClassProfile32
     {
         enum { 
             SIZE = 8, 
@@ -331,6 +343,12 @@ public:
 
         uint32_t Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
+    };
+
+    struct ClassProfile64
+    {
+        uint64_t Count;
+        CORINFO_CLASS_HANDLE ClassTable[ClassProfile32::SIZE];
     };
 
     enum class PgoInstrumentationKind
@@ -357,12 +375,15 @@ public:
         DescriptorMin = 0x40,
 
         Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
+        BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
+        TypeHandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
+        TypeHandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
-        EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
+        EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
     };
 
@@ -373,6 +394,17 @@ public:
         int32_t ILOffset;
         int32_t Count;
         int32_t Other;
+    };
+
+    enum class PgoSource
+    {
+        Unknown = 0,    // PGO data source unknown
+        Static = 1,     // PGO data comes from embedded R2R profile data
+        Dynamic = 2,    // PGO data comes from current run
+        Blend = 3,      // PGO data comes from blend of prior runs and current run
+        Text = 4,       // PGO data comes from text file
+        IBC = 5,        // PGO data from classic IBC
+        Sampling= 6,    // PGO data derived from sampling
     };
 
 #define DEFAULT_UNKNOWN_TYPEHANDLE 1
@@ -391,8 +423,9 @@ public:
             PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
                                                                    // (pointer will not remain valid after jit completes).
             uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
-            uint8_t **                 pInstrumentationData        // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
+            uint8_t **                 pInstrumentationData,       // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
+            PgoSource *                pPgoSource                  // OUT: value describing source of pgo data
             ) = 0;
 
     // Allocate a profile buffer for use in the current process
@@ -428,6 +461,7 @@ public:
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(
             void *                 location,   /* IN  */
+            void *                 locationRW, /* IN  */
             void *                 target,     /* IN  */
             uint16_t                   fRelocType, /* IN  */
             uint16_t                   slotNum = 0,  /* IN  */

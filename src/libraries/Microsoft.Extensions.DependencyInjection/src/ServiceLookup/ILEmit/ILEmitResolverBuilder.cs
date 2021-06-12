@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -17,6 +18,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly MethodInfo ScopeLockGetter = typeof(ServiceProviderEngineScope).GetProperty(
             nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
 
+        private static readonly MethodInfo ScopeIsRootScope = typeof(ServiceProviderEngineScope).GetProperty(
+            nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public).GetMethod;
+
+        private static readonly MethodInfo CallSiteRuntimeResolverResolveMethod = typeof(CallSiteRuntimeResolver).GetMethod(
+            nameof(CallSiteRuntimeResolver.Resolve), BindingFlags.Public | BindingFlags.Instance);
+
+        private static readonly MethodInfo CallSiteRuntimeResolverInstanceField = typeof(CallSiteRuntimeResolver).GetProperty(
+            nameof(CallSiteRuntimeResolver.Instance), BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance).GetMethod;
+
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
@@ -25,7 +35,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private sealed class ILEmitResolverBuilderRuntimeContext
         {
-            public IServiceScopeFactory ScopeFactory;
             public object[] Constants;
             public Func<IServiceProvider, object>[] Factories;
         }
@@ -38,39 +47,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             public DynamicMethod DynamicMethod;
         }
 
-        private readonly CallSiteRuntimeResolver _runtimeResolver;
-
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-
         private readonly ServiceProviderEngineScope _rootScope;
 
         private readonly ConcurrentDictionary<ServiceCacheKey, GeneratedMethod> _scopeResolverCache;
 
         private readonly Func<ServiceCacheKey, ServiceCallSite, GeneratedMethod> _buildTypeDelegate;
 
-        public ILEmitResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope) :
-            base()
+        public ILEmitResolverBuilder(ServiceProvider serviceProvider)
         {
-            if (runtimeResolver == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeResolver));
-            }
-            _runtimeResolver = runtimeResolver;
-            _serviceScopeFactory = serviceScopeFactory;
-            _rootScope = rootScope;
+            _rootScope = serviceProvider.Root;
             _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, GeneratedMethod>();
             _buildTypeDelegate = (key, cs) => BuildTypeNoCache(cs);
         }
 
         public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            // Optimize singleton case
-            if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
-            {
-                object value = _runtimeResolver.Resolve(callSite, _rootScope);
-                return scope => value;
-            }
-
             return BuildType(callSite).Lambda;
         }
 
@@ -100,8 +91,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 owner: GetType(),
                 skipVisibility: true);
 
-            ILEmitCallSiteAnalysisResult info = ILEmitCallSiteAnalyzer.Instance.CollectGenerationInfo(callSite);
-            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(info.Size);
+            // In traces we've seen methods range from 100B - 4K sized methods since we've
+            // stop trying to inline everything into scoped methods. We'll pay for a couple of resizes
+            // so there'll be allocations but we could potentially change ILGenerator to use the array pool
+            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(512);
             ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator);
 
 #if SAVE_ASSEMBLIES
@@ -116,7 +109,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 "ResolveService", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(object),
                 new[] { typeof(ILEmitResolverBuilderRuntimeContext), typeof(ServiceProviderEngineScope) });
 
-            GenerateMethodBody(callSite, method.GetILGenerator(), info);
+            GenerateMethodBody(callSite, method.GetILGenerator());
             type.CreateTypeInfo();
             assembly.Save(assemblyName + ".dll");
 #endif
@@ -164,7 +157,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitRootCache(ServiceCallSite callSite, ILEmitResolverBuilderContext argument)
         {
-            AddConstant(argument, _runtimeResolver.Resolve(callSite, _rootScope));
+            AddConstant(argument, CallSiteRuntimeResolver.Instance.Resolve(callSite, _rootScope));
             return null;
         }
 
@@ -203,9 +196,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, ILEmitResolverBuilderContext argument)
         {
-            // this.ScopeFactory
-            argument.Generator.Emit(OpCodes.Ldarg_0);
-            argument.Generator.Emit(OpCodes.Ldfld, typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.ScopeFactory)));
+            AddConstant(argument, serviceScopeFactoryCallSite.Value);
             return null;
         }
 
@@ -300,6 +291,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Factories = null
             };
 
+            // if (scope.IsRootScope)
+            // {
+            //     return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
+            // }
             //  var cacheKey = scopedCallSite.CacheKey;
             //  try
             //  {
@@ -328,8 +323,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 Label skipCreationLabel = context.Generator.DefineLabel();
                 Label returnLabel = context.Generator.DefineLabel();
+                Label defaultLabel = context.Generator.DefineLabel();
+
+                // Check if scope IsRootScope
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                context.Generator.Emit(OpCodes.Callvirt, ScopeIsRootScope);
+                context.Generator.Emit(OpCodes.Brfalse_S, defaultLabel);
+
+                context.Generator.Emit(OpCodes.Call, CallSiteRuntimeResolverInstanceField);
+                AddConstant(context, callSite);
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                context.Generator.Emit(OpCodes.Callvirt, CallSiteRuntimeResolverResolveMethod);
+                context.Generator.Emit(OpCodes.Ret);
 
                 // Generate cache key
+                context.Generator.MarkLabel(defaultLabel);
                 AddCacheKey(context, callSite.Cache.Key);
                 // and store to local
                 Stloc(context.Generator, cacheKeyLocal.LocalIndex);
@@ -424,8 +432,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return new ILEmitResolverBuilderRuntimeContext
             {
                 Constants = context.Constants?.ToArray(),
-                Factories = context.Factories?.ToArray(),
-                ScopeFactory = _serviceScopeFactory
+                Factories = context.Factories?.ToArray()
             };
         }
 

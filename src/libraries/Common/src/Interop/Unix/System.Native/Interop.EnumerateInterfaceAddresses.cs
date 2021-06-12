@@ -42,19 +42,15 @@ internal static partial class Interop
             private fixed byte __padding[3];
         }
 
-        public unsafe delegate void IPv4AddressDiscoveredCallback(string ifaceName, IpAddressInfo* ipAddressInfo);
-        public unsafe delegate void IPv6AddressDiscoveredCallback(string ifaceName, IpAddressInfo* ipAddressInfo, uint* scopeId);
-        public unsafe delegate void LinkLayerAddressDiscoveredCallback(string ifaceName, LinkLayerAddressInfo* llAddress);
-        public unsafe delegate void DnsAddessDiscoveredCallback(IpAddressInfo* gatewayAddress);
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateInterfaceAddresses")]
-        public static extern int EnumerateInterfaceAddresses(
-            IPv4AddressDiscoveredCallback ipv4Found,
-            IPv6AddressDiscoveredCallback? ipv6Found,
-            LinkLayerAddressDiscoveredCallback? linkLayerFound);
+        public static extern unsafe int EnumerateInterfaceAddresses(
+            void* context,
+            delegate* unmanaged<void*, byte*, IpAddressInfo*, void> ipv4Found,
+            delegate* unmanaged<void*, byte*, IpAddressInfo*, uint*, void> ipv6Found,
+            delegate* unmanaged<void*, byte*, LinkLayerAddressInfo*, void> linkLayerFound);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
-        public static extern int EnumerateGatewayAddressesForInterface(uint interfaceIndex, DnsAddessDiscoveredCallback onGatewayFound);
+        public static extern unsafe int EnumerateGatewayAddressesForInterface(void* context, uint interfaceIndex, delegate* unmanaged<void*, IpAddressInfo*, void> onGatewayFound);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces")]
         public static unsafe extern int GetNetworkInterfaces(ref int count, ref NetworkInterfaceInfo* addrs, ref int addressCount, ref IpAddressInfo *aa);

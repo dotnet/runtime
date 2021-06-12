@@ -32,7 +32,7 @@ namespace System.DirectoryServices.Protocols
 
             // We can't use vararg on Unix and can't do ber_printf(tag), so we use ber_put_int(val, tag)
             // and this local keeps tag value for the next element.
-            int tag = 0;
+            nuint tag = 0;
             bool tagIsSet = false;
             for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
@@ -42,8 +42,9 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                    const int lberTagDefault = -1;
-                    tag = lberTagDefault;
+                    int lberTagDefaultInt = -1;
+                    nuint lberTagDefaultNuint = (nuint)lberTagDefaultInt;
+                    tag = lberTagDefaultNuint;
                 }
                 char fmt = format[formatCount];
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
@@ -226,7 +227,7 @@ namespace System.DirectoryServices.Protocols
                         Debug.WriteLine("type should be int\n");
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
-                    tag = (int)value[valueCount];
+                    tag = (uint)(int)value[valueCount];
                     tagIsSet = true;
                     // It will set the tag on Windows and only check the tag on Unix.
                     error = BerPal.PrintTag(berElement, new string(fmt, 1), tag);
@@ -462,7 +463,7 @@ namespace System.DirectoryServices.Protocols
             return decodeResult;
         }
 
-        private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt, int tag)
+        private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt, nuint tag)
         {
             int error = 0;
 
@@ -472,7 +473,7 @@ namespace System.DirectoryServices.Protocols
                 IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
-                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, tempValue.Length, tag);
+                error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, (uint)tempValue.Length, tag);
             }
             else
             {
@@ -518,7 +519,7 @@ namespace System.DirectoryServices.Protocols
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, int tag)
+        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
             IntPtr tempPtr = IntPtr.Zero;

@@ -11,6 +11,12 @@
 #include <mono/component/diagnostics_server.h>
 
 void
+mono_component_event_pipe_100ns_ticks_start (void);
+
+gint64
+mono_component_event_pipe_100ns_ticks_stop (void);
+
+void
 mono_components_init (void);
 
 /* Declare each component's getter function here */
@@ -37,15 +43,5 @@ mono_component_diagnostics_server (void)
 	extern MonoComponentDiagnosticsServer *diagnostics_server;
 	return diagnostics_server;
 }
-
-/* Declare each copomnents stub init function here */
-MonoComponentHotReload *
-mono_component_hot_reload_stub_init (void);
-
-MonoComponentEventPipe *
-mono_component_event_pipe_stub_init (void);
-
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_stub_init (void);
 
 #endif/*_MONO_METADATA_COMPONENTS_H*/

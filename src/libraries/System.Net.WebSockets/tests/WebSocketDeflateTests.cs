@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (!Debugger.IsAttached)
             {
-                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             }
         }
 
@@ -378,7 +378,7 @@ namespace System.Net.WebSockets.Tests
                 DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
-            // Server sends uncompressed 
+            // Server sends uncompressed
             await SendTextAsync("Hello", server);
 
             // Although client has deflate options, it should still be able
@@ -434,11 +434,11 @@ namespace System.Net.WebSockets.Tests
             int frameSize = 2 << windowBits;
 
             byte[] message = new byte[frameSize * 10];
-            Random random = new(0);
+            new Random(0).NextBytes(message);
 
             for (int i = 0; i < message.Length; ++i)
             {
-                message[i] = (byte)random.Next(maxValue: 10);
+                message[i] %= 10;
             }
 
             await client.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken);
@@ -599,6 +599,51 @@ namespace System.Net.WebSockets.Tests
                 Assert.Equal(messages[i].Length, result.Count);
                 Assert.True(buffer.Span.Slice(0, result.Count).SequenceEqual(messages[i]));
             }
+        }
+
+        [Fact]
+        public async Task CompressedMessageWithEmptyLastFrame()
+        {
+            WebSocketTestStream stream = new();
+            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = TimeSpan.Zero,
+                DangerousDeflateOptions = new()
+            });
+
+            byte[] frame1 = new byte[1024];
+            byte[] frame2 = new byte[2048];
+
+            await server.SendAsync(frame1, WebSocketMessageType.Binary, false, CancellationToken);
+            await server.SendAsync(frame2, WebSocketMessageType.Binary, false, CancellationToken);
+
+            // Add empty end of message frame manually, because the compression routine cannot
+            // produce empty segments.
+            stream.Remote.Enqueue(0x80, 0x00);
+
+            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                IsServer = false,
+                KeepAliveInterval = TimeSpan.Zero,
+                DangerousDeflateOptions = new()
+            });
+
+            int messageSize = 0;
+            byte[] buffer = new byte[128];
+
+            while (true)
+            {
+                WebSocketReceiveResult result = await client.ReceiveAsync(buffer, CancellationToken);
+                messageSize += result.Count;
+
+                if (result.EndOfMessage)
+                {
+                    break;
+                }
+            }
+
+            Assert.Equal(frame1.Length + frame2.Length, messageSize);
         }
 
         private ValueTask SendTextAsync(string text, WebSocket websocket, bool disableCompression = false)

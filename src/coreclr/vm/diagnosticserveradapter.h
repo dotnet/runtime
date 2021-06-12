@@ -30,6 +30,11 @@ public:
 	{
 		return ds_server_resume_runtime_startup();
 	}
+
+	static bool IsPausedInRuntimeStartup()
+	{
+		return ds_server_is_paused_in_startup();
+	}
 };
 
 #endif // FEATURE_PERFTRACING && !CROSSGEN_COMPILE

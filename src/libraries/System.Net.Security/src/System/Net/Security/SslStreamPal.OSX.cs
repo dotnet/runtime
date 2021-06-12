@@ -52,6 +52,11 @@ namespace System.Net.Security
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
+        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static SafeFreeCredentials AcquireCredentialsHandle(
             SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
@@ -138,24 +143,23 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputOffset,
-            out int outputCount)
+            Span<byte> buffer,
+            out int offset,
+            out int count)
         {
-            outputOffset = 0;
-            outputCount = 0;
+            offset = 0;
+            count = 0;
 
             try
             {
                 SafeSslHandle sslHandle = securityContext.SslContext;
-                securityContext.Write(input);
+                securityContext.Write(buffer);
 
                 unsafe
                 {
-                    fixed (byte* ptr = output)
+                    fixed (byte* ptr = buffer)
                     {
-                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, output.Length, out int written);
+                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, buffer.Length, out int written);
                         if (status < 0)
                         {
                             return new SecurityStatusPal(
@@ -163,8 +167,8 @@ namespace System.Net.Security
                                 Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
                         }
 
-                        outputCount = written;
-                        outputOffset = 0;
+                        count = written;
+                        offset = 0;
 
                         switch (status)
                         {

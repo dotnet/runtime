@@ -15,17 +15,21 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
         /// <param name="elementInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSerializerOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TElement[]> CreateArrayInfo<TElement>(
             JsonSerializerOptions options,
             JsonTypeInfo elementInfo,
-            JsonNumberHandling numberHandling)
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, TElement[]>? serializeFunc)
             => new JsonTypeInfoInternal<TElement[]>(
                 options,
                 createObjectFunc: null,
-                new ArrayConverter<TElement[], TElement>(),
+                () => new ArrayConverter<TElement[], TElement>(),
                 elementInfo,
-                numberHandling);
+                numberHandling,
+                serializeFunc,
+                typeof(TElement));
 
         /// <summary>
         /// Creates metadata for types assignable to <see cref="List{T}"/>.
@@ -36,19 +40,23 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
         /// <param name="elementInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSerializerOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateListInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
-            JsonNumberHandling numberHandling)
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, TCollection>? serializeFunc)
             where TCollection : List<TElement>
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                new ListOfTConverter<TCollection, TElement>(),
+                () => new ListOfTConverter<TCollection, TElement>(),
                 elementInfo,
-                numberHandling);
+                numberHandling,
+                serializeFunc,
+                typeof(TElement));
 
         /// <summary>
         /// Creates metadata for types assignable to <see cref="Dictionary{TKey, TValue}"/>.
@@ -61,21 +69,26 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="keyInfo">A <see cref="JsonTypeInfo"/> instance representing the key type.</param>
         /// <param name="valueInfo">A <see cref="JsonTypeInfo"/> instance representing the value type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSerializerOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,
             Func<TCollection> createObjectFunc,
             JsonTypeInfo keyInfo,
             JsonTypeInfo valueInfo,
-            JsonNumberHandling numberHandling)
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, TCollection>? serializeFunc)
             where TCollection : Dictionary<TKey, TValue>
             where TKey : notnull
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                new DictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
+                () => new DictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
                 keyInfo,
                 valueInfo,
-                numberHandling);
+                numberHandling,
+                serializeFunc,
+                typeof(TKey),
+                typeof(TValue));
     }
 }

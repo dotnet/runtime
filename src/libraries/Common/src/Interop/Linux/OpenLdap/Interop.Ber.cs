@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Ldap
     {
-        private const int ber_default_successful_return_code = 0;
+        public const int ber_default_successful_return_code = 0;
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_alloc_t", CharSet = CharSet.Ansi)]
         public static extern IntPtr ber_alloc(int option);
@@ -21,7 +21,7 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_free", CharSet = CharSet.Ansi)]
         public static extern IntPtr ber_free([In] IntPtr berelement, int option);
 
-        public static int ber_printf_emptyarg(SafeBerHandle berElement, string format, int tag)
+        public static int ber_printf_emptyarg(SafeBerHandle berElement, string format, nuint tag)
         {
             if (format == "{")
             {
@@ -47,29 +47,21 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_start_seq", CharSet = CharSet.Ansi)]
-        public static extern int ber_start_seq(SafeBerHandle berElement, int tag);
+        public static extern int ber_start_seq(SafeBerHandle berElement, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_start_set", CharSet = CharSet.Ansi)]
-        public static extern int ber_start_set(SafeBerHandle berElement, int tag);
+        public static extern int ber_start_set(SafeBerHandle berElement, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_seq", CharSet = CharSet.Ansi)]
-        public static extern int ber_put_seq(SafeBerHandle berElement, int tag);
+        public static extern int ber_put_seq(SafeBerHandle berElement, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_set", CharSet = CharSet.Ansi)]
-        public static extern int ber_put_set(SafeBerHandle berElement, int tag);
+        public static extern int ber_put_set(SafeBerHandle berElement, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_null", CharSet = CharSet.Ansi)]
-        public static extern int ber_put_null(SafeBerHandle berElement, int tag);
+        public static extern int ber_put_null(SafeBerHandle berElement, nuint tag);
 
-
-        public static int ber_printf_tag(SafeBerHandle berElement, string format, int tag)
-        {
-            // Ber Linux tags are passed with the values that they affect, like `ber_printf_int(.., tag)`.
-            // So this function does nothing on Linux.
-            return ber_default_successful_return_code;
-        }
-
-        public static int ber_printf_int(SafeBerHandle berElement, string format, int value, int tag)
+        public static int ber_printf_int(SafeBerHandle berElement, string format, int value, nuint tag)
         {
             if (format == "i")
             {
@@ -87,15 +79,15 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_int", CharSet = CharSet.Ansi)]
-        public static extern int ber_put_int(SafeBerHandle berElement, int value, int tag);
+        public static extern int ber_put_int(SafeBerHandle berElement, int value, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_enum", CharSet = CharSet.Ansi)]
-        public static extern int ber_put_enum(SafeBerHandle berElement, int value, int tag);
+        public static extern int ber_put_enum(SafeBerHandle berElement, int value, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_boolean", CharSet = CharSet.Ansi)]
-        public static extern int ber_put_boolean(SafeBerHandle berElement, int value, int tag);
+        public static extern int ber_put_boolean(SafeBerHandle berElement, int value, nuint tag);
 
-        public static int ber_printf_bytearray(SafeBerHandle berElement, string format, HGlobalMemHandle value, int length, int tag)
+        public static int ber_printf_bytearray(SafeBerHandle berElement, string format, HGlobalMemHandle value, nuint length, nuint tag)
         {
             if (format == "o")
             {
@@ -113,13 +105,13 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_ostring", CharSet = CharSet.Ansi)]
-        private static extern int ber_put_ostring(SafeBerHandle berElement, HGlobalMemHandle value, int length, int tag);
+        private static extern int ber_put_ostring(SafeBerHandle berElement, HGlobalMemHandle value, nuint length, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_string", CharSet = CharSet.Ansi)]
-        private static extern int ber_put_string(SafeBerHandle berElement, HGlobalMemHandle value, int tag);
+        private static extern int ber_put_string(SafeBerHandle berElement, HGlobalMemHandle value, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_bitstring", CharSet = CharSet.Ansi)]
-        private static extern int ber_put_bitstring(SafeBerHandle berElement, HGlobalMemHandle value, int length, int tag);
+        private static extern int ber_put_bitstring(SafeBerHandle berElement, HGlobalMemHandle value, nuint length, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_flatten", CharSet = CharSet.Ansi)]
         public static extern int ber_flatten(SafeBerHandle berElement, ref IntPtr value);
@@ -135,7 +127,7 @@ internal static partial class Interop
             Debug.Assert(format == "{" || format == "}" || format == "[" || format == "]" || format == "n" || format == "x");
             if (format == "{" || format == "[")
             {
-                int len = 0;
+                nuint len = 0;
                 return ber_skip_tag(berElement, ref len);
             }
             else if (format == "]" || format == "}")
@@ -150,7 +142,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_skip_tag", CharSet = CharSet.Ansi)]
-        private static extern int ber_skip_tag(SafeBerHandle berElement, ref int len);
+        private static extern int ber_skip_tag(SafeBerHandle berElement, ref nuint len);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_get_null", CharSet = CharSet.Ansi)]
         private static extern int ber_get_null(SafeBerHandle berElement);
@@ -181,14 +173,17 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_get_boolean", CharSet = CharSet.Ansi)]
         private static extern int ber_get_boolean(SafeBerHandle berElement, ref int value);
 
-        public static int ber_scanf_bitstring(SafeBerHandle berElement, string format, ref IntPtr value, ref int bitLength)
+        public static int ber_scanf_bitstring(SafeBerHandle berElement, string format, ref IntPtr value, ref uint bitLength)
         {
             Debug.Assert(format == "B");
-            return ber_get_stringb(berElement, ref value, ref bitLength);
+            nuint bitLengthAsNuint = 0;
+            int res = ber_get_stringb(berElement, ref value, ref bitLengthAsNuint);
+            bitLength = (uint)bitLengthAsNuint;
+            return res;
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_get_stringb", CharSet = CharSet.Ansi)]
-        private static extern int ber_get_stringb(SafeBerHandle berElement, ref IntPtr value, ref int bitLength);
+        private static extern int ber_get_stringb(SafeBerHandle berElement, ref IntPtr value, ref nuint bitLength);
 
         public static int ber_scanf_ptr(SafeBerHandle berElement, string format, ref IntPtr value)
         {
@@ -199,7 +194,7 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_get_stringal", CharSet = CharSet.Ansi)]
         private static extern int ber_get_stringal(SafeBerHandle berElement, ref IntPtr value);
 
-        public static int ber_printf_berarray(SafeBerHandle berElement, string format, IntPtr value, int tag)
+        public static int ber_printf_berarray(SafeBerHandle berElement, string format, IntPtr value, nuint tag)
         {
             Debug.Assert(format == "v" || format == "V");
             // V and v are not supported on Unix yet.

@@ -14,19 +14,15 @@
 #ifdef DEBUG
 void Compiler::fgPrintEdgeWeights()
 {
-    BasicBlock* bSrc;
-    BasicBlock* bDst;
-    flowList*   edge;
-
     // Print out all of the edge weights
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
-                bSrc = edge->getBlock();
+                BasicBlock* bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -335,11 +331,87 @@ static void fprintfDouble(FILE* fgxFile, double value)
 }
 
 //------------------------------------------------------------------------
+// fgDumpTree: Dump a tree into the DOT file. Used to provide a very short, one-line,
+// visualization of a BBJ_COND block.
+//
+// Arguments:
+//    fgxFile - The file we are writing to.
+//    tree    - The operand to dump.
+//
+// static
+void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
+{
+    if (tree->OperIsCompare())
+    {
+        // Want to generate something like:
+        //   V01 <= 7
+        //   V01 > V02
+
+        const char* opName = GenTree::OpName(tree->OperGet());
+        // Make it look nicer if we can
+        switch (tree->OperGet())
+        {
+            case GT_EQ:
+                opName = "==";
+                break;
+            case GT_NE:
+                opName = "!=";
+                break;
+            case GT_LT:
+                opName = "<";
+                break;
+            case GT_LE:
+                opName = "<=";
+                break;
+            case GT_GE:
+                opName = ">=";
+                break;
+            case GT_GT:
+                opName = ">";
+                break;
+            default:
+                break;
+        }
+
+        GenTree* const lhs = tree->AsOp()->gtOp1;
+        GenTree* const rhs = tree->AsOp()->gtOp2;
+
+        fgDumpTree(fgxFile, lhs);
+        fprintf(fgxFile, " %s ", opName);
+        fgDumpTree(fgxFile, rhs);
+    }
+    else if (tree->IsCnsIntOrI())
+    {
+        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+    }
+    else if (tree->IsCnsFltOrDbl())
+    {
+        fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+    }
+    else if (tree->IsLocal())
+    {
+        fprintf(fgxFile, "V%02u", tree->AsLclVarCommon()->GetLclNum());
+    }
+    else if (tree->OperIs(GT_ARR_LENGTH))
+    {
+        GenTreeArrLen* arrLen = tree->AsArrLen();
+        GenTree*       arr    = arrLen->ArrRef();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".Length");
+    }
+    else
+    {
+        fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
+    }
+}
+
+//------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
 //
 // Arguments:
 //    wbDontClose - A boolean out argument that indicates whether the caller should close the file
 //    phase       - A phase identifier to indicate which phase is associated with the dump
+//    pos         - Are we being called to dump the flow graph pre-phase or post-phase?
 //    type        - A (wide) string indicating the type of dump, "dot" or "xml"
 //
 // Notes:
@@ -360,13 +432,14 @@ static void fprintfDouble(FILE* fgxFile, double value)
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
 
-FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type)
+FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type)
 {
     FILE*       fgxFile;
-    LPCWSTR     phasePattern = W("*"); // default (used in Release) is dump all phases
-    bool        dumpFunction = true;   // default (used in Release) is always dump
-    LPCWSTR     filename     = nullptr;
-    LPCWSTR     pathname     = nullptr;
+    LPCWSTR     prePhasePattern  = nullptr; // pre-phase:  default (used in Release) is no pre-phase dump
+    LPCWSTR     postPhasePattern = W("*");  // post-phase: default (used in Release) is dump all phases
+    bool        dumpFunction     = true;    // default (used in Release) is always dump
+    LPCWSTR     filename         = nullptr;
+    LPCWSTR     pathname         = nullptr;
     const char* escapedString;
     bool        createDuplicateFgxFiles = true;
 
@@ -391,7 +464,8 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
         pathname = JitConfig.JitDumpFgDir();
     }
 
-    phasePattern = JitConfig.JitDumpFgPhase();
+    prePhasePattern  = JitConfig.JitDumpFgPrePhase();
+    postPhasePattern = JitConfig.JitDumpFgPhase();
 #endif // DEBUG
 
     if (!dumpFunction)
@@ -400,18 +474,45 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
     }
 
     LPCWSTR phaseName = PhaseShortNames[phase];
-    if (phasePattern == nullptr)
+
+    if (pos == PhasePosition::PrePhase)
     {
-        if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
+        if (prePhasePattern == nullptr)
         {
+            // If pre-phase pattern is not specified, then don't dump for any pre-phase.
             return nullptr;
         }
-    }
-    else if (*phasePattern != W('*'))
-    {
-        if (wcsstr(phasePattern, phaseName) == nullptr)
+        else if (*prePhasePattern != W('*'))
         {
-            return nullptr;
+            if (wcsstr(prePhasePattern, phaseName) == nullptr)
+            {
+                return nullptr;
+            }
+        }
+    }
+    else
+    {
+        assert(pos == PhasePosition::PostPhase);
+        if (postPhasePattern == nullptr)
+        {
+            // There's no post-phase pattern specified. If there is a pre-phase pattern specified, then that will
+            // be the only set of phases dumped. If neither are specified, then post-phase dump after
+            // PHASE_DETERMINE_FIRST_COLD_BLOCK.
+            if (prePhasePattern != nullptr)
+            {
+                return nullptr;
+            }
+            if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
+            {
+                return nullptr;
+            }
+        }
+        else if (*postPhasePattern != W('*'))
+        {
+            if (wcsstr(postPhasePattern, phaseName) == nullptr)
+            {
+                return nullptr;
+            }
         }
     }
 
@@ -572,6 +673,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 // Arguments:
 //    phase       - A phase identifier to indicate which phase is associated with the dump,
 //                  i.e. which phase has just completed.
+//    pos         - Are we being called to dump the flow graph pre-phase or post-phase?
 //
 // Return Value:
 //    True iff a flowgraph has been dumped.
@@ -603,35 +705,51 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
 //                                     for all phases.
+//      COMPlus_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
 //      COMPlus_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
 //      COMPlus_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
 //                                     exception-handling regions.
 //      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
 //      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
 //                                     mostly lexical block linear layout.
+//      COMPlus_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
-bool Compiler::fgDumpFlowGraph(Phases phase)
+// Example:
+//
+// If you want to dump just before and after a single phase, say loop cloning, use:
+//      set COMPlus_JitDumpFgPhase=LP-CLONE
+//      set COMPlus_JitDumpFgPrePhase=LP-CLONE
+//
+bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 {
     bool result    = false;
     bool dontClose = false;
 
 #ifdef DEBUG
     const bool createDotFile = JitConfig.JitDumpFgDot() != 0;
-    const bool includeEH     = JitConfig.JitDumpFgEH() != 0;
-    const bool includeLoops  = JitConfig.JitDumpFgLoops() != 0;
-    const bool constrained   = JitConfig.JitDumpFgConstrained() != 0;
+    const bool includeEH     = (JitConfig.JitDumpFgEH() != 0) && !compIsForInlining();
+    // The loop table is not well maintained after the optimization phases, but there is no single point at which
+    // it is declared invalid. For now, refuse to add loop information starting at the rationalize phase, to
+    // avoid asserts.
+    const bool includeLoops = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
+    const bool constrained  = JitConfig.JitDumpFgConstrained() != 0;
+    const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
 #else  // !DEBUG
     const bool createDotFile = true;
     const bool includeEH     = false;
     const bool includeLoops  = false;
     const bool constrained   = true;
+    const bool useBlockId    = false;
 #endif // !DEBUG
 
-    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
+    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? W("dot") : W("fgx"));
     if (fgxFile == nullptr)
     {
         return false;
     }
+
+    JITDUMP("Dumping flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
+            PhaseNames[phase]);
 
     bool        validWeights  = fgHaveValidEdgeWeights;
     double      weightDivisor = (double)BasicBlock::getCalledCount(this);
@@ -654,7 +772,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     if (createDotFile)
     {
         fprintf(fgxFile, "digraph FlowGraph {\n");
-        fprintf(fgxFile, "    graph [label = \"%s\\nafter\\n%s\"];\n", info.compMethodName, PhaseNames[phase]);
+        fprintf(fgxFile, "    graph [label = \"%s%s\\n%s\\n%s\"];\n", info.compMethodName,
+                compIsForInlining() ? "\\n(inlinee)" : "", (pos == PhasePosition::PrePhase) ? "before" : "after",
+                PhaseNames[phase]);
         fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
@@ -712,12 +832,18 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     // to insert in the tree, to determine nesting. We'd like to use the bbNum to do this. However, we don't
     // want to renumber the blocks. So, create a mapping of bbNum to ordinal, and compare block order by
     // comparing the mapped ordinals instead.
+    //
+    // For inlinees, the max block number of the inliner is used, so we need to allocate the block map based on
+    // that size, even though it means allocating a block map possibly much bigger than what's required for just
+    // the inlinee blocks.
 
-    unsigned  blockOrdinal = 0;
-    unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[fgBBNumMax + 1];
-    memset(blkMap, 0, sizeof(unsigned) * (fgBBNumMax + 1));
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    unsigned  blkMapSize   = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax);
+    unsigned  blockOrdinal = 1;
+    unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
+    memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
+    for (BasicBlock* const block : Blocks())
     {
+        assert(block->bbNum < blkMapSize);
         blkMap[block->bbNum] = blockOrdinal++;
     }
 
@@ -729,7 +855,32 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB, block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"", block->bbNum);
+
+            if (useBlockId)
+            {
+                fprintf(fgxFile, "%s", block->dspToString());
+            }
+            else
+            {
+                fprintf(fgxFile, FMT_BB, block->bbNum);
+            }
+
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                fprintf(fgxFile, "\\n");
+
+                // Include a line with the basics of the branch condition, if possible.
+                // Find the loop termination test at the bottom of the loop.
+                Statement* condStmt = block->lastStmt();
+                if (condStmt != nullptr)
+                {
+                    GenTree* const condTree = condStmt->GetRootNode();
+                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    GenTree* const compareTree = condTree->AsOp()->gtOp1;
+                    fgDumpTree(fgxFile, compareTree);
+                }
+            }
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())
@@ -834,8 +985,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 targetWeightDivisor = (double)bTarget->bbWeight;
             }
 
-            flowList* edge;
-            for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
+            for (flowList* const edge : bTarget->PredEdges())
             {
                 BasicBlock* bSource = edge->getBlock();
                 double      sourceWeightDivisor;
@@ -929,6 +1079,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     fprintf(fgxFile, ">");
                     fprintf(fgxFile, "\n        </edge>");
                 }
+
+                ++edgeNum;
             }
         }
     }
@@ -938,7 +1090,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     //
     if (createDotFile)
     {
-        for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
+        for (BasicBlock* const bSource : Blocks())
         {
             if (constrained)
             {
@@ -960,11 +1112,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
             // Emit successor edges
             //
-            const unsigned numSuccs = bSource->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const bTarget : bSource->Succs())
             {
-                BasicBlock* const bTarget = bSource->GetSucc(i);
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
                 if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                 {
@@ -1040,7 +1189,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 };
 
             public:
-                RegionGraph(Compiler* comp, unsigned* blkMap) : m_comp(comp), m_rgnRoot(nullptr), m_blkMap(blkMap)
+                RegionGraph(Compiler* comp, unsigned* blkMap, unsigned blkMapSize)
+                    : m_comp(comp), m_rgnRoot(nullptr), m_blkMap(blkMap), m_blkMapSize(blkMapSize)
                 {
                     // Create a root region that encompasses the whole function.
                     m_rgnRoot =
@@ -1087,6 +1237,24 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
                         unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
 
+                        // Consider the following cases, where each "x" is a block in the range:
+                        //    xxxxxxx      // current 'child' range; we're comparing against this
+                        //    xxxxxxx      // (1) same range; could be considered child or parent
+                        //  xxxxxxxxx      // (2) parent range, shares last block
+                        //    xxxxxxxxx    // (3) parent range, shares first block
+                        //  xxxxxxxxxxx    // (4) fully overlapping parent range
+                        // xx              // (5) non-overlapping preceding sibling range
+                        //            xx   // (6) non-overlapping following sibling range
+                        //      xxx        // (7) child range
+                        //    xxx          // (8) child range, shares same start block
+                        //    x            // (9) single-block child range, shares same start block
+                        //        xxx      // (10) child range, shares same end block
+                        //          x      // (11) single-block child range, shares same end block
+                        //  xxxxxxx        // illegal: overlapping ranges
+                        //  xxx            // illegal: overlapping ranges (shared child start block and new end block)
+                        //      xxxxxxx    // illegal: overlapping ranges
+                        //          xxx    // illegal: overlapping ranges (shared child end block and new start block)
+
                         // Assert the child is properly nested within the parent.
                         // Note that if regions have the same start and end, you can't tell which is nested within the
                         // other, though it shouldn't matter.
@@ -1095,6 +1263,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         assert(childEndOrdinal <= curEndOrdinal);
 
                         // Should the new region be before this child?
+                        // Case (5).
                         if (newEndOrdinal < childStartOrdinal)
                         {
                             // Insert before this child.
@@ -1102,14 +1271,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                             *lastChildPtr     = newRgn;
                             break;
                         }
-                        else if (newEndOrdinal <= childEndOrdinal)
+                        else if ((newStartOrdinal >= childStartOrdinal) && (newEndOrdinal <= childEndOrdinal))
                         {
                             // Insert as a child of this child.
-                            // Need to recurse to walk the child's children list to see where
-                            // it belongs.
-
-                            // It better be properly nested.
-                            assert(newStartOrdinal >= childStartOrdinal);
+                            // Need to recurse to walk the child's children list to see where it belongs.
+                            // Case (1), (7), (8), (9), (10), (11).
 
                             curStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
                             curEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
@@ -1122,6 +1288,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         else if (newStartOrdinal <= childStartOrdinal)
                         {
                             // The new region is a parent of one or more of the existing children.
+                            // Case (2), (3), (4).
+
                             // Find all the children it encompasses.
                             Region** lastEndChildPtr = &child->m_rgnNext;
                             Region*  endChild        = child->m_rgnNext;
@@ -1154,6 +1322,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         }
 
                         // Else, look for next child.
+                        // Case (6).
 
                         lastChildPtr = &child->m_rgnNext;
                         child        = child->m_rgnNext;
@@ -1216,15 +1385,80 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 //------------------------------------------------------------------------
                 // Dump: dump the entire region graph
                 //
-                // Arguments:
-                //    stmt  - the statement to dump;
-                //    bbNum - the basic block number to dump.
-                //
                 void Dump()
                 {
                     printf("Region graph:\n");
                     DumpRegionNode(m_rgnRoot, 0);
                     printf("\n");
+                }
+
+                //------------------------------------------------------------------------
+                // VerifyNode: verify the region graph rooted at `rgn`.
+                //
+                // Arguments:
+                //    rgn  - the node (and its children) to check.
+                //
+                void Verify(Region* rgn)
+                {
+                    // The region needs to be a non-overlapping parent to all its children.
+                    // The children need to be non-overlapping, and in increasing order.
+
+                    unsigned rgnStartOrdinal = m_blkMap[rgn->m_bbStart->bbNum];
+                    unsigned rgnEndOrdinal   = m_blkMap[rgn->m_bbEnd->bbNum];
+                    assert(rgnStartOrdinal <= rgnEndOrdinal);
+
+                    Region* child     = rgn->m_rgnChild;
+                    Region* lastChild = nullptr;
+                    if (child != nullptr)
+                    {
+                        unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                        unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+                        assert(childStartOrdinal <= childEndOrdinal);
+                        assert(rgnStartOrdinal <= childStartOrdinal);
+
+                        while (true)
+                        {
+                            Verify(child);
+
+                            lastChild                      = child;
+                            unsigned lastChildStartOrdinal = childStartOrdinal;
+                            unsigned lastChildEndOrdinal   = childEndOrdinal;
+
+                            child = child->m_rgnNext;
+                            if (child == nullptr)
+                            {
+                                break;
+                            }
+
+                            childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                            childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+                            assert(childStartOrdinal <= childEndOrdinal);
+
+                            // The children can't overlap; they can't share any blocks.
+                            assert(lastChildEndOrdinal < childStartOrdinal);
+                        }
+
+                        // The parent region must fully include the last child.
+                        assert(childEndOrdinal <= rgnEndOrdinal);
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // Verify: verify the region graph satisfies proper nesting, and other legality rules.
+                //
+                void Verify()
+                {
+                    assert(m_comp != nullptr);
+                    assert(m_blkMap != nullptr);
+                    for (unsigned i = 0; i < m_blkMapSize; i++)
+                    {
+                        assert(m_blkMap[i] < m_blkMapSize);
+                    }
+
+                    // The root region has no siblings.
+                    assert(m_rgnRoot != nullptr);
+                    assert(m_rgnRoot->m_rgnNext == nullptr);
+                    Verify(m_rgnRoot);
                 }
 
 #endif // DEBUG
@@ -1349,11 +1583,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 Compiler* m_comp;
                 Region*   m_rgnRoot;
                 unsigned* m_blkMap;
+                unsigned  m_blkMapSize;
             };
 
             // Define the region graph object. We'll add regions to this, then output the graph.
 
-            RegionGraph rgnGraph(this, blkMap);
+            RegionGraph rgnGraph(this, blkMap, blkMapSize);
 
             // Add the EH regions to the region graph. An EH region consists of a region for the
             // `try`, a region for the handler, and, for filter/filter-handlers, a region for the
@@ -1405,6 +1640,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
                 {
                     const LoopDsc& loop = optLoopTable[loopNum];
+                    if (loop.lpFlags & LPFLG_REMOVED)
+                    {
+                        continue;
+                    }
                     sprintf_s(name, sizeof(name), FMT_LP, loopNum);
                     rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpFirst, loop.lpBottom);
                 }
@@ -1412,6 +1651,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
             // All the regions have been added. Now, output them.
             DBEXEC(verbose, rgnGraph.Dump());
+            INDEBUG(rgnGraph.Verify());
             rgnGraph.Output(fgxFile);
         }
     }
@@ -1450,7 +1690,7 @@ void Compiler::fgDispReach()
     printf("BBnum  Reachable by \n");
     printf("------------------------------------------------\n");
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         printf(FMT_BB " : ", block->bbNum);
         BlockSetOps::Iter iter(this, block->bbReach);
@@ -1687,19 +1927,33 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_SWITCH:
+            {
                 printf("->");
 
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-                int switchWidth;
-                switchWidth = 0;
-                do
+                const BBswtDesc* const bbJumpSwt   = block->bbJumpSwt;
+                const unsigned         jumpCnt     = bbJumpSwt->bbsCount;
+                BasicBlock** const     jumpTab     = bbJumpSwt->bbsDstTab;
+                int                    switchWidth = 0;
+
+                for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c" FMT_BB, (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
-                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits((*jumpTab)->bbNum), 2);
-                } while (++jumpTab, --jumpCnt);
+                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+
+                    const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    if (isDefault)
+                    {
+                        printf("[def]");
+                        switchWidth += 5;
+                    }
+
+                    const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                    if (isDominant)
+                    {
+                        printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                        switchWidth += 10;
+                    }
+                }
 
                 if (switchWidth < 7)
                 {
@@ -1707,7 +1961,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 }
 
                 printf(" (switch)");
-                break;
+            }
+            break;
         }
     }
 
@@ -1783,10 +2038,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         // Output a brace for every try region that this block opens
 
-        EHblkDsc* HBtab;
-        EHblkDsc* HBtabEnd;
-
-        for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             if (HBtab->ebdTryBeg == block)
             {
@@ -1797,10 +2049,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->ebdTryLast == block)
         {
@@ -1981,7 +2230,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
 
     if (!block->IsLIR())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgDumpStmtTree(stmt, block->bbNum);
         }
@@ -1992,16 +2241,18 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     }
 }
 
-/*****************************************************************************/
-//  Walk the BasicBlock list calling fgDumpTree once per Stmt
+//------------------------------------------------------------------------
+// fgDumpTrees: dumps the trees for every block in a range of blocks.
+//
+// Arguments:
+//    firstBlock - The first block to dump.
+//    lastBlock  - The last block to dump.
 //
 void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
-    // Walk the basic blocks.
-
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
-    for (BasicBlock* block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         fgDumpBlock(block);
 
@@ -2106,7 +2357,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
     }
 
     unsigned blockRefs = 0;
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         blockRefs += pred->flDupCount;
 
@@ -2241,22 +2492,15 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-        {
-            unsigned jumpCnt = blockPred->bbJumpSwt->bbsCount;
-
-            for (unsigned i = 0; i < jumpCnt; ++i)
+            for (BasicBlock* const bTarget : blockPred->SwitchTargets())
             {
-                BasicBlock* jumpTab = blockPred->bbJumpSwt->bbsDstTab[i];
-                assert(jumpTab != nullptr);
-                if (block == jumpTab)
+                if (block == bTarget)
                 {
                     return true;
                 }
             }
-
             assert(!"SWITCH in the predecessor list with no jump label to BLOCK!");
-        }
-        break;
+            break;
 
         default:
             assert(!"Unexpected bbJumpKind");
@@ -2305,7 +2549,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         // we find a potential 'hit' we check if the funclet we're looking at is
         // from the correct try region.
 
-        for (BasicBlock* bcall = comp->fgFirstFuncletBB; bcall != nullptr; bcall = bcall->bbNext)
+        for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
             if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
             {
@@ -2383,12 +2627,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     /* Check bbNum, bbRefs and bbPreds */
     // First, pick a traversal stamp, and label all the blocks with it.
     unsigned curTraversalStamp = unsigned(InterlockedIncrement((LONG*)&bbTraverseLabel));
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbTraversalStamp = curTraversalStamp;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
         {
@@ -2474,8 +2718,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             {
                 // Check to see if this block is the beginning of a filter or a handler and adjust the ref count
                 // appropriately.
-                for (EHblkDsc *HBtab = compHndBBtab, *HBtabEnd = &compHndBBtab[compHndBBtabCount]; HBtab != HBtabEnd;
-                     HBtab++)
+                for (EHblkDsc* const HBtab : EHClauses(this))
                 {
                     if (HBtab->ebdHndBeg == block)
                     {
@@ -2521,7 +2764,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt    = FALSE;
+    copiedForGenericsCtxt    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
@@ -2560,8 +2803,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
     const genTreeOps oper      = tree->OperGet();
     const unsigned   kind      = tree->OperKind();
-    unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    unsigned         chkFlags  = 0;
+    GenTreeFlags     treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags     chkFlags  = GTF_EMPTY;
 
     if (tree->OperMayThrow(this))
     {
@@ -3014,7 +3257,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 //                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
 //    debugFlags - the second argument to gtDispFlags
 //
-void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
     if (tree->OperGet() == GT_IND)
     {
@@ -3037,7 +3280,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
 
-void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags)
+void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags)
 {
     if (chkFlags & ~treeFlags)
     {
@@ -3059,7 +3302,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     {
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
-        unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
         if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
         {
@@ -3203,7 +3446,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     fgDebugCheckBlockLinks();
 
     // For each block check the links between the trees.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3233,7 +3476,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 
 void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         // Verify that bbStmtList is threaded correctly.
         // Note that for the statements list, the GetPrevStmt() list is circular.
@@ -3297,7 +3540,7 @@ void Compiler::fgDebugCheckBlockLinks()
 {
     assert(fgFirstBB->bbPrev == nullptr);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbNext)
         {
@@ -3329,11 +3572,9 @@ void Compiler::fgDebugCheckBlockLinks()
                 // about the BlockSet epoch.
                 BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-                BasicBlock** jumpTable = block->bbJumpSwt->bbsDstTab;
-                unsigned     jumpCount = block->bbJumpSwt->bbsCount;
-                for (unsigned i = 0; i < jumpCount; i++)
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, jumpTable[i]->bbNum);
+                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
                 }
                 // Now we should have a set of unique successors that matches what's in the switchMap.
                 // First, check the number of entries, then make sure all the blocks in uniqueSuccSet
@@ -3412,7 +3653,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
 {
     UniquenessCheckWalker walker(this);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3423,7 +3664,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
         }
         else
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* root = stmt->GetRootNode();
                 fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
@@ -3446,7 +3687,7 @@ void Compiler::fgDebugCheckLoopTable()
         assert(optLoopTable != nullptr);
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (optLoopCount == 0)
         {

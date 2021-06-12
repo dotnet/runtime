@@ -86,9 +86,9 @@ public class WasmAppBuilder : Task
             Behavior = behavior;
         }
         [JsonPropertyName("behavior")]
-        public string Behavior { get; set; }
+        public string Behavior { get; init; }
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; init; }
     }
 
     private class AssemblyEntry : AssetEntry

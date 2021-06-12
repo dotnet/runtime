@@ -83,10 +83,14 @@ extern void mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *
 
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-typedef struct {
-	int method_index;
+#define JIT_INFO_MAP_BUCKET_SIZE 32
+
+typedef struct _JitInfoMap JitInfoMap;
+struct _JitInfoMap {
 	MonoJitInfo *jinfo;
-} JitInfoMap;
+	JitInfoMap *next;
+	int method_index;
+};
 
 #define GOT_INITIALIZING 1
 #define GOT_INITIALIZED  2
@@ -164,7 +168,7 @@ struct MonoAotModule {
 	gpointer *globals;
 	MonoDl *sofile;
 
-	JitInfoMap *async_jit_info_table;
+	JitInfoMap **async_jit_info_table;
 	mono_mutex_t mutex;
 };
 
@@ -193,6 +197,7 @@ static GHashTable *static_aot_modules;
  */
 static char *container_assm_name;
 static MonoAotModule *container_amodule;
+static GHashTable *loaded_static_aot_modules;
 
 /*
  * Maps MonoJitInfo* to the aot module they belong to, this can be different
@@ -1572,7 +1577,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		msg = g_strdup ("compiled with --aot=full");
 		usable = FALSE;
 	}
-	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, "mscorlib")) {
+	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME)) {
 		/* mscorlib contains necessary interpreter trampolines */
 		msg = g_strdup ("not compiled with --aot=interp");
 		usable = FALSE;
@@ -1909,12 +1914,29 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (image_is_dynamic (assembly->image))
 		return;
 
+	gboolean loaded = FALSE;
+
 	mono_aot_lock ();
 
 	if (static_aot_modules)
 		info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assembly->aname.name);
+	if (info) {
+		if (!loaded_static_aot_modules)
+			loaded_static_aot_modules = g_hash_table_new (NULL, NULL);
+		if (g_hash_table_lookup (loaded_static_aot_modules, info))
+			loaded = TRUE;
+		else
+			g_hash_table_insert (loaded_static_aot_modules, info, info);
+	}
 
 	mono_aot_unlock ();
+
+	if (loaded)
+		/*
+		 * Already loaded by another assembly with the same name, or the same assembly loaded
+		 * in another ALC.
+		 */
+		return;
 
 	sofile = NULL;
 
@@ -2161,8 +2183,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = (guint8 *)info->ftnptr_arg_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = (guint8 *)info->unbox_arbitrary_trampolines;
 
-	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, "mscorlib") || !strcmp (assembly->aname.name, "System.Private.CoreLib"))
+	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME)) {
+		g_assert (!mscorlib_aot_module);
 		mscorlib_aot_module = amodule;
+	}
 
 	/* Compute method addresses */
 	amodule->methods = (void **)g_malloc0 (amodule->info.nmethods * sizeof (gpointer));
@@ -3233,16 +3257,18 @@ decode_exception_debug_info (MonoAotModule *amodule,
 
 		p += mono_seq_point_info_read (&seq_points, p, FALSE);
 
-		// FIXME: Call a function in seq-points.c
-		// FIXME:
-		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-		jit_mm_lock (jit_mm);
-		/* This could be set already since this function can be called more than once for the same method */
-		if (!g_hash_table_lookup (jit_mm->seq_points, method))
-			g_hash_table_insert (jit_mm->seq_points, method, seq_points);
-		else
-			mono_seq_point_info_free (seq_points);
-		jit_mm_unlock (jit_mm);
+		if (!async) {
+			// FIXME: Call a function in seq-points.c
+			// FIXME:
+			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+			jit_mm_lock (jit_mm);
+			/* This could be set already since this function can be called more than once for the same method */
+			if (!g_hash_table_lookup (jit_mm->seq_points, method))
+				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
+			else
+				mono_seq_point_info_free (seq_points);
+			jit_mm_unlock (jit_mm);
+		}
 
 		jinfo->seq_points = seq_points;
 	}
@@ -3262,7 +3288,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		p += map_size;
 	}
 
-	if (amodule != m_class_get_image (jinfo->d.method->klass)->aot_module) {
+	if (amodule != m_class_get_image (jinfo->d.method->klass)->aot_module && !async) {
 		mono_aot_lock ();
 		if (!ji_to_amodule)
 			ji_to_amodule = g_hash_table_new (NULL, NULL);
@@ -3430,7 +3456,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	int nmethods;
 	gpointer *methods;
 	guint8 *code1, *code2;
-	int methods_len, i;
+	int methods_len;
 	gboolean async;
 	gpointer orig_addr;
 
@@ -3492,14 +3518,17 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	/* In async mode, jinfo is not added to the normal jit info table, so have to cache it ourselves */
 	if (async) {
-		JitInfoMap *table = amodule->async_jit_info_table;
-		int len;
-
+		JitInfoMap **table = amodule->async_jit_info_table;
+		LOAD_ACQUIRE_FENCE;
 		if (table) {
-			len = table [0].method_index;
-			for (i = 1; i < len; ++i) {
-				if (table [i].method_index == method_index)
-					return table [i].jinfo;
+			int buckets = (amodule->info.nmethods / JIT_INFO_MAP_BUCKET_SIZE) + 1;
+			JitInfoMap *current_item = table [method_index % buckets];
+			LOAD_ACQUIRE_FENCE;
+			while (current_item) {
+				if (current_item->method_index == method_index)
+					return current_item->jinfo;
+				current_item = current_item->next;
+				LOAD_ACQUIRE_FENCE;
 			}
 		}
 	}
@@ -3583,34 +3612,38 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
-	/* Add it to the normal JitInfo tables */
 	if (async) {
-		JitInfoMap *old_table, *new_table;
-		int len;
+		/* Add it to the async JitInfo tables */
+		JitInfoMap **current_table, **new_table;
+		JitInfoMap *current_item, *new_item;
+		int buckets = (amodule->info.nmethods / JIT_INFO_MAP_BUCKET_SIZE) + 1;
 
-		/*
-		 * Use a simple inmutable table with linear search to cache async jit info entries.
-		 * This assumes that the number of entries is small.
-		 */
-		while (TRUE) {
-			/* Copy the table, adding a new entry at the end */
-			old_table = amodule->async_jit_info_table;
-			if (old_table)
-				len = old_table[0].method_index;
-			else
-				len = 1;
-			new_table = (JitInfoMap *)alloc0_jit_info_data (mem_manager, (len + 1) * sizeof (JitInfoMap), async);
-			if (old_table)
-				memcpy (new_table, old_table, len * sizeof (JitInfoMap));
-			new_table [0].method_index = len + 1;
-			new_table [len].method_index = method_index;
-			new_table [len].jinfo = jinfo;
-			/* Publish it */
-			mono_memory_barrier ();
-			if (mono_atomic_cas_ptr ((volatile gpointer *)&amodule->async_jit_info_table, new_table, old_table) == old_table)
+		for (;;) {
+			current_table = amodule->async_jit_info_table;
+			LOAD_ACQUIRE_FENCE;
+			if (current_table)
+				break;
+
+			new_table = alloc0_jit_info_data (mem_manager, buckets * sizeof (JitInfoMap*), async);
+			STORE_RELEASE_FENCE;
+			if (mono_atomic_cas_ptr ((volatile gpointer *)&amodule->async_jit_info_table, new_table, current_table) == current_table)
+				break;
+		}
+
+		new_item = alloc0_jit_info_data (mem_manager, sizeof (JitInfoMap), async);
+		new_item->method_index = method_index;
+		new_item->jinfo = jinfo;
+
+		for (;;) {
+			current_item = amodule->async_jit_info_table [method_index % buckets];
+			LOAD_ACQUIRE_FENCE;
+			new_item->next = current_item;
+			STORE_RELEASE_FENCE;
+			if (mono_atomic_cas_ptr ((volatile gpointer *)&amodule->async_jit_info_table [method_index % buckets], new_item, current_item) == current_item)
 				break;
 		}
 	} else {
+		/* Add it to the normal JitInfo tables */
 		mono_jit_info_table_add (jinfo);
 	}
 
@@ -4157,7 +4190,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 	if (mono_llvm_only) {
 		guint8 flags = amodule->method_flags_table [method_index];
 		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
-		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+		if (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY)) {
 			mono_aot_lock ();
 			if (!code_to_method_flags)
 				code_to_method_flags = g_hash_table_new (NULL, NULL);
@@ -5066,7 +5099,7 @@ init_plt (MonoAotModule *amodule)
 	if (amodule->plt_inited)
 		return;
 
-	tramp = mono_create_specific_trampoline (amodule, MONO_TRAMPOLINE_AOT_PLT, NULL);
+	tramp = mono_create_specific_trampoline (get_default_mem_manager (), amodule, MONO_TRAMPOLINE_AOT_PLT, NULL);
 	tramp = mono_create_ftnptr (tramp);
 
 	amodule_lock (amodule);
@@ -5269,7 +5302,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 			 * resolve the patch info by hand.
 			 */
 			if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
-				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
+				target = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES) {
 				target = amodule->info.specific_trampolines;
@@ -5803,7 +5836,7 @@ aot_is_slim_amodule (MonoAotModule *amodule)
 		return FALSE;
 
 	/* "slim" only applies to mscorlib.dll */
-	if (strcmp (amodule->aot_name, "mscorlib"))
+	if (strcmp (amodule->aot_name, MONO_ASSEMBLY_CORLIB_NAME))
 		return FALSE;
 
 	guint32 f = amodule->info.flags;
@@ -5965,7 +5998,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 			addr = load_function (amodule, "rgctx_fetch_trampoline_general");
 		info = (void **)mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (gpointer) * 2);
 		info [0] = GUINT_TO_POINTER (slot);
-		info [1] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
+		info [1] = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
 		code = mono_aot_get_static_rgctx_trampoline (info, addr);
 		return mono_create_ftnptr (code);
 	}

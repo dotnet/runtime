@@ -131,9 +131,9 @@ void Compiler::fgApplyProfileScale()
             calleeWeight, scale);
     JITDUMP("Scaling inlinee blocks\n");
 
-    for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        bb->scaleBBWeight(scale);
+        block->scaleBBWeight(scale);
     }
 }
 
@@ -194,10 +194,20 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 
     for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
     {
-        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-            ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
+        if ((IL_OFFSET)fgPgoSchema[i].ILOffset != offset)
+        {
+            continue;
+        }
+
+        if (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
         {
             *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
+            return true;
+        }
+
+        if (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount)
+        {
+            *weightWB = (BasicBlock::weight_t) * (uint64_t*)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }
@@ -304,7 +314,7 @@ void BlockCountInstrumentor::Prepare(bool preImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         block->bbCountSchemaIndex = -1;
     }
@@ -334,9 +344,11 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
     schemaElem.Count               = 1;
     schemaElem.Other               = 0;
-    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemaElem.ILOffset            = offset;
-    schemaElem.Offset              = 0;
+    schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                         ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
+                                         : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+    schemaElem.ILOffset = offset;
+    schemaElem.Offset   = 0;
 
     schema.push_back(schemaElem);
 
@@ -362,21 +374,23 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
 //
 void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
 {
-    const int schemaIndex = (int)block->bbCountSchemaIndex;
+    const ICorJitInfo::PgoInstrumentationSchema& entry = schema[block->bbCountSchemaIndex];
 
-    assert(block->bbCodeOffs == (IL_OFFSET)schema[schemaIndex].ILOffset);
-    assert(schema[schemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
-    size_t addrOfCurrentExecutionCount = (size_t)(schema[schemaIndex].Offset + profileMemory);
+    assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
+    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
+    size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
 
+    var_types typ =
+        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
     // Read Basic-Block count value
-    GenTree* valueNode =
-        m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
     // Increment value by 1
-    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, TYP_INT, valueNode, m_comp->gtNewIconNode(1));
+    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
 
     // Write new Basic-Block count value
-    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
     GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
 
     m_comp->fgNewStmtAtBeg(block, asgNode);
@@ -411,11 +425,12 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
     assert(m_entryBlock != nullptr);
     assert(m_entryBlock->bbCodeOffs == 0);
 
-    const int firstSchemaIndex = (int)m_entryBlock->bbCountSchemaIndex;
-    assert((IL_OFFSET)schema[firstSchemaIndex].ILOffset == 0);
-    assert(schema[firstSchemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
+    const ICorJitInfo::PgoInstrumentationSchema& entry = schema[m_entryBlock->bbCountSchemaIndex];
+    assert((IL_OFFSET)entry.ILOffset == 0);
+    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
 
-    const size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
+    const size_t addrOfFirstExecutionCount = (size_t)(entry.Offset + profileMemory);
 
     GenTree* arg;
 
@@ -447,13 +462,15 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
     GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
     GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
+    var_types typ =
+        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
     // Read Basic-Block count value
     //
-    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
 
     // Compare Basic-Block count value against zero
     //
-    GenTree*   relop = m_comp->gtNewOperNode(GT_NE, TYP_INT, valueNode, m_comp->gtNewIconNode(0, TYP_INT));
+    GenTree*   relop = m_comp->gtNewOperNode(GT_NE, typ, valueNode, m_comp->gtNewIconNode(0, typ));
     GenTree*   colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
     GenTree*   cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
     Statement* stmt  = m_comp->gtNewStmt(cond);
@@ -546,10 +563,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     //
     if (!compIsForInlining())
     {
-        EHblkDsc* HBtab = compHndBBtab;
-        unsigned  XTnum = 0;
-
-        for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
@@ -1041,9 +1055,11 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count               = 1;
         schemaElem.Other               = targetOffset;
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
-        schemaElem.ILOffset            = sourceOffset;
-        schemaElem.Offset              = 0;
+        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                             ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
+        schemaElem.ILOffset = sourceOffset;
+        schemaElem.Offset   = 0;
 
         schema.push_back(schemaElem);
 
@@ -1082,9 +1098,12 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         // Sanity checks.
         //
         assert((schemaIndex >= 0) && (schemaIndex < (int)schema.size()));
-        assert(schema[schemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
 
-        size_t addrOfCurrentExecutionCount = (size_t)(schema[schemaIndex].Offset + profileMemory);
+        const ICorJitInfo::PgoInstrumentationSchema& entry = schema[schemaIndex];
+        assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
+               (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
+
+        size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
 
         // Determine where to place the probe.
         //
@@ -1103,11 +1122,14 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 #ifdef DEBUG
                 // Verify the edge still exists.
                 //
-                const unsigned numSucc = block->NumSucc(comp);
-                bool           found   = false;
-                for (unsigned i = 0; i < numSucc && !found; i++)
+                bool found = false;
+                for (BasicBlock* const succ : block->Succs(comp))
                 {
-                    found = (target == block->GetSucc(i, comp));
+                    if (target == succ)
+                    {
+                        found = true;
+                        break;
+                    }
                 }
                 assert(found);
 #endif
@@ -1124,16 +1146,17 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         // Place the probe
 
+        var_types typ =
+            entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
         // Read Basic-Block count value
         GenTree* valueNode =
-            m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+            m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
         // Increment value by 1
-        GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, TYP_INT, valueNode, m_comp->gtNewIconNode(1));
+        GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
 
         // Write new Basic-Block count value
-        GenTree* lhsNode =
-            m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+        GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
         GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
 
         m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
@@ -1195,25 +1218,27 @@ public:
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count = 1;
-        schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+        schemaElem.Other = ICorJitInfo::ClassProfile32::CLASS_FLAG;
         if (call->IsVirtualStub())
         {
-            schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+            schemaElem.Other |= ICorJitInfo::ClassProfile32::INTERFACE_FLAG;
         }
         else
         {
             assert(call->IsVirtualVtable());
         }
 
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
-        schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-        schemaElem.Offset              = 0;
+        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
         schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-        schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+        schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -1260,8 +1285,11 @@ public:
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
-        assert(m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-               ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+        bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+        bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
+        assert(is32 || is64);
 
         // Figure out where the table is located.
         //
@@ -1278,10 +1306,12 @@ public:
         GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
         GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const helperCallNode = compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const          helperCallNode =
+            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
+                                          args);
+        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
         GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
@@ -1361,7 +1391,7 @@ void ClassProbeInstrumentor::Prepare(bool isPreImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         block->bbClassSchemaIndex = -1;
     }
@@ -1390,7 +1420,7 @@ void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     //
     BuildClassProbeSchemaGen                    schemaGen(schema, m_schemaCount);
     ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(m_comp, schemaGen);
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -1423,7 +1453,7 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
 
     ClassProbeInserter                    insertProbes(schema, profileMemory, &classSchemaIndex, m_instrCount);
     ClassProbeVisitor<ClassProbeInserter> visitor(m_comp, insertProbes);
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -1444,14 +1474,14 @@ void ClassProbeInstrumentor::SuppressProbes()
     SuppressProbesFunctor                    suppressProbes(cleanupCount);
     ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
 
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
         {
             continue;
         }
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
@@ -1559,7 +1589,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Walk the flow graph to build up the instrumentation schema.
     //
     Schema schema(getAllocator(CMK_Pgo));
-    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (fgCountInstrumentor->ShouldProcess(block))
         {
@@ -1615,8 +1645,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
                                                                     (UINT32)schema.size(), &profileMemory);
 
-    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
-
     // Deal with allocation failures.
     //
     if (!SUCCEEDED(res))
@@ -1638,9 +1666,11 @@ PhaseStatus Compiler::fgInstrumentMethod()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
+
     // Add the instrumentation code
     //
-    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (fgCountInstrumentor->ShouldProcess(block))
         {
@@ -1710,8 +1740,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have profile data: %d schema records (schema at %p, data at %p)\n", fgPgoSchemaCount, dspPtr(fgPgoSchema),
-            dspPtr(fgPgoData));
+    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
+            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -1725,14 +1755,17 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
                 fgPgoBlockCounts++;
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
@@ -1819,7 +1852,7 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profil
 //
 void Compiler::fgIncorporateBlockCounts()
 {
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BasicBlock::weight_t profileWeight;
 
@@ -2006,6 +2039,9 @@ private:
         block->bbSparseCountInfo = info;
     }
 
+    void MarkInterestingBlocks(BasicBlock* block, BlockInfo* info);
+    void MarkInterestingSwitches(BasicBlock* block, BlockInfo* info);
+
     // Flags for noting and handling various error cases.
     //
     bool m_badcode;
@@ -2136,7 +2172,7 @@ void EfficientEdgeCountReconstructor::Prepare()
 {
     // Create per-block info, and set up the key to block map.
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         m_keyToBlockMap.Set(BlockToKey(block), block);
         BlockInfo* const info = new (m_allocator) BlockInfo();
@@ -2157,12 +2193,16 @@ void EfficientEdgeCountReconstructor::Prepare()
         switch (schemaEntry.InstrumentationKind)
         {
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
             {
                 // Optimization TODO: if profileCount is zero, we can just ignore this edge
                 // and the right things will happen.
                 //
-                uint32_t const             profileCount = *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset);
-                BasicBlock::weight_t const weight       = (BasicBlock::weight_t)profileCount;
+                uint64_t const profileCount =
+                    schemaEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount
+                        ? *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset)
+                        : *(uint64_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+                BasicBlock::weight_t const weight = (BasicBlock::weight_t)profileCount;
 
                 m_allWeightsZero &= (profileCount == 0);
 
@@ -2496,13 +2536,177 @@ void EfficientEdgeCountReconstructor::Propagate()
 
     // Set weight on all blocks.
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
 
         m_comp->fgSetProfileWeight(block, info->m_weight);
+
+        // Mark blocks that might be worth optimizing further, given
+        // what we know about the PGO data.
+        //
+        MarkInterestingBlocks(block, info);
     }
+}
+
+//------------------------------------------------------------------------
+// EfficientEdgeCountReconstructor::MarkInterestingBlocks: look for blocks
+//   that are worth specially optimizing, given the block and edge profile data
+//
+// Arguments:
+//    block - block of interest
+//    info - associated block info
+//
+// Notes:
+//    We do this during reconstruction because we have a clean look at the edge
+//    weights. If we defer until we recompute edge weights later we may fail to solve
+//    for them.
+//
+//    Someday we'll keep the edge profile info viable all throughout compilation and
+//    we can defer this screening until later. Doing so will catch more cases as
+//    optimizations can sharpen the profile data.
+//
+void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
+{
+    switch (block->bbJumpKind)
+    {
+        case BBJ_SWITCH:
+            MarkInterestingSwitches(block, info);
+            break;
+
+        default:
+            break;
+    }
+}
+
+//------------------------------------------------------------------------
+// EfficientEdgeCountReconstructor::MarkInterestingSwitches: look for switch blocks
+//   that are worth specially optimizing, given the block and edge profile data
+//
+// Arguments:
+//    block - block of interest
+//    info - associated block info
+//
+// Notes:
+//    See if one of the non-default switch cases dominates and should be peeled
+//    from the switch during flow opts.
+//
+//    If so, information is added to the bbJmpSwt for the block for use later.
+//
+void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block, BlockInfo* info)
+{
+    assert(block->bbJumpKind == BBJ_SWITCH);
+
+    // Thresholds for detecting a dominant switch case.
+    //
+    // We need to see enough hits on the switch to have a plausible sense of the distribution of cases.
+    // We also want to enable peeling for switches that are executed at least once per call.
+    // By default, we're guaranteed to see at least 30 calls to instrumented method, for dynamic PGO.
+    // Hence we require at least 30 observed switch executions.
+    //
+    // The profitabilty of peeling is related to the dominant fraction. The cost has a constant portion
+    // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
+    // So we don't want to peel in cases where the dominant fraction is too small.
+    //
+    const BasicBlock::weight_t sufficientSamples  = 30.0f;
+    const BasicBlock::weight_t sufficientFraction = 0.55f;
+
+    if (info->m_weight < sufficientSamples)
+    {
+        JITDUMP("Switch in " FMT_BB " was hit " FMT_WT " < " FMT_WT " times, NOT checking for dominant edge\n",
+                block->bbNum, info->m_weight, sufficientSamples);
+        return;
+    }
+
+    JITDUMP("Switch in " FMT_BB " was hit " FMT_WT " >= " FMT_WT " times, checking for dominant edge\n", block->bbNum,
+            info->m_weight, sufficientSamples);
+    Edge* dominantEdge = nullptr;
+
+    // We don't expect to see any unknown edge weights; if we do, just bail out.
+    //
+    for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
+    {
+        if (!edge->m_weightKnown)
+        {
+            JITDUMP("Found edge with unknown weight.\n");
+            return;
+        }
+
+        if ((dominantEdge == nullptr) || (edge->m_weight > dominantEdge->m_weight))
+        {
+            dominantEdge = edge;
+        }
+    }
+
+    assert(dominantEdge != nullptr);
+    BasicBlock::weight_t fraction = dominantEdge->m_weight / info->m_weight;
+
+    // Because of count inconsistency we can see nonsensical ratios. Cap these.
+    //
+    if (fraction > 1.0)
+    {
+        fraction = 1.0;
+    }
+
+    if (fraction < sufficientFraction)
+    {
+        JITDUMP("Maximum edge likelihood is " FMT_WT " < " FMT_WT "; not sufficient to trigger peeling)\n", fraction,
+                sufficientFraction);
+        return;
+    }
+
+    // Despite doing "edge" instrumentation, we only use a single edge probe for a given successor block.
+    // Multiple switch cases may lead to this block. So we also need to show that there's just one switch
+    // case that can lead to the dominant edge's target block.
+    //
+    // If it turns out often we fail at this stage, we might consider building a histogram of switch case
+    // values at runtime, similar to what we do for classes at virtual call sites.
+    //
+    const unsigned     caseCount    = block->bbJumpSwt->bbsCount;
+    BasicBlock** const jumpTab      = block->bbJumpSwt->bbsDstTab;
+    unsigned           dominantCase = caseCount;
+
+    for (unsigned i = 0; i < caseCount; i++)
+    {
+        if (jumpTab[i] == dominantEdge->m_targetBlock)
+        {
+            if (dominantCase != caseCount)
+            {
+                JITDUMP("Both case %u and %u lead to " FMT_BB "-- can't optimize\n", i, dominantCase,
+                        jumpTab[i]->bbNum);
+                dominantCase = caseCount;
+                break;
+            }
+
+            dominantCase = i;
+        }
+    }
+
+    if (dominantCase == caseCount)
+    {
+        // Multiple (or no) cases lead to the dominant case target.
+        //
+        return;
+    }
+
+    if (block->bbJumpSwt->bbsHasDefault && (dominantCase == caseCount - 1))
+    {
+        // Dominant case is the default case.
+        // This effectively gets peeled already, so defer.
+        //
+        JITDUMP("Default case %u uniquely leads to target " FMT_BB " of dominant edge, so will be peeled already\n",
+                dominantCase, dominantEdge->m_targetBlock->bbNum);
+        return;
+    }
+
+    JITDUMP("Non-default case %u uniquely leads to target " FMT_BB " of dominant edge with likelihood " FMT_WT
+            "; marking for peeling\n",
+            dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
+
+    block->bbJumpSwt->bbsHasDominantCase  = true;
+    block->bbJumpSwt->bbsDominantCase     = dominantCase;
+    block->bbJumpSwt->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -2548,7 +2752,26 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
                                        BasicBlock::weight_t slop,
                                        bool*                wbUsedSlop)
 {
+    // Negative weights are nonsensical.
+    //
+    // If we can't cover the deficit with slop, fail.
+    // If we can, set the new weight to zero.
+    //
+    bool usedSlop = false;
+
+    if (newWeight < BB_ZERO_WEIGHT)
+    {
+        if ((newWeight + slop) < BB_ZERO_WEIGHT)
+        {
+            return false;
+        }
+
+        newWeight = BB_ZERO_WEIGHT;
+        usedSlop  = true;
+    }
+
     bool result = false;
+
     if ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin))
     {
         flEdgeWeightMin = newWeight;
@@ -2563,18 +2786,14 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             // is less than newWeight, so we just allow for the slop
             if (newWeight <= (flEdgeWeightMax + slop))
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will raise flEdgeWeightMin and Max towards newWeight
                     flEdgeWeightMin = flEdgeWeightMax;
                     flEdgeWeightMax = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
                 }
             }
         }
@@ -2584,31 +2803,32 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             // is more than newWeight, so we just allow for the slop
             if ((newWeight + slop) >= flEdgeWeightMin)
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will lower flEdgeWeightMin towards newWeight
-                    flEdgeWeightMin = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
+                    // But not below zero.
+                    //
+                    flEdgeWeightMin = max(BB_ZERO_WEIGHT, newWeight);
                 }
             }
         }
 
         // If we are returning true then we should have adjusted the range so that
         // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero.
-        // Also we should have set wbUsedSlop to true.
+        //
         if (result)
         {
             assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
                    ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
-
-            assert((wbUsedSlop == nullptr) || (*wbUsedSlop));
         }
+    }
+
+    if (result && usedSlop && (wbUsedSlop != nullptr))
+    {
+        *wbUsedSlop = true;
     }
 
 #if DEBUG
@@ -2648,7 +2868,26 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
                                        BasicBlock::weight_t slop,
                                        bool*                wbUsedSlop)
 {
+    // Negative weights are nonsensical.
+    //
+    // If we can't cover the deficit with slop, fail.
+    // If we can, set the new weight to zero.
+    //
+    bool usedSlop = false;
+
+    if (newWeight < BB_ZERO_WEIGHT)
+    {
+        if ((newWeight + slop) < BB_ZERO_WEIGHT)
+        {
+            return false;
+        }
+
+        newWeight = BB_ZERO_WEIGHT;
+        usedSlop  = true;
+    }
+
     bool result = false;
+
     if ((newWeight >= flEdgeWeightMin) && (newWeight <= flEdgeWeightMax))
     {
         flEdgeWeightMax = newWeight;
@@ -2663,17 +2902,13 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             // is less than newWeight, so we just allow for the slop
             if (newWeight <= (flEdgeWeightMax + slop))
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will allow this to raise flEdgeWeightMax towards newWeight
                     flEdgeWeightMax = newWeight;
-                }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
                 }
             }
         }
@@ -2683,7 +2918,8 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             // is more than newWeight, so we just allow for the slop
             if ((newWeight + slop) >= flEdgeWeightMin)
             {
-                result = true;
+                result   = true;
+                usedSlop = true;
 
                 if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
@@ -2691,24 +2927,21 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
                     flEdgeWeightMax = flEdgeWeightMin;
                     flEdgeWeightMin = newWeight;
                 }
-
-                if (wbUsedSlop != nullptr)
-                {
-                    *wbUsedSlop = true;
-                }
             }
         }
 
         // If we are returning true then we should have adjusted the range so that
         // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero
-        // Also we should have set wbUsedSlop to true, unless it is NULL
         if (result)
         {
             assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
                    ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
-
-            assert((wbUsedSlop == nullptr) || (*wbUsedSlop));
         }
+    }
+
+    if (result && usedSlop && (wbUsedSlop != nullptr))
+    {
+        *wbUsedSlop = true;
     }
 
 #if DEBUG
@@ -2989,7 +3222,6 @@ void Compiler::fgComputeEdgeWeights()
 
     BasicBlock*          bSrc;
     BasicBlock*          bDst;
-    flowList*            edge;
     BasicBlock::weight_t slop;
     unsigned             goodEdgeCountCurrent     = 0;
     unsigned             goodEdgeCountPrevious    = 0;
@@ -3014,7 +3246,7 @@ void Compiler::fgComputeEdgeWeights()
             bDstWeight -= fgCalledCount;
         }
 
-        for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+        for (flowList* const edge : bDst->PredEdges())
         {
             bool assignOK = true;
 
@@ -3094,7 +3326,7 @@ void Compiler::fgComputeEdgeWeights()
         JITDUMP("\n -- step 1 --\n");
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
         {
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
                 bool assignOK = true;
 
@@ -3199,11 +3431,8 @@ void Compiler::fgComputeEdgeWeights()
                 BasicBlock::weight_t maxEdgeWeightSum = 0;
 
                 // Calculate the sums of the minimum and maximum edge weights
-                for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+                for (flowList* const edge : bDst->PredEdges())
                 {
-                    // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->getBlock();
-
                     maxEdgeWeightSum += edge->edgeWeightMax();
                     minEdgeWeightSum += edge->edgeWeightMin();
                 }
@@ -3211,7 +3440,7 @@ void Compiler::fgComputeEdgeWeights()
                 // maxEdgeWeightSum is the sum of all flEdgeWeightMax values into bDst
                 // minEdgeWeightSum is the sum of all flEdgeWeightMin values into bDst
 
-                for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+                for (flowList* const edge : bDst->PredEdges())
                 {
                     bool assignOK = true;
 
@@ -3334,14 +3563,13 @@ EARLY_EXIT:;
 
     // See if any edge weight are expressed in [min..max] form
 
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
-                bSrc = edge->getBlock();
-                // This is the control flow edge (bSrc -> bDst)
+                // This is the control flow edge (edge->getBlock() -> bDst)
 
                 if (edge->edgeWeightMin() != edge->edgeWeightMax())
                 {
@@ -3433,7 +3661,7 @@ void Compiler::fgDebugCheckProfileData()
 
     // Verify each profiled block.
     //
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (!block->hasProfileWeight())
         {
@@ -3568,7 +3796,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
     BasicBlock::weight_t       incomingWeightMax = 0;
     bool                       foundPreds        = false;
 
-    for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
+    for (flowList* const predEdge : block->PredEdges())
     {
         incomingWeightMin += predEdge->edgeWeightMin();
         incomingWeightMax += predEdge->edgeWeightMax();
@@ -3650,16 +3878,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     for (unsigned i = 0; i < numSuccs; i++)
     {
         BasicBlock* succBlock = block->GetSucc(i, this);
-        flowList*   succEdge  = nullptr;
-
-        for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
-        {
-            if (edge->getBlock() == block)
-            {
-                succEdge = edge;
-                break;
-            }
-        }
+        flowList*   succEdge  = fgGetPredForBlock(succBlock, block);
 
         if (succEdge == nullptr)
         {
@@ -3699,6 +3918,45 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     }
 
     return missingEdges == 0;
+}
+
+//------------------------------------------------------------------------------
+// pgoSourceToString: describe source of pgo data
+//
+// Arguments:
+//    r - source enum to describe
+//
+// Returns:
+//    descriptive string
+//
+const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
+{
+    const char* pgoSource = "unknown";
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+            pgoSource = "dynamic";
+            break;
+        case ICorJitInfo::PgoSource::Static:
+            pgoSource = "static";
+            break;
+        case ICorJitInfo::PgoSource::Text:
+            pgoSource = "text";
+            break;
+        case ICorJitInfo::PgoSource::Blend:
+            pgoSource = "static+dynamic";
+            break;
+        case ICorJitInfo::PgoSource::IBC:
+            pgoSource = "IBC";
+            break;
+        case ICorJitInfo::PgoSource::Sampling:
+            pgoSource = "Sampling";
+            break;
+        default:
+            break;
+    }
+
+    return pgoSource;
 }
 
 #endif // DEBUG

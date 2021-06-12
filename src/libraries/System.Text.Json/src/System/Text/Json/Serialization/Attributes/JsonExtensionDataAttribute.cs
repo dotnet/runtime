@@ -4,7 +4,7 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// When placed on a property or field of type <see cref="System.Text.Json.Node.JsonObject"/> or
+    /// When placed on a property or field of type <see cref="System.Text.Json.Nodes.JsonObject"/> or
     /// <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, any properties that do not have a
     /// matching property or field are added during deserialization and written during serialization.
     /// </summary>
@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
     /// and TValue must be <see cref="JsonElement"/> or <see cref="object"/>.
     ///
     /// During deserializing with a <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/> extension property with TValue as
-    /// <see cref="object"/>, the type of object created will either be a <see cref="System.Text.Json.Node.JsonNode"/> or a
+    /// <see cref="object"/>, the type of object created will either be a <see cref="System.Text.Json.Nodes.JsonNode"/> or a
     /// <see cref="JsonElement"/> depending on the value of <see cref="System.Text.Json.JsonSerializerOptions.UnknownTypeHandling"/>.
     ///
     /// If a <see cref="JsonElement"/> is created, a "null" JSON value is treated as a JsonElement with <see cref="JsonElement.ValueKind"/>

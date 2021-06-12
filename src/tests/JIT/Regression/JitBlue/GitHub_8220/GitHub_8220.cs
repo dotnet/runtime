@@ -16,9 +16,17 @@ namespace Test
     {
         static Random random;
 
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         static Program()
         {
-            random = new Random(1);
+            random = new Random(Seed);
         }
 
         [MethodImpl( MethodImplOptions.NoInlining )]
