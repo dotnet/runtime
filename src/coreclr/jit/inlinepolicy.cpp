@@ -703,7 +703,7 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
                     {
                         basicBlockLimit += static_cast<unsigned>(clamp(m_ProfileFrequency, 0.0, 1.0) * 3.0);
                     }
-                    basicBlockLimit = min(14, basicBlockCount);
+                    basicBlockLimit = min(12, basicBlockCount);
                 }
                 if (basicBlockCount > basicBlockLimit)
                 {
@@ -832,6 +832,7 @@ void DefaultPolicy::NoteDouble(InlineObservation obs, double value)
 double DefaultPolicy::DetermineMultiplier()
 {
     double multiplier = 0;
+    bool   isR2R      = m_RootCompiler->opts.IsReadyToRun();
 
     // Bump up the multiplier for instance constructors
 
@@ -841,12 +842,12 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
     }
 
-    // Bump up the multiplier for methods in structs. We assume structs are more often involed
+    // Bump up the multiplier for methods in structs. We assume structs are more often involved
     // in performance critical code than reference types.
 
-    if (m_IsFromValueClass)
+    if (m_IsFromValueClass && !isR2R)
     {
-        multiplier += 5.0;
+        multiplier += 3.0;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
     }
 
@@ -881,21 +882,21 @@ double DefaultPolicy::DetermineMultiplier()
 
     if (m_ReturnsStructByValue)
     {
-        // For structs-passed-by-value we might avoid expensive copy operations if we inline
-        multiplier += 5.0;
+        // For structs-passed-by-value we might avoid expensive copy operations if we inline.
+        multiplier += 4.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.0 + m_ArgIsStructByValue;
+        multiplier += 3.0 + m_ArgIsStructByValue;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue, multiplier);
     }
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 4.0;
+        multiplier += 3.0;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -909,7 +910,7 @@ double DefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 4.0 + m_FoldableBranch * 1.5;
+        multiplier += 4.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -921,9 +922,9 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.  Multiplier increased to %g.", m_ArgCasted, multiplier);
     }
 
-    if (m_FldAccessOverArgStruct > 0)
+    if (m_FldAccessOverArgStruct > 0 && !isR2R)
     {
-        multiplier += 2.0 + m_ArgCasted;
+        multiplier += 2.0;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
                 m_FldAccessOverArgStruct, multiplier);
@@ -940,11 +941,11 @@ double DefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 2.0 + m_Intrinsic;
+        multiplier += 3.0;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
-    if (m_BinaryExprWithCns > 0)
+    if (m_BinaryExprWithCns > 0 && !isR2R)
     {
         // In some cases we're not able to detect potentially foldable expressions, e.g.:
         //
@@ -953,7 +954,7 @@ double DefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += 2.5 + m_BinaryExprWithCns;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
                 m_BinaryExprWithCns, multiplier);
     }
@@ -964,7 +965,7 @@ double DefaultPolicy::DetermineMultiplier()
         // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
         // the end of the functions and don't impact Register Allocations.
         // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
-        multiplier += (3.5 + m_ThrowBlock * 0.5);
+        multiplier += 3.0 + m_ThrowBlock;
         JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
     }
 
@@ -977,7 +978,7 @@ double DefaultPolicy::DetermineMultiplier()
         //
         //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
         //
-        multiplier += 1.5 + m_ArgIsBoxedAtCallsite;
+        multiplier += m_ArgIsBoxedAtCallsite;
         JITDUMP("\nCallsite is going to box %d arguments.  Multiplier increased to %g.", m_ArgIsBoxedAtCallsite,
                 multiplier);
     }
@@ -1017,21 +1018,21 @@ double DefaultPolicy::DetermineMultiplier()
         //   typeof(T1) == typeof(T2)
         //   Math.Abs(constArg)
         //   BitOperation.PopCount(10)
-        multiplier += 2.5 + m_FoldableIntrinsic;
+        multiplier += 3.0 + m_FoldableIntrinsic;
         JITDUMP("\nInline has %d foldable intrinsics.  Multiplier increased to %g.", m_FoldableIntrinsic, multiplier);
     }
 
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 1.5 + m_FoldableExpr;
+        multiplier += 2.0 + m_FoldableExpr;
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr, multiplier);
     }
 
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += 0.5 * m_FoldableExpr;
+        multiplier += m_FoldableExpr;
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn, multiplier);
     }
 
@@ -1043,51 +1044,53 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
-    if (m_HasProfile)
+    if (m_HasProfile && (m_CallsiteFrequency != InlineCallsiteFrequency::RARE))
     {
         // m_ProfileFrequency values:
         //   > 1  -- the callsite is inside a hot loop
         //   1    -- the callsite is as hot as its method's first block
         //   ~= 0 -- the callsite is cold.
         //
-        multiplier *= min(0.4 + m_ProfileFrequency * 11.0, 5.0);
+        multiplier *= min(0.5 + m_ProfileFrequency * 15.0, 6.0);
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
-
-    switch (m_CallsiteFrequency)
+    else
     {
-        case InlineCallsiteFrequency::RARE:
-            // Note this one is not additive, it uses '=' instead of '+='
-            multiplier = 1.3;
-            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::BORING:
-            multiplier += 1.3;
-            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::WARM:
-            multiplier += 2.0;
-            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::LOOP:
-            multiplier += 4.0;
-            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::HOT:
-            multiplier += 3.0;
-            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::UNUSED:
-            break;
-        default:
-            assert(!"Unexpected callsite frequency");
-            break;
+        switch (m_CallsiteFrequency)
+        {
+            case InlineCallsiteFrequency::RARE:
+                // Note this one is not additive, it uses '=' instead of '+='
+                multiplier = 1.3;
+                JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::BORING:
+                multiplier += 1.3;
+                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::WARM:
+                multiplier += 2.0;
+                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::LOOP:
+                multiplier += 4.0;
+                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::HOT:
+                multiplier += 3.0;
+                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::UNUSED:
+                break;
+            default:
+                assert(!"Unexpected callsite frequency");
+                break;
+        }
     }
 
     if (m_BackwardJump)
     {
         JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump);
-        multiplier *= 0.2;
+        multiplier *= 0.3;
     }
 
     if (m_IsCallsiteInNoReturnRegion)
