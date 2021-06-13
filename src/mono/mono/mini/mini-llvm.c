@@ -287,6 +287,20 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 	LLVMRealUNO
 };
 
+/* See Table 3-1 ("Comparison Predicate for CMPPD and CMPPS Instructions") in
+ * Vol. 2A of the Intel SDM.
+ */
+enum {
+    SSE_eq_ord_nosignal = 0,
+    SSE_lt_ord_signal = 1,
+    SSE_le_ord_signal = 2,
+    SSE_unord_nosignal = 3,
+    SSE_neq_unord_nosignal = 4,
+    SSE_nlt_unord_signal = 5,
+    SSE_nle_unord_signal = 6,
+    SSE_ord_nosignal = 7,
+};
+
 static MonoLLVMModule aot_module;
 
 static GHashTable *intrins_id_to_intrins;
@@ -465,6 +479,12 @@ static LLVMValueRef
 const_int1 (int v)
 {
 	return LLVMConstInt (LLVMInt1Type (), v ? 1 : 0, FALSE);
+}
+
+static LLVMValueRef
+const_int8 (int v)
+{
+	return LLVMConstInt (LLVMInt8Type (), v, FALSE);
 }
 
 static LLVMValueRef
@@ -1133,12 +1153,10 @@ simd_op_to_llvm_type (int opcode)
 	case OP_EXPAND_I4:
 		return sse_i4_t;
 	case OP_EXTRACT_I2:
-	case OP_EXTRACT_U2:
 	case OP_EXTRACTX_U2:
 	case OP_EXPAND_I2:
 		return sse_i2_t;
 	case OP_EXTRACT_I1:
-	case OP_EXTRACT_U1:
 	case OP_EXPAND_I1:
 		return sse_i1_t;
 	case OP_EXTRACT_R4:
@@ -7354,6 +7372,53 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+		case OP_EXTRACTX_U2:
+		case OP_XEXTRACT_I1:
+		case OP_XEXTRACT_I2:
+		case OP_XEXTRACT_I4:
+		case OP_XEXTRACT_I8:
+		case OP_XEXTRACT_R4:
+		case OP_XEXTRACT_R8:
+		case OP_EXTRACT_I1:
+		case OP_EXTRACT_I2:
+		case OP_EXTRACT_I4:
+		case OP_EXTRACT_I8:
+		case OP_EXTRACT_R4:
+		case OP_EXTRACT_R8: {
+			MonoTypeEnum mono_elt_t = inst_c1_type (ins);
+			LLVMTypeRef elt_t = primitive_type_to_llvm_type (mono_elt_t);
+			gboolean sext = FALSE;
+			gboolean zext = FALSE;
+			switch (mono_elt_t) {
+			case MONO_TYPE_I1: case MONO_TYPE_I2: sext = TRUE; break;
+			case MONO_TYPE_U1: case MONO_TYPE_U2: zext = TRUE; break;
+			}
+			LLVMValueRef element_ix = NULL;
+			switch (ins->opcode) {
+			case OP_XEXTRACT_I1:
+			case OP_XEXTRACT_I2:
+			case OP_XEXTRACT_I4:
+			case OP_XEXTRACT_R4:
+			case OP_XEXTRACT_R8:
+			case OP_XEXTRACT_I8:
+				element_ix = rhs;
+				break;
+			default:
+				element_ix = const_int32 (ins->inst_c0);
+			}
+			LLVMTypeRef lhs_t = LLVMTypeOf (lhs);
+			int vec_width = mono_llvm_get_prim_size_bits (lhs_t);
+			int elem_width = mono_llvm_get_prim_size_bits (elt_t);
+			LLVMTypeRef ret_t = LLVMVectorType (elt_t, vec_width / elem_width);
+			LLVMValueRef src = LLVMBuildBitCast (builder, lhs, ret_t, "extract");
+			LLVMValueRef result = LLVMBuildExtractElement (builder, src, element_ix, "extract");
+			if (zext)
+				result = LLVMBuildZExt (builder, result, i4_t, "extract_zext");
+			else if (sext)
+				result = LLVMBuildSExt (builder, result, i4_t, "extract_sext");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_EXPAND_I1:
 		case OP_EXPAND_I2:
 		case OP_EXPAND_I4:
@@ -7718,44 +7783,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 
 			values [ins->dreg] = LLVMBuildSExt (builder, pcmp, retType, "");
-			break;
-		}
-		case OP_EXTRACT_R4:
-		case OP_EXTRACT_R8:
-		case OP_EXTRACT_I8:
-		case OP_EXTRACT_I4:
-		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
-		case OP_EXTRACTX_U2:
-		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1: {
-			LLVMTypeRef t;
-			gboolean zext = FALSE;
-
-			t = simd_op_to_llvm_type (ins->opcode);
-
-			switch (ins->opcode) {
-			case OP_EXTRACT_R4:
-			case OP_EXTRACT_R8:
-			case OP_EXTRACT_I8:
-			case OP_EXTRACT_I4:
-			case OP_EXTRACT_I2:
-			case OP_EXTRACT_I1:
-				break;
-			case OP_EXTRACT_U2:
-			case OP_EXTRACTX_U2:
-			case OP_EXTRACT_U1:
-				zext = TRUE;
-				break;
-			default:
-				t = LLVMInt32Type ();
-				g_assert_not_reached ();
-			}
-
-			lhs = LLVMBuildBitCast (builder, lhs, t, "");
-			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), "");
-			if (zext)
-				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), "");
 			break;
 		}
 		case OP_XINSERT_I2: {
@@ -8313,36 +8340,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE_SHUFFLE: {
-			LLVMValueRef shuffle_vec = create_const_vector_4_i32 (
-				((ins->inst_c0 >> 0) & 0x3) + 0, // take two elements from lhs
-				((ins->inst_c0 >> 2) & 0x3) + 0, 
-				((ins->inst_c0 >> 4) & 0x3) + 4, // and two from rhs
-				((ins->inst_c0 >> 6) & 0x3) + 4);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, shuffle_vec, "");
-			break;
-		}
-
-		case OP_SSE2_SHUFFLE: {
-			LLVMValueRef right_vec;
-			LLVMValueRef shuffle_vec;
-			if (ins->inst_c1 == MONO_TYPE_R8) {
-				right_vec = rhs;
-				shuffle_vec = create_const_vector_2_i32 (
-					((ins->inst_c0 >> 0) & 0x1) + 0,
-					((ins->inst_c0 >> 1) & 0x1) + 2);
-			} else {
-				right_vec = LLVMGetUndef (LLVMVectorType (LLVMInt32Type (), 4));
-				shuffle_vec = create_const_vector_4_i32 (
-					(ins->inst_c0 >> 0) & 0x3,
-					(ins->inst_c0 >> 2) & 0x3, 
-					(ins->inst_c0 >> 4) & 0x3,
-					(ins->inst_c0 >> 6) & 0x3);
-			}
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, right_vec, shuffle_vec, "");
-			break;
-		}
-
 		case OP_SSE_OR: {
 			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
 			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
@@ -8418,30 +8415,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE_CMPSS:
 		case OP_SSE2_CMPSD: {
 			int imm = -1;
+			gboolean swap = FALSE;
 			switch (ins->inst_c0) {
-			case CMP_EQ: imm = 0; break;
-			case CMP_GT: imm = 6; break;
-			case CMP_GE: imm = 5; break;
-			case CMP_LT: imm = 1; break;
-			case CMP_LE: imm = 2; break;
-			case CMP_NE: imm = 4; break;
-			case CMP_ORD: imm = 7; break;
-			case CMP_UNORD: imm = 3; break;
+			case CMP_EQ: imm = SSE_eq_ord_nosignal; break;
+			case CMP_GT: imm = SSE_lt_ord_signal; swap = TRUE; break;
+			case CMP_GE: imm = SSE_le_ord_signal; swap = TRUE; break;
+			case CMP_LT: imm = SSE_lt_ord_signal; break;
+			case CMP_LE: imm = SSE_le_ord_signal; break;
+			case CMP_GT_UN: imm = SSE_nle_unord_signal; break;
+			case CMP_GE_UN: imm = SSE_nlt_unord_signal; break;
+			case CMP_LT_UN: imm = SSE_nle_unord_signal; swap = TRUE; break;
+			case CMP_LE_UN: imm = SSE_nlt_unord_signal; swap = TRUE; break;
+			case CMP_NE: imm = SSE_neq_unord_nosignal; break;
+			case CMP_ORD: imm = SSE_ord_nosignal; break;
+			case CMP_UNORD: imm = SSE_unord_nosignal; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef cmp = LLVMConstInt (LLVMInt8Type (), imm, FALSE);
 			LLVMValueRef args [] = { lhs, rhs, cmp };
-			switch (ins->opcode) {
-			case OP_SSE_CMPSS:
-				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSS, args, "");
-				break;
-			case OP_SSE2_CMPSD:
-				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSD, args, "");
-				break;
-			default:
-				g_assert_not_reached ();
-				break;
+			if (swap) {
+				args [0] = rhs;
+				args [1] = lhs;
 			}
+			IntrinsicId id = (IntrinsicId) 0;
+			switch (ins->opcode) {
+			case OP_SSE_CMPSS: id = INTRINS_SSE_CMPSS; break;
+			case OP_SSE2_CMPSD: id = INTRINS_SSE_CMPSD; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 		case OP_SSE_COMISS: {
@@ -8778,50 +8780,50 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSE_SHUFPS:
 		case OP_SSE2_SHUFPD:
 		case OP_SSE2_PSHUFD:
 		case OP_SSE2_PSHUFHW:
 		case OP_SSE2_PSHUFLW: {
-			LLVMBasicBlockRef bbs [256 + 1];
-			LLVMValueRef switch_ins;
-			LLVMValueRef v1, v2, mask;
-			LLVMValueRef phi_values [256 + 1];
-			int ncases;
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef l = lhs;
+			LLVMValueRef r = rhs;
+			LLVMValueRef ctl = arg3;
+			const char *oname = "";
+			int ncases = 0;
 
-			// FIXME: Optimize constant shuffle mask
-
-			if (ins->opcode == OP_SSE2_SHUFPD) {
-				/* 3 parameter version */
-				v1 = lhs;
-				v2 = rhs;
-				mask = values [ins->sreg3];
-				ncases = 4;
-			} else {
-				/* 2 parameter version */
-				v1 = v2 = lhs;
-				mask = rhs;
-				ncases = 256;
+			switch (ins->opcode) {
+			case OP_SSE_SHUFPS: ncases = 256; break;
+			case OP_SSE2_SHUFPD: ncases = 4; break;
+			case OP_SSE2_PSHUFD: case OP_SSE2_PSHUFHW: case OP_SSE2_PSHUFLW: ncases = 256; r = lhs; ctl = rhs; break;
 			}
 
-			for (int i = 0; i < ncases; ++i)
-				bbs [i] = gen_bb (ctx, "PSHUFHW_CASE_BB");
-			cbb = gen_bb (ctx, "PSHUFHW_COND_BB");
-			/* No default case */
-			switch_ins = LLVMBuildSwitch (builder, mask, bbs [0], 0);
-			for (int i = 0; i < ncases; ++i) {
-				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
-				LLVMPositionBuilderAtEnd (builder, bbs [i]);
+			switch (ins->opcode) {
+			case OP_SSE_SHUFPS: oname = "sse_shufps"; break;
+			case OP_SSE2_SHUFPD: oname = "sse2_shufpd"; break;
+			case OP_SSE2_PSHUFD: oname = "sse2_pshufd"; break;
+			case OP_SSE2_PSHUFHW: oname = "sse2_pshufhw"; break;
+			case OP_SSE2_PSHUFLW: oname = "sse2_pshuflw"; break;
+			}
 
-				/* Convert the x86 shuffle mask to LLVM's */
-				guint32 imask = i;
-				int mask_values [8];
-				int mask_len = 0;
+			ctl = LLVMBuildAnd (builder, ctl, const_int32 (ncases - 1), "");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, ncases, ctl, ret_t, oname);
+			int mask_values [8];
+			int mask_len = 0;
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
 				switch (ins->opcode) {
+				case OP_SSE_SHUFPS:
+					mask_len = 4;
+					mask_values [0] = ((i >> 0) & 0x3) + 0; // take two elements from lhs
+					mask_values [1] = ((i >> 2) & 0x3) + 0;
+					mask_values [2] = ((i >> 4) & 0x3) + 4; // and two from rhs
+					mask_values [3] = ((i >> 6) & 0x3) + 4;
+					break;
 				case OP_SSE2_SHUFPD:
-					/* Bit 0 selects v1[0] or v1[1], bit 1 selects v2[0] or v2[1] */
 					mask_len = 2;
-					mask_values [0] = ((imask >> 0) & 1);
-					mask_values [1] = ((imask >> 1) & 1) + 2;
+					mask_values [0] = ((i >> 0) & 0x1) + 0;
+					mask_values [1] = ((i >> 1) & 0x1) + 2;
 					break;
 				case OP_SSE2_PSHUFD:
 					/*
@@ -8830,7 +8832,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					 */
 					mask_len = 4;
 					for (int j = 0; j < 4; ++j) {
-						int windex = (imask >> (j * 2)) & 0x3;
+						int windex = (i >> (j * 2)) & 0x3;
 						mask_values [j] = windex;
 					}
 					break;
@@ -8844,7 +8846,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					for (int j = 0; j < 4; ++j)
 						mask_values [j] = j;
 					for (int j = 0; j < 4; ++j) {
-						int windex = (imask >> (j * 2)) & 0x3;
+						int windex = (i >> (j * 2)) & 0x3;
 						mask_values [j + 4] = 4 + windex;
 					}
 					break;
@@ -8854,21 +8856,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					for (int j = 0; j < 4; ++j)
 						mask_values [j + 4] = j + 4;
 					for (int j = 0; j < 4; ++j) {
-						int windex = (imask >> (j * 2)) & 0x3;
+						int windex = (i >> (j * 2)) & 0x3;
 						mask_values [j] = windex;
 					}
 					break;
-				default:
-					g_assert_not_reached ();
-					break;
 				}
-				phi_values [i] = LLVMBuildShuffleVector (builder, v1, v2, create_const_vector_i32 (mask_values, mask_len), "");
-				LLVMBuildBr (builder, cbb);
+				LLVMValueRef mask = create_const_vector_i32 (mask_values, mask_len);
+				LLVMValueRef result = LLVMBuildShuffleVector (builder, l, r, mask, oname);
+				immediate_unroll_commit (&ictx, i, result);
 			}
-
-			LLVMPositionBuilderAtEnd (builder, cbb);
-			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
-			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, ncases);
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (ret_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
@@ -8880,10 +8879,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_SSE3_MOVDDUP_MEM: {
-			int mask [] = { 0, 0 };
-			LLVMTypeRef t = type_to_sse_type (ins->inst_c1);
-			LLVMValueRef value = mono_llvm_build_load (builder, convert (ctx, lhs, LLVMPointerType (t, 0)), "", FALSE);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, value, LLVMGetUndef (LLVMTypeOf (value)), create_const_vector_i32 (mask, 2), "");
+			LLVMValueRef undef = LLVMGetUndef (v128_r8_t);
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (r8_t, 0));
+			LLVMValueRef elem = mono_llvm_build_aligned_load (builder, addr, "sse3_movddup_mem", FALSE, 1);
+			LLVMValueRef val = LLVMBuildInsertElement (builder, undef, elem, const_int32 (0), "sse3_movddup_mem");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, undef, LLVMConstNull (LLVMVectorType (i4_t, 2)), "sse3_movddup_mem");
 			break;
 		}
 		case OP_SSE3_MOVSHDUP: {
@@ -8941,15 +8941,51 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_DPPS_IMM: {
-			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_DPPS, args, dname);
-			break;
-		}
-
-		case OP_SSE41_DPPD_IMM: {
-			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_DPPD, args, dname);
+		case OP_SSE41_DPPS:
+		case OP_SSE41_DPPD: {
+			/* Bits 0, 1, 4, 5 are meaningful for the control mask
+			 * in dppd; all bits are meaningful for dpps.
+			 */
+			LLVMTypeRef ret_t = NULL;
+			LLVMValueRef mask = NULL;
+			int mask_bits = 0;
+			int high_shift = 0;
+			int low_mask = 0;
+			IntrinsicId iid = (IntrinsicId) 0;
+			const char *oname = "";
+			switch (ins->opcode) {
+			case OP_SSE41_DPPS:
+				ret_t = v128_r4_t;
+				mask = const_int8 (0xff); // 0b11111111
+				mask_bits = 8;
+				high_shift = 4;
+				low_mask = 0xf;
+				iid = INTRINS_SSE_DPPS;
+				oname = "sse41_dpps";
+				break;
+			case OP_SSE41_DPPD:
+				ret_t = v128_r8_t;
+				mask = const_int8 (0x33); // 0b00110011
+				mask_bits = 4;
+				high_shift = 2;
+				low_mask = 0x3;
+				iid = INTRINS_SSE_DPPD;
+				oname = "sse41_dppd";
+				break;
+			}
+			LLVMValueRef args [] = { lhs, rhs, NULL };
+			LLVMValueRef index = LLVMBuildAnd (builder, convert (ctx, arg3, i1_t), mask, oname);
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 1 << mask_bits, index, ret_t, oname);
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int imm = ((i >> high_shift) << 4) | (i & low_mask);
+				args [2] = const_int8 (imm);
+				LLVMValueRef result = call_intrins (ctx, iid, args, dname);
+				immediate_unroll_commit (&ictx, imm, result);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (ret_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
@@ -8980,19 +9016,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_BLEND_IMM: {
-			int nelem = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			g_assert(nelem >= 2 && nelem <= 8); // I2, U2, R4, R8
-			
-			int mask_values [8];
-			for (int i = 0; i < nelem; i++) {
-				// n-bit in inst_c0 (control byte) is set to 1
-				gboolean bit_set = ((ins->inst_c0 & ( 1 << i )) >> i);
-				mask_values [i] = i + (bit_set ? 1 : 0) * nelem;
+		case OP_SSE41_BLEND: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			int nelem = LLVMGetVectorSize (ret_t);
+			g_assert (nelem >= 2 && nelem <= 8); // I2, U2, R4, R8
+			int unique_ctl_patterns = 1 << nelem;
+			int ctlmask = unique_ctl_patterns - 1;
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			ctl = LLVMBuildAnd (builder, ctl, const_int8 (ctlmask), "sse41_blend");
+
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, unique_ctl_patterns, ctl, ret_t, "sse41_blend");
+			int i = 0;
+			int mask_values [MAX_VECTOR_ELEMS] = { 0 };
+			while (immediate_unroll_next (&ictx, &i)) {
+				for (int lane = 0; lane < nelem; ++lane) {
+					// n-bit in inst_c0 (control byte) is set to 1
+					gboolean bit_set = (i & (1 << lane)) >> lane;
+					mask_values [lane] = lane + (bit_set ? nelem : 0);
+				}
+				LLVMValueRef mask = create_const_vector_i32 (mask_values, nelem);
+				LLVMValueRef result = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "sse41_blend");
+				immediate_unroll_commit (&ictx, i, result);
 			}
-			
-			LLVMValueRef mask = create_const_vector_i32 (mask_values, nelem);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "");
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (ret_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
@@ -9213,24 +9261,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildZExt (builder, cmp_zero, LLVMInt8Type (), "");
 			break;
 		}
-		case OP_XEXTRACT_I32:
-		case OP_XEXTRACT_I64:
-		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_R4: {
-			LLVMTypeRef rhst = LLVMTypeOf (rhs);
-			LLVMValueRef mask = NULL;
-			switch (ins->opcode) {
-			case OP_XEXTRACT_I32: case OP_XEXTRACT_R4:
-				mask = LLVMConstInt (rhst, 0x3, FALSE); break;
-			case OP_XEXTRACT_I64: case OP_XEXTRACT_R8:
-				mask = LLVMConstInt (rhst, 0x1, FALSE); break;
-			default:
-				g_assert_not_reached ();
-			}
-			LLVMValueRef selector = LLVMBuildAnd (builder, rhs, mask, "");
-			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, selector, "");
-			break;
-		}
 		case OP_POPCNT32:
 			values [ins->dreg] = call_intrins (ctx, INTRINS_CTPOP_I32, &lhs, "");
 			break;
@@ -9301,66 +9331,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64)
 		case OP_LZCNT32:
 		case OP_LZCNT64: {
-			LLVMValueRef args [2];
-			args [0] = lhs;
-			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
+			IntrinsicId iid = ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
+			LLVMValueRef args [] = { lhs, const_int1 (FALSE) };
+			values [ins->dreg] = call_intrins (ctx, iid, args, "");
 			break;
 		}
 #endif
 
 #if defined(TARGET_ARM64)
-		case OP_EXTRACT_VAR_I1:
-		case OP_EXTRACT_VAR_U1:
-		case OP_EXTRACT_VAR_I2:
-		case OP_EXTRACT_VAR_U2:
-		case OP_EXTRACT_VAR_I4:
-		case OP_EXTRACT_VAR_R4:
-		case OP_EXTRACT_VAR_R8:
-		case OP_EXTRACT_VAR_I8:
-		case OP_EXTRACT_U1:
-		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U2:
-		case OP_EXTRACT_I2:
-		case OP_EXTRACT_I4:
-		case OP_EXTRACT_I8:
-		case OP_EXTRACT_R4:
-		case OP_EXTRACT_R8: {
-			gboolean sext = FALSE;
-			gboolean zext = FALSE;
-			switch (ins->opcode) {
-			case OP_EXTRACT_U1: case OP_EXTRACT_U2: zext = TRUE; break;
-			case OP_EXTRACT_I1: case OP_EXTRACT_I2: sext = TRUE; break;
-			case OP_EXTRACT_VAR_U1: case OP_EXTRACT_VAR_U2: zext = TRUE; break;
-			case OP_EXTRACT_VAR_I1: case OP_EXTRACT_VAR_I2: sext = TRUE; break;
-			}
-			LLVMValueRef element_ix = NULL;
-			switch (ins->opcode) {
-			case OP_EXTRACT_VAR_I1:
-			case OP_EXTRACT_VAR_U1:
-			case OP_EXTRACT_VAR_I2:
-			case OP_EXTRACT_VAR_U2:
-			case OP_EXTRACT_VAR_I4:
-			case OP_EXTRACT_VAR_R4:
-			case OP_EXTRACT_VAR_R8:
-			case OP_EXTRACT_VAR_I8:
-				element_ix = rhs;
-				break;
-			default:
-				element_ix = const_int32 (ins->inst_c0);
-			}
-			LLVMValueRef result = LLVMBuildExtractElement (builder, lhs, element_ix, "extract");
-			/* TODO: Scalar types smaller than i32 seem to be
-			 * normalized to i32 via zero or sign extension.
-			 * Is this still necessary?
-			 */
-			if (zext)
-				result = LLVMBuildZExt (builder, result, i4_t, "extract_zext");
-			else if (sext)
-				result = LLVMBuildSExt (builder, result, i4_t, "extract_sext");
-			values [ins->dreg] = result;
-			break;
-		}
+
 		case OP_XOP_I4_I4:
 		case OP_XOP_I8_I8: {
 			IntrinsicId id = (IntrinsicId)ins->inst_c0;

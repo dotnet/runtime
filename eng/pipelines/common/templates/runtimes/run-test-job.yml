@@ -326,6 +326,7 @@ jobs:
         osSubgroup: ${{ parameters.osSubgroup}}
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)

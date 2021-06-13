@@ -194,7 +194,7 @@
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
       <_ProjectsToBuild Include="testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 

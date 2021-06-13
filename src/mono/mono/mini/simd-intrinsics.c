@@ -388,6 +388,10 @@ typedef MonoInst * (* EmitIntrinsicFn) (
 	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
 	gboolean is_64bit);
 
+static const IntrinGroup unsupported_intrin_group [] = {
+	{ "", 0, unsupported, sizeof (unsupported) },
+};
+
 static MonoInst *
 emit_hardware_intrinsics (
 	MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
@@ -395,9 +399,8 @@ emit_hardware_intrinsics (
 	EmitIntrinsicFn custom_emit)
 {
 	MonoClass *klass = cmethod->klass;
-	const IntrinGroup *intrin_group = NULL;
+	const IntrinGroup *intrin_group = unsupported_intrin_group;
 	gboolean is_64bit = FALSE;
-	int id = -1;
 	int groups_size = groups_size_bytes / sizeof (groups [0]);
 	for (int i = 0; i < groups_size; ++i) {
 		const IntrinGroup *group = &groups [i];
@@ -407,31 +410,30 @@ emit_hardware_intrinsics (
 		}
 	}
 
-	const SimdIntrinsic *info = NULL;
-	MonoInst *ins = NULL;
 	gboolean supported = FALSE;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	int id = -1;
 	uint16_t op = 0;
 	uint16_t c0 = 0;
-	if (intrin_group) {
-		const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
-		int intrinsics_size = intrin_group->intrinsics_size;
-		MonoCPUFeatures feature = intrin_group->feature;
-
+	const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
+	int intrinsics_size = intrin_group->intrinsics_size;
+	MonoCPUFeatures feature = intrin_group->feature;
+	const SimdIntrinsic *info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
+	{
+		if (!info)
+			goto support_probe_complete;
+		id = info->id;
 		// Hardware intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg) && !intrin_group->jit_supported)
 			goto support_probe_complete;
 
-		info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
-		if (!info)
-			goto support_probe_complete;
-
-		if (feature)
-			supported = ((mini_get_cpu_features (cfg) & feature) != 0) && (intrin_group->intrinsics != unsupported);
+		if (intrin_group->intrinsics == unsupported)
+			supported = FALSE;
+		else if (feature)
+			supported = (mini_get_cpu_features (cfg) & feature) != 0;
 		else
 			supported = TRUE;
 
-		id = info->id;
 
 		op = info->default_op;
 		c0 = info->default_instc0;
@@ -457,16 +459,16 @@ emit_hardware_intrinsics (
 			op = info->floating_op;
 			c0 = info->floating_instc0;
 		}
-
 	}
 support_probe_complete:
 	if (id == SN_get_IsSupported) {
+		MonoInst *ins = NULL;
 		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 		return ins;
 	}
 	if (!supported) {
 		// Can't emit non-supported llvm intrinsics
-		if (!intrin_group || cfg->method != cmethod) {
+		if (cfg->method != cmethod) {
 			// Keep the original call so we end up in the intrinsic method
 			return NULL;
 		} else {
@@ -496,6 +498,27 @@ emit_vector_create_elementwise (
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+static int
+type_to_xextract_op (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1: case MONO_TYPE_U1: return OP_XEXTRACT_I1;
+	case MONO_TYPE_I2: case MONO_TYPE_U2: return OP_XEXTRACT_I2;
+	case MONO_TYPE_I4: case MONO_TYPE_U4: return OP_XEXTRACT_I4;
+	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_XEXTRACT_I8;
+	case MONO_TYPE_R4: return OP_XEXTRACT_R4;
+	case MONO_TYPE_R8: return OP_XEXTRACT_R8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_XEXTRACT_I8;
+#else
+		return OP_XEXTRACT_I4;
+#endif
+	default: g_assert_not_reached ();
+	}
+}
 
 static guint16 sri_vector_methods [] = {
 	SN_AsByte,
@@ -759,48 +782,11 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			return NULL;
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "IndexOutOfRangeException");
-		int opcode = -1;
-		int dreg;
-		gboolean is64 = FALSE;
-		switch (etype->type) {
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			opcode = OP_XEXTRACT_I64;
-			is64 = TRUE;
-			dreg = alloc_lreg (cfg);
-			break;
-		case MONO_TYPE_R8:
-			opcode = OP_XEXTRACT_R8;
-			dreg = alloc_freg (cfg);
-			break;
-		case MONO_TYPE_R4:
-			g_assert (cfg->r4fp);
-			opcode = OP_XEXTRACT_R4;
-			dreg = alloc_freg (cfg);
-			break;
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-			opcode = OP_XEXTRACT_I64;
-			is64 = TRUE;
-			dreg = alloc_lreg (cfg);
-#else
-			opcode = OP_XEXTRACT_I32;
-			dreg = alloc_ireg (cfg);
-#endif
-			break;
-		default:
-			opcode = OP_XEXTRACT_I32;
-			dreg = alloc_ireg (cfg);
-			break;
-		}
-		MONO_INST_NEW (cfg, ins, opcode);
-		ins->dreg = dreg;
-		ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		ins->sreg2 = args [1]->dreg;
-		ins->inst_c0 = etype->type;
-		mini_type_to_eval_stack_type (cfg, etype, ins);
-		MONO_ADD_INS (cfg->cbb, ins);
+		MonoTypeEnum ty = etype->type;
+		int opcode = type_to_xextract_op (ty);
+		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
+		MonoInst *ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
+		ins->inst_c1 = ty;
 		return ins;
 	}
 	case SN_ctor:
@@ -1018,29 +1004,6 @@ emit_invalid_operation (MonoCompile *cfg, const char* message)
 }
 
 #ifdef TARGET_ARM64
-
-static int
-type_to_extract_var_op (MonoTypeEnum type)
-{
-	switch (type) {
-	case MONO_TYPE_I1: return OP_EXTRACT_VAR_U1;
-	case MONO_TYPE_U1: return OP_EXTRACT_VAR_I1;
-	case MONO_TYPE_I2: return OP_EXTRACT_VAR_U2;
-	case MONO_TYPE_U2: return OP_EXTRACT_VAR_I2;
-	case MONO_TYPE_I4: case MONO_TYPE_U4: return OP_EXTRACT_VAR_I4;
-	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_EXTRACT_VAR_I8;
-	case MONO_TYPE_R4: return OP_EXTRACT_VAR_R4;
-	case MONO_TYPE_R8: return OP_EXTRACT_VAR_R8;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-		return OP_EXTRACT_VAR_I8;
-#else
-		return OP_EXTRACT_VAR_I4;
-#endif
-	default: g_assert_not_reached ();
-	}
-}
 
 static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingSignCount},
@@ -1578,7 +1541,8 @@ emit_arm64_intrinsics (
 			switch (id) {
 			case SN_DuplicateSelectedScalarToVector128:
 			case SN_DuplicateSelectedScalarToVector64: {
-				MonoInst *ins = emit_simd_ins (cfg, ret_klass, type_to_extract_var_op (rtype->type), args [0]->dreg, args [1]->dreg);
+				MonoInst *ins = emit_simd_ins (cfg, ret_klass, type_to_xextract_op (rtype->type), args [0]->dreg, args [1]->dreg);
+				ins->inst_c1 = arg0_type;
 				scalar_src_reg = ins->dreg;
 				break;
 			}
@@ -1586,7 +1550,7 @@ emit_arm64_intrinsics (
 			return emit_simd_ins (cfg, ret_klass, type_to_expand_op (rtype), scalar_src_reg, -1);
 		}
 		case SN_Extract: {
-			int extract_op = type_to_extract_var_op (arg0_type);
+			int extract_op = type_to_xextract_op (arg0_type);
 			MonoInst *ins = emit_simd_ins (cfg, klass, extract_op, args [0]->dreg, args [1]->dreg);
 			ins->inst_c1 = arg0_type;
 			return ins;
@@ -1597,10 +1561,8 @@ emit_arm64_intrinsics (
 			int insert_op = 0;
 			int extract_op = 0;
 			switch (arg0_type) {
-			case MONO_TYPE_I1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_U1; break;
-			case MONO_TYPE_U1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_I1; break;
-			case MONO_TYPE_I2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_U2; break;
-			case MONO_TYPE_U2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_I2; break;
+			case MONO_TYPE_I1: case MONO_TYPE_U1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_I1; break;
+			case MONO_TYPE_I2: case MONO_TYPE_U2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_I2; break;
 			case MONO_TYPE_I4: case MONO_TYPE_U4: insert_op = OP_XINSERT_I4; extract_op = OP_EXTRACT_I4; break;
 			case MONO_TYPE_I8: case MONO_TYPE_U8: insert_op = OP_XINSERT_I8; extract_op = OP_EXTRACT_I8; break;
 			case MONO_TYPE_R4: insert_op = OP_XINSERT_R4; extract_op = OP_EXTRACT_R4; break;
@@ -1627,6 +1589,7 @@ emit_arm64_intrinsics (
 			case SN_InsertScalar: {
 				MonoInst *ins = emit_simd_ins (cfg, klass, extract_op, val_src_reg, -1);
 				ins->inst_c0 = 0;
+				ins->inst_c1 = arg0_type;
 				val_src_reg = ins->dreg;
 				break;
 			}
@@ -1782,10 +1745,10 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_CompareLessThan, OP_XCOMPARE_FP, CMP_LT},
 	{SN_CompareLessThanOrEqual, OP_XCOMPARE_FP, CMP_LE},
 	{SN_CompareNotEqual, OP_XCOMPARE_FP, CMP_NE},
-	{SN_CompareNotGreaterThan, OP_XCOMPARE_FP, CMP_LE},
-	{SN_CompareNotGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_LT},
-	{SN_CompareNotLessThan, OP_XCOMPARE_FP, CMP_GE},
-	{SN_CompareNotLessThanOrEqual, OP_XCOMPARE_FP, CMP_GT},
+	{SN_CompareNotGreaterThan, OP_XCOMPARE_FP, CMP_LE_UN},
+	{SN_CompareNotGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_LT_UN},
+	{SN_CompareNotLessThan, OP_XCOMPARE_FP, CMP_GE_UN},
+	{SN_CompareNotLessThanOrEqual, OP_XCOMPARE_FP, CMP_GT_UN},
 	{SN_CompareOrdered, OP_XCOMPARE_FP, CMP_ORD},
 	{SN_CompareScalarEqual, OP_SSE_CMPSS, CMP_EQ},
 	{SN_CompareScalarGreaterThan, OP_SSE_CMPSS, CMP_GT},
@@ -1793,10 +1756,10 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_CompareScalarLessThan, OP_SSE_CMPSS, CMP_LT},
 	{SN_CompareScalarLessThanOrEqual, OP_SSE_CMPSS, CMP_LE},
 	{SN_CompareScalarNotEqual, OP_SSE_CMPSS, CMP_NE},
-	{SN_CompareScalarNotGreaterThan, OP_SSE_CMPSS, CMP_LE},
-	{SN_CompareScalarNotGreaterThanOrEqual, OP_SSE_CMPSS, CMP_LT},
-	{SN_CompareScalarNotLessThan, OP_SSE_CMPSS, CMP_GE},
-	{SN_CompareScalarNotLessThanOrEqual, OP_SSE_CMPSS, CMP_GT},
+	{SN_CompareScalarNotGreaterThan, OP_SSE_CMPSS, CMP_LE_UN},
+	{SN_CompareScalarNotGreaterThanOrEqual, OP_SSE_CMPSS, CMP_LT_UN},
+	{SN_CompareScalarNotLessThan, OP_SSE_CMPSS, CMP_GE_UN},
+	{SN_CompareScalarNotLessThanOrEqual, OP_SSE_CMPSS, CMP_GT_UN},
 	{SN_CompareScalarOrdered, OP_SSE_CMPSS, CMP_ORD},
 	{SN_CompareScalarOrderedEqual, OP_SSE_COMISS, CMP_EQ},
 	{SN_CompareScalarOrderedGreaterThan, OP_SSE_COMISS, CMP_GT},
@@ -1874,10 +1837,10 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_CompareLessThan},
 	{SN_CompareLessThanOrEqual, OP_XCOMPARE_FP, CMP_LE},
 	{SN_CompareNotEqual, OP_XCOMPARE_FP, CMP_NE},
-	{SN_CompareNotGreaterThan, OP_XCOMPARE_FP, CMP_LE},
-	{SN_CompareNotGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_LT},
-	{SN_CompareNotLessThan, OP_XCOMPARE_FP, CMP_GE},
-	{SN_CompareNotLessThanOrEqual, OP_XCOMPARE_FP, CMP_GT},
+	{SN_CompareNotGreaterThan, OP_XCOMPARE_FP, CMP_LE_UN},
+	{SN_CompareNotGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_LT_UN},
+	{SN_CompareNotLessThan, OP_XCOMPARE_FP, CMP_GE_UN},
+	{SN_CompareNotLessThanOrEqual, OP_XCOMPARE_FP, CMP_GT_UN},
 	{SN_CompareOrdered, OP_XCOMPARE_FP, CMP_ORD},
 	{SN_CompareScalarEqual, OP_SSE2_CMPSD, CMP_EQ},
 	{SN_CompareScalarGreaterThan, OP_SSE2_CMPSD, CMP_GT},
@@ -1885,10 +1848,10 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_CompareScalarLessThan, OP_SSE2_CMPSD, CMP_LT},
 	{SN_CompareScalarLessThanOrEqual, OP_SSE2_CMPSD, CMP_LE},
 	{SN_CompareScalarNotEqual, OP_SSE2_CMPSD, CMP_NE},
-	{SN_CompareScalarNotGreaterThan, OP_SSE2_CMPSD, CMP_LE},
-	{SN_CompareScalarNotGreaterThanOrEqual, OP_SSE2_CMPSD, CMP_LT},
-	{SN_CompareScalarNotLessThan, OP_SSE2_CMPSD, CMP_GE},
-	{SN_CompareScalarNotLessThanOrEqual, OP_SSE2_CMPSD, CMP_GT},
+	{SN_CompareScalarNotGreaterThan, OP_SSE2_CMPSD, CMP_LE_UN},
+	{SN_CompareScalarNotGreaterThanOrEqual, OP_SSE2_CMPSD, CMP_LT_UN},
+	{SN_CompareScalarNotLessThan, OP_SSE2_CMPSD, CMP_GE_UN},
+	{SN_CompareScalarNotLessThanOrEqual, OP_SSE2_CMPSD, CMP_GT_UN},
 	{SN_CompareScalarOrdered, OP_SSE2_CMPSD, CMP_ORD},
 	{SN_CompareScalarOrderedEqual, OP_SSE2_COMISD, CMP_EQ},
 	{SN_CompareScalarOrderedGreaterThan, OP_SSE2_COMISD, CMP_GT},
@@ -2125,10 +2088,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_SSE) {
 		switch (id) {
 		case SN_Shuffle:
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFFLE, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant mask (generate a switch)
-			return emit_invalid_operation (cfg, "mask in Sse.Shuffle must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFPS, 0, arg0_type, fsig, args);
 		case SN_ConvertScalarToVector128Single: {
 			int op = 0;
 			switch (fsig->params [1]->type) {
@@ -2298,7 +2258,7 @@ emit_x86_intrinsics (
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PACKUS, -1, arg0_type, fsig, args);
 		case SN_Extract:
 			g_assert (arg0_type == MONO_TYPE_U2);
-			return emit_simd_ins_for_sig (cfg, klass, OP_XEXTRACT_I32, arg0_type, 0, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XEXTRACT_I4, 0, arg0_type, fsig, args);
 		case SN_Insert:
 			g_assert (arg0_type == MONO_TYPE_I2 || arg0_type == MONO_TYPE_U2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_XINSERT_I2, 0, arg0_type, fsig, args);
@@ -2467,45 +2427,42 @@ emit_x86_intrinsics (
 
 	if (feature == MONO_CPU_X86_SSE41) {
 		switch (id) {
-		case SN_DotProduct:
-			if (args [2]->opcode == OP_ICONST && arg0_type == MONO_TYPE_R4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_DPPS_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			else if (args [2]->opcode == OP_ICONST && arg0_type == MONO_TYPE_R8)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_DPPD_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant control byte (generate a switch)
-			return emit_invalid_operation (cfg, "control byte in Sse41.DotProduct must be constant");
+		case SN_DotProduct: {
+			int op = 0;
+			switch (arg0_type) {
+			case MONO_TYPE_R4: op = OP_SSE41_DPPS; break;
+			case MONO_TYPE_R8: op = OP_SSE41_DPPD; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+		}
 		case SN_MultipleSumAbsoluteDifferences:
 			if (args [2]->opcode == OP_ICONST)
 				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_MPSADBW_IMM, args [2]->inst_c0, arg0_type, fsig, args);
 			// FIXME: handle non-constant control byte (generate a switch)
 			return emit_invalid_operation (cfg, "control byte in Sse41.MultipleSumAbsoluteDifferences must be constant");
 		case SN_Blend:
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_BLEND_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant control byte (generate a switch)
-			return emit_invalid_operation (cfg, "control byte in Sse41.Blend must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_BLEND, 0, arg0_type, fsig, args);
 		case SN_BlendVariable:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_BLENDV, -1, arg0_type, fsig, args);
 		case SN_Extract: {
 			int op = 0;
 			switch (arg0_type) {
-			case MONO_TYPE_U1:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I4: op = OP_XEXTRACT_I32; break;
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8: op = OP_XEXTRACT_I64; break;
+			case MONO_TYPE_U1: op = OP_XEXTRACT_I1; break;
+			case MONO_TYPE_U4: case MONO_TYPE_I4: op = OP_XEXTRACT_I4; break;
+			case MONO_TYPE_U8: case MONO_TYPE_I8: op = OP_XEXTRACT_I8; break;
 			case MONO_TYPE_R4: op = OP_XEXTRACT_R4; break;
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
 #if TARGET_SIZEOF_VOID_P == 8
-				op = OP_XEXTRACT_I64;
+				op = OP_XEXTRACT_I8;
 #else
-				op = OP_XEXTRACT_I32;
+				op = OP_XEXTRACT_I4;
 #endif
 				break;
 			default: g_assert_not_reached(); break;
 			}
-			return emit_simd_ins_for_sig (cfg, klass, op, arg0_type, 0, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 		}
 		case SN_Insert:
 			if (args [2]->opcode == OP_ICONST)
@@ -2593,12 +2550,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_LZCNT) {
 		switch (id) {
 		case SN_LeadingZeroCount:
-			MONO_INST_NEW (cfg, ins, is_64bit ? OP_LZCNT64 : OP_LZCNT32);
-			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-			ins->sreg1 = args [0]->dreg;
-			ins->type = is_64bit ? STACK_I8 : STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ins);
-			return ins;
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_LZCNT64 : OP_LZCNT32, 0, arg0_type, fsig, args);
 		default:
 			return NULL;
 		}
