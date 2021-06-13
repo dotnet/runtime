@@ -479,6 +479,27 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
             break;
         }
+
+        case NI_VectorT128_Sum:
+        {
+            // TODO-XArch-CQ: We could support this all the way down to SSE2 and that might be
+            // worthwhile so we can accelerate cases like byte/sbyte and long/ulong
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                {
+                    // Floating-point types require SSE3.HorizontalAdd
+                    return nullptr;
+                }
+            }
+            else if (!compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+            {
+                // Integral types require SSSE3.HorizontalAdd
+                return nullptr;
+            }
+            break;
+        }
 #endif // TARGET_XARCH
 
         default:
@@ -721,30 +742,24 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
                 case NI_VectorT128_Sum:
                 {
-                    bool isFloating = varTypeIsFloating(simdBaseType);
+                    
+                    GenTree* tmp;
+                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                    int      haddCount    = genLog2(vectorLength);
 
-                    if ((isFloating && compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
-                        compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                    NamedIntrinsic horizontalAdd =
+                        varTypeIsFloating(simdBaseType) ? NI_SSE3_HorizontalAdd : NI_SSSE3_HorizontalAdd;
+
+                    for (int i = 0; i < haddCount; i++)
                     {
-                        GenTree* tmp;
-                        unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-                        int      haddCount    = genLog2(vectorLength);
-
-                        NamedIntrinsic horizontalAdd = isFloating ? NI_SSE3_HorizontalAdd : NI_SSSE3_HorizontalAdd;
-
-                        for (int i = 0; i < haddCount; i++)
-                        {
-                            op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                               nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
-                            op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType,
-                                                             simdSize);
-                        }
-
-                        return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
-                                                          simdSize);
+                        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                            nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType,
+                                                            simdSize);
                     }
 
-                    return nullptr;
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
+                                                        simdSize);
                 }
                 case NI_VectorT256_Sum:
                 {
