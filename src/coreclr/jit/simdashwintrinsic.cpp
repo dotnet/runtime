@@ -721,18 +721,23 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
                 case NI_VectorT128_Sum:
                 {
-                    if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                    bool isFloating = varTypeIsFloating(simdBaseType);
+
+                    if ((isFloating && compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
+                        compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                     {
                         GenTree* tmp;
                         unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
                         int      haddCount    = genLog2(vectorLength);
 
+                        NamedIntrinsic horizontalAdd = isFloating ? NI_SSE3_HorizontalAdd : NI_SSSE3_HorizontalAdd;
+
                         for (int i = 0; i < haddCount; i++)
                         {
                             op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                                nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
-                            op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_SSSE3_HorizontalAdd,
-                                                             simdBaseJitType, simdSize);
+                            op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType,
+                                                             simdSize);
                         }
 
                         return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
