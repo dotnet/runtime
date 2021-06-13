@@ -13637,9 +13637,6 @@ DONE_MORPHING_CHILDREN:
                         gtReverseCond(op1);
                     }
 
-                    /* Propagate gtType of tree into op1 in case it is TYP_BYTE for setcc optimization */
-                    op1->gtType = tree->gtType;
-
                     noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
                     op1->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
 
