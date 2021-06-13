@@ -153,6 +153,7 @@
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
+    <Compile Include="Serialization\SnakeCaseUnitTests.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\StreamTests.cs" />
     <Compile Include="Serialization\Stream.Collections.cs" />

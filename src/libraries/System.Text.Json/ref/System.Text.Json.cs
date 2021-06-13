@@ -156,6 +156,7 @@ namespace System.Text.Json
     {
         protected JsonNamingPolicy() { }
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy SnakeCase { get { throw null; } }
         public abstract string ConvertName(string name);
     }
     public readonly partial struct JsonProperty

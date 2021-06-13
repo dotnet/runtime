@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
@@ -26,6 +27,7 @@
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
+    <Compile Include="..\Common\JsonSnakeCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonSnakeCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
