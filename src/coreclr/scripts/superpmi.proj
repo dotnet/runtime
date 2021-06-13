@@ -87,12 +87,8 @@
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
   </ItemGroup>
-
   <!-- We're currently not using .dotnet on the Helix agents -->
   <!--
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
