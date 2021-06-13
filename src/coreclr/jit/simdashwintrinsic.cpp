@@ -742,7 +742,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
                 case NI_VectorT128_Sum:
                 {
-                    
+
                     GenTree* tmp;
                     unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
                     int      haddCount    = genLog2(vectorLength);
@@ -753,13 +753,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     for (int i = 0; i < haddCount; i++)
                     {
                         op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                            nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
-                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType,
-                                                            simdSize);
+                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Sum"));
+                        op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, horizontalAdd, simdBaseJitType, simdSize);
                     }
 
-                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType,
-                                                        simdSize);
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
                 }
                 case NI_VectorT256_Sum:
                 {
