@@ -153,8 +153,8 @@
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
-        <source>Template {0} is not provided as argument to the logging method</source>
-        <target state="new">Template {0} is not provided as argument to the logging method</target>
+        <source>Template '{0}' is not provided as argument to the logging method</source>
+        <target state="new">Template '{0}' is not provided as argument to the logging method</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
