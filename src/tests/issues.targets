@@ -2677,6 +2677,13 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
+        </ExcludeList>
+
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ThrowHelper/NonVoidThrowHelper/**">
             <Issue>https://github.com/dotnet/runtime/issues/48819</Issue>
         </ExcludeList>
