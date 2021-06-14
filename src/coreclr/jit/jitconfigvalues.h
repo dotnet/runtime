@@ -390,7 +390,7 @@ CONFIG_INTEGER(JitConservativeInliner, W("JitConservativeInliner"), 0)
 // Tested various sizes for max tracked locals. The largest value for which no throughput regression
 // could be measured was 512. Going to 1024 showed the first throughput regressions.
 // We anticipate the larger size will be needed to support better inlining.
-CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitConservativeInliner"), 512)
+CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 512)
 
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
