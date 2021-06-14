@@ -500,6 +500,26 @@ emit_vector_create_elementwise (
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 static int
+type_to_xinsert_op (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1: case MONO_TYPE_U1: return OP_XINSERT_I1;
+	case MONO_TYPE_I2: case MONO_TYPE_U2: return OP_XINSERT_I2;
+	case MONO_TYPE_I4: case MONO_TYPE_U4: return OP_XINSERT_I4;
+	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_XINSERT_I8;
+	case MONO_TYPE_R4: return OP_XINSERT_R4;
+	case MONO_TYPE_R8: return OP_XINSERT_R8;
+	case MONO_TYPE_I: case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_XINSERT_I8;
+#else
+		return OP_XINSERT_I4;
+#endif
+	default: g_assert_not_reached ();
+	}
+}
+
+static int
 type_to_xextract_op (MonoTypeEnum type)
 {
 	switch (type) {
@@ -509,8 +529,7 @@ type_to_xextract_op (MonoTypeEnum type)
 	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_XEXTRACT_I8;
 	case MONO_TYPE_R4: return OP_XEXTRACT_R4;
 	case MONO_TYPE_R8: return OP_XEXTRACT_R8;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
+	case MONO_TYPE_I: case MONO_TYPE_U:
 #if TARGET_SIZEOF_VOID_P == 8
 		return OP_XEXTRACT_I8;
 #else
@@ -1558,6 +1577,7 @@ emit_arm64_intrinsics (
 		case SN_InsertSelectedScalar:
 		case SN_InsertScalar:
 		case SN_Insert: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
 			int insert_op = 0;
 			int extract_op = 0;
 			switch (arg0_type) {
@@ -1594,7 +1614,7 @@ emit_arm64_intrinsics (
 				break;
 			}
 			}
-			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, val_src_reg);
+			MonoInst *ins = emit_simd_ins (cfg, ret_klass, insert_op, args [0]->dreg, val_src_reg);
 			ins->sreg3 = args [1]->dreg;
 			ins->inst_c1 = arg0_type;
 			return ins;
@@ -2459,11 +2479,10 @@ emit_x86_intrinsics (
 			}
 			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 		}
-		case SN_Insert:
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_INSERT, -1, arg0_type, fsig, args);
-			// FIXME: handle non-constant index (generate a switch)
-			return emit_invalid_operation (cfg, "index in Sse41.Insert must be constant");
+		case SN_Insert: {
+			int op = arg0_type == MONO_TYPE_R4 ? OP_SSE41_INSERTPS : type_to_xinsert_op (arg0_type);
+			return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+		}
 		case SN_CeilingScalar:
 		case SN_FloorScalar:
 		case SN_RoundCurrentDirectionScalar:

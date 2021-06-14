@@ -1097,7 +1097,7 @@ MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 /* sse 4.1 */
 MINI_OP(OP_SSE41_ROUNDP, "roundp", XREG, XREG, NONE) // packed, inst_c0 - mode, inst_c1 - r4 or r8
 MINI_OP(OP_SSE41_ROUNDS, "sse41_rounds", XREG, XREG, XREG) // scalar, inst_c0 - mode, inst_c1 - r4 or r8
-MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
+MINI_OP3(OP_SSE41_INSERTPS, "sse41_insertps", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_BLENDV, "sse41_blendv", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_SSE41_BLEND, "sse41_blend", XREG, XREG, XREG, IREG)
 MINI_OP(OP_SSE41_LOADANT, "sse41_loadant", XREG, XREG, NONE)
@@ -1576,8 +1576,12 @@ MINI_OP(OP_XEXTRACT_I8, "xextract_i8", LREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_R4, "xextract_r4", FREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_R8, "xextract_r8", FREG, XREG, IREG)
 
-/* Insert element into a vector */
-/* sreg1 is the vector, sreg2 is the value, sreg3 is the index */
+/* Insert an element into a vector with a variable lane index.
+ * sreg1 is the vector, sreg2 is the value, sreg3 is the index.
+ * inst_c1 is a MonoTypeEnum representing the element type, used to control
+ * sign/zero extension if conversion of sreg2 happens to be necessary.
+ * klass must be set to the MonoClass representing the return type of the op.
+ */
 MINI_OP3(OP_XINSERT_I1, "xinsert_i1", XREG, XREG, IREG, IREG)
 MINI_OP3(OP_XINSERT_I2, "xinsert_i2", XREG, XREG, IREG, IREG)
 MINI_OP3(OP_XINSERT_I4, "xinsert_i4", XREG, XREG, IREG, IREG)
