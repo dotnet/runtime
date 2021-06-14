@@ -203,20 +203,17 @@ namespace Internal.Cryptography
                 return false;
             }
 
-#if NET5_0_OR_GREATER
-            Span<byte> buffer = GC.AllocateUninitializedArray<byte>(input.Length);
-#else
-            Span<byte> buffer = new byte[input.Length];
-#endif
+            byte[] rentedBuffer = CryptoPool.Rent(input.Length);
+            Span<byte> buffer = rentedBuffer.AsSpan(0, input.Length);
+            Span<byte> decryptedBuffer = default;
 
             fixed (byte* pBuffer = buffer)
             {
-                int written = BasicSymmetricCipher.TransformFinal(input, buffer);
-
                 try
                 {
-                    Span<byte> decrypted = buffer.Slice(0, written);
-                    int unpaddedLength = GetPaddingLength(decrypted); // validates padding
+                    int transformWritten = BasicSymmetricCipher.TransformFinal(input, buffer);
+                    decryptedBuffer = buffer.Slice(0, transformWritten);
+                    int unpaddedLength = GetPaddingLength(decryptedBuffer); // validates padding
 
                     if (unpaddedLength == 0)
                     {
@@ -229,13 +226,14 @@ namespace Internal.Cryptography
                         return false;
                     }
 
-                    decrypted.Slice(0, unpaddedLength).CopyTo(output);
+                    decryptedBuffer.Slice(0, unpaddedLength).CopyTo(output);
                     bytesWritten = unpaddedLength;
                     return true;
                 }
                 finally
                 {
-                    CryptographicOperations.ZeroMemory(buffer);
+                    CryptographicOperations.ZeroMemory(decryptedBuffer);
+                    CryptoPool.Return(rentedBuffer, clearSize: 0); // ZeroMemory clears the part of the buffer that was written to.
                 }
             }
         }
