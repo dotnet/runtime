@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task NestedType()
+        public async Task NestedTypeOK()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -262,8 +262,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.LoggingMethodInNestedType.Id, diagnostics[0].Id);
+            Assert.Empty(diagnostics);
         }
 
         [Fact]

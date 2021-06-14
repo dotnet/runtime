@@ -346,6 +346,19 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public void NestedClassTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            NestedClassTestsExtensions<ABC>.NestedMiddleParentClass.NestedClass.M9(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M9", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+        }
+
+        [Fact]
         public void TemplateTests()
         {
             var logger = new MockLogger();

@@ -331,28 +331,25 @@ namespace Microsoft.Extensions.Logging.Generators
                                         if (lc == null)
                                         {
                                             // determine the namespace the class is declared in, if any
-                                            var ns = classDec.Parent as NamespaceDeclarationSyntax;
-                                            if (ns == null)
+                                            NamespaceDeclarationSyntax? namespaceParent = null;
+                                            SyntaxNode? potentialNamespaceParent = classDec.Parent;
+                                            while (potentialNamespaceParent != null && potentialNamespaceParent as NamespaceDeclarationSyntax == null)
                                             {
-                                                if (classDec.Parent is not CompilationUnitSyntax)
-                                                {
-                                                    // since this generator doesn't know how to generate a nested type...
-                                                    Diag(DiagnosticDescriptors.LoggingMethodInNestedType, classDec.Identifier.GetLocation());
-                                                    keepMethod = false;
-                                                }
+                                                potentialNamespaceParent = potentialNamespaceParent.Parent;
                                             }
-                                            else
+                                            if (potentialNamespaceParent != null && potentialNamespaceParent as NamespaceDeclarationSyntax != null)
                                             {
-                                                nspace = ns.Name.ToString();
+                                                namespaceParent = potentialNamespaceParent as NamespaceDeclarationSyntax;
+                                                nspace = namespaceParent.Name.ToString();
                                                 while (true)
                                                 {
-                                                    ns = ns.Parent as NamespaceDeclarationSyntax;
-                                                    if (ns == null)
+                                                    namespaceParent = namespaceParent.Parent as NamespaceDeclarationSyntax;
+                                                    if (namespaceParent == null)
                                                     {
                                                         break;
                                                     }
 
-                                                    nspace = $"{ns.Name}.{nspace}";
+                                                    nspace = $"{namespaceParent.Name}.{nspace}";
                                                 }
                                             }
                                         }
@@ -364,7 +361,25 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Namespace = nspace,
                                                 Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
                                                 Constraints = classDec.ConstraintClauses.ToString(),
+                                                ParentClass = null,
                                             };
+
+                                            LoggerClass currentLoggerClass = lc;
+                                            var parentLoggerClass = (classDec.Parent as ClassDeclarationSyntax);
+                                            
+                                            while (parentLoggerClass != null)
+                                            {
+                                                currentLoggerClass.ParentClass = new LoggerClass
+                                                {
+                                                    Namespace = nspace,
+                                                    Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
+                                                    Constraints = parentLoggerClass.ConstraintClauses.ToString(),
+                                                    ParentClass = null,
+                                                };
+
+                                                currentLoggerClass = currentLoggerClass.ParentClass;
+                                                parentLoggerClass = (parentLoggerClass.Parent as ClassDeclarationSyntax);
+                                            }
 
                                             lc.Methods.Add(lm);
                                         }
@@ -571,6 +586,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public string Constraints = string.Empty;
+            public LoggerClass? ParentClass = null;
         }
 
         /// <summary>
