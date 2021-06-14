@@ -48,16 +48,16 @@ namespace System.Runtime.InteropServices
             }
             lock (s_registrations)
             {
-                if (!s_registrations.TryGetValue(signal, out List<PosixSignalRegistration>? signalRegistrations))
+                if (!s_registrations.TryGetValue(signal, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
                 {
                     if (!Interop.Sys.RegisterForPosixSignal(signal, &OnPosixSignal))
                     {
                         throw new Win32Exception();
                     }
-                    signalRegistrations = new List<PosixSignalRegistration>();
+                    signalRegistrations = new List<WeakReference<PosixSignalRegistration>>();
                     s_registrations.Add(signal, signalRegistrations);
                 }
-                signalRegistrations.Add(this);
+                signalRegistrations.Add(new WeakReference<PosixSignalRegistration>(this));
             }
             _registered = true;
         }
@@ -78,23 +78,35 @@ namespace System.Runtime.InteropServices
         {
             lock (s_registrations)
             {
-                if (s_registrations.TryGetValue(signal, out List<PosixSignalRegistration>? signalRegistrations))
+                if (s_registrations.TryGetValue(signal, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
                 {
                     if (signalRegistrations.Count != 0)
                     {
-                        PosixSignalRegistration[] registrations = signalRegistrations.ToArray();
-                        // This is called on the native signal handling thread. We need to move to another thread so
-                        // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
-                        // on work triggered from the signal handling thread.
-                        // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
-                        // in case the ThreadPool is saturated.
-                        Thread handlerThread = new Thread(HandleSignal)
+                        var registrations = new PosixSignalRegistration?[signalRegistrations.Count];
+                        bool hasRegistrations = false;
+                        for (int i = 0; i < signalRegistrations.Count; i++)
                         {
-                            IsBackground = true,
-                            Name = ".NET Signal Handler"
-                        };
-                        handlerThread.Start((signal, registrations));
-                        return 1;
+                            if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration))
+                            {
+                                registrations[i] = registration;
+                                hasRegistrations = true;
+                            }
+                        }
+                        if (hasRegistrations)
+                        {
+                            // This is called on the native signal handling thread. We need to move to another thread so
+                            // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
+                            // on work triggered from the signal handling thread.
+                            // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
+                            // in case the ThreadPool is saturated.
+                            Thread handlerThread = new Thread(HandleSignal)
+                            {
+                                IsBackground = true,
+                                Name = ".NET Signal Handler"
+                            };
+                            handlerThread.Start((signal, registrations));
+                            return 1;
+                        }
                     }
                 }
             }
@@ -103,12 +115,12 @@ namespace System.Runtime.InteropServices
 
         private static void HandleSignal(object? state)
         {
-            var (signal, registrations) = ((PosixSignal, PosixSignalRegistration[]))state!;
+            var (signal, registrations) = ((PosixSignal, PosixSignalRegistration?[]))state!;
 
             PosixSignalContext ctx = new(signal);
             foreach (var registration in registrations)
             {
-                registration.Handle(ctx);
+                registration?.Handle(ctx);
             }
 
             if (!ctx.Cancel)
@@ -117,14 +129,31 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        ~PosixSignalRegistration()
+            => Dispose(false);
+
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
         {
             if (_registered)
             {
                 lock (s_registrations)
                 {
-                    List<PosixSignalRegistration> signalRegistrations = s_registrations[_signal];
-                    signalRegistrations.Remove(this);
+                    List<WeakReference<PosixSignalRegistration>> signalRegistrations = s_registrations[_signal];
+                    for (int i = 0; i < signalRegistrations.Count; i++)
+                    {
+                        if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration) &&
+                            object.ReferenceEquals(this, registration))
+                        {
+                            signalRegistrations.RemoveAt(i);
+                            break;
+                        }
+                    }
                     if (signalRegistrations.Count == 0)
                     {
                         Interop.Sys.UnregisterForPosixSignal(_signal);
@@ -139,6 +168,6 @@ namespace System.Runtime.InteropServices
         }
 
         private static volatile bool s_initialized;
-        private static Dictionary<PosixSignal, List<PosixSignalRegistration>> s_registrations = new();
+        private static Dictionary<PosixSignal, List<WeakReference<PosixSignalRegistration>>> s_registrations = new();
     }
 }
