@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices
             {
                 if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                 {
-                    throw new Win32Exception();
+                    throw new Exception(); // TODO: can this throw Win32Exception?
                 }
                 Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
                 s_initialized = true;

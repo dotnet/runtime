@@ -65,8 +65,4 @@
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
-  <ItemGroup  Condition="'$(TargetsUnix)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <Reference Include="Microsoft.Win32.Primitives" />
-  </ItemGroup>
 </Project>
