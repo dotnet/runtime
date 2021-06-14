@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
 
   <PropertyGroup>
-    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <PackagingTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\</PackagingTaskAssembly>
     <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core'">$(PackagingTaskAssembly)netcoreapp3.1\</PackagingTaskAssembly>
     <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' != 'core'">$(PackagingTaskAssembly)net472\</PackagingTaskAssembly>
@@ -14,7 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
-                      Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true')"
+                      Condition="'$(BuildAllConfigurations)' == 'true'"
                       Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
   </ItemGroup>
 
