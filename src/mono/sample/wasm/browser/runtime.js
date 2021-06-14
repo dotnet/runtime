@@ -6,18 +6,7 @@ var Module = {
     config: null,
 
     preInit: async function() {
-        await MONO.mono_wasm_load_config("./mono-config.json");
-    },
-
-    // Called once the config file is loaded. The contents of the config file
-    // are passed as a JS object within the config parameter
-    onConfigLoaded: function (config) {
-        if (!config || config.error){
-            console.log("An error occured while loading the config file");
-            return;
-        }
-
-        Module.config = config;
+        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
     },
 
     // Called when the runtime is initialized and wasm is ready
