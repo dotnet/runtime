@@ -1132,3 +1132,26 @@ mono_wasm_intern_string (MonoString *string)
 {
 	return mono_string_intern (string);
 }
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	if (!string) {
+		if (outChars)
+			*outChars = 0;
+		if (outLengthBytes)
+			*outLengthBytes = 0;
+		if (outIsInterned)
+			*outIsInterned = 1;
+		return;
+	}
+
+	if (outChars)
+		*outChars = mono_string_chars (string);
+	if (outLengthBytes)
+		*outLengthBytes = mono_string_length (str) * 2;
+	if (outIsInterned)
+		*outIsInterned = mono_string_instance_is_interned (string);
+	return;
+}
