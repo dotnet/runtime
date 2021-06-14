@@ -882,8 +882,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
     unsigned    varNum;
-    var_types   varType  = DUMMY_INIT(TYP_UNDEF); // TYP_ type
-    typeInfo    ti;                               // Verifier type.
+    var_types   varType = DUMMY_INIT(TYP_UNDEF); // TYP_ type
+    typeInfo    ti;                              // Verifier type.
     bool        typeIsNormed = false;
     FgStack     pushedStack;
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -1101,8 +1101,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     // Conservative inliner only handles these two:
                     ni = lookupNamedIntrinsic(methodHnd);
-                    if ((ni == NI_IsSupported_True) ||
-                        (ni == NI_IsSupported_False))
+                    if ((ni == NI_IsSupported_True) || (ni == NI_IsSupported_False))
                     {
                         pushedStack.PushConstant();
                     }
@@ -1149,8 +1148,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
                             case NI_System_Numerics_BitOperations_PopCount:
-                                // If first argument of Vector(64/128/256).Create is a constant - we most likely will
-                                // fold it
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                             case NI_Vector128_Create:
                             case NI_Vector256_Create:
@@ -1352,7 +1349,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (FgStack::IsConstantOrConstArg(arg0, impInlineInfo) &&
                         FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
                     {
-                        // keep stack unchanged 
+                        // keep stack unchanged
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
                     }

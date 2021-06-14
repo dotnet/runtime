@@ -1033,7 +1033,8 @@ double DefaultPolicy::DetermineMultiplier()
     {
         // Same here
         multiplier += 3.0 + m_ArgIsStructByValue;
-        JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue, multiplier);
+        JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
+                multiplier);
     }
 
     if (m_NonGenericCallsGeneric)
@@ -1135,14 +1136,16 @@ double DefaultPolicy::DetermineMultiplier()
         //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
         //
         multiplier += 4.0 + m_ArgIsExactClsSigIsNot;
-        JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier increased to %g.",
+        JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
+                "increased to %g.",
                 m_ArgIsExactClsSigIsNot, multiplier);
     }
 
     if (m_ArgIsExactCls > 0)
     {
         multiplier += m_ArgIsExactCls;
-        JITDUMP("\nCallsite passes %d arguments of exact classes.  Multiplier increased to %g.", m_ArgIsExactCls, multiplier);
+        JITDUMP("\nCallsite passes %d arguments of exact classes.  Multiplier increased to %g.", m_ArgIsExactCls,
+                multiplier);
     }
 
     if (m_ArgIsConst > 0)
@@ -1168,21 +1171,23 @@ double DefaultPolicy::DetermineMultiplier()
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
         multiplier += 2.0 + m_FoldableExpr;
-        JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr, multiplier);
+        JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
+                multiplier);
     }
 
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
         multiplier += m_FoldableExpr;
-        JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn, multiplier);
+        JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
+                multiplier);
     }
 
     if (m_DivByCns > 0)
     {
         // E.g. callee has "x / arg0" where arg0 is a const at the call site -
         // we'll avoid a very expensive DIV instruction after inlining.
-        //multiplier += 3.0 + m_DivByCns;
+        // multiplier += 3.0 + m_DivByCns;
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
@@ -1385,8 +1390,8 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     m_CalleeNativeSizeEstimate   = DetermineNativeSizeEstimate();
     m_CallsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
-    m_Multiplier                 = (JitConfig.JitConservativeInliner() > 0) ? DetermineConservativeMultiplier() : DetermineMultiplier();
-    const int threshold          = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
+    m_Multiplier = (JitConfig.JitConservativeInliner() > 0) ? DetermineConservativeMultiplier() : DetermineMultiplier();
+    const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
     // Note the DefaultPolicy estimates are scaled up by SIZE_SCALE
     JITDUMP("\ncalleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
