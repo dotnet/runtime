@@ -49,7 +49,7 @@ namespace System.Net.WebSockets.Client.Tests
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Binary, TimeOutMilliseconds, _output);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", TestPlatforms.Any & ~TestPlatforms.Android)]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoTextMessage_Success(Uri server)
         {

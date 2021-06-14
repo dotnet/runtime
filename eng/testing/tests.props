@@ -32,6 +32,23 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
+  <!-- when testing with Xharness we could host echo test server in the xharness process and avoid external server dependency -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <!-- send middleware to Helix and handle different path to it -->
+    <EchoServerMiddlewareToHelix>$(ArtifactsDir)bin/NetCoreServer/$(NetCoreAppCurrent)-$(Configuration)/NetCoreServer.dll</EchoServerMiddlewareToHelix>
+    <_NetCoreServerPath Condition="'$(HELIX_CORRELATION_PAYLOAD)' == ''">$(EchoServerMiddlewareToHelix)</_NetCoreServerPath>
+    <_NetCoreServerPath Condition="'$(HELIX_CORRELATION_PAYLOAD)' != ''">$(HELIX_CORRELATION_PAYLOAD)/xharness/middleware/NetCoreServer.dll</_NetCoreServerPath>
+
+    <AdditionalXHarnessArguments>$(AdditionalXHarnessArguments) --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_HTTP2HOST</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments>$(AdditionalXHarnessArguments) --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2SECUREHOST</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments>$(AdditionalXHarnessArguments) --web-server-middleware=$(_NetCoreServerPath),GenericHandler</AdditionalXHarnessArguments>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" 
+      Condition="'$(TargetOS)' == 'Android'" ReferenceOutputAssembly="false"/>
+  </ItemGroup>
+
   <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
   <ItemGroup Condition="'$(MonoEnvOptions)' != '' and '$(TargetsMobile)' != 'true'">
     <RunScriptCommands Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
