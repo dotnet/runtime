@@ -54,9 +54,12 @@ int SystemNative_GetPlatformSignalNumber(PosixSignal signal)
             return SIGCHLD;
     }
 
-    if (signal > 0 &&
-        signal <= NSIG &&   // Ensure we stay within the static arrays.
-        signal <= SIGRTMAX) // Runtime check for highest value.
+    if (   signal > 0
+        && signal <= NSIG      // Ensure we stay within the static arrays.
+#ifdef SIGRTMAX
+        && signal <= SIGRTMAX  // Runtime check for highest value.
+#endif
+       )
     {
         return signal;
     }
