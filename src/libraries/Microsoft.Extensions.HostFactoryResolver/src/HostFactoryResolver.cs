@@ -194,10 +194,6 @@ namespace Microsoft.Extensions.Hosting
 
             public object CreateHost()
             {
-                // Set the async local to the instance of the HostingListener so we can filter events that
-                // aren't scoped to this execution of the entry point.
-                _currentListener.Value = this;
-
                 using var subscription = DiagnosticListener.AllListeners.Subscribe(this);
 
                 // Kick off the entry point on a new thread so we don't block the current one
@@ -208,6 +204,10 @@ namespace Microsoft.Extensions.Hosting
 
                     try
                     {
+                        // Set the async local to the instance of the HostingListener so we can filter events that
+                        // aren't scoped to this execution of the entry point.
+                        _currentListener.Value = this;
+
                         var parameters = _entryPoint.GetParameters();
                         if (parameters.Length == 0)
                         {
