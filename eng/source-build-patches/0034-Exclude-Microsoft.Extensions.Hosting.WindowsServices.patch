@@ -13,9 +13,9 @@ index c5f4d2e6da1..5493f19bc19 100644
 --- a/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
 +++ b/src/libraries/Microsoft.Extensions.Hosting.WindowsServices/Directory.Build.props
 @@ -2,5 +2,8 @@
-   <Import Project="..\Directory.Build.props" />
    <PropertyGroup>
      <PackageTags>hosting</PackageTags>
+     <SupportedOSPlatforms>windows</SupportedOSPlatforms> 
 +    <!-- Source build does not support Windows. -->
 +    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
 +    <IsPackable>false</IsPackable>
