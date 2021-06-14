@@ -81,8 +81,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
                     if (DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
-                        var root_res_obj = root_res.Value?["result"];
+                        var root_res_obj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
                         var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
                         if (objRet != null)
                         {
@@ -114,8 +113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else if (DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        var root_res = await proxy.RuntimeGetProperties(sessionId, objectId, null, token);
-                        var root_res_obj = root_res.Value?["result"];
+                        var root_res_obj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
                         var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
                         if (objRet != null)
                         {

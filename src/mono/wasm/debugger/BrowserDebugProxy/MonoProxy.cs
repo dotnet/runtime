@@ -376,8 +376,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        Result result = await RuntimeGetProperties(id, objectId, args, token);
-                        SendResponse(id, result, token);
+                        var ret = await RuntimeGetPropertiesInternal(id, objectId, args, token);
+                        if (ret == null) {
+                            SendResponse(id, Result.Err($"Unable to RuntimeGetProperties '{objectId}'"), token);
+                        }
+                        else
+                            SendResponse(id, Result.OkFromObject(new { result = ret }), token);
                         return true;
                     }
 
@@ -559,7 +563,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<Result> RuntimeGetProperties(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
+        internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
         {
             var accessorPropertiesOnly = false;
             var ownProperties = false;
@@ -575,28 +579,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (objectId.Scheme)
                 {
                     case "scope":
-                        return await GetScopeProperties(id, int.Parse(objectId.Value), token);
+                    {
+                        var res = await GetScopeProperties(id, int.Parse(objectId.Value), token);
+                        return res.Value?["result"];
+                    }
                     case "valuetype":
-                        return Result.OkFromObject(new { result = await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), accessorPropertiesOnly, token)});
+                        return await sdbHelper.GetValueTypeValues(id, int.Parse(objectId.Value), accessorPropertiesOnly, token);
                     case "array":
-                        return Result.OkFromObject(new { result = await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token)});
+                        return await sdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
                     case "object":
-                        return Result.OkFromObject(new { result = await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token) });
+                        return await sdbHelper.GetObjectValues(id, int.Parse(objectId.Value), true, false, accessorPropertiesOnly, ownProperties, token);
                     case "pointer":
-                        return Result.OkFromObject(new { result = new JArray{await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)}});
+                        return new JArray{await sdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token)};
                     case "cfo_res":
                     {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(int.Parse(objectId.Value), args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
-                        return Result.OkFromObject(new { result = value_json_str != null ? (object) JArray.Parse(value_json_str) : new {} });
+                        return value_json_str != null ? JArray.Parse(value_json_str) : null;
                     }
                     default:
-                        return Result.Err($"Unable to RuntimeGetProperties '{objectId}'");
+                        return null;
 
                 }
             }
-            catch (Exception e) {
-                return Result.Err($"Unable to RuntimeGetProperties '{objectId}' - {e}");
+            catch (Exception) {
+                return null;
             }
         }
 
