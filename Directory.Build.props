@@ -202,6 +202,17 @@
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
+    <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
+    <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
+
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
+  </PropertyGroup>
+
   <!--Feature switches -->
   <PropertyGroup>
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(Configuration)' == 'Release' or '$(Configuration)' == 'Checked')">true</EnableNgenOptimization>
