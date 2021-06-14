@@ -86,6 +86,7 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root.bind(MONO);
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots.bind(MONO);
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots.bind(MONO);
+			module ["mono_wasm_load_config"] = MONO.mono_wasm_load_config.bind(MONO);
 		},
 
 		_base64Converter: {
@@ -2323,6 +2324,34 @@ var MonoSupportLib = {
 
 			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
+
+		/**
+		 * Loads the mono config file (typically called mono-config.json)
+		 *
+		 * @param {string} configFilePath - relative path to the config file
+		 */
+		mono_wasm_load_config: async function (configFilePath) {
+			// In some cases there may be no Module object (such as in some tests)
+			// so we no-op during the callback
+			const callback = typeof Module !== "undefined" ? Module['onConfigLoaded'] : (_) => {};
+		
+			const ENVIRONMENT_IS_NODE = typeof process === "object";
+			const ENVIRONMENT_IS_WEB = typeof window === "object";
+		
+			try {
+				let config = null;
+				// NOTE: when we add nodejs make sure to include the nodejs fetch package
+				if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_NODE) {
+					const configRaw = await fetch(configFilePath);
+					config = await configRaw.json();
+				} else { // shell or worker
+					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
+				}
+				callback(config);
+			} catch(e) {
+				callback({error: e});
+			}
+		}
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
@@ -2510,7 +2539,7 @@ var MonoSupportLib = {
 			assembly_b64,
 			pdb_b64
 		});
-	},
+	}
 };
 
 autoAddDeps(MonoSupportLib, '$MONO')

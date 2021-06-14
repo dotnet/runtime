@@ -6,7 +6,7 @@ var Module = {
     config: null,
 
     preInit: async function() {
-        await loadMonoConfig("./mono-config.json");
+        await MONO.mono_wasm_load_config("./mono-config.json");
     },
 
     // Called once the config file is loaded. The contents of the config file

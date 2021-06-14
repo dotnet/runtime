@@ -212,7 +212,6 @@
     <PlatformManifestFileEntry Include="binding_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="library_mono.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="js_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />

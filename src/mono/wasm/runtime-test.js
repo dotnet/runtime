@@ -211,7 +211,7 @@ var Module = {
 	printErr,
 
     preInit: async function() {
-        await loadMonoConfig("./mono-config.json");
+        await MONO.mono_wasm_load_config("./mono-config.json");
     },
 
 	onAbort: function(x) {

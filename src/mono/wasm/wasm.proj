@@ -227,7 +227,7 @@
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --pre-js runtime/js_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
@@ -248,7 +248,6 @@
                        runtime/binding_support.js; 
                        runtime/dotnet_support.js;
                        runtime/library_mono.js;
-                       runtime/js_support.js;
                        $(SystemNativeDir)\pal_random.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
