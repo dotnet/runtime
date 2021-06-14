@@ -93,6 +93,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument.Id, diagnostics[0].Id);
+            Assert.Contains("Template 'foo' is not provided as argument to the logging method", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
