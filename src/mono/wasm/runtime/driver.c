@@ -98,23 +98,22 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	int native_res_len;
+	int native_res_len = 0;
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		let str = MONO.string_decoder.copy ($0),
-			p_native_res_len = $1,
-			p_is_exception = $2;
+		var js_str = MONO.string_decoder.copy ($0);
 
 		try {
 			var res = eval (str);
-			if (res === null || res == undefined)
+			setValue ($2, 0, "i32");
+			if (res === null || res === undefined)
 				return 0;
-			res = res.toString ();
-			setValue (p_is_exception, 0, "i32");
+			else
+				res = res.toString ();
 		} catch (e) {
 			res = e.toString();
-			setValue (p_is_exception, 1, "i32");
+			setValue ($2, 1, "i32");
 			if (res === null || res === undefined)
 				res = "unknown exception";
 
@@ -130,7 +129,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
-		setValue (p_native_res_len, res.length, "i32");
+		setValue ($1, res.length, "i32");
 		return buff;
 	}, (int)str, p_native_res_len, is_exception);
 
@@ -1142,7 +1141,7 @@ mono_wasm_string_get_data (
 	if (outChars)
 		*outChars = mono_string_chars (string);
 	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (str) * 2;
+		*outLengthBytes = mono_string_length (string) * 2;
 	if (outIsInterned)
 		*outIsInterned = mono_string_instance_is_interned (string);
 	return;
