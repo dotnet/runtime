@@ -80,6 +80,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTime>("\"abc\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>("\"abc\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Guid>("\"abc\""));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte>("\"abc\""));
@@ -118,6 +119,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(sbyte))]
         [InlineData(typeof(float))]
         [InlineData(typeof(string))]
+        [InlineData(typeof(TimeSpan))]
         [InlineData(typeof(ushort))]
         [InlineData(typeof(uint))]
         [InlineData(typeof(ulong))]
@@ -303,6 +305,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset>(unexpectedString));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset?>(unexpectedString));
 
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(unexpectedString));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan?>(unexpectedString));
+
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<string>("1"));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1"));
@@ -441,6 +446,33 @@ namespace System.Text.Json.Serialization.Tests
 
             string str = JsonSerializer.Deserialize<string>(json);
             Assert.True(json.AsSpan(1, json.Length - 2).SequenceEqual(str.AsSpan()));
+        }
+
+        [Theory]
+        [InlineData("23:59:59")]
+        [InlineData("23:59:59.9")]
+        [InlineData("23:59:59.9999999")]
+        [InlineData("9999999.23:59:59.9999999")]
+        [InlineData("-9999999.23:59:59.9999999")]
+        public static void TimeSpan_Read_Success(string json)
+        {
+            TimeSpan value = JsonSerializer.Deserialize<TimeSpan>($"\"{json}\"");
+
+            Assert.Equal(TimeSpan.Parse(json), value);
+        }
+
+        [Theory]
+        [InlineData("24:00:00")]
+        [InlineData("00:60:00")]
+        [InlineData("00:00:60")]
+        [InlineData("00:00:00.00000009")]
+        [InlineData("900000000.00:00:00")]
+        [InlineData("+00:00:00")]
+        [InlineData("2021-06-18")]
+        [InlineData("1$")]
+        public static void TimeSpan_Read_Failure(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>($"\"{json}\""));
         }
     }
 }
