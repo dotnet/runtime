@@ -12,7 +12,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <Reference Include="netstandard" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.ComponentModel.Primitives" />
