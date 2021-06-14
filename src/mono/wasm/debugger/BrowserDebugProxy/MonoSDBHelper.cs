@@ -1115,440 +1115,320 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
+        public JObject CreateJObject<T>(T value, string type, string description, bool writable, string className = null, string objectId = null, string __custom_type = null, string subtype = null, bool isValueType = false, bool expanded = false, bool isEnum = false)
+        {
+            var ret = JObject.FromObject(new {
+                    value = new
+                    {
+                        type,
+                        value,
+                        description
+                    },
+                    writable
+                });
+            if (__custom_type != null)
+                ret["value"]["__custom_type"] = __custom_type;
+            if (className != null)
+                ret["value"]["className"] = className;
+            if (objectId != null)
+                ret["value"]["objectId"] = objectId;
+            if (subtype != null)
+                ret["value"]["subtype"] = subtype;
+            if (isValueType)
+                ret["value"]["isValueType"] = isValueType;
+            if (expanded)
+                ret["value"]["expanded"] = expanded;
+            if (isEnum)
+                ret["value"]["isEnum"] = isEnum;
+            return ret;
+
+        }
+        public JObject CreateJObjectForBoolean(int value)
+        {
+            return CreateJObject<bool>(value == 0 ? false : true, "boolean", value == 0 ? "false" : "true", true);
+        }
+
+        public JObject CreateJObjectForNumber<T>(T value)
+        {
+            return CreateJObject<T>(value, "number", value.ToString(), true);
+        }
+
+        public JObject CreateJObjectForChar(int value)
+        {
+            var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
+            return CreateJObject<string>(description, "symbol", description, true);
+        }
+
+        public async Task<JObject> CreateJObjectForPtr(SessionId sessionId, ElementType etype, MonoBinaryReader ret_debugger_cmd_reader, string name, CancellationToken token)
+        {
+            string type;
+            string value;
+            long valueAddress = ret_debugger_cmd_reader.ReadLong();
+            var typeId = ret_debugger_cmd_reader.ReadInt32();
+            var className = "";
+            if (etype == ElementType.FnPtr)
+                className = "(*())"; //to keep the old behavior
+            else
+                className = "(" + await GetTypeName(sessionId, typeId, token) + ")";
+
+            int pointerId = 0;
+            if (valueAddress != 0 && className != "(void*)")
+            {
+                pointerId = Interlocked.Increment(ref debugger_object_id);
+                type = "object";
+                value =  className;
+                pointerValues[pointerId] = new PointerValue(valueAddress, typeId, name);
+            }
+            else
+            {
+                type = "symbol";
+                value = className + " " + valueAddress;
+            }
+            return CreateJObject<string>(value, type, value, false, className, $"dotnet:pointer:{pointerId}", "pointer");
+        }
+
+        public async Task<JObject> CreateJObjectForString(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        {
+            var string_id = ret_debugger_cmd_reader.ReadInt32();
+            var value = await GetStringValue(sessionId, string_id, token);
+            return CreateJObject<string>(value, "string", value, false);
+        }
+
+        public async Task<JObject> CreateJObjectForArray(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        {
+            var objectId = ret_debugger_cmd_reader.ReadInt32();
+            var value = await GetClassNameFromObject(sessionId, objectId, token);
+            var length = await GetArrayLength(sessionId, objectId, token);
+            return CreateJObject<string>(null, "object", $"{value.ToString()}({length})", false, value.ToString(), "dotnet:array:" + objectId, null, "array");
+        }
+
+        public async Task<JObject> CreateJObjectForObject(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, int typeIdFromAttribute, CancellationToken token)
+        {
+            var objectId = ret_debugger_cmd_reader.ReadInt32();
+            var className = "";
+            var type_id = await GetTypeIdFromObject(sessionId, objectId, false, token);
+            className = await GetTypeName(sessionId, type_id[0], token);
+            var description = className.ToString();
+            if (await IsDelegate(sessionId, objectId, token))
+            {
+                if (typeIdFromAttribute != -1)
+                {
+                    className = await GetTypeName(sessionId, typeIdFromAttribute, token);
+                }
+
+                description = await GetDelegateMethodDescription(sessionId, objectId, token);
+                if (description == "")
+                {
+                    return CreateJObject<string>(className.ToString(), "symbol", className.ToString(), false);
+                }
+            }
+            return CreateJObject<string>(null, "object", description, false, className, $"dotnet:object:{objectId}");
+        }
+
+        public async Task<JObject> CreateJObjectForValueType(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, string name, long initialPos, CancellationToken token)
+        {
+            JObject fieldValueType = null;
+            var isEnum = ret_debugger_cmd_reader.ReadByte();
+            var isBoxed = ret_debugger_cmd_reader.ReadByte() == 1;
+            var typeId = ret_debugger_cmd_reader.ReadInt32();
+            var className = await GetTypeName(sessionId, typeId, token);
+            var description = className;
+            var numFields = ret_debugger_cmd_reader.ReadInt32();
+            var fields = await GetTypeFields(sessionId, typeId, token);
+            JArray valueTypeFields = new JArray();
+            if (className.IndexOf("System.Nullable<") == 0) //should we call something on debugger-agent to check???
+            {
+                ret_debugger_cmd_reader.ReadByte(); //ignoring the boolean type
+                var isNull = ret_debugger_cmd_reader.ReadInt32();
+                var value = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, name, false, -1, token);
+                if (isNull != 0)
+                    return value;
+                else
+                    return CreateJObject<string>(null, "object", className, false, className, null, null, "null", true);
+            }
+            for (int i = 0; i < numFields ; i++)
+            {
+                fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, token);
+                valueTypeFields.Add(fieldValueType);
+            }
+
+            long endPos = ret_debugger_cmd_reader.BaseStream.Position;
+            var valueTypeId = Interlocked.Increment(ref debugger_object_id);
+
+            ret_debugger_cmd_reader.BaseStream.Position = initialPos;
+            byte[] valueTypeBuffer = new byte[endPos - initialPos];
+            ret_debugger_cmd_reader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
+            ret_debugger_cmd_reader.BaseStream.Position = endPos;
+            valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className), valueTypeId);
+            if (AutoInvokeToString(className) || isEnum == 1) {
+                int method_id = await GetMethodIdByName(sessionId, typeId, "ToString", token);
+                var retMethod = await InvokeMethod(sessionId, valueTypeBuffer, method_id, "methodRet", token);
+                description = retMethod["value"]?["value"].Value<string>();
+                if (className.Equals("System.Guid"))
+                    description = description.ToUpper(); //to keep the old behavior
+            }
+            else if (isBoxed && numFields == 1) {
+                return fieldValueType;
+            }
+            return CreateJObject<string>(null, "object", description, false, className, $"dotnet:valuetype:{valueTypeId}", null, null, true, true, isEnum == 1);
+        }
+
+        public async Task<JObject> CreateJObjectForNull(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        {
+            string className = "";
+            ElementType variableType = (ElementType)ret_debugger_cmd_reader.ReadByte();
+            switch (variableType)
+            {
+                case ElementType.String:
+                case ElementType.Class:
+                {
+                    var type_id = ret_debugger_cmd_reader.ReadInt32();
+                    className = await GetTypeName(sessionId, type_id, token);
+                    break;
+
+                }
+                case ElementType.SzArray:
+                case ElementType.Array:
+                {
+                    ElementType byte_type = (ElementType)ret_debugger_cmd_reader.ReadByte();
+                    var rank = ret_debugger_cmd_reader.ReadInt32();
+                    if (byte_type == ElementType.Class) {
+                        var internal_type_id = ret_debugger_cmd_reader.ReadInt32();
+                    }
+                    var type_id = ret_debugger_cmd_reader.ReadInt32();
+                    className = await GetTypeName(sessionId, type_id, token);
+                    break;
+                }
+                default:
+                {
+                    var type_id = ret_debugger_cmd_reader.ReadInt32();
+                    className = await GetTypeName(sessionId, type_id, token);
+                    break;
+                }
+            }
+            return CreateJObject<string>(null, "object", className, false, className, null, null, "null");
+        }
+
         public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, MonoBinaryReader ret_debugger_cmd_reader, string name, bool isOwn, int typeIdFromAttribute, CancellationToken token)
         {
             long initialPos = ret_debugger_cmd_reader == null ? 0 : ret_debugger_cmd_reader.BaseStream.Position;
             ElementType etype = (ElementType)ret_debugger_cmd_reader.ReadByte();
-            JObject fieldValueType = null;
             JObject ret = null;
             switch (etype) {
+                case ElementType.I:
+                case ElementType.U:
                 case ElementType.Void:
+                case (ElementType)ValueTypeId.Type:
+                case (ElementType)ValueTypeId.VType:
+                case (ElementType)ValueTypeId.FixedArray:
                     ret = new JObject{{"Type", "void"}};
                     break;
                 case ElementType.Boolean:
                 {
                     var value = ret_debugger_cmd_reader.ReadInt32();
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "boolean",
-                                value = value == 0 ? false : true,
-                                description = value == 0 ? "false" : "true"
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForBoolean(value);
                     break;
                 }
                 case ElementType.I1:
                 {
                     var value = ret_debugger_cmd_reader.ReadSByte();
-                    return JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
                 }
                 case ElementType.I2:
                 case ElementType.I4:
                 {
                     var value = ret_debugger_cmd_reader.ReadInt32();
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<int>(value);
                     break;
                 }
                 case ElementType.U1:
                 {
                     var value = ret_debugger_cmd_reader.ReadUByte();
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<int>(value);
                     break;
                 }
                 case ElementType.U2:
                 {
                     var value = ret_debugger_cmd_reader.ReadUShort();
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<int>(value);
                     break;
                 }
                 case ElementType.U4:
                 {
                     var value = ret_debugger_cmd_reader.ReadUInt32();
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<uint>(value);
                     break;
                 }
                 case ElementType.R4:
                 {
                     float value = BitConverter.Int32BitsToSingle(ret_debugger_cmd_reader.ReadInt32());
-                    return JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<float>(value);
+                    break;
                 }
                 case ElementType.Char:
                 {
                     var value = ret_debugger_cmd_reader.ReadInt32();
-                    var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "symbol",
-                                value = description,
-                                description
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForChar(value);
                     break;
                 }
                 case ElementType.I8:
                 {
                     long value = ret_debugger_cmd_reader.ReadLong();
-                    return JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<long>(value);
+                    break;
                 }
                 case ElementType.U8:
                 {
                     ulong high = (ulong) ret_debugger_cmd_reader.ReadInt32();
                     ulong low = (ulong) ret_debugger_cmd_reader.ReadInt32();
                     var value = ((high << 32) | low);
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<ulong>(value);
                     break;
                 }
                 case ElementType.R8:
                 {
                     double value = ret_debugger_cmd_reader.ReadDouble();
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "number",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = true,
-                            name
-                        });
+                    ret = CreateJObjectForNumber<double>(value);
                     break;
                 }
-                case ElementType.I:
-                case ElementType.U:
-                    // FIXME: The client and the debuggee might have different word sizes
-                    ret = new JObject{{"Type", "void"}};
-                    break;
                 case ElementType.FnPtr:
                 case ElementType.Ptr:
                 {
-                    string type;
-                    string value;
-                    long valueAddress = ret_debugger_cmd_reader.ReadLong();
-                    var typeId = ret_debugger_cmd_reader.ReadInt32();
-                    var className = "";
-                    if (etype == ElementType.FnPtr)
-                        className = "(*())"; //to keep the old behavior
-                    else
-                        className = "(" + await GetTypeName(sessionId, typeId, token) + ")";
-
-                    int pointerId = 0;
-                    if (valueAddress != 0 && className != "(void*)")
-                    {
-                        pointerId = Interlocked.Increment(ref debugger_object_id);
-                        type = "object";
-                        value =  className;
-                        pointerValues[pointerId] = new PointerValue(valueAddress, typeId, name);
-                    }
-                    else
-                    {
-                        type = "symbol";
-                        value = className + " " + valueAddress;
-                    }
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type,
-                                __custom_type = "pointer",
-                                value = value,
-                                description = value,
-                                className,
-                                objectId = $"dotnet:pointer:{pointerId}"
-                            },
-                            writable = false,
-                            name
-                        });
+                    ret = await CreateJObjectForPtr(sessionId, etype, ret_debugger_cmd_reader, name, token);
                     break;
                 }
                 case ElementType.String:
                 {
-                    var string_id = ret_debugger_cmd_reader.ReadInt32();
-                    var value = await GetStringValue(sessionId, string_id, token);
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "string",
-                                value,
-                                description = value.ToString()
-                            },
-                            writable = false,
-                            name
-                        });
+                    ret = await CreateJObjectForString(sessionId, ret_debugger_cmd_reader, token);
                     break;
                 }
                 case ElementType.SzArray:
                 case ElementType.Array:
                 {
-                    var objectId = ret_debugger_cmd_reader.ReadInt32();
-                    var value = await GetClassNameFromObject(sessionId, objectId, token);
-                    var length = await GetArrayLength(sessionId, objectId, token);
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "object",
-                                objectId = "dotnet:array:" + objectId,
-                                description = $"{value.ToString()}({length})",
-                                className = value.ToString(),
-                                subtype = "array"
-                            },
-                            name
-                        });
+                    ret = await CreateJObjectForArray(sessionId, ret_debugger_cmd_reader, token);
                     break;
                 }
                 case ElementType.Class:
                 case ElementType.Object:
                 {
-                    var objectId = ret_debugger_cmd_reader.ReadInt32();
-                    var className = "";
-                    var type_id = await GetTypeIdFromObject(sessionId, objectId, false, token);
-                    className = await GetTypeName(sessionId, type_id[0], token);
-                    var description = className.ToString();
-                    if (await IsDelegate(sessionId, objectId, token))
-                    {
-                        if (typeIdFromAttribute != -1)
-                        {
-                            className = await GetTypeName(sessionId, typeIdFromAttribute, token);
-                        }
-
-                        description = await GetDelegateMethodDescription(sessionId, objectId, token);
-                        if (description == "")
-                        {
-                            ret = JObject.FromObject(new {
-                                    value = new
-                                    {
-                                        type = "symbol",
-                                        description = className.ToString(),
-                                        value = className.ToString()
-                                    },
-                                    name
-                                });
-                            break;
-                        }
-                    }
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "object",
-                                objectId = $"dotnet:object:{objectId}", //maybe pass here the typeId and avoid another call to debugger-agent when getting fields
-                                description,
-                                className,
-                            },
-                            name
-                        });
+                    ret = await CreateJObjectForObject(sessionId, ret_debugger_cmd_reader, typeIdFromAttribute, token);
                     break;
                 }
                 case ElementType.ValueType:
                 {
-                    var isEnum = ret_debugger_cmd_reader.ReadByte();
-                    var isBoxed = ret_debugger_cmd_reader.ReadByte() == 1;
-                    var typeId = ret_debugger_cmd_reader.ReadInt32();
-                    var className = await GetTypeName(sessionId, typeId, token);
-                    var description = className;
-                    var numFields = ret_debugger_cmd_reader.ReadInt32();
-                    var fields = await GetTypeFields(sessionId, typeId, token);
-                    JArray valueTypeFields = new JArray();
-                    if (className.IndexOf("System.Nullable<") == 0) //should we call something on debugger-agent to check???
-                    {
-                        ret_debugger_cmd_reader.ReadByte(); //ignoring the boolean type
-                        var isNull = ret_debugger_cmd_reader.ReadInt32();
-                        var value = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, name, false, -1, token);
-                        if (isNull != 0)
-                            ret = value;
-                        else
-                            ret = JObject.FromObject(new {
-                                value = new
-                                {
-                                    type = "object",
-                                    subtype = "null",
-                                    isValueType = true,
-                                    className,
-                                    description = className
-                                },
-                                name
-                        });
-                        break;
-                    }
-                    for (int i = 0; i < numFields ; i++)
-                    {
-                        fieldValueType = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, token);
-                        valueTypeFields.Add(fieldValueType);
-                    }
-
-                    long endPos = ret_debugger_cmd_reader.BaseStream.Position;
-                    var valueTypeId = Interlocked.Increment(ref debugger_object_id);
-
-                    ret_debugger_cmd_reader.BaseStream.Position = initialPos;
-                    byte[] valueTypeBuffer = new byte[endPos - initialPos];
-                    ret_debugger_cmd_reader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
-                    ret_debugger_cmd_reader.BaseStream.Position = endPos;
-                    valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className), valueTypeId);
-                    if (AutoInvokeToString(className) || isEnum == 1) {
-                        int method_id = await GetMethodIdByName(sessionId, typeId, "ToString", token);
-                        var retMethod = await InvokeMethod(sessionId, valueTypeBuffer, method_id, "methodRet", token);
-                        description = retMethod["value"]?["value"].Value<string>();
-                        if (className.Equals("System.Guid"))
-                            description = description.ToUpper(); //to keep the old behavior
-                    }
-                    else if (isBoxed && numFields == 1) {
-                        fieldValueType["name"] = name;
-                        ret = fieldValueType;
-                        break;
-                    }
-
-                    ret = JObject.FromObject(new {
-                        value = new
-                        {
-                            type = "object",
-                            objectId = "dotnet:valuetype:" + valueTypeId,
-                            description,
-                            className,
-                            expanded = true,
-                            isValueType = true,
-                            isEnum = isEnum == 1 ? true : false
-                        },
-                        name
-                    });
+                    ret = await CreateJObjectForValueType(sessionId, ret_debugger_cmd_reader, name, initialPos, token);
                     break;
                 }
                 case (ElementType)ValueTypeId.Null:
                 {
-                    string className = "";
-                    ElementType variableType = (ElementType)ret_debugger_cmd_reader.ReadByte();
-                    switch (variableType)
-                    {
-                        case ElementType.String:
-                        case ElementType.Class:
-                        {
-                            var type_id = ret_debugger_cmd_reader.ReadInt32();
-                            className = await GetTypeName(sessionId, type_id, token);
-                            break;
-                        }
-                        case ElementType.SzArray:
-                        case ElementType.Array:
-                        {
-                            ElementType byte_type = (ElementType)ret_debugger_cmd_reader.ReadByte();
-                            var rank = ret_debugger_cmd_reader.ReadInt32();
-                            if (byte_type == ElementType.Class) {
-                                var internal_type_id = ret_debugger_cmd_reader.ReadInt32();
-                            }
-                            var type_id = ret_debugger_cmd_reader.ReadInt32();
-                            className = await GetTypeName(sessionId, type_id, token);
-                            break;
-                        }
-                        default:
-                        {
-                            var type_id = ret_debugger_cmd_reader.ReadInt32();
-                            className = await GetTypeName(sessionId, type_id, token);
-                            break;
-                        }
-                    }
-                    ret = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "object",
-                                subtype = "null",
-                                className,
-                                description = className
-                            },
-                            name
-                        });
-                    break;
-                }
-                case (ElementType)ValueTypeId.Type:
-                {
-                    ret = new JObject{{"Type", "void"}};
-                    break;
-                }
-                case (ElementType)ValueTypeId.VType:
-                {
-                    ret = new JObject{{"Type", "void"}};
-                    break;
-                }
-                case (ElementType)ValueTypeId.FixedArray:
-                {
-                    ret = new JObject{{"Type", "void"}};
+                    ret = await CreateJObjectForNull(sessionId, ret_debugger_cmd_reader, token);
                     break;
                 }
             }
             if (isOwn)
                 ret["isOwn"] = true;
+            ret["name"] = name;
             return ret;
         }
 
