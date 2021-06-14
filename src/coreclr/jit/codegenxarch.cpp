@@ -2754,15 +2754,22 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     unsigned size = node->GetLayout()->GetSize();
 
-    // An SSE mov that stores data larger than 8 bytes may be implemented using
-    // multiple memory accesses. Therefore, the JIT must not use such stores
-    // when INITBLK zeroes a struct that contains GC pointers and can be visible
-    // to other threads (i.e. the struct is not located on the stack).
-    // Therefore, on x64 the JIT will not use SIMD stores for such structs and
-    // will allocate a GP register for the node.
-    // On x86 the JIT will use 8 bytes stores (movq) for structs that are
-    // larger than 16 bytes.
-    const bool canUse16BytesSimdMov = !node->MustUsePointerSizeAtomicStores();
+    // An SSE mov that accesses data larger than 8 bytes may be implemented using
+    // multiple memory accesses. Hence, the JIT must not use such stores when
+    // INITBLK zeroes a struct that contains GC pointers and can be observed by
+    // other threads (i.e. when dstAddr is not an address of a local).
+    // For example, this can happen when initializing a struct field of an object.
+    const bool canUse16BytesSimdMov = !node->IsOnHeapAndContainsReferences();
+
+#ifdef TARGET_AMD64
+    // On Amd64 the JIT will not use SIMD stores for such structs and instead
+    // will always allocate a GP register for src node.
+    const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+#else
+    // On X86 the JIT will use movq for structs that are larger than 16 bytes
+    // since it is more beneficial than using two mov-s from a GP register.
+    const bool willUseSimdMov = (size >= 16);
+#endif
 
     if (!src->isContained())
     {
@@ -2772,12 +2779,10 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         // If src is contained then it must be 0.
         assert(src->IsIntegralConst(0));
-
+        assert(willUseSimdMov);
 #ifdef TARGET_AMD64
-        assert(canUse16BytesSimdMov);
         assert(size % 16 == 0);
 #else
-        assert(size >= XMM_REGSIZE_BYTES);
         assert(size % 8 == 0);
 #endif
     }
@@ -2787,7 +2792,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     assert(size <= INT32_MAX);
     assert(dstOffset < (INT32_MAX - static_cast<int>(size)));
 
-    if (AMD64_ONLY(canUse16BytesSimdMov &&)(size >= XMM_REGSIZE_BYTES))
+    if (willUseSimdMov)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 

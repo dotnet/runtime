@@ -5687,7 +5687,7 @@ public:
 #endif
 
 #ifdef TARGET_XARCH
-    bool MustUsePointerSizeAtomicStores()
+    bool IsOnHeapAndContainsReferences()
     {
         return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIsLocalAddr();
     }
