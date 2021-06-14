@@ -310,8 +310,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var instance = new ComplexOptions();
 
-            Assert.Throws<InvalidOperationException>(
+            var ex = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(ComplexOptions), "'ThisDoesNotExistInTheModel'");
+
+            Assert.Equal(expectedMessage, ex.Message);
         }
         [Fact]
         public void ThrowsIfPropertyInConfigMissingInNestedModel()
@@ -329,8 +334,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var instance = new ComplexOptions();
 
-            Assert.Throws<InvalidOperationException>(
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(NestedOptions), "'ThisDoesNotExistInTheModel'");
+
+            var ex = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+
+            Assert.Equal(expectedMessage, ex.Message);
         }
 
         [Fact]
