@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 public static class HashCodeTests
@@ -119,6 +120,75 @@ public static class HashCodeTests
         expected.Add("Hello");
 
         Assert.Equal(expected.ToHashCode(), hc.ToHashCode());
+    }
+
+    [Fact]
+    public static void HashCode_Add_Span_AllValuesHashed()
+    {
+        static void Populate(ref HashCode hc, int length)
+        {
+            byte[] data = Enumerable.Range(1, length).Select(i => (byte)i).ToArray();
+            hc.Add((ReadOnlySpan<byte>)data);
+        }
+
+        HashCode hc = default;
+        Populate(ref hc, 1);
+
+        int last = hc.ToHashCode();
+        for (int i = 2; i < 100; i++)
+        {
+            hc = default;
+            Populate(ref hc, i);
+            int value = hc.ToHashCode();
+            Assert.NotEqual(last, value);
+            last = value;
+        }
+    }
+
+    [Fact]
+    public static void HashCode_Add_Span_VariousLengthsHashed()
+    {
+        static void Populate(ref HashCode hc)
+        {
+            hc.Add((ReadOnlySpan<byte>)new byte[0]);
+            hc.Add((ReadOnlySpan<byte>)new byte[] { 1 });
+            hc.Add((ReadOnlySpan<byte>)new byte[] { 1, 2 });
+            hc.Add((ReadOnlySpan<byte>)new byte[] { 1, 2, 3 });
+            hc.Add((ReadOnlySpan<byte>)new byte[] { 1, 2, 3, 4 });
+            hc.Add((ReadOnlySpan<byte>)new byte[] { 1, 2, 3, 4, 5 });
+            hc.Add((ReadOnlySpan<byte>)Enumerable.Range(0, 10_000).Select(i => (byte)i).ToArray());
+        }
+
+        var hc1 = new HashCode();
+        Populate(ref hc1);
+
+        var hc2 = new HashCode();
+        Populate(ref hc2);
+
+        Assert.Equal(hc1.ToHashCode(), hc2.ToHashCode());
+    }
+
+    [Fact]
+    public static void HashCode_Add_Span_AlignmentDoesntImpactResult()
+    {
+        byte[] data = Enumerable.Range(0, 32).Select(_ => (byte)42).ToArray();
+        for (int length = 1; length < 10; length++)
+        {
+            int? result = null;
+            for (int i = 0; i < data.Length - length; i++)
+            {
+                var hc = new HashCode();
+                hc.Add(new ReadOnlySpan<byte>(data, i, length));
+                if (result is null)
+                {
+                    result = hc.ToHashCode();
+                }
+                else
+                {
+                    Assert.Equal(result.Value, hc.ToHashCode());
+                }
+            }
+        }
     }
 
     [Fact]

@@ -2355,6 +2355,7 @@ namespace System
         private int _dummyPrimitive;
         public void Add<T>(T value) { }
         public void Add<T>(T value, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
         public static int Combine<T1>(T1 value1) { throw null; }
         public static int Combine<T1, T2>(T1 value1, T2 value2) { throw null; }
         public static int Combine<T1, T2, T3>(T1 value1, T2 value2, T3 value3) { throw null; }
