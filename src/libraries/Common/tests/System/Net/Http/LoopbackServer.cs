@@ -11,6 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.WebSockets;
 using Xunit;
 
 namespace System.Net.Test.Common
@@ -20,6 +21,8 @@ namespace System.Net.Test.Common
         private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
         private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
 
+        private bool isRemoteLoop;
+        private ClientWebSocket _remoteControl;
         private Socket _listenSocket;
         private Options _options;
         private Uri _uri;
@@ -27,21 +30,42 @@ namespace System.Net.Test.Common
         public LoopbackServer(Options options = null)
         {
             _options = options ??= new Options();
+            isRemoteLoop = Configuration.Http.RemoteLoopHost != null;
+        }
+
+        public async Task ListenAsync()
+        {
             try
             {
-                _listenSocket = new Socket(options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                _listenSocket.Bind(new IPEndPoint(options.Address, 0));
-                _listenSocket.Listen(options.ListenBacklog);
+                IPEndPoint localEndPoint;
+                if (isRemoteLoop)
+                {
+                    _remoteControl = new ClientWebSocket();
 
-                var localEndPoint = (IPEndPoint)_listenSocket.LocalEndPoint;
-                string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                    await _remoteControl.ConnectAsync(Configuration.Http.RemoteLoopServer, CancellationToken.None);
+
+                    byte[] buffer = new byte[128 * 1024];
+                    var message = Encoding.ASCII.GetBytes($"{_options.ListenBacklog},{_options.Address}");
+                    await _remoteControl.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken.None);
+                    var first = await _remoteControl.ReceiveAsync(buffer, CancellationToken.None);
+                    localEndPoint = IPEndPoint.Parse(Encoding.ASCII.GetString(buffer, 0, first.Count));
+                }
+                else
+                {
+                    _listenSocket = new Socket(_options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                    _listenSocket.Bind(new IPEndPoint(_options.Address, 0));
+                    _listenSocket.Listen(_options.ListenBacklog);
+                    localEndPoint = (IPEndPoint)_listenSocket.LocalEndPoint;
+                }
+
+                string host = _options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
                     $"[{localEndPoint.Address}]" :
                     localEndPoint.Address.ToString();
 
-                string scheme = options.UseSsl ? "https" : "http";
-                if (options.WebSocketEndpoint)
+                string scheme = _options.UseSsl ? "https" : "http";
+                if (_options.WebSocketEndpoint)
                 {
-                    scheme = options.UseSsl ? "wss" : "ws";
+                    scheme = _options.UseSsl ? "wss" : "ws";
                 }
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
@@ -55,6 +79,11 @@ namespace System.Net.Test.Common
 
         public override void Dispose()
         {
+            if (_remoteControl != null)
+            {
+                _remoteControl.Dispose();
+                _remoteControl = null;
+            }
             if (_listenSocket != null)
             {
                 _listenSocket.Dispose();
@@ -62,27 +91,36 @@ namespace System.Net.Test.Common
             }
         }
 
-        public Socket ListenSocket => _listenSocket;
+        public SocketWrapper ListenSocket => isRemoteLoop
+                                                ? new SocketWrapper(_remoteControl)
+                                                : new SocketWrapper(_listenSocket);
         public override Uri Address => _uri;
 
         public static async Task CreateServerAsync(Func<LoopbackServer, Task> funcAsync, Options options = null)
         {
             using (var server = new LoopbackServer(options))
             {
+                await server.ListenAsync();
                 await funcAsync(server).ConfigureAwait(false);
             }
         }
 
-        public static Task CreateServerAsync(Func<LoopbackServer, Uri, Task> funcAsync, Options options = null)
+        public static Task CreateServerAsync(
+            Func<LoopbackServer, Uri, Task> funcAsync,
+            Options options = null,
+            [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
         {
-            return CreateServerAsync(server => funcAsync(server, server.Address), options);
+            return CreateServerAsync(server => funcAsync(server, new Uri(server.Address + callerName)), options);
         }
 
-        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<LoopbackServer, Task> serverFunc, Options options = null)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc,
+            Func<LoopbackServer, Task> serverFunc, 
+            Options options = null,
+            [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
         {
             return CreateServerAsync(async server =>
             {
-                Task clientTask = clientFunc(server.Address);
+                Task clientTask = clientFunc(new Uri(server.Address + callerName));
                 Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
@@ -96,23 +134,34 @@ namespace System.Net.Test.Common
 
         public async Task<Connection> EstablishConnectionAsync()
         {
-            Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+            SocketWrapper closableWrapper = null;
             try
             {
-                try
+                Stream stream = null;
+                if (isRemoteLoop)
                 {
-                    s.NoDelay = true;
+                    closableWrapper = new SocketWrapper(_remoteControl);
+                    stream = new WebSocketStream(_remoteControl, ownsSocket: true);
                 }
-                // OSX can throw if socket is in weird state during close or cancellation
-                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
+                else
+                {
+                    var socket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+                    closableWrapper = new SocketWrapper(socket);
 
-                Stream stream = new NetworkStream(s, ownsSocket: false);
+                    try
+                    {
+                        socket.NoDelay = true;
+                    }
+                    // OSX can throw if socket is in weird state during close or cancellation
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
 
-                return await Connection.CreateAsync(s, stream, _options);
+                    stream = new NetworkStream(socket, ownsSocket: false);
+                }
+                return await Connection.CreateAsync(closableWrapper, stream, _options).ConfigureAwait(false);
             }
             catch (Exception)
             {
-                s.Close();
+                closableWrapper?.Close();
                 throw;
             }
         }
@@ -161,7 +210,7 @@ namespace System.Net.Test.Common
             // We'll close the connection after reading the request header and sending the response.
             await AcceptConnectionAsync(async connection =>
             {
-                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders + "Connection: close\r\n", content).ConfigureAwait(false);
+                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders + LoopbackServer.CorsHeaders + "Connection: close\r\n", content).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
             return lines;
@@ -332,11 +381,18 @@ namespace System.Net.Test.Common
         public static string GetHttpResponseHeaders(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             GetHttpResponseHeaders(statusCode, additionalHeaders, content == null ? 0 : content.Length, connectionClose);
 
+        public static string CorsHeaders = PlatformDetection.IsBrowser
+                ? "Access-Control-Expose-Headers: *\r\n" +
+                  "Access-Control-Allow-Headers: *\r\n" +
+                  "Access-Control-Allow-Origin: *\r\n"
+                : "";
+
         public static string GetHttpResponseHeaders(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, int contentLength = 0, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             $"Content-Length: {contentLength}\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n";
 
@@ -345,6 +401,7 @@ namespace System.Net.Test.Common
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Transfer-Encoding: chunked\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n" +
             (string.IsNullOrEmpty(content) ? "" :
@@ -358,6 +415,7 @@ namespace System.Net.Test.Common
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Transfer-Encoding: chunked\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n" +
             (string.IsNullOrEmpty(content) ? "" : string.Concat(content.Select(c => $"1\r\n{c}\r\n"))) +
@@ -368,6 +426,7 @@ namespace System.Net.Test.Common
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             "Connection: close\r\n" +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n" +
             content;
@@ -395,7 +454,7 @@ namespace System.Net.Test.Common
         public sealed class Connection : GenericLoopbackConnection
         {
             private const int BufferSize = 4000;
-            private Socket _socket;
+            private SocketWrapper _socket;
             private Stream _stream;
             private byte[] _readBuffer;
             private int _readStart;
@@ -403,7 +462,7 @@ namespace System.Net.Test.Common
             private int _contentLength = 0;
             private bool _bodyRead = false;
 
-            public Connection(Socket socket, Stream stream)
+            public Connection(SocketWrapper socket, Stream stream)
             {
                 _socket = socket;
                 _stream = stream;
@@ -413,10 +472,10 @@ namespace System.Net.Test.Common
                 _readEnd = 0;
             }
 
-            public Socket Socket => _socket;
+            public SocketWrapper Socket => _socket;
             public Stream Stream => _stream;
 
-            public static async Task<Connection> CreateAsync(Socket socket, Stream stream, Options httpOptions)
+            public static async Task<Connection> CreateAsync(SocketWrapper socket, Stream stream, Options httpOptions)
             {
                 if (httpOptions.UseSsl)
                 {
@@ -850,6 +909,12 @@ namespace System.Net.Test.Common
                     }
                 }
 
+                if (PlatformDetection.IsBrowser)
+                {
+                    byte[] corsBytes = Encoding.ASCII.GetBytes(CorsHeaders);
+                    headerBytes.Write(corsBytes, 0, corsBytes.Length);
+                }
+
                 bool endHeaders = content != null || isFinal;
                 if (statusCode != null)
                 {
@@ -890,6 +955,7 @@ namespace System.Net.Test.Common
                         headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
                     }
                 }
+                headerString += CorsHeaders;
 
                 headerString = GetHttpResponseHeaders(statusCode, headerString, 0, connectionClose: true);
 
@@ -978,7 +1044,7 @@ namespace System.Net.Test.Common
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
         }
 
-        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             return await LoopbackServer.Connection.CreateAsync(socket, stream, CreateOptions(options));
         }

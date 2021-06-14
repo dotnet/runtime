@@ -13,8 +13,10 @@
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <!-- Browser specific files -->
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true' ">
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
   </ItemGroup>
 
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -60,6 +62,7 @@
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs" Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
