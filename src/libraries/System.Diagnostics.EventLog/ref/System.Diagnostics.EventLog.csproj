@@ -8,7 +8,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <Reference Include="System.ComponentModel.Primitives" />
