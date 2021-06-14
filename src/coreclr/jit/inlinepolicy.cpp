@@ -288,8 +288,96 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsInstanceCtor = value;
                 break;
 
+            case InlineObservation::CALLEE_RETURNS_STRUCT:
+                m_ReturnsStructByValue = value;
+                break;
+
+            case InlineObservation::CALLEE_CLASS_VALUETYPE:
+                m_IsFromValueClass = value;
+                break;
+
+            case InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC:
+                m_NonGenericCallsGeneric = value;
+                break;
+
             case InlineObservation::CALLEE_CLASS_PROMOTABLE:
                 m_IsFromPromotableValueClass = value;
+                break;
+
+            case InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS:
+                m_BinaryExprWithCns++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_STRUCT:
+                m_ArgIsStructByValue++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS:
+                m_FldAccessOverArgStruct++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_FEEDS_CAST:
+                m_ArgCasted++;
+                break;
+
+            case InlineObservation::CALLEE_FOLDABLE_BOX:
+                m_FoldableBox++;
+                break;
+
+            case InlineObservation::CALLEE_INTRINSIC:
+                m_Intrinsic++;
+                break;
+
+            case InlineObservation::CALLEE_BACKWARD_JUMP:
+                m_BackwardJump++;
+                break;
+
+            case InlineObservation::CALLEE_THROW_BLOCK:
+                m_ThrowBlock++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_EXACT_CLS:
+                m_ArgIsExactCls++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_BOXED:
+                m_ArgIsBoxedAtCallsite++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_CONST:
+                m_ArgIsConst++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
+                m_ArgIsExactClsSigIsNot++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_INTRINSIC:
+                m_FoldableIntrinsic++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_EXPR:
+                m_FoldableExpr++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_EXPR_UN:
+                m_FoldableExprUn++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_BRANCH:
+                m_FoldableBranch++;
+                break;
+
+            case InlineObservation::CALLSITE_DIV_BY_CNS:
+                m_DivByCns++;
+                break;
+
+            case InlineObservation::CALLSITE_HAS_PROFILE:
+                m_HasProfile = value;
+                break;
+
+            case InlineObservation::CALLSITE_IN_TRY_REGION:
+                m_CallsiteIsInTryRegion = value;
                 break;
 
             case InlineObservation::CALLEE_HAS_SIMD:
@@ -389,8 +477,8 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
             }
 
-            case InlineObservation::CALLSITE_IN_TRY_REGION:
-                m_CallsiteIsInTryRegion = true;
+            case InlineObservation::CALLSITE_IN_NORETURN_REGION:
+                m_IsCallsiteInNoReturnRegion = value;
                 break;
 
             case InlineObservation::CALLSITE_IN_LOOP:
@@ -448,6 +536,85 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
         NoteInternal(obs);
     }
 }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// DumpXml: Dump DefaultPolicy data as XML
+//
+// Arguments:
+//    file     - stream to output to
+//    indent   - indent level
+
+void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
+{
+    fprintf(file, "%*s<DefaultPolicyData", indent, "");
+
+// To reduce verbosity, let's print only non-default values
+#define XATTR_I4(x)                                                                                                    \
+    if ((INT32)x != 0)                                                                                                 \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"%d\"", (INT32)x);                                                                     \
+    }
+#define XATTR_R8(x)                                                                                                    \
+    if (fabs(x) > 0.01)                                                                                                \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"%.2lf\"", x);                                                                         \
+    }
+#define XATTR_B(x)                                                                                                     \
+    if (x)                                                                                                             \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"True\"");                                                                             \
+    }
+
+    XATTR_R8(m_Multiplier);
+    XATTR_R8(m_ProfileFrequency);
+    XATTR_I4(m_CodeSize);
+    XATTR_I4(m_CallsiteFrequency);
+    XATTR_I4(m_CallsiteDepth);
+    XATTR_I4(m_InstructionCount);
+    XATTR_I4(m_LoadStoreCount);
+    XATTR_I4(m_ArgFeedsTest);
+    XATTR_I4(m_ArgFeedsConstantTest);
+    XATTR_I4(m_ArgFeedsRangeCheck);
+    XATTR_I4(m_ConstantArgFeedsConstantTest);
+    XATTR_I4(m_BinaryExprWithCns);
+    XATTR_I4(m_ArgCasted);
+    XATTR_I4(m_ArgIsStructByValue);
+    XATTR_I4(m_FldAccessOverArgStruct);
+    XATTR_I4(m_FoldableBox);
+    XATTR_I4(m_Intrinsic);
+    XATTR_I4(m_BackwardJump);
+    XATTR_I4(m_ThrowBlock);
+    XATTR_I4(m_ArgIsExactCls);
+    XATTR_I4(m_ArgIsExactClsSigIsNot);
+    XATTR_I4(m_ArgIsConst);
+    XATTR_I4(m_ArgIsBoxedAtCallsite);
+    XATTR_I4(m_FoldableIntrinsic);
+    XATTR_I4(m_FoldableExpr);
+    XATTR_I4(m_FoldableExprUn);
+    XATTR_I4(m_FoldableBranch);
+    XATTR_I4(m_DivByCns);
+    XATTR_I4(m_CalleeNativeSizeEstimate);
+    XATTR_I4(m_CallsiteNativeSizeEstimate);
+    XATTR_B(m_IsForceInline);
+    XATTR_B(m_IsForceInlineKnown);
+    XATTR_B(m_IsInstanceCtor);
+    XATTR_B(m_IsFromPromotableValueClass);
+    XATTR_B(m_HasSimd);
+    XATTR_B(m_LooksLikeWrapperMethod);
+    XATTR_B(m_MethodIsMostlyLoadStore);
+    XATTR_B(m_CallsiteIsInTryRegion);
+    XATTR_B(m_CallsiteIsInLoop);
+    XATTR_B(m_IsNoReturn);
+    XATTR_B(m_IsNoReturnKnown);
+    XATTR_B(m_ReturnsStructByValue);
+    XATTR_B(m_IsFromValueClass);
+    XATTR_B(m_NonGenericCallsGeneric);
+    XATTR_B(m_IsCallsiteInNoReturnRegion);
+    XATTR_B(m_HasProfile);
+    fprintf(file, " />\n");
+}
+#endif
 
 //------------------------------------------------------------------------
 // BudgetCheck: see if this inline would exceed the current budget
@@ -654,9 +821,8 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
 
 void DefaultPolicy::NoteDouble(InlineObservation obs, double value)
 {
-    // By default, ignore this observation.
-    //
     assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
+    m_ProfileFrequency = value;
 }
 
 //------------------------------------------------------------------------
@@ -759,6 +925,174 @@ double DefaultPolicy::DetermineMultiplier()
         default:
             assert(!"Unexpected callsite frequency");
             break;
+    }
+
+    if (m_ReturnsStructByValue)
+    {
+        // For structs-passed-by-value we might avoid expensive copy operations if we inline
+        JITDUMP("\nInline candidate returns a struct by value.");
+    }
+
+    if (m_ArgIsStructByValue > 0)
+    {
+        // Same here
+        JITDUMP("\n%d arguments are structs passed by value.", m_ArgIsStructByValue);
+    }
+
+    if (m_NonGenericCallsGeneric)
+    {
+        // Especially, if such a callee has many foldable branches like 'typeof(T) == typeof(T2)'
+        JITDUMP("\nInline candidate is generic and caller is not.");
+    }
+
+    if (m_IsCallsiteInNoReturnRegion)
+    {
+        // E.g.
+        //
+        //   throw new ArgumentException(SR.GetMessage());
+        //
+        // ^ Here we have two calls inside a BBJ_THROW block
+        // Unfortunately, we're not able to detect ThrowHelpers calls yet.
+        JITDUMP("\nCallsite is in a no-return region.");
+    }
+
+    if (m_FoldableBranch > 0)
+    {
+        // Examples:
+        //
+        //  if (typeof(T) == typeof(int)) {
+        //  if (Avx2.IsSupported) {
+        //  if (arg0 / 10 > 100) { // where arg0 is a constant at the callsite
+        //  if (Math.Abs(arg0) > 10) { // same here
+        //  etc.
+        //
+        JITDUMP("\nInline candidate has %d foldable branches.", m_FoldableBranch);
+    }
+
+    if (m_ArgCasted > 0)
+    {
+        JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.", m_ArgCasted);
+    }
+
+    if (m_FldAccessOverArgStruct > 0)
+    {
+        // Such ldfld/stfld are cheap for promotable structs
+        JITDUMP("\n%d ldfld or stfld over arguments which are structs", m_ArgIsStructByValue);
+    }
+
+    if (m_FoldableBox > 0)
+    {
+        // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
+        // Especially useful with m_IsGenericFromNonGeneric
+        JITDUMP("\nInline has %d foldable BOX ops.", m_FoldableBox);
+    }
+
+    if (m_Intrinsic > 0)
+    {
+        // In most cases such intrinsics are lowered as single CPU instructions
+        JITDUMP("\nInline has %d intrinsics.", m_Intrinsic);
+    }
+
+    if (m_BinaryExprWithCns > 0)
+    {
+        // In some cases we're not able to detect potentially foldable expressions, e.g.:
+        //
+        //   ldc.i4.0
+        //   call int SomeFoldableNonIntrinsicCall
+        //   ceq
+        //
+        // so at least we can note potential constant tests
+        JITDUMP("\nInline candidate has %d binary expressions with constants.", m_BinaryExprWithCns);
+    }
+
+    if (m_ThrowBlock > 0)
+    {
+        // 'throw' opcode and its friends (Exception's ctor, its exception message, etc) significantly increase
+        // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
+        // the end of the functions and don't impact Register Allocations.
+        // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
+        JITDUMP("\nInline has %d throw blocks.", m_ThrowBlock);
+    }
+
+    if (m_ArgIsBoxedAtCallsite > 0)
+    {
+        // Callsite is going to box n arguments. We might avoid boxing after inlining.
+        // Example:
+        //
+        //  void DoNothing(object o) {} // o is unused, so the boxing is redundant
+        //
+        //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
+        //
+        JITDUMP("\nCallsite is going to box %d arguments.", m_ArgIsBoxedAtCallsite);
+    }
+
+    if (m_ArgIsExactClsSigIsNot > 0)
+    {
+        // If we inline such a callee - we'll be able to devirtualize all the calls for such arguments
+        // Example:
+        //
+        //  int Callee(object o) => o.GetHashCode(); // virtual call
+        //
+        //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
+        //
+        JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.",
+                m_ArgIsExactClsSigIsNot);
+    }
+
+    if (m_ArgIsExactCls > 0)
+    {
+        JITDUMP("\nCallsite passes %d arguments of exact classes.", m_ArgIsExactCls);
+    }
+
+    if (m_ArgIsConst > 0)
+    {
+        // Normally, we try to note all the places where constant arguments lead to folding/feed tests
+        // but just in case:
+        JITDUMP("\n%d arguments are constants at the callsite.", m_ArgIsConst);
+    }
+
+    if (m_FoldableIntrinsic > 0)
+    {
+        // Examples:
+        //
+        //   typeof(T1) == typeof(T2)
+        //   Math.Abs(constArg)
+        //   BitOperation.PopCount(10)
+        JITDUMP("\nInline has %d foldable intrinsics.", m_FoldableIntrinsic);
+    }
+
+    if (m_FoldableExpr > 0)
+    {
+        // E.g. add/mul/ceq, etc. over constant/constant arguments
+        JITDUMP("\nInline has %d foldable binary expressions.", m_FoldableExpr);
+    }
+
+    if (m_FoldableExprUn > 0)
+    {
+        // E.g. casts, negations, etc. over constants/constant arguments
+        JITDUMP("\nInline has %d foldable unary expressions.", m_FoldableExprUn);
+    }
+
+    if (m_DivByCns > 0)
+    {
+        // E.g. callee has "x / arg0" where arg0 is a const at the call site -
+        // we'll avoid a very expensive DIV instruction after inlining.
+        JITDUMP("\nInline has %d Div-by-constArg expressions.", m_DivByCns);
+    }
+
+    if (m_BackwardJump)
+    {
+        const bool callSiteIsInLoop = m_CallsiteFrequency == InlineCallsiteFrequency::LOOP;
+        JITDUMP("\nInline has %d backward jumps (loops?).", m_BackwardJump);
+        if (callSiteIsInLoop)
+        {
+            JITDUMP(" And is inlined into a loop.")
+        }
+    }
+
+    if (m_HasProfile)
+    {
+        JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
 
 #ifdef DEBUG
@@ -2028,6 +2362,28 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
     fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
     fprintf(file, ",%u", m_CallsiteDepth);
+    fprintf(file, ",%u", m_BinaryExprWithCns);
+    fprintf(file, ",%u", m_ArgCasted);
+    fprintf(file, ",%u", m_ArgIsStructByValue);
+    fprintf(file, ",%u", m_FldAccessOverArgStruct);
+    fprintf(file, ",%u", m_FoldableBox);
+    fprintf(file, ",%u", m_Intrinsic);
+    fprintf(file, ",%u", m_BackwardJump);
+    fprintf(file, ",%u", m_ThrowBlock);
+    fprintf(file, ",%u", m_ArgIsExactCls);
+    fprintf(file, ",%u", m_ArgIsExactClsSigIsNot);
+    fprintf(file, ",%u", m_ArgIsConst);
+    fprintf(file, ",%u", m_ArgIsBoxedAtCallsite);
+    fprintf(file, ",%u", m_FoldableIntrinsic);
+    fprintf(file, ",%u", m_FoldableExpr);
+    fprintf(file, ",%u", m_FoldableExprUn);
+    fprintf(file, ",%u", m_FoldableBranch);
+    fprintf(file, ",%u", m_DivByCns);
+    fprintf(file, ",%u", m_ReturnsStructByValue ? 1 : 0);
+    fprintf(file, ",%u", m_IsFromValueClass ? 1 : 0);
+    fprintf(file, ",%u", m_NonGenericCallsGeneric ? 1 : 0);
+    fprintf(file, ",%u", m_IsCallsiteInNoReturnRegion ? 1 : 0);
+    fprintf(file, ",%u", m_HasProfile ? 1 : 0);
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

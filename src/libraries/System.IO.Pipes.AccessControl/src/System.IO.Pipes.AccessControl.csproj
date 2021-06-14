@@ -2,7 +2,6 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net5.0-windows;net5.0;netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -32,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="netstandard" Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
     <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />

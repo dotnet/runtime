@@ -29,8 +29,6 @@
     <Compile Include="System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
     <Compile Include="System\Net\Http\HeaderEncodingSelector.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
@@ -78,11 +76,13 @@
     <Compile Include="System\Net\Http\Headers\EntityTagHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\GenericHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderDescriptor.cs" />
+    <Compile Include="System\Net\Http\Headers\HeaderStringValues.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderUtilities.cs" />
     <Compile Include="System\Net\Http\Headers\HttpContentHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpGeneralHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaders.cs" />
+    <Compile Include="System\Net\Http\Headers\HttpHeadersNonValidated.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderValueCollection.cs" />
     <Compile Include="System\Net\Http\Headers\HttpRequestHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpResponseHeaders.cs" />
@@ -137,6 +137,8 @@
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="System\Net\Http\HttpMethod.Http3.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
@@ -406,8 +408,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.Interop.CertFreeCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
@@ -496,22 +496,6 @@
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
-             Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"
-             Link="Common\System\Net\Mail\DotAtomReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs"
-             Link="Common\System\Net\Mail\MailAddress.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs"
-             Link="Common\System\Net\Mail\MailAddressParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
-             Link="Common\System\Net\Mail\MailBnfHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs"
-             Link="Common\System\Net\Mail\QuotedPairReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs"
-             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs"
-             Link="Common\System\Net\Mail\WhitespaceReader.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>
@@ -637,6 +621,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
@@ -662,7 +647,6 @@
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Security.Cryptography.Algorithms" />

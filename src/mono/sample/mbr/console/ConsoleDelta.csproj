@@ -2,12 +2,21 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- to call AsssemblyExtensions.ApplyUpdate we need Optimize=false, EmitDebugInformation=true in all configurations -->
+    <Optimize>false</Optimize>
+    <EmitDebugInformation>true</EmitDebugInformation>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DeltaHelper\DeltaHelper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,21 +27,16 @@
 
   <PropertyGroup>
     <DeltaScript>deltascript.json</DeltaScript>
-    <DeltaCount>1</DeltaCount>
   </PropertyGroup>
 
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(BuiltRuntimeConfiguration)</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  <PropertyGroup Condition="'$(BuiltRuntimeConfiguration)' != ''">
+    <HotReloadDeltaGeneratorExtraArgs>$(HotReloadDeltaGeneratorExtraArgs) -p:BuiltRuntimeConfiguration=$(BuiltRuntimeConfiguration)</HotReloadDeltaGeneratorExtraArgs>
+  </PropertyGroup>
+
+  <Target Name="CodeSignIfNeeded" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
+    <Message Importance="High" Text="Running codesign -s - -f $(PublishDir)/$(MSBuildProjectName)" />
+    <Exec Command="codesign -s - -f &quot;$(PublishDir)$(MSBuildProjectName)&quot;" />
   </Target>
 
-
-  <!-- Set RoslynILDiffFullPath property to the path of roslynildiff -->
-  <Import Project="..\DeltaHelper.targets" />
 
 </Project>

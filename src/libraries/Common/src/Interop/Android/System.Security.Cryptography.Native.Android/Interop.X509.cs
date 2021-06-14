@@ -13,10 +13,10 @@ internal static partial class Interop
         private const int INSUFFICIENT_BUFFER = -1;
         private const int SUCCESS = 1;
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509Decode")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509Decode")]
         internal static extern SafeX509Handle X509Decode(ref byte buf, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509Encode")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509Encode")]
         private static extern int X509Encode(SafeX509Handle x, [Out] byte[]? buf, ref int len);
         internal static byte[] X509Encode(SafeX509Handle x)
         {
@@ -33,7 +33,7 @@ internal static partial class Interop
             return encoded;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
         private static extern int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);
         internal static SafeX509Handle[] X509DecodeCollection(ReadOnlySpan<byte> data)
         {
@@ -60,7 +60,7 @@ internal static partial class Interop
             return handles;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ExportPkcs7")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ExportPkcs7")]
         private static extern int X509ExportPkcs7(IntPtr[] certs, int certsLen, [Out] byte[]? buf, ref int len);
         internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
         {
@@ -77,7 +77,7 @@ internal static partial class Interop
             return encoded;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetContentType")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509GetContentType")]
         private static extern X509ContentType X509GetContentType(ref byte buf, int len);
         internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
         {
@@ -92,7 +92,7 @@ internal static partial class Interop
             UnknownAlgorithm = -1,
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509PublicKey")]
+        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509PublicKey")]
         internal static extern IntPtr X509GetPublicKey(SafeX509Handle x, PAL_KeyAlgorithm algorithm);
     }
 }

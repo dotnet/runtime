@@ -2114,20 +2114,6 @@ mono_image_close_except_pools_all (MonoImage**images, int image_count)
 	}
 }
 
-#ifdef ENABLE_METADATA_UPDATE
-static void
-mono_image_close_except_pools_all_list (GList *images)
-{
-	for (GList *ptr = images; ptr; ptr = ptr->next) {
-		MonoImage *image = (MonoImage *)ptr->data;
-		if (image) {
-			if (!mono_image_close_except_pools (image))
-			    ptr->data = NULL;
-		}
-	}
-}
-#endif
-
 /*
  * Returns whether mono_image_close_finish() must be called as well.
  * We must unload images in two steps because clearing the domain in
@@ -2288,8 +2274,8 @@ mono_image_close_except_pools (MonoImage *image)
 	g_free (image->modules_loaded);
 
 #ifdef ENABLE_METADATA_UPDATE
-	if (image->delta_image)
-		mono_image_close_except_pools_all_list (image->delta_image);
+	if (image->has_updates)
+		mono_metadata_update_image_close_except_pools_all (image);
 #endif
 
 	mono_os_mutex_destroy (&image->szarray_cache_lock);
@@ -2318,20 +2304,6 @@ mono_image_close_all (MonoImage**images, int image_count)
 		g_free (images);
 }
 
-#ifdef ENABLE_METADATA_UPDATE
-static void
-mono_image_close_all_list (GList *images)
-{
-	for (GList *ptr = images; ptr; ptr = ptr->next) {
-		MonoImage *image = (MonoImage *)ptr->data;
-		if (image)
-			mono_image_close_finish (image);
-	}
-
-	g_list_free (images);
-}
-#endif
-
 void
 mono_image_close_finish (MonoImage *image)
 {
@@ -2351,7 +2323,7 @@ mono_image_close_finish (MonoImage *image)
 	mono_image_close_all (image->modules, image->module_count);
 
 #ifdef ENABLE_METADATA_UPDATE
-	mono_image_close_all_list (image->delta_image);
+	mono_metadata_update_image_close_all (image);
 #endif
 
 #ifndef DISABLE_PERFCOUNTERS

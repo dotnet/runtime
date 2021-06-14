@@ -395,7 +395,7 @@ def generateMethodBody(template, providerName, eventName):
 
 
 
-def generateLttngTpProvider(providerName, eventNodes, allTemplates):
+def generateLttngTpProvider(providerName, eventNodes, allTemplates, runtimeFlavor):
     lTTngImpl = []
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
@@ -420,9 +420,9 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates):
             for paramName in fnSig.paramlist:
                 fnparam     = fnSig.getParam(paramName)
                 wintypeName = fnparam.winType
-                typewName   = palDataTypeMapping[wintypeName]
+                typewName   = getPalDataTypeMapping(runtimeFlavor)[wintypeName]
                 winCount    = fnparam.count
-                countw      = palDataTypeMapping[winCount]
+                countw      = getPalDataTypeMapping(runtimeFlavor)[winCount]
 
                 if paramName in template.structs:
                     linefnptype.append("%sint %s_ElementSize,\n" % (lindent, paramName))
@@ -456,7 +456,7 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates):
 
 
 
-def generateLttngFiles(etwmanifest,eventprovider_directory, dryRun):
+def generateLttngFiles(etwmanifest, eventprovider_directory, runtimeFlavor, dryRun):
 
     eventprovider_directory = eventprovider_directory + "/"
     tree                    = DOM.parse(etwmanifest)
@@ -573,7 +573,7 @@ bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, 
 }
 
 """)
-                lttngimpl_file.write(generateLttngTpProvider(providerName,eventNodes,allTemplates) + "\n")
+                lttngimpl_file.write(generateLttngTpProvider(providerName,eventNodes,allTemplates,runtimeFlavor) + "\n")
 
             with open_for_update(lttngevntprovTp) as tpimpl_file:
                 tpimpl_file.write(stdprolog + "\n")
@@ -595,6 +595,8 @@ def main(argv):
                                     help='full path to manifest containig the description of events')
     required.add_argument('--intermediate', type=str, required=True,
                                     help='full path to eventprovider  intermediate directory')
+    required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
+                                    help='runtime flavor')
     required.add_argument('--dry-run', action='store_true',
                                     help='if specified, will output the names of the generated files instead of generating the files' )
     args, unknown = parser.parse_known_args(argv)
@@ -604,9 +606,10 @@ def main(argv):
 
     sClrEtwAllMan     = args.man
     intermediate      = args.intermediate
+    runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     dryRun            = args.dry_run
 
-    generateLttngFiles(sClrEtwAllMan,intermediate, dryRun)
+    generateLttngFiles(sClrEtwAllMan, intermediate, runtimeFlavor, dryRun)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])

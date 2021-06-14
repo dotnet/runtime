@@ -16,17 +16,14 @@ namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
-        [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)]
         public Type ObjectType { get; }
         public object? Value { get; }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         private JsonContent(
             object? inputValue,
-            [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType,
+            Type inputType,
             MediaTypeHeaderValue? mediaType,
             JsonSerializerOptions? options)
         {
@@ -43,15 +40,15 @@ namespace System.Net.Http.Json
             Value = inputValue;
             ObjectType = inputType;
             Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
-            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
+            _jsonSerializerOptions = options ?? JsonHelpers.s_defaultSerializerOptions;
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static JsonContent Create<[DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static JsonContent Create(object? inputValue, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
@@ -136,13 +133,13 @@ namespace System.Net.Http.Json
 #if NETCOREAPP
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static void SerializeHelper(Utf8JsonWriter writer, object? value, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, JsonSerializerOptions? options)
+            static void SerializeHelper(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerOptions? options)
                 => JsonSerializer.Serialize(writer, value, inputType, options);
 #endif
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static Task SerializeAsyncHelper(Stream utf8Json, object? value, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
+            static Task SerializeAsyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
                 => JsonSerializer.SerializeAsync(utf8Json, value, inputType, options, cancellationToken);
         }
     }

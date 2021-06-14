@@ -9,8 +9,8 @@
     </ProjectReference>
     <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
     <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore50;uap10.0;net46" />
-  </ItemGroup>
-  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
+
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />

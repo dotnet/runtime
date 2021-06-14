@@ -42,16 +42,16 @@ inline void GCToEEInterface::GcStartWork(int condemned, int max_gen)
     g_theGCToCLR->GcStartWork(condemned, max_gen);
 }
 
+inline void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->BeforeGcScanRoots(condemned, is_bgc, is_concurrent);
+}
+
 inline void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
 {
     assert(g_theGCToCLR != nullptr);
     g_theGCToCLR->AfterGcScanRoots(condemned, max_gen, sc);
-}
-
-inline void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->GcBeforeBGCSweepWork();
 }
 
 inline void GCToEEInterface::GcDone(int condemned)

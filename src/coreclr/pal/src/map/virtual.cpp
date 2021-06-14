@@ -1760,22 +1760,29 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-bool
-PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
+#if defined(HOST_OSX)
+PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
-    // Use a thread local to track per thread JIT Write enable state
-    // Per Apple, new threads start with MAP_JIT pages readable and executable (R-X) by default.
-    thread_local bool enabled = false;
-    bool result = enabled;
-    if (enabled != writeEnable)
+#if defined(HOST_ARM64)
+    thread_local int enabledCount = 0;
+    if (writeEnable)
     {
-        pthread_jit_write_protect_np(writeEnable ? 0 : 1);
-        enabled = writeEnable;
+        if (enabledCount++ == 0)
+        {
+            pthread_jit_write_protect_np(0);
+        }
     }
-    return result;
+    else
+    {
+        if (--enabledCount == 0)
+        {
+            pthread_jit_write_protect_np(1);
+        }
+        _ASSERTE(enabledCount >= 0);
+    }
+#endif // HOST_ARM64
 }
-#endif
+#endif // HOST_OSX
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------

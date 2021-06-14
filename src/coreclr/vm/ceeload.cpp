@@ -2618,7 +2618,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 
     DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
-    if (newId >= m_maxDynamicEntries)
+    if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
         CrstHolder ch(&m_Crst);
 
@@ -2637,7 +2637,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
                 memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
             m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            m_maxDynamicEntries = maxDynamicEntries;
+            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
         }
     }
 
@@ -6329,13 +6329,16 @@ void Module::FixupVTables()
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
                     UMEntryThunk *pUMEntryThunk = (UMEntryThunk*)(void*)(GetDllThunkHeap()->AllocAlignedMem(sizeof(UMEntryThunk), CODE_SIZE_ALIGN)); // UMEntryThunk contains code
-                    FillMemory(pUMEntryThunk, sizeof(*pUMEntryThunk), 0);
+                    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+                    FillMemory(uMEntryThunkWriterHolder.GetRW(), sizeof(UMEntryThunk), 0);
 
                     UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(GetThunkHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
-                    FillMemory(pUMThunkMarshInfo, sizeof(*pUMThunkMarshInfo), 0);
+                    ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                    FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit(NULL, NULL, pUMThunkMarshInfo, pMD);
+                    uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
+                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, NULL, NULL, pUMThunkMarshInfo, pMD);
+
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
@@ -8898,8 +8901,6 @@ void Module::Fixup(DataImage *image)
     image->ZeroField(this, offsetof(Module, m_pSimpleName), sizeof(m_pSimpleName));
 
     image->ZeroField(this, offsetof(Module, m_file), sizeof(m_file));
-
-    image->FixupPointerField(this, offsetof(Module, m_pDllMain));
 
     image->ZeroField(this, offsetof(Module, m_dwTransientFlags), sizeof(m_dwTransientFlags));
 

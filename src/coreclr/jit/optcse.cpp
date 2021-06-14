@@ -779,7 +779,7 @@ unsigned Compiler::optValnumCSE_Locate()
     }
 #endif
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Make the block publicly available */
 
@@ -790,13 +790,13 @@ unsigned Compiler::optValnumCSE_Locate()
         noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
         /* Walk the statement trees in this basic block */
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             const bool isReturn = stmt->GetRootNode()->OperIs(GT_RETURN);
 
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperIsCompare() && stmtHasArrLenCandidate)
                 {
@@ -1009,7 +1009,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         BitVecOps::AddElemD(cseLivenessTraits, cseCallKillsMask, cseAvailBit);
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Initialize the blocks's bbCseIn set */
 
@@ -1078,7 +1078,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // If the block doesn't contains a call then skip it...
         //
@@ -1140,7 +1140,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     if (verbose)
     {
         bool headerPrinted = false;
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             if (block->bbCseGen != nullptr)
             {
@@ -1328,7 +1328,7 @@ void Compiler::optValnumCSE_DataFlow()
     {
         printf("\nAfter performing DataFlow for ValnumCSE's\n");
 
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             printf(FMT_BB, block->bbNum);
             printf(" cseIn  = %s,", genES2str(cseLivenessTraits, block->bbCseIn));
@@ -1387,7 +1387,7 @@ void Compiler::optValnumCSE_Availablity()
 #endif
     EXPSET_TP available_cses = BitVecOps::MakeEmpty(cseLivenessTraits);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Make the block publicly available
 
@@ -1399,11 +1399,11 @@ void Compiler::optValnumCSE_Availablity()
 
         // Walk the statement trees in this basic block
 
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We walk the tree in the forwards direction (bottom up)
 
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 bool isUse = false;
                 bool isDef = false;
@@ -3832,13 +3832,13 @@ void Compiler::optOptimizeCSEs()
 void Compiler::optCleanupCSEs()
 {
     // We must clear the BBF_VISITED and BBF_MARKED flags.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // And clear all the "visited" bits on the block.
         block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We must clear the gtCSEnum field.
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
@@ -3859,13 +3859,11 @@ void Compiler::optCleanupCSEs()
 
 void Compiler::optEnsureClearCSEInfo()
 {
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
 
-        // Initialize 'stmt' to the first non-Phi statement
-        // Walk the statement trees in this basic block
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
             {

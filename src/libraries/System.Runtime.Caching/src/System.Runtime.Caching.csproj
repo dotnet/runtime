@@ -1,32 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netcoreapp3.1;netcoreapp3.1-windows;netstandard2.0;netstandard2.0-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' or '$(TargetFramework)' == 'netcoreapp3.1-windows'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Data.Common" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.IO.FileSystem.Watcher" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.Timer" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\Caching\Counters.cs" />
     <Compile Include="System\Runtime\Caching\CacheEntryChangeMonitor.cs" />
@@ -81,6 +58,30 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="netstandard" Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Data.Common" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.IO.FileSystem.Watcher" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />

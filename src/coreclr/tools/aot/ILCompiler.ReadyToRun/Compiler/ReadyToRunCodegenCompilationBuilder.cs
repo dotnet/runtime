@@ -41,6 +41,7 @@ namespace ILCompiler
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
+        private CompositeImageSettings _compositeImageSettings;
 
         private string _jitPath;
         private string _outputFile;
@@ -205,6 +206,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseCompositeImageSettings(CompositeImageSettings compositeImageSettings)
+        {
+            _compositeImageSettings = compositeImageSettings;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -241,13 +248,15 @@ namespace ILCompiler
 
             NodeFactory factory = new NodeFactory(
                 _context,
-                _compilationGroup,
+                (ReadyToRunCompilationModuleGroupBase)_compilationGroup,
                 _profileData,
                 _nameMangler,
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
                 flags);
+
+            factory.CompositeImageSettings = _compositeImageSettings;
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);

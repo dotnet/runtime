@@ -45,7 +45,6 @@ namespace System.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "throws pNSE")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TargetFrameworkTest()
@@ -212,7 +211,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();
@@ -239,12 +237,14 @@ namespace System.Tests
             Assert.Equal(AppDomain.CurrentDomain.ApplyPolicy(entryAssembly), entryAssembly);
         }
 
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and throws an exception.
         [Fact]
         public void CreateDomainNonNetfx()
         {
             AssertExtensions.Throws<ArgumentNullException>("friendlyName", () => { AppDomain.CreateDomain(null); });
             Assert.Throws<PlatformNotSupportedException>(() => { AppDomain.CreateDomain("test"); });
         }
+#pragma warning restore SYSLIB0024
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecuteAssemblyByName()
@@ -270,8 +270,10 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
             Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
 
+#pragma warning disable SYSLIB0003 // Code Access Security is not supported or honored by the runtime.
             Func<int> executeAssembly = () => AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }, null, Configuration.Assemblies.AssemblyHashAlgorithm.SHA1);
             Assert.Throws<PlatformNotSupportedException>(() => executeAssembly());
+#pragma warning restore SYSLIB0003
 
             Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssembly(name));
             Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }));
@@ -343,6 +345,7 @@ namespace System.Tests
             }).Dispose();
         }
 
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and throws an exception.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Unload()
         {
@@ -351,6 +354,7 @@ namespace System.Tests
                 Assert.Throws<CannotUnloadAppDomainException>(() => { AppDomain.Unload(AppDomain.CurrentDomain); });
             }).Dispose();
         }
+#pragma warning restore SYSLIB0024
 
         [Fact]
         public void Load()

@@ -22,13 +22,13 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 mkdir r2r
-"%CORE_ROOT%\crossgen" -ReadyToRun -Platform_Assemblies_Paths "%CORE_ROOT%" -out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+"%CORE_ROOT%\corerun" %CORE_ROOT%\crossgen2\crossgen2.dll --out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r %CORE_ROOT%\*.dll
 set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 mkdir r2r
-"$CORE_ROOT/crossgen" -ReadyToRun -Platform_Assemblies_Paths "$CORE_ROOT" -out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+"$CORE_ROOT/corerun" $CORE_ROOT/crossgen2/crossgen2.dll --out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r $CORE_ROOT/*.dll
 chmod +x ./RunBasicTestWithMcj.sh
 export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"
 ]]></BashCLRTestPreCommands>

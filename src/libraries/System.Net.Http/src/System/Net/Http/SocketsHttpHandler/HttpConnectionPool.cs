@@ -75,7 +75,6 @@ namespace System.Net.Http
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
-
         private readonly bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
@@ -122,8 +121,8 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+
+            if (IsHttp3Supported())
             {
                 _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
             }
@@ -261,8 +260,7 @@ namespace System.Net.Http
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
 
-                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-                if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+                if (IsHttp3Supported())
                 {
                     if (_http3Enabled)
                     {
@@ -281,14 +279,18 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
+        [SupportedOSPlatformGuard("linux")]
+        [SupportedOSPlatformGuard("macOS")]
+        [SupportedOSPlatformGuard("Windows")]
+        internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
         {
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (IsHttp3Supported())
             {
                 // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.
                 return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
@@ -662,7 +664,6 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
@@ -762,7 +763,6 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP3 cannot be used.
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
@@ -866,8 +866,7 @@ namespace System.Net.Http
         {
             HttpResponseMessage? response;
 
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (IsHttp3Supported())
             {
                 response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
                 if (response is not null)
@@ -1000,7 +999,7 @@ namespace System.Net.Http
 
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
-                        var authority = new HttpAuthority(value.Host!, value.Port);
+                        var authority = new HttpAuthority(value.Host ?? _originAuthority!.IdnHost, value.Port);
 
                         if (IsAltSvcBlocked(authority))
                         {
@@ -1275,10 +1274,7 @@ namespace System.Net.Http
 
                     case HttpConnectionKind.SocksTunnel:
                     case HttpConnectionKind.SslSocksTunnel:
-                        Debug.Assert(_originAuthority != null);
-                        Debug.Assert(_proxyUri != null);
-                        (socket, stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
-                        await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
+                        (socket, stream) = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
                         break;
                 }
 
@@ -1486,6 +1482,26 @@ namespace System.Net.Http
                 tunnelResponse.Dispose();
                 throw;
             }
+        }
+
+        private async ValueTask<(Socket? socket, Stream stream)> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_originAuthority != null);
+            Debug.Assert(_proxyUri != null);
+
+            (Socket? socket, Stream stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e) when (!(e is OperationCanceledException))
+            {
+                Debug.Assert(!(e is HttpRequestException));
+                throw new HttpRequestException(SR.net_http_request_aborted, e);
+            }
+
+            return (socket, stream);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>

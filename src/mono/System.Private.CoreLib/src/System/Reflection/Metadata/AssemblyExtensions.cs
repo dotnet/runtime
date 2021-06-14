@@ -51,16 +51,24 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        internal static string GetApplyUpdateCapabilities()
+        private static Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(() => InitializeApplyUpdateCapabilities());
+
+        internal static string GetApplyUpdateCapabilities() => s_ApplyUpdateCapabilities.Value;
+
+        private static string InitializeApplyUpdateCapabilities()
         {
 #if !FEATURE_METADATA_UPDATE
             return string.Empty;
 #else
-            return "Baseline";
+            return ApplyUpdateEnabled() != 0 ? "Baseline" : string.Empty ;
 #endif
         }
 
+
 #if FEATURE_METADATA_UPDATE
+        [MethodImpl (MethodImplOptions.InternalCall)]
+        private static extern int ApplyUpdateEnabled ();
+
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static unsafe extern void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
 #endif

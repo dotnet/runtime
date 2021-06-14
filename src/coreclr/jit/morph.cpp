@@ -183,20 +183,15 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         // do we need to do it in two steps R -> I, '-> smallType
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
         if (dstSize < genTypeSize(TYP_INT))
         {
-            oper = gtNewCastNodeL(TYP_INT, oper, tree->IsUnsigned(), TYP_INT);
+            oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            // We must not mistreat the original cast, which was from a floating point type,
+            // as from an unsigned type, since we now have a TYP_INT node for the source and
+            // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
+            assert(!tree->IsUnsigned());
         }
-#else
-        if (dstSize < TARGET_POINTER_SIZE)
-        {
-            oper = gtNewCastNodeL(TYP_I_IMPL, oper, false, TYP_I_IMPL);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-        }
-#endif
         else
         {
             /* Note that if we need to use a helper call then we can not morph oper */
@@ -263,17 +258,26 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     }
 #endif //! TARGET_64BIT
 
+#ifdef TARGET_ARMARCH
+    // AArch, unlike x86/amd64, has instructions that can cast directly from
+    // all integers (except for longs on AArch32 of course) to floats.
+    // Because there is no IL instruction conv.r4.un, uint/ulong -> float
+    // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
+    // We can eliminate the redundant intermediate cast as an optimization.
+    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
 #ifdef TARGET_ARM
-    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && (oper->gtOper == GT_CAST) &&
-             !varTypeIsLong(oper->AsCast()->CastOp()))
+             && !varTypeIsLong(oper->AsCast()->CastOp())
+#endif
+                 )
     {
-        // optimization: conv.r4(conv.r8(?)) -> conv.r4(d)
-        // except when the ultimate source is a long because there is no long-to-float helper, so it must be 2 step.
-        // This happens semi-frequently because there is no IL 'conv.r4.un'
         oper->gtType       = TYP_FLOAT;
         oper->CastToType() = TYP_FLOAT;
+
         return fgMorphTree(oper);
     }
+#endif // TARGET_ARMARCH
+
+#ifdef TARGET_ARM
     // converts long/ulong --> float/double casts into helper calls.
     else if (varTypeIsFloating(dstType) && varTypeIsLong(srcType))
     {
@@ -307,7 +311,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // U8 -> R4   = U8 -> R8 -> R4
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -337,7 +341,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
-        srcType = genUnsignedType(srcType);
+        srcType = varTypeToUnsigned(srcType);
 
         if (srcType == TYP_ULONG)
         {
@@ -588,7 +592,7 @@ OPTIMIZECAST:
                     srcType = genActualType(srcType);
                 }
 
-                srcType = genUnsignedType(srcType);
+                srcType = varTypeToUnsigned(srcType);
             }
 
             if (srcType == dstType)
@@ -3964,6 +3968,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                     {
                                         // Can't use the existing field's type, so use GT_LCL_FLD to swizzle
                                         // to a new type
+                                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                                         argObj->ChangeOper(GT_LCL_FLD);
                                         argObj->gtType = structBaseType;
                                     }
@@ -3988,6 +3993,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
                         {
                             // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD
+                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
                             argObj->ChangeOper(GT_LCL_FLD);
                             argObj->gtType = structBaseType;
                         }
@@ -6014,11 +6020,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     // if this field belongs to simd struct, translate it to simd intrinsic.
     if (mac == nullptr)
     {
-        GenTree* newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
-        if (newTree != tree)
+        if (IsBaselineSimdIsaSupported())
         {
-            newTree = fgMorphSmpOp(newTree);
-            return newTree;
+            GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
+            if (newTree != tree)
+            {
+                newTree = fgMorphSmpOp(newTree);
+                return newTree;
+            }
         }
     }
     else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
@@ -8522,7 +8531,7 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent ? TRUE : FALSE, &embedInfo);
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);
@@ -8630,7 +8639,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         GenTree* objp       = call->gtCallThisArg->GetNode();
         call->gtCallThisArg = nullptr;
 
-        if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->IsLocal())
+        if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->OperIs(GT_LCL_VAR))
         {
             // tmp = "this"
             unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
@@ -12027,29 +12036,33 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
 }
 
 /*****************************************************************************
-*  If a read operation tries to access simd struct field, then transform the
-*  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
-*  Otherwise, return the old tree.
+*  If a read operation tries to access simd struct field, then transform the operation
+*  to the SimdGetElementNode, and return the new tree. Otherwise, return the old tree.
 *  Argument:
 *   tree - GenTree*. If this pointer points to simd struct which is used for simd
-*          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
+*          intrinsic, we will morph it as simd intrinsic NI_Vector128_GetElement.
 *  Return:
 *   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
 */
 
-GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
+GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
 {
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
     GenTree*    simdStructNode  = getSIMDStructFromField(tree, &simdBaseJitType, &index, &simdSize);
+
     if (simdStructNode != nullptr)
     {
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        GenTree*  op2          = gtNewIconNode(index, TYP_INT);
+
+        assert(simdSize <= 16);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
-        GenTree* op2 = gtNewIconNode(index);
-        tree = gtNewSIMDNode(simdBaseType, simdStructNode, op2, SIMDIntrinsicGetItem, simdBaseJitType, simdSize);
+
+        tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
+                                       /* isSimdAsHWIntrinsic */ true);
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -12058,9 +12071,8 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 }
 
 /*****************************************************************************
-*  Transform an assignment of a SIMD struct field to SIMD intrinsic
-*  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
-*  then return the old tree.
+*  Transform an assignment of a SIMD struct field to SimdWithElementNode, and
+*  return a new tree. If it is not such an assignment, then return the old tree.
 *  Argument:
 *   tree - GenTree*. If this pointer points to simd struct which is used for simd
 *          intrinsic, we will morph it as simd intrinsic set.
@@ -12069,46 +12081,32 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 *   return nullptr.
 */
 
-GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
+GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
 {
     assert(tree->OperGet() == GT_ASG);
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
 
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
-    GenTree*    simdOp1Struct   = getSIMDStructFromField(op1, &simdBaseJitType, &index, &simdSize);
-    if (simdOp1Struct != nullptr)
+    GenTree*    simdStructNode  = getSIMDStructFromField(tree->gtGetOp1(), &simdBaseJitType, &index, &simdSize);
+
+    if (simdStructNode != nullptr)
     {
+        var_types simdType     = simdStructNode->gtType;
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
-        // Generate the simd set intrinsic
+        assert(simdSize <= 16);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
 
-        SIMDIntrinsicID simdIntrinsicID = SIMDIntrinsicInvalid;
-        switch (index)
-        {
-            case 0:
-                simdIntrinsicID = SIMDIntrinsicSetX;
-                break;
-            case 1:
-                simdIntrinsicID = SIMDIntrinsicSetY;
-                break;
-            case 2:
-                simdIntrinsicID = SIMDIntrinsicSetZ;
-                break;
-            case 3:
-                simdIntrinsicID = SIMDIntrinsicSetW;
-                break;
-            default:
-                noway_assert(!"There is no set intrinsic for index bigger than 3");
-        }
+        GenTree*       op2         = gtNewIconNode(index, TYP_INT);
+        GenTree*       op3         = tree->gtGetOp2();
+        NamedIntrinsic intrinsicId = NI_Vector128_WithElement;
 
-        GenTree* target = gtClone(simdOp1Struct);
+        GenTree* target = gtClone(simdStructNode);
         assert(target != nullptr);
-        var_types simdType = target->gtType;
-        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, simdBaseJitType, simdSize);
+
+        GenTree* simdTree = gtNewSimdWithElementNode(simdType, simdStructNode, op2, op3, simdBaseJitType, simdSize,
+                                                     /* isSimdAsHWIntrinsic */ true);
 
         tree->AsOp()->gtOp1 = target;
         tree->AsOp()->gtOp2 = simdTree;
@@ -12254,11 +12252,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             op2 = tree->AsOp()->gtOp2;
 
 #ifdef FEATURE_SIMD
+            if (IsBaselineSimdIsaSupported())
             {
                 // We should check whether op2 should be assigned to a SIMD field or not.
                 // If it is, we should tranlate the tree to simd intrinsic.
                 assert(!fgGlobalMorph || ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0));
-                GenTree* newTree = fgMorphFieldAssignToSIMDIntrinsicSet(tree);
+                GenTree* newTree = fgMorphFieldAssignToSimdSetElement(tree);
                 typ              = tree->TypeGet();
                 op1              = tree->gtGetOp1();
                 op2              = tree->gtGetOp2();
@@ -14091,7 +14090,8 @@ DONE_MORPHING_CHILDREN:
             }
 
             // Fold "cmp & 1" to just "cmp"
-            if (tree->OperIs(GT_AND) && tree->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1))
+            if (tree->OperIs(GT_AND) && tree->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1) &&
+                !gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(op2))
             {
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(tree);
@@ -16942,7 +16942,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
 
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         if (fgRemoveRestOfBlock)
         {
@@ -18070,9 +18070,9 @@ void Compiler::fgExpandQmarkNodes()
 {
     if (compQmarkUsed)
     {
-        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
 #ifdef DEBUG
@@ -18096,9 +18096,9 @@ void Compiler::fgExpandQmarkNodes()
  */
 void Compiler::fgPostExpandQmarkChecks()
 {
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             GenTree* expr = stmt->GetRootNode();
             fgWalkTreePre(&expr, Compiler::fgAssertNoQmark, nullptr);
@@ -19331,6 +19331,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
     //  1) ret(void)
     //  2) ret(cast*(callResultLclVar))
     //  3) lclVar = callResultLclVar, the actual ret(lclVar) in another block
+    //  4) nop
     if (nextMorphStmt != nullptr)
     {
         GenTree* callExpr = callStmt->GetRootNode();
@@ -19357,8 +19358,13 @@ bool Compiler::fgCheckStmtAfterTailCall()
             //
             // And if we're returning a small type we may see a cast
             // on the source side.
-            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG)))
+            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG, GT_NOP)))
             {
+                if (nextMorphStmt->GetRootNode()->OperIs(GT_NOP))
+                {
+                    nextMorphStmt = nextMorphStmt->GetNextStmt();
+                    continue;
+                }
                 Statement* moveStmt = nextMorphStmt;
                 GenTree*   moveExpr = nextMorphStmt->GetRootNode();
                 GenTree*   moveDest = moveExpr->gtGetOp1();

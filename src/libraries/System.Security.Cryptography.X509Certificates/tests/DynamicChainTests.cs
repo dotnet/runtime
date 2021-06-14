@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             intermediateCert = TamperIfNeeded(intermediateCert, intermediateErrors);
             rootCert = TamperIfNeeded(rootCert, rootErrors);
 
-            if (OperatingSystem.IsMacOS())
+            if (PlatformDetection.UsesAppleCrypto)
             {
                 // For the lower levels, turn NotSignatureValid into PartialChain,
                 // and clear all errors at higher levels.
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     rootErrors &= ~X509ChainStatusFlags.NotSignatureValid;
 
                     // On 10.13+ it becomes PartialChain, and UntrustedRoot goes away.
-                    if (PlatformDetection.IsOSX)
+                    if (PlatformDetection.UsesAppleCrypto)
                     {
                         rootErrors &= ~X509ChainStatusFlags.UntrustedRoot;
                         rootErrors |= X509ChainStatusFlags.PartialChain;
@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                     else
                     {
-                        X509ChainElement certElement = chain.ChainElements.OfType<X509ChainElement>().Single();
+                        X509ChainElement certElement = chain.ChainElements.Single();
                         const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.HasNotSupportedCriticalExtension;
                         X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
                         Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
@@ -559,7 +559,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "macOS appears to just completely ignore min/max.")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "macOS appears to just completely ignore min/max.")]
         public static void NameConstraintViolation_PermittedTree_HasMin()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -592,6 +592,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52976", TestPlatforms.Android)]
         public static void MismatchKeyIdentifiers()
         {
             X509Extension[] intermediateExtensions = new []
@@ -631,7 +632,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (OperatingSystem.IsLinux())
                 {
                     Assert.False(chain.Build(endEntityCert), "chain.Build");
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
@@ -844,7 +845,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
-            if (OperatingSystem.IsMacOS())
+            if (PlatformDetection.UsesAppleCrypto)
             {
                 const X509ChainStatusFlags AnyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
@@ -871,7 +872,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
         {
-            if (OperatingSystem.IsMacOS())
+            if (PlatformDetection.UsesAppleCrypto)
             {
                 const X509ChainStatusFlags AnyPolicyConstraintFlags =
                     X509ChainStatusFlags.NoIssuanceChainPolicy;

@@ -659,11 +659,6 @@ Thread* SetupThread()
     }
 #endif
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    // Initialize new threads to JIT Write disabled
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
@@ -724,6 +719,7 @@ Thread* SetupThread()
 
     SetupTLSForThread();
     pThread->InitThread();
+    pThread->PrepareApartmentAndContext();
 
     // reset any unstarted bits on the thread object
     FastInterlockAnd((ULONG *) &pThread->m_State, ~Thread::TS_Unstarted);
@@ -797,9 +793,6 @@ Thread* SetupThread()
     {
         FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
     }
-
-    // Initialize the thread for the platform as the final step.
-    pThread->FinishInitialization();
 
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);
@@ -1153,11 +1146,11 @@ void InitThreadManager()
         COMPlusThrowWin32();
     }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+    {
+        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+        ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
+        memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
+    }
 
     // Store the JIT_WriteBarrier copy location to a global variable so that helpers
     // can jump to it.
@@ -1821,11 +1814,17 @@ BOOL Thread::HasStarted()
 
         InitThread();
 
+        fCanCleanupCOMState = TRUE;
+        // Preparing the COM apartment and context may attempt
+        // to transition to Preemptive mode. At this point in
+        // the thread's lifetime this can be a bad thing if a GC
+        // is triggered (e.g. GCStress). Do the preparation prior
+        // to the thread being set so the Preemptive mode transition
+        // is a no-op.
+        PrepareApartmentAndContext();
+
         SetThread(this);
         SetAppDomain(m_pDomain);
-
-        fCanCleanupCOMState = TRUE;
-        FinishInitialization();
 
         ThreadStore::TransferStartedThread(this);
 
@@ -4709,7 +4708,7 @@ public:
 };
 #endif // FEATURE_COMINTEROP
 
-void Thread::FinishInitialization()
+void Thread::PrepareApartmentAndContext()
 {
     CONTRACTL {
         THROWS;
@@ -5368,7 +5367,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     return found;
 }
 
-
 // When a thread is created as unstarted.  Later it may get started, in which case
 // someone calls Thread::HasStarted() on that physical thread.  This completes
 // the Setup and calls here.
@@ -5392,7 +5390,8 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     //    is that the lock is held and not by this thread.
     _ASSERTE(!lockHeld
         || (lockHeld
-            && s_pThreadStore->m_HoldingThread != NULL
+            && !s_pThreadStore->m_holderthreadid.IsUnknown()
+            && ((s_pThreadStore->m_HoldingThread != NULL) || IsGCSpecialThread())
             && !ThreadStore::HoldingThreadStore()));
 
     LOG((LF_SYNC, INFO3, "TransferStartedThread obtain lock\n"));

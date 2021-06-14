@@ -34,6 +34,11 @@
   {
      ret
   }
+
+  .method public hidebysig instance int32 [0...,0...] Method5(int32 [0...,], int32 [,]) cil managed
+  {
+     ret
+  }
 }
 
 .class private auto ansi beforefieldinit Atom

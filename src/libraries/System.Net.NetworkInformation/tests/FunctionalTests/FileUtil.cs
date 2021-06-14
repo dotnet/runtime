@@ -14,22 +14,8 @@ namespace System.Net.NetworkInformation.Tests
         public static void NormalizeLineEndings(string source, string normalizedDest)
         {
             string contents = File.ReadAllText(source);
-            if (Environment.NewLine == "\r\n")
-            {
-                if (!contents.Contains(Environment.NewLine))
-                {
-                    contents = contents.Replace("\n", "\r\n");
-                }
-            }
-            else if (Environment.NewLine == "\n")
-            {
-                if (contents.Contains("\r\n"))
-                {
-                    contents = contents.Replace("\r\n", "\n");
-                }
-            }
-
-            File.WriteAllText(normalizedDest, contents);
+            string normalizedContents = contents.ReplaceLineEndings();
+            File.WriteAllText(normalizedDest, normalizedContents);
         }
     }
 }

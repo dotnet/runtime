@@ -1506,6 +1506,16 @@ public:
         return OperIsSimple(gtOper);
     }
 
+    static bool OperIsRelop(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsRelop() const
+    {
+        return OperIsRelop(gtOper);
+    }
+
 #ifdef FEATURE_SIMD
     bool isCommutativeSIMDIntrinsic();
 #else  // !
@@ -1778,12 +1788,6 @@ public:
     {
         return OperIsAnyList(gtOper);
     }
-
-    inline GenTree* MoveNext();
-
-    inline GenTree* Current();
-
-    inline GenTree** pCurrent();
 
     inline GenTree* gtGetOp1() const;
 
@@ -3531,6 +3535,11 @@ struct GenTreeCast : public GenTreeOp
     GenTreeCast(var_types type, GenTree* op, bool fromUnsigned, var_types castType DEBUGARG(bool largeNode = false))
         : GenTreeOp(GT_CAST, type, op, nullptr DEBUGARG(largeNode)), gtCastType(castType)
     {
+        // We do not allow casts from floating point types to be treated as from
+        // unsigned to avoid bugs related to wrong GTF_UNSIGNED in case the
+        // CastOp's type changes.
+        assert(!varTypeIsFloating(op) || !fromUnsigned);
+
         gtFlags |= fromUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
     }
 #if DEBUGGABLE_GENTREE
@@ -5793,6 +5802,31 @@ enum RMWStatus
     STOREIND_RMW_INDIR_UNEQUAL     // Indir to read value is not equivalent to indir that writes the value
 };
 
+#ifdef DEBUG
+inline const char* RMWStatusDescription(RMWStatus status)
+{
+    switch (status)
+    {
+        case STOREIND_RMW_STATUS_UNKNOWN:
+            return "RMW status unknown";
+        case STOREIND_RMW_DST_IS_OP1:
+            return "dst candidate is op1";
+        case STOREIND_RMW_DST_IS_OP2:
+            return "dst candidate is op2";
+        case STOREIND_RMW_UNSUPPORTED_ADDR:
+            return "address mode is not supported";
+        case STOREIND_RMW_UNSUPPORTED_OPER:
+            return "oper is not supported";
+        case STOREIND_RMW_UNSUPPORTED_TYPE:
+            return "type is not supported";
+        case STOREIND_RMW_INDIR_UNEQUAL:
+            return "read indir is not equivalent to write indir";
+        default:
+            unreached();
+    }
+}
+#endif
+
 // StoreInd is just a BinOp, with additional RMW status
 struct GenTreeStoreInd : public GenTreeIndir
 {
@@ -5912,6 +5946,58 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
+// GenTreeList: adapter class for forward iteration of the execution order GenTree linked list
+// using range-based `for`, normally used via Statement::TreeList(), e.g.:
+//    for (GenTree* const tree : stmt->TreeList()) ...
+//
+class GenTreeList
+{
+    GenTree* m_trees;
+
+    // Forward iterator for the execution order GenTree linked list (using `gtNext` pointer).
+    //
+    class iterator
+    {
+        GenTree* m_tree;
+
+    public:
+        iterator(GenTree* tree) : m_tree(tree)
+        {
+        }
+
+        GenTree* operator*() const
+        {
+            return m_tree;
+        }
+
+        iterator& operator++()
+        {
+            m_tree = m_tree->gtNext;
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_tree != i.m_tree;
+        }
+    };
+
+public:
+    GenTreeList(GenTree* trees) : m_trees(trees)
+    {
+    }
+
+    iterator begin() const
+    {
+        return iterator(m_trees);
+    }
+
+    iterator end() const
+    {
+        return iterator(nullptr);
+    }
+};
+
 // We use the following format when printing the Statement number: Statement->GetID()
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_STMT "STMT%05u"
@@ -5957,6 +6043,15 @@ public:
     void SetTreeList(GenTree* treeHead)
     {
         m_treeList = treeHead;
+    }
+
+    // TreeList: convenience method for enabling range-based `for` iteration over the
+    // execution order of the GenTree linked list, e.g.:
+    //    for (GenTree* const tree : stmt->TreeList()) ...
+    //
+    GenTreeList TreeList() const
+    {
+        return GenTreeList(GetTreeList());
     }
 
     InlineContext* GetInlineContext() const
@@ -6069,49 +6164,57 @@ private:
     bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
-class StatementIterator
-{
-    Statement* m_stmt;
-
-public:
-    StatementIterator(Statement* stmt) : m_stmt(stmt)
-    {
-    }
-
-    Statement* operator*() const
-    {
-        return m_stmt;
-    }
-
-    StatementIterator& operator++()
-    {
-        m_stmt = m_stmt->GetNextStmt();
-        return *this;
-    }
-
-    bool operator!=(const StatementIterator& i) const
-    {
-        return m_stmt != i.m_stmt;
-    }
-};
-
+// StatementList: adapter class for forward iteration of the statement linked list using range-based `for`,
+// normally used via BasicBlock::Statements(), e.g.:
+//    for (Statement* const stmt : block->Statements()) ...
+// or:
+//    for (Statement* const stmt : block->NonPhiStatements()) ...
+//
 class StatementList
 {
     Statement* m_stmts;
+
+    // Forward iterator for the statement linked list.
+    //
+    class iterator
+    {
+        Statement* m_stmt;
+
+    public:
+        iterator(Statement* stmt) : m_stmt(stmt)
+        {
+        }
+
+        Statement* operator*() const
+        {
+            return m_stmt;
+        }
+
+        iterator& operator++()
+        {
+            m_stmt = m_stmt->GetNextStmt();
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_stmt != i.m_stmt;
+        }
+    };
 
 public:
     StatementList(Statement* stmts) : m_stmts(stmts)
     {
     }
 
-    StatementIterator begin() const
+    iterator begin() const
     {
-        return StatementIterator(m_stmts);
+        return iterator(m_stmts);
     }
 
-    StatementIterator end() const
+    iterator end() const
     {
-        return StatementIterator(nullptr);
+        return iterator(nullptr);
     }
 };
 
@@ -7167,12 +7270,6 @@ inline bool GenTree::IsBoxedValue()
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
 }
 
-inline GenTree* GenTree::MoveNext()
-{
-    assert(OperIsAnyList());
-    return AsOp()->gtOp2;
-}
-
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // IsValidCallArgument: Given an GenTree node that represents an argument
@@ -7220,18 +7317,6 @@ inline bool GenTree::IsValidCallArgument()
     return true;
 }
 #endif // DEBUG
-
-inline GenTree* GenTree::Current()
-{
-    assert(OperIsAnyList());
-    return AsOp()->gtOp1;
-}
-
-inline GenTree** GenTree::pCurrent()
-{
-    assert(OperIsAnyList());
-    return &(AsOp()->gtOp1);
-}
 
 inline GenTree* GenTree::gtGetOp1() const
 {

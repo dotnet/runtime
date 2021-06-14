@@ -994,28 +994,10 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 
-	GList *list = image->delta_image;
-	MonoImage *dmeta;
-	MonoTableInfo *table;
-	/* result row, 0-based */
-	int ridx;
+        if (G_LIKELY (!image->has_updates))
+                return TRUE;
 
-	int original_token = mono_metadata_make_token (table_index, token_index);
-
-	uint32_t exposed_gen = mono_metadata_update_get_thread_generation ();
-	do {
-		if (!list)
-			return TRUE;
-		dmeta = list->data;
-		if (dmeta->generation > exposed_gen)
-			return TRUE;
-		list = list->next;
-		table = &dmeta->tables [table_index];
-		/* mono_image_relative_delta_index returns a 1-based index */
-		ridx = mono_image_relative_delta_index (dmeta, original_token) - 1;
-	} while (ridx < 0 || ridx >= table_info_get_rows (table));
-
-	return FALSE;
+        return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
 #endif
 
@@ -1078,8 +1060,6 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 
 
 
-typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);
-
 #ifdef ENABLE_METADATA_UPDATE
 static MonoStreamHeader *
 get_string_heap (MonoImage *image)
@@ -1102,34 +1082,9 @@ get_blob_heap (MonoImage *image)
 static gboolean
 mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, guint32 orig_index, MonoImage **image_out, guint32 *index_out)
 {
-	g_assert (image_out);
-	g_assert (index_out);
-	MonoStreamHeader *heap = get_heap (base_image);
-	g_assert (orig_index >= heap->size && base_image->delta_image);
-
-	*image_out = base_image;
-	*index_out = orig_index;
-
-	guint32 prev_size = heap->size;
-
-	uint32_t current_gen = mono_metadata_update_get_thread_generation ();
-	GList *cur;
-	for (cur = base_image->delta_image; cur; cur = cur->next) {
-		*image_out = (MonoImage*)cur->data;
-		heap = get_heap (*image_out);
-
-		if ((*image_out)->generation > current_gen)
-			return FALSE;
-
-		/* FIXME: for non-minimal deltas we should just look in the last published image. */
-		if (G_LIKELY ((*image_out)->minimal_delta))
-			*index_out -= prev_size;
-		if (*index_out < heap->size)
-			break;
-		prev_size = heap->size;
-	}
-	return (cur != NULL);
+        return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
 }
+
 #endif
 
 /**
@@ -1142,7 +1097,7 @@ const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
 #ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_string_heap, index, &dmeta, &dindex);
@@ -1180,7 +1135,7 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 	}
 
 #ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_string_heap, index, &dmeta, &dindex);
@@ -1213,7 +1168,7 @@ const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
 #ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_us.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_us.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_user_string_heap, index, &dmeta, &dindex);
@@ -1242,7 +1197,7 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 	 * mono_metadata_blob_heap_null_ok and handling a null return value. */
 	g_assert (!(index == 0 && meta->heap_blob.size == 0));
 #ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_blob_heap, index, &dmeta, &dindex);
@@ -1297,7 +1252,7 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
 #ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_blob_heap, index, &dmeta, &dindex);
@@ -1327,7 +1282,7 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 const char *
 mono_metadata_guid_heap (MonoImage *meta, guint32 index)
 {
-	/* EnC TODO: lookup in MonoImage:delta_image_last.  Unlike the other heaps, the GUID heaps are always full in every delta, even in minimal delta images. */
+	/* EnC TODO: lookup in DeltaInfo:delta_image_last.  Unlike the other heaps, the GUID heaps are always full in every delta, even in minimal delta images. */
 	--index;
 	index *= 16; /* adjust for guid size and 1-based index */
 	g_return_val_if_fail (index < meta->heap_guid.size, "");
@@ -2031,9 +1986,7 @@ mono_metadata_init (void)
 
 	mono_components_init ();
 
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_init ();
-#endif
 }
 
 /**

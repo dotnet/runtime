@@ -50,7 +50,6 @@
 #include "mini.h"
 #include "mini-s390x.h"
 #include "mini-runtime.h"
-#include "support-s390x.h"
 #include "jit-icalls.h"
 #include "debugger-agent.h"
 #include "mono/utils/mono-tls-inline.h"
@@ -245,43 +244,75 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	return buf;
 }
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_patch_callsite                          */
-/*                                                                  */
-/* Function	- Patch a non-virtual callsite so it calls @addr.   */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Locate the address of the thunk target
+ *
+ * @param[in] @code - Instruction following the branch and save
+ * @returns Address of the thunk code
+ *
+ * A thunk call is a sequence of:
+ * 	lgrl	rx,tgt 	Load address of target 		(.-6)
+ * 	basr	rx,rx	Branch and save to that address (.), or,
+ * 	br	r1	Jump to target			(.)
+ *
+ * The target of that code is a thunk which:
+ * tgt:	.quad	target		Destination
+ */
 
-void
-mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
+guint8 *
+mono_arch_get_call_target (guint8 *code)
 {
-	gint32 displace;
-	unsigned short opcode;
+	guint8 *thunk;
+	guint32 rel;
 
-	opcode = *((unsigned short *) (orig_code - 2));
-	if (opcode == 0x0dee) {
-		/* This should be a 'iihf/iilf' sequence */
-		S390_EMIT_CALL((orig_code - 14), addr);
-		mono_arch_flush_icache (orig_code - 14, 12);
-	} else {
-		/* This is the 'brasl' instruction */
-		orig_code    -= 4;
-		displace = ((gssize) addr - (gssize) (orig_code - 2)) / 2;
-		s390_patch_rel (orig_code, displace);
-		mono_arch_flush_icache (orig_code, 4);
-	}
+	/*
+	 * Determine thunk address by adding the relative offset
+	 * in the lgrl to its location
+	 */
+	rel = *(guint32 *) ((uintptr_t) code - 4);
+	thunk = (guint8 *) ((uintptr_t) code - 6) + (rel * 2);
+
+	return(thunk);
 }
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_patch_plt_entry.                        */
-/*                                                                  */
-/* Function	- Patch a PLT entry - unused as yet.                */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Patch the callsite
+ *
+ * @param[in] @method_start - first instruction of method
+ * @param[in] @orig_code - Instruction following the branch and save
+ * @param[in] @addr - New value for target of call
+ *
+ * Patch a call. The call is either a 'thunked' call identified by the BASR R14,R14
+ * instruction or a direct call
+ */
+
+void
+mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
+{
+	guint64 *thunk;
+
+	thunk = (guint64 *) mono_arch_get_call_target(orig_code - 2);
+	*thunk = (guint64) addr;
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ *
+ * @brief Patch PLT entry (AOT only)
+ *
+ * @param[in] @code - Location of PLT
+ * @param[in] @got - Global Offset Table
+ * @param[in] @regs - Registers at the time
+ * @param[in] @addr - Target address
+ *
+ * Not reached on s390x until we have AOT support
+ *
+ */
 
 void
 mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
@@ -291,14 +322,17 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_create_trampoline_code                  */
-/*                                                                  */
-/* Function	- Create the designated type of trampoline according*/
-/*                to the 'tramp_type' parameter.                    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Architecture-specific trampoline creation
+ *
+ * @param[in] @tramp_type - Type of trampoline
+ * @param[out] @info - Pointer to trampoline information
+ * @param[in] @aot - AOT indicator
+ *
+ * Create a generic trampoline
+ *
+ */
 
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
@@ -520,13 +554,16 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_invalidate_method                       */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Architecture-specific method invalidation
+ *
+ * @param[in] @func - Function to call
+ * @param[in] @func_arg - Argument to invalidation function
+ *
+ * Call an error routine so peple can fix their code
+ *
+ */
 
 void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
@@ -542,13 +579,18 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_create_specific_trampoline              */
-/*                                                                  */
-/* Function	- Creates the given kind of specific trampoline     */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Architecture-specific specific trampoline creation
+ *
+ * @param[in] @arg1 - Argument to trampoline being created
+ * @param[in] @tramp_type - Trampoline type
+ * @param[in] @domain - Mono Domain
+ * @param[out] @code_len - Length of trampoline created
+ *
+ * Create the specified kind of trampoline
+ *
+ */
 
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
@@ -591,13 +633,17 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_create_rgctx_lazy_fetch_trampoline      */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Architecture-specific RGCTX lazy fetch trampoline
+ *
+ * @param[in] @slot - Instance
+ * @param[out] @info - Mono Trampoline Information
+ * @param[in] @aot - AOT indicator
+ *
+ * Create the specified kind of trampoline
+ *
+ */
 
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
@@ -714,14 +760,16 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name    	- mono_arch_get_static_rgctx_trampoline		    */
-/*                                                                  */
-/* Function	- Create a trampoline which sets RGCTX_REG to ARG       */
-/*		  then jumps to ADDR.				    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
+/**
+ *
+ * @brief Architecture-specific static RGCTX lazy fetch trampoline
+ *
+ * @param[in] @arg - Argument to trampoline being created
+ * @param[out] @addr - Target
+ *
+ * Create a trampoline which sets RGCTX_REG to ARG
+ *                then jumps to ADDR.
+ */
 
 gpointer
 mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
