@@ -894,6 +894,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const bool  resolveTokens          = makeInlineObservations && (isTier1 || isPreJit);
     unsigned    retBlocks              = 0;
     int         prefixFlags            = 0;
+    bool        conservativeInliner    = JitConfig.JitConservativeInliner();
 
     if (makeInlineObservations)
     {
@@ -940,7 +941,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     bool   handled    = false;
     while (codeAddr < codeEndp)
     {
-        if (!handled)
+        if (!handled && !conservativeInliner)
         {
             // Push SLOT_UNKNOWN to the stack since the current opcode was not handled
             pushedStack.PushUnknown();
@@ -1004,15 +1005,21 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_LDTOKEN:
             case CEE_LDSTR:
             {
-                pushedStack.PushConstant();
-                handled = true;
+                if (!conservativeInliner)
+                {
+                    pushedStack.PushConstant();
+                    handled = true;
+                }
                 break;
             }
 
             case CEE_DUP:
             {
-                pushedStack.DuplicateTop();
-                handled = true;
+                if (!conservativeInliner)
+                {
+                    pushedStack.DuplicateTop();
+                    handled = true;
+                }
                 break;
             }
 
@@ -1090,7 +1097,17 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
                 }
 
-                if (isJitIntrinsic)
+                if (isJitIntrinsic && conservativeInliner)
+                {
+                    // Conservative inliner only handles these two:
+                    ni = lookupNamedIntrinsic(methodHnd);
+                    if ((ni == NI_IsSupported_True) ||
+                        (ni == NI_IsSupported_False))
+                    {
+                        pushedStack.PushConstant();
+                    }
+                }
+                else if (isJitIntrinsic)
                 {
                     ni = lookupNamedIntrinsic(methodHnd);
 
@@ -1227,10 +1244,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // it is a wrapper method.
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
-
-                // TODO: for normal calls if first (1-2) args are constants we can hope this
-                // unknown call will be inlined and folded too.
-                // but we'll have to call eeGetCallInfo here with questionable TP impact.
             }
             break;
 
@@ -1313,7 +1326,25 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_CLT:
             case CEE_CLT_UN:
             {
-                if (makeInlineObservations)
+                if (makeInlineObservations && conservativeInliner)
+                {
+                    switch (opcode)
+                    {
+                        case CEE_CEQ:
+                        case CEE_CGT:
+                        case CEE_CGT_UN:
+                        case CEE_CLT:
+                        case CEE_CLT_UN:
+                            if (makeInlineObservations)
+                            {
+                                fgObserveInlineConstants(opcode, pushedStack, isInlining);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else if (makeInlineObservations)
                 {
                     FgStack::FgSlot arg0 = pushedStack.Top(1);
                     FgStack::FgSlot arg1 = pushedStack.Top(0);
@@ -1422,7 +1453,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 jumpTarget->bitVectSet(jmpAddr);
 
                 // See if jump might be sensitive to inlining
-                if (makeInlineObservations)
+                if (conservativeInliner && makeInlineObservations && (opcode != CEE_BR_S) && (opcode != CEE_BR))
+                {
+                    fgObserveInlineConstants(opcode, pushedStack, isInlining);
+                }
+                else if (makeInlineObservations)
                 {
                     switch (opcode)
                     {
@@ -1500,7 +1535,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 break;
             }
 
-            case CEE_LDELEMA:
             case CEE_LDELEM_I1:
             case CEE_LDELEM_U1:
             case CEE_LDELEM_I2:
@@ -1523,6 +1557,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_LDELEM:
             case CEE_STELEM:
             {
+                if (conservativeInliner)
+                {
+                    break;
+                }
+
                 if (FgStack::IsArgument(pushedStack.Top()) || FgStack::IsArgument(pushedStack.Top(1)))
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
@@ -2067,6 +2106,106 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             if (lclDsc->lvSingleDef)
             {
                 JITDUMP("Marked V%02u as a single def local\n", lclNum);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// fgObserveInlineConstants: look for operations that might get optimized
+//   if this method were to be inlined, and report these to the inliner.
+//
+// Arguments:
+//    opcode     -- MSIL opcode under consideration
+//    stack      -- abstract stack model at this point in the IL
+//    isInlining -- true if we're inlining (vs compiling a prejit root)
+//
+// Notes:
+//    Currently only invoked on compare and branch opcodes.
+//
+//    If we're inlining we also look at the argument values supplied by
+//    the caller at this call site.
+//
+//    The crude stack model may overestimate stack depth.
+
+void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, bool isInlining)
+{
+    // We should be able to record inline observations.
+    assert(compInlineResult != nullptr);
+
+    // The stack only has to be 1 deep for BRTRUE/FALSE
+    bool lookForBranchCases = stack.IsStackAtLeastOneDeep();
+
+    if (lookForBranchCases)
+    {
+        if (opcode == CEE_BRFALSE || opcode == CEE_BRFALSE_S || opcode == CEE_BRTRUE || opcode == CEE_BRTRUE_S)
+        {
+            FgStack::FgSlot slot0 = stack.GetSlot0();
+            if (FgStack::IsArgument(slot0))
+            {
+                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+
+                if (isInlining)
+                {
+                    // Check for the double whammy of an incoming constant argument
+                    // feeding a constant test.
+                    unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
+                    if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
+                    {
+                        compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+                    }
+                }
+            }
+
+            return;
+        }
+    }
+
+    // Remaining cases require at least two things on the stack.
+    if (!stack.IsStackTwoDeep())
+    {
+        return;
+    }
+
+    FgStack::FgSlot slot0 = stack.GetSlot0();
+    FgStack::FgSlot slot1 = stack.GetSlot1();
+
+    // Arg feeds constant test
+    if ((FgStack::IsConstant(slot0) && FgStack::IsArgument(slot1)) ||
+        (FgStack::IsConstant(slot1) && FgStack::IsArgument(slot0)))
+    {
+        compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+    }
+
+    // Arg feeds range check
+    if ((FgStack::IsArrayLen(slot0) && FgStack::IsArgument(slot1)) ||
+        (FgStack::IsArrayLen(slot1) && FgStack::IsArgument(slot0)))
+    {
+        compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
+    }
+
+    // Check for an incoming arg that's a constant
+    if (isInlining)
+    {
+        if (FgStack::IsArgument(slot0))
+        {
+            compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
+
+            unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
+            if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
+            {
+                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+            }
+        }
+
+        if (FgStack::IsArgument(slot1))
+        {
+            compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
+
+            unsigned varNum = FgStack::SlotTypeToArgNum(slot1);
+            if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
+            {
+                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
             }
         }
     }
