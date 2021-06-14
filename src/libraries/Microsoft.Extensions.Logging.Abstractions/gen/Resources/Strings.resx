@@ -123,9 +123,6 @@
   <data name="InvalidLoggingMethodParameterNameMessage" xml:space="preserve">
     <value>Logging method parameter names cannot start with _</value>
   </data>
-  <data name="LoggingMethodInNestedTypeMessage" xml:space="preserve">
-    <value>Logging class cannot be in nested types</value>
-  </data>
   <data name="MissingRequiredTypeTitle" xml:space="preserve">
     <value>Could not find a required type definition</value>
   </data>
