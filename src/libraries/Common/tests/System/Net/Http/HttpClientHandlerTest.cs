@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues_CommonPlatform()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -62,6 +62,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -79,6 +80,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void Credentials_SetGet_Roundtrips()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -99,6 +101,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(0)]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxAutomaticRedirections not supported on Browser")]
         public void MaxAutomaticRedirections_InvalidValue_Throws(int redirects)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -148,6 +151,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -195,7 +199,10 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            if(PlatformDetection.IsNotBrowser)
+            {
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            }
 
             using HttpClient client = CreateHttpClient(handler);
 
@@ -224,6 +231,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("[::1234]")]
         [InlineData("[::1234]:8080")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on Browser")]
         public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host)
         {
             string ipv6Address = "http://" + host;
@@ -254,7 +262,9 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in BoolValues
+            from useSsl in BoolValues 
+            // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+            where PlatformDetection.IsNotBrowser || !useSsl 
             select new object[] { address, useSsl };
 
         [Theory]
@@ -277,8 +287,9 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    if (useSsl)
+                    if (useSsl && PlatformDetection.IsNotBrowser)
                     {
+                        // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
                     try { await client.GetAsync(url); } catch { }
@@ -296,6 +307,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1306,6 +1318,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1629,7 +1642,7 @@ namespace System.Net.Http.Functional.Tests
                 Task responseTask = server.AcceptConnectionAsync(async connection =>
                 {
                     var buffer = new byte[1000];
-                    while (await connection.Socket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), SocketFlags.None) != 0);
+                    while (await connection.ReadAsync(new Memory<byte>(buffer), 0, buffer.Length) != 0) ;
                 });
 
                 using (HttpClient client = CreateHttpClient())
