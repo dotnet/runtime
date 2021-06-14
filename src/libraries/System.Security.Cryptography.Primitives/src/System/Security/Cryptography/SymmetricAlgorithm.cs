@@ -541,7 +541,7 @@ namespace System.Security.Cryptography
         /// <param name="ciphertext">The data to decrypt</param>
         /// <param name="destination">The buffer to receive the plaintext data</param>
         /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" /></returns>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" /></param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>

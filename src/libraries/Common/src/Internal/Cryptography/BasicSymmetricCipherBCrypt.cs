@@ -84,7 +84,7 @@ namespace Internal.Cryptography
             }
             else
             {
-                numBytesWritten = BCryptTransform(input, rented);
+                numBytesWritten = BCryptTransform(input, output);
             }
 
             if (numBytesWritten != input.Length)
