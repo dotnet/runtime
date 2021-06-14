@@ -12,6 +12,8 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
+#include "executableallocator.h"
+
 #ifndef CORDB_ADDRESS_TYPE
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -187,7 +189,9 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
 
-    *((unsigned char*)address) = 0xCC;  // int 3 (single byte patch)
+    ExecutableWriterHolder<void> breakpointWriterHolder((LPVOID)address, CORDbg_BREAK_INSTRUCTION_SIZE);
+
+    *((unsigned char*)breakpointWriterHolder.GetRW()) = 0xCC; // int 3 (single byte patch)
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 
 }
@@ -198,7 +202,9 @@ inline void CORDbgSetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-    *((unsigned char*)address) =
+    ExecutableWriterHolder<void> instructionWriterHolder((LPVOID)address, sizeof(unsigned char));
+
+    *((unsigned char*)instructionWriterHolder.GetRW()) =
         (unsigned char) instruction;    // setting one byte is important
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 

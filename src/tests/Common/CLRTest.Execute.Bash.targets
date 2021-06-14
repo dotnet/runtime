@@ -325,8 +325,6 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
   TakeLock
 fi
 
-export MONO_ENV_OPTIONS=--llvm
-
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
