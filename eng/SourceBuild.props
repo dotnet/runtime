@@ -72,44 +72,16 @@
           BeforeTargets="GetCategorizedIntermediateNupkgContents">
     <ItemGroup>
       <!--
-        Order matters in some situations: put more specific patterns first, so
-        they are the ones "picked" during item-name-only deduplication.
+        Runtime artifacts are too large to fit into a single package (Azure DevOps feeds 500 mb constraint).
+        Split large components into separate packages.
       -->
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-hostfxr-internal-*.tar.gz" Category="hostfxr-internal" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-internal-*.tar.gz" Category="runtime-internal" />
       <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*.tar.gz" Category="runtime" />
 
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz" Category="Crossgen2Pack.Archive" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-apphost-pack-*.tar.gz" Category="HostPack.Archive" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-targeting-pack-*.tar.gz" Category="RefPack.Archive" />
-
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg" Category="Crossgen2Pack" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Host.*.nupkg" Category="HostPack" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Ref.*.nupkg" Category="RefPack" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Runtime.*.nupkg" Category="RuntimePack" />
-
       <IntermediateNupkgArtifactFile
         Include="
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-ilverify.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NET.Sdk.IL.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.NETCore.ILAsm.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.NETCore.ILDAsm.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.NETCore.TestHost.*.nupkg;
-          "
-        Category="CoreCLR" />
-
-      <IntermediateNupkgArtifactFile
-        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)NonShipping\Microsoft.NET.HostModel.*.nupkg;"
-        Category="HostLibraries" />
-
-      <IntermediateNupkgArtifactFile
-        Include="
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)NonShipping\Microsoft.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\System.*.nupkg;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\runtime.*.runtime.native.System.*.nupkg;
-          "
-        Category="Libraries" />
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+        Category="Crossgen2Pack" />
     </ItemGroup>
   </Target>
 
