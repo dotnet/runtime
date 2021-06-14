@@ -20,8 +20,6 @@ mono_metadata_update_available (void)
         return mono_component_hot_reload ()->component.available ();
 }
 
-#ifdef ENABLE_METADATA_UPDATE
-
 MonoMetadataUpdateData mono_metadata_update_data_private;
 
 void
@@ -122,14 +120,4 @@ mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGette
         return mono_component_hot_reload ()->delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
 }
 
-#else /* ENABLE_METADATA_UPDATE */
-
-void
-mono_metadata_update_init (void)
-{
-	MonoComponentHotReload *comp = mono_component_hot_reload ();
-	comp->set_fastpath_data (NULL);
-}
-
-#endif /* ENABLE_METADATA_UPDATE */
 
