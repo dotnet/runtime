@@ -2619,26 +2619,17 @@ emit_x86_intrinsics (
 	}
 	if (feature == MONO_CPU_X86_BMI2) {
 		switch (id) {
-		case SN_MultiplyNoFlags:
+		case SN_MultiplyNoFlags: {
+			int op = 0;
 			if (fsig->param_count == 2) {
-				MONO_INST_NEW (cfg, ins, is_64bit ? OP_MULX_H64 : OP_MULX_H32);
-				ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-				ins->sreg1 = args [0]->dreg;
-				ins->sreg2 = args [1]->dreg;
-				ins->type = is_64bit ? STACK_I8 : STACK_I4;
-				MONO_ADD_INS (cfg->cbb, ins);
+				op = is_64bit ? OP_MULX_H64 : OP_MULX_H32;
 			} else if (fsig->param_count == 3) {
-				MONO_INST_NEW (cfg, ins, is_64bit ? OP_MULX_HL64 : OP_MULX_HL32);
-				ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-				ins->sreg1 = args [0]->dreg;
-				ins->sreg2 = args [1]->dreg;
-				ins->sreg3 = args [2]->dreg;
-				ins->type = is_64bit ? STACK_I8 : STACK_I4;
-				MONO_ADD_INS (cfg->cbb, ins);
+				op = is_64bit ? OP_MULX_HL64 : OP_MULX_HL32;
 			} else {
 				g_assert_not_reached ();
 			}
-			return ins;
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		case SN_ZeroHighBits:
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_BZHI64 : OP_BZHI32);
 			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
