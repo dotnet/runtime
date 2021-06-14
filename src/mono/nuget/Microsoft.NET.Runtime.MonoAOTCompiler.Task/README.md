@@ -40,7 +40,7 @@ Use `UsingTask` directly
 </ItemGroup>
 
 <UsingTask TaskName="MonoAOTCompiler"
-           AssemblyFile="$(PkgMicrosoft_NET_Runtime_MonoAOTCompiler_Task)/tools/$(TargetFramework)/MonoAOTCompiler.dll" />
+           AssemblyFile="$(PkgMicrosoft_NET_Runtime_MonoAOTCompiler_Task)/tools/<target-framework>/MonoAOTCompiler.dll" />
 
 <!-- Use the MonoAOTCompiler task in a target -->
 <Target>
