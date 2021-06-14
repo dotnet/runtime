@@ -2565,15 +2565,24 @@ emit_x86_intrinsics (
 			return ins;
 		}
 		case SN_BitFieldExtract: {
+			int ctlreg = args [1]->dreg;
 			if (fsig->param_count == 2) {
-				MONO_INST_NEW (cfg, ins, is_64bit ? OP_BEXTR64 : OP_BEXTR32);
-				ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-				ins->sreg1 = args [0]->dreg;
-				ins->sreg2 = args [1]->dreg;
-				ins->type = is_64bit ? STACK_I8 : STACK_I4;
-				MONO_ADD_INS (cfg->cbb, ins);
-				return ins;
+			} else if (fsig->param_count == 3) {
+				MonoInst *ins = NULL;
+				/* This intrinsic is also implemented in managed code.
+				 * TODO: remove this if cross-AOT-assembly inlining works
+				 */
+				int startreg = args [1]->dreg;
+				int lenreg = args [2]->dreg;
+				int dreg1 = alloc_ireg (cfg);
+				EMIT_NEW_BIALU_IMM (cfg, ins, OP_SHL_IMM, dreg1, lenreg, 8);
+				int dreg2 = alloc_ireg (cfg);
+				EMIT_NEW_BIALU (cfg, ins, OP_IOR, dreg2, startreg, dreg1);
+				ctlreg = dreg2;
+			} else {
+				g_assert_not_reached ();
 			}
+			return emit_simd_ins (cfg, klass, is_64bit ? OP_BMI1_BEXTR64 : OP_BMI1_BEXTR32, args [0]->dreg, ctlreg);
 		}
 		case SN_GetMaskUpToLowestSetBit: {
 			// x ^ (x - 1)

@@ -9296,12 +9296,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_CTTZ32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64, args, "");
 			break;
 		}
-		case OP_BEXTR32:
-		case OP_BEXTR64: {
+		case OP_BMI1_BEXTR32:
+		case OP_BMI1_BEXTR64: {
 			LLVMValueRef args [2];
 			args [0] = lhs;
-			args [1] = convert (ctx, rhs, ins->opcode == OP_BEXTR32 ? LLVMInt32Type () : LLVMInt64Type ()); // cast ushort to u32/u64
-			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_BEXTR32 ? INTRINS_BEXTR_I32 : INTRINS_BEXTR_I64, args, "");
+			args [1] = convert (ctx, rhs, ins->opcode == OP_BMI1_BEXTR32 ? i4_t : i8_t); // cast ushort to u32/u64
+			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_BMI1_BEXTR32 ? INTRINS_BEXTR_I32 : INTRINS_BEXTR_I64, args, "");
 			break;
 		}
 		case OP_BZHI32:
