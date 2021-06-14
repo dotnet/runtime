@@ -51,7 +51,7 @@ namespace HostActivation.Tests
                 .Execute();
 
             result.Should().Pass();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X86)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && arch == "X86")
                 result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT(x86)=");
             else
                 result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT=");

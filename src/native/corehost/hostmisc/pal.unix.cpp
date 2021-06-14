@@ -381,13 +381,13 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 
 bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
 {
-    *recv = _X("/etc/dotnet/install_location");
+    recv->assign(_X("/etc/dotnet/install_location"));
 
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
     if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
     {
-        *recv = environment_install_location_override;
+        recv->assign(environment_install_location_override);
     }
 
     return true;
@@ -431,7 +431,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         {
             if (is_first_line)
             {
-                *recv = install_location;
+                recv->assign(install_location);
                 install_location_found = true;
                 trace::verbose(_X("Found install location path '%s'."), install_location.c_str());
             }
@@ -450,7 +450,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
         if (arch_prefix == get_arch())
         {
-            *recv = path_to_location;
+            recv->assign(path_to_location);
             install_location_found = true;
             trace::verbose(_X("Found architecture-specific install location path matching the current OS architecture ('%s'): '%s'."), arch_prefix.c_str(), path_to_location.c_str());
             break;

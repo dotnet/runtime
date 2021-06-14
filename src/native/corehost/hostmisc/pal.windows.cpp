@@ -26,7 +26,7 @@ bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
         return false;
 
     path.resize(dwModuleFileName);
-    *recv = path;
+    recv->assign(path);
     return true;
 }
 
@@ -332,7 +332,7 @@ bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
-    *recv = (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
+    recv->assign((key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value);
     return true;
 #endif
 }

@@ -77,7 +77,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         if (pal::get_dotnet_self_registered_dir(&default_install_location) || pal::get_default_installation_dir(&default_install_location))
         {
             trace::info(_X("Using global installation location [%s] as runtime location."), default_install_location.c_str());
-            out_dotnet_root->assign(default_install_location.c_str());
+            out_dotnet_root->assign(default_install_location);
         }
         else
         {
