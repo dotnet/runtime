@@ -8422,7 +8422,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_SSE2_CMPSD: id = INTRINS_SSE_CMPSD; break;
 			default: g_assert_not_reached (); break;
 			}
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			int elements = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			int mask_values [MAX_VECTOR_ELEMS] = { 0 };
+			for (int i = 1; i < elements; ++i) {
+				mask_values [i] = elements + i;
+			}
+			LLVMValueRef result = call_intrins (ctx, id, args, "");
+			result = LLVMBuildShuffleVector (builder, result, lhs, create_const_vector_i32 (mask_values, elements), "");
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_SSE_COMISS: {
