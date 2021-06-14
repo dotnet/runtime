@@ -31,7 +31,7 @@ The `MonoAOTCompiler` MSBuild task is also useful outside the context of `dotnet
 ```
 
 ------------
-Use `UsingTask` directly 
+Use `UsingTask` directly
 ## In the project file
 ```
 <!-- Import the NuGet package into the project -->
