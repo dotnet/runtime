@@ -7,6 +7,18 @@
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
 
+//define arguments for later
+if (is_browser) {
+	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+	var raw_args = [];
+	var url = new URL (decodeURI (window.location));
+	for (var v of url.searchParams) {
+		if (v [0] == "arg") {
+			raw_args.push (v [1]);
+		}
+	}
+}
+
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
 	var console = {
@@ -55,15 +67,6 @@ if (is_browser) {
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
 	};
-
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	var url = new URL (decodeURI (window.location));
-	var raw_args = [];
-	for (var v of url.searchParams) {
-		if (v [0] == "arg") {
-			raw_args.push (v [1]);
-		}
-	}
 }
 //proxyJson(console.log);
 

@@ -550,6 +550,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number": {
+					let result  = null;
 					if ((js_obj | 0) === js_obj)
 						result = this._box_js_int (js_obj);
 					else if ((js_obj >>> 0) === js_obj)

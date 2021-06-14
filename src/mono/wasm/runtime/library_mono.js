@@ -53,27 +53,10 @@ var MonoSupportLib = {
 		active_frames: [],
 		pump_count: 0,
 		timeout_queue: [],
-		mono_background_exec: undefined,
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
-		mono_wasm_setup_single_step: undefined,
-		mono_wasm_pause_on_exceptions: undefined,
-		mono_wasm_set_is_debugger_attached: undefined,
-		mono_wasm_register_root: undefined,
-		mono_wasm_deregister_root: undefined,
-		mono_text_decoder: undefined,
-		mono_clear_bps: undefined,
-		mono_set_timeout_exec: undefined,
-		mono_wasm_current_bp_id: undefined,
-		mono_wasm_enum_frames: undefined,
-		mono_wasm_set_bp: undefined,
-		mono_wasm_del_bp: undefined,
-		wasm_setenv: undefined,
-		wasm_parse_runtime_options: undefined,
 		num_icu_assets_loaded_successfully: 0,
 		_async_method_objectId: 0,
-		_call_function_res_cache: undefined,
-		_c_fn_table: undefined,
 		_next_id_var: 0,
 		_next_call_function_res_id: 0,
 		_scratch_root_buffer: null,
@@ -222,11 +205,6 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
-			__handle: 0,
-			__count: 0,
-			__offset: 0,
-			__offset32: 0,
-			__ownsAllocation: 0,
 			_throw_index_out_of_range: function () {
 				throw new Error ("index out of range");
 			},
@@ -278,8 +256,6 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_prototype: {
-			__index: 0,
-			__buffer: 0,
 			/** @returns {NativePointer} */
 			get_address: function () {
 				return this.__buffer.get_address (this.__index);
@@ -512,10 +488,7 @@ var MonoSupportLib = {
 			}
 		},
 
-		string_decoder: {
-			result: undefined,
-			mono_wasm_string_convert: undefined,
-			
+		string_decoder: {			
 			copy: function (mono_string) {
 				if (mono_string == 0)
 					return null;
