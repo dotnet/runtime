@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
