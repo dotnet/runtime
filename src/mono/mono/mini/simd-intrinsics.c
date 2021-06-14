@@ -2402,9 +2402,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_SSSE3) {
 		switch (id) {
 		case SN_AlignRight:
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ALIGNR, args [2]->inst_c0, arg0_type, fsig, args);
-			return emit_invalid_operation (cfg, "mask in Ssse3.AlignRight must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ALIGNR, 0, arg0_type, fsig, args);
 		case SN_HorizontalAdd:
 			if (arg0_type == MONO_TYPE_I2)
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PHADDW, arg0_type, fsig, args);

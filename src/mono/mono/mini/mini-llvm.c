@@ -8914,16 +8914,37 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = convert (ctx, abs, typ);
 			break;
 		}
-		
+
 		case OP_SSSE3_ALIGNR: {
-			LLVMValueRef mask_values [16];
-			for (int i = 0; i < 16; i++)
-				mask_values [i] = LLVMConstInt (LLVMInt32Type (), i + ins->inst_c0, FALSE);
-			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
-				convert (ctx, rhs, sse_i1_t),
-				convert (ctx, lhs, sse_i1_t),
-				LLVMConstVector (mask_values, 16), "");
-			values [ins->dreg] = convert (ctx, shuffled, type_to_sse_type (ins->inst_c1));
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMValueRef zero = LLVMConstNull (v128_i1_t);
+			LLVMValueRef hivec = convert (ctx, lhs, v128_i1_t);
+			LLVMValueRef lovec = convert (ctx, rhs, v128_i1_t);
+			LLVMValueRef rshift_amount = convert (ctx, arg3, i1_t);
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 32, rshift_amount, v128_i1_t, "ssse3_alignr");
+			LLVMValueRef mask_values [16]; // 128-bit vector, 8-bit elements, 16 total elements
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				LLVMValueRef hi = NULL;
+				LLVMValueRef lo = NULL;
+				if (i <= 16) {
+					for (int j = 0; j < 16; j++)
+						mask_values [j] = const_int32 (i + j);
+					lo = lovec;
+					hi = hivec;
+				} else {
+					for (int j = 0; j < 16; j++)
+						mask_values [j] = const_int32 (i + j - 16);
+					lo = hivec;
+					hi = zero;
+				}
+				LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, lo, hi, LLVMConstVector (mask_values, 16), "ssse3_alignr");
+				immediate_unroll_commit (&ictx, i, shuffled);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, zero);
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+			values [ins->dreg] = convert (ctx, result, ret_t);
 			break;
 		}
 
