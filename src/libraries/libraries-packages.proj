@@ -18,7 +18,7 @@
   <Import Project="$(PkgDir)baseline\baseline.props" />
 
   <!-- Calculate PackageDownload items for restore. -->
-  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != '' and '$(DotNetBuildFromSource)' != 'true'" />
 
   <!--
     Updates the package index to mark all packages we are building that can go stable as stable.
