@@ -2520,10 +2520,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_AES) {
 		switch (id) {
 		case SN_KeygenAssist: {
-			if (args [1]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_AES_KEYGEN_IMM, args [1]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant control byte (generate a switch)
-			return emit_invalid_operation (cfg, "control byte in Aes.KeygenAssist must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_AES_KEYGENASSIST, 0, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();

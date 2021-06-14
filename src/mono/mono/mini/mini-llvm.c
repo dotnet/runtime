@@ -9184,9 +9184,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_AES_KEYGEN_IMM: {
-			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_AESNI_AESKEYGENASSIST, args, "");
+		case OP_AES_KEYGENASSIST: {
+			LLVMValueRef roundconstant = convert (ctx, rhs, i1_t);
+			LLVMValueRef args [] = { convert (ctx, lhs, v128_i8_t), NULL };
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 256, roundconstant, v128_i8_t, "aes_keygenassist");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [1] = const_int8 (i);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_AESNI_AESKEYGENASSIST, args, "aes_keygenassist");
+				immediate_unroll_commit (&ictx, i, result);
+			}
+			immediate_unroll_default (&ictx);
+			LLVMBuildUnreachable (builder);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_i8_t));
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+			values [ins->dreg] = convert (ctx, result, v128_i1_t);
 			break;
 		}
 #endif
