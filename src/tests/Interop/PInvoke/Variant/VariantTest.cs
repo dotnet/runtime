@@ -62,6 +62,21 @@ partial class Test
             Assert.IsTrue(Marshal_ByValue_Object(new GenerateIClassX()));
             Assert.IsTrue(Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new GenerateIClassX())));
         }
+        else
+        {
+            Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        Marshal_ByValue_Object(new object());
+                    },
+                    "Built-in COM has been disabled via a feature switch");
+            Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new object()));
+                    },
+                    "Built-in COM has been disabled via a feature switch");
+        }
 
         Assert.Throws<ArgumentException>(() => Marshal_ByValue_Invalid(TimeSpan.Zero));
         Assert.Throws<NotSupportedException>(() => Marshal_ByValue_Invalid(new CustomStruct()));
@@ -145,6 +160,23 @@ partial class Test
 
             obj = new UnknownWrapper(new GenerateIClassX());
             Assert.IsTrue(Marshal_ByRef_Object_IUnknown(ref obj));
+        }
+        else
+        {
+            Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        obj = new object();
+                        Marshal_ByRef_Object(ref obj);
+                    },
+                    "Built-in COM has been disabled via a feature switch");
+            Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        obj = new UnknownWrapper(new object());
+                        Marshal_ByRef_Object_IUnknown(ref obj);
+                    },
+                    "Built-in COM has been disabled via a feature switch");
         }
 
         obj = DecimalValue;
@@ -238,6 +270,23 @@ partial class Test
             wrapper.value = new UnknownWrapper(new GenerateIClassX());
             Assert.IsTrue(Marshal_Struct_ByValue_Object_IUnknown(wrapper));
         }
+        else
+        {
+            Assert.Throws<NotSupportedException>(
+                () =>
+                {
+                    wrapper.value = new object();
+                    Marshal_Struct_ByValue_Object(wrapper);
+                },
+                "Built-in COM has been disabled via a feature switch");
+            Assert.Throws<NotSupportedException>(
+                () =>
+                {
+                    wrapper.value = new UnknownWrapper(new object());
+                    Marshal_Struct_ByValue_Object_IUnknown(wrapper);
+                },
+                "Built-in COM has been disabled via a feature switch");
+        }
     }
 
     private unsafe static void TestFieldByRef(bool hasComSupport)
@@ -317,6 +366,23 @@ partial class Test
 
             wrapper.value = new UnknownWrapper(new GenerateIClassX());
             Assert.IsTrue(Marshal_Struct_ByRef_Object_IUnknown(ref wrapper));
+        }
+        else
+        {
+            Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        wrapper.value = new object();
+                        Marshal_Struct_ByRef_Object(ref wrapper);
+                    },
+                    "Built-in COM has been disabled via a feature switch");
+            Assert.Throws<NotSupportedException>(
+                    () =>
+                    {
+                        wrapper.value = new UnknownWrapper(new object());
+                        Marshal_Struct_ByRef_Object_IUnknown(ref wrapper);
+                    },
+                    "Built-in COM has been disabled via a feature switch");
         }
     }
 }

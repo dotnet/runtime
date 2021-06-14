@@ -22290,7 +22290,7 @@ inline
 void gc_heap::mark_object (uint8_t* o THREAD_NUMBER_DCL)
 {
 #ifdef USE_REGIONS
-    if (is_in_condemned_gc (o))
+    if ((o != nullptr) && is_in_condemned_gc (o))
     {
         mark_object_simple (&o THREAD_NUMBER_ARG);
     }
@@ -23314,7 +23314,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
 #endif //MULTIPLE_HEAPS
     BOOL  full_p = (condemned_gen_number == max_generation);
 
-        dprintf(3,("Processing Mark overflow [%Ix %Ix]", (size_t)min_add, (size_t)max_add));
+    dprintf(3,("Processing Mark overflow [%Ix %Ix]", (size_t)min_add, (size_t)max_add));
+
+    size_t obj_count = 0;
+
 #ifdef MULTIPLE_HEAPS
     for (int hi = 0; hi < n_heaps; hi++)
     {
@@ -23323,11 +23326,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
 #else
     {
         gc_heap*  hp = 0;
-
 #endif //MULTIPLE_HEAPS
         int gen_limit = full_p ? total_generation_count : condemned_gen_number + 1;
 
-        for (int i = condemned_gen_number; i < gen_limit; i++)
+        for (int i = get_stop_generation_index (condemned_gen_number); i < gen_limit; i++)
         {
             generation* gen = hp->generation_of (i);
             heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
@@ -23347,6 +23349,7 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
                     if (marked (o))
                     {
                         mark_through_object (o, TRUE THREAD_NUMBER_ARG);
+                        obj_count++;
                     }
 
                     o = o + Align (size (o), align_const);
@@ -23355,6 +23358,10 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
                 seg = heap_segment_next_in_range (seg);
             }
         }
+#ifndef MULTIPLE_HEAPS
+        // we should have found at least one object
+        assert (obj_count > 0);
+#endif //MULTIPLE_HEAPS
     }
 }
 
@@ -28669,11 +28676,6 @@ heap_segment* gc_heap::relocate_advance_to_non_sip (heap_segment* region)
                             {
                                 dprintf (4444, ("SIP %Ix(%Ix)->%Ix->%Ix(%Ix)", 
                                     x, (uint8_t*)pval, child, *pval, method_table (child)));
-
-                                if (method_table (child) == 0)
-                                {
-                                    FATAL_GC_ERROR();
-                                }
                             }
                         });
                     }
@@ -29214,6 +29216,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
             }
         }
 
+        dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, old_address, new_address));
         *pold_address = new_address;
         return;
     }
@@ -29243,7 +29246,9 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 #endif
                 )
             {
-                *pold_address = old_address + loh_node_relocation_distance (old_address);
+                new_address = old_address + loh_node_relocation_distance (old_address);
+                dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, old_address, new_address));
+                *pold_address = new_address;
             }
         }
     }
@@ -38467,7 +38472,7 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
                         heap_segment_mem (seg), (*delete_p ? "should" : "should not")));
 
         }
-        else
+        if (!*delete_p)
         {
             dprintf (3, ("[h%d] seg %Ix alloc %Ix->%Ix",
                 heap_number, (size_t)seg,
@@ -44525,6 +44530,19 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
                 end = heap_segment_allocated (seg);
                 continue;
             }
+#ifdef USE_REGIONS
+            else if (gen_number > 0)
+            {
+                // advance to next lower generation
+                gen_number--;
+                gen = gc_heap::generation_of (gen_number);
+                seg = generation_start_segment (gen);
+
+                x = heap_segment_mem (seg);
+                end = heap_segment_allocated (seg);
+                continue;
+            }
+#endif // USE_REGIONS
             else
             {
                 if (walk_large_object_heap_p)

@@ -1466,7 +1466,19 @@ void Compiler::compShutdown()
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     // Finish reading and/or writing inline xml
-    InlineStrategy::FinalizeXml();
+    if (JitConfig.JitInlineDumpXmlFile() != nullptr)
+    {
+        FILE* file = _wfopen(JitConfig.JitInlineDumpXmlFile(), W("a"));
+        if (file != nullptr)
+        {
+            InlineStrategy::FinalizeXml(file);
+            fclose(file);
+        }
+        else
+        {
+            InlineStrategy::FinalizeXml();
+        }
+    }
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
@@ -5295,12 +5307,12 @@ void Compiler::generatePatchpointInfo()
     }
 
     // Special offsets
-
-    if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+    //
+    if (lvaReportParamTypeArg())
     {
-        const int offset = lvaToCallerSPRelativeOffset(lvaCachedGenericContextArgOffset(), true);
+        const int offset = lvaCachedGenericContextArgOffset();
         patchpointInfo->SetGenericContextArgOffset(offset);
-        JITDUMP("--OSR-- cached generic context offset is CallerSP %d\n", patchpointInfo->GenericContextArgOffset());
+        JITDUMP("--OSR-- cached generic context offset is FP %d\n", patchpointInfo->GenericContextArgOffset());
     }
 
     if (lvaKeepAliveAndReportThis())
@@ -5898,7 +5910,24 @@ void Compiler::compCompileFinish()
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     m_inlineStrategy->DumpData();
-    m_inlineStrategy->DumpXml();
+
+    if (JitConfig.JitInlineDumpXmlFile() != nullptr)
+    {
+        FILE* file = _wfopen(JitConfig.JitInlineDumpXmlFile(), W("a"));
+        if (file != nullptr)
+        {
+            m_inlineStrategy->DumpXml(file);
+            fclose(file);
+        }
+        else
+        {
+            m_inlineStrategy->DumpXml();
+        }
+    }
+    else
+    {
+        m_inlineStrategy->DumpXml();
+    }
 
 #endif
 
@@ -9714,6 +9743,21 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "devirtualization crossed version bubble";
         case CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL:
             return "object class has multiple implementations of interface";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL:
+            return "decl method is defined on class and decl method not in version bubble, and decl method not in "
+                   "type closest to version bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL:
+            return "decl method is defined on interface and not in version bubble, and implementation type not "
+                   "entirely defined in bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL:
+            return "object class not defined within version bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE:
+            return "object class cannot be referenced from R2R code due to missing tokens";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE:
+            return "crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate "
+                   "interface implementations";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE:
+            return "Decl method cannot be represented in R2R image";
         default:
             return "undefined";
     }

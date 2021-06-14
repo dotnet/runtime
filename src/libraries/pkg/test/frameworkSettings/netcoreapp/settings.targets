@@ -1,10 +1,15 @@
 <Project>
-  <Import Project="$(ToolsDir)netfxreference.props" />
-
   <PropertyGroup>
     <ShouldVerifyClosure>true</ShouldVerifyClosure>
     <ShouldVerifyTypes>true</ShouldVerifyTypes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- intentionally dangling refs in shims -->

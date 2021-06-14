@@ -1131,7 +1131,8 @@ public:
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
-    virtual void dumpLsraStatsCsv(FILE* file) = 0;
+    virtual void dumpLsraStatsCsv(FILE* file)     = 0;
+    virtual void dumpLsraStatsSummary(FILE* file) = 0;
 #endif // TRACK_LSRA_STATS
 };
 
@@ -3568,7 +3569,7 @@ public:
     unsigned lvaFrameSize(FrameLayoutState curState);
 
     // Returns the caller-SP-relative offset for the SP/FP relative offset determined by FP based.
-    int lvaToCallerSPRelativeOffset(int offs, bool isFpBased) const;
+    int lvaToCallerSPRelativeOffset(int offs, bool isFpBased, bool forRootFrame = true) const;
 
     // Returns the caller-SP-relative offset for the local variable "varNum."
     int lvaGetCallerSPRelativeOffset(unsigned varNum);
@@ -3947,6 +3948,7 @@ public:
     }
 
     void impDevirtualizeCall(GenTreeCall*            call,
+                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              CORINFO_METHOD_HANDLE*  method,
                              unsigned*               methodFlags,
                              CORINFO_CONTEXT_HANDLE* contextHandle,
@@ -3988,7 +3990,10 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
-    int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const BYTE* codeAddr, const BYTE* codeEndp);
+    int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                           const BYTE*             codeAddr,
+                           const BYTE*             codeEndp,
+                           bool                    makeInlineObservation = false);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);

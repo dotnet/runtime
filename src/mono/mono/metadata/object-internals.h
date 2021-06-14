@@ -638,10 +638,7 @@ typedef struct {
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
-#ifdef ENABLE_METADATA_UPDATE
-	void     (*metadata_update_init) (MonoError *error);
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
-#endif
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
 	void (*get_exception_stats)(guint32 *exception_count);
 } MonoRuntimeCallbacks;
@@ -688,6 +685,7 @@ mono_runtime_free_method    (MonoMethod *method);
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs);
 
+MONO_COMPONENT_API
 MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void);
 

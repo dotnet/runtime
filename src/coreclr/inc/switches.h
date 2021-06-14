@@ -53,7 +53,7 @@
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     #define USE_UPPER_ADDRESS       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
     #define UPPER_ADDRESS_MAPPING_FACTOR 2
     #define CLR_UPPER_ADDRESS_MIN   0x64400000000
     #define CODEHEAP_START_ADDRESS  0x64480000000

@@ -7331,12 +7331,6 @@ copy_imethod_for_frame (InterpFrame *frame)
 }
 
 static void
-interp_metadata_update_init (MonoError *error)
-{
-}
-
-#ifdef ENABLE_METADATA_UPDATE
-static void
 metadata_update_backup_frames (MonoThreadInfo *info, InterpFrame *frame)
 {
 	while (frame) {
@@ -7381,18 +7375,17 @@ metadata_update_prepare_to_invalidate (void)
 
 	/* (2) invalidate all the registered imethods */
 }
-#endif
 
 
 static void
 interp_invalidate_transformed (void)
 {
 	gboolean need_stw_restart = FALSE;
-#ifdef ENABLE_METADATA_UPDATE
-	need_stw_restart = TRUE;
-	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
-	metadata_update_prepare_to_invalidate ();
-#endif
+        if (mono_metadata_has_updates ()) {
+                mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
+                metadata_update_prepare_to_invalidate ();
+                need_stw_restart = TRUE;
+        }
 
 	// FIXME: Enumerate all memory managers
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();

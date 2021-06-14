@@ -8621,7 +8621,8 @@ void LinearScan::dumpLsraStats(FILE* file)
 
     fprintf(file, "----------\n");
 #ifdef DEBUG
-    fprintf(file, "Register selection order: %S\n", JitConfig.JitLsraOrdering());
+    fprintf(file, "Register selection order: %S\n",
+            JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering());
 #endif
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
@@ -8640,6 +8641,7 @@ void LinearScan::dumpLsraStats(FILE* file)
     bool addedBlockHeader = false;
     bool anyNonZeroStat   = false;
 
+    // Iterate for block 0
     for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
     {
         unsigned lsraStat = blockInfo[0].stats[statIndex];
@@ -8667,6 +8669,7 @@ void LinearScan::dumpLsraStats(FILE* file)
         fprintf(file, "\n");
     }
 
+    // Iterate for remaining blocks
     for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
@@ -8712,7 +8715,6 @@ void LinearScan::dumpLsraStats(FILE* file)
         {
             fprintf(file, "..........\n");
         }
-        // TODO-review: I don't see a point of displaying Stats (SpillCount, etc.) if they are zero. Thoughts?
         if ((regSelectI < firstRegSelStat) || (sumStats[regSelectI] != 0))
         {
             // Print register selection stats
@@ -8779,6 +8781,48 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
         fprintf(file, ",%u", sumStats[statIndex]);
     }
     fprintf(file, ",%.2f\n", compiler->info.compPerfScore);
+}
+
+// -----------------------------------------------------------
+// dumpLsraStatsSummary - dumps Lsra stats summary to given file
+//
+// Arguments:
+//    file    -  file to which stats are to be written.
+//
+void LinearScan::dumpLsraStatsSummary(FILE* file)
+{
+    unsigned             sumStats[LsraStat::STAT_FREE] = {0};
+    BasicBlock::weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
+
+    // Iterate for block 0
+    for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+    {
+        unsigned lsraStat = blockInfo[0].stats[statIndex];
+        sumStats[statIndex] += lsraStat;
+        wtdStats[statIndex] += (lsraStat * blockInfo[0].weight);
+    }
+
+    // Iterate for remaining blocks
+    for (BasicBlock* const block : compiler->Blocks())
+    {
+        if (block->bbNum > bbNumMaxBeforeResolution)
+        {
+            continue;
+        }
+
+        for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+        {
+            unsigned lsraStat = blockInfo[block->bbNum].stats[statIndex];
+            sumStats[statIndex] += lsraStat;
+            wtdStats[statIndex] += (lsraStat * block->bbWeight);
+        }
+    }
+
+    for (int regSelectI = 0; regSelectI < LsraStat::STAT_FREE; regSelectI++)
+    {
+        fprintf(file, ", %s %u %sWt %f", getStatName(regSelectI), sumStats[regSelectI], getStatName(regSelectI),
+                wtdStats[regSelectI]);
+    }
 }
 #endif // TRACK_LSRA_STATS
 
@@ -11214,13 +11258,36 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        float currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
-#ifdef TARGET_ARM
-        if (currentInterval->registerType == TYP_DOUBLE)
+        float        currentSpillWeight = 0;
+        RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
+                                             ? spillCandidateRegRecord->assignedInterval->recentRefPosition
+                                             : nullptr;
+        if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional()) &&
+            !(currentInterval->isLocalVar && recentRefPosition->IsActualRef()))
         {
-            currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+            // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+            // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+            // For such cases, consider the spill cost of next refposition.
+            // See notes in "spillInterval()".
+            RefPosition* reloadRefPosition = spillCandidateRegRecord->assignedInterval->getNextRefPosition();
+            if (reloadRefPosition != nullptr)
+            {
+                currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+            }
         }
+
+        // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
+        if (currentSpillWeight == 0)
+        {
+            currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
+#ifdef TARGET_ARM
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+            }
 #endif
+        }
+
         if (currentSpillWeight < bestSpillWeight)
         {
             bestSpillWeight    = currentSpillWeight;
