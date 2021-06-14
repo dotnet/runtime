@@ -236,7 +236,6 @@ namespace Internal.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(buffer);
-                    Reset();
                 }
             }
         }
