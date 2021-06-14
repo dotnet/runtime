@@ -2329,15 +2329,9 @@ var MonoSupportLib = {
 		 * Loads the mono config file (typically called mono-config.json)
 		 *
 		 * @param {string} configFilePath - relative path to the config file
+		 * @throws Will throw an error if the config file loading fails
 		 */
-		mono_wasm_load_config: async function (configFilePath) {
-			// In some cases there may be no Module object (such as in some tests)
-			// so we no-op during the callback
-			const callback = typeof Module !== "undefined" ? Module['onConfigLoaded'] : (_) => {};
-		
-			const ENVIRONMENT_IS_NODE = typeof process === "object";
-			const ENVIRONMENT_IS_WEB = typeof window === "object";
-		
+		mono_wasm_load_config: async function (configFilePath) {		
 			try {
 				let config = null;
 				// NOTE: when we add nodejs make sure to include the nodejs fetch package
@@ -2347,9 +2341,9 @@ var MonoSupportLib = {
 				} else { // shell or worker
 					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
 				}
-				callback(config);
+				return config;
 			} catch(e) {
-				callback({error: e});
+				return {message: "failed to load config file", error: e};
 			}
 		}
 	},
