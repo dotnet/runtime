@@ -1117,22 +1117,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             bool forceOp2DelayFree = false;
             if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
             {
-
-#ifdef DEBUG
-                if (isRMW && intrin.op1->OperIs(GT_LCL_VAR))
-                {
-                    unsigned int varNum1    = intrin.op1->AsLclVar()->GetLclNum();
-                    bool         op1LastUse = false;
-
-                    unsigned int varNum2 = BAD_VAR_NUM;
-                    if (intrin.op2->OperIs(GT_LCL_VAR))
-                    {
-                        varNum2 = intrin.op2->AsLclVar()->GetLclNum();
-                        assert((varNum1 == varNum2) && intrin.op2->HasLastUse());
-                    }
-                }
-#endif
-
                 if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
                 {
                     // If the index is not a constant and the object is not contained or is a local
