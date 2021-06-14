@@ -9,7 +9,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\ref\System.ComponentModel.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <Reference Include="System.Collections" />
