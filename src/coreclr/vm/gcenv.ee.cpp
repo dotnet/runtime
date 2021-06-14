@@ -1651,6 +1651,19 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             s_forcedGCInProgress = false;
             reportGenerationBounds();
             FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
+            if (gcGenAnalysisDump)
+            {
+                EX_TRY
+                {
+#ifdef HOST_WIN32
+                    GenerateCrashDump (GENAWARE_DUMP_FILE_NAME, 2, false);
+#else
+                    PAL_GenerateCoreDump (GENAWARE_DUMP_FILE_NAME, 2, false);
+#endif
+                }
+                EX_CATCH {}
+                EX_END_CATCH(SwallowAllExceptions);
+            }
             EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);

@@ -13,6 +13,7 @@ int64_t gcGenAnalysisGen = -1;
 int64_t gcGenAnalysisBytes = 0;
 int64_t gcGenAnalysisIndex = 0;
 uint32_t gcGenAnalysisBufferMB = 0;
+bool gcGenAnalysisDump = false;
 
 /* static */ void GenAnalysis::Initialize()
 {
@@ -41,6 +42,7 @@ uint32_t gcGenAnalysisBufferMB = 0;
             gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
             gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
             gcGenAnalysisBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+            gcGenAnalysisDump = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisDump);
             gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
         }
         else
@@ -52,13 +54,13 @@ uint32_t gcGenAnalysisBufferMB = 0;
 #endif
     {
         EnableGenerationalAwareSession();
-    }    
+    }
 }
 
 /* static */ void GenAnalysis::EnableGenerationalAwareSession()
 {
     LPCWSTR outputPath = nullptr;
-    outputPath = GENAWARE_FILE_NAME;
+    outputPath = GENAWARE_TRACE_FILE_NAME;
     NewArrayHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders;
     int providerCnt = 1;
     pProviders = new COR_PRF_EVENTPIPE_PROVIDER_CONFIG[providerCnt];
