@@ -5726,8 +5726,6 @@ protected:
 
     bool fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkDest, bool sibling);
 
-    void fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, bool isInlining);
-
     void fgAdjustForAddressExposedOrWrittenThis();
 
     unsigned fgStressBBProf()

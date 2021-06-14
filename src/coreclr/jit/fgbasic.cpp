@@ -775,6 +775,14 @@ public:
     {
         Push((FgSlot)(SLOT_ARGUMENT + arg));
     }
+    FgSlot GetSlot0() const
+    {
+        return depth >= 1 ? slot0 : FgSlot::SLOT_UNKNOWN;
+    }
+    FgSlot GetSlot1() const
+    {
+        return depth >= 2 ? slot1 : FgSlot::SLOT_UNKNOWN;
+    }
     FgSlot Top(const int n = 0)
     {
         if (n == 0)
@@ -881,7 +889,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
     const bool  makeInlineObservations = (compInlineResult != nullptr);
     const bool  isInlining             = compIsForInlining();
-    const bool  resolveTokens          = makeInlineObservations;
+    const bool  isTier1                = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool  isPreJit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool  resolveTokens          = makeInlineObservations && (isTier1 || isPreJit);
     unsigned    retBlocks              = 0;
     int         prefixFlags            = 0;
 
