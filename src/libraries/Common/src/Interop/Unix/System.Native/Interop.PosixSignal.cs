@@ -7,16 +7,24 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForPosixSignal")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPosixSignalHandler")]
         [SuppressGCTransition]
-        internal static extern unsafe bool RegisterForPosixSignal(PosixSignal signal, delegate* unmanaged<PosixSignal, int> handler);
+        internal static extern unsafe void SetPosixSignalHandler(delegate* unmanaged<int, int> handler);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UnregisterForPosixSignal")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnablePosixSignalHandling")]
         [SuppressGCTransition]
-        internal static extern void UnregisterForPosixSignal(PosixSignal signal);
+        internal static extern void EnablePosixSignalHandling(int signal);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_HandlePosixSignal")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DisablePosixSignalHandling")]
         [SuppressGCTransition]
-        internal static extern void HandlePosixSignal(PosixSignal signal);
+        internal static extern void DisablePosixSignalHandling(int signal);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DefaultSignalHandler")]
+        [SuppressGCTransition]
+        internal static extern void DefaultSignalHandler(int signal);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
+        [SuppressGCTransition]
+        internal static extern int GetPlatformSignalNumber(PosixSignal signal);
     }
 }

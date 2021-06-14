@@ -8,17 +8,21 @@ namespace System.Runtime.InteropServices
         public PosixSignal Signal
         {
             get;
+            internal set;
         }
 
         public bool Cancel
         {
             get;
-            set; // TODO: should this throw if Canceling doesn't do anything?
+            set;
         }
 
         public PosixSignalContext(PosixSignal signal)
         {
             Signal = signal;
         }
+
+        internal PosixSignalContext()
+        { }
     }
 }

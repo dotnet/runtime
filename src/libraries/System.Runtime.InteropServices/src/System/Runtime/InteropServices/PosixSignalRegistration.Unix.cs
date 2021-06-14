@@ -12,12 +12,14 @@ namespace System.Runtime.InteropServices
     {
         private readonly Action<PosixSignalContext> _handler;
         private readonly PosixSignal _signal;
+        private readonly int _signo;
         private bool _registered;
         private readonly object _gate = new object();
 
-        private PosixSignalRegistration(PosixSignal signal, Action<PosixSignalContext> handler)
+        private PosixSignalRegistration(PosixSignal signal, int signo, Action<PosixSignalContext> handler)
         {
             _signal = signal;
+            _signo = signo;
             _handler = handler;
         }
 
@@ -27,16 +29,17 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(handler));
             }
-            if (signal > PosixSignal.SIGHUP || signal < PosixSignal.SIGCHLD)
+            int signo = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signo == 0)
             {
-                throw new IndexOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(signal));
             }
-            PosixSignalRegistration registration = new PosixSignalRegistration(signal, handler);
-            registration.RegisterFor(signal);
+            PosixSignalRegistration registration = new PosixSignalRegistration(signal, signo, handler);
+            registration.Register();
             return registration;
         }
 
-        private unsafe void RegisterFor(PosixSignal signal)
+        private unsafe void Register()
         {
             if (!s_initialized)
             {
@@ -44,18 +47,19 @@ namespace System.Runtime.InteropServices
                 {
                     throw new Win32Exception();
                 }
+                Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
                 s_initialized = true;
             }
             lock (s_registrations)
             {
-                if (!s_registrations.TryGetValue(signal, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
+                if (!s_registrations.TryGetValue(_signo, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
                 {
-                    if (!Interop.Sys.RegisterForPosixSignal(signal, &OnPosixSignal))
-                    {
-                        throw new Win32Exception();
-                    }
                     signalRegistrations = new List<WeakReference<PosixSignalRegistration>>();
-                    s_registrations.Add(signal, signalRegistrations);
+                    s_registrations.Add(_signo, signalRegistrations);
+                }
+                if (signalRegistrations.Count == 0)
+                {
+                    Interop.Sys.EnablePosixSignalHandling(_signo);
                 }
                 signalRegistrations.Add(new WeakReference<PosixSignalRegistration>(this));
             }
@@ -74,11 +78,11 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static int OnPosixSignal(PosixSignal signal)
+        private static int OnPosixSignal(int signo)
         {
             lock (s_registrations)
             {
-                if (s_registrations.TryGetValue(signal, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
+                if (s_registrations.TryGetValue(signo, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
                 {
                     if (signalRegistrations.Count != 0)
                     {
@@ -104,7 +108,7 @@ namespace System.Runtime.InteropServices
                                 IsBackground = true,
                                 Name = ".NET Signal Handler"
                             };
-                            handlerThread.Start((signal, registrations));
+                            handlerThread.Start((signo, registrations));
                             return 1;
                         }
                     }
@@ -115,17 +119,23 @@ namespace System.Runtime.InteropServices
 
         private static void HandleSignal(object? state)
         {
-            var (signal, registrations) = ((PosixSignal, PosixSignalRegistration?[]))state!;
+            var (signo, registrations) = ((int, PosixSignalRegistration?[]))state!;
 
-            PosixSignalContext ctx = new(signal);
-            foreach (var registration in registrations)
+            PosixSignalContext ctx = new();
+            foreach (PosixSignalRegistration? registration in registrations)
             {
-                registration?.Handle(ctx);
+                if (registration != null)
+                {
+                    // Different values for PosixSignal map to the same signo.
+                    // Match the PosixSignal value used when registering.
+                    ctx.Signal = registration._signal;
+                    registration.Handle(ctx);
+                }
             }
 
             if (!ctx.Cancel)
             {
-                Interop.Sys.HandlePosixSignal(signal);
+                Interop.Sys.DefaultSignalHandler(signo);
             }
         }
 
@@ -144,7 +154,7 @@ namespace System.Runtime.InteropServices
             {
                 lock (s_registrations)
                 {
-                    List<WeakReference<PosixSignalRegistration>> signalRegistrations = s_registrations[_signal];
+                    List<WeakReference<PosixSignalRegistration>> signalRegistrations = s_registrations[_signo];
                     for (int i = 0; i < signalRegistrations.Count; i++)
                     {
                         if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration) &&
@@ -156,7 +166,7 @@ namespace System.Runtime.InteropServices
                     }
                     if (signalRegistrations.Count == 0)
                     {
-                        Interop.Sys.UnregisterForPosixSignal(_signal);
+                        Interop.Sys.DisablePosixSignalHandling(_signo);
                     }
                 }
 
@@ -168,6 +178,6 @@ namespace System.Runtime.InteropServices
         }
 
         private static volatile bool s_initialized;
-        private static Dictionary<PosixSignal, List<WeakReference<PosixSignalRegistration>>> s_registrations = new();
+        private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>>> s_registrations = new();
     }
 }
