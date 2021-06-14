@@ -388,6 +388,14 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_LooksLikeWrapperMethod = value;
                 break;
 
+            case InlineObservation::CALLEE_ARG_FEEDS_TEST:
+                m_ArgFeedsTest++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
+                m_ArgFeedsConstantTest++;
+                break;
+
             case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
                 m_ArgFeedsRangeCheck++;
                 break;
@@ -395,6 +403,13 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
             case InlineObservation::CALLEE_HAS_SWITCH:
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
                 propagate = true;
+                break;
+
+            case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+                // We shouldn't see this for a prejit root since
+                // we don't know anything about callers.
+                assert(!m_IsPrejitRoot);
+                m_ConstantArgFeedsConstantTest++;
                 break;
 
             case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
@@ -558,7 +573,10 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_CallsiteDepth);
     XATTR_I4(m_InstructionCount);
     XATTR_I4(m_LoadStoreCount);
+    XATTR_I4(m_ArgFeedsTest);
+    XATTR_I4(m_ArgFeedsConstantTest);
     XATTR_I4(m_ArgFeedsRangeCheck);
+    XATTR_I4(m_ConstantArgFeedsConstantTest);
     XATTR_I4(m_BinaryExprWithCns);
     XATTR_I4(m_ArgCasted);
     XATTR_I4(m_ArgIsStructByValue);
@@ -694,14 +712,14 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
             else if (!m_IsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
             {
                 unsigned basicBlockLimit = MAX_BASIC_BLOCKS;
-                if (!m_RootCompiler->opts.IsReadyToRun())
+                if (!m_RootCompiler->opts.IsReadyToRun() && !JitConfig.JitConservativeInliner())
                 {
                     // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
                     // or have Profile Data.
                     basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
                     if (m_HasProfile)
                     {
-                        basicBlockLimit += static_cast<unsigned>(clamp(m_ProfileFrequency, 0.0, 1.0) * 3.0);
+                        basicBlockLimit += static_cast<unsigned>(min(m_ProfileFrequency, 1.0) * 3.0);
                     }
                     basicBlockLimit = min(12, basicBlockCount);
                 }
@@ -825,9 +843,133 @@ void DefaultPolicy::NoteDouble(InlineObservation obs, double value)
 
 //------------------------------------------------------------------------
 // DetermineMultiplier: determine benefit multiplier for this inline
+//    used by a more conservative inliner (< .NET 6.0). We keep it just in case.
 //
 // Notes: uses the accumulated set of observations to compute a
-// profitability boost for the inline candidate.
+//    profitability boost for the inline candidate.
+
+double DefaultPolicy::DetermineConservativeMultiplier()
+{
+    double multiplier = 0;
+
+    // Bump up the multiplier for instance constructors
+
+    if (m_IsInstanceCtor)
+    {
+        multiplier += 1.5;
+        JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
+    }
+
+    // Bump up the multiplier for methods in promotable struct
+
+    if (m_IsFromPromotableValueClass)
+    {
+        multiplier += 3;
+        JITDUMP("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
+    }
+
+#ifdef FEATURE_SIMD
+
+    if (m_HasSimd)
+    {
+        multiplier += JitConfig.JitInlineSIMDMultiplier();
+        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
+                multiplier);
+    }
+
+#endif // FEATURE_SIMD
+
+    if (m_LooksLikeWrapperMethod)
+    {
+        multiplier += 1.0;
+        JITDUMP("\nInline candidate looks like a wrapper method.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ArgFeedsConstantTest > 0)
+    {
+        multiplier += 1.0;
+        JITDUMP("\nInline candidate has an arg that feeds a constant test.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_MethodIsMostlyLoadStore)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate is mostly loads and stores.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ArgFeedsRangeCheck > 0)
+    {
+        multiplier += 0.5;
+        JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ConstantArgFeedsConstantTest > 0)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+    // For prejit roots we do not see the call sites. To be suitably optimistic
+    // assume that call sites may pass constants.
+    else if (m_IsPrejitRoot && ((m_ArgFeedsConstantTest > 0) || (m_ArgFeedsTest > 0)))
+    {
+        multiplier += 3.0;
+        JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+
+    switch (m_CallsiteFrequency)
+    {
+        case InlineCallsiteFrequency::RARE:
+            // Note this one is not additive, it uses '=' instead of '+='
+            multiplier = 1.3;
+            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::BORING:
+            multiplier += 1.3;
+            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::WARM:
+            multiplier += 2.0;
+            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::LOOP:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::HOT:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+            break;
+        default:
+            assert(!"Unexpected callsite frequency");
+            break;
+    }
+
+#ifdef DEBUG
+
+    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
+
+    if (additionalMultiplier != 0)
+    {
+        multiplier += additionalMultiplier;
+        JITDUMP("\nmultiplier increased via JitInlineAdditionalMultiplier=%d to %g.", additionalMultiplier, multiplier);
+    }
+
+    if (m_RootCompiler->compInlineStress())
+    {
+        multiplier += 10;
+        JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
+    }
+
+#endif // DEBUG
+
+    return multiplier;
+}
+
+//------------------------------------------------------------------------
+// DetermineMultiplier: determine benefit multiplier for this inline
+//
+// Notes: uses the accumulated set of observations to compute a
+//    profitability boost for the inline candidate.
 
 double DefaultPolicy::DetermineMultiplier()
 {
@@ -1109,7 +1251,7 @@ double DefaultPolicy::DetermineMultiplier()
 
 #ifdef DEBUG
 
-    const int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
+    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
 
     if (additionalMultiplier != 0)
     {
@@ -1243,7 +1385,7 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     m_CalleeNativeSizeEstimate   = DetermineNativeSizeEstimate();
     m_CallsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
-    m_Multiplier                 = DetermineMultiplier();
+    m_Multiplier                 = (JitConfig.JitConservativeInliner() > 0) ? DetermineConservativeMultiplier() : DetermineMultiplier();
     const int threshold          = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
     // Note the DefaultPolicy estimates are scaled up by SIZE_SCALE
@@ -2162,7 +2304,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
           6.021 * m_CallCount +
          -0.238 * m_IsInstanceCtor +
          -5.357 * m_IsFromPromotableValueClass +
-         -7.901 * (m_FoldableBranch > 0 ? 1 : 0)  +
+         -7.901 * (m_ConstantArgFeedsConstantTest > 0 ? 1 : 0)  +
           0.065 * m_CalleeNativeSizeEstimate;
     // clang-format on
 
@@ -2359,8 +2501,10 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsFromPromotableValueClass ? 1 : 0);
     fprintf(file, ",%u", m_HasSimd ? 1 : 0);
     fprintf(file, ",%u", m_LooksLikeWrapperMethod ? 1 : 0);
+    fprintf(file, ",%u", m_ArgFeedsConstantTest);
     fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
     fprintf(file, ",%u", m_ArgFeedsRangeCheck);
+    fprintf(file, ",%u", m_ConstantArgFeedsConstantTest);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);

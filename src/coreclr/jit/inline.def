@@ -66,6 +66,8 @@ INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",      
 
 // ------ Callee Information -------
 
+INLINE_OBSERVATION(ARG_FEEDS_CONSTANT_TEST,   bool,   "argument feeds constant test",         INFORMATION, CALLEE)
+INLINE_OBSERVATION(ARG_FEEDS_TEST,            bool,   "argument feeds test",                  INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_CAST,            int,    "argument feeds castclass or isinst",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_RANGE_CHECK,     bool,   "argument feeds range check",           INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_STRUCT,                int,    "arg is a struct passed by value",      INFORMATION, CALLEE)
@@ -180,6 +182,7 @@ INLINE_OBSERVATION(FOLDABLE_EXPR,             int,    "foldable binary expressio
 INLINE_OBSERVATION(FOLDABLE_EXPR_UN,          int,    "foldable unary expression",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_BRANCH,           int,    "foldable branch",                      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DIV_BY_CNS,                int,    "dividy by const",                      INFORMATION, CALLSITE)
+INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                                INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FREQUENCY,                 int,    "rough call site frequency",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(HAS_PROFILE,               bool,   "profile data is available",            INFORMATION, CALLSITE)

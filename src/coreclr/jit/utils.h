@@ -44,12 +44,6 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
-template <typename T>
-T clamp(const T& value, const T& lower, const T& upper)
-{
-    return max(lower, min(value, upper));
-}
-
 // Adapter for iterators to a type that is compatible with C++11
 // range-based for loops.
 template <typename TIterator>

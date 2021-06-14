@@ -381,7 +381,16 @@ CONFIG_INTEGER(DisplayMemStats, W("JitMemStats"), 0) // Display JIT memory usage
 
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks
-CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 5)
+CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
+
+// Use a less aggressive and profile-independent inliner (which was the default one for < .NET 6.0).
+CONFIG_INTEGER(JitConservativeInliner, W("JitConservativeInliner"), 0)
+
+// Ex lclMAX_TRACKED constant.
+// Tested various sizes for max tracked locals. The largest value for which no throughput regression
+// could be measured was 512. Going to 1024 showed the first throughput regressions.
+// We anticipate the larger size will be needed to support better inlining.
+CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitConservativeInliner"), 512)
 
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks

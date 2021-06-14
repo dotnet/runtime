@@ -93,7 +93,10 @@ public:
         , m_CallsiteDepth(0)
         , m_InstructionCount(0)
         , m_LoadStoreCount(0)
+        , m_ArgFeedsTest(0)
+        , m_ArgFeedsConstantTest(0)
         , m_ArgFeedsRangeCheck(0)
+        , m_ConstantArgFeedsConstantTest(0)
         , m_BinaryExprWithCns(0)
         , m_ArgCasted(0)
         , m_ArgIsStructByValue(0)
@@ -170,6 +173,7 @@ protected:
 
     // Helper methods
     double DetermineMultiplier();
+    double DetermineConservativeMultiplier();
     int    DetermineNativeSizeEstimate();
     int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
 
@@ -183,7 +187,10 @@ protected:
     unsigned                m_CallsiteDepth;
     unsigned                m_InstructionCount;
     unsigned                m_LoadStoreCount;
+    unsigned                m_ArgFeedsTest;
+    unsigned                m_ArgFeedsConstantTest;
     unsigned                m_ArgFeedsRangeCheck;
+    unsigned                m_ConstantArgFeedsConstantTest;
     unsigned                m_BinaryExprWithCns;
     unsigned                m_ArgCasted;
     unsigned                m_ArgIsStructByValue;

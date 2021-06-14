@@ -830,6 +830,11 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     // Verify compiler is a root compiler instance
     assert(m_Compiler->impInlineRoot() == m_Compiler);
 
+    if (JitConfig.JitConservativeInliner())
+    {
+        m_MaxInlineSize = DEFAULT_MAX_INLINE_SIZE_CONSERVATIVE;
+    }
+
 #ifdef DEBUG
 
     // Possibly modify the max inline size.
