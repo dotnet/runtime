@@ -823,13 +823,13 @@ namespace System.Net.Security
         }
 
 
-        private ValueTask<int> EnsureFullTlsFrame<TIOAdapter>(TIOAdapter adapter)
+        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(TIOAdapter adapter)
             where TIOAdapter : IReadWriteAdapter
         {
             int frameSize;
             if (HaveFullTlsFrame(out frameSize))
             {
-                return new ValueTask<int>(frameSize);
+                return frameSize;
             }
 
             // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
@@ -847,13 +847,7 @@ namespace System.Net.Security
                 // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
                 // helper needs to yield and allocate a state machine.
 
-                ValueTask<int> t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
-                if (!t.IsCompletedSuccessfully)
-                {
-                    return InternalEnsureFullTlsFrame(adapter, t, frameSize);
-                }
-
-                int bytesRead = t.Result;
+                int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     if (_internalBufferCount != 0)
@@ -862,11 +856,10 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_eof);
                     }
 
-                    return new ValueTask<int>(0);
+                    return 0;
                 }
 
                 _internalBufferCount += bytesRead;
-
                 if (frameSize == int.MaxValue && _internalBufferCount > SecureChannel.ReadHeaderSize)
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
@@ -874,43 +867,8 @@ namespace System.Net.Security
                 }
             }
 
-            return new ValueTask<int>(frameSize);
-
-            async ValueTask<int> InternalEnsureFullTlsFrame(TIOAdapter adap, ValueTask<int> t, int frameSize)
-            {
-                do
-                {
-                    int bytesRead = await t.ConfigureAwait(false);
-                    if (bytesRead == 0)
-                    {
-                        if (_internalBufferCount != 0)
-                        {
-                            // we got EOF in middle of TLS frame. Treat that as error.
-                            throw new IOException(SR.net_io_eof);
-                        }
-
-                        return 0;
-                    }
-
-                    _internalBufferCount += bytesRead;
-                    if (frameSize == int.MaxValue && _internalBufferCount > SecureChannel.ReadHeaderSize)
-                    {
-                        frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-                    }
-
-                    if (_internalBufferCount >= frameSize)
-                    {
-                        break;
-                    }
-
-                    t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
-                }
-                while (_internalBufferCount < frameSize);
-
-                return frameSize;
-            }
+            return frameSize;
         }
-
 
         private SecurityStatusPal DecryptData(int frameSize)
         {
@@ -1023,7 +981,7 @@ namespace System.Net.Security
 
                 while (true)
                 {
-                    payloadBytes = await EnsureFullTlsFrame(adapter).ConfigureAwait(false);
+                    payloadBytes = await EnsureFullTlsFrameAsync(adapter).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
                         _receivedEOF = true;
