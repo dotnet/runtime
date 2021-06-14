@@ -912,17 +912,20 @@ namespace System.Net.Security
         }
 
 
-        private SecurityStatusPal DecryptData(int frameSize, out int decryptedCount, out int decryptedOffset)
+        private SecurityStatusPal DecryptData(int frameSize)
         {
+            Debug.Assert(_decryptedBytesCount == 0);
+
             // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
             // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
             _decryptedBytesOffset = _internalOffset;
             _decryptedBytesCount = frameSize;
             SecurityStatusPal status;
+
             lock (_handshakeLock)
             {
                 ThrowIfExceptionalOrNotAuthenticated();
-                status = _context!.Decrypt(new Span<byte>(_internalBuffer, _internalOffset, frameSize), out decryptedOffset, out decryptedCount);
+                status = _context!.Decrypt(new Span<byte>(_internalBuffer, _internalOffset, frameSize), out int decryptedOffset, out int decryptedCount);
                 _decryptedBytesCount = decryptedCount;
                 if (decryptedCount > 0)
                 {
@@ -946,7 +949,7 @@ namespace System.Net.Security
 
                     if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
                     {
-                        // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
+                        // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
                         // Tls1.3 does not have renegotiation. However on Windows this error code is used
                         // for session management e.g. anything lsass needs to see.
                         // We also allow it when explicitly requested using RenegotiateAsync().
@@ -1027,7 +1030,7 @@ namespace System.Net.Security
                         break;
                     }
 
-                    SecurityStatusPal status = DecryptData(payloadBytes, out int decryptedCount, out int decryptedOffset);
+                    SecurityStatusPal status = DecryptData(payloadBytes);
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
@@ -1068,18 +1071,19 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
 
-                    if (decryptedCount > 0)
+                    if (_decryptedBytesCount > 0)
                     {
                         // This will either copy data from rented buffer or adjust final buffer as needed.
                         // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.
-                        processedLength += CopyDecryptedData(buffer);
-                        if (_decryptedBytesCount > 0)
+                        int copyLength = CopyDecryptedData(buffer);
+                        processedLength += copyLength;
+                        if (copyLength == buffer.Length)
                         {
                             // We have more decrypted data after we filled provided buffer.
                             break;
                         }
 
-                        buffer = buffer.Slice(decryptedCount);
+                        buffer = buffer.Slice(copyLength);
                     }
 
                     if (processedLength == 0)
