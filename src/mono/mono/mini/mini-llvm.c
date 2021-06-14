@@ -9010,12 +9010,27 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_MPSADBW_IMM: {
-			LLVMValueRef args [3];
-			args [0] = LLVMBuildBitCast (ctx->builder, lhs, sse_i1_t, "");
-			args [1] = LLVMBuildBitCast (ctx->builder, rhs, sse_i1_t, "");
-			args [2] = LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE);
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_MPSADBW, args, dname);
+		case OP_SSE41_MPSADBW: {
+			LLVMValueRef args [] = {
+				convert (ctx, lhs, sse_i1_t),
+				convert (ctx, rhs, sse_i1_t),
+				NULL,
+			};
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			// Only 3 bits (bits 0-2) are used by mpsadbw and llvm.x86.sse41.mpsadbw
+			int used_bits = 0x7;
+			ctl = LLVMBuildAnd (builder, ctl, const_int8 (used_bits), "sse41_mpsadbw");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, used_bits + 1, ctl, v128_i2_t, "sse41_mpsadbw");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [2] = const_int8 (i);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_SSE_MPSADBW, args, "sse41_mpsadbw");
+				immediate_unroll_commit (&ictx, i, result);
+			}
+			immediate_unroll_default (&ictx);
+			LLVMBuildUnreachable (builder);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_i2_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
