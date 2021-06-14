@@ -105,7 +105,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		var js_str = MONO.string_decoder.copy ($0);
 
 		try {
-			var res = eval (str);
+			var res = eval (js_str);
 			setValue ($2, 0, "i32");
 			if (res === null || res === undefined)
 				return 0;

@@ -522,13 +522,13 @@ var MonoSupportLib = {
 						MONO.interned_string_table.has(mono_string)
 					) {
 						result = MONO.interned_string_table.get(mono_string);
-						console.log("intern table cache hit", mono_string, result);
+						// console.log("intern table cache hit", mono_string, result.length);
 					} else {
-						result = this.decode(pChars, pChars + pLengthBytes, false);
+						result = this.decode(pChars, pChars + lengthBytes, false);
 						if (isInterned) {
 							if (!MONO.interned_string_table)
 								MONO.interned_string_table = new Map();
-							console.log("interned", mono_string, result);
+							// console.log("interned", mono_string, result.length);
 							MONO.interned_string_table.set(mono_string, result);
 						}
 					}						
