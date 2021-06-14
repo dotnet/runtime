@@ -592,6 +592,25 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await writer.WriteAsync(new byte[1]));
         }
 
+        [Fact]
+        public void UnflushedBytesWorks()
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var stream = new MemoryStream();
+            PipeWriter writer = PipeWriter.Create(stream);
+
+            Assert.True(writer.CanGetUnflushedBytes);
+
+            bytes.AsSpan().CopyTo(writer.GetSpan(bytes.Length));
+            writer.Advance(bytes.Length);
+
+            Assert.Equal(bytes.Length, writer.UnflushedBytes);
+
+            writer.Complete();
+
+            Assert.Equal(0, writer.UnflushedBytes);
+        }
+
         private class ThrowsOperationCanceledExceptionStream : WriteOnlyStream
         {
             public override void Write(byte[] buffer, int offset, int count)
