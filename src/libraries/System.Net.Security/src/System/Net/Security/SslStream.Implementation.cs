@@ -43,7 +43,7 @@ namespace System.Net.Security
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
-        private bool receivedEOF;
+        private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
         // 0 = no handshake
@@ -823,7 +823,7 @@ namespace System.Net.Security
         }
 
 
-        private ValueTask<int> GetFullFrameIfNeed<TIOAdapter>(TIOAdapter adapter)
+        private ValueTask<int> EnsureFullTlsFrame<TIOAdapter>(TIOAdapter adapter)
             where TIOAdapter : IReadWriteAdapter
         {
             int frameSize;
@@ -850,7 +850,7 @@ namespace System.Net.Security
                 ValueTask<int> t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
                 if (!t.IsCompletedSuccessfully)
                 {
-                    return InternalGetFullFrameIfNeed(adapter, t, frameSize);
+                    return InternalEnsureFullTlsFrame(adapter, t, frameSize);
                 }
 
                 int bytesRead = t.Result;
@@ -876,9 +876,9 @@ namespace System.Net.Security
 
             return new ValueTask<int>(frameSize);
 
-            async ValueTask<int> InternalGetFullFrameIfNeed(TIOAdapter adap, ValueTask<int> t, int frameSize)
+            async ValueTask<int> InternalEnsureFullTlsFrame(TIOAdapter adap, ValueTask<int> t, int frameSize)
             {
-                while (true)
+                do
                 {
                     int bytesRead = await t.ConfigureAwait(false);
                     if (bytesRead == 0)
@@ -898,14 +898,14 @@ namespace System.Net.Security
                         frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     }
 
-                    if (_internalBufferCount < frameSize)
+                    if (_internalBufferCount >= frameSize)
                     {
-                        t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
-                        continue;
+                        break;
                     }
 
-                    break;
+                    t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
                 }
+                while (_internalBufferCount < frameSize);
 
                 return frameSize;
             }
@@ -997,7 +997,7 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
-                if (receivedEOF && _internalBufferCount == 0)
+                if (_receivedEOF && _internalBufferCount == 0)
                 {
                     // We received EOF during previous read but had buffered data to return.
                     return 0;
@@ -1020,10 +1020,10 @@ namespace System.Net.Security
 
                 while (true)
                 {
-                    payloadBytes = await GetFullFrameIfNeed(adapter).ConfigureAwait(false);
+                    payloadBytes = await EnsureFullTlsFrame(adapter).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
-                        receivedEOF = true;
+                        _receivedEOF = true;
                         break;
                     }
 
@@ -1061,7 +1061,7 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
-                            receivedEOF = true;
+                            _receivedEOF = true;
                             break;
                         }
 
