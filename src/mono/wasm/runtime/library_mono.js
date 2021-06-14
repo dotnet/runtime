@@ -53,6 +53,7 @@ var MonoSupportLib = {
 		active_frames: [],
 		pump_count: 0,
 		timeout_queue: [],
+		mono_background_exec: undefined,
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
 		mono_wasm_setup_single_step: undefined,
