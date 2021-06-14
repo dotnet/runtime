@@ -100,8 +100,8 @@ namespace Internal.Cryptography
             int BCryptTransform(ReadOnlySpan<byte> input, Span<byte> output)
             {
                 return _encrypting ?
-                    Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, rented) :
-                    Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, rented);
+                    Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output) :
+                    Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
             }
         }
 

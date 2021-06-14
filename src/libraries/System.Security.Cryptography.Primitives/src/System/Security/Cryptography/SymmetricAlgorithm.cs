@@ -484,8 +484,7 @@ namespace System.Security.Cryptography
                 // A user-derived class could do this, but it is not expected in any of the
                 // implementations that we ship.
 
-                // TODO: better error
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
             }
 
             if (written == decryptBuffer.Length)
