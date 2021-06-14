@@ -210,7 +210,7 @@ namespace System.Net.Test.Common
             // We'll close the connection after reading the request header and sending the response.
             await AcceptConnectionAsync(async connection =>
             {
-                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders + LoopbackServer.CorsHeaders + "Connection: close\r\n", content).ConfigureAwait(false);
+                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders + "Connection: close\r\n", content).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
             return lines;
