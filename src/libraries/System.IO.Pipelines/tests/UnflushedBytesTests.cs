@@ -33,7 +33,7 @@ namespace System.IO.Pipelines.Tests
         {
             MinimalPipeWriter writer = new MinimalPipeWriter();
             Assert.False(writer.CanGetUnflushedBytes);
-            _ = Assert.Throws<NotImplementedException>(() => { long value = writer.UnflushedBytes; }); ;
+            _ = Assert.Throws<NotSupportedException>(() => { long value = writer.UnflushedBytes; }); ;
         }
 
         [Fact]

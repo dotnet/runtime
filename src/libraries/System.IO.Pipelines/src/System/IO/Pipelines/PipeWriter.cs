@@ -152,6 +152,6 @@ namespace System.IO.Pipelines
         /// When overridden in a derived class, gets the count of unflushed bytes within the current writer.
         /// </summary>
         /// <exception cref="System.NotImplementedException">The <see cref="System.IO.Pipelines.PipeWriter"/> does not support getting the unflushed byte count.</exception>
-        public virtual long UnflushedBytes => throw ThrowHelper.CreateNotImplementedException_UnflushedBytes();
+        public virtual long UnflushedBytes => throw ThrowHelper.CreateNotSupportedException_UnflushedBytes();
     }
 }
