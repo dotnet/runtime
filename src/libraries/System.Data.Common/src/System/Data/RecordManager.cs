@@ -94,6 +94,7 @@ namespace System.Data
 
             return (((capacity + 10) >> 10) + 1) << 10;
         }
+
         internal int NewRecordBase()
         {
             int record;

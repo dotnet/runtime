@@ -600,6 +600,18 @@ namespace System
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong DoubleToUInt64Bits(double value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static double UInt64BitsToDouble(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint SingleToUInt32Bits(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static float UInt32BitsToSingle(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Half UInt16BitsToHalf(ushort value) { throw null; }
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static bool ToBoolean(System.ReadOnlySpan<byte> value) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
@@ -7566,6 +7578,7 @@ namespace System.IO
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
         public static System.IO.FileStream OpenWrite(string path) { throw null; }
@@ -7627,6 +7640,7 @@ namespace System.IO
         public System.IO.FileStream Open(System.IO.FileMode mode) { throw null; }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileStreamOptions options) { throw null; }
         public System.IO.FileStream OpenRead() { throw null; }
         public System.IO.StreamReader OpenText() { throw null; }
         public System.IO.FileStream OpenWrite() { throw null; }
@@ -7823,10 +7837,12 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
+        public StreamReader(string path, System.IO.FileStreamOptions options) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.Text.Encoding encoding) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }
@@ -7856,9 +7872,11 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
+        public StreamWriter(string path, System.IO.FileStreamOptions options) { }
         public StreamWriter(string path, bool append) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(string path, System.Text.Encoding encoding, System.IO.FileStreamOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public override System.Text.Encoding Encoding { get { throw null; } }
@@ -8178,6 +8196,10 @@ namespace System.Numerics
         public static uint RotateRight(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateRight(ulong value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint RoundUpToPowerOf2(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]

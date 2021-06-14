@@ -1505,7 +1505,14 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
 
 #ifdef FEATURE_COMINTEROP
-    g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
+    if (g_pConfig->IsBuiltInCOMSupported())
+    {
+        g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
+    }
+    else
+    {
+        g_pBaseCOMObject = NULL;
+    }
 #endif
 
     g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);

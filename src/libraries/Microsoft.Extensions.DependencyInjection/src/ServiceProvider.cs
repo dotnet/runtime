@@ -38,8 +38,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Root = new ServiceProviderEngineScope(this);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
+            // The list of built in services that aren't part of the list of service descriptors
+            // keep this in sync with CallSiteFactory.IsService
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
             CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(Root));
+            CallSiteFactory.Add(typeof(IServiceProviderIsService), new ConstantCallSite(typeof(IServiceProviderIsService), CallSiteFactory));
 
             if (options.ValidateScopes)
             {
@@ -111,7 +114,9 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
-            return realizedService.Invoke(serviceProviderEngineScope);
+            var result = realizedService.Invoke(serviceProviderEngineScope);
+            System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
+            return result;
         }
 
         private void ValidateService(ServiceDescriptor descriptor)

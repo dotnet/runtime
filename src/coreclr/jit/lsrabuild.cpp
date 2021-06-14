@@ -2064,7 +2064,7 @@ void LinearScan::buildIntervals()
         printf("\n-----------------\n");
         printf("LIVENESS:\n");
         printf("-----------------\n");
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             printf(FMT_BB " use def in out\n", block->bbNum);
             dumpConvertedVarSet(compiler, block->bbVarUse);
@@ -2584,7 +2584,7 @@ void LinearScan::buildIntervals()
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }

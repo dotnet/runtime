@@ -326,10 +326,6 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
@@ -2034,10 +2030,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
         {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-            auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
             pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
         }
 
@@ -2334,7 +2326,16 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
-            pStub->DecRef();
+            if (pStub->HasExternalEntryPoint())
+            {
+                // Stubs with external entry point are allocated from regular heap and so they are always writeable
+                pStub->DecRef();
+            }
+            else
+            {
+                ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+                stubWriterHolder.GetRW()->DecRef();
+            }
         }
         else if (pStub->HasExternalEntryPoint())
         {
@@ -2455,7 +2456,8 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
             *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
 
             _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-            FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
+            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
+            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }

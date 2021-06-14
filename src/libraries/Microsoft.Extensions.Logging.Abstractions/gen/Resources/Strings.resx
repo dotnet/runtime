@@ -177,7 +177,7 @@
     <value>Argument is not referenced from the logging message</value>
   </data>
   <data name="TemplateHasNoCorrespondingArgumentMessage" xml:space="preserve">
-    <value>Template {0} is not provided as argument to the logging method</value>
+    <value>Template '{0}' is not provided as argument to the logging method</value>
   </data>
   <data name="TemplateHasNoCorrespondingArgumentTitle" xml:space="preserve">
     <value>Logging template has no corresponding method argument</value>

@@ -3597,7 +3597,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	// This still causes failures
-	//remove_empty_finally_pass (cfg);
+	remove_empty_finally_pass (cfg);
 
 	mono_threads_safepoint ();
 

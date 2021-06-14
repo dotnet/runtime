@@ -210,6 +210,9 @@
       <!-- Mono interpreter -->
       <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
 
+      <!-- Hack: Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
+
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_InterpreterHWIntrinsicsIsSupportedFalse=1" />

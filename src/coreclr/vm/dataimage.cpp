@@ -1246,7 +1246,7 @@ public:
 
         StubPrecode precode;
 
-        precode.Init(m_pMD);
+        precode.Init(&precode, m_pMD);
 
         SSIZE_T offset;
         ZapNode * pNode = pImage->m_pDataImage->GetNodeForStructure(m_pMD, &offset);
@@ -1275,7 +1275,7 @@ public:
 
         StubPrecode precode;
 
-        precode.Init(m_pMD);
+        precode.Init(&precode, m_pMD);
 
         SSIZE_T offset;
         ZapNode * pNode = pImage->m_pDataImage->GetNodeForStructure(m_pMD, &offset);

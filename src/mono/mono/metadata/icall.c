@@ -56,6 +56,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/class-init.h>
 #include <mono/metadata/reflection-internals.h>
@@ -5736,7 +5737,6 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 	return result;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 void
 ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 					   gconstpointer dmeta_bytes, int32_t dmeta_len,
@@ -5753,7 +5753,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	mono_image_load_enc_delta (image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	mono_error_set_pending_exception (error);
 }
-#endif
+
+gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
+{
+        return mono_metadata_update_available ();
+}
 
 MonoBoolean
 ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)

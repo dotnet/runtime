@@ -6498,11 +6498,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		for (int i = 0; i < header->num_clauses; ++i) {
-			MonoExceptionClause *clause = &header->clauses [i];
-			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-				cfg->interp_entry_only = TRUE;
-		}
+		if (!cfg->method->wrapper_type && header->num_clauses)
+			cfg->interp_entry_only = TRUE;
 
 		if (cfg->interp_entry_only)
 			emit_llvmonly_interp_entry (cfg, header);

@@ -1,6 +1,4 @@
 <Project>
-  <Import Project="$(ToolsDir)netfxreference.props" />
-
   <PropertyGroup>
     <ShouldVerifyClosure>true</ShouldVerifyClosure>
     <ShouldVerifyTypes>true</ShouldVerifyTypes>

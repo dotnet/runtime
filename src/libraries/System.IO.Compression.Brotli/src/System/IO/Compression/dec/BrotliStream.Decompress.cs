@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,8 +43,8 @@ namespace System.IO.Compression
         public override int ReadByte()
         {
             byte b = default;
-            int numRead = Read(MemoryMarshal.CreateSpan(ref b, 1));
-            return numRead != 0 ? b : -1;
+            int bytesRead = Read(MemoryMarshal.CreateSpan(ref b, 1));
+            return bytesRead != 0 ? b : -1;
         }
 
         /// <summary>Reads a sequence of bytes from the current Brotli stream to a byte span and advances the position within the Brotli stream by the number of bytes read.</summary>
@@ -57,59 +58,25 @@ namespace System.IO.Compression
             if (_mode != CompressionMode.Decompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
             EnsureNotDisposed();
-            int totalWritten = 0;
 
-            OperationStatus lastResult = OperationStatus.DestinationTooSmall;
-            // We want to continue calling Decompress until we're either out of space for output or until Decompress indicates it is finished.
-            while (buffer.Length > 0 && lastResult != OperationStatus.Done)
+            int bytesWritten;
+            while (!TryDecompress(buffer, out bytesWritten))
             {
-                if (lastResult == OperationStatus.NeedMoreData)
+                int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
+                if (bytesRead <= 0)
                 {
-                    // Ensure any left over data is at the beginning of the array so we can fill the remainder.
-                    if (_bufferCount > 0 && _bufferOffset != 0)
-                    {
-                        _buffer.AsSpan(_bufferOffset, _bufferCount).CopyTo(_buffer);
-                    }
-                    _bufferOffset = 0;
-
-                    int numRead = 0;
-                    while (_bufferCount < _buffer.Length && ((numRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount)) > 0))
-                    {
-                        _bufferCount += numRead;
-                        if (_bufferCount > _buffer.Length)
-                        {
-                            // The stream is either malicious or poorly implemented and returned a number of
-                            // bytes larger than the buffer supplied to it.
-                            throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
-                        }
-                    }
-
-                    if (_bufferCount <= 0)
-                    {
-                        break;
-                    }
+                    break;
                 }
 
-                lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), buffer, out int bytesConsumed, out int bytesWritten);
-                if (lastResult == OperationStatus.InvalidData)
-                {
-                    throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
-                }
+                _bufferCount += bytesRead;
 
-                if (bytesConsumed > 0)
+                if (_bufferCount > _buffer.Length)
                 {
-                    _bufferOffset += bytesConsumed;
-                    _bufferCount -= bytesConsumed;
-                }
-
-                if (bytesWritten > 0)
-                {
-                    totalWritten += bytesWritten;
-                    buffer = buffer.Slice(bytesWritten);
+                    ThrowInvalidStream();
                 }
             }
 
-            return totalWritten;
+            return bytesWritten;
         }
 
         /// <summary>Begins an asynchronous read operation. (Consider using the <see cref="System.IO.Stream.ReadAsync(byte[],int,int)" /> method instead.)</summary>
@@ -169,73 +136,100 @@ namespace System.IO.Compression
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
-            return FinishReadAsyncMemory(buffer, cancellationToken);
-        }
 
-        private async ValueTask<int> FinishReadAsyncMemory(Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            AsyncOperationStarting();
-            try
+            return Core(buffer, cancellationToken);
+
+            async ValueTask<int> Core(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                int totalWritten = 0;
-                OperationStatus lastResult = OperationStatus.DestinationTooSmall;
-                // We want to continue calling Decompress until we're either out of space for output or until Decompress indicates it is finished.
-                while (buffer.Length > 0 && lastResult != OperationStatus.Done)
+                AsyncOperationStarting();
+                try
                 {
-                    if (lastResult == OperationStatus.NeedMoreData)
+                    int bytesWritten;
+                    while (!TryDecompress(buffer.Span, out bytesWritten))
                     {
-                        // Ensure any left over data is at the beginning of the array so we can fill the remainder.
-                        if (_bufferCount > 0 && _bufferOffset != 0)
-                        {
-                            _buffer.AsSpan(_bufferOffset, _bufferCount).CopyTo(_buffer);
-                        }
-                        _bufferOffset = 0;
-
-                        int numRead = 0;
-                        while (_bufferCount < _buffer.Length &&
-                              ((numRead = await _stream.ReadAsync(new Memory<byte>(_buffer, _bufferCount, _buffer.Length - _bufferCount), cancellationToken).ConfigureAwait(false)) > 0))
-                        {
-                            _bufferCount += numRead;
-                            if (_bufferCount > _buffer.Length)
-                            {
-                                // The stream is either malicious or poorly implemented and returned a number of
-                                // bytes larger than the buffer supplied to it.
-                                throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
-                            }
-                        }
-
-                        if (_bufferCount <= 0)
+                        int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
+                        if (bytesRead <= 0)
                         {
                             break;
                         }
+
+                        _bufferCount += bytesRead;
+
+                        if (_bufferCount > _buffer.Length)
+                        {
+                            ThrowInvalidStream();
+                        }
                     }
 
-                    cancellationToken.ThrowIfCancellationRequested();
-                    lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), buffer.Span, out int bytesConsumed, out int bytesWritten);
-                    if (lastResult == OperationStatus.InvalidData)
-                    {
-                        throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
-                    }
-
-                    if (bytesConsumed > 0)
-                    {
-                        _bufferOffset += bytesConsumed;
-                        _bufferCount -= bytesConsumed;
-                    }
-
-                    if (bytesWritten > 0)
-                    {
-                        totalWritten += bytesWritten;
-                        buffer = buffer.Slice(bytesWritten);
-                    }
+                    return bytesWritten;
                 }
-
-                return totalWritten;
-            }
-            finally
-            {
-                AsyncOperationCompleting();
+                finally
+                {
+                    AsyncOperationCompleting();
+                }
             }
         }
+
+        /// <summary>Tries to decode available data into the destination buffer.</summary>
+        /// <param name="destination">The destination buffer for the decompressed data.</param>
+        /// <param name="bytesWritten">The number of bytes written to destination.</param>
+        /// <returns>true if the caller should consider the read operation completed; otherwise, false.</returns>
+        private bool TryDecompress(Span<byte> destination, out int bytesWritten)
+        {
+            // Decompress any data we may have in our buffer.
+            OperationStatus lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
+            if (lastResult == OperationStatus.InvalidData)
+            {
+                throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
+            }
+
+            if (bytesConsumed != 0)
+            {
+                _bufferOffset += bytesConsumed;
+                _bufferCount -= bytesConsumed;
+            }
+
+            // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
+            if (bytesWritten != 0 || lastResult == OperationStatus.Done)
+            {
+                return true;
+            }
+
+            if (destination.IsEmpty)
+            {
+                // The caller provided a zero-byte buffer.  This is typically done in order to avoid allocating/renting
+                // a buffer until data is known to be available.  We don't have perfect knowledge here, as _decoder.Decompress
+                // will return DestinationTooSmall whether or not more data is required.  As such, we assume that if there's
+                // any data in our input buffer, it would have been decompressible into at least one byte of output, and
+                // otherwise we need to do a read on the underlying stream.  This isn't perfect, because having input data
+                // doesn't necessarily mean it'll decompress into at least one byte of output, but it's a reasonable approximation
+                // for the 99% case.  If it's wrong, it just means that a caller using zero-byte reads as a way to delay
+                // getting a buffer to use for a subsequent call may end up getting one earlier than otherwise preferred.
+                Debug.Assert(lastResult == OperationStatus.DestinationTooSmall);
+                if (_bufferCount != 0)
+                {
+                    Debug.Assert(bytesWritten == 0);
+                    return true;
+                }
+            }
+
+            Debug.Assert(
+                lastResult == OperationStatus.NeedMoreData ||
+                (lastResult == OperationStatus.DestinationTooSmall && destination.IsEmpty && _bufferCount == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(destination.Length)} == {destination.Length}");
+
+            // Ensure any left over data is at the beginning of the array so we can fill the remainder.
+            if (_bufferCount != 0 && _bufferOffset != 0)
+            {
+                new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount).CopyTo(_buffer);
+            }
+            _bufferOffset = 0;
+
+            return false;
+        }
+
+        private static void ThrowInvalidStream() =>
+            // The stream is either malicious or poorly implemented and returned a number of
+            // bytes larger than the buffer supplied to it.
+            throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
     }
 }

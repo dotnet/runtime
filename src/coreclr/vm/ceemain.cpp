@@ -489,15 +489,9 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef TARGET_UNIX
-    // On Unix, the GS cookie is stored in a read only data segment
-    DWORD newProtection = PAGE_READWRITE;
-#else // TARGET_UNIX
-    DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !TARGET_UNIX
-
+    // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
+    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
@@ -989,10 +983,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
         Assembly::Initialize();
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         SystemDomain::System()->Init();
 
