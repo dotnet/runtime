@@ -97,7 +97,7 @@ internal static class Utils
                 throw new Exception("Error: Process returned non-zero exit code: " + outputBuilder);
         }
 
-        return silent ? new String() : outputBuilder.ToString().Trim('\r', '\n');
+        return silent ? String.Empty : outputBuilder.ToString().Trim('\r', '\n');
     }
 
 #if NETCOREAPP
