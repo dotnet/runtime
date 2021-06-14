@@ -217,7 +217,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile/tests/System.IO.Compression.ZipFile.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(RunDisablediOSTests)' != 'true'">
     <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
@@ -228,6 +228,30 @@
   
     <!-- No current support for AOT+LLVM on catalyst, so skip functional test -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT-LLVM\**\*.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher/tests/System.IO.FileSystem.Watcher.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client/tests/System.Net.WebSockets.Client.Tests.csproj" />
+
+    <!-- App Launch Failure https://github.com/dotnet/runtime/issues/53813 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.AttributedModel/tests/System.Composition.AttributeModel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.TypedParts/tests/System.Composition.TypedParts.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars/tests/System.Globalization.Calendars.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.UnmanagedMemoryStream/tests/System.IO.UnmanagedMemoryStream.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Web.HttpUtility/tests/System.Web.HttpUtility.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'x64' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions/tests/System.Linq.Expressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel/tests/System.Linq.Parallel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
