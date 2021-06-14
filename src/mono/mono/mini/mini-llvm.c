@@ -9178,9 +9178,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_PCLMULQDQ_IMM: {
-			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_PCLMULQDQ, args, "");
+		case OP_PCLMULQDQ: {
+			LLVMValueRef args [] = { lhs, rhs, NULL };
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			// Only bits 0 and 4 of the immediate operand are used by PCLMULQDQ.
+			ctl = LLVMBuildAnd (builder, ctl, const_int8 (0x11), "pclmulqdq");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 1 << 2, ctl, v128_i8_t, "pclmulqdq");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int imm = ((i & 0x2) << 3) | (i & 0x1);
+				args [2] = const_int8 (imm);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_PCLMULQDQ, args, "pclmulqdq");
+				immediate_unroll_commit (&ictx, imm, result);
+			}
+			immediate_unroll_default (&ictx);
+			LLVMBuildUnreachable (builder);
+			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_i8_t));
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 

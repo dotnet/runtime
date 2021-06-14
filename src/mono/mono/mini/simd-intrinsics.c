@@ -2522,10 +2522,7 @@ emit_x86_intrinsics (
 	if (feature == MONO_CPU_X86_PCLMUL) {
 		switch (id) {
 		case SN_CarrylessMultiply: {
-			if (args [2]->opcode == OP_ICONST)
-				return emit_simd_ins_for_sig (cfg, klass, OP_PCLMULQDQ_IMM, args [2]->inst_c0, arg0_type, fsig, args);
-			// FIXME: handle non-constant control byte (generate a switch)
-			return emit_invalid_operation (cfg, "index in Pclmulqdq.CarrylessMultiply must be constant");
+			return emit_simd_ins_for_sig (cfg, klass, OP_PCLMULQDQ, 0, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();
