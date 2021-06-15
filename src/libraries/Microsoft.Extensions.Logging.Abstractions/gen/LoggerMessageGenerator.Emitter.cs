@@ -65,7 +65,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private void GenType(LoggerClass lc)
             {
-                int indentationSize = 0;
                 string nestedIndentation = "";
                 if (!string.IsNullOrWhiteSpace(lc.Namespace))
                 {
@@ -79,7 +78,7 @@ namespace {lc.Namespace}
                 // loop until you find top level nested class
                 while (parent != null)
                 {
-                    parentClasses.Add($"partial class {parent?.Name + " " + parent?.Constraints}");
+                    parentClasses.Add($"partial {parent?.Keyword} {parent?.Name} {parent?.Constraints}");
                     parent = parent.ParentClass;
                 }
 
@@ -89,12 +88,11 @@ namespace {lc.Namespace}
                     _builder.Append($@"
     {nestedIndentation}{parentClasses[i]}
     {nestedIndentation}{{");
-                    indentationSize += 4;
-                    nestedIndentation = new String(' ', indentationSize);
+                    nestedIndentation += "    ";
                 }
 
                 _builder.Append($@"
-    {nestedIndentation}partial class {lc.Name} {lc.Constraints}
+    {nestedIndentation}partial {lc.Keyword} {lc.Name} {lc.Constraints}
     {nestedIndentation}{{");
 
                 foreach (LoggerMethod lm in lc.Methods)
@@ -113,8 +111,7 @@ namespace {lc.Namespace}
                 parent = lc.ParentClass;
                 while (parent != null)
                 {
-                    indentationSize -= 4;
-                    nestedIndentation = new String(' ', indentationSize);
+                    nestedIndentation = new String(' ', nestedIndentation.Length - 4);
                     _builder.Append($@"
     {nestedIndentation}}}");
                     parent = parent.ParentClass;
