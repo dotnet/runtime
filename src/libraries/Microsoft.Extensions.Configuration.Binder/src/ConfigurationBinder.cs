@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.Configuration
                         .Select(mp => $"'{mp.Key}'")
                         .ToList();
 
-                    if (missingPropertyNames.Any())
+                    if (missingPropertyNames.Count > 0)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
                             nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
