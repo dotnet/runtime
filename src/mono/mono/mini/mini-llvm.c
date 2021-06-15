@@ -5022,6 +5022,13 @@ immediate_unroll_commit_default (ImmediateUnrollCtx *ictx, LLVMValueRef value)
 	LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
 }
 
+static void
+immediate_unroll_unreachable_default (ImmediateUnrollCtx *ictx)
+{
+	immediate_unroll_default (ictx);
+	LLVMBuildUnreachable (ictx->ctx->builder);
+}
+
 static LLVMValueRef
 immediate_unroll_end (ImmediateUnrollCtx *ictx, LLVMBasicBlockRef *continuation)
 {
@@ -9013,9 +9020,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMValueRef result = call_intrins (ctx, INTRINS_SSE_MPSADBW, args, "sse41_mpsadbw");
 				immediate_unroll_commit (&ictx, i, result);
 			}
-			immediate_unroll_default (&ictx);
-			LLVMBuildUnreachable (builder);
-			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_i2_t));
+			immediate_unroll_unreachable_default (&ictx);
 			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
@@ -9030,9 +9035,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMValueRef result = call_intrins (ctx, INTRINS_SSE_INSERTPS, args, dname);
 				immediate_unroll_commit (&ictx, i, result);
 			}
-			immediate_unroll_default (&ictx);
-			LLVMBuildUnreachable (builder);
-			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_r4_t));
+			immediate_unroll_unreachable_default (&ictx);
 			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
@@ -9191,9 +9194,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMValueRef result = call_intrins (ctx, INTRINS_PCLMULQDQ, args, "pclmulqdq");
 				immediate_unroll_commit (&ictx, imm, result);
 			}
-			immediate_unroll_default (&ictx);
-			LLVMBuildUnreachable (builder);
-			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_i8_t));
+			immediate_unroll_unreachable_default (&ictx);
 			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
@@ -9208,9 +9209,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMValueRef result = call_intrins (ctx, INTRINS_AESNI_AESKEYGENASSIST, args, "aes_keygenassist");
 				immediate_unroll_commit (&ictx, i, result);
 			}
-			immediate_unroll_default (&ictx);
-			LLVMBuildUnreachable (builder);
-			immediate_unroll_commit_default (&ictx, LLVMGetUndef (v128_i8_t));
+			immediate_unroll_unreachable_default (&ictx);
 			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
 			values [ins->dreg] = convert (ctx, result, v128_i1_t);
 			break;
