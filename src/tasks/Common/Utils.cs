@@ -157,7 +157,7 @@ internal static class Utils
         process.BeginErrorReadLine();
         process.WaitForExit();
 
-        Logger?.LogMessage(MessageImportance.High, $"Exit code: {process.ExitCode}");
+        Logger?.LogMessage(debugMessageImportance, $"Exit code: {process.ExitCode}");
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
