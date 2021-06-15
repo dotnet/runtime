@@ -335,17 +335,6 @@ namespace System.Net.Sockets
             }
         }
 
-        private void ValidateDatagram(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint)
-        {
-            ThrowIfDisposed();
-
-            if (_active && endPoint != null)
-            {
-                // Do not allow sending packets to arbitrary host when connected.
-                throw new InvalidOperationException(SR.net_udpconnected);
-            }
-        }
-
         private IPEndPoint? GetEndpoint(string? hostname, int port)
         {
             if (_active && ((hostname != null) || (port != 0)))
@@ -685,17 +674,19 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint, CancellationToken cancellationToken = default)
         {
-            ValidateDatagram(datagram, endPoint);
+            ThrowIfDisposed();
 
             if (endPoint is null)
             {
                 return _clientSocket.SendAsync(datagram, SocketFlags.None, cancellationToken);
             }
-            else
+            if (_active)
             {
-                CheckForBroadcast(endPoint.Address);
-                return _clientSocket.SendToAsync(datagram, SocketFlags.None, endPoint, cancellationToken);
+                // Do not allow sending packets to arbitrary host when connected.
+                throw new InvalidOperationException(SR.net_udpconnected);
             }
+            CheckForBroadcast(endPoint.Address);
+            return _clientSocket.SendToAsync(datagram, SocketFlags.None, endPoint, cancellationToken);
         }
 
         public Task<UdpReceiveResult> ReceiveAsync()
