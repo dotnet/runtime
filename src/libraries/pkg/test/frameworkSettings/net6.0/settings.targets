@@ -1,0 +1,12 @@
+<Project>
+  <ItemGroup>
+    <!-- VerifyClosure doesn't see these compile time references as they are
+      being excluded as the library is part of the shared framework. This should go away with
+      https://github.com/dotnet/runtime/issues/53892. -->
+    <IgnoredReference Include="Microsoft.Win32.Registry" />
+    <IgnoredReference Include="System.IO.FileSystem.AccessControl" />
+    <IgnoredReference Include="System.IO.Pipes.AccessControl" />
+    <IgnoredReference Include="System.Security.AccessControl" />
+    <IgnoredReference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+</Project>
