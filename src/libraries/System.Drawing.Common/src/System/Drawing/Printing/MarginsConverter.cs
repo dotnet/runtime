@@ -81,7 +81,7 @@ namespace System.Drawing.Printing
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "TypeDescriptor.GetConverter is safe for primitive types.")]
+            Justification = "TypeDescriptor.GetConverter is safe for primitive types.")]
         private static TypeConverter GetIntConverter() => TypeDescriptor.GetConverter(typeof(int));
 
         /// <summary>
