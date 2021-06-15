@@ -42,9 +42,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.corelib+clr.tools+clr.nativecorelib+clr.packages+</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultCoreClrSubsets)clr.native+linuxdac</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultCoreClrSubsets)clr.runtime+clr.jit+clr.alljits</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
