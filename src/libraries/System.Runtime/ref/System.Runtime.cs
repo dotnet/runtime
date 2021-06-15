@@ -21,6 +21,7 @@ namespace Microsoft.Win32.SafeHandles
         public SafeFileHandle() : base (default(bool)) { }
         public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
+        public bool IsAsync { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
@@ -7579,6 +7580,7 @@ namespace System.IO
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenHandle(string path, System.IO.FileMode mode = System.IO.FileMode.Open, System.IO.FileAccess access = System.IO.FileAccess.Read, System.IO.FileShare share = System.IO.FileShare.Read, System.IO.FileOptions options = System.IO.FileOptions.None, long preallocationSize = 0) { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
         public static System.IO.FileStream OpenWrite(string path) { throw null; }
@@ -8091,6 +8093,18 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
+    }
+    public static partial class RandomAccess
+    {
+        public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
+        public static int Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Span<byte> buffer, long fileOffset) { throw null; }
+        public static long Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Memory<byte> buffer, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<long> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static int Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlySpan<byte> buffer, long fileOffset) { throw null; }
+        public static long Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> buffers, long fileOffset) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> WriteAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlyMemory<byte> buffer, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<long> WriteAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
 }
 namespace System.IO.Enumeration

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_ctor_str_fm_fa_fs_buffer_fo : FileStream_ctor_str_fm_fa_fs_buffer
     {
         protected sealed override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize)
@@ -79,7 +79,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
-        public void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
+        public virtual void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
         {
             string path = GetTestFilePath();
             Assert.False(File.Exists(path));
