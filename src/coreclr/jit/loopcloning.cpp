@@ -1176,6 +1176,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 
     if (maxRank == -1)
     {
+        JITDUMP("> maxRank undefined\n");
         return false;
     }
 
@@ -1184,12 +1185,13 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
     // So add 1 after rank * 2.
     unsigned condBlocks = (unsigned)maxRank * 2 + 1;
 
-    // Heuristic to not create too many blocks.
-    // REVIEW: due to the definition of `condBlocks`, above, the effective max is 3 blocks, meaning
-    // `maxRank` of 1. Question: should the heuristic allow more blocks to be created in some situations?
-    // REVIEW: make this based on a COMPlus configuration?
-    if (condBlocks > 4)
+    // Heuristic to not create too many blocks. Defining as 5 allows, effectively, loop cloning on
+    // triply-nested loops.
+    // REVIEW: make this based on a COMPlus configuration, at least for debug?
+    const unsigned maxAllowedCondBlocks = 5;
+    if (condBlocks > maxAllowedCondBlocks)
     {
+        JITDUMP("> Too many condition blocks (%u > %u)\n", condBlocks, maxAllowedCondBlocks);
         return false;
     }
 
