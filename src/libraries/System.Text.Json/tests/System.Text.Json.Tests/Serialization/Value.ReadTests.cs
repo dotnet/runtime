@@ -454,7 +454,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("23:59:59.9", "23:59:59.9000000")]
         [InlineData("23:59:59.9999999")]
         [InlineData("1:00:00", "01:00:00")] // 'g' Format
-        [InlineData("1:00:00:00", "1.00:00:00")] // 'g' Format
+        [InlineData("1:2:00:00", "1.02:00:00")] // 'g' Format
         [InlineData("9999999.23:59:59.9999999")]
         [InlineData("-9999999.23:59:59.9999999")]
         [InlineData("10675199.02:48:05.4775807")] // TimeSpan.MaxValue
