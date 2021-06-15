@@ -967,7 +967,7 @@ var BindingSupportLib = {
 
 				var conv = primitiveConverters.get (key);
 				if (!conv)
-					throw new Error ("Unknown parameter type " + type);
+					throw new Error ("Unknown parameter type " + key);
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;

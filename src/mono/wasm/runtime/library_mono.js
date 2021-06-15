@@ -1293,7 +1293,7 @@ var MonoSupportLib = {
 				throw new Error (`"arguments" should be an array, but was ${request.arguments}`);
 
 			const objId = request.objectId;
-			let proxy; // Note: this variable is unused. Should it be removed?
+			let proxy; // Note: this variable is used in the fn_eval_str
 
 			if (objId.startsWith ('dotnet:cfo_res:')) {
 				if (objId in this._call_function_res_cache)

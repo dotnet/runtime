@@ -8,13 +8,13 @@
 var is_browser = typeof window != "undefined";
 
 //define arguments for later
+var allRuntimeArguments = [];
 if (is_browser) {
 	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	var raw_args = [];
 	var url = new URL (decodeURI (window.location));
 	for (var v of url.searchParams) {
 		if (v [0] == "arg") {
-			raw_args.push (v [1]);
+			allRuntimeArguments.push (v [1]);
 		}
 	}
 }
@@ -31,7 +31,7 @@ globalThis.testConsole = console;
 
 function proxyMethod (prefix, func, asJson) {
 	return function() {
-		var args = [...raw_args];
+		var args = [...arguments];
 		if (asJson) {
 			func (JSON.stringify({
 				method: prefix,
@@ -97,29 +97,26 @@ if (typeof performance == 'undefined') {
 
 try {
 	if (typeof arguments == "undefined")
-		raw_args = WScript.Arguments;
+		allRuntimeArguments = WScript.Arguments;
 	else
-		raw_args = arguments;
+		allRuntimeArguments = arguments;
 	var load = WScript.LoadScriptFile;
 	var read = WScript.LoadBinaryFile;
 } catch (e) {
 }
 
 try {
-	if (typeof raw_args == "undefined") {
+	if (typeof allRuntimeArguments == "undefined") {
 		if (typeof scriptArgs !== "undefined")
-			raw_args = scriptArgs;
+			allRuntimeArguments = scriptArgs;
 	}
 } catch (e) {
 }
 
-if (raw_args === undefined)
-	raw_args = [];
+if (allRuntimeArguments === undefined)
+	allRuntimeArguments = [];
 
 //end of all the nice shell glue code.
-
-// set up a global variable to be accessed in App.init
-var testArguments = raw_args;
 
 function test_exit (exit_code) {
 	if (is_browser) {
@@ -150,44 +147,42 @@ function inspect_object (o) {
 }
 
 // Preprocess arguments
-var args = testArguments;
-console.info("Arguments: " + testArguments);
+console.info("Arguments: " + allRuntimeArguments);
 var profilers = [];
 var setenv = {};
 var runtime_args = [];
 var enable_gc = true;
 var enable_zoneinfo = false;
 var working_dir='/';
-while (args !== undefined && args.length > 0) {
-	if (args [0].startsWith ("--profile=")) {
-		var arg = args [0].substring ("--profile=".length);
+while (allRuntimeArguments !== undefined && allRuntimeArguments.length > 0) {
+	if (allRuntimeArguments [0].startsWith ("--profile=")) {
+		var arg = allRuntimeArguments [0].substring ("--profile=".length);
 
 		profilers.push (arg);
 
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--setenv=")) {
-		var arg = args [0].substring ("--setenv=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--setenv=")) {
+		var arg = allRuntimeArguments [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
 		if (parts.length != 2)
-			fail_exec ("Error: malformed argument: '" + args [0]);
+			fail_exec ("Error: malformed argument: '" + allRuntimeArguments [0]);
 		setenv [parts [0]] = parts [1];
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--runtime-arg=")) {
-		var arg = args [0].substring ("--runtime-arg=".length);
-		runtime_args.push (arg);
-		args = args.slice (1);
-	} else if (args [0] == "--disable-on-demand-gc") {
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--runtime-arg=")) {
+		var arg = allRuntimeArguments [0].substring ("--runtime-arg=".length);
+		runtime_allRuntimeArguments.push (arg);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--working-dir=")) {
-		var arg = args [0].substring ("--working-dir=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--working-dir=")) {
+		var arg = allRuntimeArguments [0].substring ("--working-dir=".length);
 		working_dir = arg;
-		args = args.slice (1);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
 	} else {
 		break;
 	}
 }
-testArguments = args;
 
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
@@ -309,17 +304,17 @@ var App = {
 			init ("");
 		}
 
-		if (args.length == 0) {
+		if (allRuntimeArguments.length == 0) {
 			fail_exec ("Missing required --run argument");
 			return;
 		}
 
-		if (args[0] == "--regression") {
+		if (allRuntimeArguments[0] == "--regression") {
 			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
 			var res = 0;
 				try {
-					res = exec_regression (10, args[1]);
+					res = exec_regression (10, allRuntimeArguments[1]);
 					Module.print ("REGRESSION RESULT: " + res);
 				} catch (e) {
 					Module.print ("ABORT: " + e);
@@ -336,23 +331,23 @@ var App = {
 		if (runtime_args.length > 0)
 			MONO.mono_wasm_set_runtime_options (runtime_args);
 
-		if (args[0] == "--run") {
+		if (allRuntimeArguments[0] == "--run") {
 			// Run an exe
-			if (args.length == 1) {
+			if (allRuntimeArguments.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
 
-			var main_assembly_name = args[1];
-			var app_args = args.slice (2);
+			var main_assembly_name = allRuntimeArguments[1];
+			var app_args = allRuntimeArguments.slice (2);
 
-			var main_argc = args.length - 2 + 1;
+			var main_argc = allRuntimeArguments.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
 			var aindex = 0;
-			Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [1]), "i32")
+			Module.setValue (main_argv + (aindex * 4), wasm_strdup (allRuntimeArguments [1]), "i32")
 			aindex += 1;
-			for (var i = 2; i < args.length; ++i) {
-				Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [i]), "i32");
+			for (var i = 2; i < allRuntimeArguments.length; ++i) {
+				Module.setValue (main_argv + (aindex * 4), wasm_strdup (allRuntimeArguments [i]), "i32");
 				aindex += 1;
 			}
 			wasm_set_main_args (main_argc, main_argv);
@@ -374,7 +369,7 @@ var App = {
 			}
 
 		} else {
-			fail_exec ("Unhandled argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + allRuntimeArguments [0]);
 		}
 	},
 	call_test_method: function (method_name, args, signature) {
