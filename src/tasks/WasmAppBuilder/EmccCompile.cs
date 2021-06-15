@@ -61,7 +61,11 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 _tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 Directory.CreateDirectory(_tempPath);
 
-                if (DisableParallelCompile)
+                int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
+                if (BuildEngine is IBuildEngine9 be9)
+                    allowedParallelism = be9.RequestCores(allowedParallelism);
+
+                if (DisableParallelCompile || allowedParallelism == 1)
                 {
                     foreach (ITaskItem srcItem in SourceFiles)
                     {
@@ -72,7 +76,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 else
                 {
                     ParallelLoopResult result = Parallel.ForEach(SourceFiles,
-                                                    new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                     (srcItem, state) =>
                     {
                         if (!ProcessSourceFile(srcItem))
