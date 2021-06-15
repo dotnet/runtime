@@ -174,9 +174,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>af5c238556e204583b129cc8f5c7338f84dc2c40</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21310.3">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21308.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>caeaf2a3fb3f636805fdd4881df4f9a539fff8f6</Sha>
+      <Sha>802aa459394baa2451ffacc02219ba54ef77ca44</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21314.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
@@ -186,9 +186,9 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>d6f8a4ad30908fb210390380eae97264e4fbe8ce</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21311.3">
+    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.21304.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>4a2b475948d498b89fedef7cf890883f49bc1ea3</Sha>
+      <Sha>85a65ea1fca1d0867f699fed44d191358270bf6a</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21313.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
