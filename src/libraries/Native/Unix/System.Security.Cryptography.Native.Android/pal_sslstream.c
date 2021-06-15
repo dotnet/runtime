@@ -479,6 +479,12 @@ int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* t
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (targetHost);
 
+    if (g_SNIHostName == NULL || g_SSLParametersSetServerNames == NULL)
+    {
+        // SSL not supported below API Level 24
+        return UNSUPPORTED_API_LEVEL;
+    }
+
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
@@ -487,21 +493,27 @@ int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* t
     // ArrayList<SNIServerName> nameList = new ArrayList<SNIServerName>();
     // SNIHostName hostName = new SNIHostName(targetHost);
     // nameList.add(hostName);
-    loc[hostStr] = make_java_string(env, targetHost);
-    loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (g_SNIHostName != NULL)
+    {
+        loc[hostStr] = make_java_string(env, targetHost);
+        loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
 
     // SSLParameters params = sslEngine.getSSLParameters();
     // params.setServerNames(nameList);
     // sslEngine.setSSLParameters(params);
-    loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
-    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+    if (g_SSLParametersSetServerNames != NULL)
+    {
+        loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
+        (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+    }
 
     ret = SUCCESS;
 
