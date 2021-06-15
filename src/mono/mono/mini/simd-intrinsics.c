@@ -1014,14 +1014,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 }
 #endif // TARGET_AMD64
 
-static MonoInst*
-emit_invalid_operation (MonoCompile *cfg, const char* message)
-{
-	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-	mono_error_set_generic_error (cfg->error, "System", "InvalidOperationException", "%s", message);
-	return NULL;
-}
-
 #ifdef TARGET_ARM64
 
 static SimdIntrinsic armbase_methods [] = {
