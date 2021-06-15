@@ -192,7 +192,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
     LIMITED_METHOD_CONTRACT;
 
 #if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
-    ExecutableWriterHolder<void> breakpointWriterHolder((LPVOID)address, CORDbg_BREAK_INSTRUCTION_SIZE);
+    ExecutableWriterHolder<CORDB_ADDRESS_TYPE> breakpointWriterHolder(address, CORDbg_BREAK_INSTRUCTION_SIZE);
     UNALIGNED CORDB_ADDRESS_TYPE* addressRW = breakpointWriterHolder.GetRW();
 #else // !DBI_COMPILE && !DACCESS_COMPILE
     UNALIGNED CORDB_ADDRESS_TYPE* addressRW = address;
