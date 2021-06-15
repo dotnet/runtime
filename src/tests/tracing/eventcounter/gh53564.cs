@@ -20,6 +20,7 @@ namespace gh53564Tests
 
         private DateTime? setToZeroTimestamp = null;
         private DateTime? mostRecentTimestamp = null;
+        private ManualResetEvent setToZero = new ManualResetEvent(initialState: false);
         public ManualResetEvent ReadyToVerify { get; } = new ManualResetEvent(initialState: false);
 
         protected override void OnEventSourceCreated(EventSource source)
@@ -28,7 +29,7 @@ namespace gh53564Tests
             {
                 Dictionary<string, string> refreshInterval = new Dictionary<string, string>();
 
-                Console.WriteLine($"[{DateTime.Now:hh:mm:ss.fff}] Setting interval to 1");
+                Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] OnEventSourceCreated :: Setting interval to 1");
                 // first set interval to 1 seconds
                 refreshInterval["EventCounterIntervalSec"] = "1";
                 EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
@@ -37,31 +38,41 @@ namespace gh53564Tests
                 Thread.Sleep(TimeSpan.FromSeconds(3));
 
                 // then set interval to 0
-                Console.WriteLine($"[{DateTime.Now:hh:mm:ss.fff}] Setting interval to 0");
+                Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] OnEventSourceCreated :: Setting interval to 0");
                 refreshInterval["EventCounterIntervalSec"] = "0";
                 EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
-                setToZeroTimestamp = DateTime.Now + TimeSpan.FromSeconds(1); // Stash timestamp 1 second after setting to 0
+                setToZeroTimestamp = DateTime.UtcNow + TimeSpan.FromSeconds(1); // Stash timestamp 1 second after setting to 0
+                setToZero.Set();
 
                 // then attempt to set interval back to 1
                 Thread.Sleep(TimeSpan.FromSeconds(3));
-                Console.WriteLine($"[{DateTime.Now:hh:mm:ss.fff}] Setting interval to 1");
+                Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] OnEventSourceCreated :: Setting interval to 1");
                 refreshInterval["EventCounterIntervalSec"] = "1";
                 EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
-                Thread.Sleep(TimeSpan.FromSeconds(3));
-                Console.WriteLine($"[{DateTime.Now:hh:mm:ss.fff}] Setting ReadyToVerify");
-                ReadyToVerify.Set();
             }
         }
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            mostRecentTimestamp = eventData.TimeStamp;
+            if (!ReadyToVerify.WaitOne(0))
+            {
+                mostRecentTimestamp = eventData.TimeStamp;
+                if (setToZero.WaitOne(0) && mostRecentTimestamp > setToZeroTimestamp)
+                {
+                    Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] OnEventWritten :: Setting ReadyToVerify");
+                    ReadyToVerify.Set();
+                }
+            }
         }
 
         public bool Verify()
         {
             if (!ReadyToVerify.WaitOne(0))
                 return false;
+
+            Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] Verify :: Verifying");
+            Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}]   setToZeroTimestamp = {setToZeroTimestamp?.ToString("hh:mm:ss.fff") ?? "NULL"}");
+            Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}]   mostRecentTimestamp = {mostRecentTimestamp?.ToString("hh:mm:ss.fff") ?? "NULL"}");
 
             return (setToZeroTimestamp is null || mostRecentTimestamp is null) ? false : setToZeroTimestamp < mostRecentTimestamp;
         }
@@ -74,9 +85,8 @@ namespace gh53564Tests
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
-                if (myListener.ReadyToVerify.WaitOne(TimeSpan.FromSeconds(15)))
+                if (myListener.ReadyToVerify.WaitOne(TimeSpan.FromSeconds(30)))
                 {
-                Console.WriteLine($"[{DateTime.Now:hh:mm:ss.fff}] Ready to verify");
                     if (myListener.Verify())
                     {
                         Console.WriteLine("Test passed");

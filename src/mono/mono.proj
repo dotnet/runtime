@@ -8,7 +8,6 @@
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
       - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
-      - MonoMetadataUpdate - enable experimental method body replacement code (in Directory.Build.props)
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
   -->
 
@@ -412,10 +411,6 @@
     </ItemGroup>
 
     <!-- Devloop features -->
-    <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
-    </ItemGroup>
-
     <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
     </ItemGroup>
@@ -655,9 +650,6 @@
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir.TrimEnd('\/'))" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
-      <!-- Devloop features -->
-      <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
-
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
     </ItemGroup>

@@ -1468,10 +1468,6 @@ void
 ep_rt_prepare_provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-	auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 static

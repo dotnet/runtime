@@ -323,7 +323,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                                 if (!found)
                                                 {
-                                                    Diag(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument, ma.GetLocation(), t);
+                                                    Diag(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument, ma.GetLocation(), t.Key);
                                                 }
                                             }
                                         }

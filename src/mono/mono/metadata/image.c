@@ -599,14 +599,12 @@ load_tables (MonoImage *image)
 	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
 
-#ifdef ENABLE_METADATA_UPDATE
 	if (G_UNLIKELY (image->minimal_delta)) {
 		/* sanity check */
 		g_assert (image->idx_string_wide);
 		g_assert (image->idx_guid_wide);
 		g_assert (image->idx_blob_wide);
 	}
-#endif
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (const guint32 *) (heap_tables + 24);
@@ -1174,7 +1172,6 @@ hash_guid (const char *str)
 	return h;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 static void
 dump_encmap (MonoImage *image)
 {
@@ -1192,7 +1189,6 @@ dump_encmap (MonoImage *image)
 		}
 	}
 }
-#endif
 
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
@@ -1238,9 +1234,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-#ifdef ENABLE_METADATA_UPDATE
 	dump_encmap (image);
-#endif
 
 	mono_image_load_names (image);
 
@@ -2114,20 +2108,6 @@ mono_image_close_except_pools_all (MonoImage**images, int image_count)
 	}
 }
 
-#ifdef ENABLE_METADATA_UPDATE
-static void
-mono_image_close_except_pools_all_list (GList *images)
-{
-	for (GList *ptr = images; ptr; ptr = ptr->next) {
-		MonoImage *image = (MonoImage *)ptr->data;
-		if (image) {
-			if (!mono_image_close_except_pools (image))
-			    ptr->data = NULL;
-		}
-	}
-}
-#endif
-
 /*
  * Returns whether mono_image_close_finish() must be called as well.
  * We must unload images in two steps because clearing the domain in
@@ -2165,9 +2145,7 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_image_invoke_unload_hook (image);
 
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_cleanup_on_close (image);
-#endif
 
 	/*
 	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
@@ -2287,10 +2265,8 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_image_close_except_pools_all (image->modules, image->module_count);
 	g_free (image->modules_loaded);
 
-#ifdef ENABLE_METADATA_UPDATE
-	if (image->delta_image)
-		mono_image_close_except_pools_all_list (image->delta_image);
-#endif
+	if (image->has_updates)
+		mono_metadata_update_image_close_except_pools_all (image);
 
 	mono_os_mutex_destroy (&image->szarray_cache_lock);
 	mono_os_mutex_destroy (&image->lock);
@@ -2318,20 +2294,6 @@ mono_image_close_all (MonoImage**images, int image_count)
 		g_free (images);
 }
 
-#ifdef ENABLE_METADATA_UPDATE
-static void
-mono_image_close_all_list (GList *images)
-{
-	for (GList *ptr = images; ptr; ptr = ptr->next) {
-		MonoImage *image = (MonoImage *)ptr->data;
-		if (image)
-			mono_image_close_finish (image);
-	}
-
-	g_list_free (images);
-}
-#endif
-
 void
 mono_image_close_finish (MonoImage *image)
 {
@@ -2350,9 +2312,7 @@ mono_image_close_finish (MonoImage *image)
 	mono_image_close_all (image->files, image->file_count);
 	mono_image_close_all (image->modules, image->module_count);
 
-#ifdef ENABLE_METADATA_UPDATE
-	mono_image_close_all_list (image->delta_image);
-#endif
+	mono_metadata_update_image_close_all (image);
 
 #ifndef DISABLE_PERFCOUNTERS
 	/* FIXME: use an explicit subtraction method as soon as it's available */
