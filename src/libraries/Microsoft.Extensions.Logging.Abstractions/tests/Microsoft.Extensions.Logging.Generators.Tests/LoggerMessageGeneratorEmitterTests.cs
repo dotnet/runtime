@@ -88,14 +88,23 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     namespace NestedNamespace
     {
-        internal static partial class NestedClassTestsExtensions<T1> where T1 : Class1
+        public static partial class MultiLevelNestedClass
         {
-            internal static partial class NestedMiddleParentClass
+            public partial struct NestedStruct
             {
-                internal static partial class Nested<T2> where T2 : Class2
-                {
-                    [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = ""M9"")]
-                    public static partial void M9(ILogger logger);
+                internal partial record NestedRecord(string Name, string Address)
+                { 
+                    internal static partial class NestedClassTestsExtensions<T1> where T1 : Class1
+                    {
+                        internal static partial class NestedMiddleParentClass
+                        {
+                            internal static partial class Nested<T2> where T2 : Class2
+                            {
+                                [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = ""M9"")]
+                                public static partial void M9(ILogger logger);
+                            }
+                        }
+                    }
                 }
             }
         }

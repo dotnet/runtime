@@ -363,6 +363,27 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("M9", logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NestedStruct.Logger.M10(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M10", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NestedRecord.Logger.M11(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M11", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MultiLevelNestedClass.NestedStruct.NestedRecord.Logger.M12(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M12", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
