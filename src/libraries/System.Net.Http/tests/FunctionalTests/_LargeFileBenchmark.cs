@@ -104,6 +104,7 @@ namespace System.Net.Http.Functional.Tests
             { BenchmarkServer, 8, 2 },
             { BenchmarkServer, 8, 4 },
             { BenchmarkServer, 8, 8 },
+            { BenchmarkServer, 8, 16 },
         };
 
 
@@ -112,6 +113,7 @@ namespace System.Net.Http.Functional.Tests
             { BenchmarkServer, 4, 1 },
             { BenchmarkServer, 4, 2 },
             { BenchmarkServer, 4, 4 },
+            { BenchmarkServer, 4, 8 },
         };
 
         [Theory]
