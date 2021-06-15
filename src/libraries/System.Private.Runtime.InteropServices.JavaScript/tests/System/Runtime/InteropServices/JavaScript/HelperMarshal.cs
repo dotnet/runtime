@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -44,9 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public static string ToJavaScriptPostFilter => "return new Date(value)";
 
             public static CustomDate FromJavaScript (string s) {
-                // Console.WriteLine($"CustomDate.JSToManaged({s})");
                 var newDate = DateTime.Parse(s).ToUniversalTime();
-                // Console.WriteLine($"newDate={newDate}");
                 return new CustomDate { 
                     Date = newDate
                 };
@@ -54,7 +53,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             public static string ToJavaScript (in CustomDate cd) {
                 var result = cd.Date.ToString("o");
-                // Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;
             }
         }
@@ -75,16 +73,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static class CustomVector3Marshaler {
             public static string FromJavaScriptPreFilter => "let ptr = temp_malloc(4 * 3), view = new Float32Array(Module.HEAPU8.buffer, ptr, 3); " +
                 "for (var i = 0; i < 3; i++) view[i] = value[i];" +
+                "console.log('Vector3 ptr=', ptr);" +
                 "return ptr;";
             public static string ToJavaScriptPostFilter => 
                 "return [ Module.HEAPF32[((value / 4) | 0) + 0], Module.HEAPF32[((value / 4) | 0) + 1], Module.HEAPF32[((value / 4) | 0) + 2] ]";
 
-            public static unsafe CustomVector3 FromJavaScript (float * p) =>
-                new CustomVector3 {
+            public static unsafe CustomVector3 FromJavaScript (float * p) {
+                return new CustomVector3 {
                     X = p[0],
                     Y = p[1],
                     Z = p[2]
                 };
+            }
 
             public static unsafe CustomVector3 * ToJavaScript (CustomVector3 * pv3) => pv3;
         }
@@ -94,7 +94,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static CustomClass _ccValue;
         private static void InvokeCustomClass(CustomClass cc)
         {
-            // Console.WriteLine("InvokeCustomClass got argument cc.D == {0}", cc?.D);
             _ccValue = cc;
         }
         private static CustomClass ReturnCustomClass(CustomClass cc)
@@ -103,9 +102,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         internal static CustomStruct _csValue;
-        private static void InvokeCustomStruct(CustomStruct cs)
+        private unsafe static void InvokeCustomStruct(CustomStruct cs)
         {
-            // Console.WriteLine("InvokeCustomStruct got argument cs.D == {0}", cs.D);
             _csValue = cs;
         }
         private static CustomStruct ReturnCustomStruct(CustomStruct cs)
@@ -208,8 +206,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static DateTime _dateTimeValue;
         private static void InvokeDateTime(object boxed)
         {
-            if (!(boxed is DateTime))
-                Console.WriteLine("boxed value was of type " + boxed.GetType());
             _dateTimeValue = (DateTime)boxed;
         }
         private static void InvokeDateTimeOffset(DateTimeOffset dto)

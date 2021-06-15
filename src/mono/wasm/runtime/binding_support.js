@@ -1111,25 +1111,22 @@ var BindingSupportLib = {
 				BINDING: this,
 				typePtr: typePtr, 
 				// (value) => filtered_value
-				boundConverter: boundConverter,
 				temp_malloc: this._temp_malloc.bind(this)
 			};
+			var converterKey = boundConverter.name || "boundConverter";
+			closure[converterKey] = boundConverter;
 
 			var filterExpression = this._create_named_function(
 				"post_filter_for_type" + typePtr,
 				["value"], js, closure
 			);
 			closure.filter = filterExpression;
-
-			var body = [
-				"var value = boundConverter (js_value), filteredValue = filter(value);",
-				"return filteredValue;"
-			];
 			
-			var bodyJs = body.join ("\r\n");
+			var bodyJs = `var value = ${converterKey}(js_value), filteredValue = filter(value);\r\n` +
+				"return filteredValue;";
+			var functionName = "post_filtered_converter_for_type" + typePtr;
 			var result = this._create_named_function(
-				"post_filtered_converter_for_type" + typePtr, 
-				["js_value"], bodyJs, closure
+				functionName, ["js_value"], bodyJs, closure
 			);
 
 			return result;
@@ -1277,9 +1274,11 @@ var BindingSupportLib = {
 				BINDING: this,
 				typePtr: typePtr, 
 				// (js_obj, method, parmIdx) => value
-				boundConverter: boundConverter,
 				temp_malloc: this._temp_malloc.bind(this)
 			};
+
+			var converterKey = boundConverter.name || "boundConverter";
+			closure[converterKey] = boundConverter;
 
 			var filterExpression = this._create_named_function(
 				"pre_filter_for_type" + typePtr,
@@ -1287,16 +1286,14 @@ var BindingSupportLib = {
 			);
 
 			closure.filter = filterExpression;
+			var functionName = "pre_filtered_converter_for_type" + typePtr;
 
-			var body = [
-				"var filteredValue = filter(value);",
-				"var convertedResult = boundConverter (filteredValue, method, parmIdx);",
-				"return convertedResult;"
-			];
+			var bodyJs = "var filteredValue = filter(value);\r\n" +
+				`var convertedResult = ${converterKey}(filteredValue, method, parmIdx);\r\n` +
+				"return convertedResult;";
 			
-			var bodyJs = body.join ("\r\n");
 			var result = this._create_named_function(
-				"pre_filtered_converter_for_type" + typePtr, 
+				functionName, 
 				["value", "method", "parmIdx"], bodyJs, closure
 			);
 
@@ -1366,7 +1363,6 @@ var BindingSupportLib = {
 					; // FIXME: Fall-through
 				default:
 					// FIXME
-					// console.log(`found no automatic converter for mtype ${paramRecord.marshalType} type ${this._get_type_name(paramRecord.typePtr)}`);
 					result.convert = this.js_to_mono_obj.bind(this);
 					break;
 			}
@@ -2044,14 +2040,6 @@ var BindingSupportLib = {
 					"}"
 				);
 
-			body.push(
-				"",
-				`binding_support._teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
-				"return result;"
-			);
-
-			bodyJs = body.join ("\r\n");
-
 			if (friendly_name) {
 				var escapeRE = /[^A-Za-z0-9_\$]/g;
 				friendly_name = friendly_name.replace(escapeRE, "_");
@@ -2061,6 +2049,13 @@ var BindingSupportLib = {
 
 			if (this_arg)
 				displayName += "_this" + this_arg;
+	
+			body.push(
+				`binding_support._teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+				"return result;"
+			);
+
+			bodyJs = body.join ("\r\n");
 
 			var result = this._create_named_function(displayName, argumentNames, bodyJs, closure);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -307,7 +308,8 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         private static string MakeMarshalTypeRecord (Type type) {
-            return $"{{ \"marshalType\": {(int)GetMarshalTypeFromType(type)}, \"typePtr\": {type.TypeHandle.Value} }}";
+            var result = $"{{ \"marshalType\": {(int)GetMarshalTypeFromType(type)}, \"typePtr\": {type.TypeHandle.Value} }}";
+            return result;
         }
 
         private static MethodBase? MethodFromPointers (IntPtr typePtr, IntPtr methodPtr) {
@@ -330,7 +332,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (mb == null)
                 return null;
 
-            var sb = new ValueStringBuilder();
+            var sb = new StringBuilder();
             sb.Append("{ ");
             sb.Append($"\"result\": {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, ");
             sb.Append($"\"typePtr\": {typePtr}, \"methodPtr\": {methodPtr}, ");
@@ -360,7 +362,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (value == null)
                 return "null";
 
-            var sb = new ValueStringBuilder();
+            var sb = new StringBuilder();
             sb.Append('\"');
             foreach (var ch in value) {
                 switch (ch) {
@@ -382,14 +384,14 @@ namespace System.Runtime.InteropServices.JavaScript
                     sb.Append("\\x");
                     if (ch <= 0xF)
                         sb.Append('0');
-                    result += ((int)ch).ToString("X");
+                    sb.Append(((int)ch).ToString("X"));
                 } else {
                     sb.Append(ch);
                 }
             }
             sb.Append('\"');
 
-            return result;
+            return sb.ToString();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -467,10 +469,10 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         private static MarshalType GetMarshalTypeFromType (Type? type) {
-            var typeCode = Type.GetTypeCode(type);
-            if (typeCode == TypeCode.Empty)
+            if (type == null)
                 return MarshalType.VOID;
 
+            var typeCode = Type.GetTypeCode(type);
             if (type.IsEnum) {
                 switch (typeCode) {
                     case TypeCode.Int32:
@@ -532,7 +534,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.Double:
                         return MarshalType.ARRAY_DOUBLE;
                     default:
-                        throw new WasmInteropException($"Unsupported array element type {elementType.FullName}");
+                        throw new WasmInteropException($"Unsupported array element type {elementType}");
                 }
             } else if (type == typeof(IntPtr))
                 return MarshalType.INT;
@@ -548,6 +550,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // If you really need to marshal a custom Uri, define a custom marshaler for it
             else if (typeof(Uri) == type)
                 return MarshalType.URI;
+            else if (type.IsPointer)
+                return MarshalType.POINTER;
 
             if (type.IsValueType)
                 return MarshalType.VT;
@@ -603,7 +607,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (parmsLength == 0)
                 return string.Empty;
 
-            var sb = new ValueStringBuilder();
+            var sb = new StringBuilder();
             for (int c = 0; c < parmsLength; c++) {
                 Type t = parms[c].ParameterType;
                 var mt = GetMarshalTypeFromType(t);
@@ -613,6 +617,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 else
                     throw new WasmInteropException ("No signature character for marshal type " + mt);
             }
+
             return sb.ToString();
         }
 
