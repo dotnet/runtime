@@ -75,19 +75,19 @@ namespace {lc.Namespace}
                 }
 
                 LoggerClass parent = lc.ParentClass;
-                Stack<string> parentClasses = new Stack<string>();
+                var parentClasses = new List<string>();
                 // loop until you find top level nested class
                 while (parent != null)
                 {
-                    parentClasses.Push($@"partial class {parent?.Name + " " + parent?.Constraints}");
+                    parentClasses.Add($"partial class {parent?.Name + " " + parent?.Constraints}");
                     parent = parent.ParentClass;
                 }
 
                 // write down top level nested class first
-                foreach (var parentClass in parentClasses)
+                for (int i = parentClasses.Count - 1; i >= 0; i--)
                 {
                     _builder.Append($@"
-    {nestedIndentation}{parentClass}
+    {nestedIndentation}{parentClasses[i]}
     {nestedIndentation}{{");
                     indentationSize += 4;
                     nestedIndentation = new String(' ', indentationSize);
