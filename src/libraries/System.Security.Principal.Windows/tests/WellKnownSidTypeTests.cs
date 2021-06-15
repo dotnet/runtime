@@ -143,7 +143,6 @@ public class WellKnownSidTypeTests
         var currentDomainSid = WindowsIdentity.GetCurrent().Owner.AccountDomainSid;
         AssertExtensions.Throws<ArgumentException>("sidType", () => new SecurityIdentifier(sidType, currentDomainSid));
     }
-    #endif
 
     [Fact]
     public void MaxDefinedHasLegacyValue()
