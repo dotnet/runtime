@@ -29,7 +29,7 @@ namespace System.Runtime
             GC.register_ephemeron_array(data);
         }
 
-        public bool IsAllocated => data != null;
+        public bool IsAllocated => data is not null;
 
         public object? Target
         {
@@ -45,12 +45,18 @@ namespace System.Runtime
 
         public (object? Target, object? Dependent) GetTargetAndDependent()
         {
-            if (!IsAllocated)
-                throw new NotSupportedException();
+            if (this.data is not Ephemeron[] data)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return default;
+            }
+
             if (data[0].key == GC.EPHEMERON_TOMBSTONE)
             {
                 return default;
             }
+
             return (data[0].key, data[0].value);
         }
 
@@ -65,35 +71,59 @@ namespace System.Runtime
             // we provide a separate primary-only accessor for those times we only want the
             // primary.
 
-            if (!IsAllocated)
-                throw new NotSupportedException();
+            if (this.data is not Ephemeron[] data)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return default;
+            }
+
             if (data[0].key == GC.EPHEMERON_TOMBSTONE)
+            {
                 return null;
+            }
+
             return data[0].key;
         }
 
         private void SetTarget(object? primary)
         {
-            if (!IsAllocated)
-                throw new NotSupportedException();
+            if (this.data is not Ephemeron[] data)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return;
+            }
+
             data[0].key = primary;
         }
 
         private object? GetDependent()
         {
-            if (!IsAllocated)
-                throw new NotSupportedException();
+            if (this.data is not Ephemeron[] data)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return default;
+            }
+
             if (data[0].key == GC.EPHEMERON_TOMBSTONE)
             {
                 return null;
             }
+
             return data[0].value;
         }
 
         private void SetDependent(object? secondary)
         {
-            if (!IsAllocated)
-                throw new NotSupportedException();
+            if (this.data is not Ephemeron[] data)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return;
+            }
+
             data[0].value = secondary;
         }
     }

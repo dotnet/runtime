@@ -64,10 +64,31 @@ namespace System.Runtime
         /// <summary>
         /// Gets or sets the target object instance for the current handle.
         /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         public object? Target
         {
-            get => nGetPrimary(_handle);
-            set => nSetPrimary(_handle, value);
+            get
+            {
+                IntPtr handle = _handle;
+
+                if (handle == IntPtr.Zero)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+                }
+
+                return nGetPrimary(handle);
+            }
+            set
+            {
+                IntPtr handle = _handle;
+
+                if (handle == IntPtr.Zero)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+                }
+
+                nSetPrimary(handle, value);
+            }
         }
 
         /// <summary>
@@ -78,19 +99,50 @@ namespace System.Runtime
         /// recommended to use <see cref="GetTargetAndDependent"/> instead. This will result in better
         /// performance and it will reduce the chance of unexpected behavior in some cases.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         public object? Dependent
         {
-            get => GetTargetAndDependent().Dependent;
-            set => nSetSecondary(_handle, value);
+            get
+            {
+                IntPtr handle = _handle;
+
+                if (handle == IntPtr.Zero)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+                }
+
+                _ = nGetPrimaryAndSecondary(handle, out object? dependent);
+
+                return dependent;
+            }
+            set
+            {
+                IntPtr handle = _handle;
+
+                if (handle == IntPtr.Zero)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+                }
+
+                nSetSecondary(handle, value);
+            }
         }
 
         /// <summary>
         /// Retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
         /// </summary>
         /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         public (object? Target, object? Dependent) GetTargetAndDependent()
         {
-            object? target = nGetPrimaryAndSecondary(_handle, out object? secondary);
+            IntPtr handle = _handle;
+
+            if (handle == IntPtr.Zero)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+
+            object? target = nGetPrimaryAndSecondary(handle, out object? secondary);
 
             return (target, secondary);
         }
