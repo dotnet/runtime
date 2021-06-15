@@ -441,7 +441,7 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
+					var dateValue = this.call_method(this.get_date_value, null, "m", [ mono_obj ]);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
 					var dateoffsetValue = this._object_to_string (mono_obj);
