@@ -310,17 +310,16 @@ namespace System
         /// <summary>Adds a span of bytes to the hash code.</summary>
         /// <param name="value">The span.</param>
         /// <remarks>
-        /// While the implementation guarantees that the added span will result in the same
-        /// behavior within the same process, it does not guarantee that the result would match
-        /// instead adding each byte value individually.
+        /// This method does not guarantee that the result of adding a span of bytes will match
+        /// the result of adding the same bytes individually.
         /// </remarks>
-        public void Add(ReadOnlySpan<byte> value)
+        public void AddBytes(ReadOnlySpan<byte> value)
         {
             ref byte pos = ref MemoryMarshal.GetReference(value);
             ref byte end = ref Unsafe.Add(ref pos, value.Length);
 
             // Add four bytes at a time until the input has fewer than four bytes remaining.
-            while ((int)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
+            while ((nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
             {
                 Add(Unsafe.ReadUnaligned<int>(ref pos));
                 pos = ref Unsafe.Add(ref pos, sizeof(int));
@@ -329,7 +328,7 @@ namespace System
             // Add the remaining bytes a single byte at a time.
             while (Unsafe.IsAddressLessThan(ref pos, ref end))
             {
-                Add(pos);
+                Add((int)pos);
                 pos = ref Unsafe.Add(ref pos, 1);
             }
         }

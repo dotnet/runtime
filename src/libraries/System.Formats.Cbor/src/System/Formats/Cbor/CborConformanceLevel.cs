@@ -208,7 +208,7 @@ namespace System.Formats.Cbor
         {
             HashCode hash = default;
 #if NET6_0_OR_GREATER
-            hash.Add(encoding);
+            hash.AddBytes(encoding);
 #else
             while (encoding.Length >= sizeof(int))
             {
