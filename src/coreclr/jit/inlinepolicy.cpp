@@ -1605,7 +1605,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     // For prejit roots we do not see the call sites. To be suitably optimistic
     // assume that call sites may pass constants.
-    if (m_IsPrejitRoot && (m_BinaryExprWithCns > 0))
+    if (m_IsPrejitRoot)
     {
         multiplier += m_BinaryExprWithCns;
     }
