@@ -29,33 +29,40 @@ namespace System.Runtime
     // This struct intentionally does no self-synchronization. It's up to the caller to
     // to use DependentHandles in a thread-safe way.
     // =========================================================================================
-    internal struct DependentHandle
+    internal struct DependentHandle : IDisposable
     {
         private IntPtr _handle;
 
-        public DependentHandle(object primary, object? secondary) =>
+        public DependentHandle(object primary, object? secondary)
+        {
             // no need to check for null result: nInitialize expected to throw OOM.
             _handle = nInitialize(primary, secondary);
+        }
 
         public bool IsAllocated => _handle != IntPtr.Zero;
 
-        // Getting the secondary object is more expensive than getting the first so
-        // we provide a separate primary-only accessor for those times we only want the
-        // primary.
-        public object? GetPrimary() => nGetPrimary(_handle);
+        public object? Target
+        {
+            get => nGetPrimary(_handle);
+            set => nSetPrimary(_handle, value);
+        }
 
-        public object? GetPrimaryAndSecondary(out object? secondary) =>
-            nGetPrimaryAndSecondary(_handle, out secondary);
+        public object? Dependent
+        {
+            get => GetTargetAndDependent().Dependent;
+            set => nSetSecondary(_handle, value);
+        }
 
-        public void SetPrimary(object? primary) =>
-            nSetPrimary(_handle, primary);
+        public (object? Target, object? Dependent) GetTargetAndDependent()
+        {
+            object? target = nGetPrimaryAndSecondary(_handle, out object? secondary);
 
-        public void SetSecondary(object? secondary) =>
-            nSetSecondary(_handle, secondary);
+            return (target, secondary);
+        }
 
         // Forces dependentHandle back to non-allocated state (if not already there)
         // and frees the handle if needed.
-        public void Free()
+        public void Dispose()
         {
             if (_handle != IntPtr.Zero)
             {
