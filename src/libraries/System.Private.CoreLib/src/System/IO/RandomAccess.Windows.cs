@@ -90,11 +90,9 @@ namespace System.IO
 
             fixed (byte* p = &MemoryMarshal.GetReference(bytes))
             {
-                r = overlapped != null ?
-                    (syncUsingOverlapped
-                        ? Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped)
-                        : Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped))
-                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
+                r = overlapped == null || syncUsingOverlapped ?
+                        Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped) :
+                        Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped);
             }
 
             if (r == 0)
@@ -127,11 +125,9 @@ namespace System.IO
 
             fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
-                r = overlapped != null ?
-                    (syncUsingOverlapped
-                        ? Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, overlapped)
-                        : Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped))
-                    : Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
+                r = overlapped == null || syncUsingOverlapped ?
+                        Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, overlapped) :
+                        Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped);
             }
 
             if (r == 0)

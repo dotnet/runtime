@@ -23,8 +23,7 @@ namespace System.IO.Tests
         {
             using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous))
             {
-                ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => RandomAccess.WriteAsync(handle, buffers: null, 0));
-                Assert.Equal("buffers", ex.ParamName);
+                AssertExtensions.Throws<ArgumentNullException>("buffers", () => RandomAccess.WriteAsync(handle, buffers: null, 0));
             }
         }
 

@@ -9,7 +9,7 @@ using static Interop.Kernel32;
 
 namespace System.IO.Tests
 {
-    internal class SectorAlignedMemory<T> : MemoryManager<T>
+    internal sealed class SectorAlignedMemory<T> : MemoryManager<T>
     {
         private bool disposed = false;
         private int refCount = 0;

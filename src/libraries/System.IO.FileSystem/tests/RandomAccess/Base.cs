@@ -21,8 +21,7 @@ namespace System.IO.Tests
         [Fact]
         public void ThrowsArgumentNullExceptionForNullHandle()
         {
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => MethodUnderTest(null, Array.Empty<byte>(), 0));
-            Assert.Equal("handle", ex.ParamName);
+            AssertExtensions.Throws<ArgumentNullException>("handle", () => MethodUnderTest(null, Array.Empty<byte>(), 0));
         }
 
         [Fact]
@@ -30,8 +29,7 @@ namespace System.IO.Tests
         {
             SafeFileHandle handle = new SafeFileHandle(new IntPtr(-1), ownsHandle: false);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
-            Assert.Equal("handle", ex.ParamName);
+            AssertExtensions.Throws<ArgumentException>("handle", () => MethodUnderTest(handle, Array.Empty<byte>(), 0));
         }
 
         [Fact]
@@ -62,8 +60,7 @@ namespace System.IO.Tests
                 FileOptions options = ShouldThrowForAsyncHandle ? FileOptions.None : FileOptions.Asynchronous;
                 using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
                 {
-                    ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => MethodUnderTest(handle, Array.Empty<byte>(), -1));
-                    Assert.Equal("fileOffset", ex.ParamName);
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("fileOffset", () => MethodUnderTest(handle, Array.Empty<byte>(), -1));
                 }
             }
         }
@@ -77,8 +74,7 @@ namespace System.IO.Tests
             {
                 using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.Asynchronous))
                 {
-                    ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(handle, new byte[100], 0));
-                    Assert.Equal("handle", ex.ParamName);
+                    AssertExtensions.Throws<ArgumentException>("handle", () => MethodUnderTest(handle, new byte[100], 0));
                 }
             }
         }
@@ -90,8 +86,7 @@ namespace System.IO.Tests
             {
                 using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.None))
                 {
-                    ArgumentException ex = Assert.Throws<ArgumentException>(() => MethodUnderTest(handle, new byte[100], 0));
-                    Assert.Equal("handle", ex.ParamName);
+                    AssertExtensions.Throws<ArgumentException>("handle", () => MethodUnderTest(handle, new byte[100], 0));
                 }
             }
         }

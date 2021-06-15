@@ -91,7 +91,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition, _path);
-            Debug.Assert(r >= 0, "RandomAccess.ReadAtOffsete is likely broken.");
+            Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
             _filePosition += r;
 
             return r;
@@ -107,7 +107,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition, _path);
-            Debug.Assert(r >= 0, "RandomAccess.WriteAtOffset is likely broken.");
+            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
             _filePosition += r;
 
             UpdateLengthOnChangePosition();

@@ -24,8 +24,7 @@ namespace System.IO.Tests
         {
             using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.Asynchronous))
             {
-                ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => RandomAccess.ReadAsync(handle, buffers: null, 0));
-                Assert.Equal("buffers", ex.ParamName);
+                AssertExtensions.Throws<ArgumentNullException>("buffers", () => RandomAccess.ReadAsync(handle, buffers: null, 0));
             }
         }
 

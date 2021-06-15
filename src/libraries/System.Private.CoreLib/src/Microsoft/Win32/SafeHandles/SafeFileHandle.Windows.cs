@@ -12,8 +12,8 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal const FileOptions NoBuffering = (FileOptions)0x20000000;
-        private FileOptions _fileOptions = (FileOptions)(-1);
-        private int _fileType = -1;
+        private volatile FileOptions _fileOptions = (FileOptions)(-1);
+        private volatile int _fileType = -1;
 
         public SafeFileHandle() : base(true)
         {
@@ -130,9 +130,10 @@ namespace Microsoft.Win32.SafeHandles
 
         internal unsafe FileOptions GetFileOptions()
         {
-            if (_fileOptions != (FileOptions)(-1))
+            FileOptions fileOptions = _fileOptions;
+            if (fileOptions != (FileOptions)(-1))
             {
-                return _fileOptions;
+                return fileOptions;
             }
 
             Interop.NtDll.CreateOptions options;
@@ -181,17 +182,18 @@ namespace Microsoft.Win32.SafeHandles
 
         internal int GetFileType()
         {
-            if (_fileType == -1)
+            int fileType = _fileType;
+            if (fileType == -1)
             {
-                _fileType = Interop.Kernel32.GetFileType(this);
+                _fileType = fileType = Interop.Kernel32.GetFileType(this);
 
-                Debug.Assert(_fileType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
-                    || _fileType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
-                    || _fileType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
-                    "Unknown file type!");
+                Debug.Assert(fileType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
+                    || fileType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
+                    || fileType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
+                    $"Unknown file type: {fileType}");
             }
 
-            return _fileType;
+            return fileType;
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         // not using bool? as it's not thread safe
-        private NullableBool _canSeek = NullableBool.Undefined;
+        private volatile NullableBool _canSeek = NullableBool.Undefined;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -309,12 +309,13 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!IsClosed);
             Debug.Assert(!IsInvalid);
 
-            if (_canSeek == NullableBool.Undefined)
+            NullableBool canSeek = _canSeek;
+            if (canSeek == NullableBool.Undefined)
             {
-                _canSeek = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0 ? NullableBool.True : NullableBool.False;
+                _canSeek = canSeek = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0 ? NullableBool.True : NullableBool.False;
             }
 
-            return _canSeek == NullableBool.True;
+            return canSeek == NullableBool.True;
         }
 
         private enum NullableBool
