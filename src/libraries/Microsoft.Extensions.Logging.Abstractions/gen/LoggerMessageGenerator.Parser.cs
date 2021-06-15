@@ -28,9 +28,9 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             /// <summary>
-            /// Gets the set of logging classes containing methods to output.
+            /// Gets the set of logging classes or structs containing methods to output.
             /// </summary>
-            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
+            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<TypeDeclarationSyntax> classesOrStructs)
             {
                 const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
@@ -69,11 +69,18 @@ namespace Microsoft.Extensions.Logging.Generators
                 var ids = new HashSet<int>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
-                foreach (var group in classes.GroupBy(x => x.SyntaxTree))
+                foreach (var group in classesOrStructs.GroupBy(x => x.SyntaxTree))
                 {
                     SemanticModel? sm = null;
-                    foreach (ClassDeclarationSyntax classDec in group)
+                    foreach (TypeDeclarationSyntax classDec in group)
                     {
+                        SyntaxKind kind = classDec.Kind();
+                        if (kind != SyntaxKind.ClassDeclaration && kind != SyntaxKind.StructDeclaration)
+                        {
+                            // only supporting log methods directly under structs or classes
+                            continue;
+                        }
+
                         // stop if we're asked to
                         _cancellationToken.ThrowIfCancellationRequested();
 
@@ -357,6 +364,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             lc ??= new LoggerClass
                                             {
+                                                Keyword = classDec.Keyword.ValueText,
                                                 Namespace = nspace,
                                                 Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
                                                 Constraints = classDec.ConstraintClauses.ToString(),
@@ -364,12 +372,18 @@ namespace Microsoft.Extensions.Logging.Generators
                                             };
 
                                             LoggerClass currentLoggerClass = lc;
-                                            var parentLoggerClass = (classDec.Parent as ClassDeclarationSyntax);
+                                            var parentLoggerClass = (classDec.Parent as TypeDeclarationSyntax);
+
+                                            bool IsAllowedKind(SyntaxKind kind) => 
+                                                kind == SyntaxKind.ClassDeclaration ||
+                                                kind == SyntaxKind.StructDeclaration ||
+                                                kind == SyntaxKind.RecordDeclaration;
                                             
-                                            while (parentLoggerClass != null)
+                                            while (parentLoggerClass != null && IsAllowedKind(parentLoggerClass.Kind()))
                                             {
                                                 currentLoggerClass.ParentClass = new LoggerClass
                                                 {
+                                                    Keyword = parentLoggerClass.Keyword.ValueText,
                                                     Namespace = nspace,
                                                     Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
                                                     Constraints = parentLoggerClass.ConstraintClauses.ToString(),
@@ -377,7 +391,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 };
 
                                                 currentLoggerClass = currentLoggerClass.ParentClass;
-                                                parentLoggerClass = (parentLoggerClass.Parent as ClassDeclarationSyntax);
+                                                parentLoggerClass = (parentLoggerClass.Parent as TypeDeclarationSyntax);
                                             }
 
                                             lc.Methods.Add(lm);
@@ -582,6 +596,7 @@ namespace Microsoft.Extensions.Logging.Generators
         internal class LoggerClass
         {
             public readonly List<LoggerMethod> Methods = new ();
+            public string Keyword = string.Empty;
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public string Constraints = string.Empty;

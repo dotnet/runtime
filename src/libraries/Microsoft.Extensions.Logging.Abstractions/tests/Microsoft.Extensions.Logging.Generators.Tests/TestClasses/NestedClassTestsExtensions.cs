@@ -3,9 +3,31 @@
 
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
+    internal partial struct MyStruct
+    {
+        private ILogger _logger;
+        
+        public MyStruct(ILogger logger) { _logger = logger; }
+
+        [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = "M7")]
+        public partial void M7();
+    }
+
     internal static partial class NestedClassTestsExtensions<T> where T : ABC
     {
         internal static partial class NestedMiddleParentClass
+        {
+            internal static partial class NestedClass
+            {
+                [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = "M8")]
+                public static partial void M8(ILogger logger);
+            }
+        }
+    }
+    
+    internal partial class NonStaticNestedClassTestsExtensions<T> where T : ABC
+    {
+        internal partial class NonStaticNestedMiddleParentClass
         {
             internal static partial class NestedClass
             {
@@ -15,4 +37,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
     }
     public class ABC {}
+
+    public partial struct NestedStruct
+    {
+        private static partial class Logger
+        {
+            [LoggerMessage(EventId = 10, Level = LogLevel.Debug, Message = "M10")]
+            public static partial void M10(ILogger logger);
+        }
+    }
+
+    public partial record NestedRecord(string Name, string Address)
+    {
+        private static partial class Logger
+        {
+            [LoggerMessage(EventId = 11, Level = LogLevel.Debug, Message = "M11")]
+            public static partial void M11(ILogger logger);
+        }
+    }
 }
