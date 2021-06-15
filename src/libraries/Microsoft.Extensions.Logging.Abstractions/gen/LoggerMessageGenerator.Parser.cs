@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Gets the set of logging classes or structs containing methods to output.
             /// </summary>
-            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<TypeDeclarationSyntax> classesOrStructs)
+            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
                 const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
@@ -69,18 +69,11 @@ namespace Microsoft.Extensions.Logging.Generators
                 var ids = new HashSet<int>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
-                foreach (var group in classesOrStructs.GroupBy(x => x.SyntaxTree))
+                foreach (var group in classes.GroupBy(x => x.SyntaxTree))
                 {
                     SemanticModel? sm = null;
-                    foreach (TypeDeclarationSyntax classDec in group)
+                    foreach (ClassDeclarationSyntax classDec in group)
                     {
-                        SyntaxKind kind = classDec.Kind();
-                        if (kind != SyntaxKind.ClassDeclaration && kind != SyntaxKind.StructDeclaration)
-                        {
-                            // only supporting log methods directly under structs or classes
-                            continue;
-                        }
-
                         // stop if we're asked to
                         _cancellationToken.ThrowIfCancellationRequested();
 
