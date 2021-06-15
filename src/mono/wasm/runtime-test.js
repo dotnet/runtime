@@ -4,7 +4,8 @@
 //
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
-var is_browser = typeof window != "undefined";
+const is_browser = typeof window != "undefined";
+const is_node = !is_browser && typeof process != 'undefined';
 
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
@@ -18,7 +19,7 @@ globalThis.testConsole = console;
 
 function proxyMethod (prefix, func, asJson) {
 	return function() {
-		var args = [...arguments];
+		let args = [...arguments];
 		if (asJson) {
 			func (JSON.stringify({
 				method: prefix,
@@ -82,7 +83,7 @@ if (typeof crypto === 'undefined') {
 	}
 }
 
-if (typeof performance == 'undefined') {
+if (typeof performance === 'undefined') {
 	// performance.now() is used by emscripten and doesn't work in JSC
 	var performance = {
 		now: function () {
@@ -91,29 +92,108 @@ if (typeof performance == 'undefined') {
 	}
 }
 
+let testArguments = [];
 try {
-	if (typeof arguments == "undefined")
-		arguments = WScript.Arguments;
-	load = WScript.LoadScriptFile;
-	read = WScript.LoadBinaryFile;
-} catch (e) {
-}
+	if (typeof arguments === "undefined") {
+		if (is_node)
+			testArguments = process.argv.slice (2);
 
-try {
-	if (typeof arguments == "undefined") {
 		if (typeof scriptArgs !== "undefined")
-			arguments = scriptArgs;
+			testArguments = scriptArgs;
+		
+		else if (typeof WScript  !== "undefined" && WScript.Arguments)
+			testArguments = WScript.Arguments;
+	} else{
+		testArguments = arguments;
 	}
 } catch (e) {
+	console.err(e)
 }
 
-if (arguments === undefined)
-	arguments = [];
+if (is_node) {
+	var { performance, PerformanceObserver } = require("perf_hooks");
+}
 
-//end of all the nice shell glue code.
+const IOHandler = {
+	load: null,
+	read: null,
+
+	init: function() {
+		// load: function that loads and executes a script
+		if (!globalThis.load){
+			if (typeof WScript  !== "undefined"){ // Chakra
+				IOHandler.load = WScript.LoadScriptFile;
+
+			} else if (is_node) { // NodeJS
+				const fs = require ('fs');
+				IOHandler.load = function (file) {
+					eval (fs.readFileSync(file).toString());
+				};
+			} else if (is_browser) { // vanila JS in browser
+				IOHandler.load = function (file) {
+					const script = document.createElement ("script");
+					script.src = file;
+					document.head.appendChild (script);
+				}
+			}
+		} else {
+			IOHandler.load = load; // shells (v8, JavaScriptCore, Spidermonkey)
+		}
+
+		// read: function that just reads a file into a variable
+		if (!globalThis.read){
+			if (typeof WScript  !== "undefined"){
+				IOHandler.read = WScript.LoadBinaryFile; // Chakra
+
+			} else if (is_node) { // NodeJS
+				const fs = require ('fs');
+				IOHandler.read = function (path) {
+					return fs.readFileSync(path);
+				};
+			} else if (is_browser) {  // vanila JS in browser
+				// TODO
+			}
+		} else { 
+			IOHandler.read = read;  // shells (v8, JavaScriptCore, Spidermonkey)
+		}
+	},
+
+	writeContentToFile: function(content, path) {
+		const stream = FS.open(path, 'w+');
+		FS.write(stream, content, 0, content.length, 0);
+		FS.close(stream);
+	},
+
+	fetch: function(asset, params) {
+		if (is_node || is_browser) {
+			return fetch (asset, params);
+		} else {
+			return new Promise ((resolve, reject) => {
+				let bytes = null, error = null;
+				try {
+					bytes = read (asset, 'binary');
+				} catch (exc) {
+					error = exc;
+				}
+				const response = { ok: (bytes && !error), url: asset,
+					arrayBuffer: function () {
+						return new Promise ((resolve2, reject2) => {
+							if (error)
+								reject2 (error);
+							else
+								resolve2 (new Uint8Array (bytes));
+					}
+				)}
+				}
+				resolve (response);
+			})
+		}
+	}
+};
+IOHandler.init();
+// end of all the nice shell glue code.
 
 // set up a global variable to be accessed in App.init
-var testArguments = arguments;
 
 function test_exit (exit_code) {
 	if (is_browser) {
@@ -144,67 +224,47 @@ function inspect_object (o) {
 }
 
 // Preprocess arguments
-var args = testArguments;
 console.info("Arguments: " + testArguments);
-profilers = [];
-setenv = {};
-runtime_args = [];
-enable_gc = true;
-enable_zoneinfo = false;
-working_dir='/';
-while (args !== undefined && args.length > 0) {
-	if (args [0].startsWith ("--profile=")) {
-		var arg = args [0].substring ("--profile=".length);
+let profilers = [];
+let setenv = {};
+let runtime_args = [];
+let enable_gc = true;
+let enable_zoneinfo = false;
+let working_dir='/';
+while (testArguments !== undefined && testArguments.length > 0) {
+	if (testArguments [0].startsWith ("--profile=")) {
+		var arg = testArguments [0].substring ("--profile=".length);
 
 		profilers.push (arg);
 
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--setenv=")) {
-		var arg = args [0].substring ("--setenv=".length);
+		testArguments = testArguments.slice (1);
+	} else if (testArguments [0].startsWith ("--setenv=")) {
+		var arg = testArguments [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
 		if (parts.length != 2)
-			fail_exec ("Error: malformed argument: '" + args [0]);
+			fail_exec ("Error: malformed argument: '" + testArguments [0]);
 		setenv [parts [0]] = parts [1];
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--runtime-arg=")) {
-		var arg = args [0].substring ("--runtime-arg=".length);
-		runtime_args.push (arg);
-		args = args.slice (1);
-	} else if (args [0] == "--disable-on-demand-gc") {
+		testArguments = testArguments.slice (1);
+	} else if (testArguments [0].startsWith ("--runtime-arg=")) {
+		var arg = testArguments [0].substring ("--runtime-arg=".length);
+		runtime_testArguments.push (arg);
+		testArguments = testArguments.slice (1);
+	} else if (testArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--working-dir=")) {
-		var arg = args [0].substring ("--working-dir=".length);
+		testArguments = testArguments.slice (1);
+	} else if (testArguments [0].startsWith ("--working-dir=")) {
+		var arg = testArguments [0].substring ("--working-dir=".length);
 		working_dir = arg;
-		args = args.slice (1);
+		testArguments = testArguments.slice (1);
 	} else {
 		break;
 	}
 }
-testArguments = args;
 
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
-function writeContentToFile(content, path)
-{
-	var stream = FS.open(path, 'w+');
-	FS.write(stream, content, 0, content.length, 0);
-	FS.close(stream);
-}
-
-function loadScript (url)
-{
-	if (is_browser) {
-		var script = document.createElement ("script");
-		script.src = url;
-		document.head.appendChild (script);
-	} else {
-		load (url);
-	}
-}
-
-loadScript ("mono-config.js");
+IOHandler.load ("mono-config.js");
 
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
@@ -247,44 +307,16 @@ var Module = {
 			/*
 			var content = new Uint8Array (read (asset, 'binary'));
 			var path = asset.substr(config.deploy_prefix.length);
-			writeContentToFile(content, path);
+			IOHandler.writeContentToFile(content, path);
 			*/
-
-			if (typeof window != 'undefined') {
-				return fetch (asset, { credentials: 'same-origin' });
-			} else {
-				// The default mono_load_runtime_and_bcl defaults to using
-				// fetch to load the assets.  It also provides a way to set a
-				// fetch promise callback.
-				// Here we wrap the file read in a promise and fake a fetch response
-				// structure.
-				return new Promise ((resolve, reject) => {
-					var bytes = null, error = null;
-					try {
-						bytes = read (asset, 'binary');
-					} catch (exc) {
-						error = exc;
-					}
-					var response = { ok: (bytes && !error), url: asset,
-						arrayBuffer: function () {
-							return new Promise ((resolve2, reject2) => {
-								if (error)
-									reject2 (error);
-								else
-									resolve2 (new Uint8Array (bytes));
-						}
-					)}
-					}
-					resolve (response);
-				})
-			}
+			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
 		MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };
 
-loadScript ("dotnet.js");
+IOHandler.load ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 
@@ -303,17 +335,17 @@ var App = {
 			init ("");
 		}
 
-		if (args.length == 0) {
+		if (testArguments.length == 0) {
 			fail_exec ("Missing required --run argument");
 			return;
 		}
 
-		if (args[0] == "--regression") {
+		if (testArguments[0] == "--regression") {
 			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
 			var res = 0;
 				try {
-					res = exec_regression (10, args[1]);
+					res = exec_regression (10, testArguments[1]);
 					Module.print ("REGRESSION RESULT: " + res);
 				} catch (e) {
 					Module.print ("ABORT: " + e);
@@ -330,23 +362,23 @@ var App = {
 		if (runtime_args.length > 0)
 			MONO.mono_wasm_set_runtime_options (runtime_args);
 
-		if (args[0] == "--run") {
+		if (testArguments[0] == "--run") {
 			// Run an exe
-			if (args.length == 1) {
+			if (testArguments.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
 
-			main_assembly_name = args[1];
-			var app_args = args.slice (2);
+			main_assembly_name = testArguments[1];
+			var app_args = testArguments.slice (2);
 
-			var main_argc = args.length - 2 + 1;
+			var main_argc = testArguments.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
 			aindex = 0;
-			Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [1]), "i32")
+			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32")
 			aindex += 1;
-			for (var i = 2; i < args.length; ++i) {
-				Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [i]), "i32");
+			for (var i = 2; i < testArguments.length; ++i) {
+				Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [i]), "i32");
 				aindex += 1;
 			}
 			wasm_set_main_args (main_argc, main_argv);
@@ -368,10 +400,11 @@ var App = {
 			}
 
 		} else {
-			fail_exec ("Unhandled argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + testArguments [0]);
 		}
 	},
 	call_test_method: function (method_name, args, signature) {
+		// note: arguments here is the array of arguments passsed to this function
 		if ((arguments.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
