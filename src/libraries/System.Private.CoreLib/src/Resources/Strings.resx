@@ -3781,4 +3781,7 @@
   <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
     <value>File encryption is not supported on this platform.</value>
   </data>
+  <data name="Arg_MemberInfoNotFound" xml:space="preserve">
+    <value>A MemberInfo that matches '{0}' could not be found.</value>
+  </data>
 </root>
