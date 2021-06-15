@@ -3,7 +3,7 @@ MONO_ARCH?=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
-INTERP=true
+INTERP=false
 DEPLOY_AND_RUN?=true
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
