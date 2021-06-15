@@ -94,7 +94,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool useExtendedDefaultPolicy = JitConfig.JitExtendedDefaultPolicyModel() != 0;
+    const bool useExtendedDefaultPolicy = JitConfig.JitExtendedDefaultPolicy() != 0;
 
     if (!useExtendedDefaultPolicy || (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !isPrejitRoot))
     {
