@@ -405,7 +405,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var p = info.GetParameters();
             if ((p.Length != 1) || (p[0].ParameterType == null))
                 throw new WasmInteropException($"Method {type.Name}.{name} must accept exactly one parameter");
-            
+
             if (info.ReturnType == null)
                 throw new WasmInteropException($"Method {type.Name}.{name} must have a return value");
 
