@@ -47,7 +47,7 @@ namespace System.Net.WebSockets
             }
             if (socket.State != WebSocketState.Open)
             {
-                throw new IOException("SR.net_notconnected");
+                throw new IOException("The operation is not allowed on non-connected sockets.");
             }
 
             _streamSocket = socket;
@@ -99,7 +99,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                throw new NotSupportedException("SR.net_noseek");
+                throw new NotSupportedException("This stream does not support seek operations.");
             }
         }
 
@@ -107,39 +107,39 @@ namespace System.Net.WebSockets
         {
             get
             {
-                throw new NotSupportedException("SR.net_noseek");
+                throw new NotSupportedException("This stream does not support seek operations.");
             }
 
             set
             {
-                throw new NotSupportedException("SR.net_noseek");
+                throw new NotSupportedException("This stream does not support seek operations.");
             }
         }
 
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new NotSupportedException("SR.net_noseek");
+            throw new NotSupportedException("This stream does not support seek operations.");
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            throw new IOException("SR.net_sockets_blocking");
+            throw new IOException("The operation is not allowed on a non-blocking Socket.");
         }
 
         public override int Read(Span<byte> buffer)
         {
-            throw new IOException("SR.net_sockets_blocking");
+            throw new IOException("The operation is not allowed on a non-blocking Socket.");
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new IOException("SR.net_sockets_blocking");
+            throw new IOException("The operation is not allowed on a non-blocking Socket.");
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            throw new IOException("SR.net_sockets_blocking");
+            throw new IOException("The operation is not allowed on a non-blocking Socket.");
         }
 
         private int _closeTimeout = -1;
@@ -196,7 +196,7 @@ namespace System.Net.WebSockets
             ThrowIfDisposed();
             if (!CanRead)
             {
-                throw new InvalidOperationException("SR.net_writeonlystream");
+                throw new InvalidOperationException("The stream does not support reading.");
             }
 
             try
@@ -206,7 +206,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw WrapException("SR.net_io_readfailure", exception);
+                throw WrapException("Unable to read data from the transport connection", exception);
             }
         }
 
@@ -216,7 +216,7 @@ namespace System.Net.WebSockets
             ThrowIfDisposed();
             if (!canRead)
             {
-                throw new InvalidOperationException("SR.net_writeonlystream");
+                throw new InvalidOperationException("The stream does not support reading.");
             }
 
             try
@@ -227,7 +227,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw WrapException("SR.net_io_readfailure", exception);
+                throw WrapException("Unable to read data from the transport connection", exception);
             }
         }
 
@@ -237,7 +237,7 @@ namespace System.Net.WebSockets
             ThrowIfDisposed();
             if (!CanWrite)
             {
-                throw new InvalidOperationException("SR.net_readonlystream");
+                throw new InvalidOperationException("The stream does not support writing.");
             }
 
             try
@@ -246,7 +246,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw WrapException("SR.net_io_writefailure", exception);
+                throw WrapException("Unable to write data to the transport connection", exception);
             }
         }
 
@@ -256,7 +256,7 @@ namespace System.Net.WebSockets
             ThrowIfDisposed();
             if (!canWrite)
             {
-                throw new InvalidOperationException("SR.net_readonlystream");
+                throw new InvalidOperationException("The stream does not support writing.");
             }
 
             try
@@ -265,7 +265,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw WrapException("SR.net_io_writefailure", exception);
+                throw WrapException("Unable to write data to the transport connection", exception);
             }
         }
 
@@ -280,7 +280,7 @@ namespace System.Net.WebSockets
 
         public override void SetLength(long value)
         {
-            throw new NotSupportedException("SR.net_noseek");
+            throw new NotSupportedException("This stream does not support seek operations.");
         }
 
         private void ThrowIfDisposed()
@@ -295,7 +295,7 @@ namespace System.Net.WebSockets
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)
         {
-            return new IOException(SR.Format(resourceFormatString, innerException.Message), innerException);
+            return new IOException(resourceFormatString, innerException);
         }
     }
 }
