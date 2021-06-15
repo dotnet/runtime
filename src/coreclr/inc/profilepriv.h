@@ -32,6 +32,7 @@ struct AssemblyReferenceClosureWalkContextForProfAPI;
 #endif  // PROFILING_SUPPORTED_DATA
 
 #include "corprof.h"
+#include "slist.h"
 
 #define MAX_NOTIFICATION_PROFILERS 32
 
@@ -164,6 +165,14 @@ public:
     }
 };
 
+struct StoredProfilerNode
+{
+    CLSID guid;
+    SString path;
+    SLink m_Link;
+};
+
+typedef SList<StoredProfilerNode, true> STOREDPROFILERLIST;
 // ---------------------------------------------------------------------------------------
 // Global struct that lets the EE see the load status of the profiler, and provides a
 // pointer (pProfInterface) through which profiler calls can be made
@@ -225,7 +234,7 @@ public:
     BOOL fGCInProgress;
     BOOL fBaseSystemClassesLoaded;
 
-    SArray<Pair<CLSID, SString>> storedProfilers;
+    STOREDPROFILERLIST storedProfilers;
 
     ProfilerInfo mainProfilerInfo;
 

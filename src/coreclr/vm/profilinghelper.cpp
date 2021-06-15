@@ -722,17 +722,17 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 //static
 HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 {
-    if (g_profControlBlock.storedProfilers.GetCount() == 0)
+    if (g_profControlBlock.storedProfilers.IsEmpty())
     {
         return S_OK;
     }
 
     HRESULT storedHr = S_OK;
-    SArray<Pair<CLSID, SString>> &profilers = g_profControlBlock.storedProfilers;
-    for (auto it = profilers.Begin(); it != profilers.End(); ++it)
+    STOREDPROFILERLIST *profilers = &g_profControlBlock.storedProfilers;
+    for (StoredProfilerNode* item = profilers->GetHead(); item != NULL; item = STOREDPROFILERLIST::GetNext(item))
     {
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
-        CLSID *pClsid = &(it->First());
+        CLSID *pClsid = &(item->guid);
 
         // Convert to string for logging
         constexpr size_t guidStringSize = 39;
@@ -748,7 +748,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
             kStartupLoad,
             pClsid,
             wszClsid,
-            it->Second().GetUnicode(),
+            item->path.GetUnicode(),
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
         if (FAILED(hr))
