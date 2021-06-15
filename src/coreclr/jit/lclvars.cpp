@@ -7385,11 +7385,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" HFA(%s) ", varTypeName(varDsc->GetHfaType()));
     }
 
-    if (varDsc->lvLiveInOutOfHndlr)
-    {
-        printf(" EH");
-    }
-
     if (varDsc->lvDoNotEnregister)
     {
         printf(" do-not-enreg[");
@@ -7479,6 +7474,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvLiveInOutOfHndlr)
     {
         printf(" EH-live");
+    }
+    if (varDsc->lvEhWriteThruCandidate)
+    {
+        printf(" single-def");
     }
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)

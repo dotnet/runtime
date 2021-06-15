@@ -2021,6 +2021,7 @@ public:
 
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;
+    bool isSingleDef : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;

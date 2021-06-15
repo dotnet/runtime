@@ -1792,6 +1792,8 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
+            newInt->isSingleDef = varDsc->lvEhWriteThruCandidate;
+
             if (varDsc->lvLiveInOutOfHndlr)
             {
                 newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
@@ -8007,7 +8009,7 @@ void LinearScan::resolveEdges()
                     Interval* interval = getIntervalForLocalVar(varIndex);
                     // The fromReg and toReg may not match for a write-thru interval where the toReg is
                     // REG_STK, since the stack value is always valid for that case (so no move is needed).
-                    if (!interval->isWriteThru || (toReg != REG_STK))
+                    if ((!interval->isWriteThru && !interval->isSingleDef) || (toReg != REG_STK))
                     {
                         if (!foundMismatch)
                         {
@@ -8205,6 +8207,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         {
             continue;
         }
+
+        if (interval->isSingleDef && (toReg == REG_STK))
+        {
+            if (resolveType == ResolveSplit)
+            {
+                continue;
+            }
+        }
+
         if (interval->isWriteThru && (toReg == REG_STK))
         {
             // We don't actually move a writeThru var back to the stack, as its stack value is always valid.
@@ -8238,8 +8249,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         {
             // Do the reg to stack moves now
             addResolution(block, insertionPoint, interval, REG_STK, fromReg);
-            JITDUMP(" (%s)\n",
-                    (interval->isWriteThru && (toReg == REG_STK)) ? "EH DUMMY" : resolveTypeName[resolveType]);
+            JITDUMP(" (%s)\n", interval->isWriteThru ? "EH DUMMY" : resolveTypeName[resolveType]);
         }
         else
         {
@@ -10330,7 +10340,7 @@ void LinearScan::verifyFinalAllocation()
                             if (interval->physReg != regNum)
                             {
                                 assert(regNum == REG_STK);
-                                assert((interval->physReg == REG_NA) || interval->isWriteThru);
+                                assert((interval->physReg == REG_NA) || interval->isWriteThru || interval->isSingleDef);
                             }
                             interval->physReg     = REG_NA;
                             interval->assignedReg = nullptr;
@@ -10717,9 +10727,9 @@ void LinearScan::verifyFinalAllocation()
                     regNumber regNum   = getVarReg(outVarToRegMap, varIndex);
                     Interval* interval = getIntervalForLocalVar(varIndex);
                     // Either the register assignments match, or the outgoing assignment is on the stack
-                    // and this is a write-thru interval.
+                    // and this is a write-thru interval / single def.
                     assert(interval->physReg == regNum || (interval->physReg == REG_NA && regNum == REG_STK) ||
-                           (interval->isWriteThru && regNum == REG_STK));
+                           ((interval->isWriteThru || interval->isSingleDef) && regNum == REG_STK));
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
                     interval->isActive    = false;
