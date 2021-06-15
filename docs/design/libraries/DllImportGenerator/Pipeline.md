@@ -130,8 +130,8 @@ Support for these features is indicated in code by the `abstract` `SingleFrameSp
 
 The various scenarios mentioned above have different levels of support for these specialized features:
 
-| Scenarios |Pinning and Stack allocation across the native context | Storing additional temporary state in locals |
-|------|-----|-----|---------|
+| Scenarios | Pinning and Stack allocation across the native context | Storing additional temporary state in locals |
+|------|-----|-----|
 | P/Invoke | supported | supported |
 | Reverse P/Invoke | unsupported | supported |
 | User-defined structure content marshalling | unsupported | unsupported |
