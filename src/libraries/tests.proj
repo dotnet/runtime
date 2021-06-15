@@ -293,6 +293,9 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50959 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/54194 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
