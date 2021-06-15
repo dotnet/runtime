@@ -1,19 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(TargetFramework)' != 'net461'" Include="Microsoft.Win32.Registry.cs" />
-    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="Microsoft.Win32.Registry.net461.cs" />
+    <Compile Include="Microsoft.Win32.Registry.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes.AccessControl\ref\System.IO.Pipes.AccessControl.csproj" />
   </ItemGroup>
 </Project>
