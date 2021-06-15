@@ -21,42 +21,42 @@ namespace System.Net.Test.Common
         private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
         private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
 
-        private bool isRemoteLoop;
-        private ClientWebSocket _remoteControl;
+#if TARGET_BROWSER
+        private ClientWebSocket _listenSocket;
+#else
         private Socket _listenSocket;
+#endif
         private Options _options;
         private Uri _uri;
 
         public LoopbackServer(Options options = null)
         {
             _options = options ??= new Options();
-            isRemoteLoop = Configuration.Http.RemoteLoopHost != null;
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async Task ListenAsync()
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
             {
                 IPEndPoint localEndPoint;
-                if (isRemoteLoop)
-                {
-                    _remoteControl = new ClientWebSocket();
+#if TARGET_BROWSER
+                    _listenSocket = new ClientWebSocket();
 
-                    await _remoteControl.ConnectAsync(Configuration.Http.RemoteLoopServer, CancellationToken.None);
+                    await _listenSocket.ConnectAsync(Configuration.Http.RemoteLoopServer, CancellationToken.None);
 
                     byte[] buffer = new byte[128 * 1024];
                     var message = Encoding.ASCII.GetBytes($"{_options.ListenBacklog},{_options.Address}");
-                    await _remoteControl.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken.None);
-                    var first = await _remoteControl.ReceiveAsync(buffer, CancellationToken.None);
+                    await _listenSocket.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken.None);
+                    var first = await _listenSocket.ReceiveAsync(buffer, CancellationToken.None);
                     localEndPoint = IPEndPoint.Parse(Encoding.ASCII.GetString(buffer, 0, first.Count));
-                }
-                else
-                {
+#else
                     _listenSocket = new Socket(_options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                     _listenSocket.Bind(new IPEndPoint(_options.Address, 0));
                     _listenSocket.Listen(_options.ListenBacklog);
                     localEndPoint = (IPEndPoint)_listenSocket.LocalEndPoint;
-                }
+#endif
 
                 string host = _options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
                     $"[{localEndPoint.Address}]" :
@@ -79,11 +79,6 @@ namespace System.Net.Test.Common
 
         public override void Dispose()
         {
-            if (_remoteControl != null)
-            {
-                _remoteControl.Dispose();
-                _remoteControl = null;
-            }
             if (_listenSocket != null)
             {
                 _listenSocket.Dispose();
@@ -91,9 +86,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public SocketWrapper ListenSocket => isRemoteLoop
-                                                ? new SocketWrapper(_remoteControl)
-                                                : new SocketWrapper(_listenSocket);
+        public SocketWrapper ListenSocket => new SocketWrapper(_listenSocket);
         public override Uri Address => _uri;
 
         public static async Task CreateServerAsync(Func<LoopbackServer, Task> funcAsync, Options options = null)
@@ -132,25 +125,22 @@ namespace System.Net.Test.Common
             try
             {
                 Stream stream = null;
-                if (isRemoteLoop)
-                {
-                    closableWrapper = new SocketWrapper(_remoteControl);
-                    stream = new WebSocketStream(_remoteControl, ownsSocket: true);
-                }
-                else
-                {
-                    var socket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
-                    closableWrapper = new SocketWrapper(socket);
+#if TARGET_BROWSER
+                closableWrapper = new SocketWrapper(_listenSocket);
+                stream = new WebSocketStream(_listenSocket, ownsSocket: true);
+#else
+                var socket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+                closableWrapper = new SocketWrapper(socket);
 
-                    try
-                    {
-                        socket.NoDelay = true;
-                    }
-                    // OSX can throw if socket is in weird state during close or cancellation
-                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
-
-                    stream = new NetworkStream(socket, ownsSocket: false);
+                try
+                {
+                    socket.NoDelay = true;
                 }
+                // OSX can throw if socket is in weird state during close or cancellation
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
+
+                stream = new NetworkStream(socket, ownsSocket: false);
+#endif
                 return await Connection.CreateAsync(closableWrapper, stream, _options).ConfigureAwait(false);
             }
             catch (Exception)
