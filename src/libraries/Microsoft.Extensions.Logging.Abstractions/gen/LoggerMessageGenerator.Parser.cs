@@ -336,9 +336,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 potentialNamespaceParent = potentialNamespaceParent.Parent;
                                             }
-                                            if (potentialNamespaceParent != null && potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
+                                            if (potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
                                             {
-                                                namespaceParent = potentialNamespaceParent as NamespaceDeclarationSyntax;
                                                 nspace = namespaceParent.Name.ToString();
                                                 while (true)
                                                 {
