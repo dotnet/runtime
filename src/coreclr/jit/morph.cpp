@@ -12194,7 +12194,7 @@ DONE_MORPHING_CHILDREN:
         case GT_GT:
 
             // op2's value may be changed, so it cannot be a CSE candidate.
-            if (op2->OperIs(GT_CNS_INT) && !gtIsActiveCSE_Candidate(op2))
+            if (op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2))
             {
                 tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
                 oper = tree->OperGet();
@@ -14188,7 +14188,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 {
     assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
-    assert(cmp->gtGetOp2()->OperIs(GT_CNS_INT));
+    assert(cmp->gtGetOp2()->IsIntegralConst());
     assert(!gtIsActiveCSE_Candidate(cmp->gtGetOp2()));
 
     GenTree*             op1 = cmp->gtGetOp1();
