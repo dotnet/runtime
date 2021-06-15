@@ -225,7 +225,7 @@ public:
     {
         return true;
     }
-    
+
 #if defined(DEBUG) || defined(INLINE_DATA)
     void DumpXml(FILE* file, unsigned indent = 0) const override;
 
