@@ -70,7 +70,7 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteGZipServer = new Uri("http://" + Host + "/" + GZipHandler);
             public static readonly Uri Http2RemoteDeflateServer = new Uri("https://" + Http2Host + "/" + DeflateHandler);
             public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
-            public static readonly Uri RemoteLoopServer = new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
+            public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
             public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
