@@ -8,40 +8,40 @@ const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process != 'undefined';
 
 // if the engine doesn't provide a console
-if (typeof (console) === "undefined") {
-	var console = {
+if (typeof (console) === "undefined"){
+	console = {
 		log: globalThis.print,
 		clear: function () { }
 	};
-}
 
-globalThis.testConsole = console;
+	function proxyMethod (prefix, func, asJson) {
+		let method = function() {
+			let args = [...arguments];
+			if (asJson) {
+				func (JSON.stringify({
+					method: prefix,
+					payload: args[0],
+					arguments: args
+				}));
+			} else {
+				func([prefix + args[0], ...args.slice(1)]);
+			}
+		};
 
-function proxyMethod (prefix, func, asJson) {
-	return function() {
-		let args = [...arguments];
-		if (asJson) {
-			func (JSON.stringify({
-				method: prefix,
-				payload: args[0],
-				arguments: args
-			}));
-		} else {
-			func([prefix + args[0], ...args.slice(1)]);
-		}
+		return method;
 	};
-};
 
-var methods = ["debug", "trace", "warn", "info", "error"];
-for (var m of methods) {
-	if (typeof(console[m]) != "function") {
-		console[m] = proxyMethod(`console.${m}: `, console.log, false);
+	var methods = ["debug", "trace", "warn", "info", "error"];
+	for (var m of methods) {
+		if (typeof(console[m]) !== "function") {
+			console[m] = proxyMethod(`console.${m}: `, console.log, false);
+		}
 	}
-}
 
-function proxyJson (func) {
-	for (var m of ["log", ...methods])
-		console[m] = proxyMethod(`console.${m}`,func, true);
+	function proxyJson (func) {
+		for (var m of ["log", ...methods])
+			console[m] = proxyMethod(`console.${m}`,func, true);
+	}
 }
 
 if (is_browser) {
@@ -50,7 +50,7 @@ if (is_browser) {
 	let consoleWebSocket = new WebSocket(consoleUrl);
 	consoleWebSocket.onopen = function(event) {
 		proxyJson(function (msg) { consoleWebSocket.send (msg); });
-		globalThis.testConsole.log("browser: Console websocket connected.");
+		console.log("browser: Console websocket connected.");
 	};
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
@@ -66,10 +66,6 @@ if (is_browser) {
 	}
 }
 //proxyJson(console.log);
-
-
-let print = globalThis.testConsole.log;
-let printErr = globalThis.testConsole.error;
 
 if (typeof crypto === 'undefined') {
 	// **NOTE** this is a simple insecure polyfill for testing purposes only
@@ -94,20 +90,21 @@ if (typeof performance === 'undefined') {
 
 let testArguments = [];
 try {
-	if (typeof arguments === "undefined") {
-		if (is_node)
-			testArguments = process.argv.slice (2);
+	if (is_node) {
+		testArguments = process.argv.slice (2);
 
-		if (typeof scriptArgs !== "undefined")
+	}else if (typeof arguments === "undefined") {
+		if (typeof scriptArgs !== "undefined") {
 			testArguments = scriptArgs;
 		
-		else if (typeof WScript  !== "undefined" && WScript.Arguments)
+		}else if (typeof WScript  !== "undefined" && WScript.Arguments){
 			testArguments = WScript.Arguments;
+		}
 	} else{
 		testArguments = arguments;
 	}
 } catch (e) {
-	console.err(e)
+	console.error(e)
 }
 
 if (is_node) {
@@ -199,18 +196,21 @@ function test_exit (exit_code) {
 	if (is_browser) {
 		// Notify the selenium script
 		Module.exit_code = exit_code;
-		Module.print ("WASM EXIT " + exit_code);
+		console.log ("WASM EXIT " + exit_code);
 		var tests_done_elem = document.createElement ("label");
 		tests_done_elem.id = "tests_done";
 		tests_done_elem.innerHTML = exit_code.toString ();
 		document.body.appendChild (tests_done_elem);
+	} else if (is_node) {
+		Module.exit_code = exit_code;
+		console.log ("WASM EXIT " + exit_code);
 	} else {
 		Module.wasm_exit (exit_code);
 	}
 }
 
 function fail_exec (reason) {
-	Module.print (reason);
+	console.error (reason);
 	test_exit (1);
 }
 
@@ -224,7 +224,7 @@ function inspect_object (o) {
 }
 
 // Preprocess arguments
-console.info("Arguments: " + testArguments);
+console.log("Arguments: " + testArguments);
 let profilers = [];
 let setenv = {};
 let runtime_args = [];
@@ -247,7 +247,7 @@ while (testArguments !== undefined && testArguments.length > 0) {
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--runtime-arg=")) {
 		var arg = testArguments [0].substring ("--runtime-arg=".length);
-		runtime_testArguments.push (arg);
+		runtime_args = testArguments.push (arg);
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
@@ -264,21 +264,19 @@ while (testArguments !== undefined && testArguments.length > 0) {
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
-var Module = {
+export var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print,
-	printErr,
-
 	onAbort: function(x) {
-		print ("ABORT: " + x);
+		console.log ("ABORT: " + x);
 		var err = new Error();
-		print ("Stacktrace: \n");
-		print (err.stack);
+		console.log ("Stacktrace: \n");
+		console.log (err.stack);
 		test_exit (1);
 	},
 
 	onRuntimeInitialized: function () {
+		console.log("test")
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (var variable in setenv) {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
@@ -342,10 +340,10 @@ var App = {
 			var res = 0;
 				try {
 					res = exec_regression (10, testArguments[1]);
-					Module.print ("REGRESSION RESULT: " + res);
+					console.log ("REGRESSION RESULT: " + res);
 				} catch (e) {
-					Module.print ("ABORT: " + e);
-					print (e.stack);
+					console.error ("ABORT: " + e);
+					console.error (e.stack);
 					res = 1;
 				}
 
@@ -421,5 +419,6 @@ IOHandler
 		IOHandler.load ("dotnet.js");
 	})
 	.catch(function(err) {
+		console.error(err)
 		fail_exec("failed to load the mono-config.js or dotnet.js files");
 	});
