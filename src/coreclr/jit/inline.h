@@ -248,6 +248,12 @@ public:
     // Policy estimates
     virtual int CodeSizeEstimate() = 0;
 
+    // Does Policy require a more precise IL scan?
+    virtual bool RequiresPreciseScan()
+    {
+        return false;
+    }
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Record observation for prior failure

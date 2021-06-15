@@ -746,15 +746,6 @@ public:
         // Empty
     }
 
-    enum FgSlot
-    {
-        SLOT_INVALID  = UINT_MAX,
-        SLOT_UNKNOWN  = 0,
-        SLOT_CONSTANT = 1,
-        SLOT_ARRAYLEN = 2,
-        SLOT_ARGUMENT = 3
-    };
-
     void Clear()
     {
         depth = 0;
@@ -773,55 +764,31 @@ public:
     }
     void PushArgument(unsigned arg)
     {
-        Push((FgSlot)(SLOT_ARGUMENT + arg));
+        Push(static_cast<FgSlot>(SLOT_ARGUMENT + arg));
     }
-    FgSlot GetSlot0() const
+    unsigned GetSlot0() const
     {
-        return depth >= 1 ? slot0 : FgSlot::SLOT_UNKNOWN;
+        assert(depth >= 1);
+        return slot0;
     }
-    FgSlot GetSlot1() const
+    unsigned GetSlot1() const
     {
-        return depth >= 2 ? slot1 : FgSlot::SLOT_UNKNOWN;
+        assert(depth >= 2);
+        return slot1;
     }
-    FgSlot Top(const int n = 0)
-    {
-        if (n == 0)
-        {
-            return depth >= 1 ? slot0 : SLOT_UNKNOWN;
-        }
-        if (n == 1)
-        {
-            return depth == 2 ? slot1 : SLOT_UNKNOWN;
-        }
-        unreached();
-    }
-    static bool IsConstant(FgSlot value)
+    static bool IsConstant(unsigned value)
     {
         return value == SLOT_CONSTANT;
     }
-    static bool IsConstantOrConstArg(FgSlot value, InlineInfo* info)
-    {
-        return IsConstant(value) || IsConstArgument(value, info);
-    }
-    static bool IsArrayLen(FgSlot value)
+    static bool IsArrayLen(unsigned value)
     {
         return value == SLOT_ARRAYLEN;
     }
-    static bool IsArgument(FgSlot value)
+    static bool IsArgument(unsigned value)
     {
         return value >= SLOT_ARGUMENT;
     }
-    static bool IsConstArgument(FgSlot value, InlineInfo* info)
-    {
-        if ((info == nullptr) || !IsArgument(value))
-        {
-            return false;
-        }
-        const unsigned argNum = value - SLOT_ARGUMENT;
-        assert(argNum < info->argCnt);
-        return info->inlArgInfo[argNum].argIsInvariant;
-    }
-    static unsigned SlotTypeToArgNum(FgSlot value)
+    static unsigned SlotTypeToArgNum(unsigned value)
     {
         assert(IsArgument(value));
         return value - SLOT_ARGUMENT;
@@ -838,18 +805,34 @@ public:
     {
         return depth >= 1;
     }
-    void Push(FgSlot slot)
+
+    enum FgSlot
     {
-        assert(depth <= 2);
-        slot1 = slot0;
-        slot0 = slot;
-        if (depth < 2)
+        SLOT_INVALID  = UINT_MAX,
+        SLOT_UNKNOWN  = 0,
+        SLOT_CONSTANT = 1,
+        SLOT_ARRAYLEN = 2,
+        SLOT_ARGUMENT = 3
+    };
+private:
+
+    void Push(FgSlot type)
+    {
+        switch (depth)
         {
-            depth++;
+            case 0:
+                ++depth;
+                slot0 = type;
+                break;
+            case 1:
+                ++depth;
+                FALLTHROUGH;
+            case 2:
+                slot1 = slot0;
+                slot0 = type;
         }
     }
 
-private:
     FgSlot   slot0;
     FgSlot   slot1;
     unsigned depth;
@@ -1683,7 +1666,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
     {
         if (opcode == CEE_BRFALSE || opcode == CEE_BRFALSE_S || opcode == CEE_BRTRUE || opcode == CEE_BRTRUE_S)
         {
-            FgStack::FgSlot slot0 = stack.GetSlot0();
+            unsigned slot0 = stack.GetSlot0();
             if (FgStack::IsArgument(slot0))
             {
                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
@@ -1710,8 +1693,8 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
         return;
     }
 
-    FgStack::FgSlot slot0 = stack.GetSlot0();
-    FgStack::FgSlot slot1 = stack.GetSlot1();
+    unsigned slot0 = stack.GetSlot0();
+    unsigned slot1 = stack.GetSlot1();
 
     // Arg feeds constant test
     if ((FgStack::IsConstant(slot0) && FgStack::IsArgument(slot1)) ||

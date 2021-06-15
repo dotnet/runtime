@@ -137,8 +137,6 @@ public:
         return "DefaultPolicy";
     }
 
-    void DumpXml(FILE* file, unsigned indent = 0) const override;
-
 #endif // (DEBUG) || defined(INLINE_DATA)
 
 protected:
@@ -222,6 +220,20 @@ public:
     void NoteDouble(InlineObservation obs, double value) override;
 
     double DetermineMultiplier() override;
+
+    bool RequiresPreciseScan() override
+    {
+        return true;
+    }
+    
+#if defined(DEBUG) || defined(INLINE_DATA)
+    void DumpXml(FILE* file, unsigned indent = 0) const override;
+
+    const char* GetName() const override
+    {
+        return "ExtendedDefaultPolicy";
+    }
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 protected:
     double   m_ProfileFrequency;

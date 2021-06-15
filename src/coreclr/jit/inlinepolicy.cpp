@@ -456,13 +456,13 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 //------------------------------------------------------------------------
-// DumpXml: Dump DefaultPolicy data as XML
+// DumpXml: Dump ExtendedDefaultPolicy data as XML
 //
 // Arguments:
 //    file     - stream to output to
 //    indent   - indent level
 
-void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
+void ExtendedDefaultPolicy::DumpXml(FILE* file, unsigned indent) const
 {
     fprintf(file, "%*s<DefaultPolicyData", indent, "");
 
@@ -524,11 +524,6 @@ void DefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_CallsiteIsInLoop);
     XATTR_B(m_IsNoReturn);
     XATTR_B(m_IsNoReturnKnown);
-    XATTR_B(m_ReturnsStructByValue);
-    XATTR_B(m_IsFromValueClass);
-    XATTR_B(m_NonGenericCallsGeneric);
-    XATTR_B(m_IsCallsiteInNoReturnRegion);
-    XATTR_B(m_HasProfile);
     fprintf(file, " />\n");
 }
 #endif
@@ -628,11 +623,7 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
             }
             else if (!m_IsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
             {
-                if (basicBlockCount > MAX_BASIC_BLOCKS)
-                {
-                    JITDUMP("basicBlockCount=%d > basicBlockLimit=%d\n", basicBlockCount, basicBlockLimit);
-                    SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
-                }
+                SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
             }
 
             break;
@@ -2593,28 +2584,6 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
     fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
     fprintf(file, ",%u", m_CallsiteDepth);
-    fprintf(file, ",%u", m_BinaryExprWithCns);
-    fprintf(file, ",%u", m_ArgCasted);
-    fprintf(file, ",%u", m_ArgIsStructByValue);
-    fprintf(file, ",%u", m_FldAccessOverArgStruct);
-    fprintf(file, ",%u", m_FoldableBox);
-    fprintf(file, ",%u", m_Intrinsic);
-    fprintf(file, ",%u", m_BackwardJump);
-    fprintf(file, ",%u", m_ThrowBlock);
-    fprintf(file, ",%u", m_ArgIsExactCls);
-    fprintf(file, ",%u", m_ArgIsExactClsSigIsNot);
-    fprintf(file, ",%u", m_ArgIsConst);
-    fprintf(file, ",%u", m_ArgIsBoxedAtCallsite);
-    fprintf(file, ",%u", m_FoldableIntrinsic);
-    fprintf(file, ",%u", m_FoldableExpr);
-    fprintf(file, ",%u", m_FoldableExprUn);
-    fprintf(file, ",%u", m_FoldableBranch);
-    fprintf(file, ",%u", m_DivByCns);
-    fprintf(file, ",%u", m_ReturnsStructByValue ? 1 : 0);
-    fprintf(file, ",%u", m_IsFromValueClass ? 1 : 0);
-    fprintf(file, ",%u", m_NonGenericCallsGeneric ? 1 : 0);
-    fprintf(file, ",%u", m_IsCallsiteInNoReturnRegion ? 1 : 0);
-    fprintf(file, ",%u", m_HasProfile ? 1 : 0);
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
