@@ -12,7 +12,14 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegDeleteValueW", ExactSpelling = true)]
+        internal static partial int RegDeleteValue(
+#else
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegDeleteValueW", ExactSpelling = true)]
-        internal static extern int RegDeleteValue(SafeRegistryHandle hKey, string? lpValueName);
+        internal static extern int RegDeleteValue(
+#endif
+            SafeRegistryHandle hKey,
+            string? lpValueName);
     }
 }
