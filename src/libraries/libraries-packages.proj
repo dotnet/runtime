@@ -17,7 +17,7 @@
   <!-- Need the PackageIndexFile file property from baseline.props -->
   <Import Project="$(PkgDir)baseline\baseline.props" />
 
-  <!-- Calculate PackageDownload items for restore. -->
+  <!-- Calculate PackageDownload items for restore. Skip this logic during source build to avoid pre-builts. -->
   <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != '' and '$(DotNetBuildFromSource)' != 'true'" />
 
   <!--
