@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -138,6 +139,61 @@ namespace System.Globalization.Tests
                     Assert.Equal(culture, ci.Name);
                 }
             }, cultureName, predefinedCulturesOnlyEnvVar, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void TestAllowInvariantCultureOnly(bool enableInvariant, bool enableInvariantOnly)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+
+            if (enableInvariant)     { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT",              "true"); }
+            if (enableInvariantOnly) { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT_CULTURE_ONLY", "true"); }
+
+            RemoteExecutor.Invoke((invarintEnabled, invariantOnlyEnabled) =>
+            {
+                bool restrictedMode = bool.Parse(invarintEnabled) && bool.Parse(invariantOnlyEnabled);
+
+                // First ensure we can create the current cultures regaldless of the mode we are in
+                Assert.NotNull(CultureInfo.CurrentCulture);
+                Assert.NotNull(CultureInfo.CurrentUICulture);
+
+                // Invariant culture should be valid all the time
+                Assert.Equal("", new CultureInfo("").Name);
+                Assert.Equal("", CultureInfo.InvariantCulture.Name);
+
+                if (restrictedMode)
+                {
+                    Assert.Equal("", CultureInfo.CurrentCulture.Name);
+                    Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+
+                    // Throwing exception is testing accessing the resources in this restricted mode.
+                    // We should retrieve the resources from the neutral resources in the main assemblies.
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("en-US"));
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("en"));
+
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("ja-JP"));
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo("es"));
+
+                    // Test throwing exceptions from non-core assemblies.
+                    Exception exception = Record.Exception(() => new ConcurrentBag<string>(null));
+                    Assert.NotNull(exception);
+                    Assert.IsType<ArgumentNullException>(exception);
+                    Assert.Equal("collection", (exception as ArgumentNullException).ParamName);
+                    Assert.Equal("The collection argument is null. (Parameter 'collection')", exception.Message);
+                }
+                else
+                {
+                    Assert.Equal("en-US", new CultureInfo("en-US").Name);
+                    Assert.Equal("ja-JP", new CultureInfo("ja-JP").Name);
+                    Assert.Equal("en", new CultureInfo("en").Name);
+                    Assert.Equal("es", new CultureInfo("es").Name);
+                }
+            }, enableInvariant.ToString(), enableInvariantOnly.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

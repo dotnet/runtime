@@ -669,6 +669,11 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
+            if (GlobalizationMode.AllowInvariantCultureOnly)
+            {
+                return null;
+            }
+
             if (GlobalizationMode.PredefinedCulturesOnly)
             {
                 Debug.Assert(!GlobalizationMode.Invariant);
