@@ -120,42 +120,42 @@ const IOHandler = {
 
 	init: function() {
 		// load: function that loads and executes a script
-		if (!globalThis.load){
+		let loadFunc = globalThis.load; // shells (v8, JavaScriptCore, Spidermonkey)
+		if (!loadFunc){
 			if (typeof WScript  !== "undefined"){ // Chakra
-				IOHandler.load = WScript.LoadScriptFile;
+				loadFunc = WScript.LoadScriptFile;
 
 			} else if (is_node) { // NodeJS
 				const fs = require ('fs');
-				IOHandler.load = function (file) {
+				loadFunc = function (file) {
 					eval (fs.readFileSync(file).toString());
 				};
 			} else if (is_browser) { // vanila JS in browser
-				IOHandler.load = function (file) {
+				loadFunc = function (file) {
 					const script = document.createElement ("script");
 					script.src = file;
 					document.head.appendChild (script);
 				}
 			}
-		} else {
-			IOHandler.load = load; // shells (v8, JavaScriptCore, Spidermonkey)
 		}
+		IOHandler.load = async (file) => loadFunc(file);
 
 		// read: function that just reads a file into a variable
-		if (!globalThis.read){
+		let readFunc = globalThis.read; // shells (v8, JavaScriptCore, Spidermonkey)
+		if (!readFunc){
 			if (typeof WScript  !== "undefined"){
-				IOHandler.read = WScript.LoadBinaryFile; // Chakra
+				readFunc = WScript.LoadBinaryFile; // Chakra
 
 			} else if (is_node) { // NodeJS
 				const fs = require ('fs');
-				IOHandler.read = function (path) {
+				readFunc = function (path) {
 					return fs.readFileSync(path);
 				};
 			} else if (is_browser) {  // vanila JS in browser
-				// TODO
+				readFunc = fetch;
 			}
-		} else { 
-			IOHandler.read = read;  // shells (v8, JavaScriptCore, Spidermonkey)
 		}
+		IOHandler.read = async (file) => await readFunc(file);
 	},
 
 	writeContentToFile: function(content, path) {
@@ -264,8 +264,6 @@ while (testArguments !== undefined && testArguments.length > 0) {
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
-IOHandler.load ("mono-config.js");
-
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
@@ -315,8 +313,6 @@ var Module = {
 		MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };
-
-IOHandler.load ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 
@@ -417,3 +413,13 @@ var App = {
 		}
 	}
 };
+
+// load the config and runtime files which will start the runtime init and subsiquently the tests
+IOHandler
+	.load ("mono-config.js")
+	.then(function () {
+		IOHandler.load ("dotnet.js");
+	})
+	.catch(function(err) {
+		fail_exec("failed to load the mono-config.js or dotnet.js files");
+	});
