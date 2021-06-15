@@ -330,22 +330,23 @@ namespace System.Runtime.InteropServices.JavaScript
             if (mb == null)
                 return null;
 
-            var result = "{ " +
-                $"\"result\": {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, " +
-                $"\"typePtr\": {typePtr}, \"methodPtr\": {methodPtr}, " +
-                "\"parameters\": [";
+            var sb = new ValueStringBuilder();
+            sb.Append("{ ");
+            sb.Append($"\"result\": {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, ");
+            sb.Append($"\"typePtr\": {typePtr}, \"methodPtr\": {methodPtr}, ");
+            sb.Append("\"parameters\": [");
 
             int i = 0;
             foreach (var p in mb.GetParameters()) {
                 if (i > 0)
-                    result += ", ";
-                result += MakeMarshalTypeRecord(p.ParameterType);
+                    sb.Append(", ");
+                sb.Append(MakeMarshalTypeRecord(p.ParameterType));
                 i++;
             }
 
-            result += "] }";
+            sb.Append("] }");
 
-            return result;
+            return sb.ToString();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -359,33 +360,34 @@ namespace System.Runtime.InteropServices.JavaScript
             if (value == null)
                 return "null";
 
-            var result = "\"";
+            var sb = new ValueStringBuilder();
+            sb.Append('\"');
             foreach (var ch in value) {
                 switch (ch) {
                     case '\'':
-                        result += '\'';
+                        sb.Append('\'');
                         continue;
                     case '"':
-                        result += '\"';
+                        sb.Append('\"');
                         continue;
                     case '\\':
-                        result += "\\\\";
+                        sb.Append("\\\\");
                         continue;
                     case '\n':
-                        result += "\\n";
+                        sb.Append("\\n");
                         continue;
                 }
 
                 if (ch < ' ') {
-                    result += "\\x";
+                    sb.Append("\\x");
                     if (ch <= 0xF)
-                        result += '0';
+                        sb.Append('0');
                     result += ((int)ch).ToString("X");
                 } else {
-                    result += ch;
+                    sb.Append(ch);
                 }
             }
-            result += '"';
+            sb.Append('\"');
 
             return result;
         }
@@ -422,10 +424,8 @@ namespace System.Runtime.InteropServices.JavaScript
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, string marshalerFullName) {
-            if (typePtr == IntPtr.Zero)
-                return "null";
-            else if (string.IsNullOrEmpty(marshalerFullName))
+        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, string? marshalerFullName) {
+            if ((typePtr == IntPtr.Zero) || string.IsNullOrEmpty(marshalerFullName))
                 return "null";
 
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
@@ -466,39 +466,39 @@ namespace System.Runtime.InteropServices.JavaScript
                 "}");
         }
 
-        private static MarshalType GetMarshalTypeFromType (Type type) {
-            if (type == null)
+        private static MarshalType GetMarshalTypeFromType (Type? type) {
+            var typeCode = Type.GetTypeCode(type);
+            if (typeCode == TypeCode.Empty)
                 return MarshalType.VOID;
-            else if (type.IsPointer)
-                return MarshalType.POINTER;
 
-            switch (Type.GetTypeCode(type)) {
+            if (type.IsEnum) {
+                switch (typeCode) {
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                        return MarshalType.ENUM;
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        return MarshalType.ENUM64;
+                    default:
+                        throw new WasmInteropException($"Unsupported enum underlying type {typeCode}");
+                }
+            }
+
+            switch (typeCode) {
                 case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.UInt16:
                 case TypeCode.Int32:
-                    if (type.IsEnum)
-                        return MarshalType.ENUM;
-                    else
-                        return MarshalType.INT;
+                    return MarshalType.INT;
                 case TypeCode.UInt32:
-                    if (type.IsEnum)
-                        return MarshalType.ENUM;
-                    else
-                        return MarshalType.UINT32;
+                    return MarshalType.UINT32;
                 case TypeCode.Boolean:
                     return MarshalType.BOOL;
                 case TypeCode.Int64:
-                    if (type.IsEnum)
-                        return MarshalType.ENUM64;
-                    else
-                        return MarshalType.INT64;
+                    return MarshalType.INT64;
                 case TypeCode.UInt64:
-                    if (type.IsEnum)
-                        return MarshalType.ENUM64;
-                    else
-                        return MarshalType.UINT64;
+                    return MarshalType.UINT64;
                 case TypeCode.Single:
                     return MarshalType.FP32;
                 case TypeCode.Double:
@@ -509,8 +509,12 @@ namespace System.Runtime.InteropServices.JavaScript
                     return MarshalType.CHAR;
             }
 
-            if (typeof(Array).IsAssignableFrom(type)) {
-                switch (Type.GetTypeCode(type.GetElementType())) {
+            if (type.IsArray) {
+                if (!type.IsSZArray)
+                    throw new WasmInteropException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
+
+                var elementType = type.GetElementType();
+                switch (Type.GetTypeCode(elementType)) {
                     case TypeCode.Byte:
                         return MarshalType.ARRAY_UBYTE;
                     case TypeCode.SByte:
@@ -527,30 +531,23 @@ namespace System.Runtime.InteropServices.JavaScript
                         return MarshalType.ARRAY_FLOAT;
                     case TypeCode.Double:
                         return MarshalType.ARRAY_DOUBLE;
-                    case TypeCode.Char:
-                    case TypeCode.Boolean:
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        // FIXME
-                        return MarshalType.OBJECT;
                     default:
-                        // FIXME
-                        return MarshalType.OBJECT;
+                        throw new WasmInteropException($"Unsupported array element type {elementType.FullName}");
                 }
-            } else if (type == typeof(void))
-                return MarshalType.VOID;
-            else if (type == typeof(IntPtr))
+            } else if (type == typeof(IntPtr))
                 return MarshalType.INT;
             else if (type == typeof(UIntPtr))
                 return MarshalType.UINT32;
-            else if (typeof(Delegate).IsAssignableFrom(type))
-                return MarshalType.DELEGATE;
-            else if (typeof(Task).IsAssignableFrom(type))
-                return MarshalType.TASK;
-            else if (typeof(Uri).IsAssignableFrom(type))
-                return MarshalType.URI;
             else if (type == typeof(SafeHandle))
                 return MarshalType.SAFEHANDLE;
+            else if (typeof(Delegate).IsAssignableFrom(type))
+                return MarshalType.DELEGATE;
+            else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
+                return MarshalType.TASK;
+            // HACK: You could theoretically inherit from Uri, but I consider this out of scope.
+            // If you really need to marshal a custom Uri, define a custom marshaler for it
+            else if (typeof(Uri) == type)
+                return MarshalType.URI;
 
             if (type.IsValueType)
                 return MarshalType.VT;
@@ -588,7 +585,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 case MarshalType.POINTER:
                     return 'm';
                 default:
-                    return null;
+                    throw new WasmInteropException($"Unsupported marshal type {t}");
             }
         }
 
@@ -606,19 +603,17 @@ namespace System.Runtime.InteropServices.JavaScript
             if (parmsLength == 0)
                 return string.Empty;
 
-            char[] res = new char[parmsLength];
-
-            for (int c = 0; c < parmsLength; c++)
-            {
+            var sb = new ValueStringBuilder();
+            for (int c = 0; c < parmsLength; c++) {
                 Type t = parms[c].ParameterType;
                 var mt = GetMarshalTypeFromType(t);
                 var csc = GetCallSignatureCharacterForMarshalType(mt);
                 if (csc.HasValue)
-                    res[c] = csc.Value;
+                    sb.Append(csc.Value);
                 else
                     throw new WasmInteropException ("No signature character for marshal type " + mt);
             }
-            return new string(res);
+            return sb.ToString();
         }
 
         public static void SetupJSContinuation(Task task, JSObject continuationObj)
@@ -693,9 +688,9 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
         }
 
-        public static string ObjectToString(object o)
+        public static string ObjectToString(object? o)
         {
-            return o.ToString() ?? string.Empty;
+            return o?.ToString() ?? string.Empty;
         }
 
         public static bool SafeHandleAddRef(SafeHandle safeHandle)
