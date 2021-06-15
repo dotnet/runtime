@@ -1111,11 +1111,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
-        public void Send_TimeoutResponseContent_Throws()
+        public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
 
             using var server = new LoopbackServer();
+            await server.ListenAsync();
 
             // Ignore all failures from the server. This includes being disposed of before ever accepting a connection,
             // which is possible if the client times out so quickly that it hasn't initiated a connection yet.

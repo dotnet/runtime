@@ -105,22 +105,16 @@ namespace System.Net.Test.Common
             }
         }
 
-        public static Task CreateServerAsync(
-            Func<LoopbackServer, Uri, Task> funcAsync,
-            Options options = null,
-            [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
+        public static Task CreateServerAsync(Func<LoopbackServer, Uri, Task> funcAsync, Options options = null)
         {
-            return CreateServerAsync(server => funcAsync(server, new Uri(server.Address + callerName)), options);
+            return CreateServerAsync(server => funcAsync(server, server.Address), options);
         }
 
-        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc,
-            Func<LoopbackServer, Task> serverFunc, 
-            Options options = null,
-            [System.Runtime.CompilerServices.CallerMemberName] string callerName = "")
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<LoopbackServer, Task> serverFunc, Options options = null)
         {
             return CreateServerAsync(async server =>
             {
-                Task clientTask = clientFunc(new Uri(server.Address + callerName));
+                Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
@@ -1036,7 +1030,9 @@ namespace System.Net.Test.Common
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new LoopbackServer(CreateOptions(options));
+            var loopbackServer = new LoopbackServer(CreateOptions(options));
+            Task.WaitAll(loopbackServer.ListenAsync());
+            return loopbackServer;
         }
 
         public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
