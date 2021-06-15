@@ -495,9 +495,17 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("1$")]
         [InlineData("10675199.02:48:05.4775808")] // TimeSpan.MaxValue + 1
         [InlineData("-10675199.02:48:05.4775809")] // TimeSpan.MinValue - 1
-        public static void TimeSpan_Read_Failure(string json)
+        [InlineData("1234", false)]
+        [InlineData("{}", false)]
+        [InlineData("[]", false)]
+        [InlineData("true", false)]
+        [InlineData("null", false)]
+        public static void TimeSpan_Read_Failure(string json, bool addQuotes = true)
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>($"\"{json}\""));
+            if (addQuotes)
+                json = $"\"{json}\"";
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(json));
         }
     }
 }
