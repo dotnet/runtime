@@ -22,6 +22,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        private const string sPauseOnUncaught = "pause_on_uncaught";
+        private const string sPauseOnCaught = "pause_on_caught";
 
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
         {
@@ -125,12 +127,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!GetContext(sessionId).IsRuntimeReady)
                         {
                             string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
-                            if (exceptionError == "pause_on_uncaught")
+                            if (exceptionError == sPauseOnUncaught)
                             {
                                 GetContext(sessionId).PauseOnUncaught = true;
                                 return true;
                             }
-                            if (exceptionError == "pause_on_caught")
+                            if (exceptionError == sPauseOnCaught)
                             {
                                 GetContext(sessionId).PauseOnCaught = true;
                                 return true;
@@ -147,7 +149,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (reason == "exception")
                             {
                                 string exceptionError = args?["data"]?["value"]?.Value<string>();
-                                if (exceptionError == "pause_on_uncaught" || exceptionError == "pause_on_caught")
+                                if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                                     return true;
@@ -1112,7 +1114,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (context.PauseOnCaught && context.PauseOnUncaught)
                 await SendMonoCommand(sessionId, MonoCommands.SetPauseOnExceptions("all"), token);
-            if (context.PauseOnUncaught)
+            else if (context.PauseOnUncaught)
                 await SendMonoCommand(sessionId, MonoCommands.SetPauseOnExceptions("uncaught"), token);
 
             DebugStore store = await LoadStore(sessionId, token);
@@ -1251,8 +1253,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
             {
-                string checkUncaughtExceptions = "throw \"pause_on_uncaught\";";
-                string checkCaughtExceptions = "try {throw \"pause_on_caught\";} catch {}";
+                string checkUncaughtExceptions = $"throw \"{sPauseOnUncaught}\";";
+                string checkCaughtExceptions = $"try {{throw \"{sPauseOnCaught}\";}} catch {{}}";
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
