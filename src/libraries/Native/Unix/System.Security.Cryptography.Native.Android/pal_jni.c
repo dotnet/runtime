@@ -705,7 +705,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLParametersClass =                      GetClassGRef(env, "javax/net/ssl/SSLParameters");
     g_SSLParametersGetProtocols =               GetMethod(env, false,  g_SSLParametersClass, "getProtocols", "()[Ljava/lang/String;");
     g_SSLParametersSetApplicationProtocols =    GetOptionalMethod(env, false,  g_SSLParametersClass, "setApplicationProtocols", "([Ljava/lang/String;)V");
-    g_SSLParametersSetServerNames =             GetOptionalMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
 
     g_sslCtxClass =                     GetClassGRef(env, "javax/net/ssl/SSLContext");
     g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
@@ -961,7 +960,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SNIHostName = GetOptionalClassGRef(env, "javax/net/ssl/SNIHostName");
     if (g_SNIHostName != NULL)
     {
-        g_SNIHostNameCtor = GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
+        g_SNIHostNameCtor =                 GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
+        g_SSLParametersSetServerNames =     GetOptionalMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
     }
 
     g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
