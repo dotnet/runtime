@@ -903,8 +903,8 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     m_CalleeNativeSizeEstimate   = DetermineNativeSizeEstimate();
     m_CallsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
-    m_Multiplier = DetermineMultiplier();
-    const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
+    m_Multiplier                 = DetermineMultiplier();
+    const int threshold          = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
     // Note the DefaultPolicy estimates are scaled up by SIZE_SCALE
     JITDUMP("\ncalleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
@@ -977,7 +977,6 @@ int DefaultPolicy::CodeSizeEstimate()
         return 0;
     }
 }
-
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 //------------------------------------------------------------------------

@@ -149,7 +149,7 @@ protected:
 
     // Helper methods
     virtual double DetermineMultiplier();
-    int    DetermineNativeSizeEstimate();
+    int            DetermineNativeSizeEstimate();
     int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
 
     // Data members
@@ -179,7 +179,6 @@ protected:
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
 };
-
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
 // DefaultPolicy with an extended list of observations including profile data.

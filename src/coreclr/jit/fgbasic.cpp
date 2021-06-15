@@ -860,8 +860,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
     unsigned    varNum;
-    var_types   varType  = DUMMY_INIT(TYP_UNDEF); // TYP_ type
-    typeInfo    ti;                               // Verifier type.
+    var_types   varType = DUMMY_INIT(TYP_UNDEF); // TYP_ type
+    typeInfo    ti;                              // Verifier type.
     bool        typeIsNormed = false;
     FgStack     pushedStack;
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -1056,14 +1056,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE methodHnd = nullptr;
+                CORINFO_METHOD_HANDLE methodHnd      = nullptr;
                 bool                  isJitIntrinsic = false;
-                NamedIntrinsic        ni = NI_Illegal;
+                NamedIntrinsic        ni             = NI_Illegal;
 
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    methodHnd = resolvedToken.hMethod;
+                    methodHnd      = resolvedToken.hMethod;
                     isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
                 }
 
@@ -1330,7 +1330,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                     }
                     else if (FgStack::IsConstantOrConstArg(arg0, impInlineInfo) ||
-                        FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
+                             FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
                     {
                         // "X op CNS" or "CNS op X"
                         pushedStack.Push(FgStack::FgSlot::SLOT_UNKNOWN);
@@ -1452,7 +1452,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_BRANCH);
                             }
                             else if ((FgStack::IsArgument(op1) && FgStack::IsArrayLen(op2)) ||
-                                (FgStack::IsArgument(op2) && FgStack::IsArrayLen(op1)))
+                                     (FgStack::IsArgument(op2) && FgStack::IsArrayLen(op1)))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                             }
@@ -2171,7 +2171,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
     }
 
     FgStack::FgSlot slot0 = stack.GetSlot0();
-    FgStack::FgSlot slot1  = stack.GetSlot1();
+    FgStack::FgSlot slot1 = stack.GetSlot1();
 
     // Arg feeds constant test
     if ((FgStack::IsConstant(slot0) && FgStack::IsArgument(slot1)) ||
