@@ -162,42 +162,9 @@ namespace System.Net.Http
             return input.Length - startIndex;
         }
 
-        internal static bool ContainsInvalidNewLine(string value)
+        internal static bool ContainsNewLine(string value, int startIndex = 0)
         {
-            return ContainsInvalidNewLine(value, 0);
-        }
-
-        internal static bool ContainsInvalidNewLine(string value, int startIndex)
-        {
-            // Search for newlines followed by non-whitespace: This is not allowed in any header (be it a known or
-            // custom header). E.g. "value\r\nbadformat: header" is invalid. However "value\r\n goodformat: header"
-            // is valid: newlines followed by whitespace are allowed in header values.
-            int current = startIndex;
-            while (current < value.Length)
-            {
-                if (value[current] == '\r')
-                {
-                    int char10Index = current + 1;
-                    if ((char10Index < value.Length) && (value[char10Index] == '\n'))
-                    {
-                        current = char10Index + 1;
-
-                        if (current == value.Length)
-                        {
-                            return true; // We have a string terminating with \r\n. This is invalid.
-                        }
-
-                        char c = value[current];
-                        if ((c != ' ') && (c != '\t'))
-                        {
-                            return true;
-                        }
-                    }
-                }
-                current++;
-            }
-
-            return false;
+            return value.AsSpan(startIndex).IndexOfAny('\r', '\n') != -1;
         }
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
