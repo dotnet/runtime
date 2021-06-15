@@ -5,54 +5,89 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
-    // =========================================================================================
-    // This struct collects all operations on native DependentHandles. The DependentHandle
-    // merely wraps an IntPtr so this struct serves mainly as a "managed typedef."
-    //
-    // DependentHandles exist in one of two states:
-    //
-    //    IsAllocated == false
-    //        No actual handle is allocated underneath. Illegal to call GetPrimary
-    //        or GetPrimaryAndSecondary(). Ok to call Free().
-    //
-    //        Initializing a DependentHandle using the nullary ctor creates a DependentHandle
-    //        that's in the !IsAllocated state.
-    //        (! Right now, we get this guarantee for free because (IntPtr)0 == NULL unmanaged handle.
-    //         ! If that assertion ever becomes false, we'll have to add an _isAllocated field
-    //         ! to compensate.)
-    //
-    //
-    //    IsAllocated == true
-    //        There's a handle allocated underneath. You must call Free() on this eventually
-    //        or you cause a native handle table leak.
-    //
-    // This struct intentionally does no self-synchronization. It's up to the caller to
-    // to use DependentHandles in a thread-safe way.
-    // =========================================================================================
-    internal struct DependentHandle : IDisposable
+    /// <summary>
+    /// Represents a dependent GC handle, which will conditionally keep a dependent object instance alive
+    /// as long as a target object instance is alive as well, without representing a strong reference to the
+    /// target object instance. That is, a <see cref="DependentHandle"/> value with a given object instance as
+    /// target will not cause the target to be kept alive if there are no other strong references to it, but
+    /// it will do so for the dependent object instance as long as the target is alive.
+    /// <para>
+    /// This type is conceptually equivalent to having a weak reference to a given target object instance A, with
+    /// that object having a field or property (or some other strong reference) to a dependent object instance B.
+    /// </para>
+    /// </summary>
+    public struct DependentHandle : IDisposable
     {
+        // =========================================================================================
+        // This struct collects all operations on native DependentHandles. The DependentHandle
+        // merely wraps an IntPtr so this struct serves mainly as a "managed typedef."
+        //
+        // DependentHandles exist in one of two states:
+        //
+        //    IsAllocated == false
+        //        No actual handle is allocated underneath. Illegal to get Target, Dependent
+        //        or GetTargetAndDependent(). Ok to call Dispose().
+        //
+        //        Initializing a DependentHandle using the nullary ctor creates a DependentHandle
+        //        that's in the !IsAllocated state.
+        //        (! Right now, we get this guarantee for free because (IntPtr)0 == NULL unmanaged handle.
+        //         ! If that assertion ever becomes false, we'll have to add an _isAllocated field
+        //         ! to compensate.)
+        //
+        //
+        //    IsAllocated == true
+        //        There's a handle allocated underneath. You must call Dispose() on this eventually
+        //        or you cause a native handle table leak.
+        //
+        // This struct intentionally does no self-synchronization. It's up to the caller to
+        // to use DependentHandles in a thread-safe way.
+        // =========================================================================================
+
         private IntPtr _handle;
 
-        public DependentHandle(object primary, object? secondary)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DependentHandle"/> struct with the specified arguments.
+        /// </summary>
+        /// <param name="target">The target object instance to track.</param>
+        /// <param name="dependent">The dependent object instance to associate with <paramref name="target"/>.</param>
+        public DependentHandle(object? target, object? dependent)
         {
             // no need to check for null result: nInitialize expected to throw OOM.
-            _handle = nInitialize(primary, secondary);
+            _handle = nInitialize(target, dependent);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this handle has been allocated or not.
+        /// </summary>
         public bool IsAllocated => _handle != IntPtr.Zero;
 
+        /// <summary>
+        /// Gets or sets the target object instance for the current handle.
+        /// </summary>
         public object? Target
         {
             get => nGetPrimary(_handle);
             set => nSetPrimary(_handle, value);
         }
 
+        /// <summary>
+        /// Gets or sets the dependent object instance for the current handle.
+        /// </summary>
+        /// <remarks>
+        /// If it is necessary to retrieve both <see cref="Target"/> and <see cref="Dependent"/>, it is
+        /// recommended to use <see cref="GetTargetAndDependent"/> instead. This will result in better
+        /// performance and it will reduce the chance of unexpected behavior in some cases.
+        /// </remarks>
         public object? Dependent
         {
             get => GetTargetAndDependent().Dependent;
             set => nSetSecondary(_handle, value);
         }
 
+        /// <summary>
+        /// Retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
+        /// </summary>
+        /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
         public (object? Target, object? Dependent) GetTargetAndDependent()
         {
             object? target = nGetPrimaryAndSecondary(_handle, out object? secondary);
@@ -60,10 +95,12 @@ namespace System.Runtime
             return (target, secondary);
         }
 
-        // Forces dependentHandle back to non-allocated state (if not already there)
-        // and frees the handle if needed.
+        /// <inheritdoc cref="IDisposable.Dispose"/>
         public void Dispose()
         {
+            // Forces dependentHandle back to non-allocated state (if not already there)
+            // and frees the handle if needed.
+
             if (_handle != IntPtr.Zero)
             {
                 IntPtr handle = _handle;
@@ -73,7 +110,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr nInitialize(object primary, object? secondary);
+        private static extern IntPtr nInitialize(object? primary, object? secondary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object? nGetPrimary(IntPtr dependentHandle);
