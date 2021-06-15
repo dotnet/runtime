@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -396,19 +395,19 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type? returnType, out Type? parameterType) {
+        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type returnType, out Type parameterType) {
             var info = type.GetMethod(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
-            if (info == null) {
-                parameterType = null;
-                returnType = null;
-                return IntPtr.Zero;
-            }
+            if (info == null)
+                throw new WasmInteropException($"{type.Name} must have a static {name} method");
 
             var p = info.GetParameters();
-            if (p.Length != 1)
+            if ((p.Length != 1) || (p[0].ParameterType == null))
                 throw new WasmInteropException($"Method {type.Name}.{name} must accept exactly one parameter");
+            
+            if (info.ReturnType == null)
+                throw new WasmInteropException($"Method {type.Name}.{name} must have a return value");
 
             parameterType = p[0].ParameterType;
             returnType = info.ReturnType;
@@ -444,11 +443,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? fromReturnType, out Type? fromParameterType);
             var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? toReturnType, out Type? toParameterType);
-
-            if (inputPtr == IntPtr.Zero)
-                throw new WasmInteropException($"{marshalerType.Name} must have a static FromJavaScript method");
-            if (outputPtr == IntPtr.Zero)
-                throw new WasmInteropException($"{marshalerType.Name} must have a static ToJavaScript method");
 
             if (fromReturnType != type)
                 throw new WasmInteropException($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
