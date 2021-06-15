@@ -8,6 +8,8 @@
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
 
+    <Import Condition="'$(RuntimeIdentifier)' != 'browser-wasm'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+
     <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android' and '$(RunAOTCompilation)' == 'true'">
@@ -17,20 +19,20 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64" />
     </ImportGroup>
 
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios'">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
     </ImportGroup>
 
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos' and '$(RunAOTCompilation)' == 'true'">
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos'">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
     </ImportGroup>
 
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'iossimulator' and '$(RunAOTCompilation)' == 'true'">
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'iossimulator'">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator" />
     </ImportGroup>
 
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvossimulator' and '$(RunAOTCompilation)' == 'true'">
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvossimulator'">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator" />
     </ImportGroup>
 

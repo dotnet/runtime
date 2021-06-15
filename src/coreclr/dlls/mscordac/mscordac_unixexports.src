@@ -70,7 +70,6 @@ nativeStringResourceTable_mscorrc
 #PAL__open
 #PAL__pread
 #PAL__close
-#PAL_JitWriteProtect
 
 #_wcsicmp
 #_stricmp

@@ -183,6 +183,7 @@ internal static class Utils
 
         return file;
     }
+
 #if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
     {

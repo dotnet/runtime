@@ -4,9 +4,10 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Runtime.CompilerServices;
-
-[assembly: TypeForwardedTo(typeof(System.IO.Pipes.PipeAccessRights))]
-[assembly: TypeForwardedTo(typeof(System.IO.Pipes.PipeAccessRule))]
-[assembly: TypeForwardedTo(typeof(System.IO.Pipes.PipeAuditRule))]
-[assembly: TypeForwardedTo(typeof(System.IO.Pipes.PipeSecurity))]
+namespace System.ServiceProcess
+{
+    public partial class ServiceController : System.ComponentModel.Component
+    {
+        public void Stop(bool stopDependentServices) { }
+    }
+}
