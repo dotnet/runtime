@@ -127,6 +127,8 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
+        // NOTE: when enabling this test take a look at commented code maked by "ACTIVE ISSUE:" in SharedTestState
         public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
         {
             var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();
@@ -186,11 +188,12 @@ namespace AppHost.Bundle.Tests
                 TestSelfContainedFixtureComposite
                     .EnsureRestoredForRid(TestSelfContainedFixtureComposite.CurrentRid)
                     .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite),
+                                    // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
+                                    //               uncomment extraArgs when fixed.
+                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite) /*,
                                     extraArgs: new string[] {
                                        "/p:PublishReadyToRun=true",
-                                       "/p:PublishReadyToRunComposite=true" });
-
+                                       "/p:PublishReadyToRunComposite=true" } */);
             }
 
             public void Dispose()
