@@ -546,13 +546,15 @@ namespace System.Security.Cryptography.Xml
                 ek.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
 
                 // Create a random AES session key and encrypt it with the public key associated with the certificate.
-                Aes aes = Aes.Create();
-                ek.CipherData.CipherValue = EncryptedXml.EncryptKey(aes.Key, rsaPublicKey, false);
+                using (Aes aes = Aes.Create())
+                {
+                    ek.CipherData.CipherValue = EncryptedXml.EncryptKey(aes.Key, rsaPublicKey, false);
 
-                // Encrypt the input element with the random session key that we've created above.
-                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-                ed.KeyInfo.AddClause(kek);
-                ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+                    // Encrypt the input element with the random session key that we've created above.
+                    KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                    ed.KeyInfo.AddClause(kek);
+                    ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+                }
 
                 return ed;
             }
@@ -623,13 +625,15 @@ namespace System.Security.Cryptography.Xml
             ek.KeyInfo.AddClause(new KeyInfoName(keyName));
 
             // Create a random AES session key and encrypt it with the public key associated with the certificate.
-            Aes aes = Aes.Create();
-            ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(aes.Key, rsa, false) : EncryptedXml.EncryptKey(aes.Key, symKey));
+            using (Aes aes = Aes.Create())
+            {
+                ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(aes.Key, rsa, false) : EncryptedXml.EncryptKey(aes.Key, symKey));
 
-            // Encrypt the input element with the random session key that we've created above.
-            KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-            ed.KeyInfo.AddClause(kek);
-            ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+                // Encrypt the input element with the random session key that we've created above.
+                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                ed.KeyInfo.AddClause(kek);
+                ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+            }
 
             return ed;
         }
