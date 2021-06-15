@@ -73,7 +73,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static class CustomVector3Marshaler {
             public static string FromJavaScriptPreFilter => "let ptr = temp_malloc(4 * 3), view = new Float32Array(Module.HEAPU8.buffer, ptr, 3); " +
                 "for (var i = 0; i < 3; i++) view[i] = value[i];" +
-                "console.log('Vector3 ptr=', ptr);" +
                 "return ptr;";
             public static string ToJavaScriptPostFilter => 
                 "return [ Module.HEAPF32[((value / 4) | 0) + 0], Module.HEAPF32[((value / 4) | 0) + 1], Module.HEAPF32[((value / 4) | 0) + 2] ]";
