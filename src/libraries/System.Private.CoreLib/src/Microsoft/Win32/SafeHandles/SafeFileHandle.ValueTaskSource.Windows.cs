@@ -1,22 +1,49 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks.Sources;
 
-namespace System.IO.Strategies
+namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
+    public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private ValueTaskSource? _reusableValueTaskSource; // reusable ValueTaskSource that is currently NOT being used
+
+        // Rent the reusable ValueTaskSource, or create a new one to use if we couldn't get one (which
+        // should only happen on first use or if the FileStream is being used concurrently).
+        internal ValueTaskSource GetValueTaskSource() => Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+
+        protected override bool ReleaseHandle()
+        {
+            bool result = Interop.Kernel32.CloseHandle(handle);
+
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
+
+            return result;
+        }
+
+        private void TryToReuse(ValueTaskSource source)
+        {
+            source._source.Reset();
+
+            if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
+            {
+                source._preallocatedOverlapped.Dispose();
+            }
+        }
+
         /// <summary>Reusable IValueTaskSource for FileStream ValueTask-returning async operations.</summary>
-        private sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
+        internal sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
-            private readonly AsyncWindowsFileStreamStrategy _strategy;
+            private readonly SafeFileHandle _fileHandle;
             internal MemoryHandle _memoryHandle;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
@@ -28,9 +55,9 @@ namespace System.IO.Strategies
             /// </summary>
             internal ulong _result;
 
-            internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy)
+            internal ValueTaskSource(SafeFileHandle fileHandle)
             {
-                _strategy = strategy;
+                _fileHandle = fileHandle;
                 _source.RunContinuationsAsynchronously = true;
                 _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_ioCallback, this, null);
             }
@@ -41,11 +68,18 @@ namespace System.IO.Strategies
                 _preallocatedOverlapped.Dispose();
             }
 
-            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory)
+            internal static Exception GetIOError(int errorCode, string? path)
+                => errorCode == Interop.Errors.ERROR_HANDLE_EOF
+                    ? ThrowHelper.CreateEndOfFileException()
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+
+            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset)
             {
                 _result = 0;
                 _memoryHandle = memory.Pin();
-                _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
+                _overlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
+                _overlapped->OffsetLow = (int)fileOffset;
+                _overlapped->OffsetHigh = (int)(fileOffset >> 32);
                 return _overlapped;
             }
 
@@ -63,7 +97,7 @@ namespace System.IO.Strategies
                 finally
                 {
                     // The instance is ready to be reused
-                    _strategy.TryToReuse(this);
+                    _fileHandle.TryToReuse(this);
                 }
             }
 
@@ -79,11 +113,11 @@ namespace System.IO.Strategies
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
                             ValueTaskSource vts = (ValueTaskSource)s!;
-                            if (!vts._strategy._fileHandle.IsInvalid)
+                            if (!vts._fileHandle.IsInvalid)
                             {
                                 try
                                 {
-                                    Interop.Kernel32.CancelIoEx(vts._strategy._fileHandle, vts._overlapped);
+                                    Interop.Kernel32.CancelIoEx(vts._fileHandle, vts._overlapped);
                                     // Ignore all failures: no matter whether it succeeds or fails, completion is handled via the IOCallback.
                                 }
                                 catch (ObjectDisposedException) { } // in case the SafeHandle is (erroneously) closed concurrently
@@ -112,7 +146,7 @@ namespace System.IO.Strategies
                 // Free the overlapped.
                 if (_overlapped != null)
                 {
-                    _strategy._fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
+                    _fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
             }
@@ -161,6 +195,7 @@ namespace System.IO.Strategies
                     case 0:
                     case Interop.Errors.ERROR_BROKEN_PIPE:
                     case Interop.Errors.ERROR_NO_DATA:
+                    case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         // Success
                         _source.SetResult((int)numBytes);
                         break;

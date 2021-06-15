@@ -2,6 +2,7 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,7 +10,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Sample.Bench.csproj</_SampleProject>
+    <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />

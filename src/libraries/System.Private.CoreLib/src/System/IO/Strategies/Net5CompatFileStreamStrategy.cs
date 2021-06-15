@@ -89,11 +89,11 @@ namespace System.IO.Strategies
             if ((options & FileOptions.Asynchronous) != 0)
                 _useAsyncIO = true;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, preallocationSize);
+            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {
-                Init(mode, share, path, options, preallocationSize);
+                Init(mode, path, options);
             }
             catch
             {
