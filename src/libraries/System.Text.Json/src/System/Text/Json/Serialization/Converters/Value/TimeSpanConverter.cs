@@ -29,12 +29,19 @@ namespace System.Text.Json.Serialization.Converters
                 return tmpValue;
             }
 
+            result = Utf8Parser.TryParse(source, out tmpValue, out bytesConsumed, 'g');
+
+            if (result && source.Length == bytesConsumed)
+            {
+                return tmpValue;
+            }
+
             throw ThrowHelper.GetFormatException();
         }
 
         public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
         {
-            const int MaximumTimeSpanFormatLength = 25; // -ddddddd.hh:mm:ss.fffffff
+            const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
 
             Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];
 
