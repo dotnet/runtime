@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.IO
 {
@@ -537,12 +538,13 @@ namespace System.IO
 
         /// <summary>Gets the path of the target of the specified link.</summary>
         /// <param name="linkPath">A path to a link file.</param>
+        /// <param name="isDirectory">Whether the link represents a directory or not. Irrelevant in Unix since readlink does not care about the underlying type.</param>
         /// <returns>If linkPath represents a link file and it exists, returns the link's target path.
         /// If linkPath is not a link or the target does not exist, returns null.</returns>
-        internal static string? GetLinkTarget(string linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
 
         /// <summary>
-        /// Creates a file symbolic link identified by path that points to pathToTarget..
+        /// Creates a file symbolic link identified by path that points to pathToTarget.
         /// </summary>
         /// <param name="path">The path where the symbolic link should be created.</param>
         /// <param name="pathToTarget">The path of the target to which the symbolic link points.</param>
@@ -566,7 +568,7 @@ namespace System.IO
         }
 
         /// <summary>Gets the target of the specified link path.</summary>
-        /// <param name="linkPath">A path to a link file.</param>
+        /// <param name="linkPath">A path (absolute or relative) to a link file.</param>
         /// <param name="returnFinalTarget">true to return the final target file or directory in a chain of links; false to return the immediate next target.</param>
         /// <param name="isDirectory">True if the linkPath points to a directory or a symlink to a directory.</param>
         /// <returns>If the specified linkPath represents a link file and it exists, returns a FileInfo if isDirectory
@@ -577,57 +579,68 @@ namespace System.IO
             // throws if the current link file does not exist
             Interop.CheckIo(Interop.Sys.LStat(linkPath, out _), linkPath, isDirectory);
 
-            string? targetPath = GetLinkTarget(linkPath);
-            if (targetPath == null)
-            {
-                // linkPath exists but is not a link
-                return null;
-            }
-
-            //Ensure all paths are fully qualified, by adding a prefix that is relative to the previous path
-            string? prefix;
-            if (PathInternal.IsPartiallyQualified(targetPath))
-            {
-                prefix = Path.GetDirectoryName(linkPath);
-                targetPath = Path.Join(prefix, targetPath);
-            }
+            ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
+            sb.Append(linkPath);
 
             int maxVisits = returnFinalTarget ? MaxFollowedLinks : 1;
-            int visitCount = 1;
+            int visitCount = 0;
             while (visitCount < maxVisits)
             {
-                string? nextPath = GetLinkTarget(targetPath);
-
-                if (nextPath == null)
+                if (!TryGetLinkTarget(ref sb))
                 {
-                    // targetPath does not exist or is not a link
+                    if (visitCount == 0)
+                    {
+                        // Special case: Reaching here means linkPath is not a link,
+                        // but we know it exists because we did an lstat at the top
+                        sb.Dispose();
+                        return null;
+                    }
+
+                    // We finally found the final target: either
+                    // this file does not exist (broken links are acceptable)
+                    // or this file is not a link
                     break;
                 }
-
-                if (PathInternal.IsPartiallyQualified(nextPath))
-                {
-                    prefix = Path.GetDirectoryName(targetPath);
-                    targetPath = Path.Join(prefix, nextPath);
-                }
-                else
-                {
-                    targetPath = nextPath;
-                }
-
                 visitCount++;
             }
 
             if (visitCount >= MaxFollowedLinks)
             {
                 // We went over the limit and couldn't reach the final target
-                throw new IOException(SR.Format(SR.IndexOutOfRange_SymbolicLinkLevels, linkPath));
+                throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
             }
 
-            Debug.Assert(targetPath != null);
+            Debug.Assert(sb.Length > 0);
 
             return isDirectory ?
-                    new DirectoryInfo(targetPath) :
-                    new FileInfo(targetPath);
+                    new DirectoryInfo(sb.ToString()) :
+                    new FileInfo(sb.ToString()); // ToString disposes
+
+            static bool TryGetLinkTarget(ref ValueStringBuilder sb)
+            {
+                string? linkTarget = GetLinkTarget(sb.AsSpan(), isDirectory: false /* Irrelevant in Unix */);
+                if (string.IsNullOrEmpty(linkTarget))
+                {
+                    // Either linkPath does not exist
+                    // or linkPath is not a link
+                    return false;
+                }
+
+                if (PathInternal.IsPartiallyQualified(linkTarget.AsSpan()))
+                {
+                    // Preserve the full path of the directory of the previous file
+                    // so the final target is returned with a valid full path
+                    sb.Length = Path.GetDirectoryNameOffset(sb.AsSpan());
+                    sb.Append(PathInternal.DirectorySeparatorChar);
+                }
+                else
+                {
+                    sb.Length = 0;
+                }
+                sb.Append(linkTarget.AsSpan());
+
+                return true;
+            }
         }
     }
 }

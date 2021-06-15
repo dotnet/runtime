@@ -125,7 +125,7 @@ namespace System.IO
             return end >= 0 ? path.Slice(0, end) : ReadOnlySpan<char>.Empty;
         }
 
-        private static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
+        internal static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
         {
             int rootLength = PathInternal.GetRootLength(path);
             int end = path.Length;
