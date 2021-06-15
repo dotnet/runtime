@@ -1675,8 +1675,13 @@ ftnptr_to_imethod (gpointer addr)
 		g_assert (ftndesc);
 		g_assert (ftndesc->method);
 
-		imethod = mono_interp_get_imethod (ftndesc->method, error);
-		mono_error_assert_ok (error);
+		imethod = ftndesc->interp_method;
+		if (!imethod) {
+			imethod = mono_interp_get_imethod (ftndesc->method, error);
+			mono_error_assert_ok (error);
+			mono_memory_barrier ();
+			ftndesc->interp_method = imethod;
+		}
 	} else {
 		/* Function pointers are represented by their InterpMethod */
 		imethod = (InterpMethod*)addr;
@@ -1690,8 +1695,13 @@ imethod_to_ftnptr (InterpMethod *imethod)
 	if (mono_llvm_only) {
 		ERROR_DECL (error);
 		/* Function pointers are represented by a MonoFtnDesc structure */
-		MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (imethod->method, FALSE, FALSE, error);
-		mono_error_assert_ok (error);
+		MonoFtnDesc *ftndesc = imethod->ftndesc;
+		if (!ftndesc) {
+			ftndesc = mini_llvmonly_load_method_ftndesc (imethod->method, FALSE, FALSE, error);
+			mono_error_assert_ok (error);
+			mono_memory_barrier ();
+			imethod->ftndesc = ftndesc;
+		}
 		return ftndesc;
 	} else {
 		return imethod;
@@ -6520,16 +6530,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			error_init_reuse (error);
 
 			MonoMethod *cmethod = LOCAL_VAR (ip [2], MonoMethod*);
-			if (mono_llvm_only) {
-				/* Function pointers are represented by a MonoFtnDesc structure */
-				MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (cmethod, FALSE, FALSE, error);
-				mono_error_assert_ok (error);
-				LOCAL_VAR (ip [1], gpointer) = ftndesc;
-			} else {
-				InterpMethod *m = mono_interp_get_imethod (cmethod, error);
-				mono_error_assert_ok (error);
-				LOCAL_VAR (ip [1], gpointer) = m;
-			}
+
+			InterpMethod *m = mono_interp_get_imethod (cmethod, error);
+			mono_error_assert_ok (error);
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
