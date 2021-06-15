@@ -457,85 +457,6 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-//------------------------------------------------------------------------
-// DumpXml: Dump ExtendedDefaultPolicy data as XML
-//
-// Arguments:
-//    file     - stream to output to
-//    indent   - indent level
-
-void ExtendedDefaultPolicy::DumpXml(FILE* file, unsigned indent) const
-{
-    fprintf(file, "%*s<DefaultPolicyData", indent, "");
-
-// To reduce verbosity, let's print only non-default values
-#define XATTR_I4(x)                                                                                                    \
-    if ((INT32)x != 0)                                                                                                 \
-    {                                                                                                                  \
-        fprintf(file, " " #x "=\"%d\"", (INT32)x);                                                                     \
-    }
-#define XATTR_R8(x)                                                                                                    \
-    if (fabs(x) > 0.01)                                                                                                \
-    {                                                                                                                  \
-        fprintf(file, " " #x "=\"%.2lf\"", x);                                                                         \
-    }
-#define XATTR_B(x)                                                                                                     \
-    if (x)                                                                                                             \
-    {                                                                                                                  \
-        fprintf(file, " " #x "=\"True\"");                                                                             \
-    }
-
-    XATTR_R8(m_Multiplier);
-    XATTR_R8(m_ProfileFrequency);
-    XATTR_I4(m_CodeSize);
-    XATTR_I4(m_CallsiteFrequency);
-    XATTR_I4(m_CallsiteDepth);
-    XATTR_I4(m_InstructionCount);
-    XATTR_I4(m_LoadStoreCount);
-    XATTR_I4(m_ArgFeedsTest);
-    XATTR_I4(m_ArgFeedsConstantTest);
-    XATTR_I4(m_ArgFeedsRangeCheck);
-    XATTR_I4(m_ConstantArgFeedsConstantTest);
-    XATTR_I4(m_BinaryExprWithCns);
-    XATTR_I4(m_ArgCasted);
-    XATTR_I4(m_ArgIsStructByValue);
-    XATTR_I4(m_FldAccessOverArgStruct);
-    XATTR_I4(m_FoldableBox);
-    XATTR_I4(m_Intrinsic);
-    XATTR_I4(m_BackwardJump);
-    XATTR_I4(m_ThrowBlock);
-    XATTR_I4(m_ArgIsExactCls);
-    XATTR_I4(m_ArgIsExactClsSigIsNot);
-    XATTR_I4(m_ArgIsConst);
-    XATTR_I4(m_ArgIsBoxedAtCallsite);
-    XATTR_I4(m_FoldableIntrinsic);
-    XATTR_I4(m_FoldableExpr);
-    XATTR_I4(m_FoldableExprUn);
-    XATTR_I4(m_FoldableBranch);
-    XATTR_I4(m_DivByCns);
-    XATTR_I4(m_CalleeNativeSizeEstimate);
-    XATTR_I4(m_CallsiteNativeSizeEstimate);
-    XATTR_B(m_IsForceInline);
-    XATTR_B(m_IsForceInlineKnown);
-    XATTR_B(m_IsInstanceCtor);
-    XATTR_B(m_IsFromPromotableValueClass);
-    XATTR_B(m_HasSimd);
-    XATTR_B(m_LooksLikeWrapperMethod);
-    XATTR_B(m_MethodIsMostlyLoadStore);
-    XATTR_B(m_CallsiteIsInTryRegion);
-    XATTR_B(m_CallsiteIsInLoop);
-    XATTR_B(m_IsNoReturn);
-    XATTR_B(m_IsNoReturnKnown);
-    XATTR_B(m_ReturnsStructByValue);
-    XATTR_B(m_IsFromValueClass);
-    XATTR_B(m_NonGenericCallsGeneric);
-    XATTR_B(m_IsCallsiteInNoReturnRegion);
-    XATTR_B(m_HasProfile);
-    fprintf(file, " />\n");
-}
-#endif
-
 //------------------------------------------------------------------------
 // BudgetCheck: see if this inline would exceed the current budget
 //
@@ -1057,6 +978,43 @@ int DefaultPolicy::CodeSizeEstimate()
     }
 }
 
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// DumpXml: Dump ExtendedDefaultPolicy data as XML
+//
+// Arguments:
+//    file     - stream to output to
+//    indent   - indent level
+
+void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
+{
+    XATTR_R8(m_Multiplier);
+    XATTR_I4(m_CodeSize);
+    XATTR_I4((int)m_CallsiteFrequency);
+    XATTR_I4(m_CallsiteDepth);
+    XATTR_I4(m_InstructionCount);
+    XATTR_I4(m_LoadStoreCount);
+    XATTR_I4(m_ArgFeedsTest);
+    XATTR_I4(m_ArgFeedsConstantTest);
+    XATTR_I4(m_ArgFeedsRangeCheck);
+    XATTR_I4(m_ConstantArgFeedsConstantTest);
+    XATTR_I4(m_CalleeNativeSizeEstimate);
+    XATTR_I4(m_CallsiteNativeSizeEstimate);
+    XATTR_B(m_IsForceInline);
+    XATTR_B(m_IsForceInlineKnown);
+    XATTR_B(m_IsInstanceCtor);
+    XATTR_B(m_IsFromPromotableValueClass);
+    XATTR_B(m_HasSimd);
+    XATTR_B(m_LooksLikeWrapperMethod);
+    XATTR_B(m_MethodIsMostlyLoadStore);
+    XATTR_B(m_CallsiteIsInTryRegion);
+    XATTR_B(m_CallsiteIsInLoop);
+    XATTR_B(m_IsNoReturn);
+    XATTR_B(m_IsNoReturnKnown);
+}
+#endif
+
 //------------------------------------------------------------------------
 // PropagateNeverToRuntime: determine if a never result should cause the
 // method to be marked as un-inlinable.
@@ -1384,6 +1342,12 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
     m_ProfileFrequency = value;
 }
 
+//------------------------------------------------------------------------
+// DetermineMultiplier: determine benefit multiplier for this inline
+//
+// Notes: uses the accumulated set of observations to compute a
+//    profitability boost for the inline candidate.
+
 double ExtendedDefaultPolicy::DetermineMultiplier()
 {
     double multiplier = 0;
@@ -1707,6 +1671,66 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     return multiplier;
 }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// DumpXml: Dump ExtendedDefaultPolicy data as XML
+//
+// Arguments:
+//    file     - stream to output to
+//    indent   - indent level
+
+void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
+{
+    DefaultPolicy::OnDumpXml(file, indent);
+    XATTR_R8(m_Multiplier);
+    XATTR_R8(m_ProfileFrequency);
+    XATTR_I4(m_CodeSize);
+    XATTR_I4(m_CallsiteFrequency);
+    XATTR_I4(m_CallsiteDepth);
+    XATTR_I4(m_InstructionCount);
+    XATTR_I4(m_LoadStoreCount);
+    XATTR_I4(m_ArgFeedsTest);
+    XATTR_I4(m_ArgFeedsConstantTest);
+    XATTR_I4(m_ArgFeedsRangeCheck);
+    XATTR_I4(m_ConstantArgFeedsConstantTest);
+    XATTR_I4(m_BinaryExprWithCns);
+    XATTR_I4(m_ArgCasted);
+    XATTR_I4(m_ArgIsStructByValue);
+    XATTR_I4(m_FldAccessOverArgStruct);
+    XATTR_I4(m_FoldableBox);
+    XATTR_I4(m_Intrinsic);
+    XATTR_I4(m_BackwardJump);
+    XATTR_I4(m_ThrowBlock);
+    XATTR_I4(m_ArgIsExactCls);
+    XATTR_I4(m_ArgIsExactClsSigIsNot);
+    XATTR_I4(m_ArgIsConst);
+    XATTR_I4(m_ArgIsBoxedAtCallsite);
+    XATTR_I4(m_FoldableIntrinsic);
+    XATTR_I4(m_FoldableExpr);
+    XATTR_I4(m_FoldableExprUn);
+    XATTR_I4(m_FoldableBranch);
+    XATTR_I4(m_DivByCns);
+    XATTR_I4(m_CalleeNativeSizeEstimate);
+    XATTR_I4(m_CallsiteNativeSizeEstimate);
+    XATTR_B(m_IsForceInline);
+    XATTR_B(m_IsForceInlineKnown);
+    XATTR_B(m_IsInstanceCtor);
+    XATTR_B(m_IsFromPromotableValueClass);
+    XATTR_B(m_HasSimd);
+    XATTR_B(m_LooksLikeWrapperMethod);
+    XATTR_B(m_MethodIsMostlyLoadStore);
+    XATTR_B(m_CallsiteIsInTryRegion);
+    XATTR_B(m_CallsiteIsInLoop);
+    XATTR_B(m_IsNoReturn);
+    XATTR_B(m_IsNoReturnKnown);
+    XATTR_B(m_ReturnsStructByValue);
+    XATTR_B(m_IsFromValueClass);
+    XATTR_B(m_NonGenericCallsGeneric);
+    XATTR_B(m_IsCallsiteInNoReturnRegion);
+    XATTR_B(m_HasProfile);
+}
+#endif
 
 //------------------------------------------------------------------------
 // DiscretionaryPolicy: construct a new DiscretionaryPolicy

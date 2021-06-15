@@ -131,12 +131,12 @@ public:
     int CodeSizeEstimate() override;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
+    void OnDumpXml(FILE* file, unsigned indent = 0) const override;
 
     const char* GetName() const override
     {
         return "DefaultPolicy";
     }
-
 #endif // (DEBUG) || defined(INLINE_DATA)
 
 protected:
@@ -227,7 +227,7 @@ public:
     }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    void DumpXml(FILE* file, unsigned indent = 0) const override;
+    void OnDumpXml(FILE* file, unsigned indent = 0) const override;
 
     const char* GetName() const override
     {

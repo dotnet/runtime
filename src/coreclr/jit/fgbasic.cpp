@@ -1937,6 +1937,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if (makeInlineObservations)
                 {
                     pushedStack.PushArrayLen();
+                    handled = true;
                 }
                 break;
 
