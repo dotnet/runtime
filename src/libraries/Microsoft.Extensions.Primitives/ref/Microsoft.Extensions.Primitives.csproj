@@ -12,7 +12,7 @@
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <!-- PrivateAssets=all is a workaround to issue: https://github.com/NuGet/Home/issues/10617 -->
+    <!-- PrivateAssets=all is a workaround to issue: https://github.com/NuGet/Home/issues/10368. -->
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>
