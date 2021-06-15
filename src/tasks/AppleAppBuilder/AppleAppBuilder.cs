@@ -231,8 +231,9 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
             generator.DiagnosticPorts = DiagnosticPorts;
 
+            bool preferDylibs = !isDevice;
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
+                                                       AppDir, binDir, MonoRuntimeHeaders, preferDylibs, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
             {

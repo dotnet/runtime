@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
@@ -35,7 +36,8 @@ public static class Program
             delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
             ios_register_button_click(unmanagedPtr);
         }
-        const string msg = "Hello World!\n.NET 5.0";
+	var mi = typeof(System.Reflection.Metadata.AssemblyExtensions).GetMethod ("GetApplyUpdateCapabilities", BindingFlags.Static | BindingFlags.NonPublic);
+        string msg = string.Format("Hello World!\nC:<{0}>", mi == null ? "null method" : mi.Invoke(null, Array.Empty<object>()));
         for (int i = 0; i < msg.Length; i++)
         {
             // a kind of an animation
