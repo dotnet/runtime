@@ -20,23 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static double ToJavaScript (in DateTime dt)
         {
-            return (double)((new DateTimeOffset(dt)).ToUnixTimeMilliseconds());
-        }
-    }
-
-    public static class DateTimeOffsetMarshaler
-    {
-        public static string FromJavaScriptPreFilter => "return BINDING._pre_filter_date(value)";
-        public static string ToJavaScriptPostFilter => "return new Date(value)";
-
-        public static DateTimeOffset FromJavaScript (double msecsSinceEpoch)
-        {
-            return DateTimeOffset.FromUnixTimeMilliseconds((long)msecsSinceEpoch);
-        }
-
-        public static double ToJavaScript (in DateTimeOffset dto)
-        {
-            return (double)dto.ToUnixTimeMilliseconds();
+            return (double)new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
     }
 }
