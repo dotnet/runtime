@@ -546,13 +546,13 @@ namespace System.Security.Cryptography.Xml
                 ek.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
 
                 // Create a random AES session key and encrypt it with the public key associated with the certificate.
-                RijndaelManaged rijn = new RijndaelManaged();
-                ek.CipherData.CipherValue = EncryptedXml.EncryptKey(rijn.Key, rsaPublicKey, false);
+                Aes aes = Aes.Create();
+                ek.CipherData.CipherValue = EncryptedXml.EncryptKey(aes.Key, rsaPublicKey, false);
 
                 // Encrypt the input element with the random session key that we've created above.
                 KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
                 ed.KeyInfo.AddClause(kek);
-                ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
+                ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
 
                 return ed;
             }
@@ -595,7 +595,9 @@ namespace System.Security.Cryptography.Xml
                 // CMS Triple DES Key Wrap
                 encryptionMethod = EncryptedXml.XmlEncTripleDESKeyWrapUrl;
             }
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
             else if (symKey is Rijndael || symKey is Aes)
+#pragma warning restore SYSLIB0022
             {
                 // FIPS AES Key Wrap
                 switch (symKey.KeySize)
@@ -621,13 +623,13 @@ namespace System.Security.Cryptography.Xml
             ek.KeyInfo.AddClause(new KeyInfoName(keyName));
 
             // Create a random AES session key and encrypt it with the public key associated with the certificate.
-            RijndaelManaged rijn = new RijndaelManaged();
-            ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(rijn.Key, rsa, false) : EncryptedXml.EncryptKey(rijn.Key, symKey));
+            Aes aes = Aes.Create();
+            ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(aes.Key, rsa, false) : EncryptedXml.EncryptKey(aes.Key, symKey));
 
             // Encrypt the input element with the random session key that we've created above.
             KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
             ed.KeyInfo.AddClause(kek);
-            ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
+            ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
 
             return ed;
         }
@@ -868,7 +870,9 @@ namespace System.Security.Cryptography.Xml
                 // CMS Triple DES Key Wrap
                 return SymmetricKeyWrap.TripleDESKeyWrapEncrypt(symmetricAlgorithm.Key, keyData);
             }
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
             else if (symmetricAlgorithm is Rijndael || symmetricAlgorithm is Aes)
+#pragma warning restore SYSLIB0022
             {
                 // FIPS AES Key Wrap
                 return SymmetricKeyWrap.AESKeyWrapEncrypt(symmetricAlgorithm.Key, keyData);
@@ -912,7 +916,9 @@ namespace System.Security.Cryptography.Xml
                 // CMS Triple DES Key Wrap
                 return SymmetricKeyWrap.TripleDESKeyWrapDecrypt(symmetricAlgorithm.Key, keyData);
             }
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
             else if (symmetricAlgorithm is Rijndael || symmetricAlgorithm is Aes)
+#pragma warning restore SYSLIB0022
             {
                 // FIPS AES Key Wrap
                 return SymmetricKeyWrap.AESKeyWrapDecrypt(symmetricAlgorithm.Key, keyData);
