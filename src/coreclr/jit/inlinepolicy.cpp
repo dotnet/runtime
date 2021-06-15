@@ -94,13 +94,16 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    if (JitConfig.JitExtendedDefaultPolicyModel() != 0)
+    const bool useExtendedDefaultPolicy = JitConfig.JitExtendedDefaultPolicyModel() != 0;
+
+    if (!useExtendedDefaultPolicy || (!isPrejitRoot && compiler->opts.IsReadyToRun()))
     {
-        return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
+        // DefaultPolicy is better for AOT in terms of code-size.
+        return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
     }
 
-    // Use the default policy by default
-    return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
+    // Use the extended variant of default policy by default
+    return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -1254,119 +1257,99 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
 {
-    DefaultPolicy::NoteBool(obs, value);
-
-    // Check the impact
-    InlineImpact impact = InlGetImpact(obs);
-
-    // As a safeguard, all fatal impact must be
-    // reported via NoteFatal.
-    assert(impact != InlineImpact::FATAL);
-
-    // Handle most information here
-    bool isInformation = (impact == InlineImpact::INFORMATION);
-    bool propagate     = !isInformation;
-
-    if (isInformation)
+    switch (obs)
     {
-        switch (obs)
-        {
-            case InlineObservation::CALLEE_RETURNS_STRUCT:
-                m_ReturnsStructByValue = value;
-                break;
+        case InlineObservation::CALLEE_RETURNS_STRUCT:
+            m_ReturnsStructByValue = value;
+            break;
 
-            case InlineObservation::CALLEE_CLASS_VALUETYPE:
-                m_IsFromValueClass = value;
-                break;
+        case InlineObservation::CALLEE_CLASS_VALUETYPE:
+            m_IsFromValueClass = value;
+            break;
 
-            case InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC:
-                m_NonGenericCallsGeneric = value;
-                break;
+        case InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC:
+            m_NonGenericCallsGeneric = value;
+            break;
 
-            case InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS:
-                m_BinaryExprWithCns++;
-                break;
+        case InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS:
+            m_BinaryExprWithCns++;
+            break;
 
-            case InlineObservation::CALLEE_ARG_STRUCT:
-                m_ArgIsStructByValue++;
-                break;
+        case InlineObservation::CALLEE_ARG_STRUCT:
+            m_ArgIsStructByValue++;
+            break;
 
-            case InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS:
-                m_FldAccessOverArgStruct++;
-                break;
+        case InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS:
+            m_FldAccessOverArgStruct++;
+            break;
 
-            case InlineObservation::CALLEE_ARG_FEEDS_CAST:
-                m_ArgCasted++;
-                break;
+        case InlineObservation::CALLEE_ARG_FEEDS_CAST:
+            m_ArgCasted++;
+            break;
 
-            case InlineObservation::CALLEE_FOLDABLE_BOX:
-                m_FoldableBox++;
-                break;
+        case InlineObservation::CALLEE_FOLDABLE_BOX:
+            m_FoldableBox++;
+            break;
 
-            case InlineObservation::CALLEE_INTRINSIC:
-                m_Intrinsic++;
-                break;
+        case InlineObservation::CALLEE_INTRINSIC:
+            m_Intrinsic++;
+            break;
 
-            case InlineObservation::CALLEE_BACKWARD_JUMP:
-                m_BackwardJump++;
-                break;
+        case InlineObservation::CALLEE_BACKWARD_JUMP:
+            m_BackwardJump++;
+            break;
 
-            case InlineObservation::CALLEE_THROW_BLOCK:
-                m_ThrowBlock++;
-                break;
+        case InlineObservation::CALLEE_THROW_BLOCK:
+            m_ThrowBlock++;
+            break;
 
-            case InlineObservation::CALLSITE_ARG_EXACT_CLS:
-                m_ArgIsExactCls++;
-                break;
+        case InlineObservation::CALLSITE_ARG_EXACT_CLS:
+            m_ArgIsExactCls++;
+            break;
 
-            case InlineObservation::CALLSITE_ARG_BOXED:
-                m_ArgIsBoxedAtCallsite++;
-                break;
+        case InlineObservation::CALLSITE_ARG_BOXED:
+            m_ArgIsBoxedAtCallsite++;
+            break;
 
-            case InlineObservation::CALLSITE_ARG_CONST:
-                m_ArgIsConst++;
-                break;
+        case InlineObservation::CALLSITE_ARG_CONST:
+            m_ArgIsConst++;
+            break;
 
-            case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
-                m_ArgIsExactClsSigIsNot++;
-                break;
+        case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
+            m_ArgIsExactClsSigIsNot++;
+            break;
 
-            case InlineObservation::CALLSITE_FOLDABLE_INTRINSIC:
-                m_FoldableIntrinsic++;
-                break;
+        case InlineObservation::CALLSITE_FOLDABLE_INTRINSIC:
+            m_FoldableIntrinsic++;
+            break;
 
-            case InlineObservation::CALLSITE_FOLDABLE_EXPR:
-                m_FoldableExpr++;
-                break;
+        case InlineObservation::CALLSITE_FOLDABLE_EXPR:
+            m_FoldableExpr++;
+            break;
 
-            case InlineObservation::CALLSITE_FOLDABLE_EXPR_UN:
-                m_FoldableExprUn++;
-                break;
+        case InlineObservation::CALLSITE_FOLDABLE_EXPR_UN:
+            m_FoldableExprUn++;
+            break;
 
-            case InlineObservation::CALLSITE_FOLDABLE_BRANCH:
-                m_FoldableBranch++;
-                break;
+        case InlineObservation::CALLSITE_FOLDABLE_BRANCH:
+            m_FoldableBranch++;
+            break;
 
-            case InlineObservation::CALLSITE_DIV_BY_CNS:
-                m_DivByCns++;
-                break;
+        case InlineObservation::CALLSITE_DIV_BY_CNS:
+            m_DivByCns++;
+            break;
 
-            case InlineObservation::CALLSITE_HAS_PROFILE:
-                m_HasProfile = value;
-                break;
+        case InlineObservation::CALLSITE_HAS_PROFILE:
+            m_HasProfile = value;
+            break;
 
-            case InlineObservation::CALLSITE_IN_NORETURN_REGION:
-                m_IsCallsiteInNoReturnRegion = value;
-                break;
+        case InlineObservation::CALLSITE_IN_NORETURN_REGION:
+            m_IsCallsiteInNoReturnRegion = value;
+            break;
 
-            default:
-                break;
-        }
-    }
-
-    if (propagate)
-    {
-        NoteInternal(obs);
+        default:
+            DefaultPolicy::NoteBool(obs, value);
+            break;
     }
 }
 
@@ -1404,8 +1387,6 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
 double ExtendedDefaultPolicy::DetermineMultiplier()
 {
     double multiplier = 0;
-
-    // Bump up the multiplier for instance constructors
 
     if (m_IsInstanceCtor)
     {
@@ -1622,6 +1603,43 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
+    // For prejit roots we do not see the call sites. To be suitably optimistic
+    // assume that call sites may pass constants.
+    if (m_IsPrejitRoot && (m_BinaryExprWithCns > 0))
+    {
+        multiplier += m_BinaryExprWithCns;
+    }
+
+    switch (m_CallsiteFrequency)
+    {
+        case InlineCallsiteFrequency::RARE:
+            // Note this one is not additive, it uses '=' instead of '+='
+            multiplier = 1.3;
+            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::BORING:
+            multiplier += 1.3;
+            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::WARM:
+            multiplier += 2.0;
+            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::LOOP:
+            multiplier += 4.0;
+            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::HOT:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::UNUSED:
+            break;
+        default:
+            assert(!"Unexpected callsite frequency");
+            break;
+    }
+
     if (m_HasProfile)
     {
         const double profileMaxValue = 1.5;
@@ -1644,40 +1662,6 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
         multiplier *= profileTrustCoef + min(m_ProfileFrequency, profileMaxValue) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
-    }
-    else
-    {
-        // Fallback to static analysis
-
-        switch (m_CallsiteFrequency)
-        {
-            case InlineCallsiteFrequency::RARE:
-                // Note this one is not additive, it uses '=' instead of '+='
-                multiplier = 1.3;
-                JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::BORING:
-                multiplier += 1.3;
-                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::WARM:
-                multiplier += 2.0;
-                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::LOOP:
-                multiplier += 4.0;
-                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::HOT:
-                multiplier += 3.0;
-                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::UNUSED:
-                break;
-            default:
-                assert(!"Unexpected callsite frequency");
-                break;
-        }
     }
 
     if (m_BackwardJump)
