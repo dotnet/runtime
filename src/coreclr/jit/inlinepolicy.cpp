@@ -524,6 +524,11 @@ void ExtendedDefaultPolicy::DumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_CallsiteIsInLoop);
     XATTR_B(m_IsNoReturn);
     XATTR_B(m_IsNoReturnKnown);
+    XATTR_B(m_ReturnsStructByValue);
+    XATTR_B(m_IsFromValueClass);
+    XATTR_B(m_NonGenericCallsGeneric);
+    XATTR_B(m_IsCallsiteInNoReturnRegion);
+    XATTR_B(m_HasProfile);
     fprintf(file, " />\n");
 }
 #endif

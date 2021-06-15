@@ -838,28 +838,6 @@ public:
     {
         return depth >= 1;
     }
-    void DuplicateTop()
-    {
-        FgSlot const top = Pop();
-        Push(top);
-        Push(top);
-    }
-    FgSlot Pop()
-    {
-        if (depth == 0)
-        {
-            return SLOT_UNKNOWN;
-        }
-        if (depth == 1 || depth == 2)
-        {
-            const FgSlot value = slot0;
-            slot0              = slot1;
-            slot1              = SLOT_UNKNOWN; // not necessary, just for debug purposes
-            depth--;
-            return value;
-        }
-        unreached();
-    }
     void Push(FgSlot slot)
     {
         assert(depth <= 2);
@@ -1010,7 +988,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             {
                 if (preciseScan)
                 {
-                    pushedStack.DuplicateTop();
+                    pushedStack.Push(pushedStack.Top());
                     handled = true;
                 }
                 break;
@@ -1117,7 +1095,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Span_get_Item:
                             case NI_System_ReadOnlySpan_get_Item:
                             {
-                                if (FgStack::IsArgument(pushedStack.Pop()) || FgStack::IsArgument(pushedStack.Pop()))
+                                if (FgStack::IsArgument(pushedStack.Top(0)) || FgStack::IsArgument(pushedStack.Top(1)))
                                 {
                                     compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                                 }
@@ -1153,8 +1131,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_IsAssignableTo:
                             case NI_System_Type_IsAssignableFrom:
                             {
-                                if (FgStack::IsConstantOrConstArg(pushedStack.Pop(), impInlineInfo) &&
-                                    FgStack::IsConstantOrConstArg(pushedStack.Pop(), impInlineInfo))
+                                if (FgStack::IsConstantOrConstArg(pushedStack.Top(0), impInlineInfo) &&
+                                    FgStack::IsConstantOrConstArg(pushedStack.Top(1), impInlineInfo))
                                 {
                                     foldableIntrinsc = true;
                                     pushedStack.PushConstant();
@@ -1486,8 +1464,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         case CEE_BRFALSE:
                         case CEE_BRTRUE:
                         {
-                            FgStack::FgSlot op1 = pushedStack.Pop();
-                            if (FgStack::IsConstantOrConstArg(op1, impInlineInfo))
+                            if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
                             {
                                 compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_BRANCH);
                             }
