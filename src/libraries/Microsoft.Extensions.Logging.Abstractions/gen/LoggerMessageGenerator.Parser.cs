@@ -331,13 +331,12 @@ namespace Microsoft.Extensions.Logging.Generators
                                         if (lc == null)
                                         {
                                             // determine the namespace the class is declared in, if any
-                                            NamespaceDeclarationSyntax? namespaceParent = null;
                                             SyntaxNode? potentialNamespaceParent = classDec.Parent;
-                                            while (potentialNamespaceParent != null && potentialNamespaceParent as NamespaceDeclarationSyntax == null)
+                                            while (potentialNamespaceParent != null && potentialNamespaceParent is not NamespaceDeclarationSyntax)
                                             {
                                                 potentialNamespaceParent = potentialNamespaceParent.Parent;
                                             }
-                                            if (potentialNamespaceParent != null && potentialNamespaceParent as NamespaceDeclarationSyntax != null)
+                                            if (potentialNamespaceParent != null && potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
                                             {
                                                 namespaceParent = potentialNamespaceParent as NamespaceDeclarationSyntax;
                                                 nspace = namespaceParent.Name.ToString();
@@ -586,7 +585,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public string Constraints = string.Empty;
-            public LoggerClass? ParentClass = null;
+            public LoggerClass? ParentClass;
         }
 
         /// <summary>
