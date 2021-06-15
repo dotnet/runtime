@@ -127,14 +127,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!GetContext(sessionId).IsRuntimeReady)
                         {
                             string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
-                            if (exceptionError == sPauseOnUncaught)
+                            if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
                             {
-                                GetContext(sessionId).PauseOnUncaught = true;
-                                return true;
-                            }
-                            if (exceptionError == sPauseOnCaught)
-                            {
-                                GetContext(sessionId).PauseOnCaught = true;
                                 return true;
                             }
                         }
@@ -149,9 +143,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (reason == "exception")
                             {
                                 string exceptionError = args?["data"]?["value"]?.Value<string>();
-                                if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
+                                if (exceptionError == sPauseOnUncaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    GetContext(sessionId).PauseOnUncaught = true;
+                                    return true;
+                                }
+                                if (exceptionError == sPauseOnCaught)
+                                {
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    GetContext(sessionId).PauseOnCaught = true;
                                     return true;
                                 }
                             }
@@ -422,7 +423,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.setPauseOnExceptions":
                     {
                         string state = args["state"].Value<string>();
-                        await SendMonoCommand(id, MonoCommands.SetPauseOnExceptions(state), token);
+                        if (!context.IsRuntimeReady)
+                        {
+                            context.PauseOnCaught = false;
+                            context.PauseOnUncaught = false;
+                            switch (state)
+                            {
+                                case "all":
+                                    context.PauseOnCaught = true;
+                                    context.PauseOnUncaught = true;
+                                    break;
+                                case "uncaught":
+                                    context.PauseOnUncaught = true;
+                                    break;
+                            }
+                        }
+                        else
+                            await SendMonoCommand(id, MonoCommands.SetPauseOnExceptions(state), token);
                         // Pass this on to JS too
                         return false;
                     }
@@ -1258,7 +1275,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
-                    JObject.FromObject(new { source = $"globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver; {checkUncaughtExceptions} {checkCaughtExceptions}" }),
+                    JObject.FromObject(new { source = $"globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver; {checkCaughtExceptions} {checkUncaughtExceptions}" }),
                     token);
 
                 if (sessionId != SessionId.Null && !res.IsOk)
