@@ -358,7 +358,7 @@ namespace System.Net.Http
         public int InitialStreamWindowSize { get { throw null; } set { } }
         public bool EnableDynamicHttp2StreamWindowSizing { get { throw null; } set { } }
         public int StreamWindowUpdateRatio { get { throw null; } set { } }
-        public double StreamWindowMagicMultiplier { get { throw null; } set { } }
+        public int StreamWindowThresholdMultiplier { get { throw null; } set { } }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
         public System.TimeSpan ConnectTimeout { get { throw null; } set { } }

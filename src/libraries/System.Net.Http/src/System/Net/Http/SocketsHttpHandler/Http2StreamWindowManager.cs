@@ -68,14 +68,14 @@ namespace System.Net.Http
             private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
             private TimeSpan _lastWindowUpdate;
 
-            private double _magic = 1;
+            private int _streamWindowThresholdMultiplier = 1;
             private readonly TimeSpan _start;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
             {
-                _magic = connection._pool.Settings._streamWindowMagicMultiplier;
-                _stream.TraceFlowControl($" magic:{_magic} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
+                _streamWindowThresholdMultiplier = connection._pool.Settings._streamWindowThresholdMultiplier;
+                _stream.TraceFlowControl($" _streamWindowThresholdMultiplier:{_streamWindowThresholdMultiplier} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
                 _lastWindowUpdate = _stopwatch.Elapsed;
                 _start = _lastWindowUpdate;
             }
@@ -96,24 +96,13 @@ namespace System.Net.Http
                     TimeSpan rtt = _connection._rttEstimator.MinRtt;
                     TimeSpan dt = currentTime - _lastWindowUpdate;
 
-                    if (_magic * _delivered * rtt.Ticks > (double)StreamWindowThreshold * dt.Ticks)
+                    if (_delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks * _streamWindowThresholdMultiplier)
                     {
                         windowSizeIncrement += _streamWindowSize;
                         _streamWindowSize *= 2;
 
                         _stream.TraceFlowControl(
                             $"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold} | S-T={(currentTime - _start).TotalSeconds} sec {Environment.NewLine}");
-                    }
-                    else
-                    {
-                        string msg = "No adjustment! |" + GetDiagnostics();
-                        _stream.TraceFlowControl(msg);
-                    }
-
-                    string GetDiagnostics()
-                    {
-                        return $"RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
-                            $"Magic*_delivered/dt = {_magic * _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
                     }
                 }
 

@@ -72,7 +72,7 @@ namespace System.Net.Http
 
         internal int _initialStreamWindowSize = 65535;
         internal int _streamWindowUpdateRatio = 8;
-        internal double _streamWindowMagicMultiplier = 1;
+        internal int _streamWindowThresholdMultiplier = 1;
 
         public HttpConnectionSettings()
         {
@@ -130,7 +130,7 @@ namespace System.Net.Http
                 _fakeRtt = _fakeRtt,
                 _initialStreamWindowSize = _initialStreamWindowSize,
                 _streamWindowUpdateRatio = _streamWindowUpdateRatio,
-                _streamWindowMagicMultiplier = _streamWindowMagicMultiplier,
+                _streamWindowThresholdMultiplier = _streamWindowThresholdMultiplier,
                 _enableDynamicHttp2StreamWindowSizing = _enableDynamicHttp2StreamWindowSizing
             };
 

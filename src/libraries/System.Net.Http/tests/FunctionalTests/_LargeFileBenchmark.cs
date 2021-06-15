@@ -132,11 +132,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 FakeRtt = await EstimateRttAsync(hostName),
                 StreamWindowUpdateRatio = ratio,
-                StreamWindowMagicMultiplier = 1.0 / correction
+                StreamWindowThresholdMultiplier = correction
             };
 
             string details = $"StaticRtt_R({ratio})_C({correction})";
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} magic={handler.StreamWindowMagicMultiplier}",
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 dynamic Window with Static RTT  | host:{hostName} ratio={ratio} correction={handler.StreamWindowThresholdMultiplier}",
                 hostName, true, LengthMb, handler, details);
         }
 
@@ -155,10 +155,10 @@ namespace System.Net.Http.Functional.Tests
             var handler = new SocketsHttpHandler()
             {
                 StreamWindowUpdateRatio = ratio,
-                StreamWindowMagicMultiplier = 1.0/correction
+                StreamWindowThresholdMultiplier = correction
             };
             string details = $"Dynamic_R({ratio})_C({correction})";
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} magic={handler.StreamWindowMagicMultiplier}",
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} correction={handler.StreamWindowThresholdMultiplier}",
                 hostName, true, LengthMb, handler, details);
         }
 
@@ -282,7 +282,7 @@ namespace System.Net.Http.Functional.Tests
                 EnableDynamicHttp2StreamWindowSizing = h.EnableDynamicHttp2StreamWindowSizing,
                 InitialStreamWindowSize = h.InitialStreamWindowSize,
                 StreamWindowUpdateRatio = h.StreamWindowUpdateRatio,
-                StreamWindowMagicMultiplier = h.StreamWindowMagicMultiplier,
+                StreamWindowThresholdMultiplier = h.StreamWindowThresholdMultiplier,
                 ConnectCallback = h.ConnectCallback
             };
         }
