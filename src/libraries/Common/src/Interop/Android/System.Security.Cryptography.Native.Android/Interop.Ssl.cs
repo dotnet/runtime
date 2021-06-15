@@ -80,7 +80,7 @@ internal static partial class Interop
         {
             int ret = SSLStreamSetTargetHostImpl(sslHandle, targetHost);
             if (ret == UNSUPPORTED_API_LEVEL)
-                throw new PlatformNotSupportedException("The operation is not supported on this API level");
+                throw new PlatformNotSupportedException(SR.net_android_ssl_api_level_unsupported);
             else if (ret != SUCCESS)
                 throw new SslException();
         }

@@ -493,27 +493,21 @@ int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* t
     // ArrayList<SNIServerName> nameList = new ArrayList<SNIServerName>();
     // SNIHostName hostName = new SNIHostName(targetHost);
     // nameList.add(hostName);
-    if (g_SNIHostName != NULL)
-    {
-        loc[hostStr] = make_java_string(env, targetHost);
-        loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    }
+    loc[hostStr] = make_java_string(env, targetHost);
+    loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // SSLParameters params = sslEngine.getSSLParameters();
     // params.setServerNames(nameList);
     // sslEngine.setSSLParameters(params);
-    if (g_SSLParametersSetServerNames != NULL)
-    {
-        loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
-        (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
-    }
+    loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
 
     ret = SUCCESS;
 
