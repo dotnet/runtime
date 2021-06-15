@@ -3073,141 +3073,122 @@ namespace System
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
 
-            MemberInfo? result = member.MemberType switch
-            {
-                MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(this, member),
-                MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(this, member),
-                MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(this, member),
-                MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(this, member),
-                MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(this, member),
-                MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(this, member),
-                _ => null
-            };
-
-            return result ?? throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
-        }
-
-        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType? runtimeType, MemberInfo method)
-        {
+            RuntimeType? runtimeType = this;
             while (runtimeType != null)
             {
-                RuntimeMethodInfo[] cache = runtimeType.Cache.GetMethodList(MemberListType.CaseSensitive, method.Name);
-
-                for (int i = 0; i < cache.Length; i++)
+                MemberInfo? result = member.MemberType switch
                 {
-                    RuntimeMethodInfo candidate = cache[i];
-                    if (candidate.HasSameMetadataDefinitionAs(method))
-                    {
-                        return candidate;
-                    }
+                    MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(runtimeType, member),
+                    _ => null
+                };
+
+                if (result != null)
+                {
+                    return result;
                 }
 
                 runtimeType = runtimeType.GetBaseType();
             }
 
-            return null;
+            throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
         }
 
-        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType? runtimeType, MemberInfo constructor)
+        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo method)
         {
-            while (runtimeType != null)
+            RuntimeMethodInfo[] cache = runtimeType.Cache.GetMethodList(MemberListType.CaseSensitive, method.Name);
+
+            for (int i = 0; i < cache.Length; i++)
             {
-                RuntimeConstructorInfo[] cache = runtimeType.Cache.GetConstructorList(MemberListType.CaseSensitive, constructor.Name);
-
-                for (int i = 0; i < cache.Length; i++)
+                RuntimeMethodInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(method))
                 {
-                    RuntimeConstructorInfo candidate = cache[i];
-                    if (candidate.HasSameMetadataDefinitionAs(constructor))
-                    {
-                        return candidate;
-                    }
+                    return candidate;
                 }
-
-                runtimeType = runtimeType.GetBaseType();
             }
 
             return null;
         }
 
-        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType? runtimeType, MemberInfo property)
+        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructor)
         {
-            while (runtimeType != null)
+            RuntimeConstructorInfo[] cache = runtimeType.Cache.GetConstructorList(MemberListType.CaseSensitive, constructor.Name);
+
+            for (int i = 0; i < cache.Length; i++)
             {
-                RuntimePropertyInfo[] cache = runtimeType.Cache.GetPropertyList(MemberListType.CaseSensitive, property.Name);
-
-                for (int i = 0; i < cache.Length; i++)
+                RuntimeConstructorInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(constructor))
                 {
-                    RuntimePropertyInfo candidate = cache[i];
-                    if (candidate.HasSameMetadataDefinitionAs(property))
-                    {
-                        return candidate;
-                    }
+                    return candidate;
                 }
-
-                runtimeType = runtimeType.GetBaseType();
             }
 
             return null;
         }
 
-        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType? runtimeType, MemberInfo field)
+        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo property)
         {
-            while (runtimeType != null)
+            RuntimePropertyInfo[] cache = runtimeType.Cache.GetPropertyList(MemberListType.CaseSensitive, property.Name);
+
+            for (int i = 0; i < cache.Length; i++)
             {
-                RuntimeFieldInfo[] cache = runtimeType.Cache.GetFieldList(MemberListType.CaseSensitive, field.Name);
-
-                for (int i = 0; i < cache.Length; i++)
+                RuntimePropertyInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(property))
                 {
-                    RuntimeFieldInfo candidate = cache[i];
-                    if (candidate.HasSameMetadataDefinitionAs(field))
-                    {
-                        return candidate;
-                    }
+                    return candidate;
                 }
-
-                runtimeType = runtimeType.GetBaseType();
             }
 
             return null;
         }
 
-        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType? runtimeType, MemberInfo eventInfo)
+        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo field)
         {
-            while (runtimeType != null)
+            RuntimeFieldInfo[] cache = runtimeType.Cache.GetFieldList(MemberListType.CaseSensitive, field.Name);
+
+            for (int i = 0; i < cache.Length; i++)
             {
-                RuntimeEventInfo[] cache = runtimeType.Cache.GetEventList(MemberListType.CaseSensitive, eventInfo.Name);
-
-                for (int i = 0; i < cache.Length; i++)
+                RuntimeFieldInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(field))
                 {
-                    RuntimeEventInfo candidate = cache[i];
-                    if (candidate.HasSameMetadataDefinitionAs(eventInfo))
-                    {
-                        return candidate;
-                    }
+                    return candidate;
                 }
-
-                runtimeType = runtimeType.GetBaseType();
             }
 
             return null;
         }
 
-        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType? runtimeType, MemberInfo nestedType)
+        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
         {
-            while (runtimeType != null)
+            RuntimeEventInfo[] cache = runtimeType.Cache.GetEventList(MemberListType.CaseSensitive, eventInfo.Name);
+
+            for (int i = 0; i < cache.Length; i++)
             {
-                RuntimeType[] cache = runtimeType.Cache.GetNestedTypeList(MemberListType.CaseSensitive, nestedType.Name);
-
-                for (int i = 0; i < cache.Length; i++)
+                RuntimeEventInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(eventInfo))
                 {
-                    RuntimeType candidate = cache[i];
-                    if (candidate.HasSameMetadataDefinitionAs(nestedType))
-                    {
-                        return candidate;
-                    }
+                    return candidate;
                 }
+            }
 
-                runtimeType = runtimeType.GetBaseType();
+            return null;
+        }
+
+        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        {
+            RuntimeType[] cache = runtimeType.Cache.GetNestedTypeList(MemberListType.CaseSensitive, nestedType.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeType candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(nestedType))
+                {
+                    return candidate;
+                }
             }
 
             return null;

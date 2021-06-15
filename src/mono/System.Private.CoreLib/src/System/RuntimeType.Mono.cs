@@ -1123,26 +1123,37 @@ namespace System
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
 
-            MemberInfo? result = member.MemberType switch
+            RuntimeType? runtimeType = this;
+            while (runtimeType != null)
             {
-                MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(member),
-                MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(member),
-                MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(member),
-                MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(member),
-                MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(member),
-                MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(member),
-                _ => null
-            };
+                MemberInfo? result = member.MemberType switch
+                {
+                    MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(runtimeType, member),
+                    _ => null
+                };
 
-            return result ?? throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
+                if (result != null)
+                {
+                    return result;
+                }
+
+                runtimeType = runtimeType.GetBaseType();
+            }
+
+            throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
         }
 
         private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
-            BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private MemberInfo? GetMethodWithSameMetadataDefinitionAs(MemberInfo methodInfo)
+        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
         {
-            ListBuilder<MethodInfo> methods = GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
+            ListBuilder<MethodInfo> methods = runtimeType.GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
 
             for (int i = 0; i < methods.Count; i++)
             {
@@ -1156,9 +1167,9 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetConstructorWithSameMetadataDefinitionAs(MemberInfo constructorInfo)
+        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
         {
-            ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
+            ListBuilder<ConstructorInfo> ctors = runtimeType.GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
 
             for (int i = 0; i < ctors.Count; i++)
             {
@@ -1172,9 +1183,9 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetPropertyWithSameMetadataDefinitionAs(MemberInfo propertyInfo)
+        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
         {
-            ListBuilder<PropertyInfo> properties = GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
+            ListBuilder<PropertyInfo> properties = runtimeType.GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
 
             for (int i = 0; i < properties.Count; i++)
             {
@@ -1188,9 +1199,9 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetFieldWithSameMetadataDefinitionAs(MemberInfo fieldInfo)
+        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
         {
-            ListBuilder<FieldInfo> fields = GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+            ListBuilder<FieldInfo> fields = runtimeType.GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
             for (int i = 0; i < fields.Count; i++)
             {
@@ -1204,9 +1215,9 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetEventWithSameMetadataDefinitionAs(MemberInfo eventInfo)
+        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
         {
-            ListBuilder<EventInfo> events = GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+            ListBuilder<EventInfo> events = runtimeType.GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
             for (int i = 0; i < events.Count; i++)
             {
@@ -1220,9 +1231,9 @@ namespace System
             return null;
         }
 
-        private MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(MemberInfo nestedType)
+        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
         {
-            ListBuilder<Type> nestedTypes = GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
+            ListBuilder<Type> nestedTypes = runtimeType.GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
             for (int i = 0; i < nestedTypes.Count; i++)
             {
