@@ -11,18 +11,18 @@ internal static partial class Interop
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe int ReadFileScatter(
-            SafeHandle handle,
-            long* segments,
-            int numBytesToRead,
-            IntPtr reserved_mustBeZero,
-            NativeOverlapped* overlapped);
+            SafeHandle hFile,
+            long* aSegmentArray,
+            int nNumberOfBytesToRead,
+            IntPtr lpReserved,
+            NativeOverlapped* lpOverlapped);
 
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe int WriteFileGather(
-            SafeHandle handle,
-            long* segments,
-            int numBytesToWrite,
-            IntPtr reserved_mustBeZero,
-            NativeOverlapped* overlapped);
+            SafeHandle hFile,
+            long* aSegmentArray,
+            int nNumberOfBytesToWrite,
+            IntPtr lpReserved,
+            NativeOverlapped* lpOverlapped);
     }
 }

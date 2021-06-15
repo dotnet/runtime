@@ -337,7 +337,7 @@ namespace System.IO
                     MemoryHandle memoryHandle = buffer.Pin();
                     memoryHandles[i] = memoryHandle;
 
-                    unsafe // async method can't be unsafe
+                    unsafe // awaits can't be in an unsafe context
                     {
                         fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
                     }
@@ -486,7 +486,7 @@ namespace System.IO
                     MemoryHandle memoryHandle = buffer.Pin();
                     memoryHandles[i] = memoryHandle;
 
-                    unsafe // async method can't be unsafe
+                    unsafe // awaits can't be in an unsafe context
                     {
                         fileSegments[i] = new IntPtr(memoryHandle.Pointer).ToInt64();
                     }

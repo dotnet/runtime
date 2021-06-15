@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -19,13 +20,17 @@ namespace System.IO.Tests
             => OperatingSystem.IsWindows(); // on Windows we can NOT perform async IO using sync handle
 
         [Fact]
-        public Task TaskAlreadyCanceledAsync()
+        public async Task TaskAlreadyCanceledAsync()
         {
             using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.ReadWrite, options: FileOptions.Asynchronous))
             {
-                CancellationToken token = GetCancelledToken();
+                CancellationTokenSource cts = GetCancelledTokenSource();
+                CancellationToken token = cts.Token;
+
                 Assert.True(RandomAccess.WriteAsync(handle, new byte[1], 0, token).IsCanceled);
-                return Assert.ThrowsAsync<TaskCanceledException>(async () => await RandomAccess.WriteAsync(handle, new byte[1], 0, token));
+
+                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => RandomAccess.WriteAsync(handle, new byte[1], 0, token).AsTask());
+                Assert.Equal(token, ex.CancellationToken);
             }
         }
 
@@ -39,23 +44,35 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async Task HappyPath()
+        public async Task WriteUsingEmptyBufferReturnsZeroAsync()
+        {
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: FileOptions.Asynchronous))
+            {
+                Assert.Equal(0, await RandomAccess.WriteAsync(handle, Array.Empty<byte>(), fileOffset: 0));
+            }
+        }
+
+        [Fact]
+        public async Task WritesBytesFromGivenBufferToGivenFileAtGivenOffsetAsync()
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
-            byte[] content = new byte[fileSize];
-            new Random().NextBytes(content);
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous))
             {
                 int total = 0;
+                int current = 0;
 
                 while (total != fileSize)
                 {
-                    total += await RandomAccess.WriteAsync(
-                        handle,
-                        content.AsMemory(total, Math.Min(content.Length - total, fileSize / 4)),
-                        fileOffset: total);
+                    Memory<byte> buffer = content.AsMemory(total, Math.Min(content.Length - total, fileSize / 4));
+
+                    current = await RandomAccess.WriteAsync(handle, buffer, fileOffset: total);
+
+                    Assert.InRange(current, 0, buffer.Length);
+
+                    total += current;
                 }
             }
 

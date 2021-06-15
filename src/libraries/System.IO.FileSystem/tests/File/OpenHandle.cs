@@ -30,10 +30,10 @@ namespace System.IO.Tests
                 () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: -1));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53432")]
         [Theory, MemberData(nameof(StreamSpecifiers))]
         public override void FileModeAppendExisting(string streamSpecifier)
         {
-            // currently not enabled due to https://github.com/dotnet/runtime/issues/53432
             _ = streamSpecifier; // to keep the xUnit analyser happy
         }
 
@@ -56,20 +56,15 @@ namespace System.IO.Tests
             }
         }
 
+        // Unix doesn't directly support DeleteOnClose
+        // For FileStream created out of path, we mimic it by closing the handle first
+        // and then unlinking the path
+        // Since SafeFileHandle does not always have the path and we can't find path for given file descriptor on Unix
+        // this test runs only on Windows
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
-        public override void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
-        {
-            // Unix doesn't directly support DeleteOnClose
-            // For FileStream created out of path, we mimic it by closing the handle first
-            // and then unlinking the path
-            // Since SafeFileHandle does not always have the path and we can't find path for given file descriptor on Unix
-            // this test runs only on Windows
-            if (OperatingSystem.IsWindows()) // async file handles are a Windows concept
-            {
-                base.DeleteOnClose_FileDeletedAfterClose(options);
-            }
-        }
+        public override void DeleteOnClose_FileDeletedAfterClose(FileOptions options) => base.DeleteOnClose_FileDeletedAfterClose(options);
     }
 }

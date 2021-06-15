@@ -11,15 +11,15 @@ namespace System.IO.Tests
 {
     internal sealed class SectorAlignedMemory<T> : MemoryManager<T>
     {
-        private bool disposed = false;
-        private int refCount = 0;
-        private IntPtr memory;
-        private int length;
+        private bool _disposed;
+        private int _refCount;
+        private IntPtr _memory;
+        private int _length;
 
         private unsafe SectorAlignedMemory(void* memory, int length)
         {
-            this.memory = (IntPtr)memory;
-            this.length = length;
+            _memory = (IntPtr)memory;
+            _length = length;
         }
 
         public static unsafe SectorAlignedMemory<T> Allocate(int length)
@@ -33,26 +33,24 @@ namespace System.IO.Tests
             return new SectorAlignedMemory<T>(memory, length);
         }
 
-        public bool IsDisposed => disposed;
+        public bool IsDisposed => _disposed;
 
-        public unsafe override Span<T> GetSpan() => new Span<T>((void*)memory, length);
-
-        protected bool IsRetained => refCount > 0;
+        public unsafe override Span<T> GetSpan() => new Span<T>((void*)_memory, _length);
 
         public override MemoryHandle Pin(int elementIndex = 0)
         {
             unsafe
             {
                 Retain();
-                if ((uint)elementIndex > length) throw new ArgumentOutOfRangeException(nameof(elementIndex));
-                void* pointer = Unsafe.Add<T>((void*)memory, elementIndex);
+                if ((uint)elementIndex > _length) throw new ArgumentOutOfRangeException(nameof(elementIndex));
+                void* pointer = Unsafe.Add<T>((void*)_memory, elementIndex);
                 return new MemoryHandle(pointer, default, this);
             }
         }
 
-        public bool Release()
+        private bool Release()
         {
-            int newRefCount = Interlocked.Decrement(ref refCount);
+            int newRefCount = Interlocked.Decrement(ref _refCount);
 
             if (newRefCount < 0)
             {
@@ -62,31 +60,31 @@ namespace System.IO.Tests
             return newRefCount != 0;
         }
 
-        public void Retain()
+        private void Retain()
         {
-            if (disposed)
+            if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(SectorAlignedMemory<T>));
             }
 
-            Interlocked.Increment(ref refCount);
+            Interlocked.Increment(ref _refCount);
         }
 
         protected override unsafe void Dispose(bool disposing)
         {
-            if (disposed)
+            if (_disposed)
             {
                 return;
             }
 
             VirtualAlloc(
-                memory.ToPointer(),
-                new UIntPtr((uint)(Marshal.SizeOf<T>() * length)),
+                _memory.ToPointer(),
+                new UIntPtr((uint)(Marshal.SizeOf<T>() * _length)),
                 MemOptions.MEM_FREE,
                 PageOptions.PAGE_READWRITE);
-            memory = IntPtr.Zero;
+            _memory = IntPtr.Zero;
 
-            disposed = true;
+            _disposed = true;
         }
 
         protected override bool TryGetArray(out ArraySegment<T> arraySegment)

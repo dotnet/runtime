@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -24,23 +25,35 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void HappyPath()
+        public void WriteUsingEmptyBufferReturnsZero()
+        {
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
+            {
+                Assert.Equal(0, RandomAccess.Write(handle, Array.Empty<byte>(), fileOffset: 0));
+            }
+        }
+
+        [Fact]
+        public void WritesBytesFromGivenBufferToGivenFileAtGivenOffset()
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
-            byte[] content = new byte[fileSize];
-            new Random().NextBytes(content);
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 int total = 0;
+                int current = 0;
 
                 while (total != fileSize)
                 {
-                    total += RandomAccess.Write(
-                        handle,
-                        content.AsSpan(total, Math.Min(content.Length - total, fileSize / 4)),
-                        fileOffset: total);
+                    Span<byte> buffer = content.AsSpan(total, Math.Min(content.Length - total, fileSize / 4));
+
+                    current = RandomAccess.Write(handle, buffer, fileOffset: total);
+
+                    Assert.InRange(current, 0, buffer.Length);
+
+                    total += current;
                 }
             }
 

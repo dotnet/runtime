@@ -91,13 +91,11 @@ namespace System.IO.Tests
             }
         }
 
-        protected static CancellationToken GetCancelledToken()
+        protected static CancellationTokenSource GetCancelledTokenSource()
         {
             CancellationTokenSource source = new CancellationTokenSource();
-            CancellationToken token = source.Token;
             source.Cancel();
-
-            return token;
+            return source;
         }
 
         protected SafeFileHandle GetHandleToExistingFile(FileAccess access)

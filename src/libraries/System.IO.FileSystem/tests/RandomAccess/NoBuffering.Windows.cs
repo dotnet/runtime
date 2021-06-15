@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -18,8 +19,7 @@ namespace System.IO.Tests
         {
             const int fileSize = 1_000_000; // 1 MB
             string filePath = GetTestFilePath();
-            byte[] expected = new byte[fileSize];
-            new Random().NextBytes(expected);
+            byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: FileOptions.Asynchronous | NoBuffering))
@@ -28,14 +28,6 @@ namespace System.IO.Tests
                 int current = 0;
                 int total = 0;
 
-                do
-                {
-                    current = await RandomAccess.ReadAsync(handle, buffer.Memory, fileOffset: total);
-
-                    Assert.True(expected.AsSpan(total, current).SequenceEqual(buffer.GetSpan().Slice(0, current)));
-
-                    total += current;
-                }
                 // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
                 // "File access sizes, including the optional file offset in the OVERLAPPED structure,
                 // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
@@ -45,6 +37,14 @@ namespace System.IO.Tests
                 // the read from offset=4097 THROWS (Invalid argument, offset is not a multiple of sector size!)
                 // That is why we stop at the first incomplete read (the next one would throw).
                 // It's possible to get 0 if we are lucky and file size is a multiple of physical sector size.
+                do
+                {
+                    current = await RandomAccess.ReadAsync(handle, buffer.Memory, fileOffset: total);
+
+                    Assert.True(expected.AsSpan(total, current).SequenceEqual(buffer.GetSpan().Slice(0, current)));
+
+                    total += current;
+                }
                 while (current == buffer.Memory.Length);
 
                 Assert.Equal(fileSize, total);
@@ -56,8 +56,7 @@ namespace System.IO.Tests
         {
             const int fileSize = 1_000_000; // 1 MB
             string filePath = GetTestFilePath();
-            byte[] expected = new byte[fileSize];
-            new Random().NextBytes(expected);
+            byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: FileOptions.Asynchronous | NoBuffering))
@@ -96,8 +95,7 @@ namespace System.IO.Tests
             string filePath = GetTestFilePath();
             int bufferSize = Environment.SystemPageSize;
             int fileSize = bufferSize * 10;
-            byte[] content = new byte[fileSize];
-            new Random().NextBytes(content);
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous | NoBuffering))
             using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(bufferSize))
@@ -125,8 +123,7 @@ namespace System.IO.Tests
             string filePath = GetTestFilePath();
             int bufferSize = Environment.SystemPageSize;
             int fileSize = bufferSize * 10;
-            byte[] content = new byte[fileSize];
-            new Random().NextBytes(content);
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous | NoBuffering))
             using (SectorAlignedMemory<byte> buffer_1 = SectorAlignedMemory<byte>.Allocate(bufferSize))

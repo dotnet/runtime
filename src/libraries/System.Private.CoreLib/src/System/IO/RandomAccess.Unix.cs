@@ -42,7 +42,8 @@ namespace System.IO
             long result;
             try
             {
-                for (int i = 0; i < buffers.Count; i++)
+                int buffersCount = buffers.Count;
+                for (int i = 0; i < buffersCount; i++)
                 {
                     Memory<byte> buffer = buffers[i];
                     MemoryHandle memoryHandle = buffer.Pin();
@@ -104,7 +105,8 @@ namespace System.IO
             long result;
             try
             {
-                for (int i = 0; i < buffers.Count; i++)
+                int buffersCount = buffers.Count;
+                for (int i = 0; i < buffersCount; i++)
                 {
                     ReadOnlyMemory<byte> buffer = buffers[i];
                     MemoryHandle memoryHandle = buffer.Pin();

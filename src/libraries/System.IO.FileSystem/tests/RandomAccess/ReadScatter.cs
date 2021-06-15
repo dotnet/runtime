@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -34,12 +35,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void HappyPath()
+        public void ReadToAnEmptyBufferReturnsZero()
+        {
+            string filePath = GetTestFilePath();
+            File.WriteAllBytes(filePath, new byte[1]);
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open))
+            {
+                Assert.Equal(0, RandomAccess.Read(handle, new Memory<byte>[] { Array.Empty<byte>() }, fileOffset: 0));
+            }
+        }
+
+        [Fact]
+        public void ReadsBytesFromGivenFileAtGivenOffset()
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
-            byte[] expected = new byte[fileSize];
-            new Random().NextBytes(expected);
+            byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open))
@@ -51,21 +63,40 @@ namespace System.IO.Tests
                 do
                 {
                     int firstBufferLength = (int)Math.Min(actual.Length - total, fileSize / 4);
+                    Memory<byte> buffer_1 = actual.AsMemory((int)total, firstBufferLength);
+                    Memory<byte> buffer_2 = actual.AsMemory((int)total + firstBufferLength);
 
                     current = RandomAccess.Read(
                         handle,
                         new Memory<byte>[]
                         {
-                            actual.AsMemory((int)total, firstBufferLength),
-                            actual.AsMemory((int)total + firstBufferLength)
+                            buffer_1,
+                            Array.Empty<byte>(),
+                            buffer_2
                         },
                         fileOffset: total);
+
+                    Assert.InRange(current, 0, buffer_1.Length + buffer_2.Length);
 
                     total += current;
                 } while (current != 0);
 
                 Assert.Equal(fileSize, total);
                 Assert.Equal(expected, actual.Take((int)total).ToArray());
+            }
+        }
+
+        [Fact]
+        public void ReadToTheSameBufferOverwritesContent()
+        {
+            string filePath = GetTestFilePath();
+            File.WriteAllBytes(filePath, new byte[3] { 1, 2, 3 });
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open))
+            {
+                byte[] buffer = new byte[1];
+                Assert.Equal(buffer.Length + buffer.Length, RandomAccess.Read(handle, Enumerable.Repeat(buffer.AsMemory(), 2).ToList(), fileOffset: 0));
+                Assert.Equal(2, buffer[0]);
             }
         }
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -25,12 +26,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void HappyPath()
+        public void ReadToAnEmptyBufferReturnsZero()
+        {
+            string filePath = GetTestFilePath();
+            File.WriteAllBytes(filePath, new byte[1]);
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open))
+            {
+                Assert.Equal(0, RandomAccess.Read(handle, Array.Empty<byte>(), fileOffset: 0));
+            }
+        }
+
+        [Fact]
+        public void ReadsBytesFromGivenFileAtGivenOffset()
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
-            byte[] expected = new byte[fileSize];
-            new Random().NextBytes(expected);
+            byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open))
@@ -41,10 +53,11 @@ namespace System.IO.Tests
 
                 do
                 {
-                    current = RandomAccess.Read(
-                        handle,
-                        actual.AsSpan(total, Math.Min(actual.Length - total, fileSize / 4)),
-                        fileOffset: total);
+                    Span<byte> buffer = actual.AsSpan(total, Math.Min(actual.Length - total, fileSize / 4));
+
+                    current = RandomAccess.Read(handle, buffer, fileOffset: total);
+
+                    Assert.InRange(current, 0, buffer.Length);
 
                     total += current;
                 } while (current != 0);
