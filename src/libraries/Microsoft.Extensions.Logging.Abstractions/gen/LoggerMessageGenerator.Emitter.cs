@@ -78,7 +78,7 @@ namespace {lc.Namespace}
                 // loop until you find top level nested class
                 while (parent != null)
                 {
-                    parentClasses.Add($"partial {parent?.Keyword} {parent?.Name} {parent?.Constraints}");
+                    parentClasses.Add($"partial {parent.Keyword} {parent.Name} {parent.Constraints}");
                     parent = parent.ParentClass;
                 }
 
