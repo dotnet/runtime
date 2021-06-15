@@ -518,11 +518,10 @@ namespace System.Net.Sockets.Tests
             {
                 sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
                 AssertReceive(receiver);
-				
+
                 sender.Send(new ReadOnlySpan<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
                 AssertReceive(receiver);
             }
-			
         }
 
         [Theory]
@@ -538,7 +537,7 @@ namespace System.Net.Sockets.Tests
             {
                 sender.Send(new byte[1], 1, "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
                 AssertReceive(receiver);
-				
+
                 sender.Send(new ReadOnlySpan<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
                 AssertReceive(receiver);
             }
@@ -553,7 +552,7 @@ namespace System.Net.Sockets.Tests
             {
                 sender.Send(new byte[1], 1);
                 AssertReceive(receiver);
-				
+
                 sender.Send(new ReadOnlySpan<byte>(new byte[1]));
                 AssertReceive(receiver);
             }
@@ -648,10 +647,10 @@ namespace System.Net.Sockets.Tests
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
                 await sender.SendAsync(new byte[1], "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
-				await AssertReceiveAsync(receiver);
-				
-				await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
-				await AssertReceiveAsync(receiver);
+                await AssertReceiveAsync(receiver);
+
+                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
+                await AssertReceiveAsync(receiver);
             }
         }
 
@@ -679,21 +678,20 @@ namespace System.Net.Sockets.Tests
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
                 await sender.SendAsync(new byte[1], 1);
-				await AssertReceiveAsync(receiver);
-				
+                await AssertReceiveAsync(receiver);
+
                 await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]));
-				await AssertReceiveAsync(receiver);
+                await AssertReceiveAsync(receiver);
             }
         }
-		
-		private static async Task AssertReceiveAsync(UdpClient receiver)
-		{
-			UdpReceiveResult result = await receiver.ReceiveAsync();
+
+        private static async Task AssertReceiveAsync(UdpClient receiver)
+        {
+            UdpReceiveResult result = await receiver.ReceiveAsync();
             Assert.NotNull(result.RemoteEndPoint);
             Assert.NotNull(result.Buffer);
             Assert.InRange(result.Buffer.Length, 1, int.MaxValue);
-		}
-		
+        }
 
         [Fact]
         public void JoinDropMulticastGroup_InvalidArguments_Throws()
