@@ -484,7 +484,6 @@ void ReleaseLRef(JNIEnv *env, jobject lref)
 ARGS_NON_NULL_ALL static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
 {
     *out = NULL;
-    LOG_DEBUG("Finding %s class", name);
     jclass klass = (*env)->FindClass (env, name);
     if (klass == NULL)
         return false;
@@ -568,7 +567,6 @@ void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
 
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
-    LOG_DEBUG("Finding %s method", name);
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
     abort_unless(mid != NULL, "method %s %s was not found", name, sig);
     return mid;
@@ -576,7 +574,6 @@ jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, 
 
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
-    LOG_DEBUG("Finding %s method", name);
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
     if (!mid) {
         LOG_INFO("optional method %s %s was not found", name, sig);
@@ -588,7 +585,6 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
 
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
-    LOG_DEBUG("Finding %s field", name);
     jfieldID fid = isStatic ? (*env)->GetStaticFieldID(env, klass, name, sig) : (*env)->GetFieldID(env, klass, name, sig);
     abort_unless(fid != NULL, "field %s %s was not found", name, sig);
     return fid;
