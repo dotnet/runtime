@@ -94,6 +94,11 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
+    if (JitConfig.JitExtendedDefaultPolicyModel() != 0)
+    {
+        return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
+    }
+
     // Use the default policy by default
     return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
 }
@@ -288,92 +293,8 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsInstanceCtor = value;
                 break;
 
-            case InlineObservation::CALLEE_RETURNS_STRUCT:
-                m_ReturnsStructByValue = value;
-                break;
-
-            case InlineObservation::CALLEE_CLASS_VALUETYPE:
-                m_IsFromValueClass = value;
-                break;
-
-            case InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC:
-                m_NonGenericCallsGeneric = value;
-                break;
-
             case InlineObservation::CALLEE_CLASS_PROMOTABLE:
                 m_IsFromPromotableValueClass = value;
-                break;
-
-            case InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS:
-                m_BinaryExprWithCns++;
-                break;
-
-            case InlineObservation::CALLEE_ARG_STRUCT:
-                m_ArgIsStructByValue++;
-                break;
-
-            case InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS:
-                m_FldAccessOverArgStruct++;
-                break;
-
-            case InlineObservation::CALLEE_ARG_FEEDS_CAST:
-                m_ArgCasted++;
-                break;
-
-            case InlineObservation::CALLEE_FOLDABLE_BOX:
-                m_FoldableBox++;
-                break;
-
-            case InlineObservation::CALLEE_INTRINSIC:
-                m_Intrinsic++;
-                break;
-
-            case InlineObservation::CALLEE_BACKWARD_JUMP:
-                m_BackwardJump++;
-                break;
-
-            case InlineObservation::CALLEE_THROW_BLOCK:
-                m_ThrowBlock++;
-                break;
-
-            case InlineObservation::CALLSITE_ARG_EXACT_CLS:
-                m_ArgIsExactCls++;
-                break;
-
-            case InlineObservation::CALLSITE_ARG_BOXED:
-                m_ArgIsBoxedAtCallsite++;
-                break;
-
-            case InlineObservation::CALLSITE_ARG_CONST:
-                m_ArgIsConst++;
-                break;
-
-            case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
-                m_ArgIsExactClsSigIsNot++;
-                break;
-
-            case InlineObservation::CALLSITE_FOLDABLE_INTRINSIC:
-                m_FoldableIntrinsic++;
-                break;
-
-            case InlineObservation::CALLSITE_FOLDABLE_EXPR:
-                m_FoldableExpr++;
-                break;
-
-            case InlineObservation::CALLSITE_FOLDABLE_EXPR_UN:
-                m_FoldableExprUn++;
-                break;
-
-            case InlineObservation::CALLSITE_FOLDABLE_BRANCH:
-                m_FoldableBranch++;
-                break;
-
-            case InlineObservation::CALLSITE_DIV_BY_CNS:
-                m_DivByCns++;
-                break;
-
-            case InlineObservation::CALLSITE_HAS_PROFILE:
-                m_HasProfile = value;
                 break;
 
             case InlineObservation::CALLSITE_IN_TRY_REGION:
@@ -476,10 +397,6 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 }
                 break;
             }
-
-            case InlineObservation::CALLSITE_IN_NORETURN_REGION:
-                m_IsCallsiteInNoReturnRegion = value;
-                break;
 
             case InlineObservation::CALLSITE_IN_LOOP:
                 m_CallsiteIsInLoop = true;
@@ -711,19 +628,7 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
             }
             else if (!m_IsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
             {
-                unsigned basicBlockLimit = MAX_BASIC_BLOCKS;
-                if (!m_RootCompiler->opts.IsReadyToRun() && !JitConfig.JitConservativeInliner())
-                {
-                    // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
-                    // or have Profile Data.
-                    basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
-                    if (m_HasProfile)
-                    {
-                        basicBlockLimit += static_cast<unsigned>(min(m_ProfileFrequency, 1.0) * 3.0);
-                    }
-                    basicBlockLimit = min(12, basicBlockCount);
-                }
-                if (basicBlockCount > basicBlockLimit)
+                if (basicBlockCount > MAX_BASIC_BLOCKS)
                 {
                     JITDUMP("basicBlockCount=%d > basicBlockLimit=%d\n", basicBlockCount, basicBlockLimit);
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
@@ -838,17 +743,15 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
 void DefaultPolicy::NoteDouble(InlineObservation obs, double value)
 {
     assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
-    m_ProfileFrequency = value;
 }
 
 //------------------------------------------------------------------------
 // DetermineMultiplier: determine benefit multiplier for this inline
-//    used by a more conservative inliner (< .NET 6.0). We keep it just in case.
 //
 // Notes: uses the accumulated set of observations to compute a
-//    profitability boost for the inline candidate.
+// profitability boost for the inline candidate.
 
-double DefaultPolicy::DetermineConservativeMultiplier()
+double DefaultPolicy::DetermineMultiplier()
 {
     double multiplier = 0;
 
@@ -942,316 +845,6 @@ double DefaultPolicy::DetermineConservativeMultiplier()
         default:
             assert(!"Unexpected callsite frequency");
             break;
-    }
-
-#ifdef DEBUG
-
-    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
-
-    if (additionalMultiplier != 0)
-    {
-        multiplier += additionalMultiplier;
-        JITDUMP("\nmultiplier increased via JitInlineAdditionalMultiplier=%d to %g.", additionalMultiplier, multiplier);
-    }
-
-    if (m_RootCompiler->compInlineStress())
-    {
-        multiplier += 10;
-        JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
-    }
-
-#endif // DEBUG
-
-    return multiplier;
-}
-
-//------------------------------------------------------------------------
-// DetermineMultiplier: determine benefit multiplier for this inline
-//
-// Notes: uses the accumulated set of observations to compute a
-//    profitability boost for the inline candidate.
-
-double DefaultPolicy::DetermineMultiplier()
-{
-    double multiplier = 0;
-    bool   isR2R      = m_RootCompiler->opts.IsReadyToRun();
-
-    // Bump up the multiplier for instance constructors
-
-    if (m_IsInstanceCtor)
-    {
-        multiplier += 1.5;
-        JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
-    }
-
-    // Bump up the multiplier for methods in structs. We assume structs are more often involved
-    // in performance critical code than reference types.
-
-    if (m_IsFromValueClass && !isR2R)
-    {
-        multiplier += 3.0;
-        JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
-    }
-
-#ifdef FEATURE_SIMD
-
-    if (m_HasSimd)
-    {
-        multiplier += JitConfig.JitInlineSIMDMultiplier();
-        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
-                multiplier);
-    }
-
-#endif // FEATURE_SIMD
-
-    if (m_LooksLikeWrapperMethod)
-    {
-        multiplier += 1.0;
-        JITDUMP("\nInline candidate looks like a wrapper method.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_MethodIsMostlyLoadStore)
-    {
-        multiplier += 3.0;
-        JITDUMP("\nInline candidate is mostly loads and stores.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_ArgFeedsRangeCheck > 0)
-    {
-        multiplier += 2.0;
-        JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_ReturnsStructByValue)
-    {
-        // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 4.0;
-        JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_ArgIsStructByValue > 0)
-    {
-        // Same here
-        multiplier += 3.0 + m_ArgIsStructByValue;
-        JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
-                multiplier);
-    }
-
-    if (m_NonGenericCallsGeneric)
-    {
-        multiplier += 3.0;
-        JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_FoldableBranch > 0)
-    {
-        // Examples:
-        //
-        //  if (typeof(T) == typeof(int)) {
-        //  if (Avx2.IsSupported) {
-        //  if (arg0 / 10 > 100) { // where arg0 is a constant at the callsite
-        //  if (Math.Abs(arg0) > 10) { // same here
-        //  etc.
-        //
-        multiplier += 4.0 + m_FoldableBranch;
-        JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
-                multiplier);
-    }
-
-    if (m_ArgCasted > 0)
-    {
-        // TODO: handle only cases where arg is known to be "exact".
-        multiplier += 1.5 + m_ArgCasted;
-        JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.  Multiplier increased to %g.", m_ArgCasted, multiplier);
-    }
-
-    if (m_FldAccessOverArgStruct > 0 && !isR2R)
-    {
-        multiplier += 2.0;
-        // Such ldfld/stfld are cheap for promotable structs
-        JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
-                m_FldAccessOverArgStruct, multiplier);
-    }
-
-    if (m_FoldableBox > 0)
-    {
-        // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
-        // Especially useful with m_IsGenericFromNonGeneric
-        multiplier += 2.0 * m_FoldableBox;
-        JITDUMP("\nInline has %d foldable BOX ops.  Multiplier increased to %g.", m_FoldableBox, multiplier);
-    }
-
-    if (m_Intrinsic > 0)
-    {
-        // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 3.0;
-        JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
-    }
-
-    if (m_BinaryExprWithCns > 0 && !isR2R)
-    {
-        // In some cases we're not able to detect potentially foldable expressions, e.g.:
-        //
-        //   ldc.i4.0
-        //   call int SomeFoldableNonIntrinsicCall
-        //   ceq
-        //
-        // so at least we can note potential constant tests
-        multiplier += 2.0;
-        JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
-                m_BinaryExprWithCns, multiplier);
-    }
-
-    if (m_ThrowBlock > 0)
-    {
-        // 'throw' opcode and its friends (Exception's ctor, its exception message, etc) significantly increase
-        // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
-        // the end of the functions and don't impact Register Allocations.
-        // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
-        multiplier += 3.0 + m_ThrowBlock;
-        JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
-    }
-
-    if (m_ArgIsBoxedAtCallsite > 0)
-    {
-        // Callsite is going to box n arguments. We might avoid boxing after inlining.
-        // Example:
-        //
-        //  void DoNothing(object o) {} // o is unused, so the boxing is redundant
-        //
-        //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
-        //
-        multiplier += m_ArgIsBoxedAtCallsite;
-        JITDUMP("\nCallsite is going to box %d arguments.  Multiplier increased to %g.", m_ArgIsBoxedAtCallsite,
-                multiplier);
-    }
-
-    if (m_ArgIsExactClsSigIsNot > 0)
-    {
-        // If we inline such a callee - we'll be able to devirtualize all the calls for such arguments
-        // Example:
-        //
-        //  int Callee(object o) => o.GetHashCode(); // virtual call
-        //
-        //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
-        //
-        multiplier += 4.0 + m_ArgIsExactClsSigIsNot;
-        JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
-                "increased to %g.",
-                m_ArgIsExactClsSigIsNot, multiplier);
-    }
-
-    if (m_ArgIsExactCls > 0)
-    {
-        multiplier += m_ArgIsExactCls;
-        JITDUMP("\nCallsite passes %d arguments of exact classes.  Multiplier increased to %g.", m_ArgIsExactCls,
-                multiplier);
-    }
-
-    if (m_ArgIsConst > 0)
-    {
-        // Normally, we try to note all the places where constant arguments lead to folding/feed tests
-        // but just in case:
-        multiplier += m_ArgIsConst;
-        JITDUMP("\n%d arguments are constants at the callsite.  Multiplier increased to %g.", m_ArgIsConst, multiplier);
-    }
-
-    if (m_FoldableIntrinsic > 0)
-    {
-        // Examples:
-        //
-        //   typeof(T1) == typeof(T2)
-        //   Math.Abs(constArg)
-        //   BitOperation.PopCount(10)
-        multiplier += 3.0 + m_FoldableIntrinsic;
-        JITDUMP("\nInline has %d foldable intrinsics.  Multiplier increased to %g.", m_FoldableIntrinsic, multiplier);
-    }
-
-    if (m_FoldableExpr > 0)
-    {
-        // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 2.0 + m_FoldableExpr;
-        JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
-                multiplier);
-    }
-
-    if (m_FoldableExprUn > 0)
-    {
-        // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += m_FoldableExpr;
-        JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
-                multiplier);
-    }
-
-    if (m_DivByCns > 0)
-    {
-        // E.g. callee has "x / arg0" where arg0 is a const at the call site -
-        // we'll avoid a very expensive DIV instruction after inlining.
-        // multiplier += 3.0 + m_DivByCns;
-        JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
-    }
-
-    if (m_HasProfile && (m_CallsiteFrequency != InlineCallsiteFrequency::RARE))
-    {
-        // m_ProfileFrequency values:
-        //   > 1  -- the callsite is inside a hot loop
-        //   1    -- the callsite is as hot as its method's first block
-        //   ~= 0 -- the callsite is cold.
-        //
-        multiplier *= min(0.5 + m_ProfileFrequency * 15.0, 6.0);
-        JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
-    }
-    else
-    {
-        switch (m_CallsiteFrequency)
-        {
-            case InlineCallsiteFrequency::RARE:
-                // Note this one is not additive, it uses '=' instead of '+='
-                multiplier = 1.3;
-                JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::BORING:
-                multiplier += 1.3;
-                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::WARM:
-                multiplier += 2.0;
-                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::LOOP:
-                multiplier += 4.0;
-                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::HOT:
-                multiplier += 3.0;
-                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::UNUSED:
-                break;
-            default:
-                assert(!"Unexpected callsite frequency");
-                break;
-        }
-    }
-
-    if (m_BackwardJump)
-    {
-        JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump);
-        multiplier *= 0.3;
-    }
-
-    if (m_IsCallsiteInNoReturnRegion)
-    {
-        // E.g.
-        //
-        //   throw new ArgumentException(SR.GetMessage());
-        //
-        // ^ Here we have two calls inside a BBJ_THROW block
-        // Unfortunately, we're not able to detect ThrowHelpers calls yet.
-
-        // Try to avoid inlining such methods for now. We need to re-consider it later.
-        multiplier = 0.5;
-        JITDUMP("\nCallsite is in a no-return region.  Multiplier limited to %g.", multiplier);
     }
 
 #ifdef DEBUG
@@ -1390,7 +983,7 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     m_CalleeNativeSizeEstimate   = DetermineNativeSizeEstimate();
     m_CallsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
-    m_Multiplier = (JitConfig.JitConservativeInliner() > 0) ? DetermineConservativeMultiplier() : DetermineMultiplier();
+    m_Multiplier = DetermineMultiplier();
     const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
     // Note the DefaultPolicy estimates are scaled up by SIZE_SCALE
@@ -1655,6 +1248,485 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 // Disable warning about new array member initialization behavior
 #pragma warning(disable : 4351)
 #endif
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed boolean value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    DefaultPolicy::NoteBool(obs, value);
+
+    // Check the impact
+    InlineImpact impact = InlGetImpact(obs);
+
+    // As a safeguard, all fatal impact must be
+    // reported via NoteFatal.
+    assert(impact != InlineImpact::FATAL);
+
+    // Handle most information here
+    bool isInformation = (impact == InlineImpact::INFORMATION);
+    bool propagate     = !isInformation;
+
+    if (isInformation)
+    {
+        switch (obs)
+        {
+            case InlineObservation::CALLEE_RETURNS_STRUCT:
+                m_ReturnsStructByValue = value;
+                break;
+
+            case InlineObservation::CALLEE_CLASS_VALUETYPE:
+                m_IsFromValueClass = value;
+                break;
+
+            case InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC:
+                m_NonGenericCallsGeneric = value;
+                break;
+
+            case InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS:
+                m_BinaryExprWithCns++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_STRUCT:
+                m_ArgIsStructByValue++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS:
+                m_FldAccessOverArgStruct++;
+                break;
+
+            case InlineObservation::CALLEE_ARG_FEEDS_CAST:
+                m_ArgCasted++;
+                break;
+
+            case InlineObservation::CALLEE_FOLDABLE_BOX:
+                m_FoldableBox++;
+                break;
+
+            case InlineObservation::CALLEE_INTRINSIC:
+                m_Intrinsic++;
+                break;
+
+            case InlineObservation::CALLEE_BACKWARD_JUMP:
+                m_BackwardJump++;
+                break;
+
+            case InlineObservation::CALLEE_THROW_BLOCK:
+                m_ThrowBlock++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_EXACT_CLS:
+                m_ArgIsExactCls++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_BOXED:
+                m_ArgIsBoxedAtCallsite++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_CONST:
+                m_ArgIsConst++;
+                break;
+
+            case InlineObservation::CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
+                m_ArgIsExactClsSigIsNot++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_INTRINSIC:
+                m_FoldableIntrinsic++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_EXPR:
+                m_FoldableExpr++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_EXPR_UN:
+                m_FoldableExprUn++;
+                break;
+
+            case InlineObservation::CALLSITE_FOLDABLE_BRANCH:
+                m_FoldableBranch++;
+                break;
+
+            case InlineObservation::CALLSITE_DIV_BY_CNS:
+                m_DivByCns++;
+                break;
+
+            case InlineObservation::CALLSITE_HAS_PROFILE:
+                m_HasProfile = value;
+                break;
+
+            case InlineObservation::CALLSITE_IN_NORETURN_REGION:
+                m_IsCallsiteInNoReturnRegion = value;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    if (propagate)
+    {
+        NoteInternal(obs);
+    }
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
+{
+    // Don't forward CALLEE_NUMBER_OF_BASIC_BLOCKS to the DefaultPolicy
+    // as ExtendedDefaultPolicy doesn't limit itself with it.
+    if (obs != InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS)
+    {
+        DefaultPolicy::NoteInt(obs, value);
+    }
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed double value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
+{
+    // So far, CALLSITE_PROFILE_FREQUENCY is the only "double" property.
+    assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
+    m_ProfileFrequency = value;
+}
+
+double ExtendedDefaultPolicy::DetermineMultiplier()
+{
+    double multiplier = 0;
+
+    // Bump up the multiplier for instance constructors
+
+    if (m_IsInstanceCtor)
+    {
+        multiplier += 1.5;
+        JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
+    }
+
+    if (m_IsFromPromotableValueClass)
+    {
+        multiplier += 3;
+        JITDUMP("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
+    }
+    else if (m_IsFromValueClass)
+    {
+        multiplier += 1.0;
+        JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
+    }
+
+#ifdef FEATURE_SIMD
+
+    if (m_HasSimd)
+    {
+        multiplier += JitConfig.JitInlineSIMDMultiplier();
+        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
+                multiplier);
+    }
+
+#endif // FEATURE_SIMD
+
+    if (m_LooksLikeWrapperMethod)
+    {
+        multiplier += 1.0;
+        JITDUMP("\nInline candidate looks like a wrapper method.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_MethodIsMostlyLoadStore)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate is mostly loads and stores.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ArgFeedsRangeCheck > 0)
+    {
+        multiplier += 0.5;
+        JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ReturnsStructByValue)
+    {
+        // For structs-passed-by-value we might avoid expensive copy operations if we inline.
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ArgIsStructByValue > 0)
+    {
+        // Same here
+        multiplier += 3.0 + m_ArgIsStructByValue;
+        JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
+                multiplier);
+    }
+
+    if (m_NonGenericCallsGeneric)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_FoldableBranch > 0)
+    {
+        // Examples:
+        //
+        //  if (typeof(T) == typeof(int)) {
+        //  if (Avx2.IsSupported) {
+        //  if (arg0 / 10 > 100) { // where arg0 is a constant at the callsite
+        //  if (Math.Abs(arg0) > 10) { // same here
+        //  etc.
+        //
+        multiplier += 4.0 + m_FoldableBranch;
+        JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
+                multiplier);
+    }
+
+    if (m_ArgCasted > 0)
+    {
+        // TODO: handle only cases where arg is known to be "exact".
+        multiplier += 1.5 + m_ArgCasted;
+        JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.  Multiplier increased to %g.", m_ArgCasted, multiplier);
+    }
+
+    if (m_FldAccessOverArgStruct > 0)
+    {
+        multiplier += 2.0;
+        // Such ldfld/stfld are cheap for promotable structs
+        JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
+                m_FldAccessOverArgStruct, multiplier);
+    }
+
+    if (m_FoldableBox > 0)
+    {
+        // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
+        // Especially useful with m_IsGenericFromNonGeneric
+        multiplier += 2.0 * m_FoldableBox;
+        JITDUMP("\nInline has %d foldable BOX ops.  Multiplier increased to %g.", m_FoldableBox, multiplier);
+    }
+
+    if (m_Intrinsic > 0)
+    {
+        // In most cases such intrinsics are lowered as single CPU instructions
+        multiplier += 3.0;
+        JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
+    }
+
+    if (m_BinaryExprWithCns > 0)
+    {
+        // In some cases we're not able to detect potentially foldable expressions, e.g.:
+        //
+        //   ldc.i4.0
+        //   call int SomeFoldableNonIntrinsicCall
+        //   ceq
+        //
+        // so at least we can note potential constant tests
+        multiplier += 2.0;
+        JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
+                m_BinaryExprWithCns, multiplier);
+    }
+
+    if (m_ThrowBlock > 0)
+    {
+        // 'throw' opcode and its friends (Exception's ctor, its exception message, etc) significantly increase
+        // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
+        // the end of the functions and don't impact Register Allocations.
+        // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
+        multiplier += 3.0 + m_ThrowBlock;
+        JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
+    }
+
+    if (m_ArgIsBoxedAtCallsite > 0)
+    {
+        // Callsite is going to box n arguments. We might avoid boxing after inlining.
+        // Example:
+        //
+        //  void DoNothing(object o) {} // o is unused, so the boxing is redundant
+        //
+        //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
+        //
+        multiplier += m_ArgIsBoxedAtCallsite;
+        JITDUMP("\nCallsite is going to box %d arguments.  Multiplier increased to %g.", m_ArgIsBoxedAtCallsite,
+                multiplier);
+    }
+
+    if (m_ArgIsExactClsSigIsNot > 0)
+    {
+        // If we inline such a callee - we'll be able to devirtualize all the calls for such arguments
+        // Example:
+        //
+        //  int Callee(object o) => o.GetHashCode(); // virtual call
+        //
+        //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
+        //
+        multiplier += 4.0 + m_ArgIsExactClsSigIsNot;
+        JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
+                "increased to %g.",
+                m_ArgIsExactClsSigIsNot, multiplier);
+    }
+
+    if (m_ArgIsExactCls > 0)
+    {
+        multiplier += m_ArgIsExactCls;
+        JITDUMP("\nCallsite passes %d arguments of exact classes.  Multiplier increased to %g.", m_ArgIsExactCls,
+                multiplier);
+    }
+
+    if (m_ArgIsConst > 0)
+    {
+        // Normally, we try to note all the places where constant arguments lead to folding/feed tests
+        // but just in case:
+        multiplier += m_ArgIsConst;
+        JITDUMP("\n%d arguments are constants at the callsite.  Multiplier increased to %g.", m_ArgIsConst, multiplier);
+    }
+
+    if (m_FoldableIntrinsic > 0)
+    {
+        // Examples:
+        //
+        //   typeof(T1) == typeof(T2)
+        //   Math.Abs(constArg)
+        //   BitOperation.PopCount(10)
+        multiplier += 3.0 + m_FoldableIntrinsic;
+        JITDUMP("\nInline has %d foldable intrinsics.  Multiplier increased to %g.", m_FoldableIntrinsic, multiplier);
+    }
+
+    if (m_FoldableExpr > 0)
+    {
+        // E.g. add/mul/ceq, etc. over constant/constant arguments
+        multiplier += 2.0 + m_FoldableExpr;
+        JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
+                multiplier);
+    }
+
+    if (m_FoldableExprUn > 0)
+    {
+        // E.g. casts, negations, etc. over constants/constant arguments
+        multiplier += m_FoldableExpr;
+        JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
+                multiplier);
+    }
+
+    if (m_DivByCns > 0)
+    {
+        // E.g. callee has "x / arg0" where arg0 is a const at the call site -
+        // we'll avoid a very expensive DIV instruction after inlining.
+        // multiplier += 3.0 + m_DivByCns;
+        JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
+    }
+
+    if (m_HasProfile)
+    {
+        const double profileMaxValue = 1.5;
+        // m_ProfileFrequency values:
+        //   > 1  -- the callsite is inside a hot loop
+        //   1    -- the callsite is as hot as its method's first block
+        //   ~= 0 -- the callsite is cold.
+        //
+
+        // There are still cases when a (semi-)hot blocks can be marked as cold:
+        //  1) We don't support context-sensitive instrumentation in Dynamic PGO mode
+        //  2) The Static PGO that we ship can be slightly irrelevant for the current app
+        //  3) We don't support deoptimizations so we can't re-collect profiles if a workflow suddenly
+        //     starts to flow differently.
+        //  4) Sometimes it's still makes sense to inline methods in cold blocks to improve type/esacape analysis
+        //     for the whole caller.
+        //
+        const double profileTrustCoef = 0.5;
+        const double profileScale     = 10.0;
+
+        multiplier *= profileTrustCoef + min(m_ProfileFrequency, profileMaxValue) * profileScale;
+        JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
+    }
+    else
+    {
+        // Fallback to static analysis
+
+        switch (m_CallsiteFrequency)
+        {
+            case InlineCallsiteFrequency::RARE:
+                // Note this one is not additive, it uses '=' instead of '+='
+                multiplier = 1.3;
+                JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::BORING:
+                multiplier += 1.3;
+                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::WARM:
+                multiplier += 2.0;
+                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::LOOP:
+                multiplier += 4.0;
+                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::HOT:
+                multiplier += 3.0;
+                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::UNUSED:
+                break;
+            default:
+                assert(!"Unexpected callsite frequency");
+                break;
+        }
+    }
+
+    if (m_BackwardJump)
+    {
+        JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump);
+        // TODO: investigate in which cases it's profitable to inline callees with loops.
+        // So far, our micro-benchmarks mostly regress if we ignore m_BackwardJump observation.
+        // Allow inlining if only we already collected many other observations such as foldable branches.
+        multiplier *= 0.3;
+    }
+
+    if (m_IsCallsiteInNoReturnRegion)
+    {
+        // E.g.
+        //
+        //   throw new ArgumentException(SR.GetMessage());
+        //
+        // ^ Here we have two calls inside a BBJ_THROW block
+        // Unfortunately, we're not able to detect ThrowHelpers calls yet.
+
+        // Try to avoid inlining such methods for now. We need to re-consider it later.
+        multiplier = 0.5;
+        JITDUMP("\nCallsite is in a no-return region.  Multiplier limited to %g.", multiplier);
+    }
+
+#ifdef DEBUG
+
+    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
+
+    if (additionalMultiplier != 0)
+    {
+        multiplier += additionalMultiplier;
+        JITDUMP("\nmultiplier increased via JitInlineAdditionalMultiplier=%d to %g.", additionalMultiplier, multiplier);
+    }
+
+    if (m_RootCompiler->compInlineStress())
+    {
+        multiplier += 10;
+        JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
+    }
+
+#endif // DEBUG
+
+    return multiplier;
+}
 
 //------------------------------------------------------------------------
 // DiscretionaryPolicy: construct a new DiscretionaryPolicy

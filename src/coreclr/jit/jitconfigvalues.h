@@ -383,14 +383,11 @@ CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressi
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks
 CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
 
-// Use a less aggressive and profile-independent inliner (which was the default one for < .NET 6.0).
-CONFIG_INTEGER(JitConservativeInliner, W("JitConservativeInliner"), 0)
-
 // Ex lclMAX_TRACKED constant.
 // Tested various sizes for max tracked locals. The largest value for which no throughput regression
 // could be measured was 512. Going to 1024 showed the first throughput regressions.
 // We anticipate the larger size will be needed to support better inlining.
-CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 512)
+CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 200)
 
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
@@ -463,6 +460,7 @@ CONFIG_STRING(JitNoInlineRange, W("JitNoInlineRange"))
 CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
+CONFIG_INTEGER(JitExtendedDefaultPolicyModel, W("JitExtendedDefaultPolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)
