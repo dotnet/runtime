@@ -53,7 +53,6 @@
     <Compile Include="Enumeration\SymbolicLinksTests.cs" />
     <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
-    <Compile Include="RandomAccess\Mixed.cs" />
     <Compile Include="RandomAccess\Read.cs" />
     <Compile Include="RandomAccess\ReadAsync.cs" />
     <Compile Include="RandomAccess\ReadScatter.cs" />
@@ -72,6 +71,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options_as.Windows.cs" />
+    <Compile Include="RandomAccess\Mixed.Windows.cs" />
     <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />

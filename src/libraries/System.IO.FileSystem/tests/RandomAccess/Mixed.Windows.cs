@@ -10,7 +10,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class RandomAccess_Mixed : FileSystemTest
     {
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
@@ -42,13 +42,10 @@ namespace System.IO.Tests
                         await Validate(handle, options, new bool[] { syncWrite, !syncWrite }, new bool[] { syncRead, !syncRead });
                     }
 
-                    if (OperatingSystem.IsWindows())
+                    // tests code path where ThreadPoolBinding is not initialized
+                    using (SafeFileHandle tpBindingNotInitialized = CreateFileW(filePath, FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Create, (int)options, IntPtr.Zero))
                     {
-                        // tests code path where ThreadPoolBinding is not initialized
-                        using (SafeFileHandle tpBindingNotInitialized = CreateFileW(filePath, FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Create, (int)options, IntPtr.Zero))
-                        {
-                            await Validate(tpBindingNotInitialized, options, new bool[] { syncWrite, !syncWrite }, new bool[] { syncRead, !syncRead });
-                        }
+                        await Validate(tpBindingNotInitialized, options, new bool[] { syncWrite, !syncWrite }, new bool[] { syncRead, !syncRead });
                     }
                 }
             }
@@ -93,13 +90,10 @@ namespace System.IO.Tests
                         await Validate(handle, options, new bool[] { syncWrite, !syncWrite }, new bool[] { syncRead, !syncRead });
                     }
 
-                    if (OperatingSystem.IsWindows())
+                    // tests code path where ThreadPoolBinding is not initialized
+                    using (SafeFileHandle tpBindingNotInitialized = CreateFileW(filePath, FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Create, (int)options, IntPtr.Zero))
                     {
-                        // tests code path where ThreadPoolBinding is not initialized
-                        using (SafeFileHandle tpBindingNotInitialized = CreateFileW(filePath, FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Create, (int)options, IntPtr.Zero))
-                        {
-                            await Validate(tpBindingNotInitialized, options, new bool[] { syncWrite, !syncWrite }, new bool[] { syncRead, !syncRead });
-                        }
+                        await Validate(tpBindingNotInitialized, options, new bool[] { syncWrite, !syncWrite }, new bool[] { syncRead, !syncRead });
                     }
                 }
             }
