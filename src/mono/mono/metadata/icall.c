@@ -2540,7 +2540,7 @@ method_is_dim (MonoMethod *method)
 {
 	/* only valid on interface methods*/
 	/* method is marked "virtual" but not "virtual abstract" */
-	return method->flags & method->flags & METHOD_ATTRIBUTE_VIRTUAL && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT);
+	return method->flags & METHOD_ATTRIBUTE_VIRTUAL && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT);
 }
 
 static gboolean
