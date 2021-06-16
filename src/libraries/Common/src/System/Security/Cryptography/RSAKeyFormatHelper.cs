@@ -8,7 +8,7 @@ using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
-    internal static class RSAKeyFormatHelper
+    internal static partial class RSAKeyFormatHelper
     {
         private static readonly string[] s_validOids =
         {
@@ -171,36 +171,6 @@ namespace System.Security.Cryptography
             }
 
             return bytesRead;
-        }
-
-        internal static void ReadEncryptedPkcs8(
-            ReadOnlySpan<byte> source,
-            ReadOnlySpan<char> password,
-            out int bytesRead,
-            out RSAParameters key)
-        {
-            KeyFormatHelper.ReadEncryptedPkcs8<RSAParameters>(
-                s_validOids,
-                source,
-                password,
-                FromPkcs1PrivateKey,
-                out bytesRead,
-                out key);
-        }
-
-        internal static void ReadEncryptedPkcs8(
-            ReadOnlySpan<byte> source,
-            ReadOnlySpan<byte> passwordBytes,
-            out int bytesRead,
-            out RSAParameters key)
-        {
-            KeyFormatHelper.ReadEncryptedPkcs8<RSAParameters>(
-                s_validOids,
-                source,
-                passwordBytes,
-                FromPkcs1PrivateKey,
-                out bytesRead,
-                out key);
         }
 
         internal static AsnWriter WriteSubjectPublicKeyInfo(ReadOnlySpan<byte> pkcs1PublicKey)

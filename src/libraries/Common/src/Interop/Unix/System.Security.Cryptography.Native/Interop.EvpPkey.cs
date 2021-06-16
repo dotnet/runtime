@@ -13,6 +13,30 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
         internal static extern SafeEvpPKeyHandle EvpPkeyCreate();
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeEvpPKeyHandle CryptoNative_EvpPKeyDuplicate(
+            SafeEvpPKeyHandle currentKey,
+            EvpAlgorithmId algorithmId);
+
+        internal static SafeEvpPKeyHandle EvpPKeyDuplicate(
+            SafeEvpPKeyHandle currentKey,
+            EvpAlgorithmId algorithmId)
+        {
+            Debug.Assert(!currentKey.IsInvalid);
+
+            SafeEvpPKeyHandle pkey = CryptoNative_EvpPKeyDuplicate(
+                currentKey,
+                algorithmId);
+
+            if (pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static extern void EvpPkeyDestroy(IntPtr pkey);
 

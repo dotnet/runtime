@@ -173,8 +173,17 @@
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
+  </data>
+  <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
+    <value>Key is not a valid private key.</value>
+  </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
+  </data>
+  <data name="Cryptography_RSAPrivateKey_VersionTooNew" xml:space="preserve">
+    <value>The provided RSAPrivateKey value has version '{0}', but version '{1}' is the maximum supported.</value>
   </data>
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>

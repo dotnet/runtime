@@ -414,6 +414,7 @@ namespace System.Security.Cryptography
         {
             return ExportPublicKey(static spki => spki.ToArray());
         }
+
         public override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
         {
             return TryExportPublicKey(
@@ -656,6 +657,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_key))]
         private void SetKey(SafeEvpPKeyHandle newKey)
         {
             Debug.Assert(!newKey.IsInvalid);
