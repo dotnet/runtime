@@ -20,8 +20,13 @@ internal static partial class Interop
             CRYPT_VERIFYCONTEXT = 0xF0000000      // CRYPT_VERIFYCONTEXT
         }
 
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
+        public static partial bool CryptAcquireContext(
+#else
         [DllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
         public static extern bool CryptAcquireContext(
+#endif
             out SafeProvHandle phProv,
             string? szContainer,
             string? szProvider,
