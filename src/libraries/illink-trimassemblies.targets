@@ -1,0 +1,41 @@
+<Project>
+
+  <Target Name="PrepareForAssembliesTrim"
+          DependsOnTargets="SetCommonILLinkArgs">
+
+    <!-- Retrieve CoreLib's path as it isn't binplaced alongside the libraries - https://github.com/dotnet/runtime/issues/43095. -->
+    <ItemGroup>
+      <CoreLibProjectWithRuntimeConfig Include="$(CoreLibProject)">
+        <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
+        <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
+        <!-- If conflicting, manually set the Configuration property of the CoreLib project so that it aligns with the specified runtime configuration in the libraries' build. -->
+        <Properties Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
+                               '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</Properties>
+        <Properties Condition="'$(RuntimeFlavor)' == 'Mono' and
+                               '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</Properties>
+      </CoreLibProjectWithRuntimeConfig>
+    </ItemGroup>
+
+    <MSBuild Projects="@(CoreLibProjectWithRuntimeConfig)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
+    </PropertyGroup>
+
+    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
+      In this case, explicitly specify the path to the dotnet host. -->
+    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
+      <!-- This is defined when building in Visual Studio. -->
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
+    </PropertyGroup>
+    
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)illink-sharedframework.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)illink-oob.targets" />
+</Project>

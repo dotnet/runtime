@@ -94,6 +94,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define _M_ARM 7
 #elif defined(__aarch64__) && !defined(_M_ARM64)
 #define _M_ARM64 1
+#elif defined(__s390x__) && !defined(_M_S390X)
+#define _M_S390X 1
 #endif
 
 #if defined(_M_IX86) && !defined(HOST_X86)
@@ -104,6 +106,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define HOST_ARM
 #elif defined(_M_ARM64) && !defined(HOST_ARM64)
 #define HOST_ARM64
+#elif defined(_M_S390X) && !defined(HOST_S390X)
+#define HOST_S390X
 #endif
 
 #endif // !_MSC_VER
@@ -142,6 +146,12 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define THROW_DECL throw()
 #endif // !_MSC_VER
 #endif // !THROW_DECL
+
+#ifdef __sun
+#define MATH_THROW_DECL
+#else
+#define MATH_THROW_DECL THROW_DECL
+#endif
 
 #if defined(_MSC_VER)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
@@ -318,11 +328,7 @@ PAL_IsDebuggerPresent();
 
 #ifndef PAL_STDCPP_COMPAT
 
-#if HOST_64BIT || _MSC_VER >= 1400
 typedef __int64 time_t;
-#else
-typedef long time_t;
-#endif
 #define _TIME_T_DEFINED
 #endif // !PAL_STDCPP_COMPAT
 
@@ -418,7 +424,7 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
-typedef VOID (*PSHUTDOWN_CALLBACK)(void);
+typedef VOID (*PSHUTDOWN_CALLBACK)(bool isExecutingOnAltStack);
 
 PALIMPORT
 VOID
@@ -2187,6 +2193,112 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+#elif defined(HOST_S390X)
+
+// There is no context for s390x defined in winnt.h,
+// so we re-use the amd64 values.
+#define CONTEXT_S390X   0x100000
+
+#define CONTEXT_CONTROL (CONTEXT_S390X | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_S390X | 0x2L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_S390X | 0x4L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000
+#define CONTEXT_SERVICE_ACTIVE 0x10000000
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000
+
+typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
+
+    //
+    // Control flags.
+    //
+
+    DWORD ContextFlags;
+
+    //
+    // Integer registers.
+    //
+
+    union {
+        DWORD64 Gpr[16];
+        struct {
+            DWORD64 R0;
+            DWORD64 R1;
+            DWORD64 R2;
+            DWORD64 R3;
+            DWORD64 R4;
+            DWORD64 R5;
+            DWORD64 R6;
+            DWORD64 R7;
+            DWORD64 R8;
+            DWORD64 R9;
+            DWORD64 R10;
+            DWORD64 R11;
+            DWORD64 R12;
+            DWORD64 R13;
+            DWORD64 R14;
+            DWORD64 R15;
+        };
+    };
+
+    //
+    // Floating-point registers.
+    //
+
+    union {
+        DWORD64 Fpr[16];
+        struct {
+            DWORD64 F0;
+            DWORD64 F1;
+            DWORD64 F2;
+            DWORD64 F3;
+            DWORD64 F4;
+            DWORD64 F5;
+            DWORD64 F6;
+            DWORD64 F7;
+            DWORD64 F8;
+            DWORD64 F9;
+            DWORD64 F10;
+            DWORD64 F11;
+            DWORD64 F12;
+            DWORD64 F13;
+            DWORD64 F14;
+            DWORD64 F15;
+        };
+    };
+
+    //
+    // Control registers.
+    //
+
+    DWORD64 PSWMask;
+    DWORD64 PSWAddr;
+
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    PDWORD64 R6;
+    PDWORD64 R7;
+    PDWORD64 R8;
+    PDWORD64 R9;
+    PDWORD64 R10;
+    PDWORD64 R11;
+    PDWORD64 R12;
+    PDWORD64 R13;
+    PDWORD64 R14;
+    PDWORD64 R15;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
 #else
 #error Unknown architecture for defining CONTEXT.
 #endif
@@ -2321,6 +2433,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #elif defined(__linux__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__linux__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__linux__) && defined(HOST_S390X)
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__NetBSD__) && defined(__amd64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
@@ -2646,32 +2760,16 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-#ifdef __cplusplus
-extern "C++" {
-struct PAL_JITWriteEnableHolder
-{
-public:
-  PAL_JITWriteEnableHolder(bool jitWriteEnable)
-  {
-      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
-  };
-  ~PAL_JITWriteEnableHolder()
-  {
-      JITWriteEnable(m_jitWriteEnableRestore);
-  }
 
-private:
-  bool JITWriteEnable(bool enable);
-  bool m_jitWriteEnableRestore;
-};
+PALIMPORT
+VOID
+PALAPI
+PAL_JitWriteProtect(bool writeEnable);
 
-inline
-PAL_JITWriteEnableHolder
-PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
-}
-#endif // __cplusplus
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 
 PALIMPORT
 BOOL
@@ -3796,31 +3894,23 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define fsetpos       PAL_fsetpos
 #define setvbuf       PAL_setvbuf
 #define acos          PAL_acos
-#define acosh         PAL_acosh
 #define asin          PAL_asin
-#define asinh         PAL_asinh
 #define atan2         PAL_atan2
 #define exp           PAL_exp
-#define fma           PAL_fma
 #define ilogb         PAL_ilogb
 #define log           PAL_log
-#define log2          PAL_log2
 #define log10         PAL_log10
 #define pow           PAL_pow
-#define scalbn        PAL_scalbn
+#define sincos        PAL_sincos
 #define acosf         PAL_acosf
-#define acoshf        PAL_acoshf
 #define asinf         PAL_asinf
-#define asinhf        PAL_asinhf
 #define atan2f        PAL_atan2f
 #define expf          PAL_expf
-#define fmaf          PAL_fmaf
 #define ilogbf        PAL_ilogbf
 #define logf          PAL_logf
-#define log2f         PAL_log2f
 #define log10f        PAL_log10f
 #define powf          PAL_powf
-#define scalbnf       PAL_scalbnf
+#define sincosf       PAL_sincosf
 #define malloc        PAL_malloc
 #define free          PAL_free
 #define _strdup       PAL__strdup
@@ -3890,11 +3980,7 @@ PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT long long int __cdecl atoll(const char *) MATH_THROW_DECL;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
@@ -4060,21 +4146,13 @@ PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
 PALIMPORT double __cdecl acos(double);
-PALIMPORT double __cdecl acosh(double);
+PALIMPORT double __cdecl acosh(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl asin(double);
-PALIMPORT double __cdecl asinh(double);
-PALIMPORT double __cdecl atan(double) THROW_DECL;
-PALIMPORT double __cdecl atanh(double)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT double __cdecl asinh(double) MATH_THROW_DECL;
+PALIMPORT double __cdecl atan(double) MATH_THROW_DECL;
+PALIMPORT double __cdecl atanh(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT double __cdecl cbrt(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -4082,15 +4160,15 @@ PALIMPORT double __cdecl exp(double);
 PALIMPORT double __cdecl fabs(double);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl fmod(double, double);
-PALIMPORT double __cdecl fma(double, double, double);
+PALIMPORT double __cdecl fma(double, double, double) MATH_THROW_DECL;
 PALIMPORT int __cdecl ilogb(double);
 PALIMPORT double __cdecl log(double);
-PALIMPORT double __cdecl log2(double);
+PALIMPORT double __cdecl log2(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl log10(double);
 PALIMPORT double __cdecl modf(double, double*);
 PALIMPORT double __cdecl pow(double, double);
-PALIMPORT double __cdecl scalbn(double, int);
 PALIMPORT double __cdecl sin(double);
+PALIMPORT void __cdecl sincos(double, double*, double*);
 PALIMPORT double __cdecl sinh(double);
 PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl tan(double);
@@ -4100,25 +4178,13 @@ PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
 PALIMPORT float __cdecl _copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
-PALIMPORT float __cdecl acoshf(float);
+PALIMPORT float __cdecl acoshf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl asinf(float);
-PALIMPORT float __cdecl asinhf(float);
-PALIMPORT float __cdecl atanf(float)
-#ifndef __sun
-THROW_DECL
-#endif
-;
-PALIMPORT float __cdecl atanhf(float)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT float __cdecl asinhf(float) MATH_THROW_DECL;
+PALIMPORT float __cdecl atanf(float) MATH_THROW_DECL;
+PALIMPORT float __cdecl atanhf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT float __cdecl cbrtf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);
@@ -4126,15 +4192,15 @@ PALIMPORT float __cdecl expf(float);
 PALIMPORT float __cdecl fabsf(float);
 PALIMPORT float __cdecl floorf(float);
 PALIMPORT float __cdecl fmodf(float, float);
-PALIMPORT float __cdecl fmaf(float, float, float);
+PALIMPORT float __cdecl fmaf(float, float, float) MATH_THROW_DECL;
 PALIMPORT int __cdecl ilogbf(float);
 PALIMPORT float __cdecl logf(float);
-PALIMPORT float __cdecl log2f(float);
+PALIMPORT float __cdecl log2f(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl log10f(float);
 PALIMPORT float __cdecl modff(float, float*);
 PALIMPORT float __cdecl powf(float, float);
-PALIMPORT float __cdecl scalbnf(float, int);
 PALIMPORT float __cdecl sinf(float);
+PALIMPORT void __cdecl sincosf(float, float*, float*);
 PALIMPORT float __cdecl sinhf(float);
 PALIMPORT float __cdecl sqrtf(float);
 PALIMPORT float __cdecl tanf(float);
@@ -4367,6 +4433,8 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
+        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -4387,12 +4455,17 @@ public:
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
 
+    void(*ManagedToNativeExceptionCallback)(void* context);
+    void* ManagedToNativeExceptionCallbackContext;
+
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        ManagedToNativeExceptionCallback = NULL;
+        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -4429,6 +4502,8 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        ManagedToNativeExceptionCallback = NULL;
+        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     CONTEXT* GetContextRecord()
@@ -4449,6 +4524,19 @@ public:
     void SecondPassDone()
     {
         TargetFrameSp = NoTargetFrameSp;
+    }
+
+    bool HasPropagateExceptionCallback()
+    {
+        return ManagedToNativeExceptionCallback != NULL;
+    }
+
+    void SetPropagateExceptionCallback(
+        void(*callback)(void*),
+        void* context)
+    {
+        ManagedToNativeExceptionCallback = callback;
+        ManagedToNativeExceptionCallbackContext = context;
     }
 };
 

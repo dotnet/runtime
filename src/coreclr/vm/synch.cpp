@@ -118,7 +118,7 @@ void CLREventBase::CreateMonitorEvent(SIZE_T Cookie)
         GC_NOTRIGGER;
         // disallow creation of Crst before EE starts
         PRECONDITION((g_fEEStarted));
-        PRECONDITION((GetThread() != NULL));
+        PRECONDITION((GetThreadNULLOk() != NULL));
         PRECONDITION((!IsOSEvent()));
     }
     CONTRACTL_END;
@@ -359,10 +359,6 @@ BOOL CLREventBase::Reset()
 
     _ASSERTE(Thread::Debug_AllowCallout());
 
-    // We do not allow Reset on AutoEvent
-    _ASSERTE (!IsAutoEvent() ||
-              !"Can not call Reset on AutoEvent");
-
     {
         return ResetEvent(m_handle);
     }
@@ -430,7 +426,7 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode, PendingSync *syn
         {
             NOTHROW;
         }
-        if (GetThread())
+        if (GetThreadNULLOk())
         {
             if (alertable)
                 GC_TRIGGERS;
@@ -448,7 +444,7 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode, PendingSync *syn
 
     _ASSERTE(Thread::Debug_AllowCallout());
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
 #ifdef _DEBUG
     // If a CLREvent is OS event only, we can not wait for the event on a managed thread
@@ -522,7 +518,7 @@ DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
 {
     CONTRACTL
     {
-        if (GetThread() && alertable)
+        if (GetThreadNULLOk() && alertable)
         {
             THROWS;               // Thread::DoAppropriateWait can throw
         }
@@ -530,7 +526,8 @@ DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
         {
             NOTHROW;
         }
-        if (GetThread())
+
+        if (GetThreadNULLOk())
         {
             if (alertable)
                 GC_TRIGGERS;
@@ -541,12 +538,13 @@ DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
         {
             DISABLED(GC_TRIGGERS);
         }
+
         PRECONDITION(m_handle != INVALID_HANDLE_VALUE); // Invalid to have invalid handle
     }
     CONTRACTL_END;
 
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     _ASSERTE (pThread || !g_fEEStarted || dbgOnly_IsSpecialEEThread());
 
     {

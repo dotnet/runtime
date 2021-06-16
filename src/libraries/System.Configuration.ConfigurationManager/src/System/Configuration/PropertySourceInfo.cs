@@ -6,7 +6,7 @@ using System.Xml;
 
 namespace System.Configuration
 {
-    internal class PropertySourceInfo
+    internal sealed class PropertySourceInfo
     {
         internal PropertySourceInfo(XmlReader reader)
         {

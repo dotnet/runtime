@@ -20,7 +20,7 @@ namespace System
                 builder.EnsureCapacity((int)length);
             }
 
-            if (length == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
+            if (length == 0 && Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
             {
                 builder.Dispose();
                 return null;
@@ -34,7 +34,7 @@ namespace System
         {
             if (!Interop.Kernel32.SetEnvironmentVariable(variable, value))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 switch (errorCode)
                 {
                     case Interop.Errors.ERROR_ENVVAR_NOT_FOUND:
@@ -84,13 +84,11 @@ namespace System
                 char* currentPtr = stringPtr;
                 while (true)
                 {
-                    int variableLength = string.wcslen(currentPtr);
-                    if (variableLength == 0)
+                    ReadOnlySpan<char> variable = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(currentPtr);
+                    if (variable.IsEmpty)
                     {
                         break;
                     }
-
-                    var variable = new ReadOnlySpan<char>(currentPtr, variableLength);
 
                     // Find the = separating the key and value. We skip entries that begin with =.  We also skip entries that don't
                     // have =, which can happen on some older OSes when the environment block gets corrupted.
@@ -111,7 +109,7 @@ namespace System
                     }
 
                     // Move to the end of this variable, after its terminator.
-                    currentPtr += variableLength + 1;
+                    currentPtr += variable.Length + 1;
                 }
 
                 return results;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -25,6 +26,7 @@ namespace System.ComponentModel.DataAnnotations
         private string? _errorMessage;
         private Func<string>? _errorMessageResourceAccessor;
         private string? _errorMessageResourceName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         private Type? _errorMessageResourceType;
         private volatile bool _hasBaseIsValid;
         private string? _defaultErrorMessage;
@@ -175,6 +177,7 @@ namespace System.ComponentModel.DataAnnotations
         ///         Use <see cref="ErrorMessage" /> instead of this pair if error messages are not localized.
         ///     </para>
         /// </value>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public Type? ErrorMessageResourceType
         {
             get => _errorMessageResourceType;
@@ -241,11 +244,7 @@ namespace System.ComponentModel.DataAnnotations
             Debug.Assert(_errorMessageResourceType != null);
             Debug.Assert(!string.IsNullOrEmpty(_errorMessageResourceName));
             var property = _errorMessageResourceType
-                .GetTypeInfo().GetDeclaredProperty(_errorMessageResourceName);
-            if (property != null && !ValidationAttributeStore.IsStatic(property))
-            {
-                property = null;
-            }
+                .GetProperty(_errorMessageResourceName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             if (property != null)
             {

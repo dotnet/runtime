@@ -5,25 +5,17 @@ schedules:
   displayName: Sat and Sun at 2:00 AM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
-variables:
-  - template: /eng/pipelines/common/variables.yml
-
 jobs:
-#
-# Checkout repository
-#
-- ${{ if eq(variables.useCheckoutBundle, true) }}:
-  - template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
+    - OSX_arm64
     - OSX_x64
     - Linux_arm
     - Linux_arm64
@@ -50,7 +42,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
+    - OSX_arm64
     - OSX_x64
     - Linux_arm
     - Linux_arm64

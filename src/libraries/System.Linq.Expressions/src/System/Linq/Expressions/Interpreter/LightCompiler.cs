@@ -211,7 +211,7 @@ namespace System.Linq.Expressions.Interpreter
         public bool IsClear;
         private static readonly DebugInfoComparer s_debugComparer = new DebugInfoComparer();
 
-        private class DebugInfoComparer : IComparer<DebugInfo>
+        private sealed class DebugInfoComparer : IComparer<DebugInfo>
         {
             //We allow comparison between int and DebugInfo here
             int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
@@ -593,7 +593,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else if (index.ArgumentCount != 1)
             {
-                _instructions.EmitCall(index.Object!.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!);
+                _instructions.EmitCall(TypeUtils.GetArrayGetMethod(index.Object!.Type));
             }
             else
             {
@@ -632,7 +632,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else if (index.ArgumentCount != 1)
             {
-                _instructions.EmitCall(index.Object!.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)!);
+                _instructions.EmitCall(TypeUtils.GetArraySetMethod(index.Object!.Type));
             }
             else
             {
@@ -2343,7 +2343,7 @@ namespace System.Linq.Expressions.Interpreter
                         var call = (MethodCallExpression)node;
                         if (!call.Method.IsStatic &&
                             call.Object!.Type.IsArray &&
-                            call.Method == call.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
+                            call.Method == TypeUtils.GetArrayGetMethod(call.Object.Type))
                         {
                             return CompileMultiDimArrayAccess(
                                 call.Object,
@@ -2380,9 +2380,9 @@ namespace System.Linq.Expressions.Interpreter
                 indexLocals[i] = argTmp;
             }
 
-            _instructions.EmitCall(array.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!);
+            _instructions.EmitCall(TypeUtils.GetArrayGetMethod(array.Type));
 
-            return new IndexMethodByRefUpdater(objTmp, indexLocals, array.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)!, index);
+            return new IndexMethodByRefUpdater(objTmp, indexLocals, TypeUtils.GetArraySetMethod(array.Type), index);
         }
 
         private void CompileNewExpression(Expression expr)
@@ -2671,7 +2671,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (typeof(LambdaExpression).IsAssignableFrom(node.Expression.Type))
             {
-                MethodInfo compMethod = node.Expression.Type.GetMethod("Compile", Type.EmptyTypes)!;
+                MethodInfo compMethod = LambdaExpression.GetCompileMethod(node.Expression.Type);
                 CompileMethodCallExpression(
                     Expression.Call(
                         node.Expression,
@@ -3101,7 +3101,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
             }
             Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1),
-                string.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
+                $"{_instructions.CurrentStackDepth} vs {startingStackDepth + (expr.Type == typeof(void) ? 0 : 1)} for {expr.NodeType}");
         }
 
         private void Compile(Expression expr)

@@ -1237,7 +1237,7 @@ namespace System.Configuration
             Added,
         }
 
-        private class Entry
+        private sealed class Entry
         {
             private readonly object _key;
             internal EntryType EntryType;
@@ -1257,7 +1257,7 @@ namespace System.Configuration
             }
         }
 
-        private class Enumerator : IDictionaryEnumerator
+        private sealed class Enumerator : IDictionaryEnumerator
         {
             private readonly IEnumerator _itemsEnumerator;
             private readonly ConfigurationElementCollection _thisCollection;

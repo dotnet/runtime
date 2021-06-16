@@ -23,9 +23,7 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-#ifdef ENABLE_NETCORE
 #define FEATURE_COVARIANT_RETURNS
-#endif
 
 static void mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup);
 
@@ -485,9 +483,6 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			TRACE_INTERFACE_VTABLE (printf ("]"));
 			return FALSE;
 		}
-		TRACE_INTERFACE_VTABLE (printf ("[SECURITY CHECKS]"));
-		if (mono_security_core_clr_enabled ())
-			mono_security_core_clr_check_override (klass, cm, im);
 
 		TRACE_INTERFACE_VTABLE (printf ("[NAME CHECK OK]"));
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
@@ -565,10 +560,6 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			TRACE_INTERFACE_VTABLE (printf ("[METHOD NAME CHECK FAILED]"));
 			return FALSE;
 		}
-		
-		TRACE_INTERFACE_VTABLE (printf ("[SECURITY CHECKS (INJECTED CASE)]"));
-		if (mono_security_core_clr_enabled ())
-			mono_security_core_clr_check_override (klass, cm, im);
 
 		TRACE_INTERFACE_VTABLE (printf ("[INJECTED INTERFACE CHECK OK]"));
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
@@ -719,19 +710,18 @@ verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 			return FALSE;
 		}
 
-		if (!(body->flags & METHOD_ATTRIBUTE_VIRTUAL) || (body->flags & METHOD_ATTRIBUTE_STATIC)) {
-			if (body->flags & METHOD_ATTRIBUTE_STATIC)
-				mono_class_set_type_load_failure (klass, "Method must not be static to override a base type");
-			else
-				mono_class_set_type_load_failure (klass, "Method must be virtual to override a base type");
+		if (m_method_is_static (decl) != m_method_is_static (body)) {
+			mono_class_set_type_load_failure (klass, "Static method can't override a non-static method and vice versa.");
 			return FALSE;
 		}
 
-		if (!(decl->flags & METHOD_ATTRIBUTE_VIRTUAL) || (decl->flags & METHOD_ATTRIBUTE_STATIC)) {
-			if (body->flags & METHOD_ATTRIBUTE_STATIC)
-				mono_class_set_type_load_failure (klass, "Cannot override a static method in a base type");
-			else
-				mono_class_set_type_load_failure (klass, "Cannot override a non virtual method in a base type");
+		if (!m_method_is_virtual (body) && !m_method_is_static (body)) {
+			mono_class_set_type_load_failure (klass, "Method must be virtual to override a base type");
+			return FALSE;
+		}
+
+		if (!m_method_is_virtual (decl)) {
+			mono_class_set_type_load_failure (klass, "Cannot override a non virtual method in a base type");
 			return FALSE;
 		}
 
@@ -1782,7 +1772,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			int im_slot = ic_offset + im->slot;
 			MonoMethod *override_im = (override_map != NULL) ? (MonoMethod *)g_hash_table_lookup (override_map, im) : NULL;
 			
-			if (im->flags & METHOD_ATTRIBUTE_STATIC)
+			if (!m_method_is_virtual (im))
 				continue;
 
 			TRACE_INTERFACE_VTABLE (printf ("\tchecking iface method %s\n", mono_method_full_name (im,1)));
@@ -1865,7 +1855,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				MonoMethod *im = ic->methods [im_index];
 				int im_slot = ic_offset + im->slot;
 				
-				if (im->flags & METHOD_ATTRIBUTE_STATIC)
+				if (!m_method_is_virtual (im))
 					continue;
 				if (mono_method_get_is_reabstracted (im))
 					continue;
@@ -1905,9 +1895,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 					if (!strcmp(cm->name, m1->name) && 
 					    mono_metadata_signature_equal (cmsig, m1sig)) {
-
-						if (mono_security_core_clr_enabled ())
-							mono_security_core_clr_check_override (klass, cm, m1);
 
 						slot = mono_method_get_vtable_slot (m1);
 						if (slot == -1)
@@ -2028,9 +2015,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				}
 			}
 #endif /* FEATURE_COVARIANT_RETURNS */
-
-			if (mono_security_core_clr_enabled ())
-				mono_security_core_clr_check_override (klass, impl, decl);
 		}
 	}
 
@@ -2082,11 +2066,11 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 	g_assert (cur_slot <= max_vtsize);
 
-	/* Ensure that all vtable slots are filled with concrete instance methods */
+	/* Ensure that all vtable slots are filled with concrete methods */
 	// Now it is okay to implement a class that is not abstract and implements a interface that has an abstract method because it's reabstracted
 	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < cur_slot; ++i) {
-			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
+			if (vtable [i] == NULL || (vtable [i]->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (vtable [i] != NULL && mono_method_get_is_reabstracted (vtable [i]))
 					continue;
 				char *type_name = mono_type_get_full_name (klass);

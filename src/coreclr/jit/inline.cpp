@@ -467,6 +467,36 @@ void InlineContext::DumpData(unsigned indent)
 }
 
 //------------------------------------------------------------------------
+// EscapeNameForXml: Cheap xml quoting for values. Only < and & are
+//                   troublemakers, but change > for symmetry.
+//
+// Arguments:
+//    name     - string to escape (modifies content)
+
+static void EscapeNameForXml(char* name)
+{
+    int i = 0;
+    while (name[i] != '\0')
+    {
+        switch (name[i])
+        {
+            case '<':
+                name[i] = '[';
+                break;
+            case '>':
+                name[i] = ']';
+                break;
+            case '&':
+                name[i] = '#';
+                break;
+            default:
+                break;
+        }
+        i++;
+    }
+}
+
+//------------------------------------------------------------------------
 // DumpXml: Dump an InlineContext entry and all descendants in xml format
 //
 // Arguments:
@@ -499,6 +529,12 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         mdMethodDef calleeToken  = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
         unsigned    calleeHash   = compiler->compMethodHash(m_Callee);
         const char* inlineReason = InlGetObservationString(m_Observation);
+        const char* name         = compiler->eeGetMethodFullName(m_Callee);
+
+        char buf[1024];
+        strncpy(buf, name, sizeof(buf));
+        buf[sizeof(buf) - 1] = 0;
+        EscapeNameForXml(buf);
 
         int offset = -1;
         if (m_Offset != BAD_IL_OFFSET)
@@ -511,6 +547,17 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
+        fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
+        fprintf(file, "%*s<ILSize>%d</ILSize>\n", indent + 2, "", m_ILSize);
+        fprintf(file, "%*s<Devirtualized>%s</Devirtualized>\n", indent + 2, "", m_Devirtualized ? "True" : "False");
+        fprintf(file, "%*s<Guarded>%s</Guarded>\n", indent + 2, "", m_Guarded ? "True" : "False");
+        fprintf(file, "%*s<Unboxed>%s</Unboxed>\n", indent + 2, "", m_Unboxed ? "True" : "False");
+
+        // Ask InlinePolicy if it has anything to dump as well:
+        if ((m_Policy != nullptr) && (JitConfig.JitInlinePolicyDumpXml() != 0))
+        {
+            m_Policy->DumpXml(file, indent + 2);
+        }
 
         // Optionally, dump data about the inline
         const int dumpDataSetting = JitConfig.JitInlineDumpData();
@@ -1456,8 +1503,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
     DumpDataEnsurePolicyIsSet();
 
     // Cache references to compiler substructures.
-    const Compiler::Info&    info = m_Compiler->info;
-    const Compiler::Options& opts = m_Compiler->opts;
+    const Compiler::Info& info = m_Compiler->info;
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
@@ -1472,7 +1518,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
     unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
-        double countsPerSec      = CycleTimer::CyclesPerSecond();
+        double countsPerSec      = CachedCyclesPerSecond();
         double counts            = (double)compCycles;
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
@@ -1549,8 +1595,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     const Compiler::Info&    info = m_Compiler->info;
     const Compiler::Options& opts = m_Compiler->opts;
 
-    const bool isPrejitRoot  = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+    const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
@@ -1567,51 +1612,30 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
-        double countsPerSec      = CycleTimer::CyclesPerSecond();
+        double countsPerSec      = CachedCyclesPerSecond();
         double counts            = (double)compCycles;
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
 
     // Get method name just for root method, to make it a bit easier
     // to search for things in the inline xml.
-    const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+    const char* methodName = m_Compiler->eeGetMethodFullName(info.compMethodHnd);
 
-    // Cheap xml quoting for values. Only < and & are troublemakers,
-    // but change > for symmetry.
-    //
-    // Ok to truncate name, just ensure it's null terminated.
-    char buf[64];
+    char buf[1024];
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
-
-    for (size_t i = 0; i < _countof(buf); i++)
-    {
-        switch (buf[i])
-        {
-            case '<':
-                buf[i] = '[';
-                break;
-            case '>':
-                buf[i] = ']';
-                break;
-            case '&':
-                buf[i] = '#';
-                break;
-            default:
-                break;
-        }
-    }
+    EscapeNameForXml(buf);
 
     fprintf(file, "%*s<Method>\n", indent, "");
     fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", currentMethodToken);
     fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", hash);
-    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
     fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
     fprintf(file, "%*s<HotSize>%u</HotSize>\n", indent + 2, "", info.compTotalHotCodeSize);
     fprintf(file, "%*s<ColdSize>%u</ColdSize>\n", indent + 2, "", info.compTotalColdCodeSize);
     fprintf(file, "%*s<JitTime>%u</JitTime>\n", indent + 2, "", microsecondsSpentJitting);
     fprintf(file, "%*s<SizeEstimate>%u</SizeEstimate>\n", indent + 2, "", m_CurrentSizeEstimate / 10);
     fprintf(file, "%*s<TimeEstimate>%u</TimeEstimate>\n", indent + 2, "", m_CurrentTimeEstimate);
+    fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
 
     // For prejit roots also propagate out the assessment of the root method
     if (isPrejitRoot)
@@ -1666,6 +1690,9 @@ void InlineStrategy::FinalizeXml(FILE* file)
 //------------------------------------------------------------------------
 // GetRandom: setup or access random state
 //
+// Arguments:
+//   seed -- seed value to use if not doing random inlines
+//
 // Return Value:
 //    New or pre-existing random state.
 //
@@ -1674,11 +1701,11 @@ void InlineStrategy::FinalizeXml(FILE* file)
 //    specified externally (via stress or policy setting) and partially
 //    specified internally via method hash.
 
-CLRRandom* InlineStrategy::GetRandom()
+CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
 {
     if (m_Random == nullptr)
     {
-        int externalSeed = 0;
+        int externalSeed = optionalSeed;
 
 #ifdef DEBUG
 
@@ -1707,6 +1734,8 @@ CLRRandom* InlineStrategy::GetRandom()
         assert(internalSeed != 0);
 
         int seed = externalSeed ^ internalSeed;
+
+        JITDUMP("\n*** Using random seed ext(%u) ^ int(%u) = %u\n", externalSeed, internalSeed, seed);
 
         m_Random = new (m_Compiler, CMK_Inlining) CLRRandom();
         m_Random->Init(seed);

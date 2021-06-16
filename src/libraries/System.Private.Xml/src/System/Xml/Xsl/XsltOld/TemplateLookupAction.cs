@@ -94,7 +94,7 @@ namespace System.Xml.Xsl.XsltOld
         }
     }
 
-    internal class TemplateLookupActionDbg : TemplateLookupAction
+    internal sealed class TemplateLookupActionDbg : TemplateLookupAction
     {
         internal override void Execute(Processor processor, ActionFrame frame)
         {

@@ -314,13 +314,13 @@ namespace System.Xml
                 }
 
                 // must have no attributes
-                if (e.HasAttributes)
+                if (e!.HasAttributes)
                 {
                     return false;
                 }
 
                 // must have exactly one text node child
-                XmlNode? fc = e.FirstChild;
+                XmlNode? fc = e!.FirstChild;
                 if (fc == null || fc.NodeType != XmlNodeType.Text || fc.NextSibling != null)
                 {
                     return false;

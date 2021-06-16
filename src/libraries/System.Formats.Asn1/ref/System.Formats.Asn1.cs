@@ -33,7 +33,7 @@ namespace System.Formats.Asn1
         public static System.Formats.Asn1.Asn1Tag Decode(System.ReadOnlySpan<byte> source, out int bytesConsumed) { throw null; }
         public int Encode(System.Span<byte> destination) { throw null; }
         public bool Equals(System.Formats.Asn1.Asn1Tag other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public bool HasSameClassAndValue(System.Formats.Asn1.Asn1Tag other) { throw null; }
         public static bool operator ==(System.Formats.Asn1.Asn1Tag left, System.Formats.Asn1.Asn1Tag right) { throw null; }

@@ -121,8 +121,6 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
-    Zapper* zap = NULL;
-
     EX_TRY
     {
         GetCompileInfo()->SetIsGeneratingNgenPDB(TRUE);
@@ -130,7 +128,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
         NGenOptions ngo = {0};
         ngo.dwSize = sizeof(NGenOptions);
 
-        zap = Zapper::NewZapper(&ngo);
+        NewHolder<Zapper> zap(Zapper::NewZapper(&ngo));
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         zap->SetDontLoadJit();
@@ -1155,7 +1153,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
 
     // Set CORJIT_FLAG_MIN_OPT only if COMPlus_JitMinOpts == 1
     static ConfigDWORD g_jitMinOpts;
-    if (g_jitMinOpts.val_DontUse_(CLRConfig::UNSUPPORTED_JITMinOpts, 0) == 1)
+    if (g_jitMinOpts.val(CLRConfig::UNSUPPORTED_JITMinOpts) == 1)
     {
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
     }

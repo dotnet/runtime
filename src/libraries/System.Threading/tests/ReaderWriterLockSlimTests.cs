@@ -380,7 +380,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void ReleaseReadersWhenWaitingWriterTimesOut()
         {
@@ -449,7 +449,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void DontReleaseWaitingReadersWhenThereAreWaitingWriters()
         {

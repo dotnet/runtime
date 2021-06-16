@@ -4,6 +4,8 @@
     <Optimize>false</Optimize>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />

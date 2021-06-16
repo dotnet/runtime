@@ -310,7 +310,6 @@ CtxEntry* CtxEntryCache::CreateCtxEntry(LPVOID pCtxCookie, Thread * pSTAThread)
     CONTRACTL_END;
 
     CtxEntry * pCtxEntry = NULL;
-    Thread * pThread = GetThread();
 
     // If we don't already have a context entry for the context cookie,
     // we need to create one.
@@ -374,7 +373,7 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
             pSTAThread = pThread;
     }
 
-    ASSERT (GetThread ());
+    ASSERT (GetThreadNULLOk ());
     BOOL bFound = FALSE;
 
     ACQUIRE_SPINLOCK_NO_HOLDER(&m_Lock);
@@ -542,7 +541,7 @@ VOID IUnkEntry::Free()
     CONTRACTL_END;
 
     // Log the de-allocation of the IUnknown entry.
-    LOG((LF_INTEROP, LL_INFO10000, "IUnkEntry::Free called for context 0x%08X, to release entry with m_pUnknown %p, on thread %p\n", m_pCtxCookie, m_pUnknown, GetThread()));
+    LOG((LF_INTEROP, LL_INFO10000, "IUnkEntry::Free called for context 0x%08X, to release entry with m_pUnknown %p, on thread %p\n", m_pCtxCookie, m_pUnknown, GetThreadNULLOk()));
 
     if (g_fProcessDetach)
     {
@@ -1386,7 +1385,7 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
     CtxEntryEnterContextCallbackData *pData = (CtxEntryEnterContextCallbackData*)pComCallData->pUserDefined;
 
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     // Make sure the thread has been set before we call the user callback function.
     if (!pThread)

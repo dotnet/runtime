@@ -113,7 +113,6 @@ public:
     virtual ~ConvertedImageLayout();
 #endif
 private:
-    bool m_isInBundle;
     PT_RUNTIME_FUNCTION m_pExceptionDir;
 };
 

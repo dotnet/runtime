@@ -45,6 +45,6 @@ The following are good examples of breaking change issues
 
 There are additional documents that you should consult about breaking changes:
 
-* [Breaking changes](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/breaking-changes.md)
-* [Breaking change definitions](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/breaking-change-definitions.md)
-* [Breaking change rules](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/breaking-change-rules.md)
+* [Breaking changes](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/breaking-changes.md)
+* [Breaking change definitions](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/breaking-change-definitions.md)
+* [Breaking change rules](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/breaking-change-rules.md)

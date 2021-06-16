@@ -2,26 +2,24 @@ trigger:
   batch: false
   branches:
     include:
-    - master
+    - main
   paths:
     include:
     - src/coreclr/jit/*
+    - src/coreclr/inc/jiteeversionguid.h
 
 # This pipeline is supposed to be run only on merged changes
 # and should not be triggerable from a PR. 
 pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
     buildConfig: checked
     platforms:
+    - OSX_arm64
     - OSX_x64
     # Currently, Linux arm/arm64 machines don't have the Python 'pip3' tool, nor the azure-storage-blob package that
     # is required to do the JIT upload to Azure Storage. Thus, these platforms are disabled. If we can figure out how

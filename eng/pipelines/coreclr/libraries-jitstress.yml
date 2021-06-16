@@ -1,28 +1,14 @@
 trigger: none
 
 schedules:
-- cron: "0 7 * * 0,2,4,6"
-  displayName: Sun, Tue, Thu, Sat at 11:00 PM (UTC-8:00)
+- cron: "0 7 * * *"
+  displayName: Daily at 11:00 PM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
-- cron: "0 7 * * 1,3,5"
-  displayName: Mon, Wed, Fri at 11:00 PM (UTC-8:00)
-  branches:
-    include:
-    - release/*.*
-  always: true
-
-variables:
-  - template: /eng/pipelines/common/variables.yml
 
 jobs:
-#
-# Checkout repository
-#
-- ${{ if eq(variables.useCheckoutBundle, true) }}:
-  - template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Build CoreCLR checked and libraries Release

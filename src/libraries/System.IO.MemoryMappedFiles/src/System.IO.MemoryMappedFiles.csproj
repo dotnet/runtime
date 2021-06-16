@@ -6,6 +6,7 @@
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileOptions.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAccess.cs" />

@@ -9,7 +9,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.Hosting
 {
-    internal class AssemblyCatalogDebuggerProxy
+    internal sealed class AssemblyCatalogDebuggerProxy
     {
         private readonly AssemblyCatalog _catalog;
 

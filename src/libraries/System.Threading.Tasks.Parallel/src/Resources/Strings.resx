@@ -64,13 +64,13 @@
     <value>This method requires the use of an OrderedPartitioner with the KeysNormalized property set to true.</value>
   </data>
   <data name="Parallel_ForEach_PartitionerNotDynamic" xml:space="preserve">
-    <value>The Partitioner used here must support dynamic partitioning.</value>
+    <value>The Partitioner must support dynamic partitioning.</value>
   </data>
   <data name="Parallel_ForEach_PartitionerReturnedNull" xml:space="preserve">
-    <value>The Partitioner used here returned a null partitioner source.</value>
+    <value>The Partitioner returned a null partitioner source.</value>
   </data>
   <data name="Parallel_ForEach_NullEnumerator" xml:space="preserve">
-    <value>The Partitioner source returned a null enumerator.</value>
+    <value>The source returned a null enumerator.</value>
   </data>
   <data name="ParallelState_Break_InvalidOperationException_BreakAfterStop" xml:space="preserve">
     <value>Break was called after Stop was called.</value>

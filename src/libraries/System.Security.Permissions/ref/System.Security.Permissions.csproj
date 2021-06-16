@@ -1,23 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net5.0;netstandard2.0;net461;netcoreapp3.0</TargetFrameworks>
-  </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-  </PropertyGroup>
-  <!-- We conditionally apply net5.0+ obsoletions -->
-  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
-    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
+    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.Permissions.cs" />
-    <Compile Include="System.Security.Permissions.Forwards.cs" />
+    <Compile Include="System.Security.Permissions.cs" Condition="'$(TargetFramework)' != 'net461'" />
+    <Compile Include="System.Security.Permissions.Forwards.cs" Condition="'$(TargetFramework)' != 'net461'" />
+    <Compile Include="System.Security.Permissions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.Evidence.cs" Condition="'$(TargetFramework)' != 'net461' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+    <Compile Include="System.Security.Permissions.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' and '$(TargetFramework)' != 'net461'">
-    <Compile Include="System.Security.Permissions.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data.OracleClient" />
     <Reference Include="System.Net" />
@@ -27,26 +19,21 @@
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project. -->
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' and '$(TargetFramework)' != 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\ref\System.Windows.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Common\ref\System.Data.Common.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Csp\ref\System.Security.Cryptography.Csp.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Primitives\ref\System.Security.Cryptography.Primitives.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\ref\System.Text.RegularExpressions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'  or '$(TargetFramework)' == 'net5.0'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Reference Include="netstandard" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />

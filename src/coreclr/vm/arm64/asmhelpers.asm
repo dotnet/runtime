@@ -75,6 +75,13 @@
         ret     lr
     LEAF_END
 
+;; DWORD64 __stdcall GetDataCacheZeroIDReg(void);
+    LEAF_ENTRY GetDataCacheZeroIDReg
+        mrs     x0, dczid_el0
+        and     x0, x0, 31
+        ret     lr
+    LEAF_END
+
 ;;-----------------------------------------------------------------------------
 ;; This routine captures the machine state. It is used by helper method frame
 ;;-----------------------------------------------------------------------------
@@ -282,7 +289,7 @@ ThePreStubPatchLabel
     LEAF_END
 
 ;-----------------------------------------------------------------------------
-; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck)
+; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 ;
 ; Update shadow copies of the various state info required for barrier
 ;

@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <!-- SYSLIB0021: Derived cryptographic types are obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="CspParametersTests.cs" />
     <Compile Include="RSAImportExportCspBlobTests.cs" />
@@ -15,6 +16,8 @@
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs"

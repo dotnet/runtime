@@ -12,7 +12,6 @@
 #include <glib.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/profiler-private.h>

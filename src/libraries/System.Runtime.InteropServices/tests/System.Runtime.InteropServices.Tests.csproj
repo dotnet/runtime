@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -13,6 +14,9 @@
     <Compile Include="System\Runtime\InteropServices\BStrWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CULongTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CLongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CollectionsMarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAliasNameAttributeTests.cs" />
@@ -90,8 +94,10 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeInfoNameTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\InitHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\LastErrorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -140,6 +146,9 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />

@@ -282,46 +282,6 @@ namespace System.Tests
             Assert.Null(version);
         }
 
-        public static IEnumerable<object[]> ToString_TestData()
-        {
-            yield return new object[] { new Version(1, 2), new string[] { "", "1", "1.2" } };
-            yield return new object[] { new Version(1, 2, 3), new string[] { "", "1", "1.2", "1.2.3" } };
-            yield return new object[] { new Version(1, 2, 3, 4), new string[] { "", "1", "1.2", "1.2.3", "1.2.3.4" } };
-        }
-
-        [Theory]
-        [MemberData(nameof(ToString_TestData))]
-        public static void ToString_Invoke_ReturnsExpected(Version version, string[] expected)
-        {
-            for (int i = 0; i < expected.Length; i++)
-            {
-                Assert.Equal(expected[i], version.ToString(i));
-            }
-
-            int maxFieldCount = expected.Length - 1;
-            Assert.Equal(expected[maxFieldCount], version.ToString());
-
-            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.ToString(-1)); // Index < 0
-            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.ToString(maxFieldCount + 1)); // Index > version.fieldCount
-        }
-
-        private static void VerifyVersion(Version version, int major, int minor, int build, int revision)
-        {
-            Assert.Equal(major, version.Major);
-            Assert.Equal(minor, version.Minor);
-            Assert.Equal(build, version.Build);
-            Assert.Equal(revision, version.Revision);
-            Assert.Equal((short)(revision >> 16), version.MajorRevision);
-            Assert.Equal(unchecked((short)(revision & 0xFFFF)), version.MinorRevision);
-
-            Version clone = Assert.IsType<Version>(version.Clone());
-            Assert.NotSame(version, clone);
-            Assert.Equal(version.Major, clone.Major);
-            Assert.Equal(version.Minor, clone.Minor);
-            Assert.Equal(version.Build, clone.Build);
-            Assert.Equal(version.Revision, clone.Revision);
-        }
-
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
             foreach (object[] inputs in Parse_Valid_TestData())
@@ -363,6 +323,46 @@ namespace System.Tests
 
             Assert.False(Version.TryParse(input.AsSpan(), out Version version));
             Assert.Null(version);
+        }
+
+        public static IEnumerable<object[]> ToString_TestData()
+        {
+            yield return new object[] { new Version(1, 2), new string[] { "", "1", "1.2" } };
+            yield return new object[] { new Version(1, 2, 3), new string[] { "", "1", "1.2", "1.2.3" } };
+            yield return new object[] { new Version(1, 2, 3, 4), new string[] { "", "1", "1.2", "1.2.3", "1.2.3.4" } };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public static void ToString_Invoke_ReturnsExpected(Version version, string[] expected)
+        {
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i], version.ToString(i));
+            }
+
+            int maxFieldCount = expected.Length - 1;
+            Assert.Equal(expected[maxFieldCount], version.ToString());
+
+            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.ToString(-1)); // Index < 0
+            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.ToString(maxFieldCount + 1)); // Index > version.fieldCount
+        }
+
+        private static void VerifyVersion(Version version, int major, int minor, int build, int revision)
+        {
+            Assert.Equal(major, version.Major);
+            Assert.Equal(minor, version.Minor);
+            Assert.Equal(build, version.Build);
+            Assert.Equal(revision, version.Revision);
+            Assert.Equal((short)(revision >> 16), version.MajorRevision);
+            Assert.Equal(unchecked((short)(revision & 0xFFFF)), version.MinorRevision);
+
+            Version clone = Assert.IsType<Version>(version.Clone());
+            Assert.NotSame(version, clone);
+            Assert.Equal(version.Major, clone.Major);
+            Assert.Equal(version.Minor, clone.Minor);
+            Assert.Equal(version.Build, clone.Build);
+            Assert.Equal(version.Revision, clone.Revision);
         }
 
         [Theory]

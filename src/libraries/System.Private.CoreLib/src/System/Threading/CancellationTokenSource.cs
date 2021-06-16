@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -29,41 +30,26 @@ namespace System.Threading
         internal static readonly CancellationTokenSource s_neverCanceledSource = new CancellationTokenSource();
 
         /// <summary>Delegate used with <see cref="Timer"/> to trigger cancellation of a <see cref="CancellationTokenSource"/>.</summary>
-        private static readonly TimerCallback s_timerCallback = obj =>
-        {
-            Debug.Assert(obj is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {obj}");
-            ((CancellationTokenSource)obj).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
-        };
-
-        /// <summary>The number of callback partitions to use in a <see cref="CancellationTokenSource"/>. Must be a power of 2.</summary>
-        private static readonly int s_numPartitions = GetPartitionCount();
-        /// <summary><see cref="s_numPartitions"/> - 1, used to quickly mod into <see cref="_callbackPartitions"/>.</summary>
-        private static readonly int s_numPartitionsMask = s_numPartitions - 1;
+        private static readonly TimerCallback s_timerCallback = TimerCallback;
+        private static void TimerCallback(object? state) => // separated out into a named method to improve Timer diagnostics in a debugger
+            ((CancellationTokenSource)state!).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
 
         /// <summary>The current state of the CancellationTokenSource.</summary>
         private volatile int _state;
-        /// <summary>The ID of the thread currently executing the main body of CTS.Cancel()</summary>
-        /// <remarks>
-        /// This helps us to know if a call to ctr.Dispose() is running 'within' a cancellation callback.
-        /// This is updated as we move between the main thread calling cts.Cancel() and any syncContexts
-        /// that are used to actually run the callbacks.
-        /// </remarks>
-        private volatile int _threadIDExecutingCallbacks = -1;
-        /// <summary>Tracks the running callback to assist ctr.Dispose() to wait for the target callback to complete.</summary>
-        private long _executingCallbackId;
-        /// <summary>Partitions of callbacks.  Split into multiple partitions to help with scalability of registering/unregistering; each is protected by its own lock.</summary>
-        private volatile CallbackPartition?[]? _callbackPartitions;
+        /// <summary>Whether this <see cref="CancellationTokenSource"/> has been disposed.</summary>
+        private bool _disposed;
         /// <summary>TimerQueueTimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
         private volatile TimerQueueTimer? _timer;
         /// <summary><see cref="System.Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
         private volatile ManualResetEvent? _kernelEvent;
-        /// <summary>Whether this <see cref="CancellationTokenSource"/> has been disposed.</summary>
-        private bool _disposed;
+        /// <summary>Registration state for the source.</summary>
+        /// <remarks>Lazily-initialized, also serving as the lock to protect its contained state.</remarks>
+        private Registrations? _registrations;
 
         // legal values for _state
-        private const int NotCanceledState = 1;
-        private const int NotifyingState = 2;
-        private const int NotifyingCompleteState = 3;
+        private const int NotCanceledState = 0; // default value of _state
+        private const int NotifyingState = 1;
+        private const int NotifyingCompleteState = 2;
 
         /// <summary>Gets whether cancellation has been requested for this <see cref="CancellationTokenSource" />.</summary>
         /// <value>Whether cancellation has been requested for this <see cref="CancellationTokenSource" />.</value>
@@ -80,20 +66,10 @@ namespace System.Threading
         /// canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested => _state >= NotifyingState;
+        public bool IsCancellationRequested => _state != NotCanceledState;
 
         /// <summary>A simple helper to determine whether cancellation has finished.</summary>
         internal bool IsCancellationCompleted => _state == NotifyingCompleteState;
-
-        /// <summary>A simple helper to determine whether disposal has occurred.</summary>
-        internal bool IsDisposed => _disposed;
-
-        /// <summary>The ID of the thread that is running callbacks.</summary>
-        internal int ThreadIDExecutingCallbacks
-        {
-            get => _threadIDExecutingCallbacks;
-            set => _threadIDExecutingCallbacks = value;
-        }
 
         /// <summary>Gets the <see cref="CancellationToken"/> associated with this <see cref="CancellationTokenSource"/>.</summary>
         /// <value>The <see cref="CancellationToken"/> associated with this <see cref="CancellationTokenSource"/>.</value>
@@ -139,12 +115,8 @@ namespace System.Threading
             }
         }
 
-
-        /// <summary>Gets the ID of the currently executing callback.</summary>
-        internal long ExecutingCallback => Volatile.Read(ref _executingCallbackId);
-
         /// <summary>Initializes the <see cref="CancellationTokenSource"/>.</summary>
-        public CancellationTokenSource() => _state = NotCanceledState;
+        public CancellationTokenSource() { }
 
         /// <summary>
         /// Constructs a <see cref="CancellationTokenSource"/> that will be canceled after a specified time span.
@@ -170,7 +142,7 @@ namespace System.Threading
             long totalMilliseconds = (long)delay.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
-                throw new ArgumentOutOfRangeException(nameof(delay));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay);
             }
 
             InitializeWithTimer((uint)totalMilliseconds);
@@ -199,7 +171,7 @@ namespace System.Threading
         {
             if (millisecondsDelay < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay);
             }
 
             InitializeWithTimer((uint)millisecondsDelay);
@@ -217,13 +189,12 @@ namespace System.Threading
             }
             else
             {
-                _state = NotCanceledState;
                 _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
 
                 // The timer roots this CTS instance while it's scheduled.  That is by design, so
                 // that code like:
-                //     CancellationToken ct = new CancellationTokenSource(timeout).Token;
-                // will successfully cancel the token after the timeout.
+                //     new CancellationTokenSource(timeout).Token.Register(() => ...);
+                // will successfully invoke the delegate after the timeout.
             }
         }
 
@@ -394,7 +365,53 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Attempts to reset the <see cref="CancellationTokenSource"/> to be used for an unrelated operation.
+        /// </summary>
+        /// <returns>
+        /// true if the <see cref="CancellationTokenSource"/> has not had cancellation requested and could
+        /// have its state reset to be reused for a subsequent operation; otherwise, false.
+        /// </returns>
+        /// <remarks>
+        /// <see cref="TryReset"/> is intended to be used by the sole owner of the <see cref="CancellationTokenSource"/>
+        /// when it is known that the operation with which the <see cref="CancellationTokenSource"/> was used has
+        /// completed, no one else will be attempting to cancel it, and any registrations still remaining are erroneous.
+        /// Upon a successful reset, such registrations will no longer be notified for any subsequent cancellation of the
+        /// <see cref="CancellationTokenSource"/>; however, if any component still holds a reference to this
+        /// <see cref="CancellationTokenSource"/> either directly or indirectly via a <see cref="CancellationToken"/>
+        /// handed out from it, polling via their reference will show the current state any time after the reset as
+        /// it's the same instance.  Usage of <see cref="TryReset"/> concurrently with requesting cancellation is not
+        /// thread-safe and may result in TryReset returning true even if cancellation was already requested and may result
+        /// in registrations not being invoked as part of the concurrent cancellation request.
+        /// </remarks>
+        public bool TryReset()
+        {
+            ThrowIfDisposed();
 
+            // We can only reset if cancellation has not yet been requested: we never want to allow a CancellationToken
+            // to transition from canceled to non-canceled.
+            if (_state == NotCanceledState)
+            {
+                // If there is no timer, then we're free to reset.  If there is a timer, then we need to first try
+                // to reset it to be infinite so that it won't fire, and then recognize that it could have already
+                // fired by the time we successfully changed it, and so check to see whether that's possibly the case.
+                // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
+                bool reset =
+                    _timer is not TimerQueueTimer timer ||
+                    (timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued);
+
+                if (reset)
+                {
+                    // We're not canceled and no timer will run to cancel us.
+                    // Clear out all the registrations, and return that we've successfully reset.
+                    Volatile.Read(ref _registrations)?.UnregisterAll();
+                    return true;
+                }
+            }
+
+            // Failed to reset.
+            return false;
+        }
 
         /// <summary>Releases the resources used by this <see cref="CancellationTokenSource" />.</summary>
         /// <remarks>This method is not thread-safe for any other concurrent calls.</remarks>
@@ -440,7 +457,7 @@ namespace System.Threading
                     timer.Close(); // TimerQueueTimer.Close is thread-safe
                 }
 
-                _callbackPartitions = null; // free for GC; Cancel correctly handles a null field
+                _registrations = null; // allow the GC to clean up registrations
 
                 // If a kernel event was created via WaitHandle, we'd like to Dispose of it.  However,
                 // we only want to do so if it's not being used by Cancel concurrently.  First, we
@@ -465,102 +482,104 @@ namespace System.Threading
         {
             if (_disposed)
             {
-                ThrowObjectDisposedException();
+                ThrowHelper.ThrowObjectDisposedException(ExceptionResource.CancellationTokenSource_Disposed);
             }
         }
-
-        /// <summary>Throws an <see cref="ObjectDisposedException"/>.  Separated out from ThrowIfDisposed to help with inlining.</summary>
-        [DoesNotReturn]
-        private static void ThrowObjectDisposedException() =>
-            throw new ObjectDisposedException(null, SR.CancellationTokenSource_Disposed);
 
         /// <summary>
         /// Registers a callback object. If cancellation has already occurred, the
         /// callback will have been run by the time this method returns.
         /// </summary>
-        internal CancellationTokenRegistration InternalRegister(
+        internal CancellationTokenRegistration Register(
             Delegate callback, object? stateForCallback, SynchronizationContext? syncContext, ExecutionContext? executionContext)
         {
             Debug.Assert(this != s_neverCanceledSource, "This source should never be exposed via a CancellationToken.");
             Debug.Assert(callback is Action<object?> || callback is Action<object?, CancellationToken>);
 
             // If not canceled, register the handler; if canceled already, run the callback synchronously.
-            // This also ensures that during ExecuteCallbackHandlers() there will be no mutation of the _callbackPartitions.
             if (!IsCancellationRequested)
             {
-                // In order to enable code to not leak too many handlers, we allow Dispose to be called concurrently
-                // with Register.  While this is not a recommended practice, consumers can and do use it this way.
-                // We don't make any guarantees about whether the CTS will hold onto the supplied callback if the CTS
-                // has already been disposed when the callback is registered, but we try not to while at the same time
-                // not paying any non-negligible overhead.  The simple compromise is to check whether we're disposed
-                // (not volatile), and if we see we are, to return an empty registration. If there's a race and _disposed
-                // is false even though it's been disposed, or if the disposal request comes in after this line, we simply
-                // run the minor risk of having _callbackPartitions reinitialized (after it was cleared to null during Dispose).
+                // We allow Dispose to be called concurrently with Register.  While this is not a recommended practice,
+                // consumers can and do use it this way.
                 if (_disposed)
                 {
                     return default;
                 }
 
-                // Get the partitions...
-                CallbackPartition?[]? partitions = _callbackPartitions;
-                if (partitions == null)
+                // Get the registrations object. It's lazily initialized to keep the size of a CTS smaller for situations
+                // where all operations associated with the CTS complete synchronously and never actually need to register,
+                // or all only poll.
+                Registrations? registrations = Volatile.Read(ref _registrations);
+                if (registrations is null)
                 {
-                    partitions = new CallbackPartition[s_numPartitions];
-                    partitions = Interlocked.CompareExchange(ref _callbackPartitions, partitions, null) ?? partitions;
+                    registrations = new Registrations(this);
+                    registrations = Interlocked.CompareExchange(ref _registrations, registrations, null) ?? registrations;
                 }
 
-                // ...and determine which partition to use.
-                int partitionIndex = Environment.CurrentManagedThreadId & s_numPartitionsMask;
-                Debug.Assert(partitionIndex < partitions.Length, $"Expected {partitionIndex} to be less than {partitions.Length}");
-                CallbackPartition? partition = partitions[partitionIndex];
-                if (partition == null)
+                // If it looks like there's a node in the freelist we could grab, grab the lock and try to get, configure,
+                // and register the node.
+                CallbackNode? node = null;
+                long id = 0;
+                if (registrations.FreeNodeList is not null)
                 {
-                    partition = new CallbackPartition(this);
-                    partition = Interlocked.CompareExchange(ref partitions[partitionIndex], partition, null) ?? partition;
+                    registrations.EnterLock();
+                    try
+                    {
+                        // Try to take a free node.  If we're able to, configure the node and register it.
+                        node = registrations.FreeNodeList;
+                        if (node is not null)
+                        {
+                            Debug.Assert(node.Prev == null, "Nodes in the free list should all have a null Prev");
+                            registrations.FreeNodeList = node.Next;
+
+                            node.Id = id = registrations.NextAvailableId++;
+                            node.Callback = callback;
+                            node.CallbackState = stateForCallback;
+                            node.ExecutionContext = executionContext;
+                            node.SynchronizationContext = syncContext;
+                            node.Next = registrations.Callbacks;
+                            registrations.Callbacks = node;
+                            if (node.Next != null)
+                            {
+                                node.Next.Prev = node;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        registrations.ExitLock();
+                    }
                 }
 
-                // Store the callback information into the callback arrays.
-                long id;
-                CallbackNode? node;
-                bool lockTaken = false;
-                partition.Lock.Enter(ref lockTaken);
-                try
+                // If we were unsuccessful in using a free node, create a new one, configure it, and register it.
+                if (node is null)
                 {
-                    // Assign the next available unique ID.
-                    id = partition.NextAvailableId++;
-                    Debug.Assert(id != 0, "IDs should never be the reserved value 0.");
+                    // Allocate the node if we couldn't get one from the free list.  We avoid
+                    // doing this while holding the spin lock, to avoid a potentially arbitrary
+                    // amount of GC-related work under the lock, which we aim to keep very tight,
+                    // just a few assignments.
+                    node = new CallbackNode(registrations);
 
-                    // Get a node, from the free list if possible or else a new one.
-                    node = partition.FreeNodeList;
-                    if (node != null)
-                    {
-                        partition.FreeNodeList = node.Next;
-                        Debug.Assert(node.Prev == null, "Nodes in the free list should all have a null Prev");
-                        // node.Next will be overwritten below so no need to set it here.
-                    }
-                    else
-                    {
-                        node = new CallbackNode(partition);
-                    }
-
-                    // Configure the node.
-                    node.Id = id;
                     node.Callback = callback;
                     node.CallbackState = stateForCallback;
                     node.ExecutionContext = executionContext;
                     node.SynchronizationContext = syncContext;
 
-                    // Add it to the callbacks list.
-                    node.Next = partition.Callbacks;
-                    if (node.Next != null)
+                    registrations.EnterLock();
+                    try
                     {
-                        node.Next.Prev = node;
+                        node.Id = id = registrations.NextAvailableId++;
+                        node.Next = registrations.Callbacks;
+                        if (node.Next != null)
+                        {
+                            node.Next.Prev = node;
+                        }
+                        registrations.Callbacks = node;
                     }
-                    partition.Callbacks = node;
-                }
-                finally
-                {
-                    partition.Lock.Exit(useMemoryBarrier: false); // no check on lockTaken needed without thread aborts
+                    finally
+                    {
+                        registrations.ExitLock();
+                    }
                 }
 
                 // If cancellation hasn't been requested, return the registration.
@@ -568,10 +587,10 @@ namespace System.Threading
                 // ourselves, but if we can't unregister it (e.g. the thread running Cancel snagged
                 // our callback for execution), return the registration so that the caller can wait
                 // for callback completion in ctr.Dispose().
-                var ctr = new CancellationTokenRegistration(id, node);
-                if (!IsCancellationRequested || !partition.Unregister(id, node))
+                Debug.Assert(id != 0, "IDs should never be the reserved value 0.");
+                if (!IsCancellationRequested || !registrations.Unregister(id, node))
                 {
-                    return ctr;
+                    return new CancellationTokenRegistration(id, node);
                 }
             }
 
@@ -614,110 +633,101 @@ namespace System.Threading
         {
             Debug.Assert(IsCancellationRequested, "ExecuteCallbackHandlers should only be called after setting IsCancellationRequested->true");
 
-            // Record the threadID being used for running the callbacks.
-            ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
-
             // If there are no callbacks to run, we can safely exit.  Any race conditions to lazy initialize it
             // will see IsCancellationRequested and will then run the callback themselves.
-            CallbackPartition?[]? partitions = Interlocked.Exchange(ref _callbackPartitions, null);
-            if (partitions == null)
+            Registrations? registrations = Interlocked.Exchange(ref _registrations, null);
+            if (registrations is null)
             {
                 Interlocked.Exchange(ref _state, NotifyingCompleteState);
                 return;
             }
 
+            // Record the threadID being used for running the callbacks.
+            registrations.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
+
             List<Exception>? exceptionList = null;
             try
             {
-                // For each partition, and each callback in that partition, execute the associated handler.
                 // We call the delegates in LIFO order on each partition so that callbacks fire 'deepest first'.
                 // This is intended to help with nesting scenarios so that child enlisters cancel before their parents.
-                foreach (CallbackPartition? partition in partitions)
+
+                // Iterate through all nodes in the partition.  We remove each node prior
+                // to processing it.  This allows for unregistration of subsequent registrations
+                // to still be effective even as other registrations are being invoked.
+                while (true)
                 {
-                    if (partition == null)
+                    CallbackNode? node;
+                    registrations.EnterLock();
+                    try
                     {
-                        // Uninitialized partition. Nothing to do.
-                        continue;
+                        // Pop the next registration from the callbacks list.
+                        node = registrations.Callbacks;
+                        if (node == null)
+                        {
+                            // No more registrations to process.
+                            break;
+                        }
+
+                        Debug.Assert(node.Registrations.Source == this);
+                        Debug.Assert(node.Prev == null);
+                        if (node.Next != null)
+                        {
+                            node.Next.Prev = null;
+                        }
+                        registrations.Callbacks = node.Next;
+
+                        // Publish the intended callback ID, to ensure ctr.Dispose can tell if a wait is necessary.
+                        // This write happens while the lock is held so that Dispose is either able to successfully
+                        // unregister or is guaranteed to see an accurate executing callback ID, since it takes
+                        // the same lock to remove the node from the callback list.
+                        registrations.ExecutingCallbackId = node.Id;
+
+                        // Now that we've grabbed the Id, reset the node's Id to 0.  This signals
+                        // to code unregistering that the node is no longer associated with a callback.
+                        node.Id = 0;
+                    }
+                    finally
+                    {
+                        registrations.ExitLock();
                     }
 
-                    // Iterate through all nodes in the partition.  We remove each node prior
-                    // to processing it.  This allows for unregistration of subsequent registrations
-                    // to still be effective even as other registrations are being invoked.
-                    while (true)
+                    // Invoke the callback on this thread if there's no sync context or on the
+                    // target sync context if there is one.
+                    try
                     {
-                        CallbackNode? node;
-                        bool lockTaken = false;
-                        partition.Lock.Enter(ref lockTaken);
-                        try
+                        if (node.SynchronizationContext != null)
                         {
-                            // Pop the next registration from the callbacks list.
-                            node = partition.Callbacks;
-                            if (node == null)
+                            // Transition to the target syncContext and continue there.
+                            node.SynchronizationContext.Send(static s =>
                             {
-                                // No more registrations to process.
-                                break;
-                            }
-                            else
-                            {
-                                Debug.Assert(node.Prev == null);
-                                if (node.Next != null) node.Next.Prev = null;
-                                partition.Callbacks = node.Next;
-                            }
-
-                            // Publish the intended callback ID, to ensure ctr.Dispose can tell if a wait is necessary.
-                            // This write happens while the lock is held so that Dispose is either able to successfully
-                            // unregister or is guaranteed to see an accurate executing callback ID, since it takes
-                            // the same lock to remove the node from the callback list.
-                            _executingCallbackId = node.Id;
-
-                            // Now that we've grabbed the Id, reset the node's Id to 0.  This signals
-                            // to code unregistering that the node is no longer associated with a callback.
-                            node.Id = 0;
+                                var n = (CallbackNode)s!;
+                                n.Registrations.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
+                                n.ExecuteCallback();
+                            }, node);
+                            registrations.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId; // above may have altered ThreadIDExecutingCallbacks, so reset it
                         }
-                        finally
+                        else
                         {
-                            partition.Lock.Exit(useMemoryBarrier: false); // no check on lockTaken needed without thread aborts
+                            node.ExecuteCallback();
                         }
-
-                        // Invoke the callback on this thread if there's no sync context or on the
-                        // target sync context if there is one.
-                        try
-                        {
-                            if (node.SynchronizationContext != null)
-                            {
-                                // Transition to the target syncContext and continue there.
-                                node.SynchronizationContext.Send(static s =>
-                                {
-                                    var n = (CallbackNode)s!;
-                                    n.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
-                                    n.ExecuteCallback();
-                                }, node);
-                                ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId; // above may have altered ThreadIDExecutingCallbacks, so reset it
-                            }
-                            else
-                            {
-                                node.ExecuteCallback();
-                            }
-                        }
-                        catch (Exception ex) when (!throwOnFirstException)
-                        {
-                            // Store the exception and continue
-                            (exceptionList ??= new List<Exception>()).Add(ex);
-                        }
-
-                        // Drop the node. While we could add it to the free list, doing so has cost (we'd need to take the lock again)
-                        // and very limited value.  Since a source can only be canceled once, and after it's canceled registrations don't
-                        // need nodes, the only benefit to putting this on the free list would be if Register raced with cancellation
-                        // occurring, such that it could have used this free node but would instead need to allocate a new node (if
-                        // there wasn't another free node available).
                     }
+                    catch (Exception ex) when (!throwOnFirstException)
+                    {
+                        // Store the exception and continue
+                        (exceptionList ??= new List<Exception>()).Add(ex);
+                    }
+
+                    // Drop the node. While we could add it to the free list, doing so has cost (we'd need to take the lock again)
+                    // and very limited value.  Since a source can only be canceled once, and after it's canceled registrations don't
+                    // need nodes, the only benefit to putting this on the free list would be if Register raced with cancellation
+                    // occurring, such that it could have used this free node but would instead need to allocate a new node (if
+                    // there wasn't another free node available).
                 }
             }
             finally
             {
                 _state = NotifyingCompleteState;
-                Volatile.Write(ref _executingCallbackId, 0);
-                Interlocked.MemoryBarrier(); // for safety, prevent reorderings crossing this point and seeing inconsistent state.
+                Interlocked.Exchange(ref registrations.ExecutingCallbackId, 0); // for safety, prevent reorderings crossing this point and seeing inconsistent state.
             }
 
             if (exceptionList != null)
@@ -725,21 +735,6 @@ namespace System.Threading
                 Debug.Assert(exceptionList.Count > 0, $"Expected {exceptionList.Count} > 0");
                 throw new AggregateException(exceptionList);
             }
-        }
-
-        /// <summary>Gets the number of callback partitions to use based on the number of cores.</summary>
-        /// <returns>A power of 2 representing the number of partitions to use.</returns>
-        private static int GetPartitionCount()
-        {
-            int procs = Environment.ProcessorCount;
-            int count =
-                procs > 8 ? 16 : // capped at 16 to limit memory usage on larger machines
-                procs > 4 ? 8 :
-                procs > 2 ? 4 :
-                procs > 1 ? 2 :
-                1;
-            Debug.Assert(count > 0 && (count & (count - 1)) == 0, $"Got {count}, but expected a power of 2");
-            return count;
         }
 
         /// <summary>
@@ -788,47 +783,6 @@ namespace System.Threading
                 // hence each item cannot be null itself, and reads of the payloads cannot be torn.
                 _ => new LinkedNCancellationTokenSource(tokens),
             };
-        }
-
-        /// <summary>
-        /// Wait for a single callback to complete (or, more specifically, to not be running).
-        /// It is ok to call this method if the callback has already finished.
-        /// Calling this method before the target callback has been selected for execution would be an error.
-        /// </summary>
-        internal void WaitForCallbackToComplete(long id)
-        {
-            SpinWait sw = default;
-            while (ExecutingCallback == id)
-            {
-                sw.SpinOnce();  // spin, as we assume callback execution is fast and that this situation is rare.
-            }
-        }
-
-        /// <summary>
-        /// Asynchronously wait for a single callback to complete (or, more specifically, to not be running).
-        /// It is ok to call this method if the callback has already finished.
-        /// Calling this method before the target callback has been selected for execution would be an error.
-        /// </summary>
-        internal ValueTask WaitForCallbackToCompleteAsync(long id)
-        {
-            // If the currently executing callback is not the target one, then the target one has already
-            // completed and we can simply return.  This should be the most common case, as the caller
-            // calls if we're currently canceling but doesn't know what callback is running, if any.
-            if (ExecutingCallback != id)
-            {
-                return default;
-            }
-
-            // The specified callback is actually running: queue a task that'll poll for the currently
-            // executing callback to complete. In general scheduling such a work item that polls is a really
-            // unfortunate thing to do.  However, we expect this to be a rare case (disposing while the associated
-            // callback is running), and brief when it happens (so the polling will be minimal), and making
-            // this work with a callback mechanism will add additional cost to other more common cases.
-            return new ValueTask(Task.Factory.StartNew(static s =>
-            {
-                var state = (TupleSlim<CancellationTokenSource, long>)s!;
-                state.Item1.WaitForCallbackToComplete(state.Item2);
-            }, new TupleSlim<CancellationTokenSource, long>(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
         }
 
         private sealed class Linked1CancellationTokenSource : CancellationTokenSource
@@ -885,7 +839,7 @@ namespace System.Threading
             };
             private CancellationTokenRegistration[]? _linkingRegistrations;
 
-            internal LinkedNCancellationTokenSource(params CancellationToken[] tokens)
+            internal LinkedNCancellationTokenSource(CancellationToken[] tokens)
             {
                 _linkingRegistrations = new CancellationTokenRegistration[tokens.Length];
 
@@ -922,28 +876,78 @@ namespace System.Threading
             }
         }
 
-        internal sealed class CallbackPartition
+        private static void Invoke(Delegate d, object? state, CancellationTokenSource source)
         {
-            /// <summary>The associated source that owns this partition.</summary>
+            Debug.Assert(d is Action<object?> || d is Action<object?, CancellationToken>);
+
+            if (d is Action<object?> actionWithState)
+            {
+                actionWithState(state);
+            }
+            else
+            {
+                ((Action<object?, CancellationToken>)d)(state, new CancellationToken(source));
+            }
+        }
+
+        /// <summary>Set of all the registrations in the token source.</summary>
+        /// <remarks>
+        /// Separated out into a separate instance to keep CancellationTokenSource smaller for the case where one is created but nothing is registered with it.
+        /// This happens not infrequently, in particular when one is created for an operation that ends up completing synchronously / quickly.
+        /// </remarks>
+        internal sealed class Registrations
+        {
+            /// <summary>The associated source.</summary>
             public readonly CancellationTokenSource Source;
-            /// <summary>Lock that protects all state in the partition.</summary>
-            public SpinLock Lock = new SpinLock(enableThreadOwnerTracking: false); // mutable struct; do not make this readonly
-            /// <summary>Doubly-linked list of callbacks registered with the partition. Callbacks are removed during unregistration and as they're invoked.</summary>
+            /// <summary>Doubly-linked list of callbacks registered with the source. Callbacks are removed during unregistration and as they're invoked.</summary>
             public CallbackNode? Callbacks;
             /// <summary>Singly-linked list of free nodes that can be used for subsequent callback registrations.</summary>
             public CallbackNode? FreeNodeList;
             /// <summary>Every callback is assigned a unique, never-reused ID.  This defines the next available ID.</summary>
             public long NextAvailableId = 1; // avoid using 0, as that's the default long value and used to represent an empty node
+            /// <summary>Tracks the running callback to assist ctr.Dispose() to wait for the target callback to complete.</summary>
+            public long ExecutingCallbackId;
+            /// <summary>The ID of the thread currently executing the main body of CTS.Cancel()</summary>
+            /// <remarks>
+            /// This helps us to know if a call to ctr.Dispose() is running 'within' a cancellation callback.
+            /// This is updated as we move between the main thread calling cts.Cancel() and any syncContexts
+            /// that are used to actually run the callbacks.
+            /// </remarks>
+            public volatile int ThreadIDExecutingCallbacks = -1;
+            /// <summary>Spin lock that protects state in the instance.</summary>
+            private int _lock;
 
-            public CallbackPartition(CancellationTokenSource source)
+            /// <summary>Initializes the instance.</summary>
+            /// <param name="source">The associated source.</param>
+            public Registrations(CancellationTokenSource source) => Source = source;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // used in only two places, one of which is a hot path
+            private void Recycle(CallbackNode node)
             {
-                Debug.Assert(source != null, "Expected non-null source");
-                Source = source;
+                Debug.Assert(_lock == 1);
+
+                // Clear out the unused node and put it on the singly-linked free list.
+                // The only field we don't clear out is the associated Registrations, as that's fixed
+                // throughout the node's lifetime.
+                node.Id = 0;
+                node.Callback = null;
+                node.CallbackState = null;
+                node.ExecutionContext = null;
+                node.SynchronizationContext = null;
+
+                node.Prev = null;
+                node.Next = FreeNodeList;
+                FreeNodeList = node;
             }
 
-            internal bool Unregister(long id, CallbackNode node)
+            /// <summary>Unregisters a callback.</summary>
+            /// <param name="id">The expected id of the registration.</param>
+            /// <param name="node">The callback node.</param>
+            /// <returns>true if the node was found and removed; false if it couldn't be found or didn't match the provided id.</returns>
+            public bool Unregister(long id, CallbackNode node)
             {
                 Debug.Assert(node != null, "Expected non-null node");
+                Debug.Assert(node.Registrations == this, "Expected node to come from this registrations instance");
 
                 if (id == 0)
                 {
@@ -953,8 +957,7 @@ namespace System.Threading
                     return false;
                 }
 
-                bool lockTaken = false;
-                Lock.Enter(ref lockTaken);
+                EnterLock();
                 try
                 {
                     if (node.Id != id)
@@ -986,32 +989,112 @@ namespace System.Threading
                         node.Next.Prev = node.Prev;
                     }
 
-                    // Clear out the now unused node and put it on the singly-linked free list.
-                    // The only field we don't clear out is the associated Partition, as that's fixed
-                    // throughout the nodes lifetime, regardless of how many times its reused by
-                    // the same partition (it's never used on a different partition).
-                    node.Id = 0;
-                    node.Callback = null;
-                    node.CallbackState = null;
-                    node.ExecutionContext = null;
-                    node.SynchronizationContext = null;
-                    node.Prev = null;
-                    node.Next = FreeNodeList;
-                    FreeNodeList = node;
+                    Recycle(node);
 
                     return true;
                 }
                 finally
                 {
-                    Lock.Exit(useMemoryBarrier: false); // no check on lockTaken needed without thread aborts
+                    ExitLock();
                 }
+            }
+
+            /// <summary>Moves all registrations to the free list.</summary>
+            public void UnregisterAll()
+            {
+                EnterLock();
+                try
+                {
+                    // Null out all callbacks.
+                    CallbackNode? node = Callbacks;
+                    Callbacks = null;
+
+                    // Reset and move each node that was in the callbacks list to the free list.
+                    while (node != null)
+                    {
+                        CallbackNode? next = node.Next;
+                        Recycle(node);
+                        node = next;
+                    }
+                }
+                finally
+                {
+                    ExitLock();
+                }
+            }
+
+            /// <summary>
+            /// Wait for a single callback to complete (or, more specifically, to not be running).
+            /// It is ok to call this method if the callback has already finished.
+            /// Calling this method before the target callback has been selected for execution would be an error.
+            /// </summary>
+            public void WaitForCallbackToComplete(long id)
+            {
+                SpinWait sw = default;
+                while (Volatile.Read(ref ExecutingCallbackId) == id)
+                {
+                    sw.SpinOnce();  // spin, as we assume callback execution is fast and that this situation is rare.
+                }
+            }
+
+            /// <summary>
+            /// Asynchronously wait for a single callback to complete (or, more specifically, to not be running).
+            /// It is ok to call this method if the callback has already finished.
+            /// Calling this method before the target callback has been selected for execution would be an error.
+            /// </summary>
+            public ValueTask WaitForCallbackToCompleteAsync(long id)
+            {
+                // If the currently executing callback is not the target one, then the target one has already
+                // completed and we can simply return.  This should be the most common case, as the caller
+                // calls if we're currently canceling but doesn't know what callback is running, if any.
+                if (Volatile.Read(ref ExecutingCallbackId) != id)
+                {
+                    return default;
+                }
+
+                // The specified callback is actually running: queue an async loop that'll poll for the currently executing
+                // callback to complete. While such polling isn't ideal, we expect this to be a rare case (disposing while
+                // the associated callback is running), and brief when it happens (so the polling will be minimal), and making
+                // this work with a callback mechanism will add additional cost to other more common cases.
+                return new ValueTask(Task.Factory.StartNew(static async s =>
+                {
+                    var state = (TupleSlim<Registrations, long>)s!;
+                    while (Volatile.Read(ref state.Item1.ExecutingCallbackId) == state.Item2)
+                    {
+                        await Task.Yield();
+                    }
+                }, new TupleSlim<Registrations, long>(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap());
+            }
+
+            /// <summary>Enters the lock for this instance.  The current thread must not be holding the lock, but that is not validated.</summary>
+            public void EnterLock()
+            {
+                ref int value = ref _lock;
+                if (Interlocked.Exchange(ref value, 1) != 0)
+                {
+                    Contention(ref value);
+
+                    [MethodImpl(MethodImplOptions.NoInlining)]
+                    static void Contention(ref int value)
+                    {
+                        SpinWait sw = default;
+                        do { sw.SpinOnce(); } while (Interlocked.Exchange(ref value, 1) == 1);
+                    }
+                }
+            }
+
+            /// <summary>Exits the lock for this instance.  The current thread must be holding the lock, but that is not validated.</summary>
+            public void ExitLock()
+            {
+                Debug.Assert(_lock == 1);
+                Volatile.Write(ref _lock, 0);
             }
         }
 
         /// <summary>All of the state associated a registered callback, in a node that's part of a linked list of registered callbacks.</summary>
         internal sealed class CallbackNode
         {
-            public readonly CallbackPartition Partition;
+            public readonly Registrations Registrations;
             public CallbackNode? Prev;
             public CallbackNode? Next;
 
@@ -1021,10 +1104,10 @@ namespace System.Threading
             public ExecutionContext? ExecutionContext;
             public SynchronizationContext? SynchronizationContext;
 
-            public CallbackNode(CallbackPartition partition)
+            public CallbackNode(Registrations registrations)
             {
-                Debug.Assert(partition != null, "Expected non-null partition");
-                Partition = partition;
+                Debug.Assert(registrations != null, "Expected non-null parent registrations");
+                Registrations = registrations;
             }
 
             public void ExecuteCallback()
@@ -1033,7 +1116,7 @@ namespace System.Threading
                 if (context is null)
                 {
                     Debug.Assert(Callback != null);
-                    Invoke(Callback, CallbackState, Partition.Source);
+                    Invoke(Callback, CallbackState, Registrations.Source);
                 }
                 else
                 {
@@ -1041,24 +1124,9 @@ namespace System.Threading
                     {
                         var node = (CallbackNode)s!;
                         Debug.Assert(node.Callback != null);
-                        Invoke(node.Callback, node.CallbackState, node.Partition.Source);
+                        Invoke(node.Callback, node.CallbackState, node.Registrations.Source);
                     }, this);
-
                 }
-            }
-        }
-
-        private static void Invoke(Delegate d, object? state, CancellationTokenSource source)
-        {
-            Debug.Assert(d is Action<object?> || d is Action<object?, CancellationToken>);
-
-            if (d is Action<object?> actionWithState)
-            {
-                actionWithState(state);
-            }
-            else
-            {
-                ((Action<object?, CancellationToken>)d)(state, new CancellationToken(source));
             }
         }
     }

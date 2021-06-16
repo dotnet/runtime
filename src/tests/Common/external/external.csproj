@@ -14,7 +14,7 @@
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
-    <XUnitRunnerTargetFramework>netcoreapp2.1</XUnitRunnerTargetFramework>
+    <XUnitRunnerTargetFramework>netcoreapp3.1</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <IsTestProject>false</IsTestProject>
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -74,7 +74,7 @@
     <PackageReference Include="xunit.performance.core" Version="$(XunitPerformanceApiPackageVersion)" />
     <PackageReference Include="xunit.performance.execution" Version="$(XunitPerformanceApiPackageVersion)" />
     <PackageReference Include="xunit.performance.metrics" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />

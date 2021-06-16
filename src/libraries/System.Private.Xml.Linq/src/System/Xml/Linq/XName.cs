@@ -118,7 +118,7 @@ namespace System.Xml.Linq
         /// <remarks>
         /// For two <see cref="XName"/> objects to be equal, they must have the same expanded name.
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (object)this == obj;
         }

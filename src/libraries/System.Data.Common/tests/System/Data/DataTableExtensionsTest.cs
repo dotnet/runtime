@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Data.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public class DataTableExtensionsTest
     {
         private DataTable _dt;

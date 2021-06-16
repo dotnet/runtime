@@ -5,18 +5,10 @@ schedules:
   displayName: Sat and Sun at 11:00 AM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
-variables:
-  - template: /eng/pipelines/common/variables.yml
-
 jobs:
-#
-# Checkout repository
-#
-- ${{ if eq(variables.useCheckoutBundle, true) }}:
-  - template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

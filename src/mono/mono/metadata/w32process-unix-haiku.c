@@ -28,39 +28,6 @@ mono_w32process_get_path (pid_t pid)
 	return mono_w32process_get_name (pid);
 }
 
-GSList*
-mono_w32process_get_modules (pid_t pid)
-{
-	GSList *ret = NULL;
-	MonoW32ProcessModule *mod;
-	gint32 cookie = 0;
-	image_info imageInfo;
-
-	while (get_next_image_info (B_CURRENT_TEAM, &cookie, &imageInfo) == B_OK) {
-		mod = g_new0 (MonoW32ProcessModule, 1);
-		mod->device = imageInfo.device;
-		mod->inode = imageInfo.node;
-		mod->filename = g_strdup (imageInfo.name);
-		mod->address_start = MIN (imageInfo.text, imageInfo.data);
-		mod->address_end = MAX ((uint8_t*)imageInfo.text + imageInfo.text_size,
-			(uint8_t*)imageInfo.data + imageInfo.data_size);
-		mod->perms = g_strdup ("r--p");
-		mod->address_offset = 0;
-
-		if (g_slist_find_custom (ret, mod, mono_w32process_module_equals) == NULL) {
-			ret = g_slist_prepend (ret, mod);
-		} else {
-			mono_w32process_module_free (mod);
-		}
-	}
-
-	return g_slist_reverse (ret);
-}
-
-void
-mono_w32process_platform_init_once (void)
-{
-}
 
 #else
 

@@ -15,7 +15,7 @@ parameters:
   container: ''
   steps: []
   dependsOn: []
-  useCheckoutBundle: false
+  dependOnEvaluatePaths: false
   variables: {}
   name: ''
   displayName: ''
@@ -23,6 +23,7 @@ parameters:
   testScope: ''
   pool: ''
   runTests: false
+  pgoType: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -79,7 +80,6 @@ jobs:
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
           - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
-          - _extraHelixArguments: /p:TestPackages=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
@@ -96,7 +96,7 @@ jobs:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           - ${{ if eq(parameters.runTests, true) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
             - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
@@ -118,8 +118,8 @@ jobs:
         - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
-      - ${{ if eq(parameters.useCheckoutBundle, true) }}:
-        - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ parameters.dependsOn }}
       workspace:
         clean: all
@@ -128,9 +128,9 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - template: /eng/pipelines/common/checkout-step.yml
-        parameters:
-          useBundle: ${{ parameters.useCheckoutBundle }}
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
 
       - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

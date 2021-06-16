@@ -54,7 +54,7 @@ Marshaling Specifics
 
 DAC marshaling works through a collection of typedefs, macros and templated types that generally have one meaning in DAC builds and a different meaning in non-DAC builds. You can find these declarations in [src\inc\daccess.h][daccess.h]. You will also find a long comment at the beginning of this file that explains the details necessary to write code that uses the DAC.
 
-[daccess.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/daccess.h
+[daccess.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/daccess.h
 
 An example may be helpful in understanding how marshaling works. The common debugging scenario is represented in the following block diagram:
 
@@ -139,8 +139,8 @@ Even better, in a DAC build, the DAC will automatically marshal variables, data 
 
 The `GPTR` and `VPTR` macros are common enough to warrant special mention here. Both the way we use these and their external behavior is quite similar to `DPTR`s. Again, marshaling is automatic and transparent. The `VPTR` macro declares a marshaled pointer type for a class with virtual functions. This special macro is necessary because the virtual function table is essentially an implicit extra field. The DAC has to marshal this separately, since the function addresses are all target addresses that the DAC must convert to host addresses. Treating these classes in this way means that the DAC automatically instantiates the correct implementation class, making casts between base and derived types unnecessary. When you declare a `VPTR` type, you must also list it in [vptr_list.h][vptr_list.h]. `__GlobalPtr` types provide base functionality to marshal both global variables and static data members through the `GPTR`, `GVAL`, `SPTR` and `SVAL` macros. The implementation of global variables is almost identical to that of static fields (both use the `__GlobalPtr` class) and require the addition of an entry in [dacvars.h][dacvars.h]. The comments in [daccess.h][daccess.h] and [dacvars.h][dacvars.h] provide more details about declaring these types.
 
-[dacvars.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/dacvars.h
-[vptr_list.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/vptr_list.h
+[dacvars.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/dacvars.h
+[vptr_list.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/vptr_list.h
 
 Global and static values and pointers are interesting because they form the entry points to the target address space (all other uses of the DAC require you to have a target address already). Many of the globals in the runtime are already DACized. It occasionally becomes necessary to make a previously un-DACized (or a newly introduced) global available to the DAC. By using the appropriate macros and [dacvars.h][dacvars.h] entry, you enable a post-build step (DacTableGen.exe run by the build in ndp\clr\src\dacupdatedll) to save the address of the global (from clr.pdb) into a table that is embedded into mscordacwks.dll. The DAC uses this table at run-time to determine where to look in the target address space when the code accesses a global.
 
@@ -205,7 +205,7 @@ When do you need to DACize?
 
 Whenever you add a new feature, you will need to consider its debuggability needs and DACize the code to support your feature. You must also ensure that any other changes, such as bug fixes or code clean-up, conform to the DAC rules when necessary. Otherwise, the changes will break the debugger or SOS. If you are simply modifying existing code (as opposed to implementing a new feature), you will generally be able to determine that you need to worry about the DAC when a function you modify includes a `SUPPORTS_DAC` contract. This contract has a few variants such as `SUPPORTS_DAC_WRAPPER` and `LEAF_DAC_CONTRACT`. You can find comments explaining the differences in [contract.h][contract.h]. If you see a number of DAC-specific types in the function, you should assume the code will run in DAC builds.
 
-[contract.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/contract.h
+[contract.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/contract.h
 
 DACizing ensures that code in the engine will work correctly with the DAC. It is important to use the DAC correctly to marshal values from the target to the host. Target addresses used incorrectly from the host (or vice versa) may reference unmapped addresses. If addresses are mapped, the values will be completely unrelated to the values expected. As a result, DACizing mostly involves ensuring that we use `PTR` types for all values that the DAC needs to marshal. Another major task is to ensure that we do not allow invasive code to execute in DAC builds. In practice, this means that we must sometimes refactor code or add `DACCESS_COMPILE` preprocessor directives. We also want to be sure that we add the appropriate `SUPPORTS_DAC` contract. The use of this contract signals to developers that the function works with the DAC. This is important for two reasons:
 

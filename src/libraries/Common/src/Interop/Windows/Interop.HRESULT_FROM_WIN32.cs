@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
     // Implementation of HRESULT_FROM_WIN32 macro
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -67,7 +67,7 @@ namespace System.Globalization
         LAST_CALENDAR = 23      // Last calendar ID
     }
 
-    internal class DateTimeFormatInfoScanner
+    internal sealed class DateTimeFormatInfoScanner
     {
         // Special prefix-like flag char in DateWord array.
 

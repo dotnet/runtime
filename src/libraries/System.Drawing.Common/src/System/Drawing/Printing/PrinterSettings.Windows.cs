@@ -188,10 +188,10 @@ namespace System.Drawing.Printing
 
                 int bufferSize;
                 int count;
-                SafeNativeMethods.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, Level, IntPtr.Zero, 0, out bufferSize, out count);
+                Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, Level, IntPtr.Zero, 0, out bufferSize, out count);
 
                 IntPtr buffer = Marshal.AllocCoTaskMem(bufferSize);
-                int returnCode = SafeNativeMethods.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS,
+                int returnCode = Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS,
                                                         null, Level, buffer,
                                                         bufferSize, out bufferSize, out count);
                 var array = new string[count];
@@ -447,13 +447,13 @@ namespace System.Drawing.Printing
             bool isDirectPrintingSupported = false;
             if (imageFormat.Equals(ImageFormat.Jpeg) || imageFormat.Equals(ImageFormat.Png))
             {
-                int nEscape = imageFormat.Equals(ImageFormat.Jpeg) ? SafeNativeMethods.CHECKJPEGFORMAT : SafeNativeMethods.CHECKPNGFORMAT;
+                int nEscape = imageFormat.Equals(ImageFormat.Jpeg) ? Interop.Gdi32.CHECKJPEGFORMAT : Interop.Gdi32.CHECKPNGFORMAT;
                 int outData = 0;
                 DeviceContext dc = CreateInformationContext(DefaultPageSettings);
                 HandleRef hdc = new HandleRef(dc, dc.Hdc);
                 try
                 {
-                    isDirectPrintingSupported = SafeNativeMethods.ExtEscape(hdc, SafeNativeMethods.QUERYESCSUPPORT, sizeof(int), ref nEscape, 0, out outData) > 0;
+                    isDirectPrintingSupported = Interop.Gdi32.ExtEscape(hdc, Interop.Gdi32.QUERYESCSUPPORT, sizeof(int), ref nEscape, 0, out outData) > 0;
                 }
                 finally
                 {
@@ -482,17 +482,17 @@ namespace System.Drawing.Printing
 
                     byte[] pvImage = stream.ToArray();
 
-                    int nEscape = image.RawFormat.Equals(ImageFormat.Jpeg) ? SafeNativeMethods.CHECKJPEGFORMAT : SafeNativeMethods.CHECKPNGFORMAT;
+                    int nEscape = image.RawFormat.Equals(ImageFormat.Jpeg) ? Interop.Gdi32.CHECKJPEGFORMAT : Interop.Gdi32.CHECKPNGFORMAT;
                     int outData = 0;
 
                     DeviceContext dc = CreateInformationContext(DefaultPageSettings);
                     HandleRef hdc = new HandleRef(dc, dc.Hdc);
                     try
                     {
-                        bool querySupported = SafeNativeMethods.ExtEscape(hdc, SafeNativeMethods.QUERYESCSUPPORT, sizeof(int), ref nEscape, 0, out outData) > 0;
+                        bool querySupported = Interop.Gdi32.ExtEscape(hdc, Interop.Gdi32.QUERYESCSUPPORT, sizeof(int), ref nEscape, 0, out outData) > 0;
                         if (querySupported)
                         {
-                            isDirectPrintingSupported = (SafeNativeMethods.ExtEscape(hdc, nEscape, pvImage.Length, pvImage, sizeof(int), out outData) > 0)
+                            isDirectPrintingSupported = (Interop.Gdi32.ExtEscape(hdc, nEscape, pvImage.Length, pvImage, sizeof(int), out outData) > 0)
                                                         && (outData == 1);
                         }
                     }
@@ -572,7 +572,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateDeviceContext(IntPtr hdevmode)
         {
             IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
-            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, fileName:null, modePointer); ;
+            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, fileName:null, modePointer);
             Interop.Kernel32.GlobalUnlock(hdevmode);
             return dc;
         }
@@ -647,10 +647,10 @@ namespace System.Drawing.Printing
 
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
-        private static SafeNativeMethods.PRINTDLGX86 CreatePRINTDLGX86()
+        private static Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
         {
-            SafeNativeMethods.PRINTDLGX86 data = new SafeNativeMethods.PRINTDLGX86();
-            data.lStructSize = Marshal.SizeOf(typeof(SafeNativeMethods.PRINTDLGX86));
+            Interop.Comdlg32.PRINTDLGX86 data = new Interop.Comdlg32.PRINTDLGX86();
+            data.lStructSize = Marshal.SizeOf(typeof(Interop.Comdlg32.PRINTDLGX86));
             data.hwndOwner = IntPtr.Zero;
             data.hDevMode = IntPtr.Zero;
             data.hDevNames = IntPtr.Zero;
@@ -676,10 +676,10 @@ namespace System.Drawing.Printing
 
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
-        private static SafeNativeMethods.PRINTDLG CreatePRINTDLG()
+        private static Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
         {
-            SafeNativeMethods.PRINTDLG data = new SafeNativeMethods.PRINTDLG();
-            data.lStructSize = Marshal.SizeOf(typeof(SafeNativeMethods.PRINTDLG));
+            Interop.Comdlg32.PRINTDLG data = new Interop.Comdlg32.PRINTDLG();
+            data.lStructSize = Marshal.SizeOf(typeof(Interop.Comdlg32.PRINTDLG));
             data.hwndOwner = IntPtr.Zero;
             data.hDevMode = IntPtr.Zero;
             data.hDevNames = IntPtr.Zero;
@@ -713,7 +713,7 @@ namespace System.Drawing.Printing
         // We need to pass IntPtr.Zero since passing HDevMode is non-performant.
         private static int FastDeviceCapabilities(short capability, IntPtr pointerToBuffer, int defaultValue, string printerName)
         {
-            int result = SafeNativeMethods.DeviceCapabilities(printerName, GetOutputPort(),
+            int result = Interop.Winspool.DeviceCapabilities(printerName, GetOutputPort(),
                                                           capability, pointerToBuffer, IntPtr.Zero);
             if (result == -1)
                 return defaultValue;
@@ -725,9 +725,9 @@ namespace System.Drawing.Printing
         {
             if (IntPtr.Size == 8)
             {
-                SafeNativeMethods.PRINTDLG data = CreatePRINTDLG();
+                Interop.Comdlg32.PRINTDLG data = CreatePRINTDLG();
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
-                bool status = SafeNativeMethods.PrintDlg(data);
+                bool status = Interop.Comdlg32.PrintDlg(data);
 
                 if (!status)
                     return SR.NoDefaultPrinter;
@@ -749,9 +749,9 @@ namespace System.Drawing.Printing
             }
             else
             {
-                SafeNativeMethods.PRINTDLGX86 data = CreatePRINTDLGX86();
+                Interop.Comdlg32.PRINTDLGX86 data = CreatePRINTDLGX86();
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
-                bool status = SafeNativeMethods.PrintDlg(data);
+                bool status = Interop.Comdlg32.PrintDlg(data);
 
                 if (!status)
                     return SR.NoDefaultPrinter;
@@ -779,9 +779,9 @@ namespace System.Drawing.Printing
         {
             if (IntPtr.Size == 8)
             {
-                SafeNativeMethods.PRINTDLG data = CreatePRINTDLG();
+                Interop.Comdlg32.PRINTDLG data = CreatePRINTDLG();
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
-                bool status = SafeNativeMethods.PrintDlg(data);
+                bool status = Interop.Comdlg32.PrintDlg(data);
                 if (!status)
                     return SR.NoDefaultPrinter;
 
@@ -803,9 +803,9 @@ namespace System.Drawing.Printing
             }
             else
             {
-                SafeNativeMethods.PRINTDLGX86 data = CreatePRINTDLGX86();
+                Interop.Comdlg32.PRINTDLGX86 data = CreatePRINTDLGX86();
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
-                bool status = SafeNativeMethods.PrintDlg(data);
+                bool status = Interop.Comdlg32.PrintDlg(data);
 
                 if (!status)
                     return SR.NoDefaultPrinter;
@@ -859,12 +859,12 @@ namespace System.Drawing.Printing
         private IntPtr GetHdevmodeInternal(string printer)
         {
             // Create DEVMODE
-            int modeSize = SafeNativeMethods.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, IntPtr.Zero, NativeMethods.NullHandleRef, 0);
+            int modeSize = Interop.Winspool.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, IntPtr.Zero, NativeMethods.NullHandleRef, 0);
             if (modeSize < 1)
             {
                 throw new InvalidPrinterException(this);
             }
-            IntPtr handle = SafeNativeMethods.GlobalAlloc(SafeNativeMethods.GMEM_MOVEABLE, (uint)modeSize); // cannot be <0 anyway
+            IntPtr handle = Interop.Kernel32.GlobalAlloc(SafeNativeMethods.GMEM_MOVEABLE, (uint)modeSize); // cannot be <0 anyway
             IntPtr pointer = Interop.Kernel32.GlobalLock(handle);
 
             //Get the DevMode only if its not cached....
@@ -874,14 +874,14 @@ namespace System.Drawing.Printing
             }
             else
             {
-                int returnCode = SafeNativeMethods.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, pointer, NativeMethods.NullHandleRef, SafeNativeMethods.DM_OUT_BUFFER);
+                int returnCode = Interop.Winspool.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, pointer, NativeMethods.NullHandleRef, SafeNativeMethods.DM_OUT_BUFFER);
                 if (returnCode < 0)
                 {
                     throw new Win32Exception();
                 }
             }
 
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE))!;
+            Interop.Gdi32.DEVMODE mode = (Interop.Gdi32.DEVMODE)Marshal.PtrToStructure(pointer, typeof(Interop.Gdi32.DEVMODE))!;
 
 
             if (_extrainfo != null)
@@ -914,7 +914,7 @@ namespace System.Drawing.Printing
 
             Marshal.StructureToPtr(mode, pointer, false);
 
-            int retCode = SafeNativeMethods.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, pointer, pointer, SafeNativeMethods.DM_IN_BUFFER | SafeNativeMethods.DM_OUT_BUFFER);
+            int retCode = Interop.Winspool.DocumentProperties(NativeMethods.NullHandleRef, NativeMethods.NullHandleRef, printer, pointer, pointer, SafeNativeMethods.DM_IN_BUFFER | SafeNativeMethods.DM_OUT_BUFFER);
             if (retCode < 0)
             {
                 Interop.Kernel32.GlobalFree(handle);
@@ -960,7 +960,7 @@ namespace System.Drawing.Printing
             // 8 = size of fixed portion of DEVNAMES
             short offset = (short)(8 / Marshal.SystemDefaultCharSize); // Offsets are in characters, not bytes
             uint namesSize = (uint)checked(Marshal.SystemDefaultCharSize * (offset + namesCharacters)); // always >0
-            IntPtr handle = SafeNativeMethods.GlobalAlloc(SafeNativeMethods.GMEM_MOVEABLE | SafeNativeMethods.GMEM_ZEROINIT, namesSize);
+            IntPtr handle = Interop.Kernel32.GlobalAlloc(SafeNativeMethods.GMEM_MOVEABLE | SafeNativeMethods.GMEM_ZEROINIT, namesSize);
             IntPtr namesPointer = Interop.Kernel32.GlobalLock(handle);
 
             Marshal.WriteInt16(namesPointer, offset); // wDriverOffset
@@ -1001,7 +1001,7 @@ namespace System.Drawing.Printing
                 }
 
                 IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, modeHandle));
-                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE))!;
+                Interop.Gdi32.DEVMODE mode = (Interop.Gdi32.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(Interop.Gdi32.DEVMODE))!;
                 switch (field)
                 {
                     case ModeField.Orientation:
@@ -1194,7 +1194,7 @@ namespace System.Drawing.Printing
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
 
             IntPtr pointer = Interop.Kernel32.GlobalLock(hdevmode);
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE))!;
+            Interop.Gdi32.DEVMODE mode = (Interop.Gdi32.DEVMODE)Marshal.PtrToStructure(pointer, typeof(Interop.Gdi32.DEVMODE))!;
 
             //Copy entire public devmode as a byte array...
             _devmodebytes = mode.dmSize;
@@ -1650,7 +1650,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private class ArrayEnumerator : IEnumerator
+        private sealed class ArrayEnumerator : IEnumerator
         {
             private readonly object[] _array;
             private readonly int _endIndex;

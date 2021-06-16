@@ -11,12 +11,14 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedViewStream.
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedViewStreamTests : MemoryMappedFilesTestBase
     {
         /// <summary>
         /// Test to validate the offset, size, and access parameters to MemoryMappedFile.CreateViewAccessor.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void InvalidArguments()
         {
             int mapLength = s_pageSize.Value;
@@ -73,6 +75,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53601", runtimes: TestRuntimes.Mono, platforms: TestPlatforms.MacCatalyst)]
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;
@@ -204,7 +207,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     s.Position = s.Length - data.Length;
                     s.Write(data, 0, data.Length);
                     s.Position = s.Length - data.Length;
-                    Array.Clear(data, 0, data.Length);
+                    Array.Clear(data);
                     Assert.Equal(3, s.Read(data, 0, data.Length));
                     Assert.Equal(new byte[] { 1, 2, 3 }, data);
 
@@ -220,7 +223,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate that multiple accessors over the same map share data appropriately.
         /// </summary>
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation doesn't share data
+        [SkipOnPlatform(TestPlatforms.Browser, "the emscripten implementation doesn't share data")]
         public void ViewsShareData()
         {
             const int MapLength = 256;

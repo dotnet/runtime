@@ -178,6 +178,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the data stored in the column specified by index.
         /// </summary>
+        [AllowNull]
         public object this[int columnIndex]
         {
             get
@@ -1359,6 +1360,7 @@ namespace System.Data
             parentKeyValues[0] = DBNull.Value;
             SetKeyValues(relation.ChildKey, parentKeyValues);
         }
+
         public void SetAdded()
         {
             if (RowState == DataRowState.Unchanged)

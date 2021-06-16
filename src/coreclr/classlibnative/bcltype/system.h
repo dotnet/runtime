@@ -14,12 +14,6 @@
 #include "fcall.h"
 #include "qcall.h"
 
-struct FullSystemTime
-{
-    SYSTEMTIME systemTime;
-    INT64 hundredNanoSecond;
-};
-
 class SystemNative
 {
     friend class DebugStackTrace;

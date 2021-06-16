@@ -27,4 +27,7 @@
 // Runtime headers
 #include <volatile.h>
 
+// Define the following in lieu of DAC headers.
+typedef void* PTR_VOID;
+
 #endif // _INTEROP_PLATFORM_H_

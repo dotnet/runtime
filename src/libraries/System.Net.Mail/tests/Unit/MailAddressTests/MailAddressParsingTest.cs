@@ -132,6 +132,8 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "invalid@unicode\uD800.com" }; // D800 is a high surrogate
             yield return new object[] { "invalid\uD800@unicode.com" }; // D800 is a high surrogate
             yield return new object[] { "\uD800 invalid@unicode.com" }; // D800 is a high surrogate
+            yield return new object[] { null };
+            yield return new object[] { "" };
         }
 
         [Theory]
@@ -163,7 +165,19 @@ namespace System.Net.Mail.Tests
         [MemberData(nameof(GetInvalidEmailTestData))]
         public void TestInvalidEmailAddresses(string address)
         {
-            Assert.Throws<FormatException>(() => { new MailAddress(address); });
+            Action act = () => new MailAddress(address);
+            if (address is null)
+            {
+                Assert.Throws<ArgumentNullException>(act);
+            }
+            else if (address == string.Empty)
+            {
+                Assert.Throws<ArgumentException>(act);
+            }
+            else
+            {
+                Assert.Throws<FormatException>(act);
+            }
         }
     }
 }

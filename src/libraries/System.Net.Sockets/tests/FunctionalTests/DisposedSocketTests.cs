@@ -747,20 +747,6 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndAccept(null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
-        {
-            List<WeakReference> handles = await CreateHandlesAsync(clientAsync);
-            RetryHelper.Execute(() =>
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                Assert.Equal(0, handles.Count(h => h.IsAlive));
-            });
-        }
-
         [Fact]
         public void SocketWithDanglingReferenceDoesntHangFinalizerThread()
         {
@@ -775,6 +761,25 @@ namespace System.Net.Sockets.Tests
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             bool dummy = false;
             socket.SafeHandle.DangerousAddRef(ref dummy);
+        }
+    }
+
+    [Collection(nameof(NoParallelTests))]
+    public class DisposedSocketTestsNonParallel
+    {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
+        {
+            TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout);
+            List<WeakReference> handles = await CreateHandlesAsync(clientAsync).WaitAsync(timeout);
+            await RetryHelper.ExecuteAsync(() => Task.Run(() =>
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                Assert.Equal(0, handles.Count(h => h.IsAlive));
+            })).WaitAsync(timeout);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

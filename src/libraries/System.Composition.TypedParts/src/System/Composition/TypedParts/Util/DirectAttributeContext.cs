@@ -7,7 +7,7 @@ using System.Composition.Convention;
 
 namespace System.Composition.TypedParts.Util
 {
-    internal class DirectAttributeContext : AttributedModelProvider
+    internal sealed class DirectAttributeContext : AttributedModelProvider
     {
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, Reflection.MemberInfo member)
         {

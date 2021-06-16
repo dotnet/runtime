@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     public abstract class CustomTypeDescriptor : ICustomTypeDescriptor
@@ -67,6 +69,7 @@ namespace System.ComponentModel
         /// The GetConverter method returns a type converter for the type this type
         /// descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public virtual TypeConverter GetConverter()
         {
             if (_parent != null)
@@ -81,18 +84,21 @@ namespace System.ComponentModel
         /// The GetDefaultEvent method returns the event descriptor for the default
         /// event on the object this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public virtual EventDescriptor GetDefaultEvent() => _parent?.GetDefaultEvent();
 
         /// <summary>
         /// The GetDefaultProperty method returns the property descriptor for the
         /// default property on the object this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptor GetDefaultProperty() => _parent?.GetDefaultProperty();
 
         /// <summary>
         /// The GetEditor method returns an editor of the given type that is
         /// to be associated with the class this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
         public virtual object GetEditor(Type editorBaseType) => _parent?.GetEditor(editorBaseType);
 
         /// <summary>
@@ -119,6 +125,7 @@ namespace System.ComponentModel
         /// returned. If no parent is provided,this will return an empty
         /// event collection.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual EventDescriptorCollection GetEvents(Attribute[] attributes)
         {
             if (_parent != null)
@@ -136,6 +143,7 @@ namespace System.ComponentModel
         /// If no parent is provided,this will return an empty
         /// property collection.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptorCollection GetProperties()
         {
             if (_parent != null)
@@ -153,6 +161,7 @@ namespace System.ComponentModel
         /// If no parent is provided,this will return an empty
         /// property collection.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             if (_parent != null)

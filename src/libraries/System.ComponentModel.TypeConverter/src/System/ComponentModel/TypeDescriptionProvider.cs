@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -50,7 +50,11 @@ namespace System.ComponentModel
         /// parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's CreateInstance method.
         /// </summary>
-        public virtual object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+        public virtual object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type[] argTypes,
+            object[] args)
         {
             if (_parent != null)
             {
@@ -92,6 +96,7 @@ namespace System.ComponentModel
         /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public virtual ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             if (_parent != null)
@@ -126,6 +131,7 @@ namespace System.ComponentModel
         /// If not overridden, the default implementation of this method will call
         /// GetTypeDescriptor.GetComponentName.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public virtual string GetFullComponentName(object component)
         {
             if (_parent != null)
@@ -141,7 +147,8 @@ namespace System.ComponentModel
         /// If no custom type descriptor can be located for an object, GetReflectionType
         /// is called to perform normal reflection against the object.
         /// </summary>
-        public Type GetReflectionType(Type objectType) => GetReflectionType(objectType, null);
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public Type GetReflectionType([DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType) => GetReflectionType(objectType, null);
 
         /// <summary>
         /// The GetReflection method is a lower level version of GetTypeDescriptor.
@@ -152,6 +159,7 @@ namespace System.ComponentModel
         /// object type if no parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
+        [RequiresUnreferencedCode("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public Type GetReflectionType(object instance)
         {
             if (instance == null)
@@ -171,7 +179,10 @@ namespace System.ComponentModel
         /// object type if no parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
-        public virtual Type GetReflectionType(Type objectType, object instance)
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public virtual Type GetReflectionType(
+            [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType,
+            object instance)
         {
             if (_parent != null)
             {
@@ -215,7 +226,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return base.
         /// </summary>
-        public ICustomTypeDescriptor GetTypeDescriptor(Type objectType)
+        public ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
         {
             return GetTypeDescriptor(objectType, null);
         }
@@ -228,6 +239,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return base.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public ICustomTypeDescriptor GetTypeDescriptor(object instance)
         {
             if (instance == null)
@@ -252,7 +264,7 @@ namespace System.ComponentModel
         /// this method will invoke the parent provider's GetTypeDescriptor
         /// method.
         /// </summary>
-        public virtual ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+        public virtual ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object instance)
         {
             if (_parent != null)
             {

@@ -31,8 +31,7 @@ namespace System.Reflection
             AssemblyHashAlgorithm hashAlgorithm,
             AssemblyVersionCompatibility versionCompatibility,
             string? codeBase,
-            AssemblyNameFlags flags,
-            StrongNameKeyPair? keyPair) // Null if ref, matching Assembly if def
+            AssemblyNameFlags flags)
         {
             _name = name;
             _publicKey = publicKey;
@@ -43,7 +42,6 @@ namespace System.Reflection
             _versionCompatibility = versionCompatibility;
             _codeBase = codeBase;
             _flags = flags;
-            _strongNameKeyPair = keyPair;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

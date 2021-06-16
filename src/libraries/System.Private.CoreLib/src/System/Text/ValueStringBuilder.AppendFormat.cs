@@ -43,7 +43,7 @@ namespace System.Text
             AppendFormatHelper(provider, format, new ParamsArray(args));
         }
 
-        internal void AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable, IFormattable
+        internal void AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
         {
             if (value.TryFormat(_chars.Slice(_pos), out int charsWritten, format, provider))
             {

@@ -62,8 +62,6 @@ HRESULT MetaDataGetDispenser::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
-
-
     return S_OK;
 }
 

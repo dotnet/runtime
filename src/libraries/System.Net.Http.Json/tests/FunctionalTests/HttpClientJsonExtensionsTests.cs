@@ -1,13 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using Xunit;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Text.Json;
-using System.Linq;
-using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Net.Http.Json.Functional.Tests
 {
@@ -15,7 +15,7 @@ namespace System.Net.Http.Json.Functional.Tests
     {
         [Theory]
         [MemberData(nameof(ReadFromJsonTestData))]
-        public async Task TestGetFromJsonAsync(string json)
+        public async Task TestGetFromJsonAsync(string json, bool containsQuotedNumbers)
         {
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
@@ -36,6 +36,21 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         per = await client.GetFromJsonAsync<Person>(uri.ToString());
                         per.Validate();
+
+                        if (!containsQuotedNumbers)
+                        {
+                            per = (Person)await client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default);
+                            per.Validate();
+
+                            per = (Person)await client.GetFromJsonAsync(uri.ToString(), typeof(Person), JsonContext.Default);
+                            per.Validate();
+
+                            per = await client.GetFromJsonAsync<Person>(uri, JsonContext.Default.Person);
+                            per.Validate();
+
+                            per = await client.GetFromJsonAsync<Person>(uri.ToString(), JsonContext.Default.Person);
+                            per.Validate();
+                        }
                     }
                 },
                 server => server.HandleRequestAsync(content: json, headers: headers));
@@ -44,8 +59,8 @@ namespace System.Net.Http.Json.Functional.Tests
         public static IEnumerable<object[]> ReadFromJsonTestData()
         {
             Person per = Person.Create();
-            yield return new object[] { per.Serialize() };
-            yield return new object[] { per.SerializeWithNumbersAsStrings() };
+            yield return new object[] { per.Serialize(), false };
+            yield return new object[] { per.SerializeWithNumbersAsStrings(), true };
         }
 
         [Fact]
@@ -58,6 +73,8 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync(uri, typeof(Person)));
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync<Person>(uri));
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default));
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync(uri, JsonContext.Default.Person));
                     }
                 },
                 server => server.HandleRequestAsync(statusCode: HttpStatusCode.InternalServerError));
@@ -84,6 +101,18 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         using HttpResponseMessage response4 = await client.PostAsJsonAsync(uri, person, CancellationToken.None);
                         Assert.True(response4.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response5 = await client.PostAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person);
+                        Assert.True(response5.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response6 = await client.PostAsJsonAsync(uri, person, JsonContext.Default.Person);
+                        Assert.True(response6.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response7 = await client.PostAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response7.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response8 = await client.PostAsJsonAsync(uri, person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response8.StatusCode == HttpStatusCode.OK);
                     }
                 },
                 async server => {
@@ -116,6 +145,18 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         using HttpResponseMessage response4 = await client.PutAsJsonAsync(uri, person, CancellationToken.None);
                         Assert.True(response4.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response5 = await client.PutAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person);
+                        Assert.True(response5.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response6 = await client.PutAsJsonAsync(uri, person, JsonContext.Default.Person);
+                        Assert.True(response6.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response7 = await client.PutAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response7.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response8 = await client.PutAsJsonAsync(uri, person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response8.StatusCode == HttpStatusCode.OK);
                     }
                 },
                 async server => {
@@ -136,20 +177,52 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public void TestHttpClientIsNullAsync()
         {
+            const string uriString = "http://example.com";
+            const string clientParamName = "client";
+
             HttpClient client = null;
-            string uriString = "http://example.com";
             Uri uri = new Uri(uriString);
 
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.GetFromJsonAsync(uriString, typeof(Person)));
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.GetFromJsonAsync(uri, typeof(Person)));
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.GetFromJsonAsync<Person>(uriString));
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.GetFromJsonAsync<Person>(uri));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uriString, typeof(Person)));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uri, typeof(Person)));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync<Person>(uriString));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync<Person>(uri));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uriString, typeof(Person), JsonContext.Default));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uriString, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uri, JsonContext.Default.Person));
 
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.PostAsJsonAsync<Person>(uriString, null));
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.PostAsJsonAsync<Person>(uri, null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync<Person>(uriString, null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync<Person>(uri, null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync(uriString, null, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync(uri, null, JsonContext.Default.Person));
 
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.PutAsJsonAsync<Person>(uriString, null));
-            AssertExtensions.Throws<ArgumentNullException>("client", () => client.PutAsJsonAsync<Person>(uri, null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PutAsJsonAsync<Person>(uriString, null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PutAsJsonAsync<Person>(uri, null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PutAsJsonAsync(uriString, null, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PutAsJsonAsync(uri, null, JsonContext.Default.Person));
+        }
+
+        [Fact]
+        public void TestTypeMetadataIsNull()
+        {
+            const string uriString = "http://example.com";
+            const string jsonTypeInfoParamName = "client";
+            const string contextParamName = "client";
+
+            HttpClient client = null;
+            Uri uri = new Uri(uriString);
+
+            AssertExtensions.Throws<ArgumentNullException>(contextParamName, () => client.GetFromJsonAsync(uriString, typeof(Person), JsonContext.Default));
+            AssertExtensions.Throws<ArgumentNullException>(contextParamName, () => client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default));
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.GetFromJsonAsync(uriString, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.GetFromJsonAsync(uri, JsonContext.Default.Person));
+
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PostAsJsonAsync(uriString, null, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PostAsJsonAsync(uri, null, JsonContext.Default.Person));
+
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PutAsJsonAsync(uriString, null, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PutAsJsonAsync(uri, null, JsonContext.Default.Person));
         }
 
         private void ValidateRequest(HttpRequestData requestData)
@@ -170,6 +243,8 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         Person per = Assert.IsType<Person>(await client.GetFromJsonAsync((string)null, typeof(Person)));
                         per = Assert.IsType<Person>(await client.GetFromJsonAsync((Uri)null, typeof(Person)));
+                        per = Assert.IsType<Person>(await client.GetFromJsonAsync((string)null, typeof(Person), JsonContext.Default));
+                        per = Assert.IsType<Person>(await client.GetFromJsonAsync((Uri)null, typeof(Person), JsonContext.Default));
 
                         per = await client.GetFromJsonAsync<Person>((string)null);
                         per = await client.GetFromJsonAsync<Person>((Uri)null);

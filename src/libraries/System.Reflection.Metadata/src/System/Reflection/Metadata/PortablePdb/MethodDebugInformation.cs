@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     /// Debug information associated with a method definition. Stored in debug metadata.
     /// </summary>
     /// <remarks>
-    /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
+    /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
     /// </remarks>
     public readonly struct MethodDebugInformation
     {

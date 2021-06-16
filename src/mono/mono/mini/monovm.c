@@ -2,8 +2,6 @@
 #include <mono/utils/mono-compiler.h>
 #include "monovm.h"
 
-#if ENABLE_NETCORE
-
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/environment.h>
@@ -12,18 +10,6 @@
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
-
-typedef struct {
-	int assembly_count;
-	char **basenames; /* Foo.dll */
-	int *basename_lens;
-	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll */
-} MonoCoreTrustedPlatformAssemblies;
-
-typedef struct {
-	int dir_count;
-	char **dirs;
-} MonoCoreLookupPaths;
 
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
@@ -70,7 +56,7 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->assembly_count = asm_count;
 	a->assembly_filepaths = parts;
 	a->basenames = g_new0 (char*, asm_count + 1);
-	a->basename_lens = g_new0 (int, asm_count + 1);
+	a->basename_lens = g_new0 (uint32_t, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
 		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
 		a->basename_lens [i] = strlen (a->basenames [i]);
@@ -102,7 +88,7 @@ parse_lookup_paths (const char *search_path)
 }
 
 static MonoAssembly*
-mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gboolean refonly, gpointer user_data, MonoError *error)
+mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error)
 {
 	MonoAssembly *result = NULL;
 	MonoCoreTrustedPlatformAssemblies *a = (MonoCoreTrustedPlatformAssemblies *)user_data;
@@ -116,10 +102,9 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 
 	g_assert (aname);
 	g_assert (aname->name);
-	g_assert (!refonly);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
 	MonoAssemblyLoadContext *default_alc;
-	default_alc = mono_domain_default_alc (mono_alc_domain (alc));
+	default_alc = mono_alc_get_default ();
 
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
 
@@ -161,7 +146,7 @@ leave:
 static void
 install_assembly_loader_hooks (void)
 {
-	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE, FALSE);
+	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
 }
 
 static gboolean
@@ -185,15 +170,6 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 		} else if (prop_len == 16 && !strncmp (propertyKeys [i], "PINVOKE_OVERRIDE", 16)) {
 			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
 			mono_loader_install_pinvoke_override (override_fn);
-		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
-			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
-		} else if (prop_len == 27 && !strncmp (propertyKeys [i], "System.Globalization.UseNls", 27)) {
-			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_USENLS", propertyValues [i], TRUE);
-		} else if (prop_len == 32 && !strncmp (propertyKeys [i], "System.Globalization.AppLocalIcu", 32)) {
-			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", propertyValues [i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
@@ -204,15 +180,11 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 	return TRUE;
 }
 
-int
-monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
+static void
+finish_initialization (void)
 {
-	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
-
-	if (!parse_properties (propertyCount, propertyKeys, propertyValues))
-		return 0x80004005; /* E_FAIL */
-
 	install_assembly_loader_hooks ();
+
 	if (native_lib_paths != NULL)
 		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, g_strdupv (native_lib_paths->dirs));
 	// Our load hooks don't distinguish between normal, AOT'd, and satellite lookups the way CoreCLR's does.
@@ -225,7 +197,41 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 	 * the requested version and culture.
 	 */
 	mono_loader_set_strict_assembly_name_check (TRUE);
+}
 
+int
+monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
+{
+	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
+
+	if (!parse_properties (propertyCount, propertyKeys, propertyValues))
+		return 0x80004005; /* E_FAIL */
+
+	finish_initialization ();
+
+	return 0;
+}
+
+int
+monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int propertyCount, const char **propertyKeys, const char **propertyValues)
+{
+	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
+
+	trusted_platform_assemblies = parsed_properties->trusted_platform_assemblies;
+	app_paths = parsed_properties->app_paths;
+	native_lib_paths = parsed_properties->native_dll_search_directories;
+	mono_loader_install_pinvoke_override (parsed_properties->pinvoke_override);
+
+	finish_initialization ();
+
+	return 0;
+}
+
+// Initialize monovm with properties set by runtimeconfig.json. Primarily used by mobile targets.
+int
+monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data)
+{
+	mono_runtime_register_runtimeconfig_json_properties (arg, cleanup_fn, user_data);
 	return 0;
 }
 
@@ -271,25 +277,3 @@ monovm_shutdown (int *latchedExitCode)
 
 	return 0;
 }
-
-#else
-
-int
-monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
-{
-	return -1;
-}
-
-int
-monovm_execute_assembly (int argc, const char **argv, const char *managedAssemblyPath, unsigned int *exitCode)
-{
-	return -1;
-}
-
-int
-monovm_shutdown (int *latchedExitCode)
-{
-	return -1;
-}
-
-#endif // ENABLE_NETCORE

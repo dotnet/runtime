@@ -3,6 +3,7 @@
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -10,6 +11,9 @@ namespace System.Security.Cryptography.X509Certificates
     /// Provides extension methods for retrieving <see cref="DSA" /> implementations for the
     /// public and private keys of a <see cref="X509Certificate2" />.
     /// </summary>
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     public static class DSACertificateExtensions
     {
         /// <summary>

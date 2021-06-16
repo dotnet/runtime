@@ -383,12 +383,8 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
-#ifndef ENABLE_NETCORE
-#define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE (1024 * 1024)
-#else
 // Use default stack size on netcore.
 #define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE 0
-#endif
 
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)

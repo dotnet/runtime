@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class ExtensionHelper
+    internal sealed class ExtensionHelper
     {
         internal ExtensionHelper(Principal p)
         {

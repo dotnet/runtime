@@ -86,7 +86,7 @@ Crst ArgBasedStubCache
 End
 
 Crst AssemblyLoader
-    AcquiredBefore DeadlockDetection UniqueStack
+    AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
 Crst AvailableClass
@@ -327,6 +327,10 @@ Crst StubCache
     AcquiredBefore LoaderHeap
 End
 
+Crst ManagedObjectWrapperMap
+    AcquiredBefore HandleTable
+End
+
 Crst Module
     AcquiredBefore LoaderHeap UniqueStack
 End
@@ -429,7 +433,7 @@ Crst SingleUseLock
 End
 
 Crst UnwindInfoTableLock
-	AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
+    AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
     AcquiredBefore StressLog
 End
 
@@ -571,4 +575,8 @@ Crst NativeImageEagerFixups
 End
 
 Crst NativeImageLoad
+End
+
+Crst PgoData
+    AcquiredBefore LoaderHeap
 End

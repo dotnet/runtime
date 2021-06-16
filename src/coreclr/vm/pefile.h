@@ -172,7 +172,8 @@ public:
     // ------------------------------------------------------------
 
     // Path is the file path to the file; empty if not a file
-    const SString &GetPath();
+    const SString& GetPath();
+    const SString& GetIdentityPath();
 
 #ifdef DACCESS_COMPILE
     // This is the metadata module name. Used as a hint as file name.
@@ -427,7 +428,6 @@ protected:
     void OpenImporter();
     void OpenEmitter();
 
-    void ConvertMDInternalToReadWrite();
     void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
 
 
@@ -536,7 +536,7 @@ public:
 
     static PEFile* Dummy();
     void MarkNativeImageInvalidIfOwned();
-    void ConvertMetadataToRWForEnC();
+    void ConvertMDInternalToReadWrite();
 
 protected:
     PTR_ICLRPrivAssembly m_pHostAssembly;
@@ -591,9 +591,6 @@ public:
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
-
-    bool CanUseWithBindingCache()
-    { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
 
     PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
     {
@@ -710,7 +707,6 @@ class PEAssembly : public PEFile
     // Loader access API
     // ------------------------------------------------------------
 
-    friend class DomainAssembly;
 #ifdef FEATURE_PREJIT
 
     void SetNativeImage(PEImage *image);
@@ -725,17 +721,6 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     PTR_PEFile               m_creator;
-
-  public:
-    PTR_PEFile GetCreator()
-    { LIMITED_METHOD_CONTRACT; return m_creator; }
-
-    // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
-    inline bool CanUseWithBindingCache()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        return true;
-    }
 };
 
 
@@ -746,10 +731,5 @@ typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
     const CORCOMPILE_VERSION_INFO *pActual,
     PEAssembly                    *pLogAsm);
-
-// ================================================================================
-// Inline definitions
-// ================================================================================
-
 
 #endif  // PEFILE_H_

@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <BinPlaceNative>true</BinPlaceNative>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>

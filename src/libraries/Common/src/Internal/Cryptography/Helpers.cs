@@ -1,15 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using System.Runtime.Versioning;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("ios")]
+        [UnsupportedOSPlatformGuard("tvos")]
+        [UnsupportedOSPlatformGuard("maccatalyst")]
+        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst();
+#else
+        public static bool IsDSASupported => true;
+#endif
+
         [return: NotNullIfNotNull("src")]
         public static byte[]? CloneByteArray(this byte[]? src)
         {

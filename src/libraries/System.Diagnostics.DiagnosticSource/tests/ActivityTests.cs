@@ -120,6 +120,55 @@ namespace System.Diagnostics.Tests
             Assert.Equal("4", a.GetBaggageItem("1"));
         }
 
+        [Fact]
+        public void TestSetBaggage()
+        {
+            Activity a = new Activity("SetBaggage");
+            Assert.Equal(0, a.Baggage.Count());
+
+            a.SetBaggage("1", "1");
+            a.SetBaggage("2", "2");
+            a.SetBaggage("3", "3");
+            a.SetBaggage("4", "4");
+            a.SetBaggage("5", "5");
+
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("1", a.GetBaggageItem("1"));
+            Assert.Equal("2", a.GetBaggageItem("2"));
+            Assert.Equal("3", a.GetBaggageItem("3"));
+            Assert.Equal("4", a.GetBaggageItem("4"));
+            Assert.Equal("5", a.GetBaggageItem("5"));
+
+            // Check not added item
+            Assert.Null(a.GetBaggageItem("6"));
+
+            // Adding none existing key with null value is no-op
+            a.SetBaggage("6", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("6"));
+
+            // Check updated item
+            a.SetBaggage("5", "5.1");
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Add() always add new entry even we have matching key in the list.
+            // Baggage always return last entered value
+            a.AddBaggage("5", "5.2");
+            Assert.Equal(6, a.Baggage.Count());
+            Assert.Equal("5.2", a.GetBaggageItem("5"));
+
+            // Now Remove first duplicated item
+            a.SetBaggage("5", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Now Remove second item
+            a.SetBaggage("5", null);
+            Assert.Equal(4, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("5"));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {
@@ -840,7 +889,7 @@ namespace System.Diagnostics.Tests
 
                 Activity parent = new Activity("parent").Start();
                 Activity activity = new Activity("child").Start();
-                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString()); ;
+                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
             }).Dispose();
         }
 
@@ -1557,6 +1606,57 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void TestGetTagItem()
+        {
+            Activity a = new Activity("GetTagItem");
+
+            // Test empty tags list
+            Assert.Equal(0, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+
+            // Test adding first tag
+            a.AddTag("tag1", "value1");
+            Assert.Equal(1, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Null(a.GetTagItem("tag2"));
+
+            // Test adding one more key
+            a.AddTag("tag2", "value2");
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test adding duplicate key
+            a.AddTag("tag1", "value1-d");
+            Assert.Equal(3, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test setting the key (overwrite the value)
+            a.SetTag("tag1", "value1-O");
+            Assert.Equal(3, a.TagObjects.Count());
+            Assert.Equal("value1-O", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test removing the key
+            a.SetTag("tag1", null);
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("value1-d", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            a.SetTag("tag1", null);
+            Assert.Equal(1, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            a.SetTag("tag2", null);
+            Assert.Equal(0, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+            Assert.Null(a.GetTagItem("tag2"));
+        }
+
+
         [Theory]
         [InlineData("key1", null, true,  1)]
         [InlineData("key2", null, false, 0)]
@@ -1595,9 +1695,75 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestParentTraceFlags()
+        {
+            Activity a = new Activity("ParentFlagsA");
+            a.SetIdFormat(ActivityIdFormat.W3C);
+            a.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.Recorded);
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01", a.ParentId);
+
+            Activity b = new Activity("ParentFlagsB");
+            b.SetIdFormat(ActivityIdFormat.W3C);
+            b.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.None);
+            b.ActivityTraceFlags = ActivityTraceFlags.Recorded; // Setting ActivityTraceFlags shouldn't affect the parent
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00", b.ParentId);
+
+            using ActivitySource aSource = new ActivitySource("CheckParentTraceFlags");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+            ActivitySource.AddActivityListener(listener);
+
+            ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
+            a = aSource.CreateActivity("WithContext", ActivityKind.Internal, parentContext, default, default, ActivityIdFormat.W3C);
+            Assert.NotNull(a);
+            Assert.Equal("00-" + parentContext.TraceId + "-" + parentContext.SpanId + "-01", a.ParentId);
+        }
+
+        [Fact]
+        public void TestStatus()
+        {
+            Activity a = new Activity("Status");
+            Assert.Equal(ActivityStatusCode.Unset, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, null); // explicit description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, "Ignored Description"); // explicit non null description
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Error Code"); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Error Code", a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, "Description will reset to null");
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Another Error Code Description");
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Another Error Code Description", a.StatusDescription);
+
+            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode) 100, a.Status);
+            Assert.Null(a.StatusDescription);
+        }
+
+        [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+            // Note: This test verifies the presence of the struct Enumerator on DiagLinkedList<T> used by customers dynamically to avoid allocations.
 
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());
@@ -1609,6 +1775,68 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(method);
             Assert.False(method.ReturnType.IsInterface);
             Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Null(Activity.Current);
+
+                Activity a = new Activity("Root");
+                a.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                // Create Activity with the parent context to not use Activity.Current as a parent
+                Activity b = new Activity("Child");
+                b.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
+                b.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Child", Activity.Current.OperationName);
+
+                b.Stop();
+
+                // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                // the original parent stored in Activity.Current before we started the Activity.
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                a.Stop();
+                Assert.Null(Activity.Current);
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TraceIdCustomGenerationTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Random random = new Random();
+                byte [] traceIdBytes = new byte[16];
+
+                Activity.TraceIdGenerator = () =>
+                {
+                    random.NextBytes(traceIdBytes);
+                    return ActivityTraceId.CreateFromBytes(traceIdBytes);
+                };
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.Null(Activity.Current);
+                    Activity a = new Activity("CustomTraceId");
+                    a.Start();
+
+                    Assert.Equal(ActivityTraceId.CreateFromBytes(traceIdBytes), a.TraceId);
+
+                    a.Stop();
+                }
+            }).Dispose();
         }
 
         public void Dispose()

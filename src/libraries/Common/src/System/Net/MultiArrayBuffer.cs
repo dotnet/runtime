@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 
@@ -210,7 +209,7 @@ namespace System.Net
                         _blocks.AsSpan().Slice((int)unusedInitialBlocks, (int)usedBlocks).CopyTo(_blocks);
 
                         // Null out the part of the array left over from the shift, so that we aren't holding references to those blocks.
-                        _blocks.AsSpan().Slice((int)usedBlocks, (int)unusedInitialBlocks).Fill(null);
+                        _blocks.AsSpan().Slice((int)usedBlocks, (int)unusedInitialBlocks).Clear();
                     }
 
                     uint shift = unusedInitialBlocks * BlockSize;

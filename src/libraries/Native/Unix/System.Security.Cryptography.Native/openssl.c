@@ -7,6 +7,10 @@
 #include "pal_safecrt.h"
 #include "openssl.h"
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+#include "opensslshim.h"
+#endif
+
 #include <assert.h>
 #include <limits.h>
 #include <pthread.h>
@@ -1117,6 +1121,16 @@ int64_t CryptoNative_OpenSslVersionNumber()
     return (int64_t)OpenSSL_version_num();
 }
 
+void CryptoNative_RegisterLegacyAlgorithms()
+{
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(OSSL_PROVIDER_try_load))
+    {
+        OSSL_PROVIDER_try_load(NULL, "legacy", 1);
+    }
+#endif
+}
+
 #ifdef NEED_OPENSSL_1_0
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
@@ -1256,7 +1270,7 @@ done:
 }
 #endif // NEED_OPENSSL_1_0 */
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
 // Only defined in OpenSSL 1.1.1+, has no effect on 1.1.0.
 #ifndef OPENSSL_INIT_NO_ATEXIT
@@ -1305,12 +1319,25 @@ static int32_t EnsureOpenSsl11Initialized()
 
 #endif
 
+int32_t CryptoNative_OpenSslAvailable()
+{
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    // OpenLibrary will attempt to open libssl. DlOpen will handle
+    // the case of it already being open and dlclose the duplicate
+    return OpenLibrary();
+#else
+    return 1;
+#endif
+}
+
 int32_t CryptoNative_EnsureOpenSslInitialized()
 {
     // If portable then decide which OpenSSL we are, and call the right one.
     // If 1.0, call the 1.0 one.
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    InitializeOpenSSLShim();
+
     if (API_EXISTS(SSL_state))
     {
         return EnsureOpenSsl10Initialized();

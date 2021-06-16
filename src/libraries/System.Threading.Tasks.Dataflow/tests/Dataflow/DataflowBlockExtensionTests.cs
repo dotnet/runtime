@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public class DataflowBlockExtensionsTests
+    public partial class DataflowBlockExtensionsTests
     {
         [Fact]
         public void TestDataflowMessageHeader()
@@ -116,6 +116,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [OuterLoop] // finalizer/GC interactions
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestNullTarget_CompletionNoCaching()
         {
             // Make sure that the Completion task returned by a NullTarget
@@ -343,6 +344,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [OuterLoop] // stress test
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestAsObservableAndAsObserver_AsObservableDoesntLeak()
         {
             const int Count = 1000;
@@ -1004,7 +1006,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 6, actual: await t4);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // timeout involved
         public async Task TestReceive_Timeout()
         {
@@ -1121,7 +1123,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38817", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // uses a lot of stack
+        [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
         public async Task TestReceiveAsync_LongChain()
         {
             const int Length = 10000;
@@ -1923,7 +1925,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38817", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // uses a lot of stack
+        [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
         public async Task TestOutputAvailableAsync_LongSequence()
         {
             const int iterations = 10000; // enough to stack overflow if there's a problem

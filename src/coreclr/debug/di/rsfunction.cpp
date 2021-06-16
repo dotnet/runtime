@@ -1013,7 +1013,7 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
         PCCOR_SIGNATURE functionSignature;
         ULONG size;
         DWORD methodAttr = 0;
-        ULONG argCount;
+        uint32_t argCount;
 
         EX_TRY // @dbgtotod - push this up
         {

@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // LightWeightMap.h -
@@ -159,7 +157,7 @@ public:
         return -1;
     }
 
-    void Unlock() // did you really mean to use this?
+    void Unlock()
     {
         locked = false;
     }
@@ -321,7 +319,7 @@ public:
 
         // If we have RTTI, we can make this assert report the correct type. No RTTI, though, when
         // built with .NET Core, especially when built against the PAL.
-        AssertCodeMsg((ptr - bytes) == size, EXCEPTIONCODE_LWM, "%s - Ended with unexpected sizes %p != %x",
+        AssertCodeMsg(ptr == (bytes + size), EXCEPTIONCODE_LWM, "%s - Ended with unexpected sizes %p != %x",
                       "Unknown type" /*typeid(_Item).name()*/, (void*)(ptr - bytes), size);
         return size;
     }
@@ -387,11 +385,9 @@ public:
 
         if (numItems > 0)
         {
-            for (unsigned int i = numItems; i > insert; i--)
-            {
-                pKeys[i]  = pKeys[i - 1];
-                pItems[i] = pItems[i - 1];
-            }
+            int countToMove = (numItems - insert);
+            memmove(&pKeys[insert+1], &pKeys[insert], countToMove * sizeof(pKeys[insert]));
+            memmove(&pItems[insert+1], &pItems[insert], countToMove * sizeof(pItems[insert]));
         }
 
         pKeys[insert]  = key;
@@ -660,7 +656,7 @@ public:
             ptr += bufferLength * sizeof(unsigned char);
         }
 
-        AssertCodeMsg((ptr - bytes) == size, EXCEPTIONCODE_LWM, "Ended with unexpected sizes %Ix != %x", ptr - bytes,
+        AssertCodeMsg(ptr == (bytes + size), EXCEPTIONCODE_LWM, "Ended with unexpected sizes %Ix != %x", ptr - bytes,
                       size);
         return size;
     }

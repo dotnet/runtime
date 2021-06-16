@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.Data.Odbc
 {
-    internal class OdbcMetaDataFactory : DbMetaDataFactory
+    internal sealed class OdbcMetaDataFactory : DbMetaDataFactory
     {
         private readonly struct SchemaFunctionName
         {

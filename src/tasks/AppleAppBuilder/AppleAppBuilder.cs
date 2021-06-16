@@ -12,11 +12,24 @@ using Microsoft.Build.Utilities;
 
 public class AppleAppBuilderTask : Task
 {
+    private string targetOS = TargetNames.iOS;
+
     /// <summary>
     /// The Apple OS we are targeting (iOS or tvOS)
     /// </summary>
     [Required]
-    public string TargetOS { get; set; } = TargetNames.iOS;
+    public string TargetOS
+    {
+        get
+        {
+            return targetOS;
+        }
+
+        set
+        {
+            targetOS = value.ToLower();
+        }
+    }
 
     /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
@@ -49,6 +62,24 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
+    /// </summary>
+    [Required]
+    public string Arch { get; set; } = ""!;
+
+    /// <summary>
+    /// Path to *.app bundle
+    /// </summary>
+    [Output]
+    public string AppBundlePath { get; set; } = ""!;
+
+    /// <summary>
+    /// Path to xcode project
+    /// </summary>
+    [Output]
+    public string XcodeProjectPath { get; set; } = ""!;
+
+    /// <summary>
     /// Path to store build artifacts
     /// </summary>
     public string? OutputDirectory { get; set; }
@@ -57,12 +88,6 @@ public class AppleAppBuilderTask : Task
     /// Produce optimized binaries and use 'Release' config in xcode
     /// </summary>
     public bool Optimized { get; set; }
-
-    /// <summary>
-    /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
-    /// </summary>
-    [Required]
-    public string Arch { get; set; } = ""!;
 
     /// <summary>
     /// DEVELOPER_TEAM provisioning, needed for arm64 builds.
@@ -97,15 +122,24 @@ public class AppleAppBuilderTask : Task
     public bool UseConsoleUITemplate { get; set; }
 
     /// <summary>
-    /// Path to *.app bundle
-    /// </summary>
-    [Output]
-    public string AppBundlePath { get; set; } = ""!;
-
-    /// <summary>
     /// Prefer FullAOT mode for Simulator over JIT
     /// </summary>
     public bool ForceAOT { get; set; }
+
+    /// <summary>
+    /// List of enabled runtime components
+    /// </summary>
+    public string? RuntimeComponents { get; set; } = ""!;
+
+    /// <summary>
+    /// Diagnostic ports configuration string
+    /// </summary>
+    public string? DiagnosticPorts { get; set; } = ""!;
+
+    /// <summary>
+    /// Forces the runtime to use the invariant mode
+    /// </summary>
+    public bool InvariantGlobalization { get; set; }
 
     /// <summary>
     /// Forces the runtime to use the interpreter
@@ -113,15 +147,14 @@ public class AppleAppBuilderTask : Task
     public bool ForceInterpreter { get; set; }
 
     /// <summary>
-    /// Path to xcode project
+    /// Enables detailed runtime logging
     /// </summary>
-    [Output]
-    public string XcodeProjectPath { get; set; } = ""!;
+    public bool EnableRuntimeLogging { get; set; }
 
     public override bool Execute()
     {
         Utils.Logger = Log;
-        bool isDevice = Arch.Equals("arm64", StringComparison.InvariantCultureIgnoreCase);
+        bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
         {
@@ -150,13 +183,20 @@ public class AppleAppBuilderTask : Task
         Directory.CreateDirectory(binDir);
 
         var assemblerFiles = new List<string>();
+        var assemblerFilesToLink = new List<string>();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
+            var llvmObj = file.GetMetadata("LlvmObjectFile");
             if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
+            }
+
+            if (!string.IsNullOrEmpty(llvmObj))
+            {
+                assemblerFilesToLink.Add(llvmObj);
             }
         }
 
@@ -165,16 +205,34 @@ public class AppleAppBuilderTask : Task
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (ForceInterpreter && ForceAOT)
+        if (TargetOS != TargetNames.MacCatalyst && ForceInterpreter && ForceAOT)
         {
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            bool validDiagnosticsConfig = false;
+
+            if (string.IsNullOrEmpty(RuntimeComponents))
+                validDiagnosticsConfig = false;
+            else if (RuntimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
+                validDiagnosticsConfig = true;
+            else if (RuntimeComponents.Contains("diagnostics_tracing", StringComparison.OrdinalIgnoreCase))
+                validDiagnosticsConfig = true;
+
+            if (!validDiagnosticsConfig)
+                throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
+        }
+
         if (GenerateXcodeProject)
         {
-            Xcode generator = new Xcode(TargetOS);
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource);
+            Xcode generator = new Xcode(TargetOS, Arch);
+            generator.EnableRuntimeLogging = EnableRuntimeLogging;
+            generator.DiagnosticPorts = DiagnosticPorts;
+
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
             {

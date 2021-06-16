@@ -1,6 +1,8 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{3742D5F8-5C86-49FD-BAEA-050742CCEB7A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LongPath", "tests\LongPath\LongPath.csproj", "{C67553AE-F09B-407D-AD3E-D61950E06BE8}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry", "..\Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj", "{AA583AE2-BE26-4AA4-845F-916133916B7D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry", "..\Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj", "{E5AE4EB3-DB23-4F33-858B-63B68A60F7F1}"
@@ -50,6 +52,7 @@ EndProject
 Global
 	GlobalSection(NestedProjects) = preSolution
 		{3742D5F8-5C86-49FD-BAEA-050742CCEB7A} = {05C87914-711A-4589-9672-8169DB6A6BA4}
+		{C67553AE-F09B-407D-AD3E-D61950E06BE8} = {05C87914-711A-4589-9672-8169DB6A6BA4}
 		{ABA61FEF-EB06-441D-9D3D-F25FFC7CD83D} = {05C87914-711A-4589-9672-8169DB6A6BA4}
 		{AA583AE2-BE26-4AA4-845F-916133916B7D} = {9ABDFB23-5430-4410-81C3-3C0327996580}
 		{4792FFA1-1AD2-4230-8DE3-D2BCF1CF804F} = {9ABDFB23-5430-4410-81C3-3C0327996580}
@@ -160,6 +163,10 @@ Global
 		{9C521ED1-5221-4C93-BBA0-86C13D4C23C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C521ED1-5221-4C93-BBA0-86C13D4C23C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C521ED1-5221-4C93-BBA0-86C13D4C23C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C67553AE-F09B-407D-AD3E-D61950E06BE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C67553AE-F09B-407D-AD3E-D61950E06BE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C67553AE-F09B-407D-AD3E-D61950E06BE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C67553AE-F09B-407D-AD3E-D61950E06BE8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

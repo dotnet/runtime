@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     // This proxy is needed to pretty up CompositionScopeDefinitionCatalog.Parts; IQueryable<T>
     // instances are not displayed in a very friendly way in the debugger.
-    internal class CompositionScopeDefinitionDebuggerProxy
+    internal sealed class CompositionScopeDefinitionDebuggerProxy
     {
         private readonly CompositionScopeDefinition _compositionScopeDefinition;
 
@@ -35,7 +35,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        public virtual IEnumerable<CompositionScopeDefinition> Children
+        public IEnumerable<CompositionScopeDefinition> Children
         {
             get
             {

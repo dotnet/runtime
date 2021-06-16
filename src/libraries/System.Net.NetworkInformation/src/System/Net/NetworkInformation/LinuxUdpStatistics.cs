@@ -5,7 +5,7 @@ using System.IO;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxUdpStatistics : UdpStatistics
+    internal sealed class LinuxUdpStatistics : UdpStatistics
     {
         private readonly UdpGlobalStatisticsTable _table;
         private readonly int _udpListeners;

@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace System.Xml.XPath
 {
-    internal class XPathNavigatorKeyComparer : IEqualityComparer
+    internal sealed class XPathNavigatorKeyComparer : IEqualityComparer
     {
         bool IEqualityComparer.Equals(object? obj1, object? obj2)
         {

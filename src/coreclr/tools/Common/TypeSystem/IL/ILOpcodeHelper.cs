@@ -33,6 +33,28 @@ namespace Internal.IL
                 && s_opcodeSizes[(int)opcode] != Invalid;
         }
 
+        public static bool IsBranch(this ILOpcode opcode)
+        {
+            if (opcode >= ILOpcode.br && opcode <= ILOpcode.blt_un)
+                return true;
+
+            if (opcode >= ILOpcode.br_s && opcode <= ILOpcode.blt_un_s)
+                return true;
+
+            if (opcode == ILOpcode.leave_s)
+                return true;
+
+            if (opcode == ILOpcode.leave)
+                return true;
+
+            return false;
+        }
+
+        public static bool IsUnconditionalBranch(this ILOpcode opcode)
+        {
+            return opcode == ILOpcode.br || opcode == ILOpcode.br_s || opcode == ILOpcode.leave || opcode == ILOpcode.leave_s;
+        }
+
         private static readonly byte[] s_opcodeSizes = new byte[]
         {
             1, // nop = 0x00,

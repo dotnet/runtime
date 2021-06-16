@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
@@ -252,7 +251,7 @@ namespace System.Net.Internals
                 stackalloc char[256] :
                 new char[maxLength];
 
-            familyString.AsSpan().CopyTo(result);
+            familyString.CopyTo(result);
             int length = familyString.Length;
 
             result[length++] = ':';

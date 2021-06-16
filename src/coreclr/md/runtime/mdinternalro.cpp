@@ -3323,9 +3323,8 @@ HRESULT _FillMDDefaultValue(
 #if BIGENDIAN
         {
             // We need to allocate and swap the string if we're on a big endian
+            // This allocation will be freed by the MDDefaultValue destructor.
             pMDDefaultValue->m_wzValue = new WCHAR[(cbValue + 1) / sizeof (WCHAR)];
-            _ASSERTE(FALSE); // Nothing ever free's this newly allocated array. Inserting assert so that if we ever actually
-            // use this code path, we'll fix it then. (Don't want to fix something I can't test.)
             IfNullGo(pMDDefaultValue->m_wzValue);
             memcpy(const_cast<WCHAR *>(pMDDefaultValue->m_wzValue), pValue, cbValue);
             _ASSERTE(cbValue % sizeof(WCHAR) == 0);

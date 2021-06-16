@@ -286,9 +286,8 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     }
     if (useRefPosition->isFixedRegRef && !useRegConflict)
     {
-        useReg                               = useRefPosition->assignedReg();
-        useRegRecord                         = getRegisterRecord(useReg);
-        RefPosition* currFixedRegRefPosition = useRegRecord->recentRefPosition;
+        useReg       = useRefPosition->assignedReg();
+        useRegRecord = getRegisterRecord(useReg);
 
         // We know that useRefPosition is a fixed use, so the nextRefPosition must not be null.
         RefPosition* nextFixedRegRefPosition = useRegRecord->getNextRefPosition();
@@ -1160,7 +1159,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             {
                 LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
+                if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
                 {
                     if (!VarSetOps::IsMember(compiler, largeVectorCalleeSaveCandidateVars, varIndex))
                     {
@@ -1424,7 +1423,7 @@ void LinearScan::buildInternalRegisterUses()
 void LinearScan::makeUpperVectorInterval(unsigned varIndex)
 {
     Interval* lclVarInterval = getIntervalForLocalVar(varIndex);
-    assert(varTypeNeedsPartialCalleeSave(lclVarInterval->registerType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(lclVarInterval->registerType));
     Interval* newInt        = newInterval(LargeVectorSaveType);
     newInt->relatedInterval = lclVarInterval;
     newInt->isUpperVector   = true;
@@ -1506,7 +1505,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
     for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
          listNode = listNode->Next())
     {
-        if (varTypeNeedsPartialCalleeSave(listNode->treeNode->TypeGet()))
+        if (Compiler::varTypeNeedsPartialCalleeSave(listNode->treeNode->TypeGet()))
         {
             // In the rare case where such an interval is live across nested calls, we don't need to insert another.
             if (listNode->ref->getInterval()->recentRefPosition->refType != RefTypeUpperVectorSave)
@@ -1637,10 +1636,9 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 // Arguments:
 //    tree       - The node for which we are building RefPositions
-//    block      - The BasicBlock in which the node resides
 //    currentLoc - The LsraLocation of the given node
 //
-void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation currentLoc)
+void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
     // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes.
     // GT_CLS_VAR nodes should have been eliminated by rationalizer.
@@ -2066,7 +2064,7 @@ void LinearScan::buildIntervals()
         printf("\n-----------------\n");
         printf("LIVENESS:\n");
         printf("-----------------\n");
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             printf(FMT_BB " use def in out\n", block->bbNum);
             dumpConvertedVarSet(compiler, block->bbVarUse);
@@ -2147,8 +2145,9 @@ void LinearScan::buildIntervals()
 
         if (isCandidateVar(argDsc))
         {
-            Interval* interval = getIntervalForLocalVar(varIndex);
-            regMaskTP mask     = allRegs(TypeGet(argDsc));
+            Interval*       interval = getIntervalForLocalVar(varIndex);
+            const var_types regType  = argDsc->GetRegisterType();
+            regMaskTP       mask     = allRegs(regType);
             if (argDsc->lvIsRegArg)
             {
                 // Set this interval as currently assigned to that register
@@ -2335,7 +2334,7 @@ void LinearScan::buildIntervals()
         }
 
         LIR::Range& blockRange = LIR::AsRange(block);
-        for (GenTree* node : blockRange.NonPhiNodes())
+        for (GenTree* node : blockRange)
         {
             // We increment the location of each tree node by 2 so that the node definition, if any,
             // is at a new location and doesn't interfere with the uses.
@@ -2351,7 +2350,7 @@ void LinearScan::buildIntervals()
             node->SetRegNum(node->GetRegNum());
 #endif
 
-            buildRefPositionsForNode(node, block, currentLoc);
+            buildRefPositionsForNode(node, currentLoc);
 
 #ifdef DEBUG
             if (currentLoc > maxNodeLocation)
@@ -2585,7 +2584,7 @@ void LinearScan::buildIntervals()
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }
@@ -3098,6 +3097,10 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     }
     if (use != nullptr)
     {
+        // If node != rmwNode, then definitely node should be marked as "delayFree".
+        // However, if node == rmwNode, then we can mark node as "delayFree" only
+        // none of the node/rmwNode are the last uses. If either of them are last use,
+        // we can safely reuse the rmwNode as destination.
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
         {
             setDelayFree(use);
@@ -3207,8 +3210,24 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
             srcInterval->assignRelatedInterval(varDefInterval);
         }
     }
-    RefPosition* def =
-        newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(varDsc->TypeGet()), index);
+
+    regMaskTP defCandidates = RBM_NONE;
+    var_types type          = varDsc->GetRegisterType();
+
+#ifdef TARGET_X86
+    if (varTypeIsByte(type))
+    {
+        defCandidates = allByteRegs();
+    }
+    else
+    {
+        defCandidates = allRegs(type);
+    }
+#else
+    defCandidates = allRegs(type);
+#endif // TARGET_X86
+
+    RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
     {
         // We always make write-thru defs reg-optional, as we can store them if they don't
@@ -3216,7 +3235,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         def->regOptional = true;
     }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    if (varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
+    if (Compiler::varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
     {
         varDefInterval->isPartiallySpilled = false;
     }
@@ -3323,11 +3342,11 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    RefPosition* internalFloatDef = nullptr;
     if (varTypeIsSIMD(storeLoc) && !op1->IsCnsIntOrI() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
-        // Need an additional register to extract upper 4 bytes of Vector3.
-        internalFloatDef = buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+        // Need an additional register to extract upper 4 bytes of Vector3,
+        // it has to be float for x86.
+        buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
     }
 #endif // FEATURE_SIMD
 
@@ -3344,6 +3363,16 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         {
             BuildUse(op1, RBM_NONE, i);
         }
+#if defined(FEATURE_SIMD) && defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        {
+            if (varTypeIsSIMD(storeLoc) && op1->IsCall())
+            {
+                // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
+                buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+            }
+        }
+#endif // FEATURE_SIMD && TARGET_X86 && TARGET_WINDOWS
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
@@ -3786,7 +3815,6 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
 //
 int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 {
-    GenTree* dst  = tree;
     GenTree* addr = tree->gtGetOp1();
     GenTree* src  = tree->gtGetOp2();
 
@@ -3794,7 +3822,6 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     // is an indir through an lea, we need to actually instantiate the
     // lea in a register
     assert(!addr->isContained() && !src->isContained());
-    int       srcCount       = 2;
     regMaskTP addrCandidates = RBM_ARG_0;
     regMaskTP srcCandidates  = RBM_ARG_1;
 

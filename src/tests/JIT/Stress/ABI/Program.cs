@@ -17,6 +17,14 @@ namespace ABIStress
 {
     internal partial class Program
     {
+        private const int DefaultSeed = 20010415;
+        private static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         private static int Main(string[] args)
         {
             static void Usage()
@@ -167,7 +175,7 @@ namespace ABIStress
 
         private static Callee CreateCallee(string name, TypeEx[] candidateParamTypes)
         {
-            Random rand = new Random(GetSeed(name));
+            Random rand = new Random(Seed);
             List<TypeEx> pms = RandomParameters(candidateParamTypes, rand);
             var tc = new Callee(name, pms);
             return tc;

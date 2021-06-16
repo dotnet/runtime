@@ -45,7 +45,7 @@ namespace System.Net.Tests
 
             do
             {
-                readLength = await TaskTimeoutExtensions.TimeoutAfter(stream.ReadAsync(array, offset, remaining), TimeoutMilliseconds);
+                readLength = await stream.ReadAsync(array, offset, remaining).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 if (readLength <= 0)
                 {
                     break;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -53,7 +52,7 @@ namespace Internal.Cryptography
                 _currentIv = null;
                 if (currentIv != null)
                 {
-                    Array.Clear(currentIv, 0, currentIv.Length);
+                    Array.Clear(currentIv);
                 }
             }
 

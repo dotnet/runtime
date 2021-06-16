@@ -3,7 +3,7 @@ parameters:
   buildConfig: ''
   container: ''
   crossDacPlatforms: {}
-  useCheckoutBundle: false
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
@@ -29,7 +29,7 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     name: crossdacpack
     displayName: CrossDac Packaging
@@ -72,6 +72,7 @@ jobs:
       inputs:
         artifactName: $(buildCrossDacArtifactName)
         downloadPath: $(crossDacArtifactPath)
+        checkDownloadedFiles: true
 
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset crossdacpack -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) $(crossDacArgs) -ci
       displayName: Build crossdac packaging

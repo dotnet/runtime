@@ -451,11 +451,9 @@ namespace System.Net
                 response.StatusCode = status;
                 response.ContentType = "text/html";
                 string? description = HttpStatusDescription.Get(status);
-                string str;
-                if (msg != null)
-                    str = string.Format("<h1>{0} ({1})</h1>", description, msg);
-                else
-                    str = string.Format("<h1>{0}</h1>", description);
+                string str = msg != null ?
+                    $"<h1>{description} ({msg})</h1>" :
+                    $"<h1>{description}</h1>";
 
                 byte[] error = Encoding.Default.GetBytes(str);
                 response.Close(error, false);

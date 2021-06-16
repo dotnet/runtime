@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Xml.Xsl.Runtime
 {
-    internal class DecimalFormat
+    internal sealed class DecimalFormat
     {
         public NumberFormatInfo info;
         public char digit;
@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.Runtime
         }
     }
 
-    internal class DecimalFormatter
+    internal sealed class DecimalFormatter
     {
         private readonly NumberFormatInfo _posFormatInfo;
         private readonly NumberFormatInfo _negFormatInfo;

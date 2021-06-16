@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Threading.AutoreleasePool" feature="System.Threading.Thread.EnableAutoreleasePool" featurevalue="false">
+      <method signature="System.Boolean get_EnableAutoreleasePool()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

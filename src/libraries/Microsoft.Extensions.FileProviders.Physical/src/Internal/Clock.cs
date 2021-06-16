@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.FileProviders.Physical
 {
-    internal class Clock : IClock
+    internal sealed class Clock : IClock
     {
         public static readonly Clock Instance = new Clock();
 

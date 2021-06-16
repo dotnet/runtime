@@ -52,7 +52,7 @@
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="LDAP.Configuration.xml">
+    <Content Include="$(CommonTestPath)System\DirectoryServices\LDAP.Configuration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

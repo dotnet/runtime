@@ -9,9 +9,9 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class AttributeMetadata
     {
-        private readonly string _pszLastOriginatingDsaDN;
+        private readonly string? _pszLastOriginatingDsaDN;
 
-        private string _originatingServerName;
+        private string? _originatingServerName;
         private readonly DirectoryServer _server;
         private readonly Hashtable _nameTable;
         private readonly bool _advanced;
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 Marshal.PtrToStructure(info, attrMetaData);
                 Debug.Assert(attrMetaData != null);
 
-                Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
+                Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName)!;
                 Version = attrMetaData.dwVersion;
                 long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32));
                 LastOriginatingChangeTime = DateTime.FromFileTime(ftimeChangeValue);
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 Marshal.PtrToStructure(info, attrMetaData);
                 Debug.Assert(attrMetaData != null);
 
-                Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
+                Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName)!;
                 Version = attrMetaData.dwVersion;
                 long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32));
                 LastOriginatingChangeTime = DateTime.FromFileTime(ftimeChangeValue);
@@ -64,7 +64,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public long LocalChangeUsn { get; }
 
-        public string OriginatingServer
+        public string? OriginatingServer
         {
             get
             {
@@ -73,7 +73,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // check whether we have got it before
                     if (_nameTable.Contains(LastOriginatingInvocationId))
                     {
-                        _originatingServerName = (string)_nameTable[LastOriginatingInvocationId];
+                        _originatingServerName = (string)_nameTable[LastOriginatingInvocationId]!;
                     }
                     // do the translation for downlevel platform or kcc is able to do the name translation
                     else if (!_advanced || (_advanced && _pszLastOriginatingDsaDN != null))

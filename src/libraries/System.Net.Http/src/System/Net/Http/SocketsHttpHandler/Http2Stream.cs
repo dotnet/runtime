@@ -39,6 +39,7 @@ namespace System.Net.Http
             private int _pendingWindowUpdate;
             private CreditWaiter? _creditWaiter;
             private int _availableCredit;
+            private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -349,11 +350,14 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                CreditWaiter? w = _creditWaiter;
-                if (w != null)
+                lock (_creditSyncObject)
                 {
-                    w.Dispose();
-                    _creditWaiter = null;
+                    CreditWaiter? waiter = _creditWaiter;
+                    if (waiter != null)
+                    {
+                        waiter.Dispose();
+                        _creditWaiter = null;
+                    }
                 }
             }
 
@@ -421,7 +425,7 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount)
             {
-                lock (SyncObject)
+                lock (_creditSyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
                     if (_availableCredit > 0 && _creditWaiter != null)
@@ -1219,12 +1223,19 @@ namespace System.Net.Http
                     while (buffer.Length > 0)
                     {
                         int sendSize = -1;
-                        lock (SyncObject)
+                        bool flush = false;
+                        lock (_creditSyncObject)
                         {
                             if (_availableCredit > 0)
                             {
                                 sendSize = Math.Min(buffer.Length, _availableCredit);
                                 _availableCredit -= sendSize;
+
+                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                                if (_availableCredit == 0)
+                                {
+                                    flush = true;
+                                }
                             }
                             else
                             {
@@ -1245,12 +1256,23 @@ namespace System.Net.Http
                             // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
+
+                            lock (_creditSyncObject)
+                            {
+                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                                if (_availableCredit == 0)
+                                {
+                                    flush = true;
+                                }
+                            }
                         }
+
+                        Debug.Assert(sendSize > 0);
 
                         ReadOnlyMemory<byte> current;
                         (current, buffer) = SplitBuffer(buffer, sendSize);
 
-                        await _connection.SendStreamDataAsync(StreamId, current, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                        await _connection.SendStreamDataAsync(StreamId, current, flush, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
                 }
                 finally

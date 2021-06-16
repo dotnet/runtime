@@ -18,7 +18,7 @@ namespace System.Xml.Schema
     internal sealed class DtdValidator : BaseValidator
     {
         //required by ParseValue
-        private class NamespaceManager : XmlNamespaceManager
+        private sealed class NamespaceManager : XmlNamespaceManager
         {
             public override string LookupNamespace(string prefix) { return prefix; }
         }

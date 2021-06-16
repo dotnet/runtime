@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
@@ -19,16 +20,19 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the Active Udp Listeners on this machine.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPEndPoint[] GetActiveUdpListeners();
 
         /// <summary>
         /// Gets the Active Tcp Listeners on this machine.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPEndPoint[] GetActiveTcpListeners();
 
         /// <summary>
         /// Gets the Active Udp Listeners on this machine.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract TcpConnectionInformation[] GetActiveTcpConnections();
 
         /// <summary>

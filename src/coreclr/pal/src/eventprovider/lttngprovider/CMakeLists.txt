@@ -52,10 +52,9 @@ add_library(eventprovider
   eventproviderhelpers.cpp
 )
 
-add_library(coreclrtraceptprovider
+add_library_clr(coreclrtraceptprovider
   SHARED
   ${TRACEPOINT_PROVIDER_SOURCES}
-  ${VERSION_FILE_PATH}
 )
 
 add_dependencies(eventprovider generated_eventing_headers)
@@ -70,6 +69,8 @@ target_link_libraries(coreclrtraceptprovider
 set_target_properties(coreclrtraceptprovider PROPERTIES LINKER_LANGUAGE CXX)
 
 # Install the static eventprovider library
-_install(TARGETS eventprovider DESTINATION lib)
+install_clr(TARGETS eventprovider DESTINATIONS lib COMPONENT runtime)
 # Install the static coreclrtraceptprovider library
-install_clr(TARGETS coreclrtraceptprovider ADDITIONAL_DESTINATIONS sharedFramework paltests)
+install_clr(TARGETS coreclrtraceptprovider DESTINATIONS . sharedFramework COMPONENT runtime)
+install(TARGETS coreclrtraceptprovider DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
+add_dependencies(paltests_install coreclrtraceptprovider)

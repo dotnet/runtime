@@ -168,6 +168,7 @@
 #define IDS_CLASSLOAD_MI_MISSING_SIG_BODY       0x17a6
 #define IDS_CLASSLOAD_MI_MISSING_SIG_DECL       0x17a7
 #define IDS_CLASSLOAD_MI_BADRETURNTYPE          0x17a8
+#define IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL     0x17a9
 
 #define IDS_CLASSLOAD_TOOMANYGENERICARGS        0x17ab
 #define IDS_ERROR                               0x17b0
@@ -237,7 +238,6 @@
 #define IDS_EE_STRUCTARRAYTOOLARGE              0x1a05
 #define IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  0x1a06
 #define IDS_EE_NAME_UNKNOWN                     0x1a07
-#define IDS_EE_NAME_INMEMORYMODULE              0x1a08
 #define IDS_EE_THREAD_NOTSTARTED                0x1a0a
 #define IDS_EE_NO_BACKING_CLASS_FACTORY         0x1a0b
 #define IDS_EE_NAME_UNKNOWN_UNQ                 0x1a0c
@@ -245,7 +245,6 @@
 #define IDS_EE_VARARG_NOT_SUPPORTED             0x1a0f
 
 #define IDS_EE_INVALID_CA                       0x1a10
-#define IDS_EE_INVALID_CA_EX                    0x1a11
 
 #define IDS_EE_THREADSTART_STATE                0x1a12
 
@@ -272,6 +271,7 @@
 #define IDS_EE_INVALIDCOMDEFITF                 0x1a32
 #define IDS_EE_COMDEFITFNOTSUPPORTED            0x1a33
 
+#define IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     0x1a35
 #define IDS_EE_CANNOT_MAP_TO_MANAGED_VC         0x1a36
 
 #define IDS_EE_MARSHAL_UNMAPPABLE_CHAR          0x1a37
@@ -549,6 +549,9 @@
 #define IDS_PROF_SUPPLEMENTARY_INFO             0x2506
 #define IDS_PROF_LOAD_COMPLETE                  0x2507
 #define IDS_E_PROF_BAD_PATH                     0x2508
+#define IDS_E_PROF_NOTIFICATION_DISABLED        0x2509
+#define IDS_PROF_ALREADY_LOADED                 0x250A
+#define IDS_E_PROF_NOTIFICATION_LIMIT_EXCEEDED  0x250B
 #define IDS_E_PROF_NOT_ATTACHABLE               0x250E
 #define IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD  0x250F
 #define IDS_PROF_ATTACH_REQUEST_RECEIVED        0x2512

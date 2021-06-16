@@ -36,7 +36,7 @@ using System.Threading;
 
 namespace System.Net
 {
-    internal class ListenerAsyncResult : IAsyncResult
+    internal sealed class ListenerAsyncResult : IAsyncResult
     {
         private ManualResetEvent? _handle;
         private bool _synch;

@@ -170,9 +170,6 @@ FOR_ALL_NUMA_FUNCTIONS
 // The cached total number of CPUs that can be used in the OS.
 static uint32_t g_totalCpuCount = 0;
 
-// The cached number of CPUs available for the current process.
-static uint32_t g_currentProcessCpuCount = 0;
-
 //
 // Helper membarrier function
 //
@@ -194,6 +191,24 @@ enum membarrier_cmd
     MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
 };
 
+bool CanFlushUsingMembarrier()
+{
+    // Starting with Linux kernel 4.14, process memory barriers can be generated
+    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
+
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+
+    if (mask >= 0 &&
+        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
+        // Register intent to use the private expedited command.
+        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 //
 // Tracks if the OS supports FlushProcessWriteBuffers using membarrier
 //
@@ -207,7 +222,6 @@ static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
-bool GetCpuLimit(uint32_t* val);
 
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
 
@@ -284,10 +298,14 @@ void NUMASupportInitialize()
         return;
     }
 
-    g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+    g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
     if (g_numaHandle == 0)
     {
-        g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
+        g_numaHandle = dlopen("libnuma.so.1.0.0", RTLD_LAZY);
+        if (g_numaHandle == 0)
+        {
+            g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+        }
     }
     if (g_numaHandle != 0)
     {
@@ -350,13 +368,7 @@ bool GCToOSInterface::Initialize()
 
     assert(s_flushUsingMemBarrier == 0);
 
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
-        // Register intent to use the private expedited command.
-        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+    if (CanFlushUsingMembarrier())
     {
         s_flushUsingMemBarrier = TRUE;
     }
@@ -398,8 +410,6 @@ bool GCToOSInterface::Initialize()
 
 #if HAVE_SCHED_GETAFFINITY
 
-    g_currentProcessCpuCount = 0;
-
     cpu_set_t cpuSet;
     int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
 
@@ -409,7 +419,6 @@ bool GCToOSInterface::Initialize()
         {
             if (CPU_ISSET(i, &cpuSet))
             {
-                g_currentProcessCpuCount++;
                 g_processAffinitySet.Add(i);
             }
         }
@@ -423,20 +432,12 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    g_currentProcessCpuCount = g_totalCpuCount;
-
     for (size_t i = 0; i < g_totalCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
 
 #endif // HAVE_SCHED_GETAFFINITY
-
-    uint32_t cpuLimit;
-    if (GetCpuLimit(&cpuLimit) && cpuLimit < g_currentProcessCpuCount)
-    {
-        g_currentProcessCpuCount = cpuLimit;
-    }
 
     NUMASupportInitialize();
 
@@ -887,10 +888,10 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     if (cacheSize == 0)
     {
         //
-        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
-        // for the platform. Currently musl and arm64 should be only cases to use  
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
+        // for the platform. Currently musl and arm64 should be only cases to use
         // this method to determine cache size.
-        // 
+        //
         size_t size;
 
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
@@ -1102,14 +1103,6 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     }
 
     return &g_processAffinitySet;
-}
-
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    return g_currentProcessCpuCount;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.

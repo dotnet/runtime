@@ -5,8 +5,8 @@
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <StrongNameKeyId>MicrosoftShared</StrongNameKeyId>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides types to perform speech synthesis and speech recognition.
 
 Commonly Used Types

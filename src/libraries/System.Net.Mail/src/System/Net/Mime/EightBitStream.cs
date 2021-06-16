@@ -21,7 +21,7 @@ namespace System.Net.Mime
     /// For legacy (app-compat) reasons we have chosen to remove the enforcement
     /// and rename the class from SevenBitStream to EightBitStream.
     /// </summary>
-    internal class EightBitStream : DelegatedStream, IEncodableStream
+    internal sealed class EightBitStream : DelegatedStream, IEncodableStream
     {
         private WriteStateInfoBase? _writeState;
 

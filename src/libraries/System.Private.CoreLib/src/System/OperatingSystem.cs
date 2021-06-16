@@ -133,7 +133,7 @@ namespace System
         /// Indicates whether the current application is running on Linux.
         /// </summary>
         public static bool IsLinux() =>
-#if TARGET_LINUX
+#if TARGET_LINUX && !TARGET_ANDROID
             true;
 #else
             false;
@@ -166,7 +166,7 @@ namespace System
 #endif
 
         /// <summary>
-        /// Check for the Android version (returned by 'uname') with a >= version comparison. Used to guard APIs that were added in the given Android release.
+        /// Check for the Android API level (returned by 'ro.build.version.sdk') with a >= version comparison. Used to guard APIs that were added in the given Android release.
         /// </summary>
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsAndroid() && IsOSVersionAtLeast(major, minor, build, revision);
@@ -202,6 +202,22 @@ namespace System
         /// </summary>
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsMacOS() && IsOSVersionAtLeast(major, minor, build, 0);
+
+        /// <summary>
+        /// Indicates whether the current application is running on Mac Catalyst.
+        /// </summary>
+        public static bool IsMacCatalyst() =>
+#if TARGET_MACCATALYST
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Check for the Mac Catalyst version (iOS version as presented in Apple documentation) with a >= version comparison. Used to guard APIs that were added in the given Mac Catalyst release.
+        /// </summary>
+        public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0)
+            => IsMacCatalyst() && IsOSVersionAtLeast(major, minor, build, 0);
 
         /// <summary>
         /// Indicates whether the current application is running on tvOS.

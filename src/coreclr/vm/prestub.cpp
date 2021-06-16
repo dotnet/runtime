@@ -326,10 +326,6 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
@@ -361,18 +357,32 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
 
+    bool shouldTier = false;
 #if defined(FEATURE_TIERED_COMPILATION)
-    bool shouldCountCalls = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86)
-    if (shouldCountCalls
+    shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
+    // If the method is eligible for tiering but is being
+    // called from a Preemptive GC Mode thread or the method
+    // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
+    // should be disabled.
+    if (shouldTier
         && (pConfig->GetCallerGCMode() == CallerGCMode::Preemptive
             || (pConfig->GetCallerGCMode() == CallerGCMode::Unknown
                 && HasUnmanagedCallersOnlyAttribute())))
     {
-        shouldCountCalls = false;
+        NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
+        if (codeVersion.IsDefaultVersion())
+        {
+            pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
+            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+        }
+        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        {
+            codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+        }
+        pConfig->SetWasTieringDisabledBeforeJitting();
+        shouldTier = false;
     }
-#endif
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
     if (pConfig->MayUsePrecompiledCode())
     {
@@ -407,11 +417,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
         if (pCode == NULL)
         {
-#ifdef FEATURE_TIERED_COMPILATION
-            pCode = GetPrecompiledCode(pConfig, shouldCountCalls);
-#else
-            pCode = GetPrecompiledCode(pConfig);
-#endif
+            pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
 #ifdef FEATURE_PERFMAP
@@ -424,12 +430,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
-
-#ifdef FEATURE_TIERED_COMPILATION
-            pCode = JitCompileCode(pConfig, shouldCountCalls);
-#else
-            pCode = JitCompileCode(pConfig);
-#endif
+        pCode = JitCompileCode(pConfig);
     }
     else
     {
@@ -442,11 +443,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldCountCalls)
-#else
-PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
-#endif
+PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier)
 {
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
@@ -469,6 +466,11 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         {
             LOG_USING_R2R_CODE(this);
 
+#ifdef FEATURE_TIERED_COMPILATION
+            // Finalize the optimization tier before SetNativeCode() is called
+            bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
 #ifdef FEATURE_CODE_VERSIONING
@@ -479,6 +481,26 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
                 {
                     _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                     pConfig->SetShouldCountCalls();
+                }
+#endif
+
+#ifdef FEATURE_MULTICOREJIT
+                // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+                // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+                // of R2R code are also recorded.
+                if (pConfig->NeedsMulticoreJitNotification())
+                {
+                    _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+                    _ASSERTE(!pConfig->IsForMulticoreJit());
+
+                    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                    if (mcJitManager.IsRecorderActive())
+                    {
+                        if (MulticoreJitManager::IsMethodSupported(this))
+                        {
+                            mcJitManager.RecordMethodJitOrLoad(this);
+                        }
+                    }
                 }
 #endif
             }
@@ -515,9 +537,9 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
     {
         BOOL fShouldSearchCache = TRUE;
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->JITCachedFunctionSearchStarted((FunctionID)this, &fShouldSearchCache);
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->JITCachedFunctionSearchStarted((FunctionID)this, &fShouldSearchCache);
+            END_PROFILER_CALLBACK();
         }
 
         if (!fShouldSearchCache)
@@ -563,10 +585,10 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
         * cached jitted function has been made.
         */
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->
                 JITCachedFunctionSearchFinished((FunctionID)this, COR_PRF_CACHED_FUNCTION_FOUND);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
 
@@ -601,16 +623,17 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         }
     }
 #endif
+
     return pCode;
 }
 
-PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit)
+PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pConfig != NULL);
     _ASSERTE(pConfig->GetMethodDesc() == this);
-    _ASSERTE(pWasTier0Jit != NULL);
-    _ASSERTE(!*pWasTier0Jit);
+    _ASSERTE(pWasTier0 != NULL);
+    _ASSERTE(!*pWasTier0);
 
     MulticoreJitCodeInfo codeInfo;
 #ifdef FEATURE_MULTICOREJIT
@@ -624,9 +647,9 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
         #ifdef FEATURE_TIERED_COMPILATION
             if (!codeInfo.IsNull())
             {
-                if (codeInfo.WasTier0Jit())
+                if (codeInfo.WasTier0())
                 {
-                    *pWasTier0Jit = true;
+                    *pWasTier0 = true;
                 }
                 if (codeInfo.JitSwitchedToOptimized())
                 {
@@ -714,11 +737,8 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyILHeader(PrepareCodeConfig* pConfi
 //
 // This function creates a DeadlockAware list of methods being jitted
 // which prevents us from trying to JIT the same method more that once.
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig, bool shouldCountCalls)
-#else
+
 PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -805,13 +825,13 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
             if (codeVersion.IsDefaultVersion())
             {
-                bool wasTier0Jit = false;
-                pCode = GetMulticoreJitCode(pConfig, &wasTier0Jit);
+                bool wasTier0 = false;
+                pCode = GetMulticoreJitCode(pConfig, &wasTier0);
                 if (pCode != NULL)
                 {
                 #ifdef FEATURE_TIERED_COMPILATION
                     // Finalize the optimization tier before SetNativeCode() is called
-                    shouldCountCalls = wasTier0Jit && pConfig->FinalizeOptimizationTierForTier0Jit() && shouldCountCalls;
+                    bool shouldCountCalls = wasTier0 && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
                 #endif
 
                     if (pConfig->SetNativeCode(pCode, &pCode))
@@ -831,20 +851,12 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-#ifdef FEATURE_TIERED_COMPILATION
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock, shouldCountCalls);
-#else
             return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
-#endif
         }
     }
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, bool shouldCountCalls)
-#else
 PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -854,7 +866,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
         // For methods with non-zero rejit id we send ReJITCompilationStarted, otherwise
         // JITCompilationStarted. It isn't clear if this is the ideal policy for these
         // notifications yet.
@@ -863,7 +875,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         if (rejitId != 0)
         {
             _ASSERTE(!nativeCodeVersion.IsDefaultVersion());
-            g_profControlBlock.pProfInterface->ReJITCompilationStarted((FunctionID)this,
+            (&g_profControlBlock)->ReJITCompilationStarted((FunctionID)this,
                 rejitId,
                 TRUE);
         }
@@ -874,7 +886,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         {
             if (!IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->JITCompilationStarted((FunctionID)this, TRUE);
+                (&g_profControlBlock)->JITCompilationStarted((FunctionID)this, TRUE);
 
             }
             else
@@ -883,7 +895,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 CorInfoOptions corOptions;
                 LPCBYTE ilHeaderPointer = this->AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
 
-                g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
+                (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
 
             if (nativeCodeVersion.IsDefaultVersion())
@@ -891,7 +903,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -899,11 +911,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-#ifdef FEATURE_TIERED_COMPILATION
-        pCode = JitCompileCodeLocked(pConfig, pEntry, shouldCountCalls, &sizeOfCode, &flags);
-#else
         pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode, &flags);
-#endif
     }
     else
     {
@@ -923,11 +931,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-        pCode = JitCompileCodeLocked(pConfig, pEntry, shouldCountCalls, &sizeOfCode, &flags);
-#else
         pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode, &flags);
-#endif
 
         // Interpretted methods skip this notification
 #ifdef FEATURE_INTERPRETER
@@ -951,7 +955,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
         // For methods with non-zero rejit id we send ReJITCompilationFinished, otherwise
         // JITCompilationFinished. It isn't clear if this is the ideal policy for these
         // notifications yet.
@@ -960,7 +964,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         if (rejitId != 0)
         {
             _ASSERTE(!nativeCodeVersion.IsDefaultVersion());
-            g_profControlBlock.pProfInterface->ReJITCompilationFinished((FunctionID)this,
+            (&g_profControlBlock)->ReJITCompilationFinished((FunctionID)this,
                 rejitId,
                 S_OK,
                 TRUE);
@@ -972,14 +976,14 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         {
             if (!IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->
+                (&g_profControlBlock)->
                     JITCompilationFinished((FunctionID)this,
                         pEntry->m_hrResultCode,
                         TRUE);
             }
             else
             {
-                g_profControlBlock.pProfInterface->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
+                (&g_profControlBlock)->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
             }
 
             if (nativeCodeVersion.IsDefaultVersion())
@@ -987,7 +991,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1017,11 +1021,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, bool shouldCountCalls, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags)
-#else
 PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -1034,23 +1034,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER *pilHeader = GetAndVerifyILHeader(pConfig, &ilDecoderTemp);
     *pFlags = pConfig->GetJitCompilationFlags();
-
-#ifdef FEATURE_TIERED_COMPILATION
-    bool isTier0 = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-    // If we've already opted-out of call counting, for example in the UnmangedCallersOnly case,
-    // switch to optimized code.
-    if (!shouldCountCalls)
-    {
-        pFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-        pFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-
-        if (pConfig->GetMethodDesc()->IsEligibleForTieredCompilation())
-        {
-            pConfig->SetJitSwitchedToOptimized();
-        }
-    }
-#endif
-
     PCODE pOtherCode = NULL;
 
     EX_TRY
@@ -1118,7 +1101,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Finalize the optimization tier before SetNativeCode() is called
-    shouldCountCalls = isTier0 && pConfig->FinalizeOptimizationTierForTier0Jit() && shouldCountCalls;
+    bool shouldCountCalls = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
@@ -1165,7 +1148,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         {
             if (MulticoreJitManager::IsMethodSupported(this))
             {
-                mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
+                mcJitManager.RecordMethodJitOrLoad(this); // Tell multi-core JIT manager to record method on successful JITting
             }
         }
     }
@@ -1197,6 +1180,7 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_generatedOrLoadedNewCode(false),
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
+    m_wasTieringDisabledBeforeJitting(false),
     m_shouldCountCalls(false),
 #endif
     m_jitSwitchedToMinOpt(false),
@@ -1284,7 +1268,7 @@ CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
         flags = pResolver->GetJitFlags();
     }
 #ifdef FEATURE_TIERED_COMPILATION
-    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+    flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif
     return flags;
 }
@@ -1363,10 +1347,27 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
 }
 
 #ifdef FEATURE_TIERED_COMPILATION
+// This function should be called before SetNativeCode() for consistency with usage of FinalizeOptimizationTierForTier0Jit
+bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
+{
+    _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
+    _ASSERTE(!JitSwitchedToOptimized());
+
+    if (!IsForMulticoreJit())
+    {
+        return true; // should count calls if SetNativeCode() succeeds
+    }
+
+    // When using multi-core JIT, the loaded code would not be used until the method is called. Record some information that may
+    // be used later when the method is called.
+    ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
+    return false; // don't count calls
+}
+
 // This function should be called before SetNativeCode() to update the optimization tier if necessary before SetNativeCode() is
 // called. As soon as SetNativeCode() is called, another thread may get the native code and the optimization tier for that code
 // version, and it should have already been finalized.
-bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Jit()
+bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
 {
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
 
@@ -1374,7 +1375,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Jit()
     {
         // When using multi-core JIT, the jitted code would not be used until the method is called. Don't make changes to the
         // optimization tier yet, just record some information that may be used later when the method is called.
-        ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0Jit();
+        ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
         return false; // don't count calls
     }
 
@@ -1462,7 +1463,7 @@ CORJIT_FLAGS VersionedPrepareCodeConfig::GetJitCompilationFlags()
 #endif
 
 #ifdef FEATURE_TIERED_COMPILATION
-    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+    flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif
 
     return flags;
@@ -1959,11 +1960,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
 
     // Attempt to check what GC mode we are running under.
     if (CURRENT_THREAD == NULL
@@ -2032,7 +2029,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-        pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        {
+            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -2265,19 +2264,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         if (pCode == NULL)
         {
             pCode = GetStubForInteropMethod(this);
-#ifdef FEATURE_MULTICOREJIT
-            if (pCode)
-            {
-                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                if (mcJitManager.IsRecorderActive())
-                {
-                    if (MulticoreJitManager::IsMethodSupported(this))
-                    {
-                        mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
-                    }
-                }
-            }
-#endif // FEATURE_MULTICOREJIT
         }
 
         GetOrCreatePrecode();
@@ -2340,7 +2326,16 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
-            pStub->DecRef();
+            if (pStub->HasExternalEntryPoint())
+            {
+                // Stubs with external entry point are allocated from regular heap and so they are always writeable
+                pStub->DecRef();
+            }
+            else
+            {
+                ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+                stubWriterHolder.GetRW()->DecRef();
+            }
         }
         else if (pStub->HasExternalEntryPoint())
         {
@@ -2461,7 +2456,8 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
             *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
 
             _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-            FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
+            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
+            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }
@@ -3121,7 +3117,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                 pResult->indirectFirstOffset = 1;
             }
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
 
@@ -3133,7 +3129,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[2] = sizeof(TypeHandle) * data;
 

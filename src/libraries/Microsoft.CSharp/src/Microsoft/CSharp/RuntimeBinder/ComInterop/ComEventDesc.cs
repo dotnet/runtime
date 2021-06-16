@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ComEventDesc
+    internal sealed class ComEventDesc
     {
         public Guid SourceIID;
         public int Dispid;

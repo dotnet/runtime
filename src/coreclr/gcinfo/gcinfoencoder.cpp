@@ -577,8 +577,10 @@ GcSlotId GcInfoEncoder::GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcSta
 
     _ASSERTE( (flags & (GC_SLOT_IS_REGISTER | GC_SLOT_IS_DELETED)) == 0 );
 
+#if !defined(OSX_ARM64_ABI)
     // the spOffset for the stack slot is required to be pointer size aligned
     _ASSERTE((spOffset % TARGET_POINTER_SIZE) == 0);
+#endif
 
     m_SlotTable[ m_NumSlots ].Slot.Stack.SpOffset = spOffset;
     m_SlotTable[ m_NumSlots ].Slot.Stack.Base = spBase;

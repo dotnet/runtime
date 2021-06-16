@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class AnsiParser
+    internal sealed class AnsiParser
     {
         private readonly Action<string, int, int, ConsoleColor?, ConsoleColor?> _onParseWrite;
         public AnsiParser(Action<string, int, int, ConsoleColor?, ConsoleColor?> onParseWrite)

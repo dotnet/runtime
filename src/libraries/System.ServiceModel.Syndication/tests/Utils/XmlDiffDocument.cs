@@ -659,7 +659,7 @@ namespace System.ServiceModel.Syndication.Tests
             XPathNodeIterator _iter = _nav.Select(expr);
             while (_iter.MoveNext())
             {
-                ((XmlDiffNavigator)_iter.Current).CurrentNode.IgnoreValue = true; ;
+                ((XmlDiffNavigator)_iter.Current).CurrentNode.IgnoreValue = true;
             }
         }
 

@@ -88,13 +88,11 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchBlockTargetCore)state!).Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false), _target);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
@@ -178,16 +176,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, BatchSize={1}, OutputCount={2}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    BatchSize,
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, BatchSize={BatchSize}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -387,7 +378,7 @@ namespace System.Threading.Tasks.Dataflow
                             Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                             bool consumed;
-                            messageValue = source.ConsumeMessage(messageHeader, _owningBatch, out consumed);
+                            messageValue = source.ConsumeMessage(messageHeader, _owningBatch, out consumed)!;
                             if (!consumed) return DataflowMessageStatus.NotAvailable;
                         }
 
@@ -647,7 +638,6 @@ namespace System.Threading.Tasks.Dataflow
                 _nonGreedyState!.TaskForInputProcessing = new Task(thisBatchTarget => ((BatchBlockTargetCore)thisBatchTarget!).ProcessMessagesLoopCore(), this,
                                                     Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -655,7 +645,6 @@ namespace System.Threading.Tasks.Dataflow
                         _owningBatch, _nonGreedyState.TaskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
                         _messages.Count + _nonGreedyState.PostponedMessages.Count);
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(_nonGreedyState.TaskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -1004,7 +993,7 @@ namespace System.Threading.Tasks.Dataflow
                     KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>); // in case of exception from ConsumeMessage
                     bool consumed;
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (!consumed)
                     {
                         // The protocol broke down, so throw an exception, as this is fatal.  Before doing so, though,
@@ -1056,7 +1045,7 @@ namespace System.Threading.Tasks.Dataflow
                     KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>); // in case of exception from ConsumeMessage
                     bool consumed;
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (consumed)
                     {
                         var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue!);
@@ -1170,8 +1159,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displayBatch = _owningBatch as IDebuggerDisplay;
-                    return string.Format("Block=\"{0}\"",
-                        displayBatch != null ? displayBatch.Content : _owningBatch);
+                    return $"Block=\"{(displayBatch != null ? displayBatch.Content : _owningBatch)}\"";
                 }
             }
 

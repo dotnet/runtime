@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class WinMM
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal class WAVEFORMATEX
+        internal sealed class WAVEFORMATEX
         {
             internal short wFormatTag;
             internal short nChannels;

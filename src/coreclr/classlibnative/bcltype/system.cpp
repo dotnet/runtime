@@ -182,31 +182,7 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 
     BEGIN_QCALL;
 
-#ifndef TARGET_UNIX
-    CPUGroupInfo::EnsureInitialized();
-
-    if(CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-    {
-        processorCount = CPUGroupInfo::GetNumActiveProcessors();
-    }
-#endif // !TARGET_UNIX
-    // Processor count will be 0 if CPU groups are disabled/not supported
-    if(processorCount == 0)
-    {
-        SYSTEM_INFO systemInfo;
-        ZeroMemory(&systemInfo, sizeof(systemInfo));
-
-        GetSystemInfo(&systemInfo);
-
-        processorCount = systemInfo.dwNumberOfProcessors;
-    }
-
-#ifdef TARGET_UNIX
-    uint32_t cpuLimit;
-
-    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < (uint32_t)processorCount)
-        processorCount = cpuLimit;
-#endif
+    processorCount = GetCurrentProcessCpuCount();
 
     END_QCALL;
 

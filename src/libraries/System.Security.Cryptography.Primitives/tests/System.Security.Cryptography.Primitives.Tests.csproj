@@ -4,7 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
@@ -25,11 +26,12 @@
     <Compile Include="SymmetricAlgorithmTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

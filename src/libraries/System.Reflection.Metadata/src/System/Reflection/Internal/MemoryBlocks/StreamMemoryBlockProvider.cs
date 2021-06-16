@@ -76,9 +76,11 @@ namespace System.Reflection.Internal
             {
                 stream.Seek(start, SeekOrigin.Begin);
 
-                if (!isFileStream || !FileStreamReadLightUp.TryReadFile(stream, block.Pointer, start, size))
+                int bytesRead = 0;
+
+                if (!isFileStream || (bytesRead = FileStreamReadLightUp.ReadFile(stream, block.Pointer, size)) != size)
                 {
-                    stream.CopyTo(block.Pointer, size);
+                    stream.CopyTo(block.Pointer + bytesRead, size - bytesRead);
                 }
 
                 fault = false;

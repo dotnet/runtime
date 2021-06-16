@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices
 {
     [SupportedOSPlatform("windows")]
-    internal class ComEventsInfo
+    internal sealed class ComEventsInfo
     {
         private ComEventsSink? _sinks;
         private readonly object _rcw;

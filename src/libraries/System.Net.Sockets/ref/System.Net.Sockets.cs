@@ -80,7 +80,7 @@ namespace System.Net.Sockets
         private int _dummyPrimitive;
         public System.Net.IPAddress Address { get { throw null; } }
         public int Interface { get { throw null; } }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Sockets.IPPacketInformation packetInformation1, System.Net.Sockets.IPPacketInformation packetInformation2) { throw null; }
         public static bool operator !=(System.Net.Sockets.IPPacketInformation packetInformation1, System.Net.Sockets.IPPacketInformation packetInformation2) { throw null; }
@@ -220,6 +220,7 @@ namespace System.Net.Sockets
     }
     public sealed partial class SafeSocketHandle : Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid
     {
+        public SafeSocketHandle() : base (default(bool)) { }
         public SafeSocketHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
     }
@@ -234,6 +235,8 @@ namespace System.Net.Sockets
         public SendPacketsElement(byte[] buffer) { }
         public SendPacketsElement(byte[] buffer, int offset, int count) { }
         public SendPacketsElement(byte[] buffer, int offset, int count, bool endOfPacket) { }
+        public SendPacketsElement(ReadOnlyMemory<byte> buffer) { }
+        public SendPacketsElement(ReadOnlyMemory<byte> buffer, bool endOfPacket) { }
         public SendPacketsElement(System.IO.FileStream fileStream) { }
         public SendPacketsElement(System.IO.FileStream fileStream, long offset, int count) { }
         public SendPacketsElement(System.IO.FileStream fileStream, long offset, int count, bool endOfPacket) { }
@@ -247,6 +250,7 @@ namespace System.Net.Sockets
         public bool EndOfPacket { get { throw null; } }
         public string? FilePath { get { throw null; } }
         public System.IO.FileStream? FileStream { get { throw null; } }
+        public ReadOnlyMemory<byte>? MemoryBuffer { get { throw null; } }
         public int Offset { get { throw null; } }
         public long OffsetLong { get { throw null; } }
     }
@@ -288,10 +292,14 @@ namespace System.Net.Sockets
         [System.ObsoleteAttribute("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static bool SupportsIPv6 { get { throw null; } }
         public short Ttl { get { throw null; } set { } }
+        [System.ObsoleteAttribute("This property has no effect in .NET 5+ and .NET Core.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO { get { throw null; } set { } }
         public System.Net.Sockets.Socket Accept() { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.Socket> AcceptAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.Socket> AcceptAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.Socket> AcceptAsync(System.Net.Sockets.Socket? acceptSocket) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.Socket> AcceptAsync(System.Net.Sockets.Socket? acceptSocket, System.Threading.CancellationToken cancellationToken) { throw null; }
         public bool AcceptAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public System.IAsyncResult BeginAccept(System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginAccept(int receiveSize, System.AsyncCallback? callback, object? state) { throw null; }
@@ -334,6 +342,7 @@ namespace System.Net.Sockets
         public static bool ConnectAsync(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType, System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public void Disconnect(bool reuseSocket) { }
         public bool DisconnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
+        public System.Threading.Tasks.ValueTask DisconnectAsync(bool reuseSocket, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -380,10 +389,15 @@ namespace System.Net.Sockets
         public int ReceiveFrom(byte[] buffer, int size, System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP) { throw null; }
         public int ReceiveFrom(byte[] buffer, ref System.Net.EndPoint remoteEP) { throw null; }
         public int ReceiveFrom(byte[] buffer, System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP) { throw null; }
+        public int ReceiveFrom(System.Span<byte> buffer, ref System.Net.EndPoint remoteEP) { throw null; }
+        public int ReceiveFrom(System.Span<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.SocketReceiveFromResult> ReceiveFromAsync(System.ArraySegment<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEndPoint) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.SocketReceiveFromResult> ReceiveFromAsync(System.Memory<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEndPoint, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool ReceiveFromAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public int ReceiveMessageFrom(byte[] buffer, int offset, int size, ref System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP, out System.Net.Sockets.IPPacketInformation ipPacketInformation) { throw null; }
+        public int ReceiveMessageFrom(System.Span<byte> buffer, ref System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP, out System.Net.Sockets.IPPacketInformation ipPacketInformation) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.SocketReceiveMessageFromResult> ReceiveMessageFromAsync(System.ArraySegment<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEndPoint) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.SocketReceiveMessageFromResult> ReceiveMessageFromAsync(System.Memory<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEndPoint, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public bool ReceiveMessageFromAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public static void Select(System.Collections.IList? checkRead, System.Collections.IList? checkWrite, System.Collections.IList? checkError, int microSeconds) { }
         public int Send(byte[] buffer) { throw null; }
@@ -403,12 +417,18 @@ namespace System.Net.Sockets
         public bool SendAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public void SendFile(string? fileName) { }
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, System.Net.Sockets.TransmitFileOptions flags) { }
+        public void SendFile(string? fileName, System.ReadOnlySpan<byte> preBuffer, System.ReadOnlySpan<byte> postBuffer, System.Net.Sockets.TransmitFileOptions flags) { }
+        public System.Threading.Tasks.ValueTask SendFileAsync(string? fileName, System.ReadOnlyMemory<byte> preBuffer, System.ReadOnlyMemory<byte> postBuffer, System.Net.Sockets.TransmitFileOptions flags, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.ValueTask SendFileAsync(string? fileName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool SendPacketsAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public int SendTo(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
+        public int SendTo(System.ReadOnlySpan<byte> buffer, System.Net.EndPoint remoteEP) { throw null; }
+        public int SendTo(System.ReadOnlySpan<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public System.Threading.Tasks.Task<int> SendToAsync(System.ArraySegment<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> SendToAsync(System.ReadOnlyMemory<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool SendToAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetIPProtectionLevel(System.Net.Sockets.IPProtectionLevel level) { }
@@ -489,6 +509,8 @@ namespace System.Net.Sockets
         NonBlocking = 1,
         Connected = 2,
         Listening = 4,
+        [System.ObsoleteAttribute("This flag has no effect in .NET 5+ and .NET Core.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         UseOnlyOverlappedIO = 8,
     }
     public enum SocketOptionLevel
@@ -671,8 +693,10 @@ namespace System.Net.Sockets
         public System.Net.Sockets.Socket Server { get { throw null; } }
         public System.Net.Sockets.Socket AcceptSocket() { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.Socket> AcceptSocketAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.Socket> AcceptSocketAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Net.Sockets.TcpClient AcceptTcpClient() { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.TcpClient> AcceptTcpClientAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.TcpClient> AcceptTcpClientAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void AllowNatTraversal(bool allowed) { }
         public System.IAsyncResult BeginAcceptSocket(System.AsyncCallback? callback, object? state) { throw null; }
@@ -751,7 +775,7 @@ namespace System.Net.Sockets
         public byte[] Buffer { get { throw null; } }
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
         public bool Equals(System.Net.Sockets.UdpReceiveResult other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Sockets.UdpReceiveResult left, System.Net.Sockets.UdpReceiveResult right) { throw null; }
         public static bool operator !=(System.Net.Sockets.UdpReceiveResult left, System.Net.Sockets.UdpReceiveResult right) { throw null; }

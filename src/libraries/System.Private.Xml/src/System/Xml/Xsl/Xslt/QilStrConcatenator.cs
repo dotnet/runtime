@@ -10,7 +10,7 @@ using System.Xml.Xsl.Qil;
 
 namespace System.Xml.Xsl.Xslt
 {
-    internal class QilStrConcatenator
+    internal sealed class QilStrConcatenator
     {
         private readonly XPathQilFactory _f;
         private readonly StringBuilder _builder;

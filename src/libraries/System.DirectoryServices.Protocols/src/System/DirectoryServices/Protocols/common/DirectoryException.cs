@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Runtime.Serialization;
 
 namespace System.DirectoryServices.Protocols
@@ -38,22 +39,35 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryOperationException(string message, Exception inner) : base(message, inner) { }
 
-        public DirectoryOperationException(DirectoryResponse response) : base(SR.DefaultOperationsError)
+        public DirectoryOperationException(DirectoryResponse response) :
+            base(CreateMessage(response, message: null))
         {
             Response = response;
         }
 
-        public DirectoryOperationException(DirectoryResponse response, string message) : base(message)
+        public DirectoryOperationException(DirectoryResponse response, string message)
+            : base(CreateMessage(response, message))
         {
             Response = response;
         }
 
-        public DirectoryOperationException(DirectoryResponse response, string message, Exception inner) : base(message, inner)
+        public DirectoryOperationException(DirectoryResponse response, string message, Exception inner)
+            : base(CreateMessage(response, message), inner)
         {
             Response = response;
         }
 
         public DirectoryResponse Response { get; internal set; }
+
+        private static string CreateMessage(DirectoryResponse response, string message)
+        {
+            string result = message ?? SR.DefaultOperationsError;
+            if (!string.IsNullOrEmpty(response?.ErrorMessage))
+            {
+                result += " " + response.ErrorMessage;
+            }
+            return result;
+        }
     }
 
     [Serializable]

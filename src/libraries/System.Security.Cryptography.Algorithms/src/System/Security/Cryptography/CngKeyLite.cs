@@ -716,15 +716,15 @@ namespace Microsoft.Win32.SafeHandles
     {
     }
 
-    internal class SafeNCryptProviderHandle : SafeNCryptHandle
+    internal sealed class SafeNCryptProviderHandle : SafeNCryptHandle
     {
     }
 
-    internal class SafeNCryptSecretHandle : SafeNCryptHandle
+    internal sealed class SafeNCryptSecretHandle : SafeNCryptHandle
     {
     }
 
-    internal class DuplicateSafeNCryptKeyHandle : SafeNCryptKeyHandle
+    internal sealed class DuplicateSafeNCryptKeyHandle : SafeNCryptKeyHandle
     {
         public DuplicateSafeNCryptKeyHandle(SafeNCryptKeyHandle original)
             : base()

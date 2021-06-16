@@ -29,7 +29,7 @@ ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operat
                                                         //           Args: 0: Source for the cast operation.
                                                         //                 1: Constant integer representing the operation .
                                                         //                    Use VNForCastOper() to construct.
-ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception, currently we don't try to constant fold this
+ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception.
 
 ValueNumFuncDef(CastClass, 2, false, false, false)          // Args: 0: Handle of class being cast to, 1: object being cast.
 ValueNumFuncDef(IsInstanceOf, 2, false, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
@@ -77,30 +77,34 @@ ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 
-ValueNumFuncDef(Sin, 1, false, false, false)
-ValueNumFuncDef(Cos, 1, false, false, false)
-ValueNumFuncDef(Cbrt, 1, false, false, false)
-ValueNumFuncDef(Sqrt, 1, false, false, false)
 ValueNumFuncDef(Abs, 1, false, false, false)
-ValueNumFuncDef(RoundDouble, 1, false, false, false)
-ValueNumFuncDef(RoundFloat, 1, false, false, false)
-ValueNumFuncDef(RoundInt, 1, false, false, false)
-ValueNumFuncDef(Cosh, 1, false, false, false)
-ValueNumFuncDef(Sinh, 1, false, false, false)
-ValueNumFuncDef(Tan, 1, false, false, false)
-ValueNumFuncDef(Tanh, 1, false, false, false)
-ValueNumFuncDef(Asin, 1, false, false, false)
-ValueNumFuncDef(Asinh, 1, false, false, false)
 ValueNumFuncDef(Acos, 1, false, false, false)
 ValueNumFuncDef(Acosh, 1, false, false, false)
+ValueNumFuncDef(Asin, 1, false, false, false)
+ValueNumFuncDef(Asinh, 1, false, false, false)
 ValueNumFuncDef(Atan, 1, false, false, false)
-ValueNumFuncDef(Atan2, 2, false, false, false)
 ValueNumFuncDef(Atanh, 1, false, false, false)
+ValueNumFuncDef(Atan2, 2, false, false, false)
+ValueNumFuncDef(Cbrt, 1, false, false, false)
+ValueNumFuncDef(Ceiling, 1, false, false, false)
+ValueNumFuncDef(Cos, 1, false, false, false)
+ValueNumFuncDef(Cosh, 1, false, false, false)
+ValueNumFuncDef(Exp, 1, false, false, false)
+ValueNumFuncDef(Floor, 1, false, false, false)
+ValueNumFuncDef(FMod, 2, false, false, false)
+ValueNumFuncDef(ILogB, 1, false, false, false)
+ValueNumFuncDef(Log, 1, false, false, false)
+ValueNumFuncDef(Log2, 1, false, false, false)
 ValueNumFuncDef(Log10, 1, false, false, false)
 ValueNumFuncDef(Pow, 2, false, false, false)
-ValueNumFuncDef(Exp, 1, false, false, false)
-ValueNumFuncDef(Ceiling, 1, false, false, false)
-ValueNumFuncDef(Floor, 1, false, false, false)
+ValueNumFuncDef(RoundDouble, 1, false, false, false)
+ValueNumFuncDef(RoundInt32, 1, false, false, false)
+ValueNumFuncDef(RoundSingle, 1, false, false, false)
+ValueNumFuncDef(Sin, 1, false, false, false)
+ValueNumFuncDef(Sinh, 1, false, false, false)
+ValueNumFuncDef(Sqrt, 1, false, false, false)
+ValueNumFuncDef(Tan, 1, false, false, false)
+ValueNumFuncDef(Tanh, 1, false, false, false)
 
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
 
@@ -139,15 +143,14 @@ ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
-ValueNumFuncDef(StrCns, 2, false, true, false)
+ValueNumFuncDef(LazyStrCns, 2, false, true, false)  // lazy-initialized string literal (helper)
+ValueNumFuncDef(NonNullIndirect, 1, false, true, false)  // this indirect is expected to always return a non-null value
 ValueNumFuncDef(Unbox, 2, false, true, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
-
-// currently we don't constant fold the next six
 
 ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations
 ValueNumFuncDef(SUB_OVF, 2, false, false, false)

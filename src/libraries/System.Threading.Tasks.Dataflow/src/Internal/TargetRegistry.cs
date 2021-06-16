@@ -98,13 +98,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Increment the optimization counter if needed
             Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             if (node.RemainingMessages > 0) _linksWithRemainingMessages++;
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockLinking(_owningSource, target);
             }
-#endif
         }
 
         /// <summary>Gets whether the registry contains a particular target.</summary>
@@ -161,13 +159,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // Decrement the optimization counter if needed
                     if (node.RemainingMessages == 0) _linksWithRemainingMessages--;
                     Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
-#if FEATURE_TRACING
                     DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.DataflowBlockUnlinking(_owningSource, target);
                     }
-#endif
                 }
                 // If the target is to stay and we are counting the remaining messages for this link, decrement the counter
                 else if (node.RemainingMessages > 0)
@@ -365,10 +361,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     var displaySource = _owningSource as IDebuggerDisplay;
                     var displayTarget = _target as IDebuggerDisplay;
-                    return string.Format("{0} Source=\"{1}\", Target=\"{2}\"",
-                        Common.GetNameForDebugger(this),
-                        displaySource != null ? displaySource.Content : _owningSource,
-                        displayTarget != null ? displayTarget.Content : _target);
+                    return $"{Common.GetNameForDebugger(this)} Source=\"{(displaySource != null ? displaySource.Content : _owningSource)}\", Target=\"{(displayTarget != null ? displayTarget.Content : _target)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>

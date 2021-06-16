@@ -49,6 +49,8 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
+elseif(CLR_CMAKE_HOST_ARCH_S390X)
+  set(PAL_ARCH_SOURCES_DIR s390x)
 endif()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -61,7 +63,6 @@ if(CLR_CMAKE_TARGET_OSX)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
   set(PLATFORM_SOURCES
-    arch/${PAL_ARCH_SOURCES_DIR}/activationhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/context.S
     arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp
@@ -113,7 +114,7 @@ if(CLR_CMAKE_HOST_ARCH_ARM)
   endif()
 endif(CLR_CMAKE_HOST_ARCH_ARM)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_I386))
   add_compile_options(-Wa,--divide)
 endif()
 
@@ -241,10 +242,7 @@ if(CLR_CMAKE_TARGET_OSX)
     ${LIBUNWIND_DAC_OBJECTS}
   )
 
-  target_compile_definitions(coreclrpal_dac PUBLIC
-    "-D_XOPEN_SOURCE"
-    "-DUNW_REMOTE_ONLY"
-  )
+  target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
 else()
   if(NOT FEATURE_CROSSBITNESS)
     add_library(coreclrpal_dac STATIC
@@ -349,4 +347,4 @@ if(FEATURE_EVENT_TRACE)
 endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
-_install (TARGETS coreclrpal DESTINATION lib)
+install_clr (TARGETS coreclrpal DESTINATIONS lib)

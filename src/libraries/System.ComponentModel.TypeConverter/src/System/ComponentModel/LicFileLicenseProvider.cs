@@ -99,7 +99,7 @@ namespace System.ComponentModel
             return lic;
         }
 
-        private class LicFileLicense : License
+        private sealed class LicFileLicense : License
         {
             private readonly LicFileLicenseProvider _owner;
 

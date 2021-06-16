@@ -21,6 +21,7 @@ set(MCS_SOURCES
     verbdumpmap.cpp
     verbdumptoc.cpp
     verbfracture.cpp
+    verbjitflags.cpp
     verbildump.cpp
     verbinteg.cpp
     verbmerge.cpp
@@ -46,7 +47,7 @@ set(MCS_SOURCES
     ../superpmi-shared/spmidumphelper.cpp
 )
 
-_add_executable(mcs
+add_executable_clr(mcs
     ${MCS_SOURCES}
 )
 target_precompile_headers(mcs PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
@@ -65,7 +66,6 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES $<TARGET_PDB_FILE:mcs> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-_install (TARGETS mcs DESTINATION .)
+install_clr(TARGETS mcs DESTINATIONS .)

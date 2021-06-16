@@ -41,7 +41,7 @@ namespace System.Buffers.Text
                     return true;
                 }
 
-                if (4 < (uint)source.Length)
+                if (source.Length > 4)
                 {
                     if (dw == 0x534c4146 /* 'SLAF' */ && (source[4] & ~0x20) == 'E')
                     {

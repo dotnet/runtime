@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml
 {
     public class UniqueId
@@ -332,7 +334,7 @@ namespace System.Xml
             return !(id1 == id2);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return this == (obj as UniqueId);
         }

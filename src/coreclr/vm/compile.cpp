@@ -107,7 +107,7 @@ HRESULT CEECompileInfo::Startup(  BOOL fForceDebug,
     //
     if (SUCCEEDED(hr)) {
 #ifdef _DEBUG
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         _ASSERTE(pThread);
 #endif
 
@@ -313,8 +313,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
 
-            if (spec.CanUseWithBindingCache() && pDomainAssembly->CanUseWithBindingCache())
-                pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
+            pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
 
             pAssembly = pDomain->LoadAssembly(&spec, pAssemblyHolder, FILE_LOADED);
 
@@ -969,6 +968,14 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     return FALSE;
 }
 
+BOOL CEECompileInfo::IsUnmanagedCallConvMethod(CORINFO_METHOD_HANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodDesc * pMethod = GetMethod(handle);
+    return pMethod->HasUnmanagedCallConvAttribute();
+}
+
 BOOL CEECompileInfo::IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
@@ -1314,7 +1321,7 @@ void EncodeTypeInDictionarySignature(
         // SigParser expects ELEMENT_TYPE_MODULE_ZAPSIG to be before ELEMENT_TYPE_GENERICINST
         //
         SigPointer peek(ptr);
-        ULONG instType = 0;
+        uint32_t instType = 0;
         IfFailThrow(peek.GetData(&instType));
         _ASSERTE(instType == ELEMENT_TYPE_INTERNAL);
 
@@ -1342,7 +1349,7 @@ void EncodeTypeInDictionarySignature(
         EncodeTypeInDictionarySignature(pTypeHandleModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
         IfFailThrow(ptr.SkipExactlyOne());
 
-        ULONG argCnt = 0; // Get number of parameters
+        uint32_t argCnt = 0; // Get number of parameters
         IfFailThrow(ptr.GetData(&argCnt));
         pSigBuilder->AppendData(argCnt);
 
@@ -1364,7 +1371,7 @@ void EncodeTypeInDictionarySignature(
             case ELEMENT_TYPE_VAR:
             case ELEMENT_TYPE_MVAR:
                 {
-                    ULONG varNum;
+                    uint32_t varNum;
                     // Skip variable number
                     IfFailThrow(ptr.GetData(&varNum));
                     pSigBuilder->AppendData(varNum);
@@ -1388,30 +1395,30 @@ void EncodeTypeInDictionarySignature(
                     EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
                     IfFailThrow(ptr.SkipExactlyOne());
 
-                    ULONG rank = 0; // Get rank
+                    uint32_t rank = 0; // Get rank
                     IfFailThrow(ptr.GetData(&rank));
                     pSigBuilder->AppendData(rank);
 
                     if (rank)
                     {
-                        ULONG nsizes = 0;
+                        uint32_t nsizes = 0;
                         IfFailThrow(ptr.GetData(&nsizes));
                         pSigBuilder->AppendData(nsizes);
 
                         while (nsizes--)
                         {
-                            ULONG data = 0;
+                            uint32_t data = 0;
                             IfFailThrow(ptr.GetData(&data));
                             pSigBuilder->AppendData(data);
                         }
 
-                        ULONG nlbounds = 0;
+                        uint32_t nlbounds = 0;
                         IfFailThrow(ptr.GetData(&nlbounds));
                         pSigBuilder->AppendData(nlbounds);
 
                         while (nlbounds--)
                         {
-                            ULONG data = 0;
+                            uint32_t data = 0;
                             IfFailThrow(ptr.GetData(&data));
                             pSigBuilder->AppendData(data);
                         }
@@ -1438,13 +1445,13 @@ void CEECompileInfo::EncodeGenericSignature(
 
     SigPointer ptr((PCCOR_SIGNATURE)signature);
 
-    ULONG entryKind; // DictionaryEntryKind
+    uint32_t entryKind; // DictionaryEntryKind
     IfFailThrow(ptr.GetData(&entryKind));
     pSigBuilder->AppendData(entryKind);
 
     if (!fMethod)
     {
-        ULONG dictionaryIndex = 0;
+        uint32_t dictionaryIndex = 0;
         IfFailThrow(ptr.GetData(&dictionaryIndex));
 
         pSigBuilder->AppendData(dictionaryIndex);
@@ -1474,7 +1481,7 @@ void CEECompileInfo::EncodeGenericSignature(
             EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
             IfFailThrow(ptr.SkipExactlyOne());
 
-            ULONG methodFlags;
+            uint32_t methodFlags;
             IfFailThrow(ptr.GetData(&methodFlags));
             pSigBuilder->AppendData(methodFlags);
 
@@ -1484,13 +1491,13 @@ void CEECompileInfo::EncodeGenericSignature(
                 IfFailThrow(ptr.SkipExactlyOne());
             }
 
-            ULONG tokenOrSlot;
+            uint32_t tokenOrSlot;
             IfFailThrow(ptr.GetData(&tokenOrSlot));
             pSigBuilder->AppendData(tokenOrSlot);
 
             if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
             {
-                DWORD nGenericMethodArgs;
+                uint32_t nGenericMethodArgs;
                 IfFailThrow(ptr.GetData(&nGenericMethodArgs));
                 pSigBuilder->AppendData(nGenericMethodArgs);
 
@@ -1508,7 +1515,7 @@ void CEECompileInfo::EncodeGenericSignature(
             EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
             IfFailThrow(ptr.SkipExactlyOne());
 
-            DWORD fieldIndex;
+            uint32_t fieldIndex;
             IfFailThrow(ptr.GetData(&fieldIndex));
             pSigBuilder->AppendData(fieldIndex);
         }
@@ -1518,7 +1525,7 @@ void CEECompileInfo::EncodeGenericSignature(
         _ASSERTE(false);
     }
 
-    ULONG dictionarySlot;
+    uint32_t dictionarySlot;
     IfFailThrow(ptr.GetData(&dictionarySlot));
     pSigBuilder->AppendData(dictionarySlot);
 }
@@ -5736,7 +5743,7 @@ void CEEPreloader::GenerateMethodStubs(
         {
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
             PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
+            NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
             pStubMD = NDirect::GetILStubMethodDesc((NDirectMethodDesc*)pMD, &sigInfo, dwNGenStubFlags);
         }
 #ifdef FEATURE_COMINTEROP
@@ -6480,8 +6487,6 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
         spec.ConvertPublicKeyToToken();
         pRefSpec = &spec;
     }
-
-    _ASSERTE(pRefSpec->HasUniqueIdentity());
 
     //
     // See if we've already added the contents of the ref

@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class DiagnosticUtility
+    internal static class DiagnosticUtility
     {
         [Conditional("DEBUG")]
         [DoesNotReturn]
@@ -63,12 +63,5 @@ namespace System.Runtime.Serialization
                 return ThrowHelperError(e);
             }
         }
-    }
-}
-
-namespace System.ServiceModel
-{
-    internal class DiagnosticUtility : System.Runtime.Serialization.DiagnosticUtility
-    {
     }
 }

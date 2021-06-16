@@ -145,22 +145,9 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
-    <NetCoreAppLibraryNoReference>
-      Microsoft.Win32.Registry;
-      System.IO.FileSystem.AccessControl;
-      System.IO.Pipes.AccessControl;
-      System.Security.AccessControl;
-      System.Security.Cryptography.Cng;
-      System.Security.Cryptography.OpenSsl;
-      System.Security.Principal.Windows;
-    </NetCoreAppLibraryNoReference>
   </PropertyGroup>
   <!-- Make NetCoreAppLibrary available as an item. -->
   <ItemGroup>
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
-    <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
   </ItemGroup>
-  <PropertyGroup>
-    <IsAspNetCoreApp Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">true</IsAspNetCoreApp>
-  </PropertyGroup>
 </Project>

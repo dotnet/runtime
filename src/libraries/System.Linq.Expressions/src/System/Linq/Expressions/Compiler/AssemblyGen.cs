@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -38,7 +38,7 @@ namespace System.Linq.Expressions.Compiler
             _myModule = myAssembly.DefineDynamicModule(name.Name!);
         }
 
-        private TypeBuilder DefineType(string name, Type parent, TypeAttributes attr)
+        private TypeBuilder DefineType(string name, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, TypeAttributes attr)
         {
             ContractUtils.RequiresNotNull(name, nameof(name));
             ContractUtils.RequiresNotNull(parent, nameof(parent));
@@ -58,6 +58,8 @@ namespace System.Linq.Expressions.Compiler
             return _myModule.DefineType(name, attr, parent);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "MulticastDelegate has a ctor with RequiresUnreferencedCode, but the generated derived type doesn't reference this ctor, so this is trim compatible.")]
         internal static TypeBuilder DefineDelegateType(string name)
         {
             return Assembly.DefineType(

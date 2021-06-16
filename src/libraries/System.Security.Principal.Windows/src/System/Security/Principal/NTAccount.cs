@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -136,7 +137,7 @@ namespace System.Security.Principal
             }
         }
 
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return (this == o as NTAccount); // invokes operator==
         }

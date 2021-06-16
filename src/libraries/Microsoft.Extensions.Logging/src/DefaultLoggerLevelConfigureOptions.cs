@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class DefaultLoggerLevelConfigureOptions : ConfigureOptions<LoggerFilterOptions>
+    internal sealed class DefaultLoggerLevelConfigureOptions : ConfigureOptions<LoggerFilterOptions>
     {
         public DefaultLoggerLevelConfigureOptions(LogLevel level) : base(options => options.MinLevel = level)
         {

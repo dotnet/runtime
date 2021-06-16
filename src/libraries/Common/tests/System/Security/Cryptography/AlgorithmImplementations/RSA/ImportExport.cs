@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class ImportExport
     {
         public static bool Supports16384 { get; } = TestRsa16384();

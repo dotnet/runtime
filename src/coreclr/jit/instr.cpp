@@ -193,6 +193,7 @@ void CodeGen::instGen(instruction ins)
     GetEmitter()->emitIns(ins);
 
 #ifdef TARGET_XARCH
+#ifdef PSEUDORANDOM_NOP_INSERTION
     // A workaround necessitated by limitations of emitter
     // if we are scheduled to insert a nop here, we have to delay it
     // hopefully we have not missed any other prefix instructions or places
@@ -201,6 +202,7 @@ void CodeGen::instGen(instruction ins)
     {
         GetEmitter()->emitNextNop = 1;
     }
+#endif // PSEUDORANDOM_NOP_INSERTION
 #endif
 }
 
@@ -394,14 +396,76 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 
 /*****************************************************************************
  *
+ *  Generate a "mov reg1, reg2" instruction.
+ */
+void CodeGen::inst_Mov(var_types dstType,
+                       regNumber dstReg,
+                       regNumber srcReg,
+                       bool      canSkip,
+                       emitAttr  size,
+                       insFlags  flags /* = INS_FLAGS_DONT_CARE */)
+{
+    instruction ins = ins_Copy(srcReg, dstType);
+
+    if (size == EA_UNKNOWN)
+    {
+        size = emitActualTypeSize(dstType);
+    }
+
+#ifdef TARGET_ARM
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+#else
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
+#endif
+}
+
+/*****************************************************************************
+ *
+ *  Generate a "mov reg1, reg2" instruction.
+ */
+void CodeGen::inst_Mov_Extend(var_types srcType,
+                              bool      srcInReg,
+                              regNumber dstReg,
+                              regNumber srcReg,
+                              bool      canSkip,
+                              emitAttr  size,
+                              insFlags  flags /* = INS_FLAGS_DONT_CARE */)
+{
+    instruction ins = ins_Move_Extend(srcType, srcInReg);
+
+    if (size == EA_UNKNOWN)
+    {
+        size = emitActualTypeSize(srcType);
+    }
+
+#ifdef TARGET_ARM
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+#else
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
+#endif
+}
+
+/*****************************************************************************
+ *
  *  Generate a "op reg1, reg2" instruction.
  */
 
+//------------------------------------------------------------------------
+// inst_RV_RV: Generate a "op reg1, reg2" instruction.
+//
+// Arguments:
+//    ins   - the instruction to generate;
+//    reg1  - the first register to use, the dst for most instructions;
+//    reg2  - the second register to use, the src for most instructions;
+//    type  - the type used to get the size attribute if not given, usually type of the reg2 operand;
+//    size  - the size attribute, the type arg is ignored if this arg is provided with an actual value;
+//    flags - whether flags are set for arm32.
+//
 void CodeGen::inst_RV_RV(instruction ins,
                          regNumber   reg1,
                          regNumber   reg2,
-                         var_types   type,
-                         emitAttr    size,
+                         var_types   type /* = TYP_I_IMPL */,
+                         emitAttr    size /* = EA_UNKNOWN */,
                          insFlags    flags /* = INS_FLAGS_DONT_CARE */)
 {
     if (size == EA_UNKNOWN)
@@ -1557,7 +1621,8 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     if (varTypeIsFloating(srcType))
         return INS_vmov;
 #else
-    assert(!varTypeIsFloating(srcType));
+    if (varTypeIsFloating(srcType))
+        return INS_mov;
 #endif
 
 #if defined(TARGET_XARCH)
@@ -1834,14 +1899,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return ins_Copy(dstType);
     }
 #if defined(TARGET_XARCH)
-    if (dstIsFloatReg)
-    {
-        return INS_mov_i2xmm;
-    }
-    else
-    {
-        return INS_mov_xmm2i;
-    }
+    return INS_movd;
 #elif defined(TARGET_ARM64)
     if (dstIsFloatReg)
     {
@@ -2019,32 +2077,6 @@ instruction CodeGen::ins_FloatCompare(var_types type)
     return (type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
 }
 
-instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
-{
-    // On SSE2/AVX - the same instruction is used for moving double/quad word to XMM/YMM register.
-    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
-
-#if !defined(TARGET_64BIT)
-    // No 64-bit registers on x86.
-    assert((srcType != TYP_LONG) && (srcType != TYP_ULONG));
-#endif // !defined(TARGET_64BIT)
-
-    return INS_mov_i2xmm;
-}
-
-instruction CodeGen::ins_CopyFloatToInt(var_types srcType, var_types dstType)
-{
-    // On SSE2/AVX - the same instruction is used for moving double/quad word of XMM/YMM to an integer register.
-    assert((dstType == TYP_INT) || (dstType == TYP_UINT) || (dstType == TYP_LONG) || (dstType == TYP_ULONG));
-
-#if !defined(TARGET_64BIT)
-    // No 64-bit registers on x86.
-    assert((dstType != TYP_LONG) && (dstType != TYP_ULONG));
-#endif // !defined(TARGET_64BIT)
-
-    return INS_mov_xmm2i;
-}
-
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 {
     switch (oper)
@@ -2164,36 +2196,6 @@ instruction CodeGen::ins_FloatCopy(var_types type)
     return INS_vmov;
 }
 
-instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
-{
-    assert((dstType == TYP_FLOAT) || (dstType == TYP_DOUBLE));
-    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
-
-    if ((srcType == TYP_LONG) || (srcType == TYP_ULONG))
-    {
-        return INS_vmov_i2d;
-    }
-    else
-    {
-        return INS_vmov_i2f;
-    }
-}
-
-instruction CodeGen::ins_CopyFloatToInt(var_types srcType, var_types dstType)
-{
-    assert((srcType == TYP_FLOAT) || (srcType == TYP_DOUBLE));
-    assert((dstType == TYP_INT) || (dstType == TYP_UINT) || (dstType == TYP_LONG) || (dstType == TYP_ULONG));
-
-    if ((dstType == TYP_LONG) || (dstType == TYP_ULONG))
-    {
-        return INS_vmov_d2i;
-    }
-    else
-    {
-        return INS_vmov_f2i;
-    }
-}
-
 instruction CodeGen::ins_FloatCompare(var_types type)
 {
     // Not used and not implemented
@@ -2306,24 +2308,7 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
     unreached();
 }
 
-#elif defined(TARGET_ARM64)
-instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
-{
-    assert((dstType == TYP_FLOAT) || (dstType == TYP_DOUBLE));
-    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
-
-    return INS_mov;
-}
-
-instruction CodeGen::ins_CopyFloatToInt(var_types srcType, var_types dstType)
-{
-    assert((srcType == TYP_FLOAT) || (srcType == TYP_DOUBLE));
-    assert((dstType == TYP_INT) || (dstType == TYP_UINT) || (dstType == TYP_LONG) || (dstType == TYP_ULONG));
-
-    return INS_mov;
-}
-
-#endif // TARGET_ARM64
+#endif // TARGET_ARM
 
 /*****************************************************************************
  *

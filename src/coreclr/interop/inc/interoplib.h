@@ -67,13 +67,15 @@ namespace InteropLib
             CreateObjectFlags_TrackerObject = 1,
             CreateObjectFlags_UniqueInstance = 2,
             CreateObjectFlags_Aggregated = 4,
+            CreateObjectFlags_Unwrap = 8,
         };
 
-        // Get the true identity for the supplied IUnknown.
-        HRESULT GetIdentityForCreateWrapperForExternal(
+        // Get the true identity and inner for the supplied IUnknown.
+        HRESULT DetermineIdentityAndInnerForExternal(
             _In_ IUnknown* external,
             _In_ enum CreateObjectFlags flags,
-            _Outptr_ IUnknown** identity) noexcept;
+            _Outptr_ IUnknown** identity,
+            _Inout_ IUnknown** innerMaybe) noexcept;
 
         // Allocate a wrapper context for an external object.
         // The runtime supplies the external object, flags, and a memory

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Internal.Runtime.CompilerServices;
@@ -133,7 +134,7 @@ namespace System.Runtime.InteropServices
                     }
 
                     Debug.Assert(target is Array);
-                    return (IntPtr)Unsafe.AsPointer(ref Unsafe.As<Array>(target).GetRawArrayData());
+                    return (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array>(target)));
                 }
 
                 return (IntPtr)Unsafe.AsPointer(ref target.GetRawData());
@@ -162,7 +163,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override bool Equals(object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
+        public override bool Equals([NotNullWhen(true)] object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
 
         public static bool operator ==(GCHandle a, GCHandle b) => a._handle == b._handle;
 

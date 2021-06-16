@@ -8,9 +8,9 @@ using System.Reflection.Context.Custom;
 
 namespace System.Reflection.Context.Virtual
 {
-    internal partial class VirtualPropertyInfo
+    internal sealed partial class VirtualPropertyInfo
     {
-        private class PropertySetter : PropertySetterBase
+        private sealed class PropertySetter : PropertySetterBase
         {
             private readonly Action<object, object> _setter;
             private readonly ParameterInfo _valueParameter;

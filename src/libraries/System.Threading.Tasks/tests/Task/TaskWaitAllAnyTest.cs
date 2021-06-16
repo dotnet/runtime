@@ -451,7 +451,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
     public sealed class TaskWaitAllAny
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny0()
         {
@@ -462,7 +462,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny1()
         {
@@ -504,7 +504,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny5()
         {
@@ -531,7 +531,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny7()
         {
@@ -807,7 +807,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny31()
         {
@@ -892,7 +892,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny33()
         {
@@ -903,7 +903,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny34()
         {
@@ -940,7 +940,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny37()
         {
@@ -1028,7 +1028,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny45()
         {

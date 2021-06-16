@@ -21,7 +21,7 @@ namespace System.Net.WebSockets
     //
     // *RBS = ReceiveBufferSize, *SBS = SendBufferSize
     // *PBS = PropertyBufferSize (32-bit: 16, 64 bit: 20 bytes)
-    internal class WebSocketBuffer : IDisposable
+    internal sealed class WebSocketBuffer : IDisposable
     {
         private const int NativeOverheadBufferSize = 144;
         private static readonly int s_PropertyBufferSize = 3 * sizeof(uint) + IntPtr.Size;
@@ -680,7 +680,7 @@ namespace System.Net.WebSockets
             public const int SendPayloadSpecified = 1;
         }
 
-        private class PayloadReceiveResult
+        private sealed class PayloadReceiveResult
         {
             public int Count { get; set; }
             public bool EndOfMessage { get; }

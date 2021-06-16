@@ -103,7 +103,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         PRECONDITION(IsProtectedByGCFrame(pComObj));
         PRECONDITION(!m_typeHandle.IsNull());
         PRECONDITION(m_typeHandle.IsComObjectType());
-        PRECONDITION(m_pThread == GetThread());
+        PRECONDITION(m_pThread == GetThreadNULLOk());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }
     CONTRACTL_END;
@@ -142,11 +142,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         // to create duplicate wrappers
         pNewRCW->m_pIdentity = pNewRCW;
         m_pIdentity = (IUnknown*)(LPVOID)pNewRCW;
-    }
-    else if (m_flags & RCW::CF_QueryForIdentity)
-    {
-        // pNewRCW has the real Identity in this case and we need to use it to insert into RCW cache
-        m_pIdentity = (IUnknown *)pNewRCW->m_pIdentity;
     }
 
     // If the class is an extensible RCW (managed class deriving from a ComImport class)
@@ -311,7 +306,7 @@ OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRefInternal(IUnknown **ppInco
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(m_pThread == GetThread());
+        PRECONDITION(m_pThread == GetThreadNULLOk());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }
     CONTRACTL_END;
@@ -405,6 +400,7 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
         // This was previously provided by IProvideClassinfo. If the type handle isn't
         // set fallback to the opaque __ComObject type.
         m_typeHandle = TypeHandle(g_pBaseCOMObject);
+        _ASSERTE(!m_typeHandle.IsNull());
     }
 }
 

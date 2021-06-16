@@ -2309,7 +2309,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_OBJECTHANDLE vmObjectHandle;
-            BOOL            fStrong;
+            CorDebugHandleType handleType;
         } DisposeHandle;
 
         struct MSLAYOUT

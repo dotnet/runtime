@@ -7,7 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
     public static unsafe void CheckForAvailableVirtualMemory(ulong nativeSize)
     {

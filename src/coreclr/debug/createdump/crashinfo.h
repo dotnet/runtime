@@ -5,7 +5,6 @@
 #include "../dbgutil/machoreader.h"
 #else
 #include "../dbgutil/elfreader.h"
-#endif
 
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
 #if TARGET_64BIT
@@ -29,6 +28,8 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 // All interesting auvx entry types are AT_SYSINFO_EHDR and below
 #define AT_MAX (AT_SYSINFO_EHDR + 1)
 
+#endif
+
 class CrashInfo : public ICLRDataEnumMemoryRegionsCallback,
 #ifdef __APPLE__
     public MachOReader
@@ -45,17 +46,16 @@ private:
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
 #else
-#ifndef HAVE_PROCESS_VM_READV
+    bool m_canUseProcVmReadSyscall;
     int m_fd;                                       // /proc/<pid>/mem handle
-#endif
 #endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
 #else
     std::array<elf_aux_val_t, AT_MAX> m_auxvValues; // auxv values
-#endif
     std::vector<elf_aux_entry> m_auxvEntries;       // full auxv entries
+#endif
     std::vector<ThreadInfo*> m_threads;             // threads found and suspended
     std::set<MemoryRegion> m_moduleMappings;        // module memory mappings
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
@@ -88,8 +88,10 @@ public:
     inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
     inline const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
+#ifndef __APPLE__
     inline const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
+#endif
 
     // IUnknown
     STDMETHOD(QueryInterface)(___in REFIID InterfaceId, ___out PVOID* Interface);
@@ -112,7 +114,7 @@ private:
     void VisitModule(uint64_t baseAddress, std::string& moduleName);
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateModuleMappings();
-#endif 
+#endif
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
     bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
@@ -123,4 +125,5 @@ private:
     bool ValidRegion(const MemoryRegion& region);
     void CombineMemoryRegions();
     void Trace(const char* format, ...);
+    void TraceVerbose(const char* format, ...);
 };

@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlJsonReader : XmlBaseReader, IXmlJsonReaderInitializer
+    internal sealed class XmlJsonReader : XmlBaseReader, IXmlJsonReaderInitializer
     {
         private const int MaxTextChunk = 2048;
 

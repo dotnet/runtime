@@ -5,7 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        internal partial class FileAttributes
+        internal static partial class FileAttributes
         {
             internal const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
             internal const int FILE_ATTRIBUTE_READONLY = 0x00000001;

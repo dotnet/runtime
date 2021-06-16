@@ -17,9 +17,38 @@ using Xunit;
 
 namespace SampleSynthesisTests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
+    [SkipOnMono("No SAPI on Mono")]
     public static class SpeechRecognizerTests
     {
-        [Fact]
+        private static bool RecognizerInstalledAndEnabled()
+        {
+            if (PlatformDetection.IsMonoRuntime ||
+                PlatformDetection.IsWindowsNanoServer ||
+                PlatformDetection.IsWindowsServerCore)
+            {
+                return false;
+            }
+
+            try
+            {
+                using (SpeechRecognizer recognizer = new SpeechRecognizer())
+                {
+                    _ = recognizer.State; // force initialization
+                }
+            }
+            catch (Exception ex) when (ex is PlatformNotSupportedException || ex is InvalidOperationException)
+            {
+                // PlatformNotSupportedException : No recognizer is installed.
+                // PlatformNotSupportedException : The user has chosen to disable speech from running on the machine, or the system is not set up to run speech.
+                // InvalidOperationException : No audio device is installed.
+                return false;
+            }
+
+            return true;
+        }
+
+        [ConditionalFact(nameof(RecognizerInstalledAndEnabled))]
         [OuterLoop] // Pops UI
         public static void SpeechRecognizer()
         {

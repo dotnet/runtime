@@ -160,7 +160,7 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Diagnostics.Process is not supported on this platform.
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Diagnostics.Process is not supported on this platform.")]
         [InlineData("STAMain.exe", "GetApartmentStateTest")]
         [InlineData("STAMain.exe", "SetApartmentStateTest")]
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]
@@ -169,6 +169,8 @@ namespace System.Threading.Threads.Tests
         [InlineData("MTAMain.exe", "SetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();
@@ -575,6 +577,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void IsThreadPoolThreadTest()
         {
             var isThreadPoolThread = false;
@@ -599,6 +602,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void ManagedThreadIdTest()
         {
             var e = new ManualResetEvent(false);
@@ -621,19 +625,20 @@ namespace System.Threading.Threads.Tests
                 {
                     var ct = Thread.CurrentThread;
                     Assert.Equal(name, ct.Name);
-                    Assert.Throws<InvalidOperationException>(() => ct.Name = null);
-                    Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
+                    ct.Name = name + "xyz";
+                    Assert.Equal(name + "xyz", ct.Name);
+                    ct.Name = null;
+                    Assert.Null(ct.Name);
+                    ct.Name = name;
                     Assert.Equal(name, ct.Name);
                 });
             t.IsBackground = true;
             Assert.Null(t.Name);
             t.Name = null;
-            t.Name = null;
             Assert.Null(t.Name);
+            t.Name = name + "xyz";
+            Assert.Equal(name + "xyz", t.Name);
             t.Name = name;
-            Assert.Equal(name, t.Name);
-            Assert.Throws<InvalidOperationException>(() => t.Name = null);
-            Assert.Throws<InvalidOperationException>(() => t.Name = name + "b");
             Assert.Equal(name, t.Name);
             t.Start();
             waitForThread();
@@ -642,13 +647,13 @@ namespace System.Threading.Threads.Tests
             {
                 var ct = Thread.CurrentThread;
                 Assert.Null(ct.Name);
-                ct.Name = null;
+                ct.Name = name;
+                Assert.Equal(name, ct.Name);
+                ct.Name = name + "xyz";
+                Assert.Equal(name + "xyz", ct.Name);
                 ct.Name = null;
                 Assert.Null(ct.Name);
                 ct.Name = name;
-                Assert.Equal(name, ct.Name);
-                Assert.Throws<InvalidOperationException>(() => ct.Name = null);
-                Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
                 Assert.Equal(name, ct.Name);
             });
         }
@@ -668,6 +673,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void PriorityTest()
         {
             var e = new ManualResetEvent(false);
@@ -686,6 +692,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void ThreadStateTest()
         {
             var e0 = new ManualResetEvent(false);
@@ -723,6 +730,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void AbortSuspendTest()
         {
             var e = new ManualResetEvent(false);
@@ -912,6 +920,8 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
@@ -961,6 +971,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
             // A wait in a finally block can be interrupted. The .NET Framework applies the same rules as thread abort, and
@@ -986,6 +997,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
         public static void JoinTest()
         {
             var threadReady = new ManualResetEvent(false);
@@ -1034,9 +1046,36 @@ namespace System.Threading.Threads.Tests
             Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void StartTest()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50577", TestPlatforms.Android)]
+        public static void StartTest(bool useUnsafeStart)
         {
+            void Start(Thread t)
+            {
+                if (useUnsafeStart)
+                {
+                    t.UnsafeStart();
+                }
+                else
+                {
+                    t.Start();
+                }
+            }
+
+            void StartParameter(Thread t, object parameter)
+            {
+                if (useUnsafeStart)
+                {
+                    t.UnsafeStart(parameter);
+                }
+                else
+                {
+                    t.Start(parameter);
+                }
+            }
+
             var e = new AutoResetEvent(false);
             Action waitForThread;
             Thread t = null;
@@ -1046,25 +1085,25 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            Assert.Throws<InvalidOperationException>(() => t.Start(null));
-            Assert.Throws<InvalidOperationException>(() => t.Start(t));
-            t.Start();
-            Assert.Throws<ThreadStateException>(() => t.Start());
+            Assert.Throws<InvalidOperationException>(() => StartParameter(t, null));
+            Assert.Throws<InvalidOperationException>(() => StartParameter(t, t));
+            Start(t);
+            Assert.Throws<ThreadStateException>(() => Start(t));
             e.Set();
             waitForThread();
-            Assert.Throws<ThreadStateException>(() => t.Start());
+            Assert.Throws<ThreadStateException>(() => Start(t));
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => e.CheckedWait());
             t.IsBackground = true;
-            t.Start();
-            Assert.Throws<ThreadStateException>(() => t.Start());
-            Assert.Throws<ThreadStateException>(() => t.Start(null));
-            Assert.Throws<ThreadStateException>(() => t.Start(t));
+            Start(t);
+            Assert.Throws<ThreadStateException>(() => Start(t));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, null));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, t));
             e.Set();
             waitForThread();
-            Assert.Throws<ThreadStateException>(() => t.Start());
-            Assert.Throws<ThreadStateException>(() => t.Start(null));
-            Assert.Throws<ThreadStateException>(() => t.Start(t));
+            Assert.Throws<ThreadStateException>(() => Start(t));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, null));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, t));
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
                 {
@@ -1072,7 +1111,7 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start();
+            Start(t);
             waitForThread();
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
@@ -1081,7 +1120,7 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start(null);
+            StartParameter(t, null);
             waitForThread();
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
@@ -1090,7 +1129,24 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start(t);
+            StartParameter(t, t);
+            waitForThread();
+
+            var al = new AsyncLocal<int>();
+            al.Value = 42;
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
+            {
+                if (useUnsafeStart)
+                {
+                    Assert.Equal(0, al.Value);
+                }
+                else
+                {
+                    Assert.Equal(42, al.Value);
+                }
+            });
+            t.IsBackground = true;
+            StartParameter(t, t);
             waitForThread();
         }
 

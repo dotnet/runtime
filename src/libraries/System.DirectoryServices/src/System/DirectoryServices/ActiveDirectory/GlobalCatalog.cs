@@ -10,7 +10,7 @@ namespace System.DirectoryServices.ActiveDirectory
     public class GlobalCatalog : DomainController
     {
         // private variables
-        private ActiveDirectorySchema _schema;
+        private ActiveDirectorySchema? _schema;
         private bool _disabled;
 
         #region constructors
@@ -27,9 +27,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static GlobalCatalog GetGlobalCatalog(DirectoryContext context)
         {
-            string gcDnsName = null;
+            string? gcDnsName = null;
             bool isGlobalCatalog = false;
-            DirectoryEntryManager directoryEntryMgr = null;
+            DirectoryEntryManager? directoryEntryMgr = null;
 
             // check that the context argument is not null
             if (context == null)
@@ -62,8 +62,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound, context.Name), typeof(GlobalCatalog), context.Name);
                 }
 
-                gcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
-                isGlobalCatalog = (bool)bool.Parse((string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.IsGlobalCatalogReady));
+                gcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName)!;
+                isGlobalCatalog = (bool)bool.Parse((string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.IsGlobalCatalogReady)!);
                 if (!isGlobalCatalog)
                 {
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound, context.Name), typeof(GlobalCatalog), context.Name);
@@ -218,7 +218,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
                 {
-                    options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value;
+                    options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value!;
                 }
 
                 serverNtdsaEntry.Properties[PropertyManager.Options].Value = options & (~1);
@@ -253,7 +253,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // create an ActiveDirectorySchema object
             if (_schema == null)
             {
-                string schemaNC = null;
+                string? schemaNC = null;
                 try
                 {
                     schemaNC = directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.SchemaNamingContext);
@@ -290,7 +290,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static new GlobalCatalog FindOneWithCredentialValidation(DirectoryContext context, string siteName, LocatorOptions flag)
+        internal static new GlobalCatalog FindOneWithCredentialValidation(DirectoryContext context, string? siteName, LocatorOptions flag)
         {
             GlobalCatalog gc;
             bool retry = false;
@@ -366,7 +366,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return gc;
         }
 
-        internal static new GlobalCatalog FindOneInternal(DirectoryContext context, string forestName, string siteName, LocatorOptions flag)
+        internal static new GlobalCatalog FindOneInternal(DirectoryContext context, string? forestName, string? siteName, LocatorOptions flag)
         {
             DomainControllerInfo domainControllerInfo;
             int errorCode = 0;
@@ -430,7 +430,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return new GlobalCatalog(gcContext, globalCatalogName);
         }
 
-        internal static GlobalCatalogCollection FindAllInternal(DirectoryContext context, string siteName)
+        internal static GlobalCatalogCollection FindAllInternal(DirectoryContext context, string? siteName)
         {
             ArrayList gcList = new ArrayList();
 

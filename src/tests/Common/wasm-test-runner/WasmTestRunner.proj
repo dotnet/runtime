@@ -1,6 +1,7 @@
 <!-- This project requires an explicit SDK version number because it is used on Helix,
       and global.json is not available. -->
 <Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="WasmBuildApp">
+  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
@@ -15,7 +16,7 @@
 
   <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
-      <WasmMainAssemblyPath>$(TestAssembly)</WasmMainAssemblyPath>
+      <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
@@ -24,6 +25,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
@@ -36,5 +38,5 @@
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
   </Target>
 
-  <Import Project="$(CORE_ROOT)\build\WasmApp.targets" />
+  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.targets" />
 </Project>

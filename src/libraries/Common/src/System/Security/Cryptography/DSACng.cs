@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Internal.Cryptography;
 using System.Diagnostics;
 using System.IO;
@@ -74,7 +73,7 @@ namespace System.Security.Cryptography
 
             private static bool Supports2048KeySize()
             {
-                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+                Debug.Assert(OperatingSystem.IsWindows());
                 Version version = Environment.OSVersion.Version;
                 bool isAtLeastWindows8 = version.Major > 6 || (version.Major == 6 && version.Minor >= 2);
                 return isAtLeastWindows8;

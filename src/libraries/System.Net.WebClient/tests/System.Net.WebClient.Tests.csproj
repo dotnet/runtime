@@ -2,7 +2,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -21,6 +23,8 @@
              Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
              Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>

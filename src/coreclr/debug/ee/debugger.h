@@ -326,16 +326,6 @@ public:
 #define GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD_COND(cond)               \
     GCHolderEEInterface<FALSE, TRUE, TRUE> __gcCoop_onlyOneAllowedPerScope((cond))
 
-
-
-// There are still some APIs that call new that we call from the helper thread.
-// These are unsafe operations, so we wrap them here. Each of these is a potential hang.
-inline DWORD UnsafeGetConfigDWORD_DontUse_(LPCWSTR name, DWORD defValue)
-{
-    SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue);
-}
-
 inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 {
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -1114,7 +1104,8 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
     {
-        chunks[0].bookkeeping.nextPage = nextPage;
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        debuggerHeapPageWriterHolder.GetRW()->chunks[0].bookkeeping.nextPage = nextPage;
     }
 
     inline uint64_t GetPageOccupancy() const
@@ -1127,7 +1118,8 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
         // Can't unset first bit of occupancy!
         ASSERT((newOccupancy & 0x8000000000000000) != 0);
 
-        chunks[0].bookkeeping.pageOccupancy = newOccupancy;
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        debuggerHeapPageWriterHolder.GetRW()->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
     }
 
     inline void* GetPointerToChunk(int chunkNum) const
@@ -1137,12 +1129,14 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     DebuggerHeapExecutableMemoryPage()
     {
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+
         SetPageOccupancy(0x8000000000000000); // only the first bit is set.
         for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
         {
             ASSERT(i != 0);
-            chunks[i].data.startOfPage = this;
-            chunks[i].data.chunkNumber = i;
+            debuggerHeapPageWriterHolder.GetRW()->chunks[i].data.startOfPage = this;
+            debuggerHeapPageWriterHolder.GetRW()->chunks[i].data.chunkNumber = i;
         }
     }
 
@@ -1971,7 +1965,7 @@ public:
                              unsigned int *cILOffsets, DWORD **pILOffsets);
     void getBoundaries(MethodDesc * ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                       ICorDebugInfo::BoundaryTypes* implicitBoundaries);
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
@@ -2339,7 +2333,6 @@ public:
         if (g_fProcessDetach)
             return true;
 
-        BEGIN_GETTHREAD_ALLOWED;
         if (g_pEEInterface->GetThread())
         {
             return (GetThreadIdHelper(g_pEEInterface->GetThread()) == m_mutexOwner);
@@ -2348,7 +2341,6 @@ public:
         {
             return (GetCurrentThreadId() == m_mutexOwner);
         }
-        END_GETTHREAD_ALLOWED;
     }
 #endif // _DEBUG_IMPL
 
@@ -2502,7 +2494,6 @@ public:
 
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
-    HRESULT SetFiberMode(bool isFiberMode);
 
     HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
     HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
@@ -2918,6 +2909,7 @@ public:
     virtual void SuspendForGarbageCollectionCompleted();
     virtual void ResumeForGarbageCollectionStarted();
 #endif
+    BOOL m_isSuspendedForGarbageCollection;
     BOOL m_isBlockedOnGarbageCollectionEvent;
     BOOL m_willBlockOnGarbageCollectionEvent;
     BOOL m_isGarbageCollectionEventsEnabled;
@@ -3486,9 +3478,6 @@ public:
 class InteropSafe {};
 extern InteropSafe interopsafe;
 
-class InteropSafeExecutable {};
-extern InteropSafeExecutable interopsafeEXEC;
-
 #ifndef DACCESS_COMPILE
 inline void * __cdecl operator new(size_t n, const InteropSafe&)
 {
@@ -3627,62 +3616,6 @@ template<class T> void DeleteInteropSafe(T *p)
         DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
         _ASSERTE(pHeap != NULL); // should have had heap around if we're deleting
 
-        pHeap->Free(p);
-    }
-}
-
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&)
-{
-    CONTRACTL
-    {
-        THROWS; // throw on OOM
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger != NULL);
-    void *result = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc((DWORD)n);
-    if (result == NULL) {
-        ThrowOutOfMemory();
-    }
-    return result;
-}
-
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&, const NoThrow&) throw()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger != NULL);
-    DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-    if (pHeap == NULL)
-    {
-        return NULL;
-    }
-    void *result = pHeap->Alloc((DWORD)n);
-    return result;
-}
-
-// Note: there is no C++ syntax for manually invoking this, but if a constructor throws an exception I understand that
-// this delete operator will be invoked automatically to destroy the object.
-inline void __cdecl operator delete(void *p, const InteropSafeExecutable&)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (p != NULL)
-    {
-        _ASSERTE(g_pDebugger != NULL);
-        DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-        _ASSERTE(pHeap != NULL); // should have had heap around if we're deleting
         pHeap->Free(p);
     }
 }
@@ -3899,7 +3832,7 @@ HANDLE OpenWin32EventOrThrow(
       if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady()) { THROWS; } else { NOTHROW; }
 
 #define MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT \
-      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThread() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThreadNULLOk() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 
 #define GC_TRIGGERS_FROM_GETJITINFO if (GetThreadNULLOk() != NULL) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 

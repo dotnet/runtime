@@ -10,7 +10,7 @@ assignees: ''
 ## Background and Motivation
 
 <!--
-We welcome API proposals! We have a process to evaluate the value and shape of new API. There is an overview of our process [here](https://github.com/dotnet/runtime/blob/master/docs/project/api-review-process.md). This template will help us gather the information we need to start the review process.
+We welcome API proposals! We have a process to evaluate the value and shape of new API. There is an overview of our process [here](https://github.com/dotnet/runtime/blob/main/docs/project/api-review-process.md). This template will help us gather the information we need to start the review process.
 First, please describe the purpose and value of the new API here.
 -->
 
@@ -25,7 +25,7 @@ namespace System.Collections.Generic
 +    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlySet<T> {
      }
 ```
-You may find the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/framework-design-guidelines-digest.md) helpful.
+You may find the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md) helpful.
 -->
 
 ## Usage Examples

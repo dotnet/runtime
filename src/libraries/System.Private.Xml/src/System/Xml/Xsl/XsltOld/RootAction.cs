@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.XsltOld
     using MS.Internal.Xml.XPath;
     using System.Security;
 
-    internal class Key
+    internal sealed class Key
     {
         private readonly XmlQualifiedName _name;
         private readonly int _matchKey;

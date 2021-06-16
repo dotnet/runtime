@@ -177,11 +177,17 @@ fi
 
 if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
-     have_sleep=$(which sleep)
-     if [ -x "$have_sleep" ]; then
-         echo Waiting a few seconds for any dump to be written..
-          sleep 10s
-     fi
+
+    # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
+    if [[ $test_exitcode -ne 1 ]]; then
+      dmesg | tail -50
+    fi
+
+    have_sleep=$(which sleep)
+    if [ -x "$have_sleep" ]; then
+      echo Waiting a few seconds for any dump to be written..
+      sleep 10s
+    fi
   fi
 
   echo cat /proc/sys/kernel/core_pattern: $(cat /proc/sys/kernel/core_pattern)
@@ -219,8 +225,11 @@ popd >/dev/null
 # The helix work item should not exit with non-zero if tests ran and produced results
 # The special console runner for runtime returns 1 when tests fail
 if [ "$test_exitcode" == "1" ]; then
-  exit 0
-else
-  exit $test_exitcode
+  if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
+    exit 0
+  fi
+fi
+
+exit $test_exitcode
 fi
 

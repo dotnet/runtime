@@ -35,8 +35,6 @@ namespace System.Collections.Generic
             }
         }
 
-        public void SlowAdd(T item) => _builder.Add(item);
-
         public T[] ToArray() => _builder.ToArray();
 
         public CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)

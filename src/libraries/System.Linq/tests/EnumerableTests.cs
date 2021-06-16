@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using Xunit;
 
 namespace System.Linq.Tests
 {
@@ -240,6 +241,28 @@ namespace System.Linq.Tests
         protected static IEnumerable<T> FlipIsCollection<T>(IEnumerable<T> source)
         {
             return source is ICollection<T> ? ForceNotCollection(source) : new List<T>(source);
+        }
+        protected static T[] Repeat<T>(Func<int, T> factory, int count)
+        {
+            T[] results = new T[count];
+            for (int index = 0; index < results.Length; index++)
+            {
+                results[index] = factory(index);
+            }
+
+            return results;
+        }
+
+        protected static IEnumerable<T> ListPartitionOrEmpty<T>(IList<T> source) // Or Empty
+        {
+            var listPartition = source.Skip(0);
+            return listPartition;
+        }
+
+        protected static IEnumerable<T> EnumerablePartitionOrEmpty<T>(IEnumerable<T> source) // Or Empty
+        {
+            var enumerablePartition = ForceNotCollection(source).Skip(0);
+            return enumerablePartition;
         }
 
         protected struct StringWithIntArray

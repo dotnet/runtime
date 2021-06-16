@@ -464,7 +464,7 @@ namespace System.Linq.Tests
             return lengths.SelectMany(l => lengths, (l1, l2) => new object[] { l1, l2 });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core optimizes SelectMany and throws an OverflowException. On the .NET Framework this takes a long time. See https://github.com/dotnet/corefx/pull/13942.")]
         [InlineData(new[] { int.MaxValue, 1 })]
         [InlineData(new[] { 2, int.MaxValue - 1 })]
@@ -509,19 +509,19 @@ namespace System.Linq.Tests
                 Assert.Equal(Enumerable.Repeat(0, timesCalledMap.Length - index - 1), timesCalledMap.Skip(index + 1));
             }
 
-            Array.Clear(timesCalledMap, 0, timesCalledMap.Length);
+            Array.Clear(timesCalledMap);
 
             // ToArray
             iterator.ToArray();
             Assert.Equal(Enumerable.Repeat(1, timesCalledMap.Length), timesCalledMap);
 
-            Array.Clear(timesCalledMap, 0, timesCalledMap.Length);
+            Array.Clear(timesCalledMap);
 
             // ToList
             iterator.ToList();
             Assert.Equal(Enumerable.Repeat(1, timesCalledMap.Length), timesCalledMap);
 
-            Array.Clear(timesCalledMap, 0, timesCalledMap.Length);
+            Array.Clear(timesCalledMap);
 
             // ToHashSet
             iterator.ToHashSet();

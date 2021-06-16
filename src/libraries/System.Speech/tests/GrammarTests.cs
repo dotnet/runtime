@@ -100,6 +100,7 @@ namespace SampleSynthesisTests
         }
 
         [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(SynthesizeRecognizeTests.HasInstalledRecognizers))]
+        [SkipOnMono("No SAPI on Mono")]
         public void GrammarBuilder()
         {
             Choices colorChoice = new Choices(new string[] { "red", "green", "blue" });

@@ -9,10 +9,11 @@
 #define OPT_CONFIG // Enable optimization level configuration.
 #endif
 
+#if defined(DEBUG)
+
 ///
 /// JIT
 ///
-#if defined(DEBUG)
 CONFIG_INTEGER(AltJitLimit, W("AltJitLimit"), 0)               // Max number of functions to use altjit for (decimal)
 CONFIG_INTEGER(AltJitSkipOnAssert, W("AltJitSkipOnAssert"), 0) // If AltJit hits an assert, fall back to the fallback
                                                                // JIT. Useful in conjunction with
@@ -26,6 +27,11 @@ CONFIG_INTEGER(JitDasmWithAddress, W("JitDasmWithAddress"), 0) // Print the proc
                                                                // the disassembly
 CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
 CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)       // Display JIT Linear Scan Register Allocator statistics
+                                                             // If set to "1", display the stats in textual format.
+                                                             // If set to "2", display the stats in csv format.
+                                                             // If set to "3", display the stats in summarize format.
+                                                             // Recommended to use with JitStdOutFile flag.
+CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))         // LSRA heuristics ordering
 CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0) // Prints all jitted methods to the console
 CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1)  // Whether absolute addr be encoded as PC-rel offset by
                                                              // RyuJIT where possible
@@ -41,11 +47,31 @@ CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In deb
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
                                                           // with this byte.
+CONFIG_INTEGER(JitAlignLoopMinBlockWeight,
+               W("JitAlignLoopMinBlockWeight"),
+               DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT) // Minimum weight needed for the first block of a loop to make it a
+                                                    // candidate for alignment.
+CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
+               W("JitAlignLoopMaxCodeSize"),
+               DEFAULT_MAX_LOOPSIZE_FOR_ALIGN) // For non-adaptive alignment, minimum loop size (in bytes) for which
+                                               // alignment will be done.
+                                               // Defaults to 3 blocks of 32 bytes chunks = 96 bytes.
+CONFIG_INTEGER(JitAlignLoopBoundary,
+               W("JitAlignLoopBoundary"),
+               DEFAULT_ALIGN_LOOP_BOUNDARY) // For non-adaptive alignment, address boundary (power of 2) at which loop
+                                            // alignment should be done. By default, 32B.
+CONFIG_INTEGER(JitAlignLoopForJcc,
+               W("JitAlignLoopForJcc"),
+               0) // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
+
+CONFIG_INTEGER(JitAlignLoopAdaptive,
+               W("JitAlignLoopAdaptive"),
+               1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
-CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)         // Uses only ASCII characters in tree dumps
-CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 0)         // Set to non-zero to emit Dot instead of Xml Flowgraph dump
-CONFIG_INTEGER(JitDumpTerseLsra, W("JitDumpTerseLsra"), 1) // Produce terse dump output for LSRA
+CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)               // Uses only ASCII characters in tree dumps
+CONFIG_INTEGER(JitDumpTerseLsra, W("JitDumpTerseLsra"), 1)       // Produce terse dump output for LSRA
 CONFIG_INTEGER(JitDumpToDebugger, W("JitDumpToDebugger"), 0)     // Output JitDump output to the debugger
 CONFIG_INTEGER(JitDumpVerboseSsa, W("JitDumpVerboseSsa"), 0)     // Produce especially verbose dump output for SSA
 CONFIG_INTEGER(JitDumpVerboseTrees, W("JitDumpVerboseTrees"), 0) // Enable more verbose tree dumps
@@ -92,7 +118,8 @@ CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
 CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                 // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoRegLoc, W("JitNoRegLoc"), 0)
-CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion in Jit32
+CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion 1 - for all, 2 - for
+                                                                   // params.
 CONFIG_INTEGER(JitNoUnroll, W("JitNoUnroll"), 0)
 CONFIG_INTEGER(JitOrder, W("JitOrder"), 0)
 CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldClass"), 1)
@@ -174,13 +201,25 @@ CONFIG_METHODSET(NgenUnwindDump, W("NgenUnwindDump")) // Dump the unwind codes f
 ///
 /// JIT
 ///
-CONFIG_STRING(JitDumpFg, W("JitDumpFg"))           // Dumps Xml/Dot Flowgraph for specified method
+CONFIG_METHODSET(JitDumpFg, W("JitDumpFg"))        // Dumps Xml/Dot Flowgraph for specified method
 CONFIG_STRING(JitDumpFgDir, W("JitDumpFgDir"))     // Directory for Xml/Dot flowgraph dump(s)
-CONFIG_STRING(JitDumpFgFile, W("JitDumpFgFile"))   // Filename for Xml/Dot flowgraph dump(s)
+CONFIG_STRING(JitDumpFgFile, W("JitDumpFgFile"))   // Filename for Xml/Dot flowgraph dump(s) (default: "default")
 CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgraph support. Set to the short name of a
                                                    // phase to see the flowgraph after that phase. Leave unset to dump
                                                    // after COLD-BLK (determine first cold block) or set to * for all
                                                    // phases
+CONFIG_STRING(JitDumpFgPrePhase,
+              W("JitDumpFgPrePhase")) // Same as JitDumpFgPhase, but specifies to dump pre-phase, not post-phase.
+CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)     // 0 == dump XML format; non-zero == dump DOT format
+CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)       // 0 == no EH regions; non-zero == include EH regions
+CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0) // 0 == no loop regions; non-zero == include loop regions
+
+CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't constrain to mostly linear layout;
+                                                                   // non-zero == force mostly lexical block
+                                                                   // linear layout
+CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block with bbNum; 1 == display with both
+                                                           // bbNum and bbID
+
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -192,15 +231,22 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 ///
 /// NGEN
 ///
-CONFIG_STRING(NgenDumpFg, W("NgenDumpFg"))         // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml Flowgraph support
+CONFIG_METHODSET(NgenDumpFg, W("NgenDumpFg"))      // Ngen Xml/Dot flowgraph dump support
+CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml/Dot flowgraph dump support
+CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml/Dot flowgraph dump support
 ///
 /// JIT Hardware Intrinsics
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
-#endif                                                                     // defined(DEBUG)
+
+#endif // defined(DEBUG)
+
+#if FEATURE_LOOP_ALIGN
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
+#else
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
+#endif
 
 ///
 /// JIT
@@ -235,6 +281,7 @@ CONFIG_INTEGER(EnableSSE41, W("EnableSSE41"), 1)             // Enable SSE41
 CONFIG_INTEGER(EnableSSE42, W("EnableSSE42"), 1)             // Enable SSE42
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1)                 // Enable AVX
 CONFIG_INTEGER(EnableAVX2, W("EnableAVX2"), 1)               // Enable AVX2
+CONFIG_INTEGER(EnableAVXVNNI, W("EnableAVXVNNI"), 1)         // Enable AVXVNNI
 CONFIG_INTEGER(EnableFMA, W("EnableFMA"), 1)                 // Enable FMA
 CONFIG_INTEGER(EnableAES, W("EnableAES"), 1)                 // Enable AES
 CONFIG_INTEGER(EnableBMI1, W("EnableBMI1"), 1)               // Enable BMI1
@@ -247,7 +294,7 @@ CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 #endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
-CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
+CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
@@ -278,6 +325,10 @@ CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
 CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 #endif // defined(TARGET_ARM64)
+
+#if defined(CONFIGURABLE_ARM_ABI)
+CONFIG_INTEGER(JitSoftFP, W("JitSoftFP"), 0)
+#endif // defined(CONFIGURABLE_ARM_ABI)
 
 // clang-format on
 
@@ -341,6 +392,7 @@ CONFIG_INTEGER(JitDoAssertionProp, W("JitDoAssertionProp"), 1) // Perform assert
 CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1)   // Perform copy propagation on variables that appear redundant
 CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Propagation
 CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
+CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop inversion on "for/while" loops
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
@@ -389,6 +441,8 @@ CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
 CONFIG_INTEGER(JitInlineDumpXml, W("JitInlineDumpXml"), 0) // 1 = full xml (+ failures in DEBUG)
                                                            // 2 = only methods with inlines (+ failures in DEBUG)
                                                            // 3 = only methods with inlines, no failures
+CONFIG_STRING(JitInlineDumpXmlFile, W("JitInlineDumpXmlFile"))
+CONFIG_INTEGER(JitInlinePolicyDumpXml, W("JitInlinePolicyDumpXml"), 0)
 CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
 CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
@@ -412,15 +466,15 @@ CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
 #endif // DEBUG
 
-// Overall master enable for Guarded Devirtualization. Currently not enabled by default.
-CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 0)
+// Overall master enable for Guarded Devirtualization.
+CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 1)
 
-#if defined(DEBUG)
 // Various policies for GuardedDevirtualization
+CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B) // 75
+CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 4)
+#if defined(DEBUG)
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
-CONFIG_INTEGER(JitGuardedDeivrtualizationUseProfile, W("JitGuardedDevirtualizationUseProfile"), 0)
+CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
@@ -429,8 +483,23 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 
 // Profile instrumentation options
-CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
-CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
+CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
+CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
+CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
+
+// Profile consumption options
+CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
+#if defined(DEBUG)
+CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange")) // Enable pgo data for only some methods
+CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
+CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
+#endif // debug
+
+// Control when Virtual Calls are expanded
+CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
+                                                                 // phase)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
@@ -463,8 +532,8 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 0) // Allow Jit to retype structs as primitive types
-                                                                       // when possible.
+// Allow to enregister locals with struct type.
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0)
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

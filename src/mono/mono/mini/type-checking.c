@@ -13,7 +13,7 @@
 #include <mono/metadata/class-abi-details.h>
 
 
-#define is_complex_isinst(klass) (mono_class_is_interface (klass) || m_class_get_rank (klass) || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || mono_class_is_sealed (klass) || m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR || m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (mono_class_is_interface (klass) || m_class_get_rank (klass) || mono_class_is_nullable (klass) || mono_class_is_sealed (klass) || m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR || m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR)
 
 static int
 get_castclass_cache_idx (MonoCompile *cfg)
@@ -407,42 +407,6 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 	if (mono_class_is_interface (klass)) {
 		int tmp_reg = alloc_preg (cfg);
-#ifndef DISABLE_REMOTING
-		MonoBasicBlock *interface_fail_bb;
-		MonoBasicBlock *array_fail_bb;
-		int klass_reg = alloc_preg (cfg);
-
-		NEW_BBLOCK (cfg, interface_fail_bb);
-		NEW_BBLOCK (cfg, array_fail_bb);
-
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, is_null_bb);
-
-		// iface bitmap check failed
-		MONO_START_BB (cfg, interface_fail_bb);
-
-		//Check if it's a rank zero array and emit fallback casting
-		emit_special_array_iface_check (cfg, src, klass, tmp_reg, array_fail_bb, is_null_bb, context_used);
-
-		// array check failed
-		MONO_START_BB (cfg, array_fail_bb);
-
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-
-		mini_emit_class_check (cfg, klass_reg, mono_defaults.transparent_proxy_class);
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
-
-		MonoInst *args [1] = { src };
-		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
-		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
-
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
-#else
 		MonoBasicBlock *interface_fail_bb = NULL;
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
@@ -459,57 +423,16 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 		}
-#endif
-	} else if (mono_class_is_marshalbyref (klass)) {
-#ifndef DISABLE_REMOTING
-		MonoBasicBlock *no_proxy_bb, *fail_1_bb;
-		int tmp_reg = alloc_preg (cfg);
-		int klass_reg = alloc_preg (cfg);
-
-		NEW_BBLOCK (cfg, no_proxy_bb);
-
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, no_proxy_bb);
-
-		NEW_BBLOCK (cfg, fail_1_bb);
-
-		mini_emit_isninst_cast (cfg, klass_reg, klass, fail_1_bb, is_null_bb);
-
-		MONO_START_BB (cfg, fail_1_bb);
-
-		MonoInst *args [1] = { src };
-		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
-		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
-
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
-
-		MONO_START_BB (cfg, no_proxy_bb);
-
-		mini_emit_castclass_inst (cfg, obj_reg, klass_reg, klass, klass_inst, is_null_bb);
-#else
-		g_error ("Transparent proxy support is disabled while trying to JIT code that uses it");
-#endif
 	} else {
 		int vtable_reg = alloc_preg (cfg);
 		int klass_reg = alloc_preg (cfg);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
-		if (!m_class_get_rank (klass) && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
+		if (!m_class_get_rank (klass) && !cfg->compile_aot && mono_class_is_sealed (klass)) {
 			/* the remoting code is broken, access the class for now */
 			if (0) { /*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-				MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, cfg->error);
+				MonoVTable *vt = mono_class_vtable_checked (klass, cfg->error);
 				if (!is_ok (cfg->error)) {
 					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 					return NULL;
@@ -592,71 +515,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			MONO_START_BB (cfg, not_an_array);
 		}
 
-#ifndef DISABLE_REMOTING
-		int tmp_reg, klass_reg;
-		MonoBasicBlock *call_proxy_isinst;
-
-		NEW_BBLOCK (cfg, call_proxy_isinst);
-
-		klass_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-
-		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, false_bb);
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
-
-		MONO_START_BB (cfg, call_proxy_isinst);
-
-		MonoInst *args [1] = { src };
-		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
-#else
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
-#endif
-
-	} else if (mono_class_is_marshalbyref (klass)) {
-
-#ifndef DISABLE_REMOTING
-		int tmp_reg, klass_reg;
-		MonoBasicBlock *no_proxy_bb, *call_proxy_isinst;
-
-		NEW_BBLOCK (cfg, no_proxy_bb);
-		NEW_BBLOCK (cfg, call_proxy_isinst);
-
-		klass_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-
-		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
-
-		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
-
-		mini_emit_isninst_cast (cfg, klass_reg, klass, call_proxy_isinst, is_null_bb);
-
-		MONO_START_BB (cfg, call_proxy_isinst);
-
-		MonoInst *args [1] = { src };
-		MonoInst *proxy_test_inst = mono_emit_method_call (cfg, mono_marshal_get_proxy_cancast (klass), args, NULL);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, proxy_test_inst->dreg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
-
-		MONO_START_BB (cfg, no_proxy_bb);
-
-		mini_emit_isninst_cast (cfg, klass_reg, klass, false_bb, is_null_bb);
-#else
-		g_error ("transparent proxy support is disabled while trying to JIT code that uses it");
-#endif
 	} else {
 		int klass_reg = alloc_preg (cfg);
 
@@ -726,11 +585,11 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			/* the is_null_bb target simply copies the input register to the output */
 			mini_emit_isninst_cast (cfg, klass_reg, m_class_get_cast_class (klass), false_bb, is_null_bb);
 		} else {
-			if (!cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
+			if (!cfg->compile_aot && mono_class_is_sealed (klass)) {
 				g_assert (!context_used);
 				/* the remoting code is broken, access the class for now */
 				if (0) {/*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-					MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, cfg->error);
+					MonoVTable *vt = mono_class_vtable_checked (klass, cfg->error);
 					if (!is_ok (cfg->error)) {
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						return NULL;

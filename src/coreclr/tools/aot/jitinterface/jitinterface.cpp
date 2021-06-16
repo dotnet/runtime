@@ -13,23 +13,22 @@ static void NotImplemented()
     abort();
 }
 
-int JitInterfaceWrapper::FilterException(void* pExceptionPointers)
+int JitInterfaceWrapper::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
 {
     NotImplemented();
     return 1; // EXCEPTION_EXECUTE_HANDLER
 }
 
-void JitInterfaceWrapper::HandleException(void* pExceptionPointers)
+void JitInterfaceWrapper::HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
 {
     NotImplemented();
 }
 
-bool JitInterfaceWrapper::runWithErrorTrap(void* function, void* parameter)
+bool JitInterfaceWrapper::runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter)
 {
-    typedef void(*pfn)(void*);
     try
     {
-        (*(pfn)function)(parameter);
+        (*function)(parameter);
     }
     catch (CorInfoExceptionClass *)
     {

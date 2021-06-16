@@ -32,7 +32,8 @@ if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
 
-_add_executable(paltests
+add_executable_clr(paltests
+  EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
   #composite/object_management/event/nonshared/event.cpp
@@ -224,9 +225,9 @@ _add_executable(paltests
   c_runtime/qsort/test2/test2.cpp
   c_runtime/rand_srand/test1/test1.cpp
   c_runtime/realloc/test1/test1.cpp
-  c_runtime/scalbn/test1/test1.cpp
-  c_runtime/scalbnf/test1/test1.cpp
   c_runtime/sin/test1/test1.cpp
+  c_runtime/sincos/test1/test1.cpp
+  c_runtime/sincosf/test1/test1.cpp
   c_runtime/sinf/test1/test1.cpp
   c_runtime/sinh/test1/test1.cpp
   c_runtime/sinhf/test1/test1.cpp
@@ -918,7 +919,6 @@ _add_executable(paltests
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
-
 )
 
 add_dependencies(paltests coreclrpal)
@@ -927,5 +927,6 @@ target_link_libraries(paltests
   ${COMMON_TEST_LIBRARIES}
 )
 
-_install (TARGETS paltests DESTINATION paltests)
-_install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests)
+install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
+add_dependencies(paltests_install paltests)
+install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)

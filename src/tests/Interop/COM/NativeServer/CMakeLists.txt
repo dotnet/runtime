@@ -13,7 +13,7 @@ add_library (COMNativeServer SHARED ${SOURCES})
 target_link_libraries(COMNativeServer ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy manifest file to project output
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/COMNativeServer.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/COMNativeServer.X.manifest)
+file(GENERATE OUTPUT $<TARGET_FILE_DIR:${PROJECT_NAME}>/COMNativeServer.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/COMNativeServer.X.manifest)
 
 # add the install targets
 install (TARGETS COMNativeServer DESTINATION bin)

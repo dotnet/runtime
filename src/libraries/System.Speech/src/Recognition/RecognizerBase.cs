@@ -591,8 +591,8 @@ ISpGrammarResourceLoader
 
             RecognizeCompletedSync += eventHandler;
 
-            //InitialSilenceTimeout bookmark should keep this function from hanging forever, but also have a timeout
-            //here in case something's wrong with the audio and the bookmark never gets hit.
+            // InitialSilenceTimeout bookmark should keep this function from waiting forever, but also have a timeout
+            // here in case something's wrong with the audio and the bookmark never gets hit.
             TimeSpan eventTimeout = TimeSpan.FromTicks(Math.Max(initialSilenceTimeout.Ticks, _defaultTimeout.Ticks));
 
             try
@@ -888,7 +888,7 @@ ISpGrammarResourceLoader
                     return new PlatformNotSupportedException(SR.Get(srid));
 
                 default:
-                    Exception exReturn = null; ;
+                    Exception exReturn = null;
                     if (srid >= 0)
                     {
                         exReturn = new InvalidOperationException(SR.Get(srid));
@@ -2277,7 +2277,7 @@ ISpGrammarResourceLoader
             }
             finally
             {
-                // Always want to call Resume or we can hang the engine in the pause state.
+                // Always want to call Resume otherwise the engine will remain in the pause state.
                 // Currently all bookmarks pause but we check anyway for safety.
                 if (((SPRECOEVENTFLAGS)speechEvent.WParam & SPRECOEVENTFLAGS.SPREF_AutoPause) != 0)
                 {
@@ -3068,7 +3068,7 @@ ISpGrammarResourceLoader
         private RecognizerBaseThunk _recoThunk;
         #endregion
 
-        private class RecognizerBaseThunk : ISpGrammarResourceLoader
+        private sealed class RecognizerBaseThunk : ISpGrammarResourceLoader
         {
             internal RecognizerBaseThunk(RecognizerBase recognizer)
             {

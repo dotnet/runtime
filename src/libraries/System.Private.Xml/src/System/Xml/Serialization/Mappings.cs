@@ -5,6 +5,8 @@ namespace System.Xml.Serialization
 {
     using System.Reflection;
     using System.Collections;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Xml.Schema;
     using System;
     using System.Text;
@@ -139,7 +141,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ElementAccessor : Accessor
+    internal sealed class ElementAccessor : Accessor
     {
         private bool _nullable;
         private bool _isSoap;
@@ -180,7 +182,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ChoiceIdentifierAccessor : Accessor
+    internal sealed class ChoiceIdentifierAccessor : Accessor
     {
         private string? _memberName;
         private string[]? _memberIds;
@@ -205,15 +207,15 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TextAccessor : Accessor
+    internal sealed class TextAccessor : Accessor
     {
     }
 
-    internal class XmlnsAccessor : Accessor
+    internal sealed class XmlnsAccessor : Accessor
     {
     }
 
-    internal class AttributeAccessor : Accessor
+    internal sealed class AttributeAccessor : Accessor
     {
         private bool _isSpecial;
         private bool _isList;
@@ -359,7 +361,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class NullableMapping : TypeMapping
+    internal sealed class NullableMapping : TypeMapping
     {
         private TypeMapping? _baseMapping;
 
@@ -375,7 +377,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ArrayMapping : TypeMapping
+    internal sealed class ArrayMapping : TypeMapping
     {
         private ElementAccessor[]? _elements;
         private ElementAccessor[]? _sortedElements;
@@ -417,7 +419,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class EnumMapping : PrimitiveMapping
+    internal sealed class EnumMapping : PrimitiveMapping
     {
         private ConstantMapping[]? _constants;
         private bool _isFlags;
@@ -435,7 +437,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ConstantMapping : Mapping
+    internal sealed class ConstantMapping : Mapping
     {
         private string? _xmlName;
         private string? _name;
@@ -462,7 +464,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class StructMapping : TypeMapping, INameScope
+    internal sealed class StructMapping : TypeMapping, INameScope
     {
         private MemberMapping[]? _members;
         private StructMapping? _baseMapping;
@@ -765,14 +767,14 @@ namespace System.Xml.Serialization
             Array.Sort(elements, new AccessorComparer());
         }
 
-        internal class AccessorComparer : IComparer
+        internal sealed class AccessorComparer : IComparer<ElementAccessor>
         {
-            public int Compare(object? o1, object? o2)
+            public int Compare(ElementAccessor? a1, ElementAccessor? a2)
             {
-                if (o1 == o2)
+                if (a1 == a2)
                     return 0;
-                Accessor a1 = (Accessor)o1!;
-                Accessor a2 = (Accessor)o2!;
+                Debug.Assert(a1 != null);
+                Debug.Assert(a2 != null);
                 int w1 = a1.Mapping!.TypeDesc!.Weight;
                 int w2 = a2.Mapping!.TypeDesc!.Weight;
                 if (w1 == w2)
@@ -880,13 +882,12 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MemberMappingComparer : IComparer
+    internal sealed class MemberMappingComparer : IComparer<MemberMapping>
     {
-        public int Compare(object? o1, object? o2)
+        public int Compare(MemberMapping? m1, MemberMapping? m2)
         {
-            MemberMapping m1 = (MemberMapping)o1!;
-            MemberMapping m2 = (MemberMapping)o2!;
-
+            Debug.Assert(m1 != null);
+            Debug.Assert(m2 != null);
             bool m1Text = m1.IsText;
             if (m1Text)
             {
@@ -911,7 +912,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MemberMapping : AccessorMapping
+    internal sealed class MemberMapping : AccessorMapping
     {
         private string? _name;
         private bool _checkShouldPersist;
@@ -1004,7 +1005,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MembersMapping : TypeMapping
+    internal sealed class MembersMapping : TypeMapping
     {
         private MemberMapping[]? _members;
         private bool _hasWrapperElement = true;
@@ -1054,9 +1055,10 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class SerializableMapping : SpecialMapping
+    internal sealed class SerializableMapping : SpecialMapping
     {
         private XmlSchema? _schema;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private Type? _type;
         private bool _needSchema = true;
 
@@ -1172,6 +1174,7 @@ namespace System.Xml.Serialization
             set { _next = value; }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         internal Type? Type
         {
             get { return _type; }

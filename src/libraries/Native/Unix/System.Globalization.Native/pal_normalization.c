@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "pal_icushim_internal.h"
@@ -47,7 +48,7 @@ int32_t GlobalizationNative_IsNormalized(
 
     if (U_SUCCESS(err))
     {
-        return isNormalized == TRUE ? 1 : 0;
+        return isNormalized ? 1 : 0;
     }
     else
     {

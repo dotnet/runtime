@@ -101,6 +101,8 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define X86RegFromAMD64Reg(extended_reg) \
             ((X86Reg)(((int)extended_reg) & X86_REGISTER_MASK))
 
+#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+
 // Why is the return value ARG_SLOT? On 64-bit systems, that is 64-bits
 // and much bigger than necessary for R4, requiring explicit downcasts.
 inline
@@ -145,11 +147,11 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-typedef INT64 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
-
-// !! This expression assumes STACK_ELEM_SIZE is a power of 2.
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+{
+    const unsigned stackSlotSize = 8;
+    return ALIGN_UP(parmSize, stackSlotSize);
+}
 
 //**********************************************************************
 // Frames
@@ -368,11 +370,11 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
 
 // Get Rel32 destination, emit jumpStub if necessary into a preallocated location
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, bool emitJump);
+INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target);
+void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
 
-void emitJump(LPBYTE pBuffer, LPVOID target);
+void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 BOOL isJumpRel32(PCODE pCode);
 PCODE decodeJump32(PCODE pCode);
@@ -386,11 +388,11 @@ PCODE decodeJump64(PCODE pCode);
 // For all other platforms back to back jumps don't require anything special
 // That is why we have these two wrapper functions that call emitJump and decodeJump
 //
-inline void emitBackToBackJump(LPBYTE pBuffer, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     WRAPPER_NO_CONTRACT;
 
-    emitJump(pBuffer, target);
+    emitJump(pBufferRX, pBufferRW, target);
 }
 
 inline BOOL isBackToBackJump(PCODE pCode)
@@ -436,7 +438,7 @@ struct DECLSPEC_ALIGN(8) UMEntryThunkCode
     BYTE            m_jmpRAX[3];    // JMP RAX
     BYTE            m_padding2[5];
 
-    void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
     void Poison();
 
     LPCBYTE GetEntryPoint() const
@@ -608,19 +610,19 @@ private:
 
 #ifndef DACCESS_COMPILE
 public:
-    CallCountingStubShort(CallCount *remainingCallCountCell, PCODE targetForMethod)
+    CallCountingStubShort(CallCountingStubShort* stubRX, CallCount *remainingCallCountCell, PCODE targetForMethod)
         : m_part0{                                              0x48, 0xb8},            //     mov  rax,
         m_remainingCallCountCell(remainingCallCountCell),                               //               <imm64>
         m_part1{                                                0x66, 0xff, 0x08,       //     dec  word ptr [rax]
                                                                 0x0f, 0x85},            //     jnz  
         m_rel32TargetForMethod(                                                         //          <rel32>
             GetRelative32BitOffset(
-                &m_rel32TargetForMethod,
+                &stubRX->m_rel32TargetForMethod,
                 targetForMethod)),
         m_part2{                                                0xe8},                  //     call
         m_rel32TargetForThresholdReached(                                               //          <rel32>
             GetRelative32BitOffset(
-                &m_rel32TargetForThresholdReached,
+                &stubRX->m_rel32TargetForThresholdReached,
                 TargetForThresholdReached)),
                                                                                         // (rip == stub-identifying token)
         m_alignmentPadding{}

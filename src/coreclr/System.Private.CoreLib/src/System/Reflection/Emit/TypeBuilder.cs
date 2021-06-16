@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
         }
 
         #region Declarations
-        private class CustAttr
+        private sealed class CustAttr
         {
             private readonly ConstructorInfo? m_con;
             private readonly byte[]? m_binaryAttribute;
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
                 {
                     Debug.Assert(m_con != null);
                     DefineCustomAttribute(module, token, module.GetConstructorToken(m_con),
-                        m_binaryAttribute, false, false);
+                        m_binaryAttribute);
                 }
                 else
                 {
@@ -178,10 +178,10 @@ namespace System.Reflection.Emit
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
-            byte[]? attr, int attrLength, bool toDisk, bool updateCompilerFlags);
+            byte[]? attr, int attrLength);
 
         internal static void DefineCustomAttribute(ModuleBuilder module, int tkAssociate, int tkConstructor,
-            byte[]? attr, bool toDisk, bool updateCompilerFlags)
+            byte[]? attr)
         {
             byte[]? localAttr = null;
 
@@ -192,7 +192,7 @@ namespace System.Reflection.Emit
             }
 
             DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
-                localAttr, (localAttr != null) ? localAttr.Length : 0, toDisk, updateCompilerFlags);
+                localAttr, (localAttr != null) ? localAttr.Length : 0);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -837,6 +837,8 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             if (!IsCreated())
@@ -845,6 +847,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetInterface(name, ignoreCase);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             if (m_bakedRuntimeType != null)
@@ -912,7 +915,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetNestedType(name, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -921,7 +924,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMember(name, type, bindingAttr);
         }
 
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
@@ -938,7 +941,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvents(bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -947,6 +950,9 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMembers(bindingAttr);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But in this case it acts only on TypeBuilder which is never trimmed (as it's runtime created).")]
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (IsTypeEqual(c, this))
@@ -2159,7 +2165,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
             DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
-                binaryAttribute, false, false);
+                binaryAttribute);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)

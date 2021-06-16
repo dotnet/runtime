@@ -29,6 +29,10 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { "[]", new object[] { "a" }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 49, 132, 0, 0, 0, 0 } : new byte[] { 49, 0 } };
             yield return new object[] { "n", new object[] { "a" }, new byte[] { 5, 0 } };
 
+            yield return new object[] { "e", new object[] { 128 }, new byte[] { 10, 2, 0, 128 } };
+            yield return new object[] { "te", new object[] { 128, 0 }, new byte[] { 128, 1, 0 } };
+            yield return new object[] { "tet", new object[] { 128, 0, 133 }, new byte[] { 128, 1, 0 } };
+
             yield return new object[] { "tetie", new object[] { 128, 0, 133, 2, 3 }, new byte[] { 128, 1, 0, 133, 1, 2, 10, 1, 3 } };
             yield return new object[] { "{tetie}", new object[] { 128, 0, 133, 2, 3 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 9, 128, 1, 0, 133, 1, 2, 10, 1, 3 } : new byte[] { 48, 9, 128, 1, 0, 133, 1, 2, 10, 1, 3 } };
 
@@ -36,10 +40,16 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { "{bb}", new object[] { true, false }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } : new byte[] { 48, 6, 1, 1, 255, 1, 1, 0 } };
 
             yield return new object[] { "ssss", new object[] { null, "", "abc", "\0" }, new byte[] { 4, 0, 4, 0, 4, 3, 97, 98, 99, 4, 1, 0 } };
+
+            yield return new object[] { "o", new object[] { null },  new byte[] { 4, 0} };
+            yield return new object[] { "X", new object[] { new byte[] { 0, 1, 2, 255 } }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 3, 4, 0, 1, 2, 255 } : new byte[] { 3, 2, 4, 0 } };
             yield return new object[] { "oXo", new object[] { null, new byte[] { 0, 1, 2, 255 }, new byte[0] }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 4, 0, 3, 4, 0, 1, 2, 255, 4, 0 } : new byte[] { 4, 0, 3, 2, 4, 0, 4, 0 } };
             yield return new object[] { "vv", new object[] { null, new string[] { "abc", "", null } }, new byte[] { 4, 3, 97, 98, 99, 4, 0, 4, 0 } };
             yield return new object[] { "{vv}", new object[] { null, new string[] { "abc", "", null } }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 } : new byte[] { 48, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 } };
-            yield return new object[] { "VVVV", new object[] { null, new byte[][] { new byte[] { 0, 1, 2, 3 }, null }, new byte[][] { new byte[0] }, new byte[0][] }, new byte[] { 4, 4, 0, 1, 2, 3, 4, 0, 4, 0 } };
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                yield return new object[] { "VVVV", new object[] { null, new byte[][] { new byte[] { 0, 1, 2, 3 }, null }, new byte[][] { new byte[0] }, new byte[0][] }, new byte[] { 4, 4, 0, 1, 2, 3, 4, 0, 4, 0 } };
+            }
         }
 
         [Theory]
@@ -116,6 +126,7 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             yield return new object[] { "{}", new byte[] { 48, 0, 0, 0, 0, 0 }, new object[0] };
             yield return new object[] { "{a}", new byte[] { 48, 132, 0, 0, 0, 5, 4, 3, 97, 98, 99 }, new object[] { "abc" } };
+            yield return new object[] { "{i}", new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 10 }, new object[] { 10 } };
             yield return new object[] { "{ie}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { -1, 0 } };
             yield return new object[] { "{bb}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { true, false } };
             yield return new object[] { "{OO}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[] { 255 }, new byte[] { 0 } } };

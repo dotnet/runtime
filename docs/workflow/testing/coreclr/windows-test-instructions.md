@@ -9,6 +9,12 @@ Building coreclr tests must be done using a specific script as follows:
 src\tests\build.cmd
 ```
 
+By default, the test build uses Release as the libraries configuration. To use a different configuration, set the `LibrariesConfiguration` property to the desired configuration. For example:
+
+```
+src\tests\build.cmd /p:LibrariesConfiguration=Debug
+```
+
 ## Building Precompiled Tests
 
 ```

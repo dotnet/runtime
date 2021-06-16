@@ -9,7 +9,7 @@ using System.Security.Principal;
 namespace System.DirectoryServices.AccountManagement
 {
     [DirectoryRdnPrefix("CN")]
-    internal class UnknownPrincipal : Principal
+    internal sealed class UnknownPrincipal : Principal
     {
         //
         // Public constructors

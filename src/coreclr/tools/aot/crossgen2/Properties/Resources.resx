@@ -120,6 +120,9 @@
   <data name="BubbleGenericsOption" xml:space="preserve">
     <value>Compile instantiations from reference modules used in the current module</value>
   </data>
+  <data name="EmbedPgoDataOption" xml:space="preserve">
+    <value>Embed instrumentation data in generated file</value>
+  </data>
   <data name="CodeGenOptions" xml:space="preserve">
     <value>Define a codegen option</value>
   </data>
@@ -145,13 +148,19 @@
     <value>Method layout must be either DefaultSort or MethodOrder.</value>
   </data>
   <data name="InvalidMethodLayout" xml:space="preserve">
-    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold.</value>
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, or CallFrequency.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
   </data>
   <data name="CompositeBuildMode" xml:space="preserve">
     <value>Emit a composite R2R image comprising a number of input assemblies</value>
+  </data>
+  <data name="CompositeKeyFile" xml:space="preserve">
+    <value>KeyFile(.snk) for specifiying a Public Key for the composite image created</value>
+  </data>
+  <data name="ErrorCompositeKeyFileNotPublicKey" xml:space="preserve">
+    <value>--CompositeKeyFile does not specify a valid public key</value>
   </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
@@ -198,6 +207,9 @@
   <data name="OptimizeSpeedOption" xml:space="preserve">
     <value>Enable optimizations, favor code speed</value>
   </data>
+  <data name="OutNearInputOption" xml:space="preserve">
+    <value>Create output files near input files with ni.dll suffix</value>
+  </data>
   <data name="OutputFilePath" xml:space="preserve">
     <value>Output file path</value>
   </data>
@@ -213,6 +225,9 @@
   <data name="ReferenceFiles" xml:space="preserve">
     <value>Reference file(s) for compilation</value>
   </data>
+  <data name="InputBubbleReferenceFiles" xml:space="preserve">
+    <value>Input bubble reference file(s) to be added to bubble (any use of this option is unsupported!) </value>
+  </data>
   <data name="ResilientOption" xml:space="preserve">
     <value>Disable behavior where unexpected compilation failures cause overall compilation failure</value>
   </data>
@@ -221,6 +236,12 @@
   </data>
   <data name="SaveDetailedLogOption" xml:space="preserve">
     <value>Save detailed log of dependency analysis</value>
+  </data>
+  <data name="PrintReproInstructionsOption" xml:space="preserve">
+    <value>When compiling each method, print out the set of arguments needed to compile that method only</value>
+  </data>
+  <data name="SingleFileCompilationOption" xml:space="preserve">
+    <value>Compile each of the input files separately</value>
   </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
@@ -302,5 +323,26 @@
   </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
+  </data>
+  <data name="DisableOptimizationsOption" xml:space="preserve">
+    <value>Disable optimizations to simplify debugging</value>
+  </data>
+  <data name="WarningOverridingOptimize" xml:space="preserve">
+    <value>Warning: -Od overrides other optimization options</value>
+  </data>
+  <data name="CallChainProfileFile" xml:space="preserve">
+    <value>Json file(s) for predictive profile guided optimization</value>
+  </data>
+  <data name="PdbFileOption" xml:space="preserve">
+    <value>Generate PDB symbol information file (supported on Windows only)</value>
+  </data>
+  <data name="PerfMapFileOption" xml:space="preserve">
+    <value>Generate PerfMap symbol information file for use by PerfInfo</value>
+  </data>
+  <data name="PdbFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the output PDB file path</value>
+  </data>
+  <data name="PerfMapFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the PerfMap file path</value>
   </data>
 </root>

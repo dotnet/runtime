@@ -39,7 +39,7 @@ bool           g_jitInitialized = false;
 
 /*****************************************************************************/
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
 {
     if (g_jitInitialized)
     {
@@ -164,7 +164,7 @@ void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
     return CILJitBuff;
 }
 
-DLLEXPORT ICorJitCompiler* __stdcall getJit()
+DLLEXPORT ICorJitCompiler* getJit()
 {
     if (!g_jitInitialized)
     {
@@ -251,8 +251,11 @@ void JitTls::SetCompiler(Compiler* compiler)
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
-CorJitResult CILJit::compileMethod(
-    ICorJitInfo* compHnd, CORINFO_METHOD_INFO* methodInfo, unsigned flags, BYTE** entryAddress, ULONG* nativeSizeOfCode)
+CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
+                                   CORINFO_METHOD_INFO* methodInfo,
+                                   unsigned             flags,
+                                   uint8_t**            entryAddress,
+                                   uint32_t*            nativeSizeOfCode)
 {
     JitFlags jitFlags;
 
@@ -537,7 +540,7 @@ unsigned Compiler::eeGetMDArrayDataOffset(var_types type, unsigned rank)
 void Compiler::eeGetStmtOffsets()
 {
     ULONG32                      offsetsCount;
-    DWORD*                       offsets;
+    uint32_t*                    offsets;
     ICorDebugInfo::BoundaryTypes offsetsImplicit;
 
     info.compCompHnd->getBoundaries(info.compMethodHnd, &offsetsCount, &offsets, &offsetsImplicit);
@@ -858,6 +861,8 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
+    // Estimate number of unique vars with debug info
+    //
     ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
     for (unsigned i = 0; i < cVars; i++)
     {
@@ -867,7 +872,8 @@ void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInf
             AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
         }
     }
-    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+
+    printf("; Variable debug info: %d live ranges, %d vars for method %s\n", cVars,
            AllVarSetOps::Count(this, uniqueVars), info.compFullName);
 
     for (unsigned i = 0; i < cVars; i++)
@@ -1009,13 +1015,13 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
+void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "TRUE" : "FALSE",
-               isColdCode ? "TRUE" : "FALSE", unwindSize);
+        printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
+               isColdCode ? "true" : "false", unwindSize);
     }
 #endif // DEBUG
 
@@ -1405,7 +1411,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return nullptr;
     }
 
-    return (asString->chars);
+    return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
 

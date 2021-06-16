@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data
 {
-    internal partial class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
         internal static IntPtr LocalAlloc(IntPtr initialSize)
         {

@@ -34,7 +34,7 @@ due to a few well-known issues:
    optimization change when it is eventually merged.  Source/library/runtime
    changes are in play for TechEmpower and Benchmarks Game both.
 
-Compiler micro-benchmarks (like those in our [test tree](https://github.com/dotnet/runtime/tree/master/src/tests/JIT/Performance/CodeQuality))
+Compiler micro-benchmarks (like those in our [test tree](https://github.com/dotnet/runtime/tree/main/src/tests/JIT/Performance/CodeQuality))
 don't share these issues, and adding them as optimizations are implemented is
 critical for validation and regression prevention; however, micro-benchmarks
 often aren't as representative of real-world code, and therefore not as

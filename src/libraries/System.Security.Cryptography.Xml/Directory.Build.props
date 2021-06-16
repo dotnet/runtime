@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
     <PackageDescription>Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, "XML-Signature Syntax and Processing", described at http://www.w3.org/TR/xmldsig-core/.

@@ -67,8 +67,10 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task CanReadMultipleTimes()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CanReadMultipleTimes(bool useZeroByteReads)
         {
             // This needs to run inline to synchronize the reader and writer
             TaskCompletionSource<object> waitForRead = null;
@@ -109,7 +111,7 @@ namespace System.IO.Pipelines.Tests
 
             // We're using the pipe here as a way to pump bytes into the reader asynchronously
             var pipe = new Pipe();
-            var options = new StreamPipeReaderOptions(bufferSize: 4096);
+            var options = new StreamPipeReaderOptions(bufferSize: 4096, useZeroByteReads: useZeroByteReads);
             PipeReader reader = PipeReader.Create(pipe.Reader.AsStream(), options);
 
             var writes = new[] { 4096, 1024, 123, 4096, 100 };
@@ -265,13 +267,34 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadIsAsync()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAsync(bool useZeroByteReads)
         {
             var stream = new CancelledReadsStream();
-            PipeReader reader = PipeReader.Create(stream);
+            PipeReader reader = PipeReader.Create(stream, new StreamPipeReaderOptions(useZeroByteReads: useZeroByteReads));
 
             ValueTask<ReadResult> task = reader.ReadAsync();
+
+            reader.CancelPendingRead();
+
+            stream.WaitForReadTask.TrySetResult(null);
+
+            ReadResult readResult = await task;
+            Assert.True(readResult.IsCanceled);
+            reader.Complete();
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAtLeastAsync(bool useZeroByteReads)
+        {
+            var stream = new CancelledReadsStream();
+            PipeReader reader = PipeReader.Create(stream, new StreamPipeReaderOptions(useZeroByteReads: useZeroByteReads));
+
+            ValueTask<ReadResult> task = reader.ReadAtLeastAsync(1);
 
             reader.CancelPendingRead();
 

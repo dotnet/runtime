@@ -6,7 +6,7 @@ using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
-    internal partial class DesImplementation
+    internal sealed partial class DesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,

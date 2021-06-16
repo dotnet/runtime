@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -40,7 +41,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return Unsafe.SizeOf<Vector<T>>() / Unsafe.SizeOf<T>();
             }
         }
@@ -51,7 +52,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return default;
             }
         }
@@ -62,7 +63,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return new Vector<T>(GetOneValue());
             }
         }
@@ -72,7 +73,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return new Vector<T>(GetAllBitsSetValue());
             }
         }
@@ -81,7 +82,7 @@ namespace System.Numerics
         [Intrinsic]
         public unsafe Vector(T value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Unsafe.SkipInit(out this);
 
             for (nint index = 0; index < Count; index++)
@@ -101,7 +102,7 @@ namespace System.Numerics
         [Intrinsic]
         public unsafe Vector(T[] values, int index)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values is null)
             {
@@ -124,7 +125,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<byte> values)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values.Length < Vector<byte>.Count)
             {
@@ -141,7 +142,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<T> values)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values.Length < Count)
             {
@@ -166,7 +167,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
         public readonly void CopyTo(Span<byte> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
@@ -184,7 +185,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
         public readonly void CopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Count)
             {
@@ -216,7 +217,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly unsafe void CopyTo(T[] destination, int startIndex)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (destination is null)
             {
@@ -243,11 +244,11 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
                 if ((uint)index >= (uint)Count)
                 {
-                    throw new IndexOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
                 return GetElement(index);
@@ -258,7 +259,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals(object? obj) => (obj is Vector<T> other) && Equals(other);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
         /// <param name="other">The vector to compare this instance to.</param>
@@ -270,7 +271,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             HashCode hashCode = default;
 
             for (nint index = 0; index < Count; index++)
@@ -296,7 +297,7 @@ namespace System.Numerics
         /// <returns>The string representation.</returns>
         public readonly string ToString(string? format, IFormatProvider? formatProvider)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
@@ -322,7 +323,7 @@ namespace System.Numerics
         /// <paramref name="destination" /> is not large enough to hold the source vector.</returns>
         public readonly bool TryCopyTo(Span<byte> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
@@ -342,7 +343,7 @@ namespace System.Numerics
         /// <paramref name="destination" /> is not large enough to hold the source vector.</returns>
         public readonly bool TryCopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Count)
             {
@@ -408,7 +409,7 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static Vector<T> operator *(Vector<T> value, T factor)
         {
             Vector<T> result = default;
@@ -421,11 +422,11 @@ namespace System.Numerics
             return result;
         }
 
-
         /// <summary>Multiplies a vector by the given scalar.</summary>
         /// <param name="factor">The scalar value.</param>
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(T factor, Vector<T> value) => value * factor;
 
@@ -449,6 +450,7 @@ namespace System.Numerics
         /// <summary>Negates a given vector.</summary>
         /// <param name="value">The source vector.</param>
         /// <returns>The negated vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator -(Vector<T> value) => Zero - value;
 
         /// <summary>Returns a new vector by performing a bitwise-and operation on each of the elements in the given vectors.</summary>
@@ -458,7 +460,7 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = left.register.uint64_0 & right.register.uint64_0;
@@ -474,7 +476,7 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = left.register.uint64_0 | right.register.uint64_0;
@@ -490,7 +492,7 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = left.register.uint64_0 ^ right.register.uint64_0;
@@ -538,7 +540,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<byte>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<byte>>(ref value);
         }
 
@@ -549,7 +551,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<sbyte>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<sbyte>>(ref value);
         }
 
@@ -560,7 +562,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<ushort>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<ushort>>(ref value);
         }
 
@@ -570,7 +572,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<short>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<short>>(ref value);
         }
 
@@ -581,7 +583,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<uint>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<uint>>(ref value);
         }
 
@@ -591,7 +593,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<int>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<int>>(ref value);
         }
 
@@ -602,7 +604,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<ulong>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<ulong>>(ref value);
         }
 
@@ -612,7 +614,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<long>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<long>>(ref value);
         }
 
@@ -622,7 +624,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<float>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<float>>(ref value);
         }
 
@@ -632,8 +634,29 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<double>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<double>>(ref value);
+        }
+
+        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<nuint>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            return Unsafe.As<Vector<T>, Vector<nuint>>(ref value);
+        }
+
+        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [Intrinsic]
+        public static explicit operator Vector<nint>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            return Unsafe.As<Vector<T>, Vector<nint>>(ref value);
         }
 
         [Intrinsic]
@@ -713,7 +736,7 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector<T> ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = (left.register.uint64_0 & condition.register.uint64_0) | (right.register.uint64_0 & ~condition.register.uint64_0);
@@ -738,6 +761,10 @@ namespace System.Numerics
                 return value;
             }
             else if (typeof(T) == typeof(ulong))
+            {
+                return value;
+            }
+            else if (typeof(T) == typeof(nuint))
             {
                 return value;
             }
@@ -793,6 +820,19 @@ namespace System.Numerics
             }
 
             return product;
+        }
+
+        [Intrinsic]
+        internal static T Sum(Vector<T> value)
+        {
+            T sum = default;
+
+            for (nint index = 0; index < Count; index++)
+            {
+                sum = ScalarAdd(sum, value.GetElement(index));
+            }
+
+            return sum;
         }
 
         [Intrinsic]
@@ -877,6 +917,14 @@ namespace System.Numerics
             {
                 return (double)(object)left == (double)(object)right;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left == (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left == (nint)(object)right;
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -925,6 +973,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left < (double)(object)right;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left < (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left < (nint)(object)right;
             }
             else
             {
@@ -975,6 +1031,14 @@ namespace System.Numerics
             {
                 return (double)(object)left <= (double)(object)right;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left <= (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left <= (nint)(object)right;
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1023,6 +1087,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left > (double)(object)right;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left > (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left > (nint)(object)right;
             }
             else
             {
@@ -1073,6 +1145,14 @@ namespace System.Numerics
             {
                 return (double)(object)left >= (double)(object)right;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left >= (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left >= (nint)(object)right;
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1121,6 +1201,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)((double)(object)left + (double)(object)right);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left + (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left + (nint)(object)right);
             }
             else
             {
@@ -1171,6 +1259,14 @@ namespace System.Numerics
             {
                 return (T)(object)(double)((double)(object)left - (double)(object)right);
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left - (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left - (nint)(object)right);
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1219,6 +1315,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)((double)(object)left * (double)(object)right);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left * (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left * (nint)(object)right);
             }
             else
             {
@@ -1269,6 +1373,14 @@ namespace System.Numerics
             {
                 return (T)(object)(double)((double)(object)left / (double)(object)right);
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left / (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left / (nint)(object)right);
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1317,6 +1429,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)1;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)1;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)1;
             }
             else
             {
@@ -1367,6 +1487,14 @@ namespace System.Numerics
             {
                 return (T)(object)BitConverter.Int64BitsToDouble(-1);
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)nuint.MaxValue;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)(-1);
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1401,6 +1529,10 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)Math.Abs((double)(object)value);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)Math.Abs((nint)(object)value);
             }
             else
             {
@@ -1450,6 +1582,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)Math.Sqrt((double)(object)value);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)Math.Sqrt((nuint)(object)value);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)Math.Sqrt((nint)(object)value);
             }
             else
             {
