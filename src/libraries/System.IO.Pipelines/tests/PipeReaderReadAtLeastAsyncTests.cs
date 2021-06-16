@@ -142,7 +142,7 @@ namespace System.IO.Pipelines.Tests
         public Task ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken()
         {
             ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(0, new CancellationToken(canceled: true));
-            return Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+            return Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
         }
 
         [Fact]
