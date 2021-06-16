@@ -18,11 +18,15 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(128)]
         [InlineData(256)]
         [InlineData(512)]
-        [InlineData(1024)]
-        [InlineData(2048)]
-        [InlineData(4096)]
-        [InlineData(8192)]
-        [InlineData(16384)]
+        [InlineData(1 * 1024)]
+        [InlineData(2 * 1024)]
+        [InlineData(4 * 1024)]
+        [InlineData(8 * 1024)]
+        [InlineData(16 * 1024)]
+        [InlineData(64 * 1024)]
+        [InlineData(1 * 1024 * 1024)]
+        [InlineData(2 * 1024 * 1024)]
+        [InlineData(4 * 1024 * 1024)]
         public void AlignedAllocTest(uint alignment)
         {
             void* ptr = NativeMemory.AlignedAlloc(1, alignment);
@@ -115,11 +119,15 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(128)]
         [InlineData(256)]
         [InlineData(512)]
-        [InlineData(1024)]
-        [InlineData(2048)]
-        [InlineData(4096)]
-        [InlineData(8192)]
-        [InlineData(16384)]
+        [InlineData(1 * 1024)]
+        [InlineData(2 * 1024)]
+        [InlineData(4 * 1024)]
+        [InlineData(8 * 1024)]
+        [InlineData(16 * 1024)]
+        [InlineData(64 * 1024)]
+        [InlineData(1 * 1024 * 1024)]
+        [InlineData(2 * 1024 * 1024)]
+        [InlineData(4 * 1024 * 1024)]
         public void AlignedReallocTest(uint alignment)
         {
             void* ptr = NativeMemory.AlignedAlloc(1, alignment);
