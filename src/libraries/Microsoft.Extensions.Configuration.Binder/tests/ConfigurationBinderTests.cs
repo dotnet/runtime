@@ -340,7 +340,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var ex = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
 
-
             Assert.Equal(expectedMessage, ex.Message);
         }
 

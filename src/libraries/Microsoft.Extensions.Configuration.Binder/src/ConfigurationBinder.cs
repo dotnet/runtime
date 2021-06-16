@@ -209,14 +209,15 @@ namespace Microsoft.Extensions.Configuration
         {
             if (instance != null)
             {
-                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType()).ToList();
+                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
 
                 if (options.ErrorOnUnknownConfiguration)
                 {
                     HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
                         StringComparer.OrdinalIgnoreCase);
 
-                    List<string> missingPropertyNames = configuration.GetChildren()
+                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren().ToList();
+                    List<string> missingPropertyNames = configurationSections
                         .Where(cs => !propertyNames.Contains(cs.Key))
                         .Select(mp => $"'{mp.Key}'")
                         .ToList();
@@ -642,7 +643,7 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static IEnumerable<PropertyInfo> GetAllProperties(
+        private static List<PropertyInfo> GetAllProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type)
         {
