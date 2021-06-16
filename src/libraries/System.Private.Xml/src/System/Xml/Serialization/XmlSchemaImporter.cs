@@ -8,6 +8,7 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Xml.Serialization.Configuration;
     using System.Collections.Specialized;
@@ -19,10 +20,13 @@ namespace System.Xml.Serialization
 
     public class XmlSchemaImporter : SchemaImporter
     {
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlSchemaImporter(XmlSchemas schemas) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext()) { }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers? typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext(typeIdentifiers, false)) { }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type? baseType)
         {
             return ImportDerivedTypeMapping(name, baseType, false);
@@ -42,6 +46,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type? baseType, bool baseTypeCanBeIndirect)
         {
             ElementAccessor element = ImportElement(name, typeof(TypeMapping), baseType);
@@ -67,16 +72,19 @@ namespace System.Xml.Serialization
             return new XmlTypeMapping(Scope, element);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName)
         {
             return ImportSchemaType(typeName, null, false);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type? baseType)
         {
             return ImportSchemaType(typeName, baseType, false);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type? baseType, bool baseTypeCanBeIndirect)
         {
             TypeMapping typeMapping = ImportType(typeName, typeof(TypeMapping), baseType, TypeFlags.CanBeElementValue, true)!;
@@ -114,16 +122,19 @@ namespace System.Xml.Serialization
             return new XmlTypeMapping(Scope, accessor);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(XmlQualifiedName name)
         {
             return ImportDerivedTypeMapping(name, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName name)
         {
             return new XmlMembersMapping(Scope, ImportElement(name, typeof(MembersMapping), null), XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping? ImportAnyType(XmlQualifiedName typeName, string elementName)
         {
             TypeMapping? typeMapping = ImportType(typeName, typeof(MembersMapping), null, TypeFlags.CanBeElementValue, true);
@@ -163,11 +174,13 @@ namespace System.Xml.Serialization
             return members;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName[] names)
         {
             return ImportMembersMapping(names, null, false);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName[] names, Type? baseType, bool baseTypeCanBeIndirect)
         {
             CodeIdentifiers memberScope = new CodeIdentifiers();
@@ -196,6 +209,7 @@ namespace System.Xml.Serialization
             return new XmlMembersMapping(Scope, element, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string name, string? ns, SoapSchemaMember[] members)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -219,6 +233,7 @@ namespace System.Xml.Serialization
             return new XmlMembersMapping(Scope, accessor, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
+        [RequiresUnreferencedCode("calls ImportElement")]
         private ElementAccessor ImportElement(XmlQualifiedName name, Type desiredMappingType, Type? baseType)
         {
             XmlSchemaElement element = FindElement(name);
@@ -234,6 +249,7 @@ namespace System.Xml.Serialization
             return accessor;
         }
 
+        [RequiresUnreferencedCode("calls ImportElementType")]
         private ElementAccessor ImportElement(XmlSchemaElement element, string identifier, Type desiredMappingType, Type? baseType, string? ns, bool topLevelElement)
         {
             if (!element.RefName.IsEmpty)
@@ -292,6 +308,7 @@ namespace System.Xml.Serialization
             return accessor;
         }
 
+        [RequiresUnreferencedCode("calls ImportMembersType")]
         private TypeMapping ImportElementType(XmlSchemaElement element, string identifier, Type desiredMappingType, Type? baseType, string? ns)
         {
             TypeMapping? mapping;
@@ -366,6 +383,7 @@ namespace System.Xml.Serialization
             return TypeIdentifiers.AddUnique(typeName, typeName);
         }
 
+        [RequiresUnreferencedCode("calls ImportType")]
         internal override void ImportDerivedTypes(XmlQualifiedName baseName)
         {
             foreach (XmlSchema schema in Schemas)
@@ -387,6 +405,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls FindType")]
         private TypeMapping? ImportType(XmlQualifiedName name, Type desiredMappingType, Type? baseType, TypeFlags flags, bool addref)
         {
             if (name.Name == Soap.UrType && name.Namespace == XmlSchema.Namespace)
@@ -414,6 +433,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls ImportMembersType")]
         private TypeMapping? ImportType(XmlSchemaComplexType type, string? typeNs, string identifier, Type desiredMappingType, Type? baseType, TypeFlags flags)
         {
             if (type.Redefined != null)
@@ -447,6 +467,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.XmlInternalError, nameof(desiredMappingType));
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private MembersMapping ImportMembersType(XmlSchemaType type, string? typeNs, string identifier)
         {
             if (!type.DerivedFrom.IsEmpty) throw new InvalidOperationException(SR.XmlMembersDeriveError);
@@ -461,6 +482,7 @@ namespace System.Xml.Serialization
             return mappings;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private StructMapping ImportStructType(XmlSchemaType type, string? typeNs, string identifier, Type? baseType, bool arrayLike)
         {
             TypeDesc? baseTypeDesc = null;
@@ -570,6 +592,7 @@ namespace System.Xml.Serialization
             return (items.Particle != null) && (items.Particle is XmlSchemaAll);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private StructMapping ImportStructDataType(XmlSchemaSimpleType dataType, string? typeNs, string identifier, Type baseType)
         {
             identifier = Accessor.UnescapeName(identifier);
@@ -591,7 +614,7 @@ namespace System.Xml.Serialization
             return structMapping;
         }
 
-        private class TypeItems
+        private sealed class TypeItems
         {
             internal XmlSchemaObjectCollection Attributes = new XmlSchemaObjectCollection();
             internal XmlSchemaAnyAttribute? AnyAttribute;
@@ -600,6 +623,7 @@ namespace System.Xml.Serialization
             internal bool IsUnbounded;
         }
 
+        [RequiresUnreferencedCode("calls FindType")]
         private MemberMapping[] ImportTypeMembers(XmlSchemaType type, string? typeNs, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, INameScope elementsScope, ref bool needExplicitOrder, bool order, bool allowUnboundedElements)
         {
             TypeItems items = GetTypeItems(type);
@@ -718,6 +742,7 @@ namespace System.Xml.Serialization
             return items;
         }
 
+        [RequiresUnreferencedCode("calls ImportChoiceGroup")]
         private void ImportGroup(XmlSchemaGroupBase group, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, INameScope elementsScope, string? ns, bool mixed, ref bool needExplicitOrder, bool allowDuplicates, bool groupRepeats, bool allowUnboundedElements)
         {
             if (group is XmlSchemaChoice)
@@ -731,6 +756,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private MemberMapping ImportChoiceGroup(XmlSchemaGroupBase group, string identifier, CodeIdentifiers? members, CodeIdentifiers? membersScope, INameScope? elementsScope, string? ns, bool groupRepeats, ref bool needExplicitOrder, bool allowDuplicates)
         {
             NameTable choiceElements = new NameTable();
@@ -872,11 +898,13 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        [RequiresUnreferencedCode("calls GatherGroupChoices")]
         private bool GatherGroupChoices(XmlSchemaGroup group, NameTable choiceElements, string identifier, string? ns, ref bool needExplicitOrder, bool allowDuplicates)
         {
             return GatherGroupChoices(group.Particle, choiceElements, identifier, ns, ref needExplicitOrder, allowDuplicates);
         }
 
+        [RequiresUnreferencedCode("Calls ImportAny")]
         private bool GatherGroupChoices(XmlSchemaParticle? particle, NameTable choiceElements, string identifier, string? ns, ref bool needExplicitOrder, bool allowDuplicates)
         {
             if (particle is XmlSchemaGroupRef)
@@ -980,6 +1008,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls ImportChoiceGroup")]
         private void ImportGroupMembers(XmlSchemaParticle? particle, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, INameScope elementsScope, string? ns, bool groupRepeats, ref bool mixed, ref bool needExplicitOrder, bool allowDuplicates, bool allowUnboundedElements)
         {
             if (particle is XmlSchemaGroupRef)
@@ -1057,6 +1086,7 @@ namespace System.Xml.Serialization
             return (XmlSchemaElement[])equivalentElements.ToArray(typeof(XmlSchemaElement));
         }
 
+        [RequiresUnreferencedCode("calls ImportChoiceGroup")]
         private bool ImportSubstitutionGroupMember(XmlSchemaElement element, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, string? ns, bool repeats, ref bool needExplicitOrder, bool allowDuplicates)
         {
             XmlSchemaElement[] elements = GetEquivalentElements(element);
@@ -1076,6 +1106,7 @@ namespace System.Xml.Serialization
             return true;
         }
 
+        [RequiresUnreferencedCode("calls ImportType")]
         private void ImportTextMember(CodeIdentifiers members, CodeIdentifiers membersScope, XmlQualifiedName? simpleContentType)
         {
             TypeMapping? mapping;
@@ -1128,6 +1159,7 @@ namespace System.Xml.Serialization
             members.Add(member.Name, member);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private MemberMapping ImportAnyMember(XmlSchemaAny any, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, INameScope elementsScope, string? ns, ref bool mixed, ref bool needExplicitOrder, bool allowDuplicates)
         {
             ElementAccessor[] accessors = ImportAny(any, !mixed, ns);
@@ -1160,6 +1192,8 @@ namespace System.Xml.Serialization
             }
             return member;
         }
+
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private ElementAccessor[] ImportAny(XmlSchemaAny any, bool makeElement, string? targetNamespace)
         {
             SpecialMapping mapping = new SpecialMapping();
@@ -1205,6 +1239,7 @@ namespace System.Xml.Serialization
             return new ElementAccessor[] { anyAccessor };
         }
 
+        [RequiresUnreferencedCode("calls ImportArrayMapping")]
         private ElementAccessor? ImportArray(XmlSchemaElement element, string identifier, string? ns, bool repeats)
         {
             if (repeats) return null;
@@ -1223,6 +1258,7 @@ namespace System.Xml.Serialization
             return arrayAccessor;
         }
 
+        [RequiresUnreferencedCode("calls ImportChoiceGroup")]
         private ArrayMapping? ImportArrayMapping(XmlSchemaType type, string identifier, string? ns, bool repeats)
         {
             if (!(type is XmlSchemaComplexType)) return null;
@@ -1327,6 +1363,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private SpecialMapping? ImportAnyMapping(XmlSchemaType? type, string identifier, string? ns, bool repeats)
         {
             if (type == null) return null;
@@ -1373,6 +1410,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls ImportSubstitutionGroupMember")]
         private void ImportElementMember(XmlSchemaElement element, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, INameScope elementsScope, string? ns, bool repeats, ref bool needExplicitOrder, bool allowDuplicates, bool allowUnboundedElements)
         {
             repeats = repeats | element.IsMultipleOccurrence;
@@ -1429,6 +1467,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls ImportAttribute")]
         private void ImportAttributeMember(XmlSchemaAttribute attribute, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, string? ns)
         {
             AttributeAccessor? accessor = ImportAttribute(attribute, identifier, ns, attribute);
@@ -1453,6 +1492,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private void ImportAnyAttributeMember(XmlSchemaAnyAttribute any, CodeIdentifiers members, CodeIdentifiers membersScope)
         {
             SpecialMapping mapping = new SpecialMapping();
@@ -1509,6 +1549,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private void ImportXmlnsDeclarationsMember(XmlSchemaType type, CodeIdentifiers members, CodeIdentifiers membersScope)
         {
             string? xmlnsMemberName;
@@ -1536,6 +1577,7 @@ namespace System.Xml.Serialization
             member.Ignore = true;
         }
 
+        [RequiresUnreferencedCode("calls ImportAnyAttributeMember")]
         private void ImportAttributeGroupMembers(XmlSchemaAttributeGroup group, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, string ns)
         {
             for (int i = 0; i < group.Attributes.Count; i++)
@@ -1550,6 +1592,7 @@ namespace System.Xml.Serialization
                 ImportAnyAttributeMember(group.AnyAttribute, members, membersScope);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private AttributeAccessor ImportSpecialAttribute(XmlQualifiedName name, string identifier)
         {
             PrimitiveMapping mapping = new PrimitiveMapping();
@@ -1563,6 +1606,7 @@ namespace System.Xml.Serialization
             return accessor;
         }
 
+        [RequiresUnreferencedCode("calls ImportSpecialAttribute")]
         private AttributeAccessor? ImportAttribute(XmlSchemaAttribute attribute, string identifier, string? ns, XmlSchemaAttribute defaultValueProvider)
         {
             if (attribute.Use == XmlSchemaUse.Prohibited) return null;
@@ -1626,6 +1670,7 @@ namespace System.Xml.Serialization
             return accessor;
         }
 
+        [RequiresUnreferencedCode("calls ImportStructDataType")]
         private TypeMapping? ImportDataType(XmlSchemaSimpleType dataType, string? typeNs, string identifier, Type? baseType, TypeFlags flags, bool isList)
         {
             if (baseType != null)
@@ -1688,6 +1733,7 @@ namespace System.Xml.Serialization
             return ImportPrimitiveDataType(dataType, flags);
         }
 
+        [RequiresUnreferencedCode("calls FindType")]
         private TypeMapping? ImportEnumeratedDataType(XmlSchemaSimpleType dataType, string? typeNs, string identifier, TypeFlags flags, bool isList)
         {
             TypeMapping? mapping = (TypeMapping?)ImportedMappings[dataType];
@@ -1750,7 +1796,7 @@ namespace System.Xml.Serialization
             return enumMapping;
         }
 
-        internal class ElementComparer : IComparer
+        internal sealed class ElementComparer : IComparer
         {
             public int Compare(object? o1, object? o2)
             {
@@ -1789,6 +1835,7 @@ namespace System.Xml.Serialization
             return enumMapping;
         }
 
+        [RequiresUnreferencedCode("calls GetDataTypeSource")]
         private PrimitiveMapping ImportPrimitiveDataType(XmlSchemaSimpleType dataType, TypeFlags flags)
         {
             TypeDesc sourceTypeDesc = GetDataTypeSource(dataType, flags);
@@ -1855,6 +1902,7 @@ namespace System.Xml.Serialization
             return new XmlQualifiedName("string", XmlSchema.Namespace);
         }
 
+        [RequiresUnreferencedCode("calls FindDataType")]
         private TypeDesc GetDataTypeSource(XmlSchemaSimpleType dataType, TypeFlags flags)
         {
             TypeDesc? typeDesc = null;
@@ -1872,6 +1920,7 @@ namespace System.Xml.Serialization
             return typeDesc;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private XmlSchemaSimpleType? FindDataType(XmlQualifiedName? name, TypeFlags flags)
         {
             if (name == null || name.IsEmpty)
@@ -1906,6 +1955,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private XmlSchemaType? FindType(XmlQualifiedName? name, TypeFlags flags)
         {
             if (name == null || name.IsEmpty)

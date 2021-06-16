@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
+using System.Linq;
 
 namespace ILCompiler.IBC
 {
@@ -12,7 +13,8 @@ namespace ILCompiler.IBC
     {
         public IBCProfileData(bool partialNGen, IEnumerable<MethodProfileData> methodData)
         {
-            foreach (MethodProfileData data in methodData)
+            MethodProfileData[] dataArray = methodData.ToArray();
+            foreach (MethodProfileData data in dataArray)
             {
                 if (!_methodData.ContainsKey(data.Method))
                 {

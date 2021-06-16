@@ -16,7 +16,7 @@ namespace System.Xml
 {
     internal delegate void CachingEventHandler(XsdCachingReader cachingReader);
 
-    internal class AttributePSVIInfo
+    internal sealed class AttributePSVIInfo
     {
         internal string? localName;
         internal string? namespaceUri;
@@ -37,7 +37,7 @@ namespace System.Xml
         }
     }
 
-    internal partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
+    internal sealed partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
     {
         private enum ValidatingReaderState
         {

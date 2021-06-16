@@ -122,17 +122,12 @@ namespace System.Threading
             _valueFactory = valueFactory;
             _trackAllValues = trackAllValues;
 
-            // Assign the ID and mark the instance as initialized. To avoid leaking IDs, we assign the ID and set _initialized
-            // in a finally block, to avoid a thread abort in between the two statements.
-            try { }
-            finally
-            {
-                _idComplement = ~s_idManager.GetId();
+            // Assign the ID and mark the instance as initialized.
+             _idComplement = ~s_idManager.GetId();
 
-                // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
-                // occurred in the constructor.)
-                _initialized = true;
-            }
+            // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
+            // occurred in the constructor.)
+            _initialized = true;
         }
 
         /// <summary>
@@ -593,7 +588,7 @@ namespace System.Threading
         /// </summary>
         private static int GetNewTableSize(int minSize)
         {
-            if ((uint)minSize > Array.MaxArrayLength)
+            if ((uint)minSize > Array.MaxLength)
             {
                 // Intentionally return a value that will result in an OutOfMemoryException
                 return int.MaxValue;
@@ -628,9 +623,9 @@ namespace System.Threading
             newSize++;
 
             // Don't set newSize to more than Array.MaxArrayLength
-            if ((uint)newSize > Array.MaxArrayLength)
+            if ((uint)newSize > Array.MaxLength)
             {
-                newSize = Array.MaxArrayLength;
+                newSize = Array.MaxLength;
             }
 
             return newSize;
@@ -676,7 +671,7 @@ namespace System.Threading
         /// <summary>
         /// A manager class that assigns IDs to ThreadLocal instances
         /// </summary>
-        private class IdManager
+        private sealed class IdManager
         {
             // The next ID to try
             private int _nextIdToTry;
@@ -733,7 +728,7 @@ namespace System.Threading
         /// (all those LinkedSlot instances can be found by following references from the table slots) and
         /// releases the table so that it can get GC'd.
         /// </summary>
-        private class FinalizationHelper
+        private sealed class FinalizationHelper
         {
             internal LinkedSlotVolatile[] SlotArray;
             private readonly bool _trackAllValues;

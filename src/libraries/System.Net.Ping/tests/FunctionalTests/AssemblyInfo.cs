@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("System.Net.Ping is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Net.Ping is not supported on Browser")]

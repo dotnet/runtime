@@ -445,13 +445,10 @@ namespace System.Numerics.Tests
         #region Tests for constructors using unsupported types
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Guid() => TestConstructorWithUnsupportedTypes<Guid>();
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_DateTime() => TestConstructorWithUnsupportedTypes<DateTime>();
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<Char>();
 
         private void TestConstructorWithUnsupportedTypes<T>() where T : struct
@@ -490,7 +487,7 @@ namespace System.Numerics.Tests
         private void TestIndexerOutOfRange<T>() where T : struct
         {
             Vector<T> vector = Vector<T>.One;
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 T value = vector[Vector<T>.Count];
             });
@@ -719,7 +716,7 @@ namespace System.Numerics.Tests
             // us to check that we didn't overwrite any part of the destination
             // if it was too small to contain the entire output.
 
-            new Random().NextBytes(MemoryMarshal.AsBytes(destination));
+            Random.Shared.NextBytes(MemoryMarshal.AsBytes(destination));
             T[] destinationCopy = destination.ToArray();
 
             Assert.False(vector.TryCopyTo(destination.Slice(1)));
@@ -3049,6 +3046,139 @@ namespace System.Numerics.Tests
         }
 
         #endregion Narrow / Widen
+
+        #region Explicit Cast/As
+        [Fact]
+        public void TestCastByteToInt() => TestCastToInt<byte>();
+
+        [Fact]
+        public void TestCastSByteToInt() => TestCastToInt<sbyte>();
+
+        [Fact]
+        public void TestCastInt16ToInt() => TestCastToInt<short>();
+
+        [Fact]
+        public void TestCastUInt16ToInt() => TestCastToInt<ushort>();
+
+        [Fact]
+        public void TestCastInt32ToInt() => TestCastToInt<int>();
+
+        [Fact]
+        public void TestCastUInt32ToInt() => TestCastToInt<uint>();
+
+        [Fact]
+        public void TestCastInt64ToInt() => TestCastToInt<long>();
+
+        [Fact]
+        public void TestCastUInt64ToInt() => TestCastToInt<ulong>();
+
+        [Fact]
+        public void TestCastSingleToInt() => TestCastToInt<float>();
+
+        [Fact]
+        public void TestCastDoubleToInt() => TestCastToInt<double>();
+
+        private unsafe void TestCastToInt<T>() where T : unmanaged
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values);
+            Vector<int> vector2 = (Vector<int>)vector1;
+
+            var vector1Bytes = new byte[sizeof(T) * Vector<T>.Count];
+            vector1.CopyTo(vector1Bytes);
+            var vector2Bytes = new byte[sizeof(int) * Vector<int>.Count];
+            vector2.CopyTo(vector2Bytes);
+
+            Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+
+        [Fact]
+        public void TestAsIntToByte() => TestAs<int, byte>();
+
+        [Fact]
+        public void TestAsIntToSByte() => TestAs<int, sbyte>();
+
+        [Fact]
+        public void TestAsIntToInt16() => TestAs<int, short>();
+
+        [Fact]
+        public void TestAsIntToUInt16() => TestAs<int, ushort>();
+
+        [Fact]
+        public void TestAsIntToInt32() => TestAs<int, int>();
+
+        [Fact]
+        public void TestAsIntToUInt32() => TestAs<int, uint>();
+
+        [Fact]
+        public void TestAsIntToInt64() => TestAs<int, long>();
+
+        [Fact]
+        public void TestAsIntToUInt64() => TestAs<int, ulong>();
+
+        [Fact]
+        public void TestAsIntToSingle() => TestAs<int, float>();
+
+        [Fact]
+        public void TestAsIntToDouble() => TestAs<int, double>();
+
+        private unsafe void TestAs<TFrom, TTo>() where TFrom : unmanaged where TTo : unmanaged
+        {
+            TFrom[] values = GenerateRandomValuesForVector<TFrom>();
+            Vector<TFrom> vector1 = new Vector<TFrom>(values);
+            Vector<TTo> vector2 = vector1.As<TFrom, TTo>();
+
+            var vector1Bytes = new byte[sizeof(TFrom) * Vector<TFrom>.Count];
+            vector1.CopyTo(vector1Bytes);
+            var vector2Bytes = new byte[sizeof(TTo) * Vector<TTo>.Count];
+            vector2.CopyTo(vector2Bytes);
+
+            Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+        #endregion
+
+        #region Sum
+
+        [Fact]
+        public void SumInt32() => TestSum<int>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumInt64() => TestSum<long>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumSingle() => TestSum<float>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumDouble() => TestSum<double>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt32() => TestSum<uint>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt64() => TestSum<ulong>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumByte() => TestSum<byte>(x => x.Aggregate((a, b) => (byte)(a + b)));
+
+        [Fact]
+        public void SumSByte() => TestSum<sbyte>(x => x.Aggregate((a, b) => (sbyte)(a + b)));
+
+        [Fact]
+        public void SumInt16() => TestSum<short>(x => x.Aggregate((a, b) => (short)(a + b)));
+
+        [Fact]
+        public void SumUInt16() => TestSum<ushort>(x => x.Aggregate((a, b) => (ushort)(a + b)));
+
+        private static void TestSum<T>(Func<T[], T> expected) where T : struct, IEquatable<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new(values);
+            T sum = Vector.Sum(vector);
+
+            AssertEqual(expected(values), sum, "Sum");
+        }
+
+        #endregion
 
         #region Helper Methods
         private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>

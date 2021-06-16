@@ -51,7 +51,8 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Runs an application and returns a Task that only completes when the token is triggered or shutdown is triggered.
+        /// Runs an application and returns a <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.
+        /// The <paramref name="host"/> instance is disposed of after running.
         /// </summary>
         /// <param name="host">The <see cref="IHost"/> to run.</param>
         /// <param name="token">The token to trigger shutdown.</param>
@@ -74,7 +75,6 @@ namespace Microsoft.Extensions.Hosting
                 {
                     host.Dispose();
                 }
-
             }
         }
 

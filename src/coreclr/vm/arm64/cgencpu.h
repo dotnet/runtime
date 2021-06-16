@@ -58,6 +58,8 @@ extern PCODE GetPreStubEntryPoint();
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
 
+#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
@@ -81,13 +83,27 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-typedef INT64 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
+{
+#if defined(OSX_ARM64_ABI)
+    if (!isValueType)
+    {
+        // The primitive types' sizes are expected to be powers of 2.
+        _ASSERTE((parmSize & (parmSize - 1)) == 0);
+        // No padding/alignment for primitive types.
+        return parmSize;
+    }
+    if (isFloatHfa)
+    {
+        _ASSERTE((parmSize % 4) == 0);
+        // float hfa is not considered a struct type and passed with 4-byte alignment.
+        return parmSize;
+    }
+#endif
 
-// The expression below assumes STACK_ELEM_SIZE is a power of 2, so check that.
-static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
-
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
+    const unsigned stackSlotSize = 8;
+    return ALIGN_UP(parmSize, stackSlotSize);
+}
 
 //
 // JIT HELPERS.
@@ -258,7 +274,7 @@ inline NEON128 GetSimdMem(PCODE ip)
 }
 
 #ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target);
+void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
 #endif // FEATURE_COMINTEROP
 
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
@@ -272,10 +288,10 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBuffer, LPVOID target)
+inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
-    UINT32* pCode = (UINT32*)pBuffer;
+    UINT32* pCode = (UINT32*)pBufferRW;
 
     // We require 8-byte alignment so the LDR instruction is aligned properly
     _ASSERTE(((UINT_PTR)pCode & 7) == 0);
@@ -288,7 +304,7 @@ inline void emitJump(LPBYTE pBuffer, LPVOID target)
     pCode[1] = 0xD61F0200UL;   // br  x16
 
     // Ensure that the updated instructions get updated in the I-Cache
-    ClrFlushInstructionCache(pCode, 8);
+    ClrFlushInstructionCache(pBufferRX, 8);
 
     *((LPVOID *)(pCode + 2)) = target;   // 64-bit target address
 
@@ -325,10 +341,10 @@ inline BOOL isBackToBackJump(PCODE pBuffer)
 }
 
 //------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBuffer, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     WRAPPER_NO_CONTRACT;
-    emitJump(pBuffer, target);
+    emitJump(pBufferRX, pBufferRW, target);
 }
 
 //------------------------------------------------------------------------
@@ -417,7 +433,7 @@ class StubLinkerCPU : public StubLinker
 
 private:
     void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec);
-    void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec);
+    void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
     // BitFlags for EmitLoadStoreReg(Pair)Imm methods
@@ -468,7 +484,7 @@ public:
     void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
     void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
 
-    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
+    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0, int log2Size = 3);
     void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
 
     void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
@@ -499,7 +515,7 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
     TADDR       m_pTargetCode;
     TADDR       m_pvSecretParam;
 
-    void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
     void Poison();
 
     LPCBYTE GetEntryPoint() const
@@ -567,7 +583,7 @@ struct StubPrecode {
     TADDR   m_pTarget;
     TADDR   m_pMethodDesc;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     TADDR GetMethodDesc()
     {
@@ -590,7 +606,8 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        InterlockedExchange64((LONGLONG*)&m_pTarget, (TADDR)GetPreStubEntryPoint());
+        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode)); 
+        InterlockedExchange64((LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)GetPreStubEntryPoint());
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
@@ -602,8 +619,9 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode)); 
         return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
 
 #ifdef FEATURE_PREJIT
@@ -627,7 +645,7 @@ struct NDirectImportPrecode {
     TADDR   m_pTarget;
     TADDR   m_pMethodDesc;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     TADDR GetMethodDesc()
     {
@@ -673,7 +691,7 @@ struct FixupPrecode {
     BYTE    m_PrecodeChunkIndex;
     TADDR   m_pTarget;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
+    void Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
     void InitCommon()
     {
         WRAPPER_NO_CONTRACT;
@@ -714,7 +732,8 @@ struct FixupPrecode {
         }
         CONTRACTL_END;
 
-        InterlockedExchange64((LONGLONG*)&m_pTarget, (TADDR)GetEEFuncEntryPoint(PrecodeFixupThunk));
+        ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
+        InterlockedExchange64((LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)GetEEFuncEntryPoint(PrecodeFixupThunk));
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
@@ -726,8 +745,9 @@ struct FixupPrecode {
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
         return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
 
     static BOOL IsFixupPrecodeByASM(PCODE addr)
@@ -786,8 +806,9 @@ struct ThisPtrRetBufPrecode {
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode)); 
         return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
@@ -855,7 +876,7 @@ private:
 
 #ifndef DACCESS_COMPILE
 public:
-    CallCountingStubShort(CallCount *remainingCallCountCell, PCODE targetForMethod)
+    CallCountingStubShort(CallCountingStubShort* stubRX, CallCount *remainingCallCountCell, PCODE targetForMethod)
         : m_part0{  0x58000149,             //     ldr  x9, [pc, #(m_remainingCallCountCell)]
                     0x7940012a,             //     ldrh w10, [x9]
                     0x7100054a,             //     subs w10, w10, #1

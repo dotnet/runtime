@@ -500,9 +500,11 @@ namespace
             *val->puiVal = *val->puiVal * 2;
             break;
         case VARENUM::VT_I4:
+        case VARENUM::VT_INT:
             *val->plVal = *val->plVal * 2;
             break;
         case VARENUM::VT_UI4:
+        case VARENUM::VT_UINT:
             *val->pulVal = *val->pulVal * 2;
             break;
         case VARENUM::VT_I8:
@@ -569,9 +571,11 @@ namespace
                 val->uiVal = val->uiVal * 2;
                 break;
             case VARENUM::VT_I4:
+            case VARENUM::VT_INT:
                 val->lVal = val->lVal * 2;
                 break;
             case VARENUM::VT_UI4:
+            case VARENUM::VT_UINT:
                 val->ulVal = val->ulVal * 2;
                 break;
             case VARENUM::VT_I8:

@@ -139,7 +139,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (X509Store.DisallowedStoreName.Equals(storeName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return new DirectoryBasedStoreProvider.UnsupportedDisallowedStore(openFlags);
+                    return DirectoryBasedStoreProvider.OpenDisallowedStore(openFlags);
                 }
 
                 return new DirectoryBasedStoreProvider(storeName, openFlags);

@@ -250,7 +250,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override bool Equals(object? rparam)
+        public override bool Equals([NotNullWhen(true)] object? rparam)
         {
             return rparam == null ?
                 false :

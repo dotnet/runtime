@@ -84,13 +84,6 @@ namespace System.Security.Cryptography
                 KeySizeValue = _ecc.ImportParameters(parameters);
             }
 
-            public override void ImportSubjectPublicKeyInfo(
-                ReadOnlySpan<byte> source,
-                out int bytesRead)
-            {
-                KeySizeValue = _ecc.ImportSubjectPublicKeyInfo(source, out bytesRead);
-            }
-
             public override void ImportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,
                 ReadOnlySpan<byte> source,
@@ -239,7 +232,7 @@ namespace System.Security.Cryptography
                     else
                     {
                         hasher.AppendData(secret);
-                        Array.Clear(secret, 0, secret.Length);
+                        Array.Clear(secret);
                     }
 
                     return null;
@@ -256,7 +249,7 @@ namespace System.Security.Cryptography
             public override ECDiffieHellmanPublicKey PublicKey =>
                 new ECDiffieHellmanSecurityTransformsPublicKey(ExportParameters(false));
 
-            private class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
+            private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
             {
                 private EccSecurityTransforms _ecc;
 

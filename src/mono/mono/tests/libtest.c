@@ -3402,6 +3402,54 @@ mono_test_marshal_variant_out_bool_false_unmanaged(VarRefFunc func)
 	return 1;
 }
 
+typedef struct _StructWithVariant {
+    VARIANT data;
+} StructWithVariant;
+typedef int (STDCALL *CheckStructWithVariantFunc) (StructWithVariant sv);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_struct_with_variant_in_unmanaged(CheckStructWithVariantFunc func)
+{
+    StructWithVariant sv;
+    sv.data.vt = VT_I4;
+    sv.data.lVal = -123;
+    return func(sv);
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_struct_with_variant_out_unmanaged (StructWithVariant sv)
+{
+	if (sv.data.vt != VT_I4)
+		return 1;
+	if (sv.data.lVal != -123)
+		return 2;
+	return 0;
+}
+
+typedef struct _StructWithBstr {
+    gunichar2* data;
+} StructWithBstr;
+typedef int (STDCALL *CheckStructWithBstrFunc) (StructWithBstr sb);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_struct_with_bstr_in_unmanaged(CheckStructWithBstrFunc func)
+{
+    StructWithBstr sb;
+    sb.data = marshal_bstr_alloc("this is a test string");
+    return func(sb);
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_struct_with_bstr_out_unmanaged (StructWithBstr sb)
+{
+	char *s = g_utf16_to_utf8 (sb.data, g_utf16_len (sb.data), NULL, NULL, NULL);
+	gboolean same = !strcmp (s, "this is a test string");
+	g_free (s);
+	if (!same)
+		return 1;
+	return 0;
+}
+
 typedef struct MonoComObject MonoComObject;
 typedef struct MonoDefItfObject MonoDefItfObject;
 
@@ -3436,6 +3484,7 @@ typedef struct
 	int (STDCALL *ArrayIn)(MonoComObject* pUnk, void *array);
 	int (STDCALL *ArrayIn2)(MonoComObject* pUnk, void *array);
 	int (STDCALL *ArrayIn3)(MonoComObject* pUnk, void *array);
+	int (STDCALL *ArrayOut)(MonoComObject* pUnk, guint32 *array, guint32 *result);
 	int (STDCALL *GetDefInterface1)(MonoComObject* pUnk, MonoDefItfObject **iface);
 	int (STDCALL *GetDefInterface2)(MonoComObject* pUnk, MonoDefItfObject **iface);
 } MonoIUnknown;
@@ -3591,6 +3640,12 @@ ArrayIn3(MonoComObject* pUnk, void *array)
 }
 
 LIBTEST_API int STDCALL
+ArrayOut(MonoComObject* pUnk, guint32 *array, guint32 *result)
+{
+	return S_OK;
+}
+
+LIBTEST_API int STDCALL
 GetDefInterface1(MonoComObject* pUnk, MonoDefItfObject **obj)
 {
 	return S_OK;
@@ -3638,6 +3693,7 @@ static void create_com_object (MonoComObject** pOut)
 	(*pOut)->vtbl->ArrayIn = ArrayIn;
 	(*pOut)->vtbl->ArrayIn2 = ArrayIn2;
 	(*pOut)->vtbl->ArrayIn3 = ArrayIn3;
+	(*pOut)->vtbl->ArrayOut = ArrayOut;
 	(*pOut)->vtbl->GetDefInterface1 = GetDefInterface1;
 	(*pOut)->vtbl->GetDefInterface2 = GetDefInterface2;
 }
@@ -5712,6 +5768,29 @@ mono_test_marshal_safearray_in_ccw(MonoComObject *pUnk)
 	SafeArrayDestroy(array);
 
 	return ret;
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_lparray_out_ccw(MonoComObject *pUnk)
+{
+	guint32 array, result;
+	int ret;
+
+	ret = pUnk->vtbl->ArrayOut (pUnk, &array, &result);
+	if (ret)
+		return ret;
+	if (array != 55)
+		return 1;
+	if (result != 1)
+		return 2;
+
+	ret = pUnk->vtbl->ArrayOut (pUnk, NULL, &result);
+	if (ret)
+		return ret;
+	if (result != 0)
+		return 3;
+
+	return 0;
 }
 
 #endif

@@ -18,12 +18,13 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            TypeDesc baseType = type.BaseType;
+            DefType baseType = type.BaseType;
             bool hasNonTrivialParent = baseType != null
                 && !baseType.IsWellKnownType(WellKnownType.Object)
                 && !baseType.IsWellKnownType(WellKnownType.ValueType);
 
-            if (hasNonTrivialParent && !IsBlittableType(baseType))
+            // Type is blittable only if parent is also blittable and is not empty.
+            if (hasNonTrivialParent && (!IsBlittableType(baseType) || baseType.IsZeroSizedReferenceType))
             {
                 return false;
             }

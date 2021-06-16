@@ -145,11 +145,14 @@ namespace System.Net.Security.Tests
             using (var client = new TcpClient())
             {
                 server.SslProtocols = serverSslProtocols;
+                // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
+                string serverName = TestHelper.GetTestSNIName(nameof(ClientAsyncSslHelper), clientSslProtocols, serverSslProtocols);
+
                 await client.ConnectAsync(server.RemoteEndPoint.Address, server.RemoteEndPoint.Port);
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, certificateCallback != null ? certificateCallback : AllowAnyServerCertificate, null))
                 {
-                    Task clientAuthTask = sslStream.AuthenticateAsClientAsync("localhost", null, clientSslProtocols, false);
-                    await clientAuthTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    Task clientAuthTask = sslStream.AuthenticateAsClientAsync(serverName, null, clientSslProtocols, false);
+                    await clientAuthTask.WaitAsync(TestConfiguration.PassingTestTimeout);
 
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         server.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);

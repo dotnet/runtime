@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Buffers
 {
@@ -128,7 +129,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns true if both the Symbol and Precision are equal.
         /// </summary>
-        public override bool Equals(object? obj) => obj is StandardFormat other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is StandardFormat other && Equals(other);
 
         /// <summary>
         /// Compute a hash code.

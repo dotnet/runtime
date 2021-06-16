@@ -3,12 +3,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
     // DbConnectionPoolKey: Base class implementation of a key to connection pool groups
     //  Only connection string is used as a key
-    internal class DbConnectionPoolKey : ICloneable
+    internal sealed class DbConnectionPoolKey : ICloneable
     {
         private string? _connectionString;
 
@@ -17,7 +18,7 @@ namespace System.Data.Common
             _connectionString = connectionString;
         }
 
-        protected DbConnectionPoolKey(DbConnectionPoolKey key)
+        private DbConnectionPoolKey(DbConnectionPoolKey key)
         {
             _connectionString = key.ConnectionString;
         }
@@ -27,7 +28,7 @@ namespace System.Data.Common
             return new DbConnectionPoolKey(this);
         }
 
-        internal virtual string? ConnectionString
+        internal string? ConnectionString
         {
             get
             {
@@ -40,7 +41,7 @@ namespace System.Data.Common
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null || obj.GetType() != typeof(DbConnectionPoolKey))
             {

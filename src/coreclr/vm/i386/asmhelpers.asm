@@ -436,7 +436,7 @@ CpuTypeDone:
         retn
 _GetSpecificCpuTypeAsm@0 ENDP
 
-; DWORD __stdcall GetSpecificCpuFeaturesAsm(DWORD *pInfo);
+; uint32_t __stdcall GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
 _GetSpecificCpuFeaturesAsm@4 PROC public
         push    ebx         ; ebx is trashed by the cpuid calls
 

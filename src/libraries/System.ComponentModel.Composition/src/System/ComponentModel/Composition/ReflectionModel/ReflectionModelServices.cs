@@ -314,7 +314,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
     }
 
-    internal class ReflectionPartCreationInfo : IReflectionPartCreationInfo
+    internal sealed class ReflectionPartCreationInfo : IReflectionPartCreationInfo
     {
         private readonly Lazy<Type> _partType;
         private readonly Lazy<IEnumerable<ImportDefinition>>? _imports;
@@ -463,7 +463,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
     }
 
-    internal class LazyExportDefinition : ExportDefinition
+    internal sealed class LazyExportDefinition : ExportDefinition
     {
         private readonly Lazy<IDictionary<string, object?>> _metadata;
 

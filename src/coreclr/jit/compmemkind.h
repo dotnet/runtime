@@ -47,6 +47,7 @@ CompMemKindMacro(DebugInfo)
 CompMemKindMacro(DebugOnly)
 CompMemKindMacro(Codegen)
 CompMemKindMacro(LoopOpt)
+CompMemKindMacro(LoopClone)
 CompMemKindMacro(LoopHoist)
 CompMemKindMacro(Unknown)
 CompMemKindMacro(RangeCheck)
@@ -58,6 +59,7 @@ CompMemKindMacro(ClassLayout)
 CompMemKindMacro(TailMergeThrows)
 CompMemKindMacro(EarlyProp)
 CompMemKindMacro(ZeroInit)
+CompMemKindMacro(Pgo)
 //clang-format on
 
 #undef CompMemKindMacro

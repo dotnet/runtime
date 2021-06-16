@@ -158,7 +158,7 @@ namespace System.Net.Security.Tests
                     await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions));
                     serverStream.Dispose();
 
-                    await t1.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    await t1.WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
                 else
                 {
@@ -173,7 +173,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(ClientSupportsAlpn))]
         [MemberData(nameof(Http2Servers))]
         public async Task SslStream_Http2_Alpn_Success(Uri server)

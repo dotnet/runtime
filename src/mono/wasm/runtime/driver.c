@@ -48,6 +48,7 @@ void mono_icall_table_init (void);
 void mono_aot_register_module (void **aot_info);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
+int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
@@ -57,12 +58,14 @@ static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
+static MonoClass* voidtaskresult_class;
 
 static int resolved_datetime_class = 0,
 	resolved_datetimeoffset_class = 0,
 	resolved_uri_class = 0,
 	resolved_task_class = 0,
-	resolved_safehandle_class = 0;
+	resolved_safehandle_class = 0,
+	resolved_voidtaskresult_class = 0;
 
 int mono_wasm_enable_gc = 1;
 
@@ -74,6 +77,9 @@ typedef struct {
 	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles);
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
+
+int
+mono_string_instance_is_interned (MonoString *str_raw);
 
 void
 mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
@@ -92,19 +98,19 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-	int native_res_len;
+	int native_res_len = 0;
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var str = MONO.string_decoder.decode ($0, $0 + $1);
+		var js_str = MONO.string_decoder.copy ($0);
+
 		try {
-			var res = eval (str);
-			if (res === null || res == undefined)
-				return 0;
-			res = res.toString ();
+			var res = eval (js_str);
 			setValue ($2, 0, "i32");
+			if (res === null || res === undefined)
+				return 0;
+			else
+				res = res.toString ();
 		} catch (e) {
 			res = e.toString();
 			setValue ($2, 1, "i32");
@@ -123,9 +129,9 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
-		setValue ($3, res.length, "i32");
+		setValue ($1, res.length, "i32");
 		return buff;
-	}, (int)native_val, native_len, is_exception, p_native_res_len);
+	}, (int)str, p_native_res_len, is_exception);
 
 	if (native_res == NULL)
 		return NULL;
@@ -175,6 +181,9 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 				break;
 		}
 	}, log_level, message, fatal, log_domain, user_data);
+
+	if (fatal)
+		exit (1);
 }
 
 typedef uint32_t target_mword;
@@ -273,9 +282,7 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
-#ifdef ENABLE_NETCORE
 static void *sysglobal_native_handle;
-#endif
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
@@ -284,10 +291,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	if (handle)
 		return handle;
 
-#ifdef ENABLE_NETCORE
 	if (!strcmp (name, "System.Globalization.Native"))
 		return sysglobal_native_handle;
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	return dlopen(name, flags);
@@ -299,10 +304,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-#ifdef ENABLE_NETCORE
 	if (handle == sysglobal_native_handle)
 		assert (0);
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
@@ -353,14 +356,24 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#ifdef ICALL_TABLE_mscorlib
-	if (!strcmp (image_name, "mscorlib") || !strcmp (image_name, "System.Private.CoreLib")) {
+#if defined(ICALL_TABLE_mscorlib)
+	if (!strcmp (image_name, "mscorlib")) {
 		indexes = mscorlib_icall_indexes;
 		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
 		handles = mscorlib_icall_handles;
 		funcs = mscorlib_icall_funcs;
 		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
 	}
+#endif
+#if defined(ICALL_TABLE_corlib)
+	if (!strcmp (image_name, "System.Private.CoreLib")) {
+		indexes = corlib_icall_indexes;
+		indexes_size = sizeof (corlib_icall_indexes) / 4;
+		handles = corlib_icall_handles;
+		funcs = corlib_icall_funcs;
+		assert (sizeof (corlib_icall_indexes [0]) == 4);
+	}
+#endif
 #ifdef ICALL_TABLE_System
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
@@ -384,7 +397,6 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
 	return funcs [idx];
-#endif
 }
 
 static const char*
@@ -417,7 +429,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	int len;
 
 	assert (strlen (name) < 100);
-	sprintf (key, "%s_%s_%s", name, class_name, method_name);
+	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
 	len = strlen (key);
 	for (int i = 0; i < len; ++i) {
 		if (key [i] == '.')
@@ -462,10 +474,16 @@ mono_wasm_register_bundled_satellite_assemblies ()
 	}
 }
 
+void mono_wasm_link_icu_shim (void);
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
+
+#ifndef INVARIANT_GLOBALIZATION
+	mono_wasm_link_icu_shim ();
+#endif
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -492,6 +510,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
 #ifdef ENABLE_AOT
+	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
+
 	// Defined in driver-gen.c
 	register_aot_modules ();
 #ifdef EE_MODE_LLVMONLY_INTERP
@@ -514,6 +534,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		interp_opts = "-all";
 		mono_wasm_enable_debugging (debug_level);
 	}
+
 #endif
 
 #ifdef LINK_ICALLS
@@ -591,6 +612,12 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_get_delegate_invoke (MonoObject *delegate)
+{
+	return mono_get_delegate_invoke(mono_object_get_class (delegate));
+}
+
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 {
@@ -653,10 +680,10 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	/*
 	 * If the entry point looks like a compiler generated wrapper around
-	 * an async method in the form "<Name>" then try to look up the async method
-	 * "Name" it is wrapping.  We do this because the generated sync wrapper will
-	 * call task.GetAwaiter().GetResult() when we actually want to yield
-	 * to the host runtime.
+	 * an async method in the form "<Name>" then try to look up the async methods
+	 * "<Name>$" and "Name" it could be wrapping.  We do this because the generated
+	 * sync wrapper will call task.GetAwaiter().GetResult() when we actually want
+	 * to yield to the host runtime.
 	 */
 	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
 		const char *name = mono_method_get_name (method);
@@ -666,12 +693,21 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
-		char *async_name = strdup (name);
+		char *async_name = malloc (name_length + 2);
+		snprintf (async_name, name_length + 2, "%s$", name);
 
-		async_name [name_length - 1] = '\0';
-
+		// look for "<Name>$"
 		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
+		if (async_method != NULL) {
+			free (async_name);
+			return async_method;
+		}
+
+		// look for "Name" by trimming the first and last character of "<Name>"
+		async_name [name_length - 1] = '\0';
+		async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+
 		free (async_name);
 		if (async_method != NULL)
 			return async_method;
@@ -685,6 +721,7 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
+// Deprecated
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_convert (MonoString *str)
 {
@@ -772,6 +809,8 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_INT64 26
 #define MARSHAL_TYPE_UINT64 27
 #define MARSHAL_TYPE_CHAR 28
+#define MARSHAL_TYPE_STRING_INTERNED 29
+#define MARSHAL_TYPE_VOID 30
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -791,6 +830,10 @@ void mono_wasm_ensure_classes_resolved ()
 	if (!safehandle_class && !resolved_safehandle_class) {
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 		resolved_safehandle_class = 1;
+	}
+	if (!voidtaskresult_class && !resolved_voidtaskresult_class) {
+		voidtaskresult_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "VoidTaskResult");
+		resolved_voidtaskresult_class = 1;
 	}
 }
 
@@ -857,6 +900,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_DATEOFFSET;
 		if (uri_class && mono_class_is_assignable_from(uri_class, klass))
 			return MARSHAL_TYPE_URI;
+		if (klass == voidtaskresult_class)
+			return MARSHAL_TYPE_VOID;
 		if (mono_class_is_enum (klass))
 			return MARSHAL_TYPE_ENUM;
 		if (!mono_type_is_reference (type)) //vt
@@ -881,6 +926,10 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if ((klass == mono_get_string_class ()) &&
+		mono_string_instance_is_interned ((MonoString *)obj))
+		return MARSHAL_TYPE_STRING_INTERNED;
+
 	MonoType *type = mono_class_get_type (klass);
 	obj = NULL;
 
@@ -904,6 +953,12 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if ((klass == mono_get_string_class ()) &&
+		mono_string_instance_is_interned ((MonoString *)obj)) {
+		*resultL = 0;
+		return MARSHAL_TYPE_STRING_INTERNED;
+	}
+
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
 
 	if (mono_class_is_enum (klass))
@@ -1061,4 +1116,33 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_intern_string (MonoString *string) 
+{
+	return mono_string_intern (string);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	if (!string) {
+		if (outChars)
+			*outChars = 0;
+		if (outLengthBytes)
+			*outLengthBytes = 0;
+		if (outIsInterned)
+			*outIsInterned = 1;
+		return;
+	}
+
+	if (outChars)
+		*outChars = mono_string_chars (string);
+	if (outLengthBytes)
+		*outLengthBytes = mono_string_length (string) * 2;
+	if (outIsInterned)
+		*outIsInterned = mono_string_instance_is_interned (string);
+	return;
 }

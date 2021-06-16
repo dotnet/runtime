@@ -1558,7 +1558,7 @@ namespace System.IO.Packaging
         /// Each scope stores the "previous" or parent scope, its depth, and an associated XmlCompatibilityReader.
         /// At a particular Reader depth, only one scope should be pushed.
         /// </summary>
-        private class CompatibilityScope
+        private sealed class CompatibilityScope
         {
             private readonly CompatibilityScope? _previous;
             private readonly int _depth;
@@ -1834,7 +1834,7 @@ namespace System.IO.Packaging
             }
         }
 
-        private class ProcessContentSet
+        private sealed class ProcessContentSet
         {
             private bool _all;
             private readonly string _namespaceName;
@@ -1889,7 +1889,7 @@ namespace System.IO.Packaging
             }
         }
 
-        private class PreserveItemSet
+        private sealed class PreserveItemSet
         {
             private bool _all;
             private readonly string _namespaceName;

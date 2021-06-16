@@ -64,13 +64,6 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
-#ifndef DISABLE_SIMD
-#ifndef ENABLE_NETCORE
-#define MONO_ARCH_SIMD_INTRINSICS 1
-#define MONO_ARCH_NEED_SIMD_BANK 1
-#endif
-#endif
-
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */
 #if defined(__APPLE__)
 #define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ
@@ -161,19 +154,11 @@ typedef struct {
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)
 
-#ifdef _MSC_VER
-
-#define MONO_INIT_CONTEXT_FROM_FUNC(ctx, start_func) do { \
-    unsigned int stackptr; \
-    { \
-	   __asm mov stackptr, ebp \
-    } \
-	MONO_CONTEXT_SET_IP ((ctx), (start_func)); \
-	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
-	MONO_CONTEXT_SET_SP ((ctx), stackptr); \
-} while (0)
-
-#else
+#if defined(HOST_WIN32)
+#define __builtin_extract_return_addr(x) x
+#define __builtin_return_address(x) _ReturnAddress()
+#define __builtin_frame_address(x) _AddressOfReturnAddress()
+#endif
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
@@ -181,7 +166,6 @@ typedef struct {
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
 
-#endif
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
 
@@ -239,7 +223,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_TAILCALL_MEMBASE 1
 #define MONO_ARCH_HAVE_OP_TAILCALL_REG 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
-#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-p:32:32-n32-S128"
 
 /* Used for optimization, not complete */

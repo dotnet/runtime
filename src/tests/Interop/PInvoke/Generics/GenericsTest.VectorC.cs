@@ -9,34 +9,34 @@ using TestLibrary;
 unsafe partial class GenericsNative
 {
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector<char> GetVectorC128(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07);
+    public static extern Vector<char> GetVectorC128([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector<char> GetVectorC256(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, char e08, char e09, char e10, char e11, char e12, char e13, char e14, char e15);
+    public static extern Vector<char> GetVectorC256([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, [MarshalAs(UnmanagedType.U2)]char e08, [MarshalAs(UnmanagedType.U2)]char e09, [MarshalAs(UnmanagedType.U2)]char e10, [MarshalAs(UnmanagedType.U2)]char e11, [MarshalAs(UnmanagedType.U2)]char e12, [MarshalAs(UnmanagedType.U2)]char e13, [MarshalAs(UnmanagedType.U2)]char e14, [MarshalAs(UnmanagedType.U2)]char e15);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVectorC128Out(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, Vector<char>* value);
+    public static extern void GetVectorC128Out([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, Vector<char>* value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVectorC256Out(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, char e08, char e09, char e10, char e11, char e12, char e13, char e14, char e15, Vector<char>* value);
+    public static extern void GetVectorC256Out([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, [MarshalAs(UnmanagedType.U2)]char e08, [MarshalAs(UnmanagedType.U2)]char e09, [MarshalAs(UnmanagedType.U2)]char e10, [MarshalAs(UnmanagedType.U2)]char e11, [MarshalAs(UnmanagedType.U2)]char e12, [MarshalAs(UnmanagedType.U2)]char e13, [MarshalAs(UnmanagedType.U2)]char e14, [MarshalAs(UnmanagedType.U2)]char e15, Vector<char>* value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVectorC128Out(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, out Vector<char> value);
+    public static extern void GetVectorC128Out([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, out Vector<char> value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVectorC256Out(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, char e08, char e09, char e10, char e11, char e12, char e13, char e14, char e15, out Vector<char> value);
+    public static extern void GetVectorC256Out([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, [MarshalAs(UnmanagedType.U2)]char e08, [MarshalAs(UnmanagedType.U2)]char e09, [MarshalAs(UnmanagedType.U2)]char e10, [MarshalAs(UnmanagedType.U2)]char e11, [MarshalAs(UnmanagedType.U2)]char e12, [MarshalAs(UnmanagedType.U2)]char e13, [MarshalAs(UnmanagedType.U2)]char e14, [MarshalAs(UnmanagedType.U2)]char e15, out Vector<char> value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector<char>* GetVectorC128Ptr(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07);
+    public static extern Vector<char>* GetVectorC128Ptr([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector<char>* GetVectorC256Ptr(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, char e08, char e09, char e10, char e11, char e12, char e13, char e14, char e15);
+    public static extern Vector<char>* GetVectorC256Ptr([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, [MarshalAs(UnmanagedType.U2)]char e08, [MarshalAs(UnmanagedType.U2)]char e09, [MarshalAs(UnmanagedType.U2)]char e10, [MarshalAs(UnmanagedType.U2)]char e11, [MarshalAs(UnmanagedType.U2)]char e12, [MarshalAs(UnmanagedType.U2)]char e13, [MarshalAs(UnmanagedType.U2)]char e14, [MarshalAs(UnmanagedType.U2)]char e15);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetVectorC128Ptr")]
-    public static extern ref readonly Vector<char> GetVectorC128Ref(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07);
+    public static extern ref readonly Vector<char> GetVectorC128Ref([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetVectorC256Ptr")]
-    public static extern ref readonly Vector<char> GetVectorC256Ref(char e00, char e01, char e02, char e03, char e04, char e05, char e06, char e07, char e08, char e09, char e10, char e11, char e12, char e13, char e14, char e15);
+    public static extern ref readonly Vector<char> GetVectorC256Ref([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, [MarshalAs(UnmanagedType.U2)]char e04, [MarshalAs(UnmanagedType.U2)]char e05, [MarshalAs(UnmanagedType.U2)]char e06, [MarshalAs(UnmanagedType.U2)]char e07, [MarshalAs(UnmanagedType.U2)]char e08, [MarshalAs(UnmanagedType.U2)]char e09, [MarshalAs(UnmanagedType.U2)]char e10, [MarshalAs(UnmanagedType.U2)]char e11, [MarshalAs(UnmanagedType.U2)]char e12, [MarshalAs(UnmanagedType.U2)]char e13, [MarshalAs(UnmanagedType.U2)]char e14, [MarshalAs(UnmanagedType.U2)]char e15);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Vector<char> AddVectorC128(Vector<char> lhs, Vector<char> rhs);

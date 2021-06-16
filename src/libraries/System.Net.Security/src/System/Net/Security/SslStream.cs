@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -689,6 +688,17 @@ namespace System.Net.Security
         public override void Flush() => InnerStream.Flush();
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
+
+        public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+            if (RemoteCertificate != null)
+            {
+                throw new InvalidOperationException(SR.net_ssl_certificate_exist);
+            }
+
+            return RenegotiateAsync(cancellationToken);
+        }
 
         protected override void Dispose(bool disposing)
         {

@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Intrinsics
 {
@@ -117,7 +118,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Zero { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector128<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -225,7 +226,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Zero { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector256<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -307,7 +308,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Zero { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector64<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -2563,6 +2564,8 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingSignCount(long value) { throw null; }
             public static int LeadingZeroCount(long value) { throw null; }
             public static int LeadingZeroCount(ulong value) { throw null; }
+            public static long MultiplyHigh(long left, long right) { throw null; }
+            public static ulong MultiplyHigh(ulong left, ulong right) { throw null; }
             public static long ReverseElementBits(long value) { throw null; }
             public static ulong ReverseElementBits(ulong value) { throw null; }
         }
@@ -3366,6 +3369,28 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
+
+    [System.CLSCompliantAttribute(false)]
+    [RequiresPreviewFeatures]
+    public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal AvxVnni() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Bmi1 : System.Runtime.Intrinsics.X86.X86Base
     {

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -373,9 +374,13 @@ namespace System.Linq.Expressions.Interpreter
             internal MutableValue(int index, Type type)
                 : base(index)
             {
+                Debug.Assert(type.IsValueType, "MutableValue only supports value types.");
+
                 _type = type;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 try
@@ -406,9 +411,13 @@ namespace System.Linq.Expressions.Interpreter
             internal MutableBox(int index, Type type)
                 : base(index)
             {
+                Debug.Assert(type.IsValueType, "MutableBox only supports value types.");
+
                 _type = type;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 object? value;

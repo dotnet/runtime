@@ -365,7 +365,7 @@ void QCALLTYPE COMDynamicWrite::SetMethodIL(QCall::ModuleHandle pModule,
     if (totalSizeSafe.IsOverflow())
         COMPlusThrowOM();
     UINT32 totalSize = totalSizeSafe.Value();
-    ICeeGen* pGen = pRCW->GetCeeGen();
+    ICeeGenInternal* pGen = pRCW->GetCeeGen();
     BYTE* buf = NULL;
     ULONG methodRVA;
     pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA);
@@ -818,52 +818,29 @@ void QCALLTYPE COMDynamicWrite::SetClassLayout(QCall::ModuleHandle pModule, INT3
     END_QCALL;
 }
 
-void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob, BOOL toDisk, BOOL updateCompilerFlags)
+// Helper function for COMDynamicWrite::DefineCustomAttribute
+void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCustomAttribute, mdToken token, mdToken conTok, LPCBYTE pBlob, INT32 cbBlob)
 {
-    QCALL_CONTRACT;
+    WRAPPER_NO_CONTRACT;
 
-    BEGIN_QCALL;
+    LPCUTF8 szNamespace;
+    LPCUTF8 szName;
 
-    RefClassWriter* pRCW = pModule->GetReflectionModule()->GetClassWriter();
-    _ASSERTE(pRCW);
-
-    HRESULT hr;
-    mdCustomAttribute retToken;
-
-    if (toDisk && pRCW->GetOnDiskEmitter())
-    {
-        hr = pRCW->GetOnDiskEmitter()->DefineCustomAttribute(
-                token,
-                conTok,
-                pBlob,
-                cbBlob,
-                &retToken);
-    }
-    else
-    {
-        hr = pRCW->GetEmitter()->DefineCustomAttribute(
-                token,
-                conTok,
-                pBlob,
-                cbBlob,
-                &retToken);
-    }
-
+    HRESULT hr = pModule->GetMDImport()->GetNameOfCustomAttribute(tkCustomAttribute, &szNamespace, &szName);
     if (FAILED(hr))
     {
-        // See if the metadata engine gave us any error information.
-        SafeComHolderPreemp<IErrorInfo> pIErrInfo;
-        BSTRHolder bstrMessage;
-        if (SafeGetErrorInfo(&pIErrInfo) == S_OK)
-        {
-            if (SUCCEEDED(pIErrInfo->GetDescription(&bstrMessage)) && bstrMessage != NULL)
-                COMPlusThrow(kArgumentException, IDS_EE_INVALID_CA_EX, bstrMessage);
-        }
-
-        COMPlusThrow(kArgumentException, IDS_EE_INVALID_CA);
+        // If the type name cannot be acquired, then this isn't an interesting CustomAttribute
+        return;
     }
 
-    if (updateCompilerFlags)
+    if (szNamespace == NULL || szName == NULL)
+    {
+        // If either of the namespace or name are NULL, then this isn't an interesting attribute
+        return;
+    }
+
+    // Debuggable attribute processing
+    if ((strcmp(szNamespace, DEBUGGABLE_ATTRIBUTE_TYPE_NAMESPACE) == 0) && (strcmp(szName, DEBUGGABLE_ATTRIBUTE_TYPE_NAME) == 0))
     {
         DWORD flags     = 0;
         DWORD mask      = ~(DACF_OBSOLETE_TRACK_JIT_INFO | DACF_IGNORE_PDBS | DACF_ALLOW_JIT_OPTS) & DACF_CONTROL_FLAGS_MASK;
@@ -908,6 +885,44 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
             actualFlags = ((DWORD)(i.GetModule()->GetDebuggerInfoBits()) & mask) | flags;
             i.GetModule()->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
         }
+    }
+
+    // InternalsVisibleTo and IgnoresAccessChecksTo attribute processing
+    if (((strcmp(szNamespace, FRIEND_ASSEMBLY_TYPE_NAMESPACE) == 0) && (strcmp(szName, FRIEND_ASSEMBLY_TYPE_NAME) == 0)) ||
+        ((strcmp(szNamespace, SUBJECT_ASSEMBLY_TYPE_NAMESPACE) == 0) && (strcmp(szName, SUBJECT_ASSEMBLY_TYPE_NAME) == 0)))
+    {
+        Assembly* pAssembly = pModule->GetAssembly();
+        pAssembly->UpdateCachedFriendAssemblyInfo();
+    }
+}
+
+void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    RefClassWriter* pRCW = pModule->GetReflectionModule()->GetClassWriter();
+    _ASSERTE(pRCW);
+
+    HRESULT hr;
+    mdCustomAttribute retToken;
+
+    hr = pRCW->GetEmitter()->DefineCustomAttribute(
+            token,
+            conTok,
+            pBlob,
+            cbBlob,
+            &retToken);
+
+    if (FAILED(hr))
+    {
+        COMPlusThrow(kArgumentException, IDS_EE_INVALID_CA);
+    }
+
+    if (token == TokenFromRid(1, mdtAssembly))
+    {
+        UpdateRuntimeStateForAssemblyCustomAttribute(pModule, retToken, token, conTok, pBlob, cbBlob);
     }
 
     END_QCALL;

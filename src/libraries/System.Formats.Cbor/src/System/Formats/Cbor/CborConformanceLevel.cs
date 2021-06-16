@@ -2,52 +2,49 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>
-    ///   Defines supported conformance modes for encoding and decoding CBOR data.
-    /// </summary>
+    /// <summary>Defines supported conformance modes for encoding and decoding CBOR data.</summary>
     public enum CborConformanceMode
     {
-        /// <summary>
-        ///   Ensures that the CBOR data is well-formed, as specified in RFC7049.
-        /// </summary>
+        /// <summary>Ensures that the CBOR data is well-formed, as specified in RFC7049.</summary>
         Lax,
 
         /// <summary>
-        ///   Ensures that the CBOR data adheres to strict mode, as specified in RFC7049 section 3.10.
-        ///   Extends lax conformance with the following requirements:
-        ///   <list type="bullet">
-        ///   <item>Maps (major type 5) must not contain duplicate keys.</item>
-        ///   <item>Simple values (major type 7) must be encoded as small a possible and exclude the reserved values 24-31.</item>
-        ///   <item>UTF-8 string encodings must be valid.</item>
-        ///   </list>
+        /// <para>Ensures that the CBOR data adheres to strict mode, as specified in RFC7049 section 3.10.</para>
+        /// <para>Extends lax conformance with the following requirements:</para>
+        /// <list type="bullet">
+        /// <item>Maps (major type 5) must not contain duplicate keys.</item>
+        /// <item>Simple values (major type 7) must be encoded as small a possible and exclude the reserved values 24-31.</item>
+        /// <item>UTF-8 string encodings must be valid.</item>
+        /// </list>
         /// </summary>
         Strict,
 
         /// <summary>
-        ///   Ensures that the CBOR data is canonical, as specified in RFC7049 section 3.9.
-        ///   Extends strict conformance with the following requirements:
-        ///   <list type="bullet">
-        ///   <item>Integers must be encoded as small as possible.</item>
-        ///   <item>Maps (major type 5) must contain keys sorted by encoding.</item>
-        ///   <item>Indefinite-length items must be made into definite-length items.</item>
-        ///   </list>
+        /// <para>Ensures that the CBOR data is canonical, as specified in RFC7049 section 3.9.</para>
+        /// <para>Extends strict conformance with the following requirements:</para>
+        /// <list type="bullet">
+        /// <item>Integers must be encoded as small as possible.</item>
+        /// <item>Maps (major type 5) must contain keys sorted by encoding.</item>
+        /// <item>Indefinite-length items must be made into definite-length items.</item>
+        /// </list>
         /// </summary>
         Canonical,
 
         /// <summary>
-        ///   Ensures that the CBOR data is canonical, as specified by the CTAP v2.0 standard, section 6.
-        ///   Extends strict conformance with the following requirements:
-        ///   <list type="bullet">
-        ///   <item>Maps (major type 5) must contain keys sorted by encoding.</item>
-        ///   <item>Indefinite-length items must be made into definite-length items.</item>
-        ///   <item>Integers must be encoded as small as possible.</item>
-        ///   <item>The representations of any floating-point values are not changed.</item>
-        ///   <item>CBOR tags (major type 6) are not permitted.</item>
-        ///   </list>
+        /// <para>Ensures that the CBOR data is canonical, as specified by the CTAP v2.0 standard, section 6.</para>
+        /// <para>Extends strict conformance with the following requirements:</para>
+        /// <list type="bullet">
+        /// <item>Maps (major type 5) must contain keys sorted by encoding.</item>
+        /// <item>Indefinite-length items must be made into definite-length items.</item>
+        /// <item>Integers must be encoded as small as possible.</item>
+        /// <item>The representations of any floating-point values are not changed.</item>
+        /// <item>CBOR tags (major type 6) are not permitted.</item>
+        /// </list>
         /// </summary>
         Ctap2Canonical,
     }
@@ -209,7 +206,22 @@ namespace System.Formats.Cbor
 
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
         {
-            return System.Marvin.ComputeHash32(encoding, System.Marvin.DefaultSeed);
+            HashCode hash = default;
+#if NET6_0_OR_GREATER
+            hash.AddBytes(encoding);
+#else
+            while (encoding.Length >= sizeof(int))
+            {
+                hash.Add(MemoryMarshal.Read<int>(encoding));
+                encoding = encoding.Slice(sizeof(int));
+            }
+
+            foreach (byte b in encoding)
+            {
+                hash.Add(b);
+            }
+#endif
+            return hash.ToHashCode();
         }
 
         public static bool AreEqualKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)

@@ -4,10 +4,12 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [PlatformSpecific(PlatformSupport.OpenSSL)]
     public static class HostnameMatchTests
     {
         [Theory]

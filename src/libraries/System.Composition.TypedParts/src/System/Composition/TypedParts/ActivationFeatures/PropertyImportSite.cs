@@ -8,7 +8,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
     /// <summary>
     /// Represents a part property that is configured as an import.
     /// </summary>
-    internal class PropertyImportSite
+    internal sealed class PropertyImportSite
     {
         private readonly PropertyInfo _pi;
 

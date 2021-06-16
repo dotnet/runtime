@@ -30,6 +30,14 @@ namespace SciMark2
 
     public class FFT
     {
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new System.Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         public static double num_flops(int N)
         {
             double Nd = (double)N;
@@ -91,7 +99,7 @@ namespace SciMark2
         {
             int nd = 2 * n;
             double[] data = new double[nd];
-            System.Random r = new System.Random();
+            System.Random r = new System.Random(Seed);
             for (int i = 0; i < nd; i++)
                 data[i] = r.NextDouble();
             return data;

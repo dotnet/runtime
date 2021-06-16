@@ -124,6 +124,8 @@ HRESULT GetAppDomainStaticAddress::Shutdown()
 
 HRESULT GetAppDomainStaticAddress::ModuleLoadFinished(ModuleID moduleId, HRESULT hrStatus)
 {
+    SHUTDOWNGUARD();
+
     constexpr size_t nameLen = 1024;
     WCHAR name[nameLen];
     HRESULT hr = pCorProfilerInfo->GetModuleInfo2(moduleId,
@@ -148,7 +150,9 @@ HRESULT GetAppDomainStaticAddress::ModuleLoadFinished(ModuleID moduleId, HRESULT
 }
 
 HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
-{               
+{
+    SHUTDOWNGUARD();
+
     printf("Forcing GC due to module unload\n");
     gcWaitEvent.Signal();
 
@@ -247,6 +251,8 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
 
 HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hrStatus)
 {
+    SHUTDOWNGUARD();
+
     HRESULT hr = S_OK;
 
     ThreadID threadId = NULL;
@@ -313,6 +319,8 @@ HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hr
 
 HRESULT GetAppDomainStaticAddress::ClassUnloadStarted(ClassID classId)
 {
+    SHUTDOWNGUARD();
+
     lock_guard<mutex> guard(classADMapLock);
 
     mdTypeDef unloadClassToken;
@@ -356,12 +364,16 @@ HRESULT GetAppDomainStaticAddress::ClassUnloadStarted(ClassID classId)
 
 HRESULT GetAppDomainStaticAddress::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     ++jitEventCount;
     return S_OK;
 }
 
 HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
 {
+    SHUTDOWNGUARD();
+
     HRESULT hr = S_OK;
     lock_guard<mutex> guard(classADMapLock);
 

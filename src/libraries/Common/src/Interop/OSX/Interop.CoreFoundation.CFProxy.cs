@@ -45,7 +45,7 @@ internal static partial class Interop
             public IntPtr CopyDescription;
         }
 
-        internal class CFProxy
+        internal sealed class CFProxy
         {
             private SafeCFDictionaryHandle _dictionary;
 

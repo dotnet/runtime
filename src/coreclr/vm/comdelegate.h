@@ -83,12 +83,6 @@ public:
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
 
-#if defined(TARGET_X86)
-    // Marshals a managed method to an unmanaged callback.
-    // This is only used on x86. See usage for further details.
-    static PCODE ConvertToUnmanagedCallback(MethodDesc* pMD);
-#endif // defined(TARGET_X86)
-
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
@@ -208,7 +202,7 @@ struct ShuffleEntry
 
     union {
         UINT16    dstofs;           //if srcofs != SENTINEL
-        UINT16    stacksizedelta;   //if dstofs == SENTINEL, difference in stack size between virtual and static sigs
+        UINT16    stacksizedelta;   //if srcofs == SENTINEL, difference in stack size between virtual and static sigs
     };
 };
 

@@ -11,4 +11,7 @@
 /* GCDecoder.cpp is a common source file bewtween VM and JIT/IL */
 /* GCDecoder.cpp is located in $COM99/inc                       */
 
+// we need only one copy when embedding
+#if !defined(CORECLR_EMBEDDED)
 #include "gcdecoder.cpp"
+#endif

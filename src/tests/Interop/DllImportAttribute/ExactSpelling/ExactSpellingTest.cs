@@ -130,7 +130,7 @@ class ExactSpellingTest
         try
         {
             ExactSpellingTrue();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 ExactSpellingFalse_Windows();
             }

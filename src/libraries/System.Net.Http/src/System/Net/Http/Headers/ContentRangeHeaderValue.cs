@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
             _unit = source._unit;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             ContentRangeHeaderValue? other = obj as ContentRangeHeaderValue;
 

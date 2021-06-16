@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- https://github.com/dotnet/runtime/issues/49189 -->
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'x86'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

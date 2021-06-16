@@ -27,7 +27,6 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
-#nullable enable
     internal
 #endif
     sealed class ObsoleteAttribute : Attribute

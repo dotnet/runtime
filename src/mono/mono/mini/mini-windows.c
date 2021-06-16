@@ -35,9 +35,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -236,21 +234,7 @@ mono_runtime_install_custom_handlers_usage (void)
 }
 
 void
-mono_runtime_cleanup_handlers (void)
-{
-#ifndef MONO_CROSS_COMPILE
-	win32_seh_cleanup();
-#endif
-}
-
-void
 mono_init_native_crash_info (void)
-{
-	return;
-}
-
-void
-mono_cleanup_native_crash_info (void)
 {
 	return;
 }
@@ -317,22 +301,6 @@ timer_event_proc (UINT uID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PT
 }
 
 static VOID
-stop_profiler_timer_event (void)
-{
-	if (g_timer_event != 0) {
-
-		timeKillEvent (g_timer_event);
-		g_timer_event = 0;
-	}
-
-	if (g_timer_main_thread != INVALID_HANDLE_VALUE) {
-
-		CloseHandle (g_timer_main_thread);
-		g_timer_main_thread = INVALID_HANDLE_VALUE;
-	}
-}
-
-static VOID
 start_profiler_timer_event (void)
 {
 	g_return_if_fail (g_timer_main_thread == INVALID_HANDLE_VALUE && g_timer_event == 0);
@@ -362,24 +330,9 @@ mono_runtime_setup_stat_profiler (void)
 	start_profiler_timer_event ();
 	return;
 }
-
-void
-mono_runtime_shutdown_stat_profiler (void)
-{
-	stop_profiler_timer_event ();
-	return;
-}
 #elif !HAVE_EXTERN_DEFINED_WIN32_TIMERS
 void
 mono_runtime_setup_stat_profiler (void)
-{
-	g_unsupported_api ("timeGetDevCaps, timeBeginPeriod, timeEndPeriod, timeSetEvent, timeKillEvent");
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return;
-}
-
-void
-mono_runtime_shutdown_stat_profiler (void)
 {
 	g_unsupported_api ("timeGetDevCaps, timeBeginPeriod, timeEndPeriod, timeSetEvent, timeKillEvent");
 	SetLastError (ERROR_NOT_SUPPORTED);

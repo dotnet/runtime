@@ -1,17 +1,15 @@
-<Project>
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
-
+<Project Sdk="Microsoft.Build.Traversal">
   <PropertyGroup>
     <BuildIdentityPackage>false</BuildIdentityPackage>
     <SupportedRids>linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64;linux-arm;linux-musl-arm</SupportedRids>
   </PropertyGroup>
 
-  <Target Name="VerifyCrossDacProperties" BeforeTargets="Build">
+  <Target Name="VerifyCrossDacProperties" BeforeTargets="Build;Pack">
     <Error Condition="'$(CrossDacArtifactsDir)' == '' or !Exists('$(CrossDacArtifactsDir)')"
           Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to to a path containing all cross OS DAC assets needed." />
   </Target>
 
-  <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build">
+  <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">
     <ItemGroup>
       <_projectsToBuild Include="@(Project)" Condition="$(SupportedRids.Contains('%(Project.PackageTargetRuntime)'))">
         <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux.x64.$(Configuration)/x64</AdditionalProperties>
@@ -29,8 +27,4 @@
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(versioning.targets))" />
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->
-  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>

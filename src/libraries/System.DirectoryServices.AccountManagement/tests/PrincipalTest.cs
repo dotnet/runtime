@@ -15,9 +15,8 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         private void RefreshContext()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
-            string username = "Administrator", password = "Adrumble@6";
-
+            string username = "Administrator";
+            string password = Environment.GetEnvironmentVariable("TESTPASSWORD");
             string OU = "Tests";
             string baseDomain = WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
             string domain = $"{baseDomain}.nttest.microsoft.com";

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
+import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -30,37 +31,37 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        try
-        {
-            // loadLibrary can throw an error here if OpenSSL bits aren't around. 
-            // We'll delete OpenSSL impl once we finish the transition to Android Crypto.
-            System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
-        } catch (java.lang.UnsatisfiedLinkError e) {
-            Log.e("DOTNET", e.getLocalizedMessage());
-        }
+        System.loadLibrary("System.Security.Cryptography.Native.Android");
         System.loadLibrary("monodroid");
     }
 
     static String entryPointLibName = "%EntryPointLibName%";
     static Bundle result = new Bundle();
-    static boolean forceInterpreter = %ForceInterpreter%;
+
+    private String[] argsToForward;
 
     @Override
     public void onCreate(Bundle arguments) {
         if (arguments != null) {
-            String lib = arguments.getString("entryPointLibName");
-            if (lib != null) {
-                entryPointLibName = lib;
-            }
-
+            ArrayList<String> argsList = new ArrayList<String>();
             for (String key : arguments.keySet()) {
                 if (key.startsWith("env:")) {
                     String envName = key.substring("env:".length());
                     String envValue = arguments.getString(key);
                     setEnv(envName, envValue);
                     Log.i("DOTNET", "env:" + envName + "=" + envValue);
+                } else if (key.equals("entrypoint:libname")) {
+                    entryPointLibName = arguments.getString(key);
+                } else {
+                    String val = arguments.getString(key);
+                    if (val != null) {
+                        argsList.add(key);
+                        argsList.add(val);
+                    }
                 }
             }
+
+            argsToForward = argsList.toArray(new String[argsList.size()]);
         }
 
         super.onCreate(arguments);
@@ -75,7 +76,7 @@ public class MonoRunner extends Instrumentation
         return docsPath.getAbsolutePath();
     }
 
-    public static int initialize(String entryPointLibName, Context context) {
+    public static int initialize(String entryPointLibName, String[] args, Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
         String docsDir = getDocsDir(context);
@@ -84,7 +85,7 @@ public class MonoRunner extends Instrumentation
         unzipAssets(context, filesDir, "assets.zip");
 
         Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
-        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName, forceInterpreter);
+        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName, args);
     }
 
     @Override
@@ -92,11 +93,11 @@ public class MonoRunner extends Instrumentation
         Looper.prepare();
 
         if (entryPointLibName == "") {
-            Log.e("DOTNET", "Missing entryPointLibName argument, pass '-e entryPointLibName <name.dll>' to adb to specify which program to run.");
+            Log.e("DOTNET", "Missing entrypoint argument, pass '-e entrypoint:libname <name.dll>' to adb to specify which program to run.");
             finish(1, null);
             return;
         }
-        int retcode = initialize(entryPointLibName, getContext());
+        int retcode = initialize(entryPointLibName, argsToForward, getContext());
 
         Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
         result.putInt("return-code", retcode);
@@ -145,7 +146,7 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, boolean forceInterpreter);
+    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, String[] args);
 
     static native int setEnv(String key, String value);
 }

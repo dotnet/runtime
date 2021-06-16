@@ -19,7 +19,7 @@ class Program {
             if (ex.InnerException == null) {
                 Console.WriteLine("No inner exception was provided");
                 Console.WriteLine("FAILED");
-                return 201;;
+                return 201;
             }
             else if (ex.InnerException is ArgumentNullException) {
                 Console.WriteLine("Inner exception is ArgumentNullException as expected");

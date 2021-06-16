@@ -26,25 +26,6 @@
 #define ZERO 0
 
 #ifdef _MSC_VER
-// These don't seem useful, so turning them off is no big deal
-#pragma warning(disable : 4065) // "switch statement contains 'default' but no 'case' labels" (happens due to #ifdefs)
-#pragma warning(disable : 4510) // can't generate default constructor
-#pragma warning(disable : 4511) // can't generate copy constructor
-#pragma warning(disable : 4512) // can't generate assignment constructor
-#pragma warning(disable : 4610) // user defined constructor required
-#pragma warning(disable : 4211) // nonstandard extension used (char name[0] in structs)
-#pragma warning(disable : 4127) // conditional expression constant
-#pragma warning(disable : 4201) // "nonstandard extension used : nameless struct/union"
-
-// Depending on the code base, you may want to not disable these
-#pragma warning(disable : 4245) // assigning signed / unsigned
-#pragma warning(disable : 4146) // unary minus applied to unsigned
-
-#pragma warning(disable : 4100) // unreferenced formal parameter
-#pragma warning(disable : 4291) // new operator without delete (only in emitX86.cpp)
-#endif
-
-#ifdef _MSC_VER
 #define CHECK_STRUCT_PADDING 0 // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after
                                // construct 'member_name'" on interesting structs/classes
 #else
@@ -105,9 +86,6 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_X86 and TARGET_ARM64
 #endif
-#if !defined(HOST_X86)
-#define _CROSS_COMPILER_
-#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -117,9 +95,6 @@
 #endif
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_AMD64 and TARGET_ARM64
-#endif
-#if !defined(HOST_AMD64)
-#define _CROSS_COMPILER_
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -131,9 +106,6 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_ARM and TARGET_ARM64
 #endif
-#if !defined(HOST_ARM)
-#define _CROSS_COMPILER_
-#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -143,9 +115,6 @@
 #endif
 #if defined(TARGET_ARM)
 #error Cannot define both TARGET_ARM64 and TARGET_ARM
-#endif
-#if !defined(HOST_ARM64)
-#define _CROSS_COMPILER_
 #endif
 #else
 #error Unsupported or unset target architecture
@@ -217,11 +186,9 @@
 
 #ifdef DEBUG
 #define INDEBUG(x) x
-#define INDEBUG_COMMA(x) x,
 #define DEBUGARG(x) , x
 #else
 #define INDEBUG(x)
-#define INDEBUG_COMMA(x)
 #define DEBUGARG(x)
 #endif
 
@@ -242,7 +209,7 @@
 #if defined(DEBUG) && !defined(OSX_ARM64_ABI)
 // On all platforms except Arm64 OSX arguments on the stack are taking
 // register size slots. On these platforms we could check that stack slots count
-// matchs out new byte size calculations.
+// matches our new byte size calculations.
 #define DEBUG_ARG_SLOTS
 #endif
 
@@ -258,11 +225,6 @@
 
 #if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
-#define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
-#define PUT_STRUCT_ARG_STK_ONLY(x) x
-#else
-#define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
-#define PUT_STRUCT_ARG_STK_ONLY(x)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -316,8 +278,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define INFO6 LL_INFO10000   // Did Jit or Inline succeeded?
 #define INFO7 LL_INFO100000  // NYI stuff
 #define INFO8 LL_INFO1000000 // Weird failures
-#define INFO9 LL_EVERYTHING  // Info about incoming settings
-#define INFO10 LL_EVERYTHING // Totally verbose
 
 #endif // DEBUG
 
@@ -326,11 +286,6 @@ typedef class ICorJitInfo* COMP_HANDLE;
 const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = (CORINFO_CLASS_HANDLE) nullptr;
 
 /*****************************************************************************/
-
-inline bool False()
-{
-    return false;
-} // Use to disable code while keeping prefast happy
 
 // We define two IL offset types, as follows:
 //
@@ -386,6 +341,27 @@ typedef ptrdiff_t ssize_t;
 #define FLD_GLOBAL_DS ((CORINFO_FIELD_HANDLE)-4)
 #define FLD_GLOBAL_FS ((CORINFO_FIELD_HANDLE)-8)
 
+class GlobalJitOptions
+{
+public:
+#ifdef FEATURE_HFA
+#define FEATURE_HFA_FIELDS_PRESENT
+#ifdef CONFIGURABLE_ARM_ABI
+    // These are safe to have globals as they cannot change once initialized within the process.
+    static LONG compUseSoftFPConfigured;
+    static bool compFeatureHfa;
+#else  // !CONFIGURABLE_ARM_ABI
+    static const bool compFeatureHfa = true;
+#endif // CONFIGURABLE_ARM_ABI
+#else  // !FEATURE_HFA
+    static const bool compFeatureHfa = false;
+#endif // FEATURE_HFA
+
+#ifdef FEATURE_HFA
+#undef FEATURE_HFA
+#endif
+};
+
 /*****************************************************************************/
 
 #include "vartype.h"
@@ -403,11 +379,6 @@ typedef ptrdiff_t ssize_t;
 /*****************************************************************************/
 
 /*****************************************************************************/
-
-#define FEATURE_VALNUM_CSE 1 // enable the Value Number CSE optimization logic
-
-// true if Value Number CSE is enabled
-#define FEATURE_ANYCSE FEATURE_VALNUM_CSE
 
 #define CSE_INTO_HANDLERS 0
 
@@ -499,20 +470,16 @@ typedef ptrdiff_t ssize_t;
 #endif
 
 /*****************************************************************************/
-#ifdef DEBUG
-/*****************************************************************************/
-
-#define DUMPER
-
-#else // !DEBUG
+#if !defined(DEBUG)
 
 #if DUMP_GC_TABLES
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
 const bool dspGCtbls = true;
 #endif
 
-/*****************************************************************************/
 #endif // !DEBUG
+
+/*****************************************************************************/
 
 #ifdef DEBUG
 #define JITDUMP(...)                                                                                                   \
@@ -548,6 +515,9 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)                                                                                        \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTreeRange(range, t);
+#define DISPBLOCK(b)                                                                                                   \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
 #else // !DEBUG
 #define JITDUMP(...)
@@ -559,6 +529,7 @@ const bool dspGCtbls = true;
 #define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
+#define DISPBLOCK(b)
 #define VERBOSE 0
 #endif // !DEBUG
 
@@ -590,20 +561,7 @@ inline bool IsUninitialized(T data);
 
 /*****************************************************************************/
 
-enum accessLevel
-{
-    ACL_NONE,
-    ACL_PRIVATE,
-    ACL_DEFAULT,
-    ACL_PROTECTED,
-    ACL_PUBLIC,
-};
-
-/*****************************************************************************/
-
 #define castto(var, typ) (*(typ*)&var)
-
-#define sizeto(typ, mem) (offsetof(typ, mem) + sizeof(((typ*)0)->mem))
 
 /*****************************************************************************/
 
@@ -644,22 +602,10 @@ inline size_t roundUp(size_t size, size_t mult = sizeof(size_t))
     return (size + (mult - 1)) & ~(mult - 1);
 }
 
-inline size_t roundDn(size_t size, size_t mult = sizeof(size_t))
-{
-    assert(mult && ((mult & (mult - 1)) == 0)); // power of two test
-
-    return (size) & ~(mult - 1);
-}
-
 #ifdef HOST_64BIT
 inline unsigned int roundUp(unsigned size, unsigned mult)
 {
     return (unsigned int)roundUp((size_t)size, (size_t)mult);
-}
-
-inline unsigned int roundDn(unsigned size, unsigned mult)
-{
-    return (unsigned int)roundDn((size_t)size, (size_t)mult);
 }
 #endif // HOST_64BIT
 
@@ -696,12 +642,6 @@ private:
 };
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
-
-/*****************************************************************************/
-#ifdef ICECAP
-#include "icapexp.h"
-#include "icapctrl.h"
-#endif
 
 /*****************************************************************************/
 
@@ -747,6 +687,12 @@ private:
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
+#ifdef TARGET_XARCH
+#define FEATURE_LOOP_ALIGN 1
+#else
+#define FEATURE_LOOP_ALIGN 0
+#endif
+
 #define CLFLG_MAXOPT                                                                                                   \
     (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADASGN | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS |  \
      CLFLG_INLINING | CLFLG_STRUCTPROMOTE | CLFLG_CONSTANTFOLD)
@@ -768,17 +714,13 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          COMP_HANDLE           compHnd,
                          CORINFO_METHOD_INFO*  methodInfo,
                          void**                methodCodePtr,
-                         ULONG*                methodCodeSize,
+                         uint32_t*             methodCodeSize,
                          JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
 
 // Constants for making sure size_t fit into smaller types.
 const size_t MAX_USHORT_SIZE_T   = static_cast<size_t>(static_cast<unsigned short>(-1));
 const size_t MAX_UNSIGNED_SIZE_T = static_cast<size_t>(static_cast<unsigned>(-1));
-
-// These assume 2's complement...
-const int MAX_SHORT_AS_INT = 32767;
-const int MIN_SHORT_AS_INT = -32768;
 
 /*****************************************************************************/
 
@@ -883,6 +825,13 @@ T dspOffset(T o)
 }
 
 #endif // !defined(DEBUG)
+
+extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
+                                                      UINT32                                 countSchemaItems,
+                                                      BYTE*                                  pInstrumentationData,
+                                                      int32_t                                ilOffset,
+                                                      UINT32*                                pLikelihood,
+                                                      UINT32*                                pNumberOfClasses);
 
 /*****************************************************************************/
 #endif //_JIT_H_

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class RSAXml
     {
         [Fact]
@@ -1340,7 +1340,7 @@ zM=
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29515", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29515", TestPlatforms.OSX | TestPlatforms.Android)]
         public static void FromNonsenseXml()
         {
             // This is DiminishedDPParameters XML, but with a P that is way too long.

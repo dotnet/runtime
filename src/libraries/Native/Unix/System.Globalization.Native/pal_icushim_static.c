@@ -22,10 +22,19 @@
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
+static void log_shim_error(const char* format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
 static void log_icu_error(const char* name, UErrorCode status)
 {
     const char * statusText = u_errorName(status);
-    fprintf(stderr, "ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
+    log_shim_error("ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
 }
 
 static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
@@ -38,9 +47,114 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
+static int32_t load_icu_data(void* pData);
+
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
+{
+    return GlobalizationNative_GetICUDTName(culture);
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData);
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
+{
+    return load_icu_data(pData);
+}
+
+
+/*
+ * driver.c calls this to make sure this file is linked, otherwise
+ * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
+ * are not kept.
+ */
+void mono_wasm_link_icu_shim(void);
+
+void mono_wasm_link_icu_shim(void)
+{
+}
+
+#endif
+
+static int32_t load_icu_data(void* pData)
+{
+
+    UErrorCode status = 0;
+    udata_setCommonData(pData, &status);
+
+    if (U_FAILURE(status)) {
+        log_icu_error("udata_setCommonData", status);
+        return 0;
+    } else {
+
+#if defined(ICU_TRACING)
+        // see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
+        utrace_setFunctions(0, 0, 0, icu_trace_data);
+        utrace_setLevel(UTRACE_VERBOSE);
+#endif
+        isDataSet = 1;
+        return 1;
+    }
+}
+
+int32_t GlobalizationNative_LoadICUData(const char* path)
+{
+    int32_t ret = -1;
+    char* icu_data;
+
+    FILE *fp = fopen(path, "rb");
+    if (fp == NULL) {
+        log_shim_error("Unable to load ICU dat file '%s'.", path);
+        return ret;
+    }
+
+    if (fseek(fp, 0L, SEEK_END) != 0) {
+        fclose(fp);
+        log_shim_error("Unable to determine size of the dat file");
+        return ret;
+    }
+
+    long bufsize = ftell(fp);
+
+    if (bufsize == -1) {
+        fclose(fp);
+        log_shim_error("Unable to determine size of the ICU dat file.");
+        return ret;
+    }
+
+    icu_data = malloc(sizeof(char) * (bufsize + 1));
+
+    if (icu_data == NULL) {
+        fclose(fp);
+        log_shim_error("Unable to allocate enough to read the ICU dat file");
+        return ret;
+    }
+
+    if (fseek(fp, 0L, SEEK_SET) != 0) {
+        fclose(fp);
+        log_shim_error("Unable to seek ICU dat file.");
+        return ret;
+    }
+
+    fread(icu_data, sizeof(char), bufsize, fp);
+    if (ferror( fp ) != 0 ) {
+        fclose(fp);
+        log_shim_error("Unable to read ICU dat file");
+        return ret;
+    }
+
+    fclose(fp);
+
+    if (load_icu_data(icu_data) == 0) {
+        log_shim_error("ICU BAD EXIT %d.", ret);
+        return ret;
+    }
+
+    return GlobalizationNative_LoadICU();
+}
+
+const char* GlobalizationNative_GetICUDTName(const char* culture)
 {
     // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
 
@@ -68,27 +182,6 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     // full except CJK cultures
     return "icudt_no_CJK.dat";
 }
-
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
-
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
-{
-    UErrorCode status = 0;
-    udata_setCommonData(pData, &status);
-
-    if (U_FAILURE(status)) {
-        log_icu_error("udata_setCommonData", status);
-        return 0;
-    } else {
-        //// Uncomment to enable ICU tracing,
-        //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
-        // utrace_setFunctions(0, 0, 0, icu_trace_data);
-        // utrace_setLevel(UTRACE_VERBOSE);
-        isDataSet = 1;
-        return 1;
-    }
-}
-#endif
 
 int32_t GlobalizationNative_LoadICU(void)
 {

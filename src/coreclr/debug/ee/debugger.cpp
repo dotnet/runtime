@@ -67,7 +67,6 @@ bool g_EnableSIS = false;
 
 // The following instances are used for invoking overloaded new/delete
 InteropSafe interopsafe;
-InteropSafeExecutable interopsafeEXEC;
 
 #ifndef DACCESS_COMPILE
 
@@ -366,10 +365,10 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     Thread * pThread;
     bool fIsCooperative;
-    BEGIN_GETTHREAD_ALLOWED;
+    
     pThread = g_pEEInterface->GetThread();
     fIsCooperative = (pThread != NULL) && (pThread->PreemptiveGCDisabled());
-    END_GETTHREAD_ALLOWED;
+    
     if (m_fShutdownMode && !fIsCooperative)
     {
         // The big fear is that some other random thread will take the debugger-lock and then block on something else,
@@ -778,7 +777,7 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
     // We're in some Controller's Filter after hitting an exception.
     // We're not stopped.
     //_ASSERTE(!g_pDebugger->IsStopped()); <-- @todo - this fires, need to find out why.
-    _ASSERTE(GetThread() == pThread);
+    _ASSERTE(GetThreadNULLOk() == pThread);
 
     CONTEXT *pCtx = g_pEEInterface->GetThreadFilterContext(pThread);
 
@@ -935,6 +934,7 @@ Debugger::Debugger()
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
     m_defines(_defines),
+    m_isSuspendedForGarbageCollection(FALSE),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
     m_willBlockOnGarbageCollectionEvent(FALSE),
     m_isGarbageCollectionEventsEnabled(FALSE),
@@ -1047,11 +1047,11 @@ void Debugger::InitDebugEventCounting()
     memset(&g_iDbgDebuggerCounter, 0, DBG_DEBUGGER_MAX*sizeof(int));
 
     // retrieve the possible counter for break point
-    LPWSTR      wstrValue = NULL;
+    CLRConfigStringHolder wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint);
     // The string value is of the following format
     // <Event Name>=Count;<Event Name>=Count;....;
     // The string must end with ;
-    if ((wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint)) != NULL)
+    if (wstrValue != NULL)
     {
         LPSTR   strValue;
         int     cbReq;
@@ -1107,73 +1107,8 @@ void Debugger::InitDebugEventCounting()
 
         // free the ansi buffer
         delete [] strValue;
-        REGUTIL::FreeConfigString(wstrValue);
     }
 #endif // _DEBUG
-}
-
-
-// This is a notification from the EE it's about to go to fiber mode.
-// This is given *before* it actually goes to fiber mode.
-HRESULT Debugger::SetFiberMode(bool isFiberMode)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-
-        // Notifications from EE never come on helper worker.
-        PRECONDITION(!ThisIsHelperThreadWorker());
-    }
-    CONTRACTL_END;
-
-
-    Thread * pThread = ::GetThread();
-
-    m_pRCThread->m_pDCB->m_bHostingInFiber = isFiberMode;
-
-    // If there is a debugger already attached, then we have a big problem. As of V2.0, the debugger
-    // does not support debugging processes with fibers in them. We set the unrecoverable state to
-    // indicate that we're in a bad state now. The debugger will notice this, and take appropiate action.
-    if (isFiberMode && CORDebuggerAttached())
-    {
-        LOG((LF_CORDB, LL_INFO10, "Thread has entered fiber mode while debugger attached.\n"));
-
-        EX_TRY
-        {
-            // We send up a MDA for two reasons: 1) we want to give the user some chance to see what went wrong,
-            // and 2) we want to get the Right Side to notice that we're in an unrecoverable error state now.
-
-            SString szName(W("DebuggerFiberModeNotSupported"));
-            SString szDescription;
-            szDescription.LoadResource(CCompRC::Debugging, MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED);
-            SString szXML(W(""));
-
-            // Sending any debug event will be a GC violation.
-            // However, if we're enabling fiber-mode while a debugger is attached, we're already doomed.
-            // Deadlocks and AVs are just around the corner. A Gc-violation is the least of our worries.
-            // We want to at least notify the debugger at all costs.
-            CONTRACT_VIOLATION(GCViolation);
-
-            // As soon as we set unrecoverable error in the LS,  the RS will pick it up and basically shut down.
-            // It won't dispatch any events. So we fire the MDA first, and then set unrecoverable error.
-            SendMDANotification(pThread, &szName, &szDescription, &szXML, (CorDebugMDAFlags) 0, FALSE);
-
-            CORDBDebuggerSetUnrecoverableError(this, CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS, false);
-
-            // Fire the MDA again just to force the RS to sniff the LS and pick up that we're in an unrecoverable error.
-            // No harm done from dispatching an MDA twice. And
-            SendMDANotification(pThread, &szName, &szDescription, &szXML, (CorDebugMDAFlags) 0, FALSE);
-
-        }
-        EX_CATCH
-        {
-            LOG((LF_CORDB, LL_INFO10, "Error sending MDA regarding fiber mode.\n"));
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-
-    return S_OK;
 }
 
 // Checks if the MethodInfos table has been allocated, and if not does so.
@@ -1381,11 +1316,14 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     WRAPPER_NO_CONTRACT;
 
     // Allocate the breakpoint instruction info in executable memory.
-    m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
+    void *bpInfoSegmentRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+    ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder((DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
+    new (bpInfoSegmentWriterHolder.GetRW()) DebuggerEvalBreakpointInfoSegment(this);
+    m_bpInfoSegment = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
 
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
-    m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
+    bpInfoSegmentWriterHolder.GetRW()->m_breakpointInstruction[0] = 0x16;
 #if defined(TARGET_ARM)
     USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
     *bp = CORDbg_BREAK_INSTRUCTION;
@@ -1416,9 +1354,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_aborted = false;
     m_completed = false;
     m_evalDuringException = fInException;
-    m_rethrowAbortException = false;
     m_retValueBoxing = Debugger::NoValueTypeBoxing;
-    m_requester = (Thread::ThreadAbortRequester)0;
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
 
     // Copy the thread's context.
@@ -1431,61 +1367,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
         memcpy(&m_context, pContext, sizeof(m_context));
     }
 }
-
-//---------------------------------------------------------------------------------------
-//
-// This constructor is only used when setting up an eval to re-abort a thread.
-//
-// Arguments:
-//      pContext - The context to return to when done with this eval.
-//      pThread - The thread to re-abort.
-//      requester - The type of abort to throw.
-//
-DebuggerEval::DebuggerEval(CONTEXT * pContext, Thread * pThread, Thread::ThreadAbortRequester requester)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Allocate the breakpoint instruction info in executable memory.
-    m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
-
-    // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
-    // so that we can have a breakpoint instruction in any slot in the bundle.
-    m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
-    m_thread = pThread;
-    m_evalType = DB_IPCE_FET_RE_ABORT;
-    m_methodToken = mdMethodDefNil;
-    m_classToken = mdTypeDefNil;
-    m_debuggerModule = NULL;
-    m_funcEvalKey = RSPTR_CORDBEVAL::NullPtr();
-    m_argCount = 0;
-    m_stringSize = 0;
-    m_arrayRank = 0;
-    m_genericArgsCount = 0;
-    m_genericArgsNodeCount = 0;
-    m_successful = false;
-    m_argData = NULL;
-    m_targetCodeAddr = NULL;
-    memset(m_result, 0, sizeof(m_result));
-    m_md = NULL;
-    m_resultType = TypeHandle();
-    m_aborting = FE_ABORT_NONE;
-    m_aborted = false;
-    m_completed = false;
-    m_evalDuringException = false;
-    m_rethrowAbortException = false;
-    m_retValueBoxing = Debugger::NoValueTypeBoxing;
-    m_requester = requester;
-
-    if (pContext == NULL)
-    {
-        memset(&m_context, 0, sizeof(m_context));
-    }
-    else
-    {
-        memcpy(&m_context, pContext, sizeof(m_context));
-    }
-}
-
 
 #ifdef _DEBUG
 // Thread proc for interop stress coverage. Have an unmanaged thread
@@ -1829,7 +1710,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     // This ensures the debuggee is actually stopped at startup, and
     // this gives the debugger a chance to call SetDesiredNGENFlags before we
     // set s_fCanChangeNgenFlags to FALSE.
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
     SENDIPCEVENT_RAW_END;
 
     pDbgLockHolder->Acquire();
@@ -6001,6 +5882,8 @@ void Debugger::SuspendForGarbageCollectionCompleted()
     }
     CONTRACTL_END;
 
+    this->m_isSuspendedForGarbageCollection = TRUE;
+
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;
@@ -6037,6 +5920,8 @@ void Debugger::ResumeForGarbageCollectionStarted()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    this->m_isSuspendedForGarbageCollection = FALSE;
 
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
@@ -6202,7 +6087,7 @@ void Debugger::SendRawUserBreakpoint(Thread * pThread)
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
 
-        PRECONDITION(pThread == GetThread());
+        PRECONDITION(pThread == GetThreadNULLOk());
 
         PRECONDITION(ThreadHoldsLock());
 
@@ -7932,7 +7817,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         DebuggerEval *pDE = pfe->pDE;
 
         _ASSERTE(pDE->m_evalDuringException);
-        _ASSERTE(pDE->m_thread == GetThread());
+        _ASSERTE(pDE->m_thread == GetThreadNULLOk());
 
         // Remove the pending eval from the hash. This ensures that if we take a first chance exception during the eval
         // that we can do another nested eval properly.
@@ -7945,15 +7830,6 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
 
         // The return value should be NULL when FuncEvalHijackWorker is called as part of an exception.
         _ASSERTE(ret == NULL);
-    }
-
-    // If we need to re-throw a ThreadAbortException, go ahead and do it now.
-    if (GetThread()->m_StateNC & Thread::TSNC_DebuggerReAbort)
-    {
-        // Now clear the bit else we'll see it again when we process the Exception notification
-        // from this upcoming UserAbort exception.
-        pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE);
     }
 
 #endif
@@ -7993,7 +7869,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
 
     LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
 #ifdef _DEBUG
     static ConfigDWORD d_fce;
@@ -8037,7 +7913,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     // @@@
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     // Quick check.
     if (!CORDebuggerAttached())
@@ -8105,7 +7981,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 {
     CONTRACTL
     {
-        if ((GetThread() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -8137,7 +8013,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // useful information for the debugger and, in fact, it may be a completely
     // internally handled runtime exception, so we should do nothing.
     //
-    if ((GetThread() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -9015,7 +8891,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
         MODE_ANY;
 
         PRECONDITION(thread != NULL);
-        PRECONDITION(thread == ::GetThread());
+        PRECONDITION(thread == ::GetThreadNULLOk());
     }
     CONTRACTL_END;
 
@@ -10362,13 +10238,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC);
     _ASSERTE(ThreadHoldsLock());
 
-    // If we need to rethrow a ThreadAbortException then set the thread's state so we remember that.
-    if (pDE->m_rethrowAbortException)
-    {
-        pThread->SetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-    }
-
-
     //
     // Get the domain that the result is valid in. The RS will cache this in the ICorDebugValue
     // Note: it's possible that the AppDomain has (or is about to be) unloaded, which could lead to a
@@ -11418,14 +11287,21 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
             // DISPOSE an object handle
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
+            CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
-            if (pEvent->DisposeHandle.fStrong == TRUE)
+            switch (handleType)
             {
+            case HANDLE_STRONG:
                 DestroyStrongHandle(objectHandle);
-            }
-            else
-            {
+                break;
+            case HANDLE_WEAK_TRACK_RESURRECTION:
                 DestroyLongWeakHandle(objectHandle);
+                break;
+            case HANDLE_PINNED:
+                DestroyPinningHandle(objectHandle);
+                break;
+            default:
+                pEvent->hr = E_INVALIDARG;
             }
             break;
         }
@@ -14872,7 +14748,7 @@ HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -15357,87 +15233,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 }
 
 //
-// FuncEvalSetupReAbort sets up a function evaluation specifically to rethrow a ThreadAbortException on the given
-// thread.
-//
-HRESULT Debugger::FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortRequester requester)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000,
-            "D::FESRA: performing reabort on thread %#x, id=0x%x\n",
-            pThread, GetThreadIdHelper(pThread)));
-
-    // The thread has to be at a GC safe place. It should be, since this is only done in response to a previous eval
-    // completing with a ThreadAbortException.
-    if (!g_pDebugger->IsThreadAtSafePlace(pThread))
-        return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
-
-    // Grab the filter context.
-    CONTEXT *filterContext = GetManagedStoppedCtx(pThread);
-
-    if (filterContext == NULL)
-    {
-        return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
-    }
-
-    if (::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
-    {
-        // SP is not aligned, we cannot do a FuncEval here
-        LOG((LF_CORDB, LL_INFO1000, "D::FESRA: SP is unaligned"));
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
-    }
-
-    // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
-    // CONTEXT.
-    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pThread, requester);
-
-    if (pDE == NULL)
-    {
-        return E_OUTOFMEMORY;
-    }
-    else if (!pDE->Init())
-    {
-        // We fail to change the m_breakpointInstruction field to PAGE_EXECUTE_READWRITE permission.
-        return E_FAIL;
-    }
-
-    // Set the thread's IP (in the filter context) to our hijack function.
-    _ASSERTE(filterContext != NULL);
-
-    ::SetIP(filterContext, (UINT_PTR)GetEEFuncEntryPoint(::FuncEvalHijack));
-
-#ifdef TARGET_X86 // reliance on filterContext->Eip & Eax
-    // Set EAX to point to the DebuggerEval.
-    filterContext->Eax = (DWORD)pDE;
-#elif defined(TARGET_AMD64)
-    // Set RCX to point to the DebuggerEval.
-    filterContext->Rcx = (SIZE_T)pDE;
-#elif defined(TARGET_ARM)
-    filterContext->R0 = (DWORD)pDE;
-#elif defined(TARGET_ARM64)
-    filterContext->X0 = (SIZE_T)pDE;
-#else
-    PORTABILITY_ASSERT("FuncEvalSetupReAbort (Debugger.cpp) is not implemented on this platform.");
-#endif
-
-    // Now clear the bit requesting a re-abort
-    pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-
-    g_pDebugger->IncThreadsAtUnsafePlaces();
-
-    // Return that all went well. Tracing the stack at this point should not show that the func eval is setup, but it
-    // will show a wrong IP, so it shouldn't be done.
-
-    return S_OK;
-}
-
-//
 // FuncEvalAbort: Does a gentle abort of a func-eval already in progress.
 //    Because this type of abort waits for the thread to get to a good state,
 //    it may never return, or may time out.
@@ -15486,7 +15281,7 @@ Debugger::FuncEvalAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
+                hr = pDE->m_thread->UserAbort(EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;
@@ -15552,7 +15347,7 @@ Debugger::FuncEvalRudeAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
+                hr = pDE->m_thread->UserAbort(EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -45,6 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return result;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Exception GetException()
         {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero);

@@ -58,6 +58,9 @@ namespace DebuggerTests
         public DateTime[] DTArray { get { return new DateTime[] { new DateTime(6, 7, 8, 9, 10, 11), new DateTime(1, 2, 3, 4, 5, 6) }; } }
         public DateTime DTAutoProperty { get; set; }
         public string StringField;
+
+        private static DateTime PrivateStaticDTProp => new DateTime(6, 5, 4, 3, 2, 1);
+        public static DateTime PublicStaticDTProp => new DateTime(3, 6, 1, 7, 9, 4);
     }
 
     struct StructWithProperties
@@ -71,5 +74,8 @@ namespace DebuggerTests
         public DateTime[] DTArray { get { return new DateTime[] { new DateTime(6, 7, 8, 9, 10, 11), new DateTime(1, 2, 3, 4, 5, 6) }; } }
         public DateTime DTAutoProperty { get; set; }
         public string StringField;
+
+        private static DateTime PrivateStaticDTProp => new DateTime(6, 5, 4, 3, 2, 1);
+        public static DateTime PublicStaticDTProp => new DateTime(3, 6, 1, 7, 9, 4);
     }
 }

@@ -53,6 +53,8 @@ GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,(GTK_UNOP|GTK_EXOP))      // arr
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,(GTK_BINOP|GTK_EXOP))     // intrinsics
 
 GTNODE(LOCKADD          , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))
+GTNODE(XAND             , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(XORR             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XADD             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XCHG             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,GTK_SPECIAL)
@@ -130,6 +132,7 @@ GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP) // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
 GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP) // returns high bits (top N bits of the 2N bit result of an NxN multiply)
                                                            // GT_MULHI is used in division by a constant (fgMorphDivByConst). We turn
                                                            // the div into a MULHI + some adjustments. In codegen, we only use the

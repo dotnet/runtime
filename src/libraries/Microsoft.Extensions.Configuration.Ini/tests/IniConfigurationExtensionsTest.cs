@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
         [Theory]
         [InlineData(null)]
         [InlineData("")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
         public void AddIniFile_ThrowsIfFilePathIsNullOrEmpty(string path)
         {
             // Arrange
@@ -25,6 +26,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
         public void AddIniFile_ThrowsIfFileDoesNotExistAtPath()
         {
             // Arrange
@@ -32,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
  
             // Act and Assert
             var ex = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddIniFile(path).Build());
-            Assert.StartsWith($"The configuration file '{path}' was not found and is not optional. The physical path is '", ex.Message);
+            Assert.StartsWith($"The configuration file '{path}' was not found and is not optional. The expected physical path was '", ex.Message);
         }
 
         [Fact]

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -13,6 +14,7 @@ namespace System.Security.Cryptography
         public static new KeyedHashAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static new KeyedHashAlgorithm? Create(string algName) =>
             (KeyedHashAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
 
@@ -36,7 +38,7 @@ namespace System.Security.Cryptography
             {
                 if (KeyValue != null)
                 {
-                    Array.Clear(KeyValue, 0, KeyValue.Length);
+                    Array.Clear(KeyValue);
                 }
                 KeyValue = null!;
             }

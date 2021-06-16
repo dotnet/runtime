@@ -15,6 +15,7 @@
 #include "sigparser.h"
 #include "zapsig.h"
 #include "threads.h"
+#include "corinfo.h"
 
 #include "eecontract.h"
 #include "typectxt.h"
@@ -196,7 +197,7 @@ public:
         // Returns size of that element in bytes. This is the minimum size that a
         // field of this type would occupy inside an object.
         //------------------------------------------------------------------------
-        UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext) const;
+        UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext, TypeHandle* pTypeHandle) const;
 
 private:
 
@@ -635,7 +636,6 @@ class MetaSig
         // defines in cor.h) - throws.
         //----------------------------------------------------------
         static BYTE GetCallingConvention(
-            Module          *pModule,
             const Signature &signature)
         {
             CONTRACTL
@@ -662,7 +662,6 @@ class MetaSig
         //----------------------------------------------------------
         __checkReturn
         static HRESULT GetCallingConvention_NoThrow(
-            Module          *pModule,
             const Signature &signature,
             BYTE            *pbCallingConvention)
         {
@@ -750,7 +749,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is vararg?
         //----------------------------------------------------------
-        static BOOL IsVarArg(Module *pModule, const Signature &signature)
+        static BOOL IsVarArg(const Signature &signature)
         {
             CONTRACTL
             {
@@ -764,7 +763,7 @@ class MetaSig
             HRESULT hr;
             BYTE    nCallingConvention;
 
-            hr = GetCallingConvention_NoThrow(pModule, signature, &nCallingConvention);
+            hr = GetCallingConvention_NoThrow(signature, &nCallingConvention);
             if (FAILED(hr))
             {   // Invalid signatures are not VarArg
                 return FALSE;
@@ -777,32 +776,6 @@ class MetaSig
             LIMITED_METHOD_DAC_CONTRACT;
 
             return m_pModule;
-        }
-
-        //----------------------------------------------------------
-        // Gets the unmanaged calling convention by reading any modopts.
-        //
-        // Returns:
-        //   S_OK - Calling convention was read from modopt
-        //   S_FALSE - Calling convention was not read from modopt
-        //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
-        //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
-        //                          than one calling convention specified)
-        //----------------------------------------------------------
-        static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
-            _In_ Module *pModule,
-            _In_ PCCOR_SIGNATURE pSig,
-            _In_ ULONG cSig,
-            _Out_ CorUnmanagedCallingConvention *callConvOut,
-            _Out_ UINT *errorResID);
-
-        static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()
-        {
-#ifdef TARGET_UNIX
-            return IMAGE_CEE_UNMANAGED_CALLCONV_C;
-#else // TARGET_UNIX
-            return IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL;
-#endif // !TARGET_UNIX
         }
 
         //------------------------------------------------------------------
@@ -854,7 +827,8 @@ class MetaSig
         {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
-            return m_pRetType.SizeOf(m_pModule, &m_typeContext);
+            TypeHandle thValueType;
+            return m_pRetType.SizeOf(m_pModule, &m_typeContext, &thValueType);
         }
 
         //------------------------------------------------------------------
@@ -1162,7 +1136,6 @@ public:
         BYTE            m_flags;
         BYTE            m_CallConv;
 };  // class MetaSig
-
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);
 

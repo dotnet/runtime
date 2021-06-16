@@ -84,6 +84,8 @@ internal partial class VectorTest
         if (VectorAbsTest<byte>.VectorAbs((byte)0xff, (byte)0xff) != Pass) returnVal = Fail;
         if (VectorAbsTest<uint>.VectorAbs(0x41000000u, 0x41000000u) != Pass) returnVal = Fail;
         if (VectorAbsTest<ulong>.VectorAbs(0x4100000000000000ul, 0x4100000000000000ul) != Pass) returnVal = Fail;
+        if (VectorAbsTest<nint>.VectorAbs(-1, 1) != Pass) returnVal = Fail;
+        if (VectorAbsTest<nuint>.VectorAbs(0x41000000u, 0x41000000u) != Pass) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("Abs", "Single")) returnVal = Fail;
@@ -99,6 +101,8 @@ internal partial class VectorTest
         if (!jitLog.Check("Abs", "Byte")) returnVal = Fail;
         if (!jitLog.Check("Abs", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("Abs", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "UIntPtr")) returnVal = Fail;
 
         jitLog.Dispose();
 

@@ -5,6 +5,7 @@ using System.ComponentModel;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.RNGCryptoServiceProviderMessage, DiagnosticId = Obsoletions.RNGCryptoServiceProviderDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class RNGCryptoServiceProvider : RandomNumberGenerator
     {

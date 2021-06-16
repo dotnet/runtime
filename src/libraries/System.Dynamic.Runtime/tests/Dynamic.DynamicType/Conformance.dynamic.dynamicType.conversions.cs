@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions.common.common;
+using System;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions.common.common

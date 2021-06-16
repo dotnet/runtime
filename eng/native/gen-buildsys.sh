@@ -84,7 +84,10 @@ if [[ "$build_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
-cmake_command=$(command -v cmake)
+if ! cmake_command=$(command -v cmake); then
+    echo "CMake was not found in PATH."
+    exit 1
+fi
 
 if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
@@ -92,6 +95,19 @@ fi
 
 if [[ "$build_arch" == "wasm" ]]; then
     cmake_command="emcmake $cmake_command"
+fi
+
+cmake_args_to_cache="$scan_build\n$SCAN_BUILD_COMMAND\n$generator\n$__UnprocessedCMakeArgs"
+cmake_args_cache_file="$__CMakeBinDir/cmake_cmd_line.txt"
+if [[ -z "$__ConfigureOnly" ]]; then
+    if [[ -e "$cmake_args_cache_file" ]]; then
+        cmake_args_cache=$(<"$cmake_args_cache_file")
+        if [[ "$cmake_args_cache" == "$cmake_args_to_cache" ]]; then
+            echo "CMake command line is unchanged. Reusing previous cache instead of regenerating."
+            exit 0
+        fi
+    fi
+    echo $cmake_args_to_cache > $cmake_args_cache_file
 fi
 
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options

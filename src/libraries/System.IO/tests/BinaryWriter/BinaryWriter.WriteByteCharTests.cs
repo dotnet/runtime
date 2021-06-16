@@ -579,13 +579,13 @@ namespace System.IO.Tests
 
                     char testChar;
 
-                    testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
+                    testChar = (char)((ushort)baseStream.ReadByte() + ((ushort)baseStream.ReadByte() << 8));
                     Assert.Equal('a', testChar);
 
-                    testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
+                    testChar = (char)((ushort)baseStream.ReadByte() + ((ushort)baseStream.ReadByte() << 8));
                     Assert.Equal('7', testChar);
 
-                    testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
+                    testChar = (char)((ushort)baseStream.ReadByte() + ((ushort)baseStream.ReadByte() << 8));
                     Assert.Equal(char.MaxValue, testChar);
                 }
             }

@@ -224,7 +224,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(10, 1), ordered.Take(11).Skip(10));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "This fails with an OOM, as it iterates through the large array. See https://github.com/dotnet/corefx/pull/6821.")]
         public void TakeAndSkip_DoesntIterateRangeUnlessNecessary()
         {

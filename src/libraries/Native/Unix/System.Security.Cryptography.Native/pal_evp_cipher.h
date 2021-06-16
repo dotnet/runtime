@@ -96,6 +96,22 @@ PALEXPORT int32_t CryptoNative_EvpCipherSetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* 
 
 /*
 Function:
+EvpCipherGetAeadTag
+
+Retrieves tag for authenticated encryption
+*/
+PALEXPORT int32_t CryptoNative_EvpCipherGetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength);
+
+/*
+Function:
+EvpCipherSetAeadTag
+
+Sets tag for authenticated decryption
+*/
+PALEXPORT int32_t CryptoNative_EvpCipherSetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength);
+
+/*
+Function:
 EvpAes128Ecb
 
 Direct shim to EVP_aes_128_ecb.
@@ -309,3 +325,12 @@ EvpRC2Cbc
 Direct shim to EVP_des_rc2_cbc.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpRC2Cbc(void);
+
+/*
+Function:
+EvpChaCha20Poly1305
+
+Direct shim to EVP_chacha20_poly1305. Returns NULL if not available
+on the current platform.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305(void);

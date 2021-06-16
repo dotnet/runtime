@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -43,7 +44,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return Vector256.Size / Unsafe.SizeOf<T>();
             }
         }
@@ -55,7 +56,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return default;
             }
         }
@@ -68,7 +69,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return Vector256.Create(0xFFFFFFFF).As<uint, T>();
             }
         }
@@ -157,7 +158,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector256{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (obj is Vector256<T>) && Equals((Vector256<T>)(obj));
         }
@@ -167,7 +168,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             HashCode hashCode = default;
 
@@ -184,7 +185,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             int lastElement = Count - 1;
             var sb = new ValueStringBuilder(stackalloc char[64]);

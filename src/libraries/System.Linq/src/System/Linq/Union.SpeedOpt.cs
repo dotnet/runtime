@@ -9,9 +9,9 @@ namespace System.Linq
     {
         private abstract partial class UnionIterator<TSource> : IIListProvider<TSource>
         {
-            private Set<TSource> FillSet()
+            private HashSet<TSource> FillSet()
             {
-                var set = new Set<TSource>(_comparer);
+                var set = new HashSet<TSource>(_comparer);
                 for (int index = 0; ; ++index)
                 {
                     IEnumerable<TSource>? enumerable = GetEnumerable(index);
@@ -24,9 +24,9 @@ namespace System.Linq
                 }
             }
 
-            public TSource[] ToArray() => FillSet().ToArray();
+            public TSource[] ToArray() => Enumerable.HashSetToArray(FillSet());
 
-            public List<TSource> ToList() => FillSet().ToList();
+            public List<TSource> ToList() => Enumerable.HashSetToList(FillSet());
 
             public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
         }

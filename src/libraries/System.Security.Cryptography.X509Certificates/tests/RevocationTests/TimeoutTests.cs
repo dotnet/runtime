@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
             {
-                TimeSpan delay = TimeSpan.FromSeconds(3);
+                TimeSpan delay = TimeSpan.FromSeconds(10);
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
@@ -340,7 +340,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         private static X509ChainStatusFlags GetFlags(X509Chain chain, string thumbprint) =>
-            chain.ChainElements.OfType<X509ChainElement>().
+            chain.ChainElements.
                 Single(e => e.Certificate.Thumbprint == thumbprint).
                 ChainElementStatus.Aggregate((X509ChainStatusFlags)0, (a, e) => a | e.Status);
     }

@@ -48,19 +48,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         // Nice, normal serial number.
-        [InlineData("microsoft.cer", "2A98A8770374E7B34195EBE04D9B17F6")]
+        [InlineData(TestFiles.MicrosoftRootCertFileName, "2A98A8770374E7B34195EBE04D9B17F6")]
         // Positive serial number which requires a padding byte to be interpreted positive.
-        [InlineData("test.cer", "00D01E4090000046520000000100000004")]
+        [InlineData(TestFiles.TestCertFileName, "00D01E4090000046520000000100000004")]
         // Negative serial number.
         //   RFC 2459: INTEGER
         //   RFC 3280: INTEGER, MUST be positive.
         //   RFC 5280: INTEGER, MUST be positive, MUST be 20 bytes or less.
         //       Readers SHOULD handle negative values.
         //       (Presumably readers also "should" handle long values created under the previous rules)
-        [InlineData("My.cer", "D5B5BC1C458A558845BFF51CB4DFF31C")]
+        [InlineData(TestFiles.MyCertFileName, "D5B5BC1C458A558845BFF51CB4DFF31C")]
         public static void TestSerialString(string fileName, string expectedSerial)
         {
-            using (var c = new X509Certificate2(Path.Combine("TestData", fileName)))
+            using (var c = new X509Certificate2(Path.Combine(TestFiles.TestDataFolder, fileName)))
             {
                 Assert.Equal(expectedSerial, c.SerialNumber);
             }

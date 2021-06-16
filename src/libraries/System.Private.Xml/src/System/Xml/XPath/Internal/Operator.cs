@@ -6,7 +6,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Operator : AstNode
+    internal sealed class Operator : AstNode
     {
         public enum Op
         { // order is aligned with XPathOperator

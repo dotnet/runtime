@@ -7,7 +7,7 @@ using System.Net.Http;
 
 namespace Microsoft.Extensions.Http
 {
-    internal class DefaultHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
+    internal sealed class DefaultHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
     {
         public DefaultHttpMessageHandlerBuilder(IServiceProvider services)
         {

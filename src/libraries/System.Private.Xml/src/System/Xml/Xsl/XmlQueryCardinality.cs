@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace System.Xml.Xsl
@@ -119,7 +120,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// True if "other" is an XmlQueryCardinality, and this type is the exact same static type.
         /// </summary>
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             if (other is XmlQueryCardinality)
             {

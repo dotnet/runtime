@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -11,6 +12,7 @@ namespace System.ComponentModel.DataAnnotations
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class MetadataTypeAttribute : Attribute
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _metadataClassType;
 
         /// <summary>
@@ -19,7 +21,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="metadataClassType">The metadata class to reference.</param>
         /// <exception cref="System.ArgumentNullException">metadataClassType is null.</exception>
-        public MetadataTypeAttribute(Type metadataClassType)
+        public MetadataTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type metadataClassType)
         {
             _metadataClassType = metadataClassType;
         }
@@ -27,6 +29,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         /// Gets the metadata class that is associated with a data-model partial class.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type MetadataClassType
         {
             get

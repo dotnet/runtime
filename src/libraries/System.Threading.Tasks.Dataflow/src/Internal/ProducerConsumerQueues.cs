@@ -23,11 +23,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections;
-#if USE_INTERNAL_CONCURRENT_COLLECTIONS
-using System.Threading.Tasks.Dataflow.Internal.Collections;
-#else
 using System.Collections.Concurrent;
-#endif
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -79,7 +75,7 @@ namespace System.Threading.Tasks
         /// <summary>Attempts to dequeue an item from the queue.</summary>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        bool IProducerConsumerQueue<T>.TryDequeue(out T result) { return base.TryDequeue(out result); }
+        bool IProducerConsumerQueue<T>.TryDequeue([MaybeNullWhen(false)] out T result) { return base.TryDequeue(out result); }
 
         /// <summary>Gets whether the collection is currently empty.</summary>
         bool IProducerConsumerQueue<T>.IsEmpty { get { return base.IsEmpty; } }
@@ -270,7 +266,7 @@ namespace System.Threading.Tasks
         /// <summary>Attempts to peek at an item in the queue.</summary>
         /// <param name="result">The peeked item.</param>
         /// <returns>true if an item could be peeked; otherwise, false.</returns>
-        public bool TryPeek(out T result)
+        public bool TryPeek([MaybeNullWhen(false)] out T result)
         {
             Segment segment = _head;
             T[] array = segment._array;
@@ -400,8 +396,7 @@ namespace System.Threading.Tasks
 
         public void Clear()
         {
-            T ignored;
-            while (TryDequeue(out ignored)) ;
+            while (TryDequeue(out _)) ;
         }
 
         /// <summary>Gets whether the collection is currently empty.</summary>

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#nullable enable
 namespace System.Text.Json
 {
     internal struct BitStack

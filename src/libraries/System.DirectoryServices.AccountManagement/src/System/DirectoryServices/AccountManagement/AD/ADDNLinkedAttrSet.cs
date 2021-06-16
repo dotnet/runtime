@@ -1387,7 +1387,7 @@ namespace System.DirectoryServices.AccountManagement
         ASQ = 1,
     }
 
-    internal class ADDNLinkedAttrSetBookmark : ResultSetBookmark
+    internal sealed class ADDNLinkedAttrSetBookmark : ResultSetBookmark
     {
         public Dictionary<string, bool> usersVisited;
         public List<string> groupsToVisit;

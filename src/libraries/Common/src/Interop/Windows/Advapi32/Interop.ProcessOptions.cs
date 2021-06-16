@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
-        internal partial class SEPrivileges
+        internal static partial class SEPrivileges
         {
             internal const uint SE_PRIVILEGE_DISABLED = 0;
             internal const int SE_PRIVILEGE_ENABLED = 2;
         }
 
-        internal partial class PerfCounterOptions
+        internal static partial class PerfCounterOptions
         {
             internal const int NtPerfCounterSizeLarge = 0x00000100;
         }
 
-        internal partial class ProcessOptions
+        internal static partial class ProcessOptions
         {
             internal const int PROCESS_TERMINATE = 0x0001;
             internal const int PROCESS_VM_READ = 0x0010;
@@ -31,13 +31,13 @@ internal partial class Interop
             internal const int SYNCHRONIZE = 0x00100000;
         }
 
-        internal partial class RPCStatus
+        internal static partial class RPCStatus
         {
             internal const int RPC_S_SERVER_UNAVAILABLE = 1722;
             internal const int RPC_S_CALL_FAILED = 1726;
         }
 
-        internal partial class StartupInfoOptions
+        internal static partial class StartupInfoOptions
         {
             internal const int STARTF_USESTDHANDLES = 0x00000100;
             internal const int CREATE_UNICODE_ENVIRONMENT = 0x00000400;

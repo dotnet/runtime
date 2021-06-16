@@ -748,5 +748,239 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<bool>().Min());
         }
+
+        [Fact]
+        public static void Min_Generic_NullSource_ThrowsArgumentNullException()
+        {
+            IEnumerable<int> source = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Min(comparer: null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Min(Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void Min_Generic_EmptyStructSource_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min(comparer: null));
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min(Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Theory]
+        [MemberData(nameof(Min_Generic_TestData))]
+        public static void Min_Generic_HasExpectedOutput<TSource>(IEnumerable<TSource> source, IComparer<TSource>? comparer, TSource? expected)
+        {
+            Assert.Equal(expected, source.Min(comparer));
+        }
+
+        [Theory]
+        [MemberData(nameof(Min_Generic_TestData))]
+        public static void Min_Generic_RunOnce_HasExpectedOutput<TSource>(IEnumerable<TSource> source, IComparer<TSource>? comparer, TSource? expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Min(comparer));
+        }
+
+        public static IEnumerable<object[]> Min_Generic_TestData()
+        {
+            yield return WrapArgs(
+                source: Enumerable.Empty<int?>(),
+                comparer: null,
+                expected: null);
+
+            yield return WrapArgs(
+                source: Enumerable.Empty<int?>(),
+                comparer: Comparer<int?>.Create((_, _) => 0),
+                expected: null);
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                comparer: null,
+                expected: 0);
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                comparer: Comparer<int>.Create((x, y) => -x.CompareTo(y)),
+                expected: 9);
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                comparer: Comparer<int>.Create((x, y) => 0),
+                expected: 0);
+
+            yield return WrapArgs(
+                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                comparer: null,
+                expected: "Aardvark");
+
+            yield return WrapArgs(
+                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
+                expected: "Zyzzyva");
+
+            object[] WrapArgs<TSource>(IEnumerable<TSource> source, IComparer<TSource>? comparer, TSource? expected)
+                => new object[] { source, comparer, expected };
+        }
+
+        [Fact]
+        public static void MinBy_Generic_NullSource_ThrowsArgumentNullException()
+        {
+            IEnumerable<int> source = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.MinBy(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.MinBy(x => x, comparer: null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.MinBy(x => x, Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_NullKeySelector_ThrowsArgumentNullException()
+        {
+            IEnumerable<int> source = Enumerable.Empty<int>();
+            Func<int, int> keySelector = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.MinBy(keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.MinBy(keySelector, comparer: null));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.MinBy(keySelector, Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_EmptyStructSource_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MinBy(x => x.ToString()));
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MinBy(x => x.ToString(), comparer: null));
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().MinBy(x => x.ToString(), Comparer<string>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_EmptyNullableSource_ReturnsNull()
+        {
+            Assert.Null(Enumerable.Empty<int?>().MinBy(x => x.GetHashCode()));
+            Assert.Null(Enumerable.Empty<int?>().MinBy(x => x.GetHashCode(), comparer: null));
+            Assert.Null(Enumerable.Empty<int?>().MinBy(x => x.GetHashCode(), Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_EmptyReferenceSource_ReturnsNull()
+        {
+            Assert.Null(Enumerable.Empty<string>().MinBy(x => x.GetHashCode()));
+            Assert.Null(Enumerable.Empty<string>().MinBy(x => x.GetHashCode(), comparer: null));
+            Assert.Null(Enumerable.Empty<string>().MinBy(x => x.GetHashCode(), Comparer<int>.Create((_, _) => 0)));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_StructSourceAllKeysAreNull_ReturnsLastElement()
+        {
+            Assert.Equal(4, Enumerable.Range(0, 5).MinBy(x => default(string)));
+            Assert.Equal(4, Enumerable.Range(0, 5).MinBy(x => default(string), comparer: null));
+            Assert.Equal(4, Enumerable.Range(0, 5).MinBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_NullableSourceAllKeysAreNull_ReturnsLastElement()
+        {
+            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?)));
+            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?), comparer: null));
+            Assert.Equal(4, Enumerable.Range(0, 5).Cast<int?>().MinBy(x => default(int?), Comparer<int?>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+        }
+
+        [Fact]
+        public static void MinBy_Generic_ReferenceSourceAllKeysAreNull_ReturnsLastElement()
+        {
+            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string)));
+            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string), comparer: null));
+            Assert.Equal("4", Enumerable.Range(0, 5).Select(x => x.ToString()).MinBy(x => default(string), Comparer<string>.Create((_, _) => throw new InvalidOperationException("comparer should not be called."))));
+        }
+
+        [Theory]
+        [MemberData(nameof(MinBy_Generic_TestData))]
+        public static void MinBy_Generic_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer, TSource? expected)
+        {
+            Assert.Equal(expected, source.MinBy(keySelector, comparer));
+        }
+
+        [Theory]
+        [MemberData(nameof(MinBy_Generic_TestData))]
+        public static void MinBy_Generic_RunOnce_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer, TSource? expected)
+        {
+            Assert.Equal(expected, source.RunOnce().MinBy(keySelector, comparer));
+        }
+
+        public static IEnumerable<object[]> MinBy_Generic_TestData()
+        {
+            yield return WrapArgs(
+                source: Enumerable.Empty<int?>(),
+                keySelector: x => x,
+                comparer: null,
+                expected: null);
+
+            yield return WrapArgs(
+                source: Enumerable.Empty<int?>(),
+                keySelector: x => x,
+                comparer: Comparer<int?>.Create((_, _) => 0),
+                expected: null);
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                keySelector: x => x,
+                comparer: null,
+                expected: 0);
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                keySelector: x => x,
+                comparer: Comparer<int>.Create((x, y) => -x.CompareTo(y)),
+                expected: 9);
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                keySelector: x => x,
+                comparer: Comparer<int>.Create((x, y) => 0),
+                expected: 0);
+
+            yield return WrapArgs(
+                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                keySelector: x => x,
+                comparer: null,
+                expected: "Aardvark");
+
+            yield return WrapArgs(
+                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                keySelector: x => x,
+                comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
+                expected: "Zyzzyva");
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 43), ("Dick", 55), ("Harry", 20) },
+                keySelector: x => x.Age,
+                comparer: null,
+                expected: (Name: "Harry", Age: 20));
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 43), ("Dick", 55), ("Harry", 20) },
+                keySelector: x => x.Age,
+                comparer: Comparer<int>.Create((x, y) => -x.CompareTo(y)),
+                expected: (Name: "Dick", Age: 55));
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 43), ("Dick", 55), ("Harry", 20) },
+                keySelector: x => x.Name,
+                comparer: null,
+                expected: (Name: "Dick", Age: 55));
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 43), ("Dick", 55), ("Harry", 20) },
+                keySelector: x => x.Name,
+                comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
+                expected: (Name: "Tom", Age: 43));
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { (null, 43), ("Dick", 55), ("Harry", 20) },
+                keySelector: x => x.Name,
+                comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
+                expected: (Name: "Harry", Age: 20));
+
+            object[] WrapArgs<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer, TSource? expected)
+                => new object[] { source, keySelector, comparer, expected };
+        }
     }
 }

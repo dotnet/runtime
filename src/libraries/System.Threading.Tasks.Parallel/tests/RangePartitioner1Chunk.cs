@@ -319,7 +319,7 @@ namespace System.Threading.Tasks.Tests
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return (System.Collections.IEnumerator)this.GetEnumerator(); ;
+            return (System.Collections.IEnumerator)this.GetEnumerator();
         }
 
         public IEnumerator<T> GetEnumerator()

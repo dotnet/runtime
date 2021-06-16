@@ -10,7 +10,7 @@ You must install several components to build the dotnet/runtime repository. Thes
 
 ## Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
 If using Git for Windows you might need to also configure long paths there. Using an admin terminal simply type:
 ```cmd
@@ -42,9 +42,9 @@ The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The dotnet/runtime repository recommends using CMake 3.16.0 or newer, but works with CMake 3.15.5.
+The dotnet/runtime repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
 
-## Ninja (optional)
+## Ninja
 
 - Install Ninja in one of the two following ways
   - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
@@ -75,7 +75,7 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 
 While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the dotnet.exe command to run .NET applications in the 'normal' way.
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
-The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/master/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
+The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). [You can find the installers and binaries for nightly builds of .NET SDK here](https://github.com/dotnet/installer#installers-and-binaries).
 
 Alternatively, to avoid modifying your machine state, you can use the repository's locally acquired SDK by passing in the solution to load via the `-vs` switch:
 

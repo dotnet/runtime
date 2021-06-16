@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -176,7 +177,7 @@ namespace System.Drawing
         /// Tests to see whether the specified object is a <see cref='System.Drawing.Size'/>  with the same dimensions
         /// as this <see cref='System.Drawing.Size'/>.
         /// </summary>
-        public override readonly bool Equals(object? obj) => obj is Size && Equals((Size)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is Size && Equals((Size)obj);
 
         public readonly bool Equals(Size other) => this == other;
 

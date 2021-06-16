@@ -67,7 +67,6 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Imports()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -81,7 +80,6 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Imports_CardinalityIgnored_WhenNotSpecified()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -94,7 +92,6 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Imports_CardinalityNotIgnored_WhenSpecified()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();

@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Internal.TypeSystem;
+
+// If any of these constants change, update src/coreclr/inc/readytorun.h and
+// src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs with the new R2R minor version
 
 namespace Internal.ReadyToRunConstants
 {
@@ -30,6 +34,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_MemberRefToken = 0x10,
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
+        READYTORUN_METHOD_SIG_UpdateContext = 0x80,
     }
 
     [Flags]
@@ -48,6 +53,13 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_LAYOUT_Alignment_Native = 0x04,
         READYTORUN_LAYOUT_GCLayout = 0x08,
         READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
+    }
+
+    [Flags]
+    public enum ReadyToRunVirtualFunctionOverrideFlags : uint
+    {
+        None = 0x00,
+        VirtualFunctionOverriden = 0x01,
     }
 
     public enum DictionaryEntryKind
@@ -115,10 +127,13 @@ namespace Internal.ReadyToRunConstants
         IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
         PInvokeTarget = 0x2F,               // Target of an inlined pinvoke
 
-        Check_InstructionSetSupport = 0x30, // Define the set of instruction sets that must be supported/unsupported to use the fixup 
+        Check_InstructionSetSupport = 0x30, // Define the set of instruction sets that must be supported/unsupported to use the fixup
 
         Verify_FieldOffset = 0x31,  // Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
         Verify_TypeLayout = 0x32,  // Generate a runtime check to ensure that the type layout (size, alignment, HFA, reference map) matches between compile and runtime. Unlike Check_TypeLayout, this will generate a runtime failure instead of silently dropping the method
+
+        Check_VirtualFunctionOverride = 0x33, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used
+        Verify_VirtualFunctionOverride = 0x34, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure.
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -275,6 +290,8 @@ namespace Internal.ReadyToRunConstants
 
         StackProbe                  = 0x111,
 
+        GetCurrentManagedThreadId   = 0x112,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
@@ -312,8 +329,6 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
-
-        GetCurrentManagedThreadId,
     }
 
     // Enum used for HFA type recognition.
@@ -330,6 +345,6 @@ namespace Internal.ReadyToRunConstants
     public static class ReadyToRunRuntimeConstants
     {
         public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
-        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2;
+        public static int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits(TargetArchitecture target) => target == TargetArchitecture.X86 ? 5 : 2;
     }
 }

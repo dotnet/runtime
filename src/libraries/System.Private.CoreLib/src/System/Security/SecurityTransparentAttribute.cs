@@ -3,12 +3,7 @@
 
 namespace System.Security
 {
-    // SecurityTransparentAttribute:
-    // Indicates the assembly contains only transparent code.
-    // Security critical actions will be restricted or converted into less critical actions. For example,
-    // Assert will be restricted, SuppressUnmanagedCode, LinkDemand, unsafe, and unverifiable code will be converted
-    // into Full-Demands.
-
+    // Has no effect in .NET Core
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed class SecurityTransparentAttribute : Attribute
     {

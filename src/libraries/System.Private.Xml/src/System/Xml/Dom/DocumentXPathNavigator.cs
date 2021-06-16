@@ -1226,7 +1226,7 @@ namespace System.Xml
             return false;
         }
 
-        public override bool IsDescendant(XPathNavigator? other)
+        public override bool IsDescendant([NotNullWhen(true)] XPathNavigator? other)
         {
             if (other is DocumentXPathNavigator that)
             {

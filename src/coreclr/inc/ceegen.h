@@ -25,7 +25,7 @@ typedef DWORD StringRef;
  This is a description of the current implementation of these types for generating
  CLR modules.
 
-  ICeeGen - interface to generate in-memory CLR module.
+  ICeeGenInternal - interface to generate in-memory CLR module.
 
   CCeeGen - implementation of ICeeGen. Currently it uses both CeeSections
             as well as PESections (inside PESectionMan), and maintains a
@@ -45,7 +45,7 @@ typedef DWORD StringRef;
                 etc which are not implemented. These are left over from before
 
                                                      +----------------------------+
-                                                     |       ICeeGen              |
+                                                     | ICeeGenInternal            |
                                                      |                            |
                                                      |  COM-style version of      |
                                                      |  ICeeFileGen. HCEEFILE is  |
@@ -174,16 +174,14 @@ class CeeSection {
 // Only handles in memory stuff
 // Base class for CeeFileGenWriter (which actually generates PEFiles)
 
-class CCeeGen : public ICeeGen, ICeeGenInternal {
+class CCeeGen : public ICeeGenInternal {
     LONG m_cRefs;
-    BOOL m_encMode;
   protected:
     short m_textIdx;            // m_sections[] index for the .text section
     short m_metaIdx;            // m_sections[] index for metadata (.text, or .cormeta for obj files)
     short m_corHdrIdx;          // m_sections[] index for the COM+ header (.text0)
     short m_stringIdx;          // m_sections[] index for strings (.text, or .rdata for EnC)
     short m_ilIdx;              // m_sections[] index for IL (.text)
-    bool m_objSwitch;
 
     CeeGenTokenMapper *m_pTokenMap;
     BOOLEAN m_fTokenMapSupported;   // temporary to support both models
@@ -202,8 +200,6 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
 
     HRESULT addSection(CeeSection *section, short *sectionIdx);
 
-    HRESULT setEnCMode();
-
 // Init process: Call static CreateNewInstance() , not operator new
   protected:
     HRESULT Init();
@@ -217,7 +213,7 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
 
     virtual HRESULT Cleanup();
 
-    // ICeeGen interfaces
+    // ICeeGenInternal interfaces
 
     ULONG STDMETHODCALLTYPE AddRef();
     ULONG STDMETHODCALLTYPE Release();
@@ -274,13 +270,7 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
         ULONG align=1,
         void **ppBytes=0);
 
-    STDMETHODIMP TruncateSection (
-        HCEESECTION section,
-        ULONG len);
-
-    STDMETHODIMP GenerateCeeMemoryImage (void **ppImage);
-
-    STDMETHODIMP ComputePointer (
+   STDMETHODIMP ComputePointer (
         HCEESECTION section,
         ULONG RVA,                          // [IN] RVA for method to return
         UCHAR **lpBuffer);                  // [OUT] Returned buffer
@@ -325,15 +315,6 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
     //Section data will be appended onto any information already in the section.
     //This is done to support the DynamicIL -> PersistedIL transform.
     virtual HRESULT cloneInstance(CCeeGen *destination);
-
-#ifdef EMIT_FIXUPS
-public:
-    virtual HRESULT addFixup(CeeSection& sectionSource, unsigned offset, CeeSectionRelocType reloc, CeeSection * sectionTarget = NULL, CeeSectionRelocExtra *extra = 0) {
-        LIMITED_METHOD_CONTRACT;
-
-        return(E_NOTIMPL);
-    }
-#endif
 };
 
 // ***** CeeSection inline methods

@@ -13,7 +13,7 @@ using MS.Internal.Xml;
 
 namespace System.Xml.Xsl.XPath {
 
-    internal class XPathContext {
+    internal sealed class XPathContext {
         // Context is the most fundamental concept of XPath
         // In docs it is -- "current node-set" and "current node in this node-set"
         // on practice in this implementation we have "current node" (C), "position of current node in current node-set" (P)
@@ -96,7 +96,7 @@ namespace System.Xml.Xsl.XPath {
             return context;
         }
 
-        private class Replacer : QilActiveVisitor {
+        private sealed class Replacer : QilActiveVisitor {
             QilIterator from, to;
 
             public Replacer(QilFactory f) : base(f) {}

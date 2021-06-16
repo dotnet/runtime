@@ -1,12 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
-    <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
-    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />

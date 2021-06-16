@@ -53,7 +53,15 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(2, b4.B2);
             Assert.Equal(3, b4.B3);
 
-            int expected = (b4.B3 << 24) + (b4.B2 << 16) + (b4.B1 << 8) + (b4.B0);
+            int expected;
+            if (BitConverter.IsLittleEndian)
+            {
+                expected = (b4.B3 << 24) + (b4.B2 << 16) + (b4.B1 << 8) + (b4.B0);
+            }
+            else
+            {
+                expected = (b4.B0 << 24) + (b4.B1 << 16) + (b4.B2 << 8) + (b4.B3);
+            }
             Assert.Equal(expected, value);
         }
 
@@ -63,12 +71,24 @@ namespace System.Runtime.CompilerServices
             long value = 1234567891011121314L;
             long* longAddress = (long*)Unsafe.AsPointer(ref value);
             Byte4Short2 b4s2 = Unsafe.Read<Byte4Short2>(longAddress);
-            Assert.Equal(162, b4s2.B0);
-            Assert.Equal(48, b4s2.B1);
-            Assert.Equal(210, b4s2.B2);
-            Assert.Equal(178, b4s2.B3);
-            Assert.Equal(4340, b4s2.S4);
-            Assert.Equal(4386, b4s2.S6);
+            if (BitConverter.IsLittleEndian)
+            {
+                Assert.Equal(162, b4s2.B0);
+                Assert.Equal(48, b4s2.B1);
+                Assert.Equal(210, b4s2.B2);
+                Assert.Equal(178, b4s2.B3);
+                Assert.Equal(4340, b4s2.S4);
+                Assert.Equal(4386, b4s2.S6);
+            }
+            else
+            {
+                Assert.Equal(17, b4s2.B0);
+                Assert.Equal(34, b4s2.B1);
+                Assert.Equal(16, b4s2.B2);
+                Assert.Equal(244, b4s2.B3);
+                Assert.Equal(-19758, b4s2.S4);
+                Assert.Equal(12450, b4s2.S6);
+            }
 
             b4s2.B0 = 1;
             b4s2.B1 = 1;
@@ -78,7 +98,15 @@ namespace System.Runtime.CompilerServices
             b4s2.S6 = 1;
             Unsafe.Write(longAddress, b4s2);
 
-            long expected = 281479288520961;
+            long expected;
+            if (BitConverter.IsLittleEndian)
+            {
+                expected = 281479288520961;
+            }
+            else
+            {
+                expected = 72340172821299201;
+            }
             Assert.Equal(expected, value);
             Assert.Equal(expected, Unsafe.Read<long>(longAddress));
         }

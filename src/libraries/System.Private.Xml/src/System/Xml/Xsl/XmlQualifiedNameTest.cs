@@ -21,7 +21,7 @@ namespace System.Xml.Xsl
     ///     ~{A}:*    XmlQualifiedNameTest.New("B", "A")        Match QName with namespace not A    and any local name
     ///     {~A}:B    only as a result of the intersection      Match QName with namespace not A    and local name B
     /// </summary>
-    internal class XmlQualifiedNameTest : XmlQualifiedName
+    internal sealed class XmlQualifiedNameTest : XmlQualifiedName
     {
         private readonly bool _exclude;
         private const string wildcard = "*";

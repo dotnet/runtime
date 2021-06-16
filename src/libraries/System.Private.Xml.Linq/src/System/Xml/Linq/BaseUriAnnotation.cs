@@ -3,7 +3,7 @@
 
 namespace System.Xml.Linq
 {
-    internal class BaseUriAnnotation
+    internal sealed class BaseUriAnnotation
     {
         internal string baseUri;
 

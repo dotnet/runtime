@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIPv4InterfaceStatistics : IPv4InterfaceStatistics
+    internal sealed class BsdIPv4InterfaceStatistics : IPv4InterfaceStatistics
     {
         private readonly BsdIpInterfaceStatistics _statistics;
 

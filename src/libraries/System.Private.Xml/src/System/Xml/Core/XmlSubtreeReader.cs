@@ -15,7 +15,7 @@ namespace System.Xml
         //
         // Private types
         //
-        private class NodeData
+        private sealed class NodeData
         {
             internal XmlNodeType type;
             internal string localName;

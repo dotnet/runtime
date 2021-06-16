@@ -171,6 +171,7 @@ namespace System.Tests
         [InlineData("nelknet 4.15.0-24201807041620-generic", 4, 15, 0, int.MaxValue)] // integer overflow
         [InlineData("", 0, 0, 0, 0)]
         [InlineData("1abc", 1, 0, 0, 0)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void OSVersion_ParseVersion(string input, int major, int minor, int build, int revision)
         {
             var getOSMethod = typeof(Environment).GetMethod("GetOperatingSystem", BindingFlags.Static | BindingFlags.NonPublic);
@@ -183,6 +184,7 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49106", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void OSVersion_ValidVersion_OSX()
         {
             Version version = Environment.OSVersion.Version;
@@ -331,6 +333,7 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
@@ -393,6 +396,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.MyMusic, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.MyPictures, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.Fonts, Environment.SpecialFolderOption.DoNotVerify)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
         public void GetFolderPath_Unix_NonEmptyFolderPaths(Environment.SpecialFolder folder, Environment.SpecialFolderOption option)
         {
             Assert.NotEmpty(Environment.GetFolderPath(folder, option));
@@ -468,7 +472,7 @@ namespace System.Tests
             FileAttributes attributes = GetFileAttributesW(path);
             if (attributes == (FileAttributes)(-1))
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 Assert.False(true, $"error {error} getting attributes for {path}");
             }
 

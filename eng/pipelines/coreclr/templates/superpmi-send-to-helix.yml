@@ -30,7 +30,7 @@ steps:
     sendParams: $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.proj /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }}
     condition: ${{ parameters.condition }}
-    continueOnError: ${{ parameters.continueOnError }}
+    shouldContinueOnError: ${{ parameters.continueOnError }}
     environment:
       MchFileTag: $(MchFileTag)
       BuildConfig:  ${{ parameters.BuildConfig }}

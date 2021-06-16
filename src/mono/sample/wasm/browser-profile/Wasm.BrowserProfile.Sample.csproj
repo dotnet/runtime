@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmProfilers>aot;</WasmProfilers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraConfig Include="enable_profiler" Value="true" Condition="'$(EnableProfiler)' == 'true'" />
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+</Project>

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -29,7 +30,7 @@ namespace System
             return SpanHelpers.SequenceEqual(
                     ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
                     ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
-                    ((nuint)strA.Length) * 2);
+                    ((uint)strA.Length) * sizeof(char));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -41,7 +42,9 @@ namespace System
             Debug.Assert(countA >= 0 && countB >= 0);
             Debug.Assert(indexA + countA <= strA.Length && indexB + countB <= strB.Length);
 
-            return SpanHelpers.SequenceCompareTo(ref Unsafe.Add(ref strA.GetRawStringData(), indexA), countA, ref Unsafe.Add(ref strB.GetRawStringData(), indexB), countB);
+            return SpanHelpers.SequenceCompareTo(
+                ref Unsafe.Add(ref strA.GetRawStringData(), (nint)(uint)indexA /* force zero-extension */), countA,
+                ref Unsafe.Add(ref strB.GetRawStringData(), (nint)(uint)indexB /* force zero-extension */), countB);
         }
 
         internal static bool EqualsOrdinalIgnoreCase(string? strA, string? strB)
@@ -604,7 +607,7 @@ namespace System
         }
 
         // Determines whether two strings match.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (object.ReferenceEquals(this, obj))
                 return true;
@@ -619,7 +622,7 @@ namespace System
         }
 
         // Determines whether two strings match.
-        public bool Equals(string? value)
+        public bool Equals([NotNullWhen(true)] string? value)
         {
             if (object.ReferenceEquals(this, value))
                 return true;
@@ -637,7 +640,7 @@ namespace System
             return EqualsHelper(this, value);
         }
 
-        public bool Equals(string? value, StringComparison comparisonType)
+        public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(this, value))
             {

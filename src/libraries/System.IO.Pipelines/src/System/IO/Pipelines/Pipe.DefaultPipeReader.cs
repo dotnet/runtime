@@ -7,9 +7,7 @@ using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
-    /// <summary>
-    /// Default <see cref="PipeWriter"/> and <see cref="PipeReader"/> implementation.
-    /// </summary>
+    /// <summary>The default <see cref="System.IO.Pipelines.PipeWriter" /> and <see cref="System.IO.Pipelines.PipeReader" /> implementation.</summary>
     public sealed partial class Pipe
     {
         private sealed class DefaultPipeReader : PipeReader, IValueTaskSource<ReadResult>
@@ -24,6 +22,8 @@ namespace System.IO.Pipelines
             public override bool TryRead(out ReadResult result) => _pipe.TryRead(out result);
 
             public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => _pipe.ReadAsync(cancellationToken);
+
+            protected override ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumBytes, CancellationToken cancellationToken) => _pipe.ReadAtLeastAsync(minimumBytes, cancellationToken);
 
             public override void AdvanceTo(SequencePosition consumed) => _pipe.AdvanceReader(consumed);
 

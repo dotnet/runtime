@@ -194,7 +194,7 @@ namespace System.Net.NetworkInformation
                             }
                         }
                     }
-                    catch
+                    finally
                     {
                         Marshal.FreeHGlobal(buffer);
                     }

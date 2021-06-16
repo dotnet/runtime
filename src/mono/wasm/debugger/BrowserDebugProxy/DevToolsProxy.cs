@@ -16,54 +16,10 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.WebAssembly.Diagnostics
 {
 
-    internal class DevToolsQueue
-    {
-        private Task current_send;
-        private List<byte[]> pending;
-
-        public WebSocket Ws { get; private set; }
-        public Task CurrentSend { get { return current_send; } }
-        public DevToolsQueue(WebSocket sock)
-        {
-            this.Ws = sock;
-            pending = new List<byte[]>();
-        }
-
-        public Task Send(byte[] bytes, CancellationToken token)
-        {
-            pending.Add(bytes);
-            if (pending.Count == 1)
-            {
-                if (current_send != null)
-                    throw new Exception("current_send MUST BE NULL IF THERE'S no pending send");
-                //logger.LogTrace ("sending {0} bytes", bytes.Length);
-                current_send = Ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
-                return current_send;
-            }
-            return null;
-        }
-
-        public Task Pump(CancellationToken token)
-        {
-            current_send = null;
-            pending.RemoveAt(0);
-
-            if (pending.Count > 0)
-            {
-                if (current_send != null)
-                    throw new Exception("current_send MUST BE NULL IF THERE'S no pending send");
-
-                current_send = Ws.SendAsync(new ArraySegment<byte>(pending[0]), WebSocketMessageType.Text, true, token);
-                return current_send;
-            }
-            return null;
-        }
-    }
-
     internal class DevToolsProxy
     {
         private TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
-        private TaskCompletionSource<bool> client_initiated_close = new TaskCompletionSource<bool>();
+        private TaskCompletionSource client_initiated_close = new TaskCompletionSource();
         private Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
         private ClientWebSocket browser;
         private WebSocket ide;
@@ -98,14 +54,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (socket.State != WebSocketState.Open)
                 {
                     Log("error", $"DevToolsProxy: Socket is no longer open.");
-                    client_initiated_close.TrySetResult(true);
+                    client_initiated_close.TrySetResult();
                     return null;
                 }
 
                 WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    client_initiated_close.TrySetResult(true);
+                    client_initiated_close.TrySetResult();
                     return null;
                 }
 
@@ -302,6 +258,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         while (!x.IsCancellationRequested)
                         {
                             Task task = await Task.WhenAny(pending_ops.ToArray());
+
+                            if (client_initiated_close.Task.IsCompleted)
+                            {
+                                await client_initiated_close.Task.ConfigureAwait(false);
+                                Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
+                                x.Cancel();
+
+                                break;
+                            }
+
                             //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
                             if (task == pending_ops[0])
                             {
@@ -326,12 +292,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 bool res = ((Task<bool>)task).Result;
                                 throw new Exception("side task must always complete with an exception, what's going on???");
                             }
-                            else if (task == pending_ops[3])
-                            {
-                                bool res = ((Task<bool>)task).Result;
-                                Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
-                                x.Cancel();
-                            }
                             else
                             {
                                 //must be a background task
@@ -339,8 +299,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 DevToolsQueue queue = GetQueueForTask(task);
                                 if (queue != null)
                                 {
-                                    Task tsk = queue.Pump(x.Token);
-                                    if (tsk != null)
+                                    if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))
                                         pending_ops.Add(tsk);
                                 }
                             }

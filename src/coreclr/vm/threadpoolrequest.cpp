@@ -525,13 +525,10 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
         }
         *wasNotRecalled = ThreadpoolMgr::ShouldWorkerKeepRunning();
 
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread)
         {
-            if (pThread->IsAbortRequested())
-            {
-                pThread->EEResetAbort(Thread::TAR_ALL);
-            }
+            _ASSERTE(!pThread->IsAbortRequested());
             pThread->InternalReset();
         }
 
@@ -634,7 +631,7 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
     *wasNotRecalled = true;
 
     HRESULT hr;
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         ClrFlsSetThreadType(ThreadType_Threadpool_Worker);

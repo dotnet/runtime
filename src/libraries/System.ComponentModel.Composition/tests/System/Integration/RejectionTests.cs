@@ -11,7 +11,6 @@ using Xunit;
 
 namespace Tests.Integration
 {
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class RejectionTests
     {
         public interface IExtension

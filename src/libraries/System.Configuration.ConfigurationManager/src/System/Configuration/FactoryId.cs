@@ -7,7 +7,7 @@ namespace System.Configuration
 {
     // Identifies a factory
     [DebuggerDisplay("FactoryId {ConfigKey}")]
-    internal class FactoryId
+    internal sealed class FactoryId
     {
         internal FactoryId(string configKey, string group, string name)
         {

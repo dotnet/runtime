@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 
 namespace System.Threading.Tasks
@@ -19,6 +20,9 @@ namespace System.Threading.Tasks
     [EventSource(Name = "System.Threading.Tasks.Parallel.EventSource")]
     internal sealed class ParallelEtwProvider : EventSource
     {
+#if !ES_BUILD_STANDALONE
+        private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
+#endif
         /// <summary>
         /// Defines the singleton instance for the Task.Parallel ETW provider.
         /// </summary>
@@ -39,7 +43,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>ETW tasks that have start/stop events.</summary>
-        public class Tasks
+        public static class Tasks
         {  // this name is important for EventSource
            /// <summary>A parallel loop.</summary>
             public const EventTask Loop = (EventTask)1;
@@ -97,6 +101,10 @@ namespace System.Threading.Tasks
         /// <param name="OperationType">The kind of fork/join operation.</param>
         /// <param name="InclusiveFrom">The lower bound of the loop.</param>
         /// <param name="ExclusiveTo">The upper bound of the loop.</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(PARALLELLOOPBEGIN_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Loop, Opcode = EventOpcode.Start)]
         public void ParallelLoopBegin(int OriginatingTaskSchedulerID, int OriginatingTaskID,      // PFX_COMMON_EVENT_HEADER
                                       int ForkJoinContextID, ForkJoinOperationType OperationType, // PFX_FORKJOIN_COMMON_EVENT_HEADER
@@ -157,6 +165,10 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="ForkJoinContextID">The loop ID.</param>
         /// <param name="TotalIterations">the total number of iterations processed.</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(PARALLELLOOPEND_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Loop, Opcode = EventOpcode.Stop)]
         public void ParallelLoopEnd(int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
                                     int ForkJoinContextID, long TotalIterations)
@@ -204,6 +216,10 @@ namespace System.Threading.Tasks
         /// <param name="ForkJoinContextID">The invoke ID.</param>
         /// <param name="OperationType">The kind of fork/join operation.</param>
         /// <param name="ActionCount">The number of actions being invoked.</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(PARALLELINVOKEBEGIN_ID, Level = EventLevel.Informational, Task = ParallelEtwProvider.Tasks.Invoke, Opcode = EventOpcode.Start)]
         public void ParallelInvokeBegin(int OriginatingTaskSchedulerID, int OriginatingTaskID,      // PFX_COMMON_EVENT_HEADER
                                         int ForkJoinContextID, ForkJoinOperationType OperationType, // PFX_FORKJOIN_COMMON_EVENT_HEADER

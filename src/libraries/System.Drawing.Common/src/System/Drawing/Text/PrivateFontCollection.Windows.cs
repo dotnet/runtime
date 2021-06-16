@@ -7,7 +7,7 @@ namespace System.Drawing.Text
     {
         private void GdiAddFontFile(string filename)
         {
-            SafeNativeMethods.AddFontFile(filename);
+            Interop.Gdi32.AddFontFile(filename);
         }
     }
 }

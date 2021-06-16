@@ -26,6 +26,9 @@
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
              Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="Dataflow\DataflowBlockExtensionTests.IAsyncEnumerable.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />
   </ItemGroup>

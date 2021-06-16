@@ -389,7 +389,7 @@ var MonoSupportLib = {
 				throw new Error ("capacity >= 1");
 
 			capacity = capacity | 0;
-				
+
 			var capacityBytes = capacity * 4;
 			if ((offset % 4) !== 0)
 				throw new Error ("Unaligned offset");
@@ -399,7 +399,7 @@ var MonoSupportLib = {
 			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
 			result.__offset32 = (offset / 4) | 0;
-			result.__count = capacity;	
+			result.__count = capacity;
 			result.length = capacity;
 			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 			result.__ownsAllocation = false;
@@ -424,7 +424,7 @@ var MonoSupportLib = {
 			} else {
 				var index = this._mono_wasm_claim_scratch_index ();
 				var buffer = this._scratch_root_buffer;
-					
+
 				result = Object.create (this._mono_wasm_root_prototype);
 				result.__buffer = buffer;
 				result.__index = index;
@@ -487,15 +487,54 @@ var MonoSupportLib = {
 		mono_text_decoder: undefined,
 		string_decoder: {
 			copy: function (mono_string) {
-				if (mono_string == 0)
+				if (mono_string === 0)
 					return null;
 
-				if (!this.mono_wasm_string_convert)
-					this.mono_wasm_string_convert = Module.cwrap ("mono_wasm_string_convert", null, ['number']);
+				if (!this.mono_wasm_string_root)
+					this.mono_wasm_string_root = MONO.mono_wasm_new_root ();
+				this.mono_wasm_string_root.value = mono_string;
 
-				this.mono_wasm_string_convert (mono_string);
-				var result = this.result;
-				this.result = undefined;
+				if (!this.mono_wasm_string_get_data)
+					this.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
+				
+				if (!this.mono_wasm_string_decoder_buffer)
+					this.mono_wasm_string_decoder_buffer = Module._malloc(12);
+				
+				let ppChars = this.mono_wasm_string_decoder_buffer + 0,
+					pLengthBytes = this.mono_wasm_string_decoder_buffer + 4,
+					pIsInterned = this.mono_wasm_string_decoder_buffer + 8;
+				
+				this.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
+
+				// TODO: Is this necessary?
+				if (!this.mono_wasm_empty_string)
+					this.mono_wasm_empty_string = "";
+
+				let result = this.mono_wasm_empty_string;
+				let lengthBytes = Module.HEAP32[pLengthBytes / 4],
+					pChars = Module.HEAP32[ppChars / 4],
+					isInterned = Module.HEAP32[pIsInterned / 4];
+
+				if (pLengthBytes && pChars) {
+					if (
+						isInterned && 
+						MONO.interned_string_table && 
+						MONO.interned_string_table.has(mono_string)
+					) {
+						result = MONO.interned_string_table.get(mono_string);
+						// console.log("intern table cache hit", mono_string, result.length);
+					} else {
+						result = this.decode(pChars, pChars + lengthBytes, false);
+						if (isInterned) {
+							if (!MONO.interned_string_table)
+								MONO.interned_string_table = new Map();
+							// console.log("interned", mono_string, result.length);
+							MONO.interned_string_table.set(mono_string, result);
+						}
+					}						
+				}
+
+				this.mono_wasm_string_root.value = 0;
 				return result;
 			},
 			decode: function (start, end, save) {
@@ -759,6 +798,14 @@ var MonoSupportLib = {
                 throw new Error(`Could not get a value for ${root}`);
 
             return this._resolve_member_by_name(rootObject, root, parts);
+		},
+
+		mono_wasm_set_variable_value: function (scope, index, name, newValue) {
+			console.debug (">> mono_wasm_set_variable_value " + name + " - " + newValue);
+			var ret = this._c_fn_table.mono_wasm_set_variable_on_frame_wrapper(scope, index, name, newValue);
+			if (ret == false)
+				throw new Error(`Could not get a value for ${name}`);
+            return ret;
         },
 
 		/**
@@ -1224,6 +1271,32 @@ var MonoSupportLib = {
 			return getter_res.length > 0 ? getter_res [0] : {};
 		},
 
+		/**
+		 * @param  {string} objectIdStr objectId
+		 * @param  {string} name property name
+		 * @returns {object} return true if it works and false if it doesn't
+		 */
+		_set_value_on_object: function (objectIdStr, name, newvalue) {
+			const id = this._parse_object_id (objectIdStr);
+			if (id === undefined)
+				throw new Error (`Invalid object id: ${objectIdStr}`);
+
+			let setter_res;
+			if (id.scheme == 'object') {
+				if (isNaN (id.o) || id.o < 0)
+					throw new Error (`Invalid object id: ${objectIdStr}`);
+
+				var ret = this._c_fn_table.mono_wasm_set_value_on_object_wrapper (id.o, name, newvalue);
+				if (!ret)
+					throw new Error (`Invoking setter on ${objectIdStr} failed`);
+
+				setter_res = ret;
+			}
+			else
+				throw new Error (`Only object is supported for setters, id: ${objectIdStr}`);
+			return setter_res;
+		},
+
 		_create_proxy_from_object_id: function (objectId) {
 			const details = this.mono_wasm_get_details(objectId);
 
@@ -1245,7 +1318,10 @@ var MonoSupportLib = {
 				}
 			});
 
-			return proxy;
+			const handler1 = {
+				set (obj, prop, newValue) {return MONO._set_value_on_object (objectId, prop, newValue.toString());},
+			};
+			return new Proxy(proxy, handler1);
 		},
 
 		mono_wasm_call_function_on: function (request) {
@@ -1384,12 +1460,14 @@ var MonoSupportLib = {
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
-			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'number' ]);
-			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'number' ]);
-			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 'bool', [ 'number', 'string' ]);
-			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
-			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
-			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   	'bool', [ 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        	'bool', [ 'number', 'number', 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 	'bool', [ 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  	'bool', [ 'number', 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_get_local_vars',          	'bool', [ 'number', 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     	'bool', [ 'number', 'number']);
+			this._register_c_fn     ('mono_wasm_set_value_on_object',     	'bool', [ 'number', 'string', 'string' ]);
+			this._register_c_fn     ('mono_wasm_set_variable_on_frame', 'bool', [ 'number', 'number', 'string', 'string']);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;
@@ -1445,9 +1523,9 @@ var MonoSupportLib = {
 			if (options == null)
 				options = {}
 			if (!('write_at' in options))
-				options.write_at = 'WebAssembly.Runtime::StopProfile';
+				options.write_at = 'Interop/Runtime::StopProfile';
 			if (!('send_to' in options))
-				options.send_to = 'WebAssembly.Runtime::DumpAotProfileData';
+				options.send_to = 'Interop/Runtime::DumpAotProfileData';
 			var arg = "aot:write-at-method=" + options.write_at + ",send-to-method=" + options.send_to;
 			Module.ccall ('mono_wasm_load_profiler_aot', null, ['string'], [arg]);
 		},
@@ -1904,6 +1982,9 @@ var MonoSupportLib = {
 
 			if (invariantMode)
 				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+
+			// Set globalization mode to PredefinedCulturesOnly
+			this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
 		},
 
 		// Used by the debugger to enumerate loaded dlls and pdbs
@@ -2096,7 +2177,8 @@ var MonoSupportLib = {
 						type: "boolean",
 						value: v,
 						description: v.toString ()
-					}
+					},
+					writable:true
 				});
 				break;
 			}
@@ -2108,7 +2190,8 @@ var MonoSupportLib = {
 						type: "symbol",
 						value: v,
 						description: v
-					}
+					},
+					writable:true
 				});
 				break;
 			}
@@ -2119,7 +2202,8 @@ var MonoSupportLib = {
 						type: "number",
 						value: value,
 						description: '' + value
-					}
+					},
+					writable:true
 				});
 				break;
 

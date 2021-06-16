@@ -4420,14 +4420,7 @@ HRESULT CordbHandleValue::Dispose()
                           m_appdomain->GetADToken());
 
     event.DisposeHandle.vmObjectHandle = vmObjHandle;
-    if (m_handleType == HANDLE_STRONG)
-    {
-        event.DisposeHandle.fStrong = TRUE;
-    }
-    else
-    {
-        event.DisposeHandle.fStrong = FALSE;
-    }
+    event.DisposeHandle.handleType = m_handleType;
 
     // Note: one-way event here...
     hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));

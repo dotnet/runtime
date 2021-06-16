@@ -1,7 +1,8 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+      <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
 
 Commonly Used Types:
 Microsoft.Extensions.Logging.ILogger

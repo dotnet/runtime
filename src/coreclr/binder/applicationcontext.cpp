@@ -17,7 +17,6 @@
 #include "failurecache.hpp"
 #include "assemblyidentitycache.hpp"
 #include "utils.hpp"
-#include "variables.hpp"
 #include "ex.h"
 #include "clr/fs/path.h"
 using namespace clr::fs;

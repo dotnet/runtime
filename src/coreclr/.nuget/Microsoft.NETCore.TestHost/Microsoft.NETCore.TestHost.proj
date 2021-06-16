@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
     <!-- identity project, runtime specific projects are included by props above -->

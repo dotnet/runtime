@@ -10,11 +10,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Net.Http.QPack;
 using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
@@ -264,7 +268,7 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
             catch (Http3ConnectionException ex)
@@ -307,7 +311,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Expected HEADERS as first response frame; recieved {frameType}.");
+                        Trace($"Expected HEADERS as first response frame; received {frameType}.");
                     }
                     throw new HttpRequestException(SR.net_http_invalid_response);
                 }
@@ -499,15 +503,7 @@ namespace System.Net.Http
             _sendBuffer.Commit(2);
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            if (normalizedMethod.Http3EncodedBytes != null)
-            {
-                BufferBytes(normalizedMethod.Http3EncodedBytes);
-            }
-            else
-            {
-                BufferLiteralHeaderWithStaticNameReference(H3StaticTable.MethodGet, normalizedMethod.Method);
-            }
-
+            BufferBytes(normalizedMethod.Http3EncodedBytes);
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
             if (request.HasHeaders && request.Headers.Host != null)
@@ -590,7 +586,7 @@ namespace System.Net.Http
 
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 
@@ -753,12 +749,14 @@ namespace System.Net.Http
                     case Http3FrameType.Headers:
                     case Http3FrameType.Data:
                         return ((Http3FrameType)frameType, payloadLength);
-                    case Http3FrameType.Settings:
+                    case Http3FrameType.Settings: // These frames should only be received on a control stream, not a response stream.
                     case Http3FrameType.GoAway:
                     case Http3FrameType.MaxPushId:
-                        // These frames should only be received on a control stream, not a response stream.
+                    case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
+                    case Http3FrameType.ReservedHttp2Ping:
+                    case Http3FrameType.ReservedHttp2WindowUpdate:
+                    case Http3FrameType.ReservedHttp2Continuation:
                         throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
-                    case Http3FrameType.DuplicatePush:
                     case Http3FrameType.PushPromise:
                     case Http3FrameType.CancelPush:
                         // Because we haven't sent any MAX_PUSH_ID frames, any of these push-related
@@ -808,6 +806,9 @@ namespace System.Net.Http
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
+
+            // Reset decoder state. Require because one decoder instance is reused to decode headers and trailers.
+            _headerDecoder.Reset();
         }
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
@@ -886,7 +887,7 @@ namespace System.Net.Http
 
                 _response = new HttpResponseMessage()
                 {
-                    Version = Http3Connection.HttpVersion30,
+                    Version = HttpVersion.Version30,
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent(),
                     StatusCode = (HttpStatusCode)statusCode

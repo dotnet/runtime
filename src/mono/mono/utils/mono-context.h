@@ -45,8 +45,17 @@ typedef struct _libc_xmmreg MonoContextSimdReg;
 typedef __m128d MonoContextSimdReg;
 #endif
 #elif defined(TARGET_ARM64)
+/* We need a definition for MonoContextSimdReg even when cross-compiling
+   from Windows, but __uint128_t doesn't exist. Here __m128d is used as
+   a stand-in. This is not expected to work for Windows ARM64 native builds. */
+#if defined(HOST_WIN32)
+#define MONO_HAVE_SIMD_REG
+#include <emmintrin.h>
+typedef __m128d MonoContextSimdReg;
+#else
 #define MONO_HAVE_SIMD_REG
 typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 
 /*
@@ -75,7 +84,7 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->wasm_bp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->wasm_sp))
 
-#elif (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
+#elif ((defined(__i386__) || defined(_M_IX86)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
@@ -246,7 +255,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
+#elif ((defined(__x86_64__) || defined(_M_X64)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64))
 
 #include <mono/arch/amd64/amd64-codegen.h>
 
@@ -914,7 +923,6 @@ typedef struct ucontext MonoContext;
 #define MONO_CONTEXT_SET_BP(ctx,bp) 					\
 	do {		 						\
 		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
-		(ctx)->uc_stack.ss_sp	     = (void*)bp;		\
 	} while (0) 
 
 #define MONO_CONTEXT_GET_IP(ctx) (gpointer) (ctx)->uc_mcontext.psw.addr

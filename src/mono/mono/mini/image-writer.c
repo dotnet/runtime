@@ -167,7 +167,7 @@ struct _MonoImageWriter {
 };
 
 static G_GNUC_UNUSED int
-ilog2(register int value)
+ilog2(int value)
 {
 	int count = -1;
 	while (value & ~0xf) count += 4, value >>= 4;

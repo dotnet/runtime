@@ -69,7 +69,9 @@ namespace Internal.TypeSystem
             AssemblyName homeAssembly = FindAssemblyIfNamePresent(name);
             if (homeAssembly != null)
             {
-                homeModule = module.Context.ResolveAssembly(homeAssembly);
+                homeModule = module.Context.ResolveAssembly(homeAssembly, throwIfNotFound);
+                if (homeModule == null)
+                    return null;
             }
             MetadataType typeDef = resolver != null ? resolver(genericTypeDefName.ToString(), homeModule, throwIfNotFound) :
                 ResolveCustomAttributeTypeDefinitionName(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
@@ -274,7 +276,7 @@ namespace Internal.TypeSystem
                 namespaceName = fullName.Substring(0, split);
                 typeName = fullName.Substring(split + 1);
             }
-            return module.GetType(namespaceName, typeName, throwIfNotFound);
+            return module.GetType(namespaceName, typeName, throwIfNotFound ? NotFoundBehavior.Throw : NotFoundBehavior.ReturnNull);
         }
 
         private static AssemblyName FindAssemblyIfNamePresent(string name)

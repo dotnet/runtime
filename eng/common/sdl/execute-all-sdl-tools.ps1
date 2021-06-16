@@ -32,7 +32,7 @@ try {
   $ErrorActionPreference = 'Stop'
   Set-StrictMode -Version 2.0
   $disableConfigureToolsetImport = $true
-  $LASTEXITCODE = 0
+  $global:LASTEXITCODE = 0
 
   # `tools.ps1` checks $ci to perform some actions. Since the SDL
   # scripts don't necessarily execute in the same agent that run the
@@ -85,10 +85,6 @@ try {
   }
   if ($SourceToolsList -and $SourceToolsList.Count -gt 0) {
     & $(Join-Path $PSScriptRoot 'run-sdl.ps1') -GuardianCliLocation $guardianCliLocation -WorkingDirectory $workingDirectory -TargetDirectory $SourceDirectory -GdnFolder $gdnFolder -ToolsList $SourceToolsList -AzureDevOpsAccessToken $AzureDevOpsAccessToken -UpdateBaseline $UpdateBaseline -GuardianLoggerLevel $GuardianLoggerLevel -CrScanAdditionalRunConfigParams $CrScanAdditionalRunConfigParams -PoliCheckAdditionalRunConfigParams $PoliCheckAdditionalRunConfigParams
-  }
-
-  if ($UpdateBaseline) {
-    & (Join-Path $PSScriptRoot 'push-gdn.ps1') -Repository $RepoName -BranchName $BranchName -GdnFolder $GdnFolder -AzureDevOpsAccessToken $AzureDevOpsAccessToken -PushReason 'Update baseline'
   }
 
   if ($TsaPublish) {

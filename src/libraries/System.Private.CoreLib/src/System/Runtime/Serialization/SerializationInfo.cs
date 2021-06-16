@@ -246,11 +246,10 @@ namespace System.Runtime.Serialization
 
         internal void AddValueInternal(string name, object? value, Type type)
         {
-            if (_nameToIndex.ContainsKey(name))
+            if (!_nameToIndex.TryAdd(name, _count))
             {
                 throw new SerializationException(SR.Serialization_SameNameTwice);
             }
-            _nameToIndex.Add(name, _count);
 
             // If we need to expand the arrays, do so.
             if (_count >= _names.Length)

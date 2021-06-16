@@ -28,7 +28,7 @@ namespace System.Net.WebSockets
 
         // return value here signifies if a Sec-WebSocket-Protocol header should be returned by the server.
         internal static bool ProcessWebSocketProtocolHeader(string? clientSecWebSocketProtocol,
-            string subProtocol,
+            string? subProtocol,
             out string acceptProtocol)
         {
             acceptProtocol = string.Empty;
@@ -76,7 +76,7 @@ namespace System.Net.WebSockets
                     subProtocol));
         }
 
-        internal static void ValidateOptions(string subProtocol, int receiveBufferSize, int sendBufferSize, TimeSpan keepAliveInterval)
+        internal static void ValidateOptions(string? subProtocol, int receiveBufferSize, int sendBufferSize, TimeSpan keepAliveInterval)
         {
             if (subProtocol != null)
             {

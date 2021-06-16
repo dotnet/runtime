@@ -12,7 +12,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Int32 : IComparable, IConvertible, IFormattable, IComparable<int>, IEquatable<int>, ISpanFormattable
+    public readonly struct Int32 : IComparable, IConvertible, ISpanFormattable, IComparable<int>, IEquatable<int>
     {
         private readonly int m_value; // Do not rename (binary serialization)
 
@@ -56,7 +56,7 @@ namespace System
             return 0;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is int))
             {
@@ -143,7 +143,7 @@ namespace System
         }
 
         // Parses an integer from a String. Returns false rather
-        // than throwing exceptin if input is invalid
+        // than throwing an exception if input is invalid.
         //
         public static bool TryParse([NotNullWhen(true)] string? s, out int result)
         {
@@ -162,7 +162,7 @@ namespace System
         }
 
         // Parses an integer from a String in the given style. Returns false rather
-        // than throwing exceptin if input is invalid
+        // than throwing an exception if input is invalid.
         //
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {

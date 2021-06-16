@@ -20,12 +20,7 @@ namespace System.Drawing.Printing
         /// </remarks>
         internal sealed class SafeDeviceModeHandle : SafeHandle
         {
-            /// <summary>
-            /// This constructor is used by the P/Invoke marshaling layer
-            /// to allocate a SafeHandle instance. P/Invoke then does the
-            /// appropriate method call, storing the handle in this class.
-            /// </summary>
-            private SafeDeviceModeHandle() : base(IntPtr.Zero, ownsHandle: true)
+            public SafeDeviceModeHandle() : base(IntPtr.Zero, ownsHandle: true)
             {
             }
 

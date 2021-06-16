@@ -1516,7 +1516,7 @@ namespace System.Globalization
               NlsGetSortKeyLength(source, options) :
               IcuGetSortKeyLength(source, options);
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             return value is CompareInfo otherCompareInfo
                 && Name == otherCompareInfo.Name;

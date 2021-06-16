@@ -52,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return (T)fromCache;
         }
 
-        internal class BinderEqualityComparer : IEqualityComparer<ICSharpBinder>
+        internal sealed class BinderEqualityComparer : IEqualityComparer<ICSharpBinder>
         {
             public bool Equals(ICSharpBinder x, ICSharpBinder y) => x.IsEquivalentTo(y);
             public int GetHashCode(ICSharpBinder obj) => obj.GetGetBinderEquivalenceHash();

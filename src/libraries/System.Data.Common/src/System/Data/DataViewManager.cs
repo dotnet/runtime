@@ -97,6 +97,7 @@ namespace System.Data
                 builder.Append("</DataViewSettingCollectionString>");
                 return builder.ToString();
             }
+            [RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed.")]
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -287,7 +288,7 @@ namespace System.Data
 
             if (listAccessors == null || listAccessors.Length == 0)
             {
-                return ((ICustomTypeDescriptor)(new DataViewManagerListItemTypeDescriptor(this))).GetProperties();
+                return new DataViewManagerListItemTypeDescriptor(this).GetPropertiesInternal();
             }
             else
             {

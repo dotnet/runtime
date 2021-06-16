@@ -1,7 +1,7 @@
 
 # Using your .NET Runtime build with .NET SDK
 
-This walkthrough explains how to run your own app against your local build using only the .NET SDK. 
+This walkthrough explains how to run your own app against your local build using only the .NET SDK.
 
 Testing your local build this way is quite realistic - more like a real user. However it takes longer because you have to build the package. Each build can take 10 minutes altogether.
 
@@ -9,7 +9,7 @@ If you want to use a faster method, you may want to use one of these walkthrough
 
 - [Using Your Build - Update from raw build output](./testing/using-your-build.md)
 - [Using CoreRun To Run .NET Application](./testing/using-corerun.md)
-- [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
+- [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md).
 
 ## Prerequisites
 
@@ -104,7 +104,7 @@ static void Main(string[] args)
 Now is the time to publish. The publish step will trigger restore and build. You can iterate on build by calling `dotnet build` as
 needed.
 
-```bat
+```cmd
 dotnet publish
 ```
 
@@ -179,22 +179,22 @@ So the steps are:
 
 ### 1. Build the package again
 
-```bat
+```cmd
 build.cmd clr+libs+host+packs -c release
-``` 
+```
 
-If you only changed libraries, `build.cmd libs+host+packs -c release` is a little faster; if you only changed clr, then `build.cmd clr+host+packs -c release` 
+If you only changed libraries, `build.cmd libs+host+packs -c release` is a little faster; if you only changed clr, then `build.cmd clr+host+packs -c release`
 
 ### 2. Delete your local package cache
 
-```bat
+```cmd
 rd /s /q c:\localcache
 ```
 
 ### 3. Publish again
 
-```bat
+```cmd
 dotnet publish
 ```
 
-Now your app will use your updated package. 
+Now your app will use your updated package.

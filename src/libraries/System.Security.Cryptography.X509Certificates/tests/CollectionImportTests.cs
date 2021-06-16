@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -51,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportX509DerFile()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "MS.cer")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.MsCertificateDerFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
@@ -61,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportX509PemFile()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "MS.pem")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.MsCertificatePemFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
@@ -69,6 +70,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerBytes_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7EmptyDerBytes))
@@ -79,6 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemBytes_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7EmptyPemBytes))
@@ -89,9 +92,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerFile_Empty()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "empty.p7b")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7EmptyDerFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(0, collection.Count);
@@ -99,9 +103,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemFile_Empty()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "empty.p7c")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7EmptyPemFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(0, collection.Count);
@@ -109,6 +114,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerBytes_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7SingleDerBytes))
@@ -121,6 +127,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemBytes_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7SinglePemBytes))
@@ -133,9 +140,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerFile_Single()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "singlecert.p7b")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7SingleDerFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
@@ -145,9 +153,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemFile_Single()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "singlecert.p7c")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7SinglePemFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
@@ -157,6 +166,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainDerBytes))
@@ -167,6 +177,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerByteSpan_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainDerBytes.AsSpan()))
@@ -177,6 +188,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes))
@@ -187,6 +199,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemByteSpan_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes.AsSpan()))
@@ -197,9 +210,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerFile_Chain()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "certchain.p7b")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7ChainDerFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(3, collection.Count);
@@ -207,9 +221,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemFile_Chain()
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "certchain.p7c")))
+            using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7ChainPemFile))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(3, collection.Count);
@@ -274,7 +289,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void ImportPkcs12File_Single(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), TestData.PfxDataPassword, keyStorageFlags))
+            using (ImportedCollection ic = Cert.Import(TestFiles.PfxFile, TestData.PfxDataPassword, keyStorageFlags))
             {
                 X509Certificate2Collection cc2 = ic.Collection;
                 int count = cc2.Count;
@@ -291,7 +306,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestData.PfxDataPassword.AsSpan().CopyTo(password.Slice(1));
             password = password.Slice(1, TestData.PfxDataPassword.Length);
 
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), password, keyStorageFlags))
+            using (ImportedCollection ic = Cert.Import(TestFiles.PfxFile, password, keyStorageFlags))
             {
                 X509Certificate2Collection cc2 = ic.Collection;
                 int count = cc2.Count;
@@ -342,7 +357,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void ImportPkcs12File_Chain(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, keyStorageFlags))
+            using (ImportedCollection ic = Cert.Import(TestFiles.ChainPfxFile, TestData.ChainPfxPassword, keyStorageFlags))
             {
                 X509Certificate2Collection certs = ic.Collection;
                 int count = certs.Count;
@@ -354,7 +369,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void ImportPkcs12File_Chain_VerifyContents(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, keyStorageFlags))
+            using (ImportedCollection ic = Cert.Import(TestFiles.ChainPfxFile, TestData.ChainPfxPassword, keyStorageFlags))
             {
                 X509Certificate2Collection certs = ic.Collection;
                 int count = certs.Count;
@@ -368,7 +383,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "test.local",
                 };
 
-                string[] actualSubjects = certs.OfType<X509Certificate2>().
+                string[] actualSubjects = certs.
                     Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
                     ToArray();
 
@@ -382,7 +397,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     true,
                 };
 
-                bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
+                bool[] actualHasPrivateKeys = certs.
                     Select(cert => cert.HasPrivateKey).
                     ToArray();
 

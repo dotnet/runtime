@@ -292,7 +292,7 @@ public:
     // Assumptions:
     //    The stack must not be empty.
     //
-    T Top()
+    T Top() const
     {
         assert(Size() > 0);
         return this->m_members[m_used - 1];
@@ -328,7 +328,7 @@ public:
     // Assumptions:
     //    The element index does not exceed the current stack depth.
     //
-    T GetNoExpand(unsigned idx)
+    T GetNoExpand(unsigned idx) const
     {
         assert(idx < m_used);
         return this->m_members[idx];
@@ -364,7 +364,7 @@ public:
     // Return Value:
     //    The stack depth.
     //
-    unsigned Size()
+    unsigned Size() const
     {
         return m_used;
     }

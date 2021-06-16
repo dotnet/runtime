@@ -466,10 +466,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    // validate the sleep time
-    if ((iTime < 0) && (iTime != INFINITE_TIMEOUT))
-        COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-
     GetThread()->UserSleep(iTime);
 
     HELPER_METHOD_FRAME_END();
@@ -659,10 +655,7 @@ FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
     // Don't report a StopRequested if the thread has actually stopped.
     if (state & Thread::TS_Dead)
     {
-        if (state & Thread::TS_Aborted)
-            res |= ThreadAborted;
-        else
-            res |= ThreadStopped;
+        res |= ThreadStopped;
     }
     else
     {
@@ -1016,16 +1009,16 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         if (name == NULL)
         {
-            g_profControlBlock.pProfInterface->ThreadNameChanged((ThreadID)pThread, 0, NULL);
+            (&g_profControlBlock)->ThreadNameChanged((ThreadID)pThread, 0, NULL);
         }
         else
         {
-            g_profControlBlock.pProfInterface->ThreadNameChanged((ThreadID)pThread, len, (WCHAR*)name);
+            (&g_profControlBlock)->ThreadNameChanged((ThreadID)pThread, len, (WCHAR*)name);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1160,30 +1153,6 @@ BOOL QCALLTYPE ThreadNative::YieldThread()
 
     return ret;
 }
-
-FCIMPL1(Object*, ThreadNative::GetThreadDeserializationTracker, StackCrawlMark* stackMark)
-{
-    FCALL_CONTRACT;
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal)
-
-    // To avoid reflection trying to bypass deserialization tracking, check the caller
-    // and only allow SerializationInfo to call into this method.
-    MethodTable* pCallerMT = SystemDomain::GetCallersType(stackMark);
-    if (pCallerMT != CoreLibBinder::GetClass(CLASS__SERIALIZATION_INFO))
-    {
-        COMPlusThrowArgumentException(W("stackMark"), NULL);
-    }
-
-    Thread* pThread = GetThread();
-
-    refRetVal = ObjectFromHandle(pThread->GetOrCreateDeserializationTracker());
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
 
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {

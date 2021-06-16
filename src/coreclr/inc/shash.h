@@ -190,6 +190,9 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // updating an element rather than adding a duplicate.
     void AddOrReplace(const element_t & element);
 
+    // NoThrow version of AddOrReplace. Returns TRUE if element was added/replaced, FALSE otherwise.
+    BOOL AddOrReplaceNoThrow(const element_t &element);
+
     // Remove the first element matching the key from the hash table.
 
     void Remove(key_t key);

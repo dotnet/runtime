@@ -20,10 +20,10 @@ namespace MS.Internal.Xml.XPath
     // --- if false, we hold with row #I and apply this algorithm starting for row #I+1
     // --- when we done with #I+1 we continue with row #I
 
-    internal class PreSiblingQuery : CacheAxisQuery
+    internal sealed class PreSiblingQuery : CacheAxisQuery
     {
         public PreSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest) { }
-        protected PreSiblingQuery(PreSiblingQuery other) : base(other) { }
+        private PreSiblingQuery(PreSiblingQuery other) : base(other) { }
 
         private static bool NotVisited(XPathNavigator nav, List<XPathNavigator> parentStk)
         {

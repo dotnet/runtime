@@ -7,7 +7,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Diagnostics.CodeAnalysis;
     using System.Xml;
 
-    internal class NamespaceDecl
+    internal sealed class NamespaceDecl
     {
         private string _prefix;
         private string _nsUri;

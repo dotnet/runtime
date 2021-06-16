@@ -81,7 +81,7 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
             ProcessPriorityClass originalPriority = _process.PriorityClass;
-            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
+            Assert.Equal(Process.GetCurrentProcess().PriorityClass, originalPriority);
 
             try
             {
@@ -171,25 +171,29 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
         public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
         public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // OSX doesn't support throwing on Process.Start
+        [SkipOnPlatform(TestPlatforms.OSX, "OSX doesn't support throwing on Process.Start")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52882", TestPlatforms.MacCatalyst)]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -272,6 +276,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 42);
@@ -340,6 +345,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
             // Create a directory that will ProcessStartInfo.WorkingDirectory
@@ -469,6 +475,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS, or tvOS.")]
         public void Kill_NotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -541,7 +548,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Getting MaxWorkingSet is not supported on OSX and BSD.
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Getting MaxWorkingSet is not supported on OSX, BSD, iOS, MacCatalyst, and tvOS.")]
         public void MaxWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -596,7 +603,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Getting MinWorkingSet is not supported on OSX and BSD.
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Getting MinWorkingSet is not supported on OSX, BSD, iOS, MacCatalyst, and tvOS.")]
         public void MinWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -735,6 +742,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49107", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestVirtualMemorySize64()
         {
             CreateDefaultProcess();
@@ -894,7 +902,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // getting/setting affinity not supported on OSX and BSD
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "getting/setting affinity not supported on OSX and BSD")]
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();
@@ -1373,6 +1381,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public void TestStartWithMissingFile(bool fullPath)
         {
             string path = Guid.NewGuid().ToString("N");
@@ -1465,6 +1474,56 @@ namespace System.Diagnostics.Tests
             process.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => process.Start());
+        }
+
+        [Fact]
+        public void StandardInput_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardInput);
+        }
+
+        [Fact]
+        public void StandardError_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardError);
+        }
+
+        [Fact]
+        public void StandardOutput_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardOutput);
+        }
+
+        [Fact]
+        public void CancelOutputRead_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.CancelOutputRead());
+        }
+
+        [Fact]
+        public void CancelErrorRead_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.CancelErrorRead());
         }
 
         [Fact]
@@ -2035,6 +2094,8 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
         public void LongProcessNamesAreSupported()
         {
             string sleepPath;
@@ -2360,7 +2421,7 @@ namespace System.Diagnostics.Tests
         {
             string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
             string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
-            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+            string[] arguments = new string[] { "/c", "mkdir", fullPath };
 
             if (Directory.Exists(fullPath))
             {

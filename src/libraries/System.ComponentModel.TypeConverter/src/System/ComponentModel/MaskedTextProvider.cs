@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
@@ -19,6 +19,7 @@ namespace System.ComponentModel
     /// to the test string itself, since mask literals cannot be modified (i.e: replacing on a literal position
     /// will actually replace on the nearest edit position forward).
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] // needed by Clone() to preserve derived ctors
     public class MaskedTextProvider : ICloneable
     {
         ///
@@ -65,7 +66,7 @@ namespace System.ComponentModel
         /// This structure describes some constraints and properties of a character in the test string, as specified
         /// in the mask.
         /// </summary>
-        private class CharDescriptor
+        private sealed class CharDescriptor
         {
             // The position the character holds in the mask string. Required for testing the character against the mask.
             public int MaskPosition;

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class ECDsaTests
     {
         [Fact]
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[1], 0, 1, new byte[1], new HashAlgorithmName("")));
 
                 var input = new byte[1024];
-                new Random().NextBytes(input);
+                Random.Shared.NextBytes(input);
 
                 byte[] result = ecdsa.SignData(input, HashAlgorithmName.SHA256);
                 Assert.NotNull(result);
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(new byte[1]), new byte[1], new HashAlgorithmName("")));
 
                 var input = new byte[1024];
-                new Random().NextBytes(input);
+                Random.Shared.NextBytes(input);
 
                 byte[] result = ecdsa.SignData(new MemoryStream(input), HashAlgorithmName.SHA256);
                 Assert.NotNull(result);
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData((ReadOnlySpan<byte>)new byte[1], new byte[1], new HashAlgorithmName(null)));
 
                 var input = new byte[1024];
-                new Random().NextBytes(input);
+                Random.Shared.NextBytes(input);
 
                 byte[] output = new byte[1];
                 int outputLength;

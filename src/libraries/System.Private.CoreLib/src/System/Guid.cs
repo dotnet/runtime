@@ -18,7 +18,7 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
+    public readonly partial struct Guid : ISpanFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
     {
         public static readonly Guid Empty;
 
@@ -797,7 +797,7 @@ namespace System
 
         // Returns true if and only if the guid represented
         //  by o is the same as this instance.
-        public override bool Equals(object? o) => o is Guid g && EqualsCore(this, g);
+        public override bool Equals([NotNullWhen(true)] object? o) => o is Guid g && EqualsCore(this, g);
 
         public bool Equals(Guid g) => EqualsCore(this, g);
 

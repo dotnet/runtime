@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -428,7 +427,7 @@ namespace System.Security.Cryptography
                         }
                         finally
                         {
-                            Array.Clear(ecParameters.D!, 0, ecParameters.D!.Length);
+                            Array.Clear(ecParameters.D!);
                         }
                     }
                 }

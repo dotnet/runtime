@@ -40,6 +40,10 @@ namespace System.Net.Sockets.Tests
             using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
             using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
 
+            // Force non-blocking mode in ...SyncForceNonBlocking variants of the test: 
+            ConfigureNonBlocking(left);
+            ConfigureNonBlocking(right);
+
             var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
             var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
 
@@ -118,6 +122,11 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceiveNonParallel_Task : SendReceiveNonParallel<SocketHelperTask>
     {
         public SendReceiveNonParallel_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_CancellableTask : SendReceiveNonParallel<SocketHelperCancellableTask>
+    {
+        public SendReceiveNonParallel_CancellableTask(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class SendReceiveNonParallel_Eap : SendReceiveNonParallel<SocketHelperEap>

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -181,7 +180,7 @@ internal static partial class Interop
                     }
                 }
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException || ex.InnerException is IOException)
             {
                 contents = null;
                 return false;

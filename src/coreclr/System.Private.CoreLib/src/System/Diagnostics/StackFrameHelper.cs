@@ -11,7 +11,7 @@ namespace System.Diagnostics
     // Modifying the order or fields of this object may require other changes
     // to the unmanaged definition of the StackFrameHelper class, in
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
-    internal class StackFrameHelper
+    internal sealed class StackFrameHelper
     {
         private Thread? targetThread;
         private int[]? rgiOffset;
@@ -27,6 +27,7 @@ namespace System.Diagnostics
         private Assembly?[]? rgAssembly;
         private IntPtr[]? rgLoadedPeAddress;
         private int[]? rgiLoadedPeSize;
+        private bool[]? rgiIsFileLayout;
         private IntPtr[]? rgInMemoryPdbAddress;
         private int[]? rgiInMemoryPdbSize;
         // if rgiMethodToken[i] == 0, then don't attempt to get the portable PDB source/info
@@ -39,7 +40,7 @@ namespace System.Diagnostics
 #pragma warning restore 414
 
         private delegate void GetSourceLineInfoDelegate(Assembly? assembly, string assemblyPath, IntPtr loadedPeAddress,
-            int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
+            int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
         private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
@@ -58,6 +59,7 @@ namespace System.Diagnostics
             rgAssembly = null;
             rgLoadedPeAddress = null;
             rgiLoadedPeSize = null;
+            rgiIsFileLayout = null;
             rgInMemoryPdbAddress = null;
             rgiInMemoryPdbSize = null;
             dynamicMethods = null;
@@ -83,13 +85,6 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
-        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
-        // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
-        // so the code below is actually recognized by linker, but fails to resolve the type since the System.Diagnostics.StackTrace
-        // is not always part of the closure linker works on.
-        // DynamicDependencyAttribute on the other hand can pull in additional assemblies.
-        [DynamicDependency("GetSourceLineInfo", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
-        [DynamicDependency("#ctor()", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
         internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
@@ -117,7 +112,7 @@ namespace System.Diagnostics
 
                     Type[] parameterTypes = new Type[]
                     {
-                        typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(IntPtr),
+                        typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(bool), typeof(IntPtr),
                         typeof(int), typeof(int), typeof(int),
                         typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()
                     };
@@ -144,7 +139,7 @@ namespace System.Diagnostics
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken![index] != 0)
                     {
-                        s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index],
+                        s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
                             rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
                             rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
                     }
@@ -159,7 +154,7 @@ namespace System.Diagnostics
             }
         }
 
-        public virtual MethodBase? GetMethodBase(int i)
+        public MethodBase? GetMethodBase(int i)
         {
             // There may be a better way to do this.
             // we got RuntimeMethodHandles here and we need to go to MethodBase
@@ -176,17 +171,17 @@ namespace System.Diagnostics
             return RuntimeType.GetMethodBase(mhReal);
         }
 
-        public virtual int GetOffset(int i) { return rgiOffset![i]; }
-        public virtual int GetILOffset(int i) { return rgiILOffset![i]; }
-        public virtual string? GetFilename(int i) { return rgFilename?[i]; }
-        public virtual int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
-        public virtual int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
+        public int GetOffset(int i) { return rgiOffset![i]; }
+        public int GetILOffset(int i) { return rgiILOffset![i]; }
+        public string? GetFilename(int i) { return rgFilename?[i]; }
+        public int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
+        public int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
 
-        public virtual bool IsLastFrameFromForeignExceptionStackTrace(int i)
+        public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {
             return (rgiLastFrameFromForeignExceptionStackTrace == null) ? false : rgiLastFrameFromForeignExceptionStackTrace[i];
         }
 
-        public virtual int GetNumberOfFrames() { return iFrameCount; }
+        public int GetNumberOfFrames() { return iFrameCount; }
     }
 }

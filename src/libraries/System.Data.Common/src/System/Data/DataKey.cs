@@ -168,20 +168,9 @@ namespace System.Data
             {
                 return false;
             }
-            else if (column1.Length != column2.Length)
-            {
-                return false;
-            }
             else
             {
-                for (int i = 0; i < column1.Length; i++)
-                {
-                    if (!column1[i].Equals(column2[i]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
+                return column1.AsSpan().SequenceEqual(column2);
             }
         }
 

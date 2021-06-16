@@ -368,7 +368,7 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 // Returns TRUE if all the collation elements in str are completely ignorable
 static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
 {
-    int result = TRUE;
+    int result = true;
     UErrorCode err = U_ZERO_ERROR;
     UCollationElements* pCollElem = ucol_openElements(pColl, lpStr, length, &err);
 
@@ -379,7 +379,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
         {
             if (curCollElem != UCOL_IGNORABLE)
             {
-                result = FALSE;
+                result = false;
                 break;
             }
         }
@@ -387,7 +387,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
         ucol_closeElements(pCollElem);
     }
 
-    return U_SUCCESS(err) ? result : FALSE;
+    return U_SUCCESS(err) ? result : false;
 }
 
 static void CreateSortHandle(SortHandle** ppSortHandle)
@@ -496,7 +496,7 @@ static inline int32_t CreateNewSearchNode(SortHandle* pSortHandle, int32_t optio
     SearchIteratorNode* node = (SearchIteratorNode*) malloc(sizeof(SearchIteratorNode));
     if (node == NULL)
     {
-        return FALSE;
+        return false;
     }
 
     node->searchIterator = USED_STRING_SEARCH; // Mark the new node search handle as borrowed.
@@ -517,9 +517,9 @@ static inline int32_t CreateNewSearchNode(SortHandle* pSortHandle, int32_t optio
 
         pCurrent = pCurrent->next;
 
-    } while (TRUE);
+    } while (true);
 
-    return TRUE;
+    return true;
 }
 
 // Restore previously borrowed search handle to the linked list.
@@ -531,12 +531,12 @@ static inline int32_t RestoreSearchHandle(SortHandle* pSortHandle, UStringSearch
     {
         if (pCurrent->searchIterator == USED_STRING_SEARCH && pal_atomic_cas_ptr((void* volatile*)&(pCurrent->searchIterator), pSearchIterator, USED_STRING_SEARCH))
         {
-            return TRUE;
+            return true;
         }
         pCurrent = pCurrent->next;
     }
 
-    return FALSE;
+    return false;
 }
 
 // return -1 if couldn't borrow search handle from the SortHandle cache, otherwise, it return the slot number of the cache.
@@ -559,7 +559,7 @@ static int32_t GetSearchIteratorUsingCollator(
         *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
         if (!U_SUCCESS(err))
         {
-            assert(FALSE && "Couldn't open the search iterator.");
+            assert(false && "Couldn't open the search iterator.");
             return -1;
         }
 
@@ -597,7 +597,7 @@ static int32_t GetSearchIteratorUsingCollator(
         *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
         if (!U_SUCCESS(err))
         {
-            assert(FALSE && "Couldn't open a new search iterator.");
+            assert(false && "Couldn't open a new search iterator.");
             return -1;
         }
 
@@ -645,7 +645,7 @@ static inline int32_t GetSearchIterator(
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
     if (!U_SUCCESS(err))
     {
-        assert(FALSE && "Couldn't get the collator.");
+        assert(false && "Couldn't get the collator.");
         return -1;
     }
 
@@ -672,7 +672,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
     }
     else
     {
-        assert(FALSE && "Unexpected ucol_getVersion to fail.");
+        assert(false && "Unexpected ucol_getVersion to fail.");
     }
     return result;
 }
@@ -860,13 +860,13 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
     assert(strength >= UCOL_SECONDARY);
 
     UErrorCode errorCode = U_ZERO_ERROR;
-    int32_t movePattern = TRUE, moveSource = TRUE;
+    int32_t movePattern = true, moveSource = true;
     int32_t patternElement = UCOL_IGNORABLE, sourceElement = UCOL_IGNORABLE;
     int32_t capturedOffset = 0;
 
     int32_t collationElementMask = GetCollationElementMask(strength);
 
-    while (TRUE)
+    while (true)
     {
         if (movePattern)
         {
@@ -880,7 +880,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             }
             sourceElement = forwardSearch ? ucol_next(pSourceIterator, &errorCode) : ucol_previous(pSourceIterator, &errorCode);
         }
-        movePattern = TRUE; moveSource = TRUE;
+        movePattern = true; moveSource = true;
 
         if (patternElement == UCOL_NULLORDER)
         {
@@ -894,7 +894,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             }
             else if (forwardSearch && ((sourceElement & UCOL_PRIMARYORDERMASK) == 0) && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
             {
-                return FALSE; // the next character in source text is a combining character, an example: "o\u0308".StartsWith("o")
+                return false; // the next character in source text is a combining character, an example: "o\u0308".StartsWith("o")
             }
             else
             {
@@ -903,15 +903,15 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         }
         else if (patternElement == UCOL_IGNORABLE)
         {
-            moveSource = FALSE;
+            moveSource = false;
         }
         else if (sourceElement == UCOL_IGNORABLE)
         {
-            movePattern = FALSE;
+            movePattern = false;
         }
         else if ((patternElement & collationElementMask) != (sourceElement & collationElementMask))
         {
-            return FALSE;
+            return false;
         }
     }
 
@@ -920,12 +920,12 @@ ReturnTrue:
     {
         *pCapturedOffset = capturedOffset;
     }
-    return TRUE;
+    return true;
 }
 
 static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch, int32_t* pMatchedLength)
 {
-    int32_t result = FALSE;
+    int32_t result = false;
 
     UCollationElements* pPatternIterator = ucol_openElements(pCollator, pPattern, patternLength, pErrorCode);
     if (U_SUCCESS(*pErrorCode))
@@ -956,7 +956,7 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
 
 static int32_t ComplexStartsWith(SortHandle* pSortHandle, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t options, int32_t* pMatchedLength)
 {
-    int32_t result = FALSE;
+    int32_t result = false;
     UErrorCode err = U_ZERO_ERROR;
 
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
@@ -977,7 +977,7 @@ static int32_t ComplexStartsWith(SortHandle* pSortHandle, const UChar* pPattern,
     {
         if (idx == 0)
         {
-            result = TRUE;
+            result = true;
         }
         else
         {
@@ -1017,15 +1017,15 @@ int32_t GlobalizationNative_StartsWith(
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
     if (!U_SUCCESS(err))
     {
-        return FALSE;
+        return false;
     }
 
-    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE, pMatchedLength);
+    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, true, pMatchedLength);
 }
 
 static int32_t ComplexEndsWith(SortHandle* pSortHandle, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t options, int32_t* pMatchedLength)
 {
-    int32_t result = FALSE;
+    int32_t result = false;
 
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
@@ -1049,7 +1049,7 @@ static int32_t ComplexEndsWith(SortHandle* pSortHandle, const UChar* pPattern, i
 
         if (matchEnd == textLength)
         {
-            result = TRUE;
+            result = true;
         }
         else
         {
@@ -1092,9 +1092,9 @@ int32_t GlobalizationNative_EndsWith(
 
     if (!U_SUCCESS(err))
     {
-        return FALSE;
+        return false;
     }
-    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE, pMatchedLength);
+    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, false, pMatchedLength);
 }
 
 int32_t GlobalizationNative_GetSortKey(

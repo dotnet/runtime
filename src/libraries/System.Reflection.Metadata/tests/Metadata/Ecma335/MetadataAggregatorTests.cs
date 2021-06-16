@@ -10,14 +10,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MetadataAggregatorTests
     {
-        private static unsafe EnCMapTableReader CreateEncMapTable(int[] tokens)
+        private static unsafe EnCMapTableReader CreateEncMapTable(byte[] tokens)
         {
             GCHandle handle = GCHandle.Alloc(tokens, GCHandleType.Pinned);
-            var block = new MemoryBlock((byte*)handle.AddrOfPinnedObject(), tokens.Length * sizeof(uint));
-            return new EnCMapTableReader(tokens.Length, block, containingBlockOffset: 0);
+            var block = new MemoryBlock((byte*)handle.AddrOfPinnedObject(), tokens.Length);
+            return new EnCMapTableReader(tokens.Length / sizeof(uint), block, containingBlockOffset: 0);
         }
 
-        private static EnCMapTableReader[] CreateEncMapTables(int[][] tables)
+        private static EnCMapTableReader[] CreateEncMapTables(byte[][] tables)
         {
             var result = new EnCMapTableReader[tables.Length];
 
@@ -47,35 +47,35 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var encMaps = new[]
             {
-                new[] // Gen1
+                new byte[] // Gen1
                 {
-                    0x0100009c,
-                    0x0200002e,
-                    0x0600009e,
-                    0x0600009f,
-                    0x23000011,
+                    0x9c, 0x00, 0x00, 0x01,
+                    0x2e, 0x00, 0x00, 0x02,
+                    0x9e, 0x00, 0x00, 0x06,
+                    0x9f, 0x00, 0x00, 0x06,
+                    0x11, 0x00, 0x00, 0x23,
                 },
-                new[] // Gen2
+                new byte[] // Gen2
                 {
-                    0x0100009d,
-                    0x06000075,
-                    0x1700001a,
-                    0x18000037,
-                    0x18000038,
-                    0x23000012,
-                    0x23000013,
+                    0x9d, 0x00, 0x00, 0x01,
+                    0x75, 0x00, 0x00, 0x06,
+                    0x1a, 0x00, 0x00, 0x17,
+                    0x37, 0x00, 0x00, 0x18,
+                    0x38, 0x00, 0x00, 0x18,
+                    0x12, 0x00, 0x00, 0x23,
+                    0x13, 0x00, 0x00, 0x23,
                 },
-                new[] // Gen3
+                new byte[] // Gen3
                 {
-                    0x0100009e,
-                    0x0100009f,
-                    0x06000075,
-                    0x11000031,
-                    0x1700001a,
-                    0x18000039,
-                    0x1800003a,
-                    0x23000014,
-                    0x23000015,
+                    0x9e, 0x00, 0x00, 0x01,
+                    0x9f, 0x00, 0x00, 0x01,
+                    0x75, 0x00, 0x00, 0x06,
+                    0x31, 0x00, 0x00, 0x11,
+                    0x1a, 0x00, 0x00, 0x17,
+                    0x39, 0x00, 0x00, 0x18,
+                    0x3a, 0x00, 0x00, 0x18,
+                    0x14, 0x00, 0x00, 0x23,
+                    0x15, 0x00, 0x00, 0x23,
                 }
             };
 

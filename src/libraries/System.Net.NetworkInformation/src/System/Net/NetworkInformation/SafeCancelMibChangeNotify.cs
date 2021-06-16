@@ -9,7 +9,7 @@ namespace System.Net.NetworkInformation
     // CancelMibChangeNotify2 guarantees that after it returns, the callback will NEVER be called.  It may block
     // for a small amount of time if the callback is currently in progress, which is fine (and, intentional).
 
-    internal class SafeCancelMibChangeNotify : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeCancelMibChangeNotify : SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeCancelMibChangeNotify() : base(true) { }
 
