@@ -12,7 +12,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HttpRequestMessageTest : HttpClientHandlerTestBase
     {
         private readonly Version _expectedRequestMessageVersion = HttpVersion.Version11;
@@ -229,6 +228,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HEAD")]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
+            if(PlatformDetection.IsBrowser && (method=="DELETE" || method=="OPTIONS")){
+               // [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)] //TODO pre-flight OPTIONS
+               return;
+            }
             using (HttpClient client = CreateHttpClient())
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
