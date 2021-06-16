@@ -40,7 +40,9 @@ namespace System.Runtime
 
         public (object? Target, object? Dependent) GetTargetAndDependent()
         {
-            if (_data is not Ephemeron[] data)
+            Ephemeron[]? data = _data;
+
+            if (data is null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -69,7 +71,9 @@ namespace System.Runtime
 
         internal object? UnsafeGetTargetAndDependent(out object? dependent)
         {
-            if (_data is not Ephemeron[] data)
+            Ephemeron[]? data = _data;
+
+            if (data is null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -101,7 +105,9 @@ namespace System.Runtime
 
         private object? GetTarget()
         {
-            if (_data is not Ephemeron[] data)
+            Ephemeron[]? data = _data;
+
+            if (data is null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -115,7 +121,9 @@ namespace System.Runtime
 
         private void SetTarget(object? target)
         {
-            if (_data is not Ephemeron[] data)
+            Ephemeron[]? data = _data;
+
+            if (data is null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -127,7 +135,9 @@ namespace System.Runtime
 
         private object? GetDependent()
         {
-            if (_data is not Ephemeron[] data)
+            Ephemeron[]? data = _data;
+
+            if (data is null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -141,7 +151,9 @@ namespace System.Runtime
 
         private void SetDependent(object? dependent)
         {
-            if (_data is not Ephemeron[] data)
+            Ephemeron[]? data = _data;
+
+            if (data is null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
