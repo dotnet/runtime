@@ -154,7 +154,7 @@ namespace System.IO
             }
             else if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             _stream = stream;
@@ -220,8 +220,8 @@ namespace System.IO
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {
             ValidateArgs(path, encoding);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            if (bufferSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
         }
