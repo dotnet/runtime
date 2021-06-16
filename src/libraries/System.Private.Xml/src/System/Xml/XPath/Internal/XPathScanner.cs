@@ -40,16 +40,18 @@ namespace MS.Internal.Xml.XPath
         private bool NextChar()
         {
             Debug.Assert(0 <= _xpathExprIndex && _xpathExprIndex <= _xpathExpr.Length);
-            if (_xpathExprIndex < _xpathExpr.Length)
+
+            string expr = _xpathExpr;
+            int index = _xpathExprIndex;
+            if ((uint)index < (uint)expr.Length)
             {
-                _currentChar = _xpathExpr[_xpathExprIndex++];
+                _currentChar = expr[index];
+                _xpathExprIndex = index + 1;
                 return true;
             }
-            else
-            {
-                _currentChar = '\0';
-                return false;
-            }
+
+            _currentChar = '\0';
+            return false;
         }
 
         public LexKind Kind { get { return _kind; } }
