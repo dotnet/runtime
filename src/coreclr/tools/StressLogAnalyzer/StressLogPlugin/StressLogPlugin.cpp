@@ -480,7 +480,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
             for (int i = 0; i < s_valueFilterCount; i++)
             {
                 if ((s_valueFilter[i].end < src || src < s_valueFilter[i].start) &&
-                    (s_valueFilter[i].end < dst_from || dst_from < s_valueFilter[i].start)) &&
+                    (s_valueFilter[i].end < dst_from || dst_from < s_valueFilter[i].start) &&
                     (s_valueFilter[i].end < dst_to || dst_to < s_valueFilter[i].start))
                 {
                     // empty intersection with both the source and the destination

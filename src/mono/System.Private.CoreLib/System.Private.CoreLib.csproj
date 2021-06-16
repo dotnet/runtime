@@ -125,11 +125,6 @@
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
   </PropertyGroup>
 
-  <!-- Experimental mono metadata update feature -->
-  <PropertyGroup>
-    <DefineConstants Condition="'$(MonoMetadataUpdate)' == 'true'">$(DefineConstants);FEATURE_METADATA_UPDATE</DefineConstants>
-  </PropertyGroup>
-
   <!-- ILLinker settings -->
   <PropertyGroup>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>

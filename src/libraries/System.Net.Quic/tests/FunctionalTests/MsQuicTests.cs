@@ -10,13 +10,20 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
+        readonly ITestOutputHelper _output;
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
+
+        public MsQuicTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         [Fact]
         public async Task UnidirectionalAndBidirectionalStreamCountsWork()
@@ -83,9 +90,22 @@ namespace System.Net.Quic.Tests
                 // With trusted root, we should be able to build chain.
                 chain.ChainPolicy.CustomTrustStore.Add(rootCA);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                Assert.True(chain.Build(certificate));
+                bool ret = chain.Build(certificate);
+                if (!ret)
+                {
+                    _output.WriteLine("Chain build failed with {0} elements", chain.ChainElements);
+                    foreach (X509ChainElement element in chain.ChainElements)
+                    {
+                        _output.WriteLine("Element subject {0} and issuer {1}", element.Certificate.Subject, element.Certificate.Issuer);
+                        _output.WriteLine("Element status len {0}", element.ChainElementStatus.Length);
+                        foreach (X509ChainStatus status in element.ChainElementStatus)
+                        {
+                            _output.WriteLine($"Status:  {status.Status}: {status.StatusInformation}");
+                        }
+                    }
+                }
 
-                return true;
+                return ret;
             };
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);

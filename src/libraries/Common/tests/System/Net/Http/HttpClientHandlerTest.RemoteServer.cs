@@ -113,7 +113,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -289,7 +288,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -315,7 +313,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             // Sync API supported only up to HTTP/1.1
@@ -342,14 +339,23 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_CallMethodTwice_StringContent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 string data = "Test String";
                 var content = new StringContent(data, Encoding.UTF8);
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                }
+
                 HttpResponseMessage response;
                 using (response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
@@ -358,7 +364,16 @@ namespace System.Net.Http.Functional.Tests
 
                 // Repeat call.
                 content = new StringContent(data, Encoding.UTF8);
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                }
+
                 using (response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -368,14 +383,21 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_CallMethod_UnicodeStringContent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 string data = "\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb";
                 var content = new StringContent(data, Encoding.UTF8);
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                }
 
                 using (HttpResponseMessage response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
@@ -386,12 +408,19 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(VerifyUploadServersStreamsAndExpectedData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)] 
         public async Task PostAsync_CallMethod_StreamContent(Configuration.Http.RemoteServer remoteServer, HttpContent content, byte[] expectedData)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
+                }
 
                 using (HttpResponseMessage response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
@@ -526,7 +555,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_CallMethod_NullContent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -548,7 +576,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_CallMethod_EmptyContent(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -641,7 +668,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_RedirectWith307_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
             if (remoteServer.HttpVersion == new Version(2, 0))
@@ -657,7 +683,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_RedirectWith302_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
             await PostAsync_Redirect_LargePayload_Helper(remoteServer, 302, false);
@@ -686,7 +711,15 @@ namespace System.Net.Http.Functional.Tests
                 var content = new StreamContent(fs);
 
                 // Compute MD5 of request body data. This will be verified by the server when it receives the request.
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(contentBytes);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(contentBytes);
+                }
 
                 using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
                 using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
@@ -713,7 +746,6 @@ namespace System.Net.Http.Functional.Tests
 #if !NETFRAMEWORK
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task PostAsync_ReuseRequestContent_Success(Configuration.Http.RemoteServer remoteServer)
         {
             const string ContentString = "This is the content string.";
@@ -759,12 +791,16 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(HttpMethodsThatAllowContent))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53591", TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
             string method,
             Uri serverUri)
         {
+            if (method == "GET" && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53591", TestPlatforms.Browser)]
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(

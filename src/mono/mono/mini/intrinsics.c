@@ -140,15 +140,18 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 			else if (!strcmp (cmethod->name, "Round") && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0) {
-				// special case: emit vroundps for MathF.Round directly instead of what llvm.round.f32 emits
+				// special case: emit vroundss for MathF.Round directly instead of what llvm.round.f32 emits
 				// to align with CoreCLR behavior
 				int xreg = alloc_xreg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_FCONV_TO_R4_X, xreg, args [0]->dreg);
-				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDS, xreg, xreg);
+				int xround = alloc_xreg (cfg);
+				EMIT_NEW_BIALU (cfg, ins, OP_SSE41_ROUNDS, xround, xreg, xreg);
 				ins->inst_c0 = 0x4; // vroundss xmm0, xmm0, xmm0, 0x4 (mode for rounding)
 				ins->inst_c1 = MONO_TYPE_R4;
 				int dreg = alloc_freg (cfg);
-				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xreg);
+				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xround);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_R4;
 				return ins;
 			}
 #endif

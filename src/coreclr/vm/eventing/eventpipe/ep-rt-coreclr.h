@@ -1468,10 +1468,6 @@ void
 ep_rt_prepare_provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-	auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 static
@@ -1665,9 +1661,9 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 
 #ifndef DACCESS_COMPILE
 		// Let the profiler know the provider has been created so it can register if it wants to
-		BEGIN_PIN_PROFILER (CORProfilerIsMonitoringEventPipe ());
-		g_profControlBlock.pProfInterface->EventPipeProviderCreated (provider);
-		END_PIN_PROFILER ();
+		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
+		(&g_profControlBlock)->EventPipeProviderCreated (provider);
+		END_PROFILER_CALLBACK ();
 #endif // DACCESS_COMPILE
 }
 
