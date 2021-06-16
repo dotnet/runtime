@@ -49,7 +49,10 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static void AlignedFree(void* ptr)
         {
-            Interop.Ucrtbase._aligned_free(ptr);
+            if (ptr != null)
+            {
+                Interop.Ucrtbase._aligned_free(ptr);
+            }
         }
 
         /// <summary>Reallocates an aligned block of memory of the specified size and alignment, in bytes.</summary>
@@ -107,36 +110,6 @@ namespace System.Runtime.InteropServices
             return result;
         }
 
-        /// <summary>Allocates a block of memory of the specified size, in elements.</summary>
-        /// <param name="elementCount">The count, in elements, of the block to allocate.</param>
-        /// <param name="elementSize">The size, in bytes, of each element in the allocation.</param>
-        /// <returns>A pointer to the allocated block of memory.</returns>
-        /// <exception cref="OutOfMemoryException">Allocating <paramref name="elementCount" /> * <paramref name="elementSize" /> bytes of memory failed.</exception>
-        /// <remarks>
-        ///     <para>This method allows <paramref name="elementCount" /> and/or <paramref name="elementSize" /> to be <c>0</c> and will return a valid pointer that should not be dereferenced and that should be passed to free to avoid memory leaks.</para>
-        ///     <para>This method is a thin wrapper over the C <c>malloc</c> API.</para>
-        /// </remarks>
-        [CLSCompliant(false)]
-        public static void* Alloc(nuint elementCount, nuint elementSize)
-        {
-            nuint byteCount = GetByteCount(elementCount, elementSize);
-            return Alloc(byteCount);
-        }
-
-        /// <summary>Allocates and zeroes a block of memory of the specified size, in bytes.</summary>
-        /// <param name="byteCount">The size, in bytes, of the block to allocate.</param>
-        /// <returns>A pointer to the allocated and zeroed block of memory.</returns>
-        /// <exception cref="OutOfMemoryException">Allocating <paramref name="byteCount" /> of memory failed.</exception>
-        /// <remarks>
-        ///     <para>This method allows <paramref name="byteCount" /> to be <c>0</c> and will return a valid pointer that should not be dereferenced and that should be passed to free to avoid memory leaks.</para>
-        ///     <para>This method is a thin wrapper over the C <c>calloc</c> API.</para>
-        /// </remarks>
-        [CLSCompliant(false)]
-        public static void* AllocZeroed(nuint byteCount)
-        {
-            return AllocZeroed(byteCount, elementSize: 1);
-        }
-
         /// <summary>Allocates and zeroes a block of memory of the specified size, in elements.</summary>
         /// <param name="elementCount">The count, in elements, of the block to allocate.</param>
         /// <param name="elementSize">The size, in bytes, of each element in the allocation.</param>
@@ -169,7 +142,10 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static void Free(void* ptr)
         {
-            Interop.Ucrtbase.free(ptr);
+            if (ptr != null)
+            {
+                Interop.Ucrtbase.free(ptr);
+            }
         }
 
         /// <summary>Reallocates a block of memory to be the specified size, in bytes.</summary>
