@@ -1132,26 +1132,6 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_pick_result_chara_for_marshal_type: function (mtype) {
-			var signatureChForMtype = {
-				1: 'i',
-				2: 'd',
-				3: 's',
-				7: 'o',
-				9: 'j',
-				22: 'u', // FIXME
-				24: 'f',
-				25: 'i',
-				26: 'l',
-				27: 'l',
-				28: 'i', // FIXME
-				32: 'm',
-			};
-			if (mtype === 4)
-				throw new Error ("ManagedToJS cannot return a struct");
-			return signatureChForMtype[mtype] || 'a';
-		},
-
 		_pre_filter_date: function (value) {
 			switch (typeof (value)) {
 				case "number":
@@ -1326,8 +1306,10 @@ var BindingSupportLib = {
 
 				// FIXME
 				var sigInfo = this.get_method_signature_info (0, convMethod);
+				if (sigInfo.parameters.length < 1)
+					throw new Error("Expected at least one parameter");
 				// Return unboxed so it can go directly into the arguments list
-				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
+				var signature = sigInfo.parameters[0].signatureChar + "!";
 				var methodName = this._get_type_name(typePtr) + "$FromJavaScript";
 				var boundConverter = this.bind_method (
 					convMethod, 0, signature, methodName

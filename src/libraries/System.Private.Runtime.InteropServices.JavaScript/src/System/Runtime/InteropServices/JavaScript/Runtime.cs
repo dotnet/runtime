@@ -306,8 +306,10 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        private static string MakeMarshalTypeRecord (Type type) {
-            var result = $"{{ \"marshalType\": {(int)GetMarshalTypeFromType(type)}, \"typePtr\": {type.TypeHandle.Value} }}";
+        private static string MakeMarshalTypeRecord (Type type, MarshalType mtype) {
+            var result = $"{{ \"marshalType\": {(int)mtype}, " +
+                $"\"typePtr\": {type.TypeHandle.Value}, " +
+                $"\"signatureChar\": \"{GetCallSignatureCharacterForMarshalType(mtype, 'a')}\" }}";
             return result;
         }
 
@@ -331,9 +333,11 @@ namespace System.Runtime.InteropServices.JavaScript
             if (mb == null)
                 return null;
 
+            var returnType = (mb as MethodInfo)?.ReturnType ?? typeof(void);
+            var returnMtype = GetMarshalTypeFromType(returnType);
             var sb = new StringBuilder();
             sb.Append("{ ");
-            sb.Append($"\"result\": {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, ");
+            sb.Append($"\"result\": {MakeMarshalTypeRecord(returnType, returnMtype)}, ");
             sb.Append($"\"typePtr\": {typePtr}, \"methodPtr\": {methodPtr}, ");
             sb.Append("\"parameters\": [");
 
@@ -341,7 +345,7 @@ namespace System.Runtime.InteropServices.JavaScript
             foreach (var p in mb.GetParameters()) {
                 if (i > 0)
                     sb.Append(", ");
-                sb.Append(MakeMarshalTypeRecord(p.ParameterType));
+                sb.Append(MakeMarshalTypeRecord(p.ParameterType, GetMarshalTypeFromType(p.ParameterType)));
                 i++;
             }
 
@@ -553,7 +557,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.OBJECT;
         }
 
-        private static char? GetCallSignatureCharacterForMarshalType (MarshalType t) {
+        private static char? GetCallSignatureCharacterForMarshalType (MarshalType t, char? defaultValue) {
             switch (t) {
                 case MarshalType.BOOL:
                 case MarshalType.INT:
@@ -583,7 +587,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 case MarshalType.POINTER:
                     return 'm';
                 default:
-                    throw new WasmInteropException($"Unsupported marshal type {t}");
+                    if (defaultValue.HasValue)
+                        return defaultValue;
+                    else
+                        throw new WasmInteropException($"Unsupported marshal type {t}");
             }
         }
 
@@ -605,7 +612,7 @@ namespace System.Runtime.InteropServices.JavaScript
             for (int c = 0; c < parmsLength; c++) {
                 Type t = parms[c].ParameterType;
                 var mt = GetMarshalTypeFromType(t);
-                var csc = GetCallSignatureCharacterForMarshalType(mt);
+                var csc = GetCallSignatureCharacterForMarshalType(mt, null);
                 if (csc.HasValue)
                     sb.Append(csc.Value);
                 else
