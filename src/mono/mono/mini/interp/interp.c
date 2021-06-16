@@ -3216,6 +3216,8 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	};
 #endif
 
+	g_assert_not_reached ();
+
 	HANDLE_FUNCTION_ENTER ();
 	/*
 	 * GC SAFETY:
@@ -3233,8 +3235,6 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	 * can be reserved here.
 	 */
 	MonoObjectHandle tmp_handle = MONO_HANDLE_NEW (MonoObject, NULL);
-
-	g_assert_not_reached ();
 
 	if (method_entry (context, frame,
 #if DEBUG_INTERP
