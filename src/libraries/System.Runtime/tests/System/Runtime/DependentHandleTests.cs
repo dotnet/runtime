@@ -69,5 +69,13 @@ namespace System.Runtime.Tests
 
             Assert.False(handle.IsAllocated);
         }
+
+        [Fact]
+        public void Dispose_ValidOnDefault()
+        {
+            DependentHandle handle = default;
+            Assert.False(handle.IsAllocated);
+            handle.Dispose();
+        }
     }
 }
