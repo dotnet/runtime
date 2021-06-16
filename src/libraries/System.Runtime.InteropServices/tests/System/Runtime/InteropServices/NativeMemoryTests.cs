@@ -16,6 +16,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public void AlignedAllocLessThanVoidPtrAlignmentTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(1, 1);
+            Assert.True(ptr != null);
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Fact]
         public void AlignedAllocOOMTest()
         {
             Assert.Throws<OutOfMemoryException>(() => NativeMemory.AlignedAlloc(nuint.MaxValue - ((uint)sizeof(nuint) - 1), (uint)sizeof(nuint)));
@@ -82,6 +90,17 @@ namespace System.Runtime.InteropServices.Tests
             Assert.True(ptr != null);
 
             void* newPtr = NativeMemory.AlignedRealloc(ptr, 1, (uint)sizeof(nuint));
+            Assert.True(newPtr != null);
+            NativeMemory.AlignedFree(newPtr);
+        }
+
+        [Fact]
+        public void AlignedReallocLessThanVoidPtrAlignmentTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+
+            void* newPtr = NativeMemory.AlignedRealloc(ptr, 1, 1);
             Assert.True(newPtr != null);
             NativeMemory.AlignedFree(newPtr);
         }

@@ -37,7 +37,8 @@ namespace System.Runtime.InteropServices
             // we should only overflow for byteCount > (nuint.MaxValue & ~(alignment - 1)). When such an overflow occurs we will
             // get a result that is less than alignment which will cause the allocation to fail.
 
-            void* result = Interop.Sys.AlignedAlloc(Math.Max(alignment, sizeof(void*)), (byteCount != 0) ? (byteCount + (alignment - 1)) & ~(alignment - 1) : alignment);
+            var adjustedAlignment = Math.Max(alignment, sizeof(void*));
+            void* result = Interop.Sys.AlignedAlloc(adjustedAlignment, (byteCount != 0) ? (byteCount + (alignment - 1)) & ~(alignment - 1) : adjustedAlignment);
 
             if (result == null)
             {
