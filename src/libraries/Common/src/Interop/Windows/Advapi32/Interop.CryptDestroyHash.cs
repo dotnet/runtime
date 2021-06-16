@@ -8,7 +8,12 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        public static partial bool CryptDestroyHash(IntPtr hHash);
+#else
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool CryptDestroyHash(IntPtr hHash);
+#endif
     }
 }

@@ -17,8 +17,8 @@ internal static partial class Interop
             KP_KEYLEN = 9
         }
 
-        [DllImport(Libraries.Advapi32, SetLastError = true)]
-        public static extern bool CryptGetKeyParam(
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        public static partial bool CryptGetKeyParam(
             SafeKeyHandle hKey,
             CryptGetKeyParamFlags dwParam,
             byte[]? pbData,

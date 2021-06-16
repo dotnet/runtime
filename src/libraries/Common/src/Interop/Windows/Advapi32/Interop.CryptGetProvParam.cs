@@ -22,22 +22,37 @@ internal static partial class Interop
             PP_UNIQUE_CONTAINER = 36
         }
 
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        public static partial bool CryptSetProvParam(
+#else
         [DllImport(Libraries.Advapi32, SetLastError = true)]
         public static extern bool CryptSetProvParam(
+#endif
             SafeHandle safeProvHandle,
             CryptProvParam dwParam,
             IntPtr pbData,
             int dwFlags);
 
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        public static partial bool CryptSetProvParam(
+#else
         [DllImport(Libraries.Advapi32, SetLastError = true)]
         public static extern bool CryptSetProvParam(
+#endif
             SafeProvHandle hProv,
             CryptProvParam dwParam,
             ref IntPtr pbData,
             int dwFlags);
 
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        public static partial bool CryptGetProvParam(
+#else
         [DllImport(Libraries.Advapi32, SetLastError = true)]
         public static extern bool CryptGetProvParam(
+#endif
             SafeHandle safeProvHandle,
             CryptProvParam dwParam,
             IntPtr pbData,
