@@ -7,11 +7,29 @@ namespace System.Runtime.InteropServices.Tests
 {
     public unsafe class NativeMemoryTests
     {
-        [Fact]
-        public void AlignedAllocTest()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(128)]
+        [InlineData(256)]
+        [InlineData(512)]
+        [InlineData(1024)]
+        [InlineData(2048)]
+        [InlineData(4096)]
+        [InlineData(8192)]
+        [InlineData(16384)]
+        public void AlignedAllocTest(uint alignment)
         {
-            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            void* ptr = NativeMemory.AlignedAlloc(1, alignment);
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % alignment == 0);
+
             NativeMemory.AlignedFree(ptr);
         }
 
@@ -72,7 +90,10 @@ namespace System.Runtime.InteropServices.Tests
         public void AlignedAllocZeroSizeTest()
         {
             void* ptr = NativeMemory.AlignedAlloc(0, (uint)sizeof(nuint));
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % (uint)sizeof(nuint) == 0);
+
             NativeMemory.AlignedFree(ptr);
         }
 
@@ -83,21 +104,41 @@ namespace System.Runtime.InteropServices.Tests
             NativeMemory.AlignedFree(null);
         }
 
-        [Fact]
-        public void AlignedReallocTest()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(128)]
+        [InlineData(256)]
+        [InlineData(512)]
+        [InlineData(1024)]
+        [InlineData(2048)]
+        [InlineData(4096)]
+        [InlineData(8192)]
+        [InlineData(16384)]
+        public void AlignedReallocTest(uint alignment)
         {
-            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
-            Assert.True(ptr != null);
+            void* ptr = NativeMemory.AlignedAlloc(1, alignment);
 
-            void* newPtr = NativeMemory.AlignedRealloc(ptr, 1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % alignment == 0);
+
+            void* newPtr = NativeMemory.AlignedRealloc(ptr, 1, alignment);
+
             Assert.True(newPtr != null);
+            Assert.True((nuint)newPtr % alignment == 0);
+
             NativeMemory.AlignedFree(newPtr);
         }
 
         [Fact]
         public void AlignedReallocLessThanVoidPtrAlignmentTest()
         {
-            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            void* ptr = NativeMemory.AlignedAlloc(1, 1);
             Assert.True(ptr != null);
 
             void* newPtr = NativeMemory.AlignedRealloc(ptr, 1, 1);
@@ -109,7 +150,10 @@ namespace System.Runtime.InteropServices.Tests
         public void AlignedReallocNullPtrTest()
         {
             void* ptr = NativeMemory.AlignedRealloc(null, 1, (uint)sizeof(nuint));
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % (uint)sizeof(nuint) == 0);
+
             NativeMemory.AlignedFree(ptr);
         }
 
@@ -123,7 +167,10 @@ namespace System.Runtime.InteropServices.Tests
         public void AlignedReallocNullPtrZeroSizeTest()
         {
             void* ptr = NativeMemory.AlignedRealloc(null, 0, (uint)sizeof(nuint));
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % (uint)sizeof(nuint) == 0);
+
             NativeMemory.AlignedFree(ptr);
         }
 
@@ -131,7 +178,9 @@ namespace System.Runtime.InteropServices.Tests
         public void AlignedReallocZeroAlignmentTest()
         {
             void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % (uint)sizeof(nuint) == 0);
 
             Assert.Throws<ArgumentException>(() => NativeMemory.AlignedRealloc(ptr, (uint)sizeof(nuint), 0));
             NativeMemory.AlignedFree(ptr);
@@ -141,7 +190,9 @@ namespace System.Runtime.InteropServices.Tests
         public void AlignedReallocNonPowerOfTwoAlignmentTest()
         {
             void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % (uint)sizeof(nuint) == 0);
 
             Assert.Throws<ArgumentException>(() => NativeMemory.AlignedRealloc(ptr, (uint)sizeof(nuint), (uint)sizeof(nuint) + 1));
             Assert.Throws<ArgumentException>(() => NativeMemory.AlignedRealloc(ptr, (uint)sizeof(nuint), (uint)sizeof(nuint) * 3));
@@ -152,10 +203,15 @@ namespace System.Runtime.InteropServices.Tests
         public void AlignedReallocZeroSizeTest()
         {
             void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+
             Assert.True(ptr != null);
+            Assert.True((nuint)ptr % (uint)sizeof(nuint) == 0);
 
             void* newPtr = NativeMemory.AlignedRealloc(ptr, 0, (uint)sizeof(nuint));
+
             Assert.True(newPtr != null);
+            Assert.True((nuint)newPtr % (uint)sizeof(nuint) == 0);
+
             NativeMemory.AlignedFree(newPtr);
         }
 
