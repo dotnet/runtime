@@ -1792,9 +1792,15 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
+            if (varDsc->lvSingleDefRegCandidate)
+            {
+                newInt->isSingleDef = true;
+                setIntervalAsSpilled(newInt);
+            }
+
             if (varDsc->lvLiveInOutOfHndlr)
             {
-                newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
+                newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
             }
 

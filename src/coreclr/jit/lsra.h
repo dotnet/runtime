@@ -1928,6 +1928,7 @@ public:
         , isPartiallySpilled(false)
 #endif
         , isWriteThru(false)
+        , isSingleDef(false)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
@@ -2022,6 +2023,9 @@ public:
 
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;
+
+    // True if this interval has a single definition.
+    bool isSingleDef : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
