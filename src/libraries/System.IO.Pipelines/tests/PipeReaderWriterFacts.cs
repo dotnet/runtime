@@ -215,7 +215,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task ReadAsync_ThrowsIfWriterCompletedWithException()
         {
             ThrowTestException(new InvalidOperationException("Writer exception"), e => _pipe.Writer.Complete(e));
@@ -234,7 +234,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task WriteAsync_ThrowsIfReaderCompletedWithException()
         {
             ThrowTestException(new InvalidOperationException("Reader exception"), e => _pipe.Reader.Complete(e));
