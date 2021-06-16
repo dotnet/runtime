@@ -80,9 +80,13 @@ namespace System.Runtime.InteropServices
         public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment)
         {
             void* newPtr = AlignedAlloc(byteCount, alignment);
-            Buffer.Memmove(ref *(byte*)newPtr, ref *(byte*)ptr, byteCount);
 
-            AlignedFree(ptr);
+            if (ptr != null)
+            {
+                Buffer.Memmove(ref *(byte*)newPtr, ref *(byte*)ptr, byteCount);
+                Interop.Sys.AlignedFree(ptr);
+            }
+
             return newPtr;
         }
 
