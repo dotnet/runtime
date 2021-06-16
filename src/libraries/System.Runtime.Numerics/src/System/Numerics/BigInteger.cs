@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -992,8 +993,7 @@ namespace System.Numerics
 
             HashCode hash = default;
             hash.Add(_sign);
-            for (int iv = _bits.Length; --iv >= 0;)
-                hash.Add(_bits[iv]);
+            hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
             return hash.ToHashCode();
         }
 
