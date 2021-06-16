@@ -264,7 +264,7 @@ while (testArguments !== undefined && testArguments.length > 0) {
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
-export var Module = {
+var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
 	onAbort: function(x) {
