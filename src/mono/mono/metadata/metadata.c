@@ -986,7 +986,6 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	return size;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 /* returns true if given index is not in bounds with provided table/index pair */
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index)
@@ -999,7 +998,6 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 
         return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
-#endif
 
 /**
  * mono_metadata_compute_table_bases:
@@ -1058,9 +1056,6 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
 }
 
-
-
-#ifdef ENABLE_METADATA_UPDATE
 static MonoStreamHeader *
 get_string_heap (MonoImage *image)
 {
@@ -1085,8 +1080,6 @@ mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, 
         return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
 }
 
-#endif
-
 /**
  * mono_metadata_string_heap:
  * \param meta metadata context
@@ -1096,7 +1089,6 @@ mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, 
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
-#ifdef ENABLE_METADATA_UPDATE
 	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
@@ -1105,7 +1097,6 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 
 	g_assertf (index < meta->heap_strings.size, " index = 0x%08x size = 0x%08x meta=%s ", index, meta->heap_strings.size, meta && meta->name ? meta->name : "unknown image" );
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
@@ -1134,7 +1125,6 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 		return img->sheap.data + index;
 	}
 
-#ifdef ENABLE_METADATA_UPDATE
 	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
@@ -1148,7 +1138,6 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 
 	if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
@@ -1167,7 +1156,6 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
-#ifdef ENABLE_METADATA_UPDATE
 	if (G_UNLIKELY (index >= meta->heap_us.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
@@ -1176,7 +1164,6 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 	g_assert (index < meta->heap_us.size);
 	g_return_val_if_fail (index < meta->heap_us.size, "");
 	return meta->heap_us.data + index;
@@ -1196,7 +1183,6 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 	 * assertion is hit, consider updating caller to use
 	 * mono_metadata_blob_heap_null_ok and handling a null return value. */
 	g_assert (!(index == 0 && meta->heap_blob.size == 0));
-#ifdef ENABLE_METADATA_UPDATE
 	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
@@ -1205,7 +1191,6 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 	g_assert (index < meta->heap_blob.size);
 	return meta->heap_blob.data + index;
 }
@@ -1251,7 +1236,6 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 	}
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
-#ifdef ENABLE_METADATA_UPDATE
 	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
@@ -1264,7 +1248,6 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
 		mono_error_set_bad_image_by_name (error, image_name, "blob heap index %u out of bounds %u: %s", index, meta->heap_blob.size, image_name);

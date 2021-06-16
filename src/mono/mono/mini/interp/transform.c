@@ -6859,7 +6859,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->ip += 5;
 					const gconstpointer func = mono_find_jit_icall_info ((MonoJitICallId)token)->func;
 
-					interp_add_ins (td, MINT_LDFTN);
+					interp_add_ins (td, MINT_LDFTN_ADDR);
 					push_simple_type (td, STACK_TYPE_I);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 					td->last_ins->data [0] = get_data_item_index (td, (gpointer)func);
@@ -9603,9 +9603,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	error_init (error);
 
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_thread_expose_published ();
-#endif
 
 	if (mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
 		mono_error_set_invalid_operation (error, "%s", "Could not execute the method because the containing type is not fully instantiated.");

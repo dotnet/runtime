@@ -912,19 +912,42 @@ namespace System.ServiceProcess
         /// they will be stopped first. The DependentServices property lists this set
         /// of services.
         /// </summary>
-        public unsafe void Stop()
+        public void Stop()
+        {
+            Stop(stopDependentServices: true);
+        }
+
+        /// <summary>
+        /// Stops the service and optionally any services that are dependent on this service.
+        /// </summary>
+        /// <remarks>
+        /// If any other services depend on this one, you need to either pass <c>true</c> for
+        /// <paramref name="stopDependentServices"/> or stop them manually before calling this method.
+        /// </remarks>
+        /// <param name="stopDependentServices">
+        /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
+        /// </param>
+#if NETCOREAPP3_1_OR_GREATER
+        public
+#else
+        private
+#endif
+            unsafe void Stop(bool stopDependentServices)
         {
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_STOP);
-            // Before stopping this service, stop all the dependent services that are running.
-            // (It's OK not to cache the result of getting the DependentServices property because it caches on its own.)
-            for (int i = 0; i < DependentServices.Length; i++)
+            if (stopDependentServices)
             {
-                ServiceController currentDependent = DependentServices[i];
-                currentDependent.Refresh();
-                if (currentDependent.Status != ServiceControllerStatus.Stopped)
+                // Before stopping this service, stop all the dependent services that are running.
+                // (It's OK not to cache the result of getting the DependentServices property because it caches on its own.)
+                for (int i = 0; i < DependentServices.Length; i++)
                 {
-                    currentDependent.Stop();
-                    currentDependent.WaitForStatus(ServiceControllerStatus.Stopped, new TimeSpan(0, 0, 30));
+                    ServiceController currentDependent = DependentServices[i];
+                    currentDependent.Refresh();
+                    if (currentDependent.Status != ServiceControllerStatus.Stopped)
+                    {
+                        currentDependent.Stop();
+                        currentDependent.WaitForStatus(ServiceControllerStatus.Stopped, new TimeSpan(0, 0, 30));
+                    }
                 }
             }
 

@@ -24,8 +24,6 @@ typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);
 gboolean
 mono_metadata_update_available (void);
 
-#ifdef ENABLE_METADATA_UPDATE
-
 gboolean
 mono_metadata_update_enabled (int *modifiable_assemblies_out);
 
@@ -55,23 +53,5 @@ mono_metadata_update_table_bounds_check (MonoImage *base_image, int table_index,
 
 gboolean
 mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
-
-#else /* ENABLE_METADATA_UPDATE */
-
-static inline gboolean
-mono_metadata_update_enabled (int *modifiable_assemblies_out)
-{
-        if (modifiable_assemblies_out)
-                *modifiable_assemblies_out = 0;
-        return FALSE;
-}
-
-static inline gboolean
-mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
-{
-        return FALSE;
-}
-
-#endif /* ENABLE_METADATA_UPDATE */
 
 #endif /*__MONO_METADATA_UPDATE_H__*/

@@ -1725,10 +1725,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
     } CONTRACTL_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     MethodTable* objectType = (*protectedObj)->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(objectType));
 
@@ -2988,10 +2984,6 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
         PRECONDITION(addrOfResolver != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     //allocate from the requisite heap and copy the template over it.
     LookupHolder * holder     = (LookupHolder*) (void*) lookup_heap->AllocAlignedMem(sizeof(LookupHolder), CODE_SIZE_ALIGN);

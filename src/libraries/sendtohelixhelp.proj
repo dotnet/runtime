@@ -29,6 +29,7 @@
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and '$(Outerloop)' == 'true'">00:20:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == ''">00:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == ''">00:30:00</_workItemTimeout>
 
@@ -68,6 +69,11 @@
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
@@ -82,7 +88,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <!-- 
+    <!--
       We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
       We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
       For the HTTPS endpoint we need development SSL certificate.

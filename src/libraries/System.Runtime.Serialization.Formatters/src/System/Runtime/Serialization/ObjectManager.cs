@@ -16,6 +16,8 @@ namespace System.Runtime.Serialization
 
         private const string ObjectManagerUnreferencedCodeMessage = "ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.";
 
+        private static readonly FieldInfo s_nullableValueField = typeof(Nullable<>).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
         private DeserializationEventHandler? _onDeserializationHandler;
         private SerializationEventHandler? _onDeserializedHandler;
 
@@ -383,14 +385,11 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        [DynamicDependency("value", typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T>.value field will be preserved by the DynamicDependency.")]
         private static FieldInfo? GetNullableValueField(Type type)
         {
             if (Nullable.GetUnderlyingType(type) != null)
             {
-                return type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                return (FieldInfo)type.GetMemberWithSameMetadataDefinitionAs(s_nullableValueField);
             }
 
             return null;

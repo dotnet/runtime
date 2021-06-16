@@ -599,13 +599,11 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Include="mattr=neon" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
-      <!--
       <MonoAotOption Include="mattr=sse4.2" />
       <MonoAotOption Include="mattr=popcnt" />
       <MonoAotOption Include="mattr=lzcnt" />
       <MonoAotOption Include="mattr=bmi" />
       <MonoAotOption Include="mattr=bmi2" />
-      -->
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>

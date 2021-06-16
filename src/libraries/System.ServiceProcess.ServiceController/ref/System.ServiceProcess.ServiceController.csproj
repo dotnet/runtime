@@ -1,14 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ServiceProcess.ServiceController.cs" Condition="'$(TargetFramework)' != 'net461'" />
     <Compile Include="System.ServiceProcess.ServiceController.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
+    <Compile Include="System.ServiceProcess.ServiceController.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.ComponentModel.Primitives" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.ServiceProcess" />
