@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+#if !DEBUG
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Runtime
 {
@@ -215,31 +217,7 @@ namespace System.Runtime
         {
             // This optimization is the same that is used in GCHandle in RELEASE mode.
             // This is not used in DEBUG builds as the runtime performs additional checks.
-            // This conversion works because on CoreCLR, DependentHandle is really just a
-            // OBJECTHANDLE value, the same that GCHandle uses. They are defined as follows:
-            //
-            // struct OBJECTHANDLE__
-            // {
-            //     void* unused;
-            // };
-            //
-            // typedef struct OBJECTHANDLE__* OBJECTHANDLE;
-            //
-            // The way this works is that the GC will allocate a special region of memory where
-            // the object reference will be stored (that is, an object* pointer), and the GC will
-            // take care of updating it whenever a compacting collection occurs and the object is
-            // moved. The code below is just doing an indirect memory access to read the pointer
-            // value stored in this memory region, and then converting that to an object reference.
-            // Note that Unsafe.As<IntPtr, object> returns a ref object and does an implicit read.
-            // The (nint) cast is needed to avoid emitting a call to IntPtr::op_Explicit(nint), which
-            // results in the same codegen but has a larger IL and creates more IR nodes at JIT time.
-            // The code below just compiles down to the following asm on x64:
-            //
-            // mov rax, [rcx]
-            // ret
-            //
-            // That is, it's reading the object* pointer the handle points to, and returning it.
-            // The object* pointer is just expressed object in C#, as it's a reference type.
+            // The logic below is the inlined copy of ObjectFromHandle in the unmanaged runtime.
             return Unsafe.As<IntPtr, object>(ref *(IntPtr*)(nint)dependentHandle);
         }
 #endif
