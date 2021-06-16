@@ -65,18 +65,16 @@ FCIMPLEND
 
 
 
-FCIMPL2(Object*, DependentHandle::nGetPrimaryAndSecondary, OBJECTHANDLE handle, Object **outSecondary)
+FCIMPL1(Object*, DependentHandle::nGetSecondary, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
-    _ASSERTE(handle != NULL && outSecondary != NULL);
+    _ASSERTE(handle != NULL);
 
     OBJECTREF primary = ObjectFromHandle(handle);
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     // Secondary is tracked only if primary is non-null
-    *outSecondary = (primary != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
-
-    return OBJECTREFToObject(primary);
+    return (primary != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
 }
 FCIMPLEND
 

@@ -42,7 +42,7 @@ class DependentHandle
 public:
     static FCDECL2(OBJECTHANDLE, nInitialize, Object *primary, Object *secondary);
     static FCDECL1(Object *, nGetPrimary, OBJECTHANDLE handle);
-    static FCDECL2(Object *, nGetPrimaryAndSecondary, OBJECTHANDLE handle, Object **outSecondary);
+    static FCDECL1(Object *, nGetSecondary, OBJECTHANDLE handle);
     static FCDECL1(VOID, nFree, OBJECTHANDLE handle);
     static FCDECL2(VOID, nSetPrimary, OBJECTHANDLE handle, Object *primary);
     static FCDECL2(VOID, nSetSecondary, OBJECTHANDLE handle, Object *secondary);

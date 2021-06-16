@@ -114,9 +114,7 @@ namespace System.Runtime
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                _ = nGetPrimaryAndSecondary(handle, out object? dependent);
-
-                return dependent;
+                return nGetSecondary(handle);
             }
             set
             {
@@ -145,7 +143,8 @@ namespace System.Runtime
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            object? target = nGetPrimaryAndSecondary(handle, out object? secondary);
+            object? target = nGetPrimary(handle);
+            object? secondary = nGetSecondary(handle);
 
             return (target, secondary);
         }
@@ -189,7 +188,13 @@ namespace System.Runtime
         /// </remarks>
         internal object? UnsafeGetTargetAndDependent(out object? dependent)
         {
-            return nGetPrimaryAndSecondary(_handle, out dependent);
+            IntPtr handle = _handle;
+
+            object? target = nGetPrimary(handle);
+
+            dependent = nGetSecondary(handle);
+
+            return target;
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -223,7 +228,7 @@ namespace System.Runtime
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? nGetPrimaryAndSecondary(IntPtr dependentHandle, out object? secondary);
+        private static extern object? nGetSecondary(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void nSetPrimary(IntPtr dependentHandle, object? primary);
