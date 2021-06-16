@@ -46,7 +46,7 @@ stages:
   #
   - template: /eng/common/templates/job/onelocbuild.yml
     parameters:
-      CreatePr: false
+      MirroRepo: runtime
       LclSource: lclFilesfromPackage
       LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
