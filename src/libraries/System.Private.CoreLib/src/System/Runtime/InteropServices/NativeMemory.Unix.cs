@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
             // get a result that is less than alignment which will cause the allocation to fail.
 
             var adjustedAlignment = Math.Max(alignment, sizeof(void*));
-            void* result = Interop.Sys.AlignedAlloc(adjustedAlignment, (byteCount != 0) ? (byteCount + (alignment - 1)) & ~(alignment - 1) : adjustedAlignment);
+            void* result = Interop.Sys.AlignedAlloc(adjustedAlignment, (byteCount != 0) ? (byteCount + (adjustedAlignment - 1)) & ~(adjustedAlignment - 1) : adjustedAlignment);
 
             if (result == null)
             {
