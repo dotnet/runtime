@@ -193,6 +193,15 @@ namespace System.Globalization.Tests
                     Assert.Equal("en", new CultureInfo("en").Name);
                     Assert.Equal("es", new CultureInfo("es").Name);
                 }
+
+                // Ensure the Invariant Mode functionality still work
+                if (bool.Parse(invariantEnabled))
+                {
+                    Assert.True(CultureInfo.CurrentCulture.Calendar is GregorianCalendar);
+                    Assert.True("abcd".Equals("ABCD", StringComparison.CurrentCultureIgnoreCase));
+                    Assert.Equal("Invariant Language (Invariant Country)", CultureInfo.CurrentCulture.NativeName);
+                }
+
             }, enableInvariant.ToString(), enableInvariantOnly.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
