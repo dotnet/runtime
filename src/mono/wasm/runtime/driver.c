@@ -1254,11 +1254,11 @@ mono_wasm_create_method_signature_info (MonoClass *klass, MonoMethod *method)
 	if (!method)
 		return 0;
 
-	MonoMethodSignature *raw_sig = mono_method_signature (method);
+	MonoMethodSignature *raw_sig = mono_method_signature (method), *sig;
 	if (!raw_sig)
 		return 0;
 
-	MonoGenericContext *generic_ctx = mono_class_get_context (klass), *sig;
+	MonoGenericContext *generic_ctx = mono_class_get_context (klass);
 	if (!generic_ctx) {
 		sig = raw_sig;
 	} else {
