@@ -375,6 +375,12 @@ namespace System.Net.Http
             }
         }
 
+        private sealed class BrowserUnseekableStream : MemoryStream {
+            public BrowserUnseekableStream (byte [] data) : base (data, writable: false) { }
+
+            public override bool CanSeek => false;
+        }
+
         private sealed class BrowserHttpContent : HttpContent
         {
             private byte[]? _data;
@@ -407,7 +413,7 @@ namespace System.Net.Http
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
-                return new MemoryStream(data, writable: false);
+                return new BrowserUnseekableStream (data);
             }
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
