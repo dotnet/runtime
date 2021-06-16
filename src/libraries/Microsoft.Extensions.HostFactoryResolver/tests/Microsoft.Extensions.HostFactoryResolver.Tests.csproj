@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
-    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +21,7 @@
     <ProjectReference Include="CreateWebHostBuilderInvalidSignature\CreateWebHostBuilderInvalidSignature.csproj" />
     <ProjectReference Include="CreateWebHostBuilderPatternTestSite\CreateWebHostBuilderPatternTestSite.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPattern\NoSpecialEntryPointPattern.csproj" />
+    <ProjectReference Include="NoSpecialEntryPointPatternBuildsThenThrows\NoSpecialEntryPointPatternBuildsThenThrows.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternThrows\NoSpecialEntryPointPatternThrows.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternExits\NoSpecialEntryPointPatternExits.csproj" />
     <ProjectReference Include="NoSpecialEntryPointPatternHangs\NoSpecialEntryPointPatternHangs.csproj" />

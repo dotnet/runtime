@@ -999,7 +999,7 @@ namespace System.Net.Http
 
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
-                        var authority = new HttpAuthority(value.Host!, value.Port);
+                        var authority = new HttpAuthority(value.Host ?? _originAuthority!.IdnHost, value.Port);
 
                         if (IsAltSvcBlocked(authority))
                         {

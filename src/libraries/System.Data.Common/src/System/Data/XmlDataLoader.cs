@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Xml;
@@ -94,6 +95,7 @@ namespace System.Data
         }
 
         // after loading, all detached DataRows are attached to their tables
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void AttachRows(DataRow parentRow, XmlNode parentElement)
         {
             if (parentElement == null)
@@ -292,6 +294,7 @@ namespace System.Data
                 return true;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadData(XmlDocument xdoc)
         {
             if (xdoc.DocumentElement == null)
@@ -369,6 +372,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRowData(DataRow row, XmlElement rowElement)
         {
             XmlNode n;
@@ -499,6 +503,7 @@ namespace System.Data
 
 
         // load all data from tree structre into datarows
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRows(DataRow parentRow, XmlNode parentElement)
         {
             if (parentElement == null)
@@ -545,6 +550,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
         {
             row[col] = col.ConvertXmlToObject(xmlText);
@@ -584,6 +590,7 @@ namespace System.Data
             _ROWORDER = nameTable.Add(Keywords.ROWORDER);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadData(XmlReader reader)
         {
             _dataReader = DataTextReader.CreateReader(reader);
@@ -679,6 +686,7 @@ namespace System.Data
         //
         // Yes, it is terrible and I don't like it also..
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadTopMostTable(DataTable table)
         {
             //        /------------------------------- This one is in topMostNode (backed up to XML DOM)
@@ -859,6 +867,7 @@ namespace System.Data
         // this method divided into 3 parts: attribute processing (including diffgram),
         // nested elements processing and loading data. Please keep it this way.
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadTable(DataTable table, bool isNested)
         {
             //  <DataSet> /--------------------------- We are here on entrance
@@ -1127,6 +1136,7 @@ namespace System.Data
         }
 
         // Returns column value
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadColumn(DataColumn column, object[] foundColumns)
         {
             //  <DataSet>    /--------------------------------- We are here on entrance
@@ -1357,6 +1367,7 @@ namespace System.Data
         // Check for schema and skips or loads XSD schema if found. Returns true if schema found.
         // DataReader would be set on the first XML element after the schema of schema was found.
         // If no schema detected, reader's position will not change.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private bool ProcessXsdSchema()
         {
             if (((object)_dataReader.LocalName == _XSD_SCHEMA && (object)_dataReader.NamespaceURI == _XSDNS))

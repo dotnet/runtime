@@ -702,6 +702,9 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_VERIFY_FIELD_OFFSET,                     /* Used for the R2R compiler can generate a check against the real field offset used at runtime */
     ENCODE_VERIFY_TYPE_LAYOUT,                      /* Used for the R2R compiler can generate a check against the real type layout used at runtime */
 
+    ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE,         /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used */
+    ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE,        /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. */
+
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
     ENCODE_MODULE_ID_FOR_STATICS,                   /* For accessing static fields */
@@ -724,6 +727,7 @@ enum EncodeMethodSigFlags
     ENCODE_METHOD_SIG_MemberRefToken            = 0x10,
     ENCODE_METHOD_SIG_Constrained               = 0x20,
     ENCODE_METHOD_SIG_OwnerType                 = 0x40,
+    ENCODE_METHOD_SIG_UpdateContext             = 0x80,
 };
 
 enum EncodeFieldSigFlags
