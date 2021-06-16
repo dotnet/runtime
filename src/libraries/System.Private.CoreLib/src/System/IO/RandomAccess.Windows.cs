@@ -30,7 +30,8 @@ namespace System.IO
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path = null)
         {
-            NativeOverlapped* nativeOverlapped = GetNativeOverlappedForSynchronousOperation(handle, fileOffset);
+            NativeOverlapped stackAllocated = default;
+            NativeOverlapped* nativeOverlapped = GetNativeOverlappedForSynchronousOperation(handle, fileOffset, &stackAllocated);
             ManualResetEvent? mres = null;
             bool isSync = !handle.IsAsync;
 
@@ -86,7 +87,8 @@ namespace System.IO
 
         internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, string? path = null)
         {
-            NativeOverlapped* nativeOverlapped = GetNativeOverlappedForSynchronousOperation(handle, fileOffset);
+            NativeOverlapped stackAllocated = default;
+            NativeOverlapped* nativeOverlapped = GetNativeOverlappedForSynchronousOperation(handle, fileOffset, &stackAllocated);
             ManualResetEvent? mres = null;
             bool isSync = !handle.IsAsync;
 
@@ -625,7 +627,7 @@ namespace System.IO
             return new ValueTask<int>(vts, vts.Version);
         }
 
-        private static unsafe NativeOverlapped* GetNativeOverlappedForSynchronousOperation(SafeFileHandle handle, long fileOffset, NativeOverlapped stackAllocated = default)
+        private static unsafe NativeOverlapped* GetNativeOverlappedForSynchronousOperation(SafeFileHandle handle, long fileOffset, NativeOverlapped* stackAllocated)
         {
             NativeOverlapped* result;
             if (handle.IsAsync)
@@ -641,7 +643,7 @@ namespace System.IO
             }
             else
             {
-                result = &stackAllocated;
+                result = stackAllocated;
             }
 
             // For pipes the offsets are ignored by the OS
