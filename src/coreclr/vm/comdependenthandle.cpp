@@ -14,20 +14,18 @@
 #include "common.h"
 #include "comdependenthandle.h"
 
-
-
-FCIMPL2(OBJECTHANDLE, DependentHandle::nInitialize, Object *_primary, Object *_secondary)
+FCIMPL2(OBJECTHANDLE, DependentHandle::InternalInitialize, Object *_target, Object *_dependent)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF primary(_primary);
-    OBJECTREF secondary(_secondary);
+    OBJECTREF target(_target);
+    OBJECTREF dependent(_dependent);
     OBJECTHANDLE result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
 
     // Create the handle.
-    result = GetAppDomain()->CreateDependentHandle(primary, secondary);
+    result = GetAppDomain()->CreateDependentHandle(target, dependent);
 
     HELPER_METHOD_FRAME_END_POLL();
 
@@ -35,9 +33,31 @@ FCIMPL2(OBJECTHANDLE, DependentHandle::nInitialize, Object *_primary, Object *_s
 }
 FCIMPLEND
 
+FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
+{
+    FCALL_CONTRACT;
+    FCUnique(0x54);
+    _ASSERTE(handle != NULL);
+    return OBJECTREFToObject(ObjectFromHandle(handle));
+}
+FCIMPLEND
 
+FCIMPL1(Object*, DependentHandle::InternalGetDependent, OBJECTHANDLE handle)
+{
+    FCALL_CONTRACT;
 
-FCIMPL1(VOID, DependentHandle::nFree, OBJECTHANDLE handle)
+    _ASSERTE(handle != NULL);
+
+    OBJECTREF target = ObjectFromHandle(handle);
+
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+
+    // The dependent is tracked only if target is non-null
+    return (target != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
+}
+FCIMPLEND
+
+FCIMPL1(VOID, DependentHandle::InternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
@@ -48,37 +68,10 @@ FCIMPL1(VOID, DependentHandle::nFree, OBJECTHANDLE handle)
     DestroyDependentHandle(handle);
 
     HELPER_METHOD_FRAME_END();
-
 }
 FCIMPLEND
 
-
-
-FCIMPL1(Object*, DependentHandle::nGetPrimary, OBJECTHANDLE handle)
-{
-    FCALL_CONTRACT;
-    FCUnique(0x54);
-    _ASSERTE(handle != NULL);
-    return OBJECTREFToObject(ObjectFromHandle(handle));
-}
-FCIMPLEND
-
-
-
-FCIMPL1(Object*, DependentHandle::nGetSecondary, OBJECTHANDLE handle)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(handle != NULL);
-
-    OBJECTREF primary = ObjectFromHandle(handle);
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    // Secondary is tracked only if primary is non-null
-    return (primary != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
-}
-FCIMPLEND
-
-FCIMPL2(VOID, DependentHandle::nSetPrimary, OBJECTHANDLE handle, Object *_primary)
+FCIMPL2(VOID, DependentHandle::InternalSetTarget, OBJECTHANDLE handle, Object *_target)
 {
     FCALL_CONTRACT;
 
@@ -88,17 +81,17 @@ FCIMPL2(VOID, DependentHandle::nSetPrimary, OBJECTHANDLE handle, Object *_primar
     FCUnique(0x12);
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    mgr->StoreObjectInHandle(handle, _primary);
+    mgr->StoreObjectInHandle(handle, _target);
 }
 FCIMPLEND
 
-FCIMPL2(VOID, DependentHandle::nSetSecondary, OBJECTHANDLE handle, Object *_secondary)
+FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(handle != NULL);
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    mgr->SetDependentHandleSecondary(handle, _secondary);
+    mgr->SetDependentHandleSecondary(handle, _dependent);
 }
 FCIMPLEND

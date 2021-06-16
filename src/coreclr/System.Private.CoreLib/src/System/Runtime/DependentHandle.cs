@@ -56,7 +56,7 @@ namespace System.Runtime
         public DependentHandle(object? target, object? dependent)
         {
             // no need to check for null result: nInitialize expected to throw OOM.
-            _handle = nInitialize(target, dependent);
+            _handle = InternalInitialize(target, dependent);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace System.Runtime
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                return nGetPrimary(handle);
+                return InternalGetTarget(handle);
             }
             set
             {
@@ -90,7 +90,7 @@ namespace System.Runtime
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                nSetPrimary(handle, value);
+                InternalSetTarget(handle, value);
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Runtime
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                return nGetSecondary(handle);
+                return InternalGetDependent(handle);
             }
             set
             {
@@ -125,7 +125,7 @@ namespace System.Runtime
                     ThrowHelper.ThrowInvalidOperationException();
                 }
 
-                nSetSecondary(handle, value);
+                InternalSetDependent(handle, value);
             }
         }
 
@@ -143,8 +143,8 @@ namespace System.Runtime
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            object? target = nGetPrimary(handle);
-            object? secondary = nGetSecondary(handle);
+            object? target = InternalGetTarget(handle);
+            object? secondary = InternalGetDependent(handle);
 
             return (target, secondary);
         }
@@ -156,7 +156,7 @@ namespace System.Runtime
         /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
         internal object? UnsafeGetTarget()
         {
-            return nGetPrimary(_handle);
+            return InternalGetTarget(_handle);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace System.Runtime
         /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
         internal void UnsafeSetTarget(object? target)
         {
-            nSetPrimary(_handle, target);
+            InternalSetTarget(_handle, target);
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace System.Runtime
         /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
         internal void UnsafeSetDependent(object? dependent)
         {
-            nSetSecondary(_handle, dependent);
+            InternalSetDependent(_handle, dependent);
         }
 
         /// <summary>
@@ -190,9 +190,9 @@ namespace System.Runtime
         {
             IntPtr handle = _handle;
 
-            object? target = nGetPrimary(handle);
+            object? target = InternalGetTarget(handle);
 
-            dependent = nGetSecondary(handle);
+            dependent = InternalGetDependent(handle);
 
             return target;
         }
@@ -207,18 +207,18 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
                 _handle = IntPtr.Zero;
-                nFree(handle);
+                InternalFree(handle);
             }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr nInitialize(object? primary, object? secondary);
+        private static extern IntPtr InternalInitialize(object? target, object? dependent);
 
 #if DEBUG
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? nGetPrimary(IntPtr dependentHandle);
+        private static extern object? InternalGetTarget(IntPtr dependentHandle);
 #else
-        private static unsafe object? nGetPrimary(IntPtr dependentHandle)
+        private static unsafe object? InternalGetTarget(IntPtr dependentHandle)
         {
             // This optimization is the same that is used in GCHandle in RELEASE mode.
             // This is not used in DEBUG builds as the runtime performs additional checks.
@@ -228,15 +228,15 @@ namespace System.Runtime
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? nGetSecondary(IntPtr dependentHandle);
+        private static extern object? InternalGetDependent(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nSetPrimary(IntPtr dependentHandle, object? primary);
+        private static extern void InternalSetTarget(IntPtr dependentHandle, object? target);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nSetSecondary(IntPtr dependentHandle, object? secondary);
+        private static extern void InternalSetDependent(IntPtr dependentHandle, object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nFree(IntPtr dependentHandle);
+        private static extern void InternalFree(IntPtr dependentHandle);
     }
 }
