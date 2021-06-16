@@ -16,6 +16,11 @@ typedef enum
 } RsaPaddingMode;
 
 /*
+Create a new EVP_PKEY* wrapping an existing RSA key.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey);
+
+/*
 Creates an RSA key of the requested size.
 */
 PALEXPORT EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize);

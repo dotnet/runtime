@@ -13,6 +13,12 @@ Returns the new EVP_PKEY instance.
 PALEXPORT EVP_PKEY* CryptoNative_EvpPkeyCreate(void);
 
 /*
+Create a new EVP_PKEY that has the same interior key as currentKey,
+optionally verifying that the key has the correct algorithm.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId);
+
+/*
 Cleans up and deletes a EVP_PKEY instance.
 
 Implemented by calling EVP_PKEY_free.

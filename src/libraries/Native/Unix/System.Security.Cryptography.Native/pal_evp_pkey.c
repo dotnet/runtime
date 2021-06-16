@@ -9,6 +9,51 @@ EVP_PKEY* CryptoNative_EvpPkeyCreate()
     return EVP_PKEY_new();
 }
 
+EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
+{
+    assert(currentKey != NULL);
+
+    int currentAlgId = EVP_PKEY_base_id(currentKey);
+
+    if (algId != NID_undef && algId != currentAlgId)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INVALID_KEY, __FILE__, __LINE__);
+        return NULL;
+    }
+
+    EVP_PKEY* newKey = EVP_PKEY_new();
+
+    if (newKey == NULL)
+    {
+        return NULL;
+    }
+
+    bool success = true;
+
+    if (currentAlgId == EVP_PKEY_RSA)
+    {
+        RSA* rsa = EVP_PKEY_get0_RSA(currentKey);
+
+        if (rsa == NULL || !EVP_PKEY_set1_RSA(newKey, rsa))
+        {
+            success = false;
+        }
+    }
+    else
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
+        success = false;
+    }
+
+    if (!success)
+    {
+        EVP_PKEY_free(newKey);
+        newKey = NULL;
+    }
+
+    return newKey;
+}
+
 void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 {
     if (pkey != NULL)
