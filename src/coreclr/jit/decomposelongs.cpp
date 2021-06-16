@@ -283,8 +283,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     if (m_compiler->opts.OptimizationEnabled() && !use.IsDummyUse() && use.User()->OperIs(GT_CAST) &&
         use.User()->TypeIs(TYP_INT) && use.Def()->OperIs(GT_LONG))
     {
-        assert(nextNode == use.User());
-        nextNode = OptimizeCastFromDecomposedLong(use.User()->AsCast());
+        nextNode = OptimizeCastFromDecomposedLong(use.User()->AsCast(), nextNode);
     }
 
     return nextNode;
@@ -1800,17 +1799,23 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 // Does not optimize checked casts.
 //
 // Arguments:
-//    cast - the cast tree that has a GT_LONG node as its operand.
+//    cast     - the cast tree that has a GT_LONG node as its operand.
+//    nextNode - the next candidate for decomposition.
 //
 // Return Value:
-//    The next node to process in DecomposeRange: "cast" if it wasn't
-//    removed, "cast->gtNext" otherwise.
+//    The next node to process in DecomposeRange: "nextNode->gtNext" if
+//    "cast == nextNode", simply "nextNode" otherwise.
 //
-GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
+// Notes:
+//    Because "nextNode" usually is "cast", and this method may remove "cast"
+//    from the linear order, it needs to return the updated "nextNode". Instead
+//    of receiving it as an argument, it could assume that "nextNode" is always
+//    "cast->CastOp()->gtNext", but not making that assumption seems better.
+//
+GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTree* nextNode)
 {
-    GenTree*   nextNode = cast;
-    GenTreeOp* src      = cast->CastOp()->AsOp();
-    var_types  dstType  = cast->CastToType();
+    GenTreeOp* src     = cast->CastOp()->AsOp();
+    var_types  dstType = cast->CastToType();
 
     assert(src->OperIs(GT_LONG));
     assert(genActualType(dstType) == TYP_INT);
@@ -1861,7 +1866,10 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast)
             loSrc->SetUnusedValue();
         }
 
-        nextNode = cast->gtNext;
+        if (nextNode == cast)
+        {
+            nextNode = nextNode->gtNext;
+        }
 
         INDEBUG(treeToDisplay = loSrc);
         JITDUMP("Removing the cast:\n");
