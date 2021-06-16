@@ -51,6 +51,16 @@
     <Compile Include="Enumeration\ExampleTests.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
     <Compile Include="Enumeration\SymbolicLinksTests.cs" />
+    <Compile Include="RandomAccess\Base.cs" />
+    <Compile Include="RandomAccess\GetLength.cs" />
+    <Compile Include="RandomAccess\Read.cs" />
+    <Compile Include="RandomAccess\ReadAsync.cs" />
+    <Compile Include="RandomAccess\ReadScatter.cs" />
+    <Compile Include="RandomAccess\ReadScatterAsync.cs" />
+    <Compile Include="RandomAccess\Write.cs" />
+    <Compile Include="RandomAccess\WriteAsync.cs" />
+    <Compile Include="RandomAccess\WriteGather.cs" />
+    <Compile Include="RandomAccess\WriteGatherAsync.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
@@ -61,10 +71,14 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options_as.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
+    <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="Common\Interop\Windows\Interop.MemOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs" Link="Common\Interop\Windows\Interop.VirtualAlloc_Ptr.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="FileSystemTest.Browser.cs" />
@@ -158,6 +172,7 @@
     <Compile Include="File\Exists.cs" />
     <Compile Include="File\GetSetTimes.cs" />
     <Compile Include="File\Open.cs" />
+    <Compile Include="File\OpenHandle.cs" />
     <Compile Include="FileInfo\Create.cs" />
     <Compile Include="FileInfo\Delete.cs" />
     <Compile Include="FileInfo\Exists.cs" />

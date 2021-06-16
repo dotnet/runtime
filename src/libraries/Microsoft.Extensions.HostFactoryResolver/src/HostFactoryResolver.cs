@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.Hosting
             return (IServiceProvider?)servicesProperty?.GetValue(host);
         }
 
-        private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+        private sealed class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
         {
             private readonly string[] _args;
             private readonly MethodInfo _entryPoint;
@@ -180,6 +180,7 @@ namespace Microsoft.Extensions.Hosting
             private IDisposable? _disposable;
             private Action<object>? _configure;
             private Action<Exception?>? _entrypointCompleted;
+            private static readonly AsyncLocal<HostingListener> _currentListener = new();
 
             public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure, Action<Exception?>? entrypointCompleted)
             {
@@ -203,6 +204,10 @@ namespace Microsoft.Extensions.Hosting
 
                     try
                     {
+                        // Set the async local to the instance of the HostingListener so we can filter events that
+                        // aren't scoped to this execution of the entry point.
+                        _currentListener.Value = this;
+
                         var parameters = _entryPoint.GetParameters();
                         if (parameters.Length == 0)
                         {
@@ -279,6 +284,12 @@ namespace Microsoft.Extensions.Hosting
 
             public void OnNext(DiagnosticListener value)
             {
+                if (_currentListener.Value != this)
+                {
+                    // Ignore events that aren't for this listener
+                    return;
+                }
+
                 if (value.Name == "Microsoft.Extensions.Hosting")
                 {
                     _disposable = value.Subscribe(this);
@@ -287,6 +298,12 @@ namespace Microsoft.Extensions.Hosting
 
             public void OnNext(KeyValuePair<string, object?> value)
             {
+                if (_currentListener.Value != this)
+                {
+                    // Ignore events that aren't for this listener
+                    return;
+                }
+
                 if (value.Key == "HostBuilding")
                 {
                     _configure?.Invoke(value.Value!);
@@ -304,7 +321,7 @@ namespace Microsoft.Extensions.Hosting
                 }
             }
 
-            private class StopTheHostException : Exception
+            private sealed class StopTheHostException : Exception
             {
 
             }

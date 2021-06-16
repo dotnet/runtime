@@ -7738,12 +7738,12 @@ getMethodInfoHelper(
 #if defined(PROFILING_SUPPORTED)
         BOOL fProfilerRequiresGenericsContextForEnterLeave = FALSE;
         {
-            BEGIN_PIN_PROFILER(CORProfilerPresent());
-            if (g_profControlBlock.pProfInterface->RequiresGenericsContextForEnterLeave())
+            BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
+            if ((&g_profControlBlock)->RequiresGenericsContextForEnterLeave())
             {
                 fProfilerRequiresGenericsContextForEnterLeave = TRUE;
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
         if (fProfilerRequiresGenericsContextForEnterLeave)
         {
@@ -8134,7 +8134,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         // profiler that this inlining is going to take place, and give them a
         // chance to prevent it.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
             if (pCaller->IsILStub() || pCallee->IsILStub())
             {
                 // do nothing
@@ -8142,7 +8142,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             else
             {
                 BOOL fShouldInline;
-                HRESULT hr = g_profControlBlock.pProfInterface->JITInlining(
+                HRESULT hr = (&g_profControlBlock)->JITInlining(
                     (FunctionID)pCaller,
                     (FunctionID)pCallee,
                     &fShouldInline);
@@ -8154,7 +8154,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                     goto exit;
                 }
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 #endif // PROFILING_SUPPORTED
@@ -11184,9 +11184,9 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
         void * profilerHandle = m_pMethodBeingCompiled;
 
         {
-            BEGIN_PIN_PROFILER(CORProfilerFunctionIDMapperEnabled());
-            profilerHandle = (void *)g_profControlBlock.pProfInterface->EEFunctionIDMapper((FunctionID) m_pMethodBeingCompiled, &bHookFunction);
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerFunctionIDMapperEnabled());
+            profilerHandle = (void *)(&g_profControlBlock)->EEFunctionIDMapper((FunctionID) m_pMethodBeingCompiled, &bHookFunction);
+            END_PROFILER_CALLBACK();
         }
 
         m_gphCache.m_pvGphProfilerHandle = profilerHandle;
@@ -13961,9 +13961,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CORINFO_PROFILING_HANDLE profilerHandle = (CORINFO_PROFILING_HANDLE)funId;
 
             {
-                BEGIN_PIN_PROFILER(CORProfilerFunctionIDMapperEnabled());
-                profilerHandle = (CORINFO_PROFILING_HANDLE) g_profControlBlock.pProfInterface->EEFunctionIDMapper(funId, &bHookFunction);
-                END_PIN_PROFILER();
+                BEGIN_PROFILER_CALLBACK(CORProfilerFunctionIDMapperEnabled());
+                profilerHandle = (CORINFO_PROFILING_HANDLE)(&g_profControlBlock)->EEFunctionIDMapper(funId, &bHookFunction);
+                END_PROFILER_CALLBACK();
             }
 
             // Profiling handle is opaque token. It does not have to be aligned thus we can not store it in the same location as token.

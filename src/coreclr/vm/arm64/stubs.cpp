@@ -571,10 +571,6 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     int n = 0;
 
     m_rgCode[n++] = 0x10000089; // adr x9, #16
@@ -608,10 +604,6 @@ void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pM
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     int n = 0;
 
     m_rgCode[n++] = 0x1000008B; // adr x11, #16
@@ -644,10 +636,6 @@ void NDirectImportPrecode::Fixup(DataImage *image)
 void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
     WRAPPER_NO_CONTRACT;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     InitCommon();
 
@@ -1071,15 +1059,16 @@ void JIT_TailCall()
 }
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
+
+extern "C" void STDCALL JIT_PatchedCodeStart();
+extern "C" void STDCALL JIT_PatchedCodeLast();
 
 static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
+    ExecutableWriterHolder<BYTE> writeBarrierWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierWriterHolder.GetRW() - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()
@@ -1227,9 +1216,6 @@ UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 
 void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     // adr x12, _label
     // ldp x16, x12, [x12]
     // br x16
@@ -1252,9 +1238,6 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
 
 void UMEntryThunkCode::Poison()
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
     UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
 
@@ -1867,21 +1850,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
-    SIZE_T cb = size; \
-    SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * p = pStart; \
-    static const size_t rxOffset = 0; \
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-
-#define END_DYNAMIC_HELPER_EMIT() \
-    _ASSERTE(pStart + cb == p); \
-    while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
-#else // defined(HOST_OSX) && defined(HOST_ARM64)
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1896,7 +1864,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
     ClrFlushInstructionCache(pStartRX, cbAligned); \
     return (PCODE)pStartRX
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 // Uses x8 as scratch register to store address of data label
 // After load x8 is increment to point to next data

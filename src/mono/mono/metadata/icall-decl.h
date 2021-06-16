@@ -242,9 +242,7 @@ ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseIn
 ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);
 #endif
 
-#ifdef ENABLE_METADATA_UPDATE
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 ICALL_EXPORT gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void);
-#endif
 
 #endif // __MONO_METADATA_ICALL_DECL_H__
