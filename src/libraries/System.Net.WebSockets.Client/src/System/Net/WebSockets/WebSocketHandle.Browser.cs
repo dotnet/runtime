@@ -65,8 +65,9 @@ namespace System.Net.WebSockets
 
                 switch (exc) {
                     case WebSocketException:
-                    case OperationCanceledException _ when cancellationToken.IsCancellationRequested:
                         throw;
+                    case OperationCanceledException oce when cancellationToken.IsCancellationRequested:
+                        throw new TaskCanceledException(oce.Message, oce.InnerException, cancellationToken);
                     default:
                         throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, exc);
                 }
