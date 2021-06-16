@@ -15,6 +15,9 @@ internal static partial class Interop
         internal static extern void _aligned_free(void* ptr);
 
         [DllImport(Libraries.Ucrtbase, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void* _aligned_realloc(void* ptr, nuint size, nuint alignment);
+
+        [DllImport(Libraries.Ucrtbase, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void* calloc(nuint num, nuint size);
 
         [DllImport(Libraries.Ucrtbase, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]

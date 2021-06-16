@@ -767,7 +767,13 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void AlignedFree(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
+        public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static void* Alloc(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint byteCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void* AllocZeroed(nuint elementCount, nuint elementSize) { throw null; }
         [System.CLSCompliantAttribute(false)]

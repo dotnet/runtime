@@ -76,7 +76,72 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void AllocTest()
+        public void AlignedReallocTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+
+            void* newPtr = NativeMemory.AlignedRealloc(ptr, 1, (uint)sizeof(nuint));
+            Assert.True(newPtr != null);
+            NativeMemory.AlignedFree(newPtr);
+        }
+
+        [Fact]
+        public void AlignedReallocNullPtrTest()
+        {
+            void* ptr = NativeMemory.AlignedRealloc(null, 1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Fact]
+        public void AlignedReallocNullPtrOOMTest()
+        {
+            Assert.Throws<OutOfMemoryException>(() => NativeMemory.AlignedRealloc(null, nuint.MaxValue, (uint)sizeof(nuint)));
+        }
+
+        [Fact]
+        public void AlignedReallocNullPtrZeroSizeTest()
+        {
+            void* ptr = NativeMemory.AlignedRealloc(null, 0, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Fact]
+        public void AlignedReallocZeroAlignmentTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+
+            Assert.Throws<ArgumentException>(() => NativeMemory.AlignedRealloc(ptr, (uint)sizeof(nuint), 0));
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Fact]
+        public void AlignedReallocNonPowerOfTwoAlignmentTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+
+            Assert.Throws<ArgumentException>(() => NativeMemory.AlignedRealloc(ptr, (uint)sizeof(nuint), (uint)sizeof(nuint) + 1));
+            Assert.Throws<ArgumentException>(() => NativeMemory.AlignedRealloc(ptr, (uint)sizeof(nuint), (uint)sizeof(nuint) * 3));
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Fact]
+        public void AlignedReallocZeroSizeTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(1, (uint)sizeof(nuint));
+            Assert.True(ptr != null);
+
+            void* newPtr = NativeMemory.AlignedRealloc(ptr, 0, (uint)sizeof(nuint));
+            Assert.True(newPtr != null);
+            NativeMemory.AlignedFree(newPtr);
+        }
+
+        [Fact]
+        public void AllocByteCountTest()
         {
             void* ptr = NativeMemory.Alloc(1);
             Assert.True(ptr != null);
@@ -84,13 +149,29 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void AllocOOMTest()
+        public void AllocElementCountTest()
+        {
+            void* ptr = NativeMemory.Alloc(1, 1);
+            Assert.True(ptr != null);
+            NativeMemory.Free(ptr);
+        }
+
+        [Fact]
+        public void AllocByteCountOOMTest()
         {
             Assert.Throws<OutOfMemoryException>(() => NativeMemory.Alloc(nuint.MaxValue));
         }
 
         [Fact]
-        public void AllocZeroSizeTest()
+        public void AllocElementCountOOMTest()
+        {
+            Assert.Throws<OutOfMemoryException>(() => NativeMemory.Alloc(1, nuint.MaxValue));
+            Assert.Throws<OutOfMemoryException>(() => NativeMemory.Alloc(nuint.MaxValue, 1));
+            Assert.Throws<OutOfMemoryException>(() => NativeMemory.Alloc(nuint.MaxValue, nuint.MaxValue));
+        }
+
+        [Fact]
+        public void AllocZeroByteCountTest()
         {
             void* ptr = NativeMemory.Alloc(0);
             Assert.True(ptr != null);
@@ -98,7 +179,34 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void AllocZeroedTest()
+        public void AllocZeroElementCountTest()
+        {
+            void* ptr = NativeMemory.Alloc(0, 1);
+            Assert.True(ptr != null);
+            NativeMemory.Free(ptr);
+        }
+
+        [Fact]
+        public void AllocZeroElementSizeTest()
+        {
+            void* ptr = NativeMemory.Alloc(1, 0);
+            Assert.True(ptr != null);
+            NativeMemory.Free(ptr);
+        }
+
+        [Fact]
+        public void AllocZeroedByteCountTest()
+        {
+            void* ptr = NativeMemory.AllocZeroed(1);
+
+            Assert.True(ptr != null);
+            Assert.Equal(expected: 0, actual: ((byte*)ptr)[0]);
+
+            NativeMemory.Free(ptr);
+        }
+
+        [Fact]
+        public void AllocZeroedElementCountTest()
         {
             void* ptr = NativeMemory.AllocZeroed(1, 1);
 
@@ -109,10 +217,25 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void AllocZeroedOOMTest()
+        public void AllocZeroedByteCountOOMTest()
+        {
+            Assert.Throws<OutOfMemoryException>(() => NativeMemory.AllocZeroed(nuint.MaxValue));
+        }
+
+        [Fact]
+        public void AllocZeroedElementCountOOMTest()
         {
             Assert.Throws<OutOfMemoryException>(() => NativeMemory.AllocZeroed(1, nuint.MaxValue));
             Assert.Throws<OutOfMemoryException>(() => NativeMemory.AllocZeroed(nuint.MaxValue, 1));
+            Assert.Throws<OutOfMemoryException>(() => NativeMemory.AllocZeroed(nuint.MaxValue, nuint.MaxValue));
+        }
+
+        [Fact]
+        public void AllocZeroedZeroByteCountTest()
+        {
+            void* ptr = NativeMemory.AllocZeroed(0);
+            Assert.True(ptr != null);
+            NativeMemory.Free(ptr);
         }
 
         [Fact]
