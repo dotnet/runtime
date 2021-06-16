@@ -31,15 +31,15 @@ function proxyMethod (prefix, func, asJson) {
 	return method;
 };
 
-var methods = ["debug", "trace", "warn", "info", "error"];
-for (var m of methods) {
+const methods = ["debug", "trace", "warn", "info", "error"];
+for (let m of methods) {
 	if (typeof(console[m]) !== "function") {
 		console[m] = proxyMethod(`console.${m}: `, console.log, false);
 	}
 }
 
 function proxyJson (func) {
-	for (var m of ["log", ...methods])
+	for (let m of ["log", ...methods])
 		console[m] = proxyMethod(`console.${m}`,func, true);
 }
 
@@ -88,8 +88,8 @@ try {
 
 	}else if (is_browser) {
 		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-		var url = new URL (decodeURI (window.location));
-		for (var param of url.searchParams) {
+		const url = new URL (decodeURI (window.location));
+		for (let param of url.searchParams) {
 			if (param [0] == "arg") {
 				testArguments.push (param [1]);
 			}
@@ -194,7 +194,7 @@ function test_exit (exit_code) {
 		// Notify the selenium script
 		Module.exit_code = exit_code;
 		console.log ("WASM EXIT " + exit_code);
-		var tests_done_elem = document.createElement ("label");
+		const tests_done_elem = document.createElement ("label");
 		tests_done_elem.id = "tests_done";
 		tests_done_elem.innerHTML = exit_code.toString ();
 		document.body.appendChild (tests_done_elem);
@@ -220,27 +220,27 @@ let enable_gc = true;
 let working_dir='/';
 while (testArguments !== undefined && testArguments.length > 0) {
 	if (testArguments [0].startsWith ("--profile=")) {
-		var arg = testArguments [0].substring ("--profile=".length);
+		const arg = testArguments [0].substring ("--profile=".length);
 
 		profilers.push (arg);
 
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--setenv=")) {
-		var arg = testArguments [0].substring ("--setenv=".length);
-		var parts = arg.split ('=');
+		const arg = testArguments [0].substring ("--setenv=".length);
+		const parts = arg.split ('=');
 		if (parts.length != 2)
 			fail_exec ("Error: malformed argument: '" + testArguments [0]);
 		setenv [parts [0]] = parts [1];
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--runtime-arg=")) {
-		var arg = testArguments [0].substring ("--runtime-arg=".length);
+		const arg = testArguments [0].substring ("--runtime-arg=".length);
 		runtime_args = testArguments.push (arg);
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--working-dir=")) {
-		var arg = testArguments [0].substring ("--working-dir=".length);
+		const arg = testArguments [0].substring ("--working-dir=".length);
 		working_dir = arg;
 		testArguments = testArguments.slice (1);
 	} else {
@@ -251,12 +251,13 @@ while (testArguments !== undefined && testArguments.length > 0) {
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
+// must be var as dotnet.js uses it
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
 	onAbort: function(x) {
 		console.log ("ABORT: " + x);
-		var err = new Error();
+		const err = new Error();
 		console.log ("Stacktrace: \n");
 		console.log (err.stack);
 		test_exit (1);
@@ -264,7 +265,7 @@ var Module = {
 
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-		for (var variable in setenv) {
+		for (let variable in setenv) {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
@@ -287,8 +288,8 @@ var Module = {
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
-			var content = new Uint8Array (read (asset, 'binary'));
-			var path = asset.substr(config.deploy_prefix.length);
+			const content = new Uint8Array (read (asset, 'binary'));
+			const path = asset.substr(config.deploy_prefix.length);
 			IOHandler.writeContentToFile(content, path);
 			*/
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
@@ -298,18 +299,17 @@ var Module = {
 	},
 };
 
-var App = {
+const App = {
 	init: function () {
-		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
-		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
+		const wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
+		const wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 
 		Module.wasm_exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
 
 		console.info("Initializing.....");
 
-		for (var i = 0; i < profilers.length; ++i) {
-			var init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
-
+		for (let i = 0; i < profilers.length; ++i) {
+			const init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
 			init ("");
 		}
 
@@ -319,9 +319,9 @@ var App = {
 		}
 
 		if (testArguments[0] == "--regression") {
-			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
+			const exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
-			var res = 0;
+			let res = 0;
 				try {
 					res = exec_regression (10, testArguments[1]);
 					console.log ("REGRESSION RESULT: " + res);
@@ -348,22 +348,22 @@ var App = {
 			}
 
 			main_assembly_name = testArguments[1];
-			var app_args = testArguments.slice (2);
+			const app_args = testArguments.slice (2);
 
-			var main_argc = testArguments.length - 2 + 1;
-			var main_argv = Module._malloc (main_argc * 4);
+			const main_argc = testArguments.length - 2 + 1;
+			const main_argv = Module._malloc (main_argc * 4);
 			aindex = 0;
 			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32")
 			aindex += 1;
-			for (var i = 2; i < testArguments.length; ++i) {
+			for (let i = 2; i < testArguments.length; ++i) {
 				Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [i]), "i32");
 				aindex += 1;
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
 			// Automatic signature isn't working correctly
-			let result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
-			let onError = function (error)
+			const result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+			const onError = function (error)
 			{
 				console.error (error);
 				if (error.stack)
@@ -386,7 +386,7 @@ var App = {
 		if ((arguments.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
-		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+		const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
 		try {
 			return BINDING.call_static_method(fqn, args || [], signature);
 		} catch (exc) {
