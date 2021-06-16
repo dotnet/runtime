@@ -26,7 +26,7 @@ namespace System.IO.Strategies
             _share = share;
             _exposedHandle = true;
 
-            handle.InitThreadPoolBindingIfNeeded();
+            handle.EnsureThreadPoolBindingInitialized();
 
             if (handle.CanSeek)
             {

@@ -82,7 +82,7 @@ namespace System.IO.Strategies
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            handle.InitThreadPoolBindingIfNeeded();
+            handle.EnsureThreadPoolBindingInitialized();
 
             if (handle.CanSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);

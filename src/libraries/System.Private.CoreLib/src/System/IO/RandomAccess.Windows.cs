@@ -14,6 +14,8 @@ namespace System.IO
 {
     public static partial class RandomAccess
     {
+        private static readonly IOCompletionCallback s_callback = AllocateCallback();
+
         internal static unsafe long GetFileLength(SafeFileHandle handle, string? path)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
@@ -28,57 +30,113 @@ namespace System.IO
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path = null)
         {
-            NativeOverlapped nativeOverlapped = GetNativeOverlapped(fileOffset);
-            int r = ReadFileNative(handle, buffer, syncUsingOverlapped: true, &nativeOverlapped, out int errorCode);
+            NativeOverlapped* nativeOverlapped = GetNativeOverlappedForSynchronousOperation(handle, fileOffset);
+            ManualResetEvent? mres = null;
+            bool isSync = !handle.IsAsync;
 
-            if (r == -1)
+            if (!isSync)
             {
-                // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
-                {
-                    r = 0;
-                }
-                else
-                {
-                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    {
-                        ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
-                    }
+                mres = new ManualResetEvent(false);
 
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
-                }
+                // From https://docs.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
+                // "If the hEvent member of the OVERLAPPED structure is NULL, the system uses the state of the hFile handle to signal when the operation has been completed.
+                // Use of file, named pipe, or communications-device handles for this purpose is discouraged.
+                // It is safer to use an event object because of the confusion that can occur when multiple simultaneous overlapped operations
+                // are performed on the same file, named pipe, or communications device.
+                // In this situation, there is no way to know which operation caused the object's state to be signaled."
+                // Since we want RandomAccess APIs to be thread-safe, we provide a dedicated wait handle.
+                nativeOverlapped->EventHandle = mres.SafeWaitHandle.DangerousGetHandle();
             }
 
-            return r;
+            try
+            {
+                int result = ReadFileNative(handle, buffer, syncUsingOverlapped: isSync, nativeOverlapped, out int errorCode);
+                if (result != -1)
+                {
+                    return result;
+                }
+
+                if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                {
+                    Debug.Assert(!isSync);
+                    mres!.WaitOne();
+
+                    if (Interop.Kernel32.GetOverlappedResult(handle, nativeOverlapped, ref result, bWait: false))
+                    {
+                        return result;
+                    }
+
+                    errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                }
+
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                    || errorCode == Interop.Errors.ERROR_HANDLE_EOF) // logically success with 0 bytes read (read at end of file)
+                {
+                    return 0;
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+
+            }
+            finally
+            {
+                mres?.Dispose();
+            }
         }
 
         internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, string? path = null)
         {
-            NativeOverlapped nativeOverlapped = GetNativeOverlapped(fileOffset);
-            int r = WriteFileNative(handle, buffer, true, &nativeOverlapped, out int errorCode);
+            NativeOverlapped* nativeOverlapped = GetNativeOverlappedForSynchronousOperation(handle, fileOffset);
+            ManualResetEvent? mres = null;
+            bool isSync = !handle.IsAsync;
 
-            if (r == -1)
+            if (!isSync)
             {
-                // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
-                if (errorCode == Interop.Errors.ERROR_NO_DATA)
-                {
-                    r = 0;
-                }
-                else
-                {
-                    // ERROR_INVALID_PARAMETER may be returned for writes
-                    // where the position is too large or for synchronous writes
-                    // to a handle opened asynchronously.
-                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    {
-                        throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
-                    }
-
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
-                }
+                mres = new ManualResetEvent(false);
+                nativeOverlapped->EventHandle = mres.SafeWaitHandle.DangerousGetHandle();
             }
 
-            return r;
+            try
+            {
+                int result = WriteFileNative(handle, buffer, syncUsingOverlapped: isSync, nativeOverlapped, out int errorCode);
+                if (result != -1)
+                {
+                    return result;
+                }
+
+                if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                {
+                    Debug.Assert(!isSync);
+                    mres!.WaitOne();
+
+                    if (Interop.Kernel32.GetOverlappedResult(handle, nativeOverlapped, ref result, bWait: false))
+                    {
+                        return result;
+                    }
+
+                    errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                }
+
+                if (errorCode == Interop.Errors.ERROR_NO_DATA) // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
+                {
+                    return 0;
+                }
+
+                // ERROR_INVALID_PARAMETER may be returned for writes
+                // where the position is too large or for synchronous writes
+                // to a handle opened asynchronously.
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    throw new IOException(SR.IO_FileTooLong);
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+
+            }
+            finally
+            {
+                mres?.Dispose();
+            }
         }
 
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
@@ -143,7 +201,9 @@ namespace System.IO
         }
 
         private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
-            => Map(QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken));
+            => handle.IsAsync
+                ? Map(QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken))
+                : ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<int> Map((SafeFileHandle.ValueTaskSource? vts, int errorCode) tuple)
             => tuple.vts != null
@@ -153,6 +213,8 @@ namespace System.IO
         internal static unsafe (SafeFileHandle.ValueTaskSource? vts, int errorCode) QueueAsyncReadFile(
             SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
+            handle.EnsureThreadPoolBindingInitialized();
+
             SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
             try
             {
@@ -200,11 +262,15 @@ namespace System.IO
         }
 
         private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
-           => Map(QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken));
+            => handle.IsAsync
+                ? Map(QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken))
+                : ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         internal static unsafe (SafeFileHandle.ValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(
             SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
+            handle.EnsureThreadPoolBindingInitialized();
+
             SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
             try
             {
@@ -291,6 +357,11 @@ namespace System.IO
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
+            if (!handle.IsAsync)
+            {
+                return ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+            }
+
             if (CanUseScatterGatherWindowsAPIs(handle))
             {
                 long totalBytes = 0;
@@ -358,6 +429,8 @@ namespace System.IO
         private static unsafe ValueTask<int> ReadFileScatterAsync(SafeFileHandle handle, MemoryHandle pinnedSegments,
             int bytesToRead, long fileOffset, CancellationToken cancellationToken)
         {
+            handle.EnsureThreadPoolBindingInitialized();
+
             SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
             try
             {
@@ -426,6 +499,11 @@ namespace System.IO
         private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
+            if (!handle.IsAsync)
+            {
+                return ScheduleSyncWriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+            }
+
             if (CanUseScatterGatherWindowsAPIs(handle))
             {
                 long totalBytes = 0;
@@ -507,6 +585,8 @@ namespace System.IO
         private static unsafe ValueTask<int> WriteFileGatherAsync(SafeFileHandle handle, MemoryHandle pinnedSegments,
             int bytesToWrite, long fileOffset, CancellationToken cancellationToken)
         {
+            handle.EnsureThreadPoolBindingInitialized();
+
             SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
             try
             {
@@ -545,14 +625,41 @@ namespace System.IO
             return new ValueTask<int>(vts, vts.Version);
         }
 
-        private static NativeOverlapped GetNativeOverlapped(long fileOffset)
+        private static unsafe NativeOverlapped* GetNativeOverlappedForSynchronousOperation(SafeFileHandle handle, long fileOffset, NativeOverlapped stackAllocated = default)
         {
-            NativeOverlapped nativeOverlapped = default;
-            // For pipes the offsets are ignored by the OS
-            nativeOverlapped.OffsetLow = unchecked((int)fileOffset);
-            nativeOverlapped.OffsetHigh = (int)(fileOffset >> 32);
+            NativeOverlapped* result;
+            if (handle.IsAsync)
+            {
+                handle.EnsureThreadPoolBindingInitialized();
 
-            return nativeOverlapped;
+                // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
+                // to allocate a native overlapped and provide a valid callback.
+                // Since we really don't care about the callback (because this is sync IO for async handle)
+                // and we are going to wait on WaitHandle anyway, we pass ThreadPoolBinding as a state.
+                // The callback is going to use it to free the native overlapped.
+                result = handle.ThreadPoolBinding!.AllocateNativeOverlapped(s_callback, handle.ThreadPoolBinding, null);
+            }
+            else
+            {
+                result = &stackAllocated;
+            }
+
+            // For pipes the offsets are ignored by the OS
+            result->OffsetLow = unchecked((int)fileOffset);
+            result->OffsetHigh = (int)(fileOffset >> 32);
+
+            return result;
+        }
+
+        private static unsafe IOCompletionCallback AllocateCallback()
+        {
+            return new IOCompletionCallback(Callback);
+
+            static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+            {
+                ThreadPoolBoundHandle threadPoolBoundHandle = (ThreadPoolBoundHandle)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
+                threadPoolBoundHandle.FreeNativeOverlapped(pOverlapped);
+            }
         }
     }
 }
