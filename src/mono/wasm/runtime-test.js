@@ -13,35 +13,34 @@ if (typeof (console) === "undefined"){
 		log: globalThis.print,
 		clear: function () { }
 	};
-
-	function proxyMethod (prefix, func, asJson) {
-		let method = function() {
-			let args = [...arguments];
-			if (asJson) {
-				func (JSON.stringify({
-					method: prefix,
-					payload: args[0],
-					arguments: args
-				}));
-			} else {
-				func([prefix + args[0], ...args.slice(1)]);
-			}
-		};
-
-		return method;
+}
+function proxyMethod (prefix, func, asJson) {
+	let method = function() {
+		let args = [...arguments];
+		if (asJson) {
+			func (JSON.stringify({
+				method: prefix,
+				payload: args[0],
+				arguments: args
+			}));
+		} else {
+			func([prefix + args[0], ...args.slice(1)]);
+		}
 	};
 
-	var methods = ["debug", "trace", "warn", "info", "error"];
-	for (var m of methods) {
-		if (typeof(console[m]) !== "function") {
-			console[m] = proxyMethod(`console.${m}: `, console.log, false);
-		}
-	}
+	return method;
+};
 
-	function proxyJson (func) {
-		for (var m of ["log", ...methods])
-			console[m] = proxyMethod(`console.${m}`,func, true);
+var methods = ["debug", "trace", "warn", "info", "error"];
+for (var m of methods) {
+	if (typeof(console[m]) !== "function") {
+		console[m] = proxyMethod(`console.${m}: `, console.log, false);
 	}
+}
+
+function proxyJson (func) {
+	for (var m of ["log", ...methods])
+		console[m] = proxyMethod(`console.${m}`,func, true);
 }
 
 if (is_browser) {
@@ -276,7 +275,6 @@ var Module = {
 	},
 
 	onRuntimeInitialized: function () {
-		console.log("test")
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (var variable in setenv) {
 			MONO.mono_wasm_setenv (variable, setenv [variable]);
