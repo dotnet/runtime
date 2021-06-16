@@ -980,7 +980,7 @@ int DefaultPolicy::CodeSizeEstimate()
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 //------------------------------------------------------------------------
-// DumpXml: Dump ExtendedDefaultPolicy data as XML
+// OnDumpXml: Dump DefaultPolicy data as XML
 //
 // Arguments:
 //    file     - stream to output to
@@ -1319,11 +1319,49 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
 void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
 {
-    // Don't forward CALLEE_NUMBER_OF_BASIC_BLOCKS to the DefaultPolicy
-    // as ExtendedDefaultPolicy doesn't limit itself with it.
-    if (obs != InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS)
+    switch (obs)
     {
-        DefaultPolicy::NoteInt(obs, value);
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
+            {
+                assert(m_IsForceInlineKnown);
+                assert(value != 0);
+                m_CodeSize = static_cast<unsigned>(value);
+
+                if (m_IsForceInline)
+                {
+                    // Candidate based on force inline
+                    SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+                }
+                else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+                {
+                    // Candidate based on small size
+                    SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+                }
+                else if (m_CodeSize <= 1000)
+                {
+                    // Candidate, pending profitability evaluation
+                    SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+                }
+                else
+                {
+                    // Callee too big, not a candidate
+                    SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+                }
+                break;
+            }
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+            if (!m_IsForceInline && m_IsNoReturn && (value == 1))
+            {
+                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            }
+            else if (!m_HasProfile && !m_IsForceInline && (value > MAX_BASIC_BLOCKS + 10))
+            {
+                SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+            }
+            break;
+        default:
+            DefaultPolicy::NoteInt(obs, value);
+            break;
     }
 }
 
