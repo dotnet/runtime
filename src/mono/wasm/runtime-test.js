@@ -70,7 +70,7 @@ if (is_node) {
 	}
 }
 if (is_node) {
-	var { performance, PerformanceObserver } = require("perf_hooks");
+	var { performance } = require("perf_hooks");
 } else if (typeof performance === 'undefined') {
 	// performance.now() is used by emscripten and doesn't work in JSC
 	var performance = {
@@ -211,22 +211,12 @@ function fail_exec (reason) {
 	test_exit (1);
 }
 
-function inspect_object (o) {
-	var r = "";
-	for(var p in o) {
-		var t = typeof o[p];
-		r += "'" + p + "' => '" + t + "', ";
-	}
-	return r;
-}
-
 // Preprocess arguments
 console.log("Arguments: " + testArguments);
 let profilers = [];
 let setenv = {};
 let runtime_args = [];
 let enable_gc = true;
-let enable_zoneinfo = false;
 let working_dir='/';
 while (testArguments !== undefined && testArguments.length > 0) {
 	if (testArguments [0].startsWith ("--profile=")) {
@@ -307,8 +297,6 @@ var Module = {
 		MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };
-
-const IGNORE_PARAM_COUNT = -1;
 
 var App = {
 	init: function () {
