@@ -12,9 +12,14 @@
 PALEXPORT void* SystemNative_AlignedAlloc(uintptr_t alignment, uintptr_t size);
 
 /**
- * C runtime free for aligned_alloc
+ * Free for C runtime aligned_alloc
  */
 PALEXPORT void SystemNative_AlignedFree(void* ptr);
+
+/**
+ * Realloc for C runtime aligned_alloc
+ */
+PALEXPORT void* SystemNative_AlignedRealloc(void* ptr, uintptr_t alignment, uintptr_t size);
 
 /**
  * C runtime calloc
@@ -25,6 +30,11 @@ PALEXPORT void* SystemNative_Calloc(uintptr_t num, uintptr_t size);
  * C runtime free
  */
 PALEXPORT void SystemNative_Free(void* ptr);
+
+/**
+ * Get usable size of C runtime malloc
+ */
+PALEXPORT uintptr_t SystemNative_GetUsableSize(void* ptr);
 
 /**
  * C runtime malloc
@@ -39,4 +49,4 @@ PALEXPORT void* SystemNative_MemSet(void* s, int c, uintptr_t n);
 /**
  * C runtime realloc
  */
-PALEXPORT void* SystemNative_Realloc(void* ptr, uintptr_t size);
+PALEXPORT void* SystemNative_Realloc(void* ptr, uintptr_t new_size);

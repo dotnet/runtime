@@ -110,6 +110,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Log)
     DllImportEntry(SystemNative_AlignedAlloc)
     DllImportEntry(SystemNative_AlignedFree)
+    DllImportEntry(SystemNative_AlignedRealloc)
     DllImportEntry(SystemNative_Calloc)
     DllImportEntry(SystemNative_Free)
     DllImportEntry(SystemNative_Malloc)

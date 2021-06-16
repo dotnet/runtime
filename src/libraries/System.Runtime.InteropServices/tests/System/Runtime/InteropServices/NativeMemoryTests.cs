@@ -224,6 +224,32 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public void AlignedReallocSmallerToLargerTest()
+        {
+            void* ptr = NativeMemory.AlignedAlloc(16, 16);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 16 == 0);
+
+            for (int i = 0; i < 16; i++)
+            {
+                ((byte*)ptr)[i] = i;
+            }
+
+            void* newPtr = NativeMemory.AlignedRealloc(ptr, 32, 16);
+
+            Assert.True(newPtr != null);
+            Assert.True((nuint)newPtr % 16 == 0);
+
+            for (int i = 0; i < 16; i++)
+            {
+                Assert.True(((byte*)newPtr)[i] == i);
+            }
+
+            NativeMemory.AlignedFree(newPtr);
+        }
+
+        [Fact]
         public void AllocByteCountTest()
         {
             void* ptr = NativeMemory.Alloc(1);
@@ -386,6 +412,28 @@ namespace System.Runtime.InteropServices.Tests
             void* newPtr = NativeMemory.Realloc(ptr, 0);
             Assert.True(newPtr != null);
             NativeMemory.Free(newPtr);
+        }
+
+        [Fact]
+        public void ReallocSmallerToLargerTest()
+        {
+            void* ptr = NativeMemory.Alloc(16);
+            Assert.True(ptr != null);
+
+            for (int i = 0; i < 16; i++)
+            {
+                ((byte*)ptr)[i] = i;
+            }
+
+            void* newPtr = NativeMemory.Realloc(ptr, 32);
+            Assert.True(newPtr != null);
+
+            for (int i = 0; i < 16; i++)
+            {
+                Assert.True(((byte*)newPtr)[i] == i);
+            }
+
+            NativeMemory.AlignedFree(newPtr);
         }
     }
 }

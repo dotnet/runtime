@@ -4,12 +4,21 @@
 #include "pal_config.h"
 #include "pal_memory.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
+#if HAVE_MALLOC_USABLE_SIZE
+    #include <malloc.h>
+#elif HAVE_MALLOC_SIZE
+    #include <malloc/malloc.h>
+#else
+    #error "Platform doesn't support malloc_usable_size or malloc_size"
+#endif
+
 void* SystemNative_AlignedAlloc(uintptr_t alignment, uintptr_t size)
 {
-#if HAVE_ALIGNED_ALLOC && !defined(__APPLE__)
+#if HAVE_ALIGNED_ALLOC
     // We want to prefer the standardized aligned_alloc function. However
     // it cannot be used on __APPLE__ since we target 10.13 and it was
     // only added in 10.15, but we might be compiling on a 10.15 box.
@@ -28,6 +37,22 @@ void SystemNative_AlignedFree(void* ptr)
     free(ptr);
 }
 
+void* SystemNative_AlignedRealloc(void* ptr, uintptr_t alignment, uintptr_t new_size)
+{
+    void* result = SystemNative_AlignedAlloc(alignment, new_size);
+
+    if (result != NULL)
+    {
+        uintptr_t old_size = SystemNative_GetUsableSize(ptr);
+        assert((ptr != NULL) || (old_size == 0));
+
+        memcpy(result, ptr, (new_size < old_size) ? new_size : old_size);
+        SystemNative_AlignedFree(ptr);
+    }
+
+    return result;
+}
+
 void* SystemNative_Calloc(uintptr_t num, uintptr_t size)
 {
     return calloc(num, size);
@@ -36,6 +61,17 @@ void* SystemNative_Calloc(uintptr_t num, uintptr_t size)
 void SystemNative_Free(void* ptr)
 {
     free(ptr);
+}
+
+uintptr_t SystemNative_GetUsableSize(void* ptr)
+{
+#if HAVE_MALLOC_USABLE_SIZE
+    return malloc_usable_size(ptr);
+#elif HAVE_MALLOC_SIZE
+    return malloc_size(ptr);
+#else
+    #error "Platform doesn't support malloc_usable_size or malloc_size"
+#endif
 }
 
 void* SystemNative_Malloc(uintptr_t size)

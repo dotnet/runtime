@@ -14,6 +14,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_AlignedFree")]
         internal static extern void AlignedFree(void* ptr);
 
+        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_AlignedRealloc")]
+        internal static extern void* AlignedRealloc(void* ptr, nuint alignment, nuint new_size);
+
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Calloc")]
         internal static extern void* Calloc(nuint num, nuint size);
 

@@ -79,15 +79,29 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment)
         {
-            void* newPtr = AlignedAlloc(byteCount, alignment);
-
-            if (ptr != null)
+            if (!BitOperations.IsPow2(alignment))
             {
-                Buffer.Memmove(ref *(byte*)newPtr, ref *(byte*)ptr, byteCount);
-                Interop.Sys.AlignedFree(ptr);
+                // The C standard doesn't define what a valid alignment is, however Windows and POSIX requires a power of 2
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
             }
 
-            return newPtr;
+            // The C standard and POSIX requires size to be a multiple of alignment and we want an "empty" allocation for zero
+            // POSIX additionally requires alignment to be at least sizeof(void*)
+
+            // The adjustment for byteCount can overflow here, but such overflow is "harmless". This is because of the requirement
+            // that alignment be a power of two and that byteCount be a multiple of alignment. Given both of these constraints
+            // we should only overflow for byteCount > (nuint.MaxValue & ~(alignment - 1)). When such an overflow occurs we will
+            // get a result that is less than alignment which will cause the allocation to fail.
+
+            nuint adjustedAlignment = Math.Max(alignment, (uint)sizeof(void*));
+            void* result = Interop.Sys.AlignedRealloc(ptr, adjustedAlignment, (byteCount != 0) ? (byteCount + (adjustedAlignment - 1)) & ~(adjustedAlignment - 1) : adjustedAlignment);
+
+            if (result == null)
+            {
+                ThrowHelper.ThrowOutOfMemoryException();
+            }
+
+            return result;
         }
 
         /// <summary>Allocates a block of memory of the specified size, in bytes.</summary>
