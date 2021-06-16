@@ -3216,6 +3216,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	};
 #endif
 
+
 	g_assert_not_reached ();
 
 	HANDLE_FUNCTION_ENTER ();
