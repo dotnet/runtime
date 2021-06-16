@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues_CommonPlatform()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -62,6 +62,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -79,6 +80,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void Credentials_SetGet_Roundtrips()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -99,6 +101,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(0)]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxAutomaticRedirections not supported on Browser")]
         public void MaxAutomaticRedirections_InvalidValue_Throws(int redirects)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -148,6 +151,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -195,7 +199,10 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            if(PlatformDetection.IsNotBrowser)
+            {
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            }
 
             using HttpClient client = CreateHttpClient(handler);
 
@@ -224,6 +231,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("[::1234]")]
         [InlineData("[::1234]:8080")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on Browser")]
         public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host)
         {
             string ipv6Address = "http://" + host;
@@ -254,7 +262,9 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in BoolValues
+            from useSsl in BoolValues 
+            // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+            where PlatformDetection.IsNotBrowser || !useSsl 
             select new object[] { address, useSsl };
 
         [Theory]
@@ -277,8 +287,9 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    if (useSsl)
+                    if (useSsl && PlatformDetection.IsNotBrowser)
                     {
+                        // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
                     try { await client.GetAsync(url); } catch { }
@@ -296,6 +307,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -328,6 +340,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("nocolon")]
         [InlineData("no colon")]
         [InlineData("Content-Length      ")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_InvalidHeaderNameValue_ThrowsHttpRequestException(string invalidHeader)
         {
             if (UseVersion == HttpVersion30)
@@ -341,7 +354,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
                 }
-            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{invalidHeader}\r\nContent-Length: 11\r\n\r\nhello world"));
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{invalidHeader}\r\n{LoopbackServer.CorsHeaders}Content-Length: 11\r\n\r\nhello world"));
         }
 
         [Theory]
@@ -349,6 +362,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_IncompleteData_ThrowsHttpRequestException(bool failDuringHeaders, bool getString)
         {
             if (IsWinHttpHandler)
@@ -372,11 +386,12 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, server =>
                 failDuringHeaders ?
-                   server.AcceptConnectionSendCustomResponseAndCloseAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n") :
-                   server.AcceptConnectionSendCustomResponseAndCloseAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhe"));
+                   server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{LoopbackServer.CorsHeaders}Content-Length: 5\r\n") :
+                   server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{LoopbackServer.CorsHeaders}Content-Length: 5\r\n\r\nhe"));
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -565,7 +580,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Equal("1.1", resp.Version.ToString());
                     Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-                    Assert.Contains("*", resp.Headers.GetValues("Access-Control-Allow-Origin"));
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        Assert.Contains("*", resp.Headers.GetValues("Access-Control-Allow-Origin"));
+                    }
                     Assert.Contains("text/example;charset=utf-8", resp.Headers.GetValues("Accept-Patch"));
                     Assert.Contains("bytes", resp.Headers.AcceptRanges);
                     Assert.Equal(TimeSpan.FromSeconds(12), resp.Headers.Age.GetValueOrDefault());
@@ -581,7 +599,10 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("gzip", resp.Content.Headers.ContentEncoding);
                     Assert.Contains("da", resp.Content.Headers.ContentLanguage);
                     Assert.Equal(new Uri("/index.htm", UriKind.Relative), resp.Content.Headers.ContentLocation);
-                    Assert.Equal(Convert.FromBase64String("Q2hlY2sgSW50ZWdyaXR5IQ=="), resp.Content.Headers.ContentMD5);
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        Assert.Equal(Convert.FromBase64String("Q2hlY2sgSW50ZWdyaXR5IQ=="), resp.Content.Headers.ContentMD5);
+                    }
                     Assert.Equal("bytes", resp.Content.Headers.ContentRange.Unit);
                     Assert.Equal(21010, resp.Content.Headers.ContentRange.From.GetValueOrDefault());
                     Assert.Equal(47021, resp.Content.Headers.ContentRange.To.GetValueOrDefault());
@@ -600,7 +621,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("max-age=2592000; pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"", resp.Headers.GetValues("Public-Key-Pins"));
                     Assert.Equal(TimeSpan.FromSeconds(120), resp.Headers.RetryAfter.Delta.GetValueOrDefault());
                     Assert.Contains(new ProductInfoHeaderValue("Apache", "2.4.1"), resp.Headers.Server);
-                    Assert.Contains("UserID=JohnDoe; Max-Age=3600; Version=1", resp.Headers.GetValues("Set-Cookie"));
+
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        Assert.Contains("UserID=JohnDoe; Max-Age=3600; Version=1", resp.Headers.GetValues("Set-Cookie"));
+                    }
                     Assert.Contains("max-age=16070400; includeSubDomains", resp.Headers.GetValues("Strict-Transport-Security"));
                     Assert.Contains("Max-Forwards", resp.Headers.Trailer);
                     Assert.Contains("?", resp.Headers.GetValues("Tk"));
@@ -627,6 +652,7 @@ namespace System.Net.Http.Functional.Tests
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
                 $"HTTP/1.1 200 OK{newline}" +
                 $"Access-Control-Allow-Origin:{fold} *{newline}" +
+                $"Access-Control-Expose-Headers:{fold} *{newline}" +
                 $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
                 $"Accept-Ranges:{fold} bytes{newline}" +
                 $"Age: {fold}12{newline}" +
@@ -681,6 +707,7 @@ namespace System.Net.Http.Functional.Tests
                 dribble ? new LoopbackServer.Options { StreamWrapper = s => new DribbleStream(s) } : null);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         [Fact]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {
@@ -700,6 +727,7 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             "Connection: close\r\n" +
+                            LoopbackServer.CorsHeaders +
                             "Transfer-Encoding: chunked\r\n" +
                             "\r\n" +
                             "4    \r\n" + // whitespace after size
@@ -745,6 +773,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     string partialResponse = "HTTP/1.1 200 OK\r\n" +
+                        LoopbackServer.CorsHeaders +
                         "Transfer-Encoding: chunked\r\n" +
                         "\r\n" +
                         $"{chunkSize}\r\n";
@@ -780,6 +809,7 @@ namespace System.Net.Http.Functional.Tests
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
                 "HTTP/1.1 200 OK\r\n" +
                 "Connection: close\r\n" +
+                LoopbackServer.CorsHeaders +
                 "Transfer-Encoding: chunked\r\n" +
                 "\r\n" +
                 "5\r\n" +
@@ -808,7 +838,7 @@ namespace System.Net.Http.Functional.Tests
                     var tcs = new TaskCompletionSource<bool>();
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+                        await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\n" + LoopbackServer.CorsHeaders + "Transfer-Encoding: chunked\r\n\r\n");
                         try
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
@@ -828,6 +858,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CORS is required on Browser")]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
         {
             var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com") { Version = UseVersion };
@@ -859,6 +890,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            LoopbackServer.CorsHeaders +
                             "Content-Length: 16000\r\n" +
                             "\r\n" +
                             "less than 16000 bytes");
@@ -882,6 +914,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54159", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1047,6 +1080,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54159", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1211,6 +1245,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(99)]
         [InlineData(1000)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
         {
             if (UseVersion == HttpVersion30)
@@ -1227,6 +1262,7 @@ namespace System.Net.Http.Functional.Tests
                     await server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.1 {statusCode}\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            LoopbackServer.CorsHeaders +
                             "Connection: close\r\n" +
                             "\r\n");
 
@@ -1255,6 +1291,7 @@ namespace System.Net.Http.Functional.Tests
 #region Post Methods Tests
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1306,6 +1343,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1480,6 +1518,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
         {
             if (IsWinHttpHandler)
@@ -1576,6 +1615,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Switching protocol is not supported on Browser")]
         public async Task SendAsync_101SwitchingProtocolsResponse_Success()
         {
             // WinHttpHandler and CurlHandler will hang, waiting for additional response.
@@ -1616,6 +1656,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
         {
             if (UseVersion == HttpVersion30)
@@ -1629,7 +1670,7 @@ namespace System.Net.Http.Functional.Tests
                 Task responseTask = server.AcceptConnectionAsync(async connection =>
                 {
                     var buffer = new byte[1000];
-                    while (await connection.Socket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), SocketFlags.None) != 0);
+                    while (await connection.ReadAsync(new Memory<byte>(buffer), 0, buffer.Length) != 0) ;
                 });
 
                 using (HttpClient client = CreateHttpClient())
@@ -1651,6 +1692,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpStatusCode.MethodNotAllowed, "Custom description")]
         [InlineData(HttpStatusCode.MethodNotAllowed, "")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54163", TestPlatforms.Browser)]
         public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -1668,13 +1710,14 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(reasonPhrase, response.ReasonPhrase);
                 }
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                $"HTTP/1.1 {(int)statusCode} {reasonPhrase}\r\nContent-Length: 0\r\n\r\n"));
+                $"HTTP/1.1 {(int)statusCode} {reasonPhrase}\r\n{LoopbackServer.CorsHeaders}Content-Length: 0\r\n\r\n"));
         }
 
         #endregion
 
         #region Version tests
 
+        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
@@ -1688,6 +1731,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
 
+        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
         [Fact]
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
@@ -1695,6 +1739,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
+        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
