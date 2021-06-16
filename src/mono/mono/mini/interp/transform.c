@@ -6859,7 +6859,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->ip += 5;
 					const gconstpointer func = mono_find_jit_icall_info ((MonoJitICallId)token)->func;
 
-					interp_add_ins (td, MINT_LDFTN);
+					interp_add_ins (td, MINT_LDFTN_ADDR);
 					push_simple_type (td, STACK_TYPE_I);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 					td->last_ins->data [0] = get_data_item_index (td, (gpointer)func);
