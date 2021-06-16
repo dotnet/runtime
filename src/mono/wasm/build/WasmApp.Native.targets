@@ -265,7 +265,11 @@
       <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
     </ItemGroup>
 
-    <EmccCompile SourceFiles="@(_BitCodeFile)" Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; @(_EmccLDFlags->'%(Identity)', ' ')" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <EmccCompile
+          Condition="@(_BitCodeFile->Count()) > 0"
+          SourceFiles="@(_BitCodeFile)"
+          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; @(_EmccLDFlags->'%(Identity)', ' ')"
+          EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <ItemGroup>
       <!-- order seems to matter -->

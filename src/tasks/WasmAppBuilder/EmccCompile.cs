@@ -34,12 +34,18 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string?      WorkingDirectory       { get; set; }
 
         [Output]
-        public ITaskItem[]? OutputFiles { get; set; }
+        public ITaskItem[]? OutputFiles            { get; private set; }
 
         private string? _tempPath;
 
         public override bool Execute()
         {
+            if (SourceFiles.Length == 0)
+            {
+                Log.LogError($"No SourceFiles to compile");
+                return false;
+            }
+
             ITaskItem? badItem = SourceFiles.FirstOrDefault(sf => string.IsNullOrEmpty(sf.GetMetadata("ObjectFile")));
             if (badItem != null)
             {
