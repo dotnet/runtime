@@ -8,7 +8,7 @@
 #include "mini.h"
 #include <mono/utils/mono-stack-unwinding.h>
 
-#define MONO_DBG_CALLBACKS_VERSION (3)
+#define MONO_DBG_CALLBACKS_VERSION (4)
 // 2. debug_log parameters changed from MonoString* to MonoStringHandle
 // 3. debug_log parameters changed from MonoStringHandle back to MonoString*
 
@@ -20,7 +20,7 @@ struct _MonoDebuggerCallbacks {
 	void (*single_step_event) (void *sigctx);
 	void (*single_step_from_context) (MonoContext *ctx);
 	void (*breakpoint_from_context) (MonoContext *ctx);
-	void (*free_domain_info) (MonoDomain *domain);
+	void (*free_mem_manager) (gpointer mem_manager);
 	void (*unhandled_exception) (MonoException *exc);
 	void (*handle_exception) (MonoException *exc, MonoContext *throw_ctx,
 							  MonoContext *catch_ctx, StackFrameInfo *catch_frame);
@@ -43,7 +43,7 @@ mono_debugger_agent_parse_options (char *options);
 void
 mono_debugger_agent_stub_init (void);
 
-MONO_API gboolean
+MONO_API MONO_RT_EXTERNAL_ONLY gboolean
 mono_debugger_agent_transport_handshake (void);
 
 #endif

@@ -4,11 +4,13 @@
 #include "../../AnyOS/entrypoints.h"
 
 // Include System.Native headers
+#include "pal_autoreleasepool.h"
 #include "pal_console.h"
 #include "pal_datetime.h"
 #include "pal_errno.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
+#include "pal_iossupportversion.h"
 #include "pal_log.h"
 #include "pal_memory.h"
 #include "pal_mount.h"
@@ -88,6 +90,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FTruncate)
     DllImportEntry(SystemNative_Poll)
     DllImportEntry(SystemNative_PosixFAdvise)
+    DllImportEntry(SystemNative_PosixFAllocate)
     DllImportEntry(SystemNative_Read)
     DllImportEntry(SystemNative_ReadLink)
     DllImportEntry(SystemNative_Rename)
@@ -221,6 +224,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Acquire)
     DllImportEntry(SystemNative_LowLevelMonitor_Release)
     DllImportEntry(SystemNative_LowLevelMonitor_Wait)
+    DllImportEntry(SystemNative_LowLevelMonitor_TimedWait)
     DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release)
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_GetTimestamp)
@@ -233,6 +237,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupList)
     DllImportEntry(SystemNative_GetUid)
     DllImportEntry(SystemNative_LowLevelMonitor_Create)
+    DllImportEntry(SystemNative_CreateAutoreleasePool)
+    DllImportEntry(SystemNative_DrainAutoreleasePool)
+    DllImportEntry(SystemNative_iOSSupportVersion)
+    DllImportEntry(SystemNative_GetErrNo)
+    DllImportEntry(SystemNative_SetErrNo)
+    DllImportEntry(SystemNative_PRead)
+    DllImportEntry(SystemNative_PWrite)
+    DllImportEntry(SystemNative_PReadV)
+    DllImportEntry(SystemNative_PWriteV)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

@@ -181,14 +181,8 @@ namespace System.Threading.Tasks
             newSegment.m_state.m_last = 1;
             newSegment.m_state.m_lastCopy = 1;
 
-            try { }
-            finally
-            {
-                // Finally block to protect against corruption due to a thread abort
-                // between setting m_next and setting m_tail.
-                Volatile.Write(ref m_tail.m_next, newSegment); // ensure segment not published until item is fully stored
-                m_tail = newSegment;
-            }
+            Volatile.Write(ref m_tail.m_next, newSegment); // ensure segment not published until item is fully stored
+            m_tail = newSegment;
         }
 
         /// <summary>Attempts to dequeue an item from the queue.</summary>

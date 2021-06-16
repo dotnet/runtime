@@ -44,13 +44,20 @@ namespace System.Net.Http.Functional.Tests
             foreach (int statusCode in new[] { 300, 301, 302, 303, 307, 308 })
             {
                 yield return new object[] { statusCode, "GET", "GET" };
-                yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
                 yield return new object[] { statusCode, "HEAD", "HEAD" };
+
+                yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
+
+                yield return new object[] { statusCode, "DELETE", statusCode == 303 ? "GET" : "DELETE" };
+                yield return new object[] { statusCode, "OPTIONS", statusCode == 303 ? "GET" : "OPTIONS" };
+                yield return new object[] { statusCode, "PATCH", statusCode == 303 ? "GET" : "PATCH" };
+                yield return new object[] { statusCode, "PUT", statusCode == 303 ? "GET" : "PUT" };
+                yield return new object[] { statusCode, "MYCUSTOMMETHOD", statusCode == 303 ? "GET" : "MYCUSTOMMETHOD" };
             }
         }
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
@@ -185,7 +192,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
@@ -212,7 +219,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
         {
@@ -233,7 +240,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
         {
@@ -281,7 +288,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
         {
@@ -303,7 +310,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [InlineData(3, 2)]
         [InlineData(3, 3)]
@@ -351,7 +358,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithRelativeLocation(Configuration.Http.RemoteServer remoteServer)
         {
@@ -471,7 +478,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -490,7 +497,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -515,7 +522,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
@@ -547,7 +554,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {

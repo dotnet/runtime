@@ -426,6 +426,7 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->serialization_format,
 		true,
 		ds_ipc_stream_get_stream_ref (stream),
+		NULL,
 		NULL);
 
 	if (session_id == 0) {
@@ -475,6 +476,7 @@ eventpipe_protocol_helper_collect_tracing_2 (
 		payload->serialization_format,
 		payload->rundown_requested,
 		ds_ipc_stream_get_stream_ref (stream),
+		NULL,
 		NULL);
 
 	if (session_id == 0) {
@@ -503,7 +505,7 @@ eventpipe_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
 {
-	DS_LOG_WARNING_1 ("Received unknown request type (%d)\n", ds_ipc_header_get_commandset (ds_ipc_message_get_header_cref (message)));
+	DS_LOG_WARNING_1 ("Received unknown request type (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_cref (message)));
 	ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_COMMAND);
 	ds_ipc_stream_free (stream);
 	return true;

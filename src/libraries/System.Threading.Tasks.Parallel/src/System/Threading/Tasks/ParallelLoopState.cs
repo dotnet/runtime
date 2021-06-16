@@ -262,7 +262,7 @@ namespace System.Threading.Tasks
         }
     }
 
-    internal class ParallelLoopState32 : ParallelLoopState
+    internal sealed class ParallelLoopState32 : ParallelLoopState
     {
         private readonly ParallelLoopStateFlags32 _sharedParallelStateFlags;
         private int _currentIteration;
@@ -326,7 +326,7 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Allows independent iterations of a parallel loop to interact with other iterations.
     /// </summary>
-    internal class ParallelLoopState64 : ParallelLoopState
+    internal sealed class ParallelLoopState64 : ParallelLoopState
     {
         private readonly ParallelLoopStateFlags64 _sharedParallelStateFlags;
         private long _currentIteration;
@@ -459,7 +459,7 @@ namespace System.Threading.Tasks
     /// An internal class used to share accounting information in 32-bit versions
     /// of For()/ForEach() loops.
     /// </summary>
-    internal class ParallelLoopStateFlags32 : ParallelLoopStateFlags
+    internal sealed class ParallelLoopStateFlags32 : ParallelLoopStateFlags
     {
         // Records the lowest iteration at which a Break() has been called,
         // or Int32.MaxValue if no break has been called.  Used directly
@@ -525,7 +525,7 @@ namespace System.Threading.Tasks
     /// An internal class used to share accounting information in 64-bit versions
     /// of For()/ForEach() loops.
     /// </summary>
-    internal class ParallelLoopStateFlags64 : ParallelLoopStateFlags
+    internal sealed class ParallelLoopStateFlags64 : ParallelLoopStateFlags
     {
         // Records the lowest iteration at which a Break() has been called,
         // or Int64.MaxValue if no break has been called.  Used directly

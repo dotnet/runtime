@@ -230,7 +230,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the SelectMany logic.
         //
 
-        private class IndexedSelectManyQueryOperatorEnumerator : QueryOperatorEnumerator<TOutput, Pair<int, int>>
+        private sealed class IndexedSelectManyQueryOperatorEnumerator : QueryOperatorEnumerator<TOutput, Pair<int, int>>
         {
             private readonly QueryOperatorEnumerator<TLeftInput, int> _leftSource; // The left data source to enumerate.
             private readonly SelectManyQueryOperator<TLeftInput, TRightInput, TOutput> _selectManyOperator; // The select many operator to use.
@@ -239,7 +239,7 @@ namespace System.Linq.Parallel
             private Mutables? _mutables; // bag of frequently mutated value types [allocate in moveNext to avoid false-sharing]
             private readonly CancellationToken _cancellationToken;
 
-            private class Mutables
+            private sealed class Mutables
             {
                 internal int _currentRightSourceIndex = -1; // The index for the right data source.
                 internal TLeftInput _currentLeftElement = default!; // The current element in the left data source.
@@ -281,7 +281,7 @@ namespace System.Linq.Parallel
                         // Check cancellation every few lhs-enumerations in case none of them are producing
                         // any outputs.  Otherwise, we rely on the consumer of this operator to be performing the checks.
                         if ((_mutables._lhsCount++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // We don't have a "current" right enumerator to use. We have to fetch the next
                         // one. If the left has run out of elements, however, we're done and just return
@@ -362,7 +362,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the SelectMany logic.
         //
 
-        private class SelectManyQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TOutput, Pair<TLeftKey, int>>
+        private sealed class SelectManyQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TOutput, Pair<TLeftKey, int>>
         {
             private readonly QueryOperatorEnumerator<TLeftInput, TLeftKey> _leftSource; // The left data source to enumerate.
             private readonly SelectManyQueryOperator<TLeftInput, TRightInput, TOutput> _selectManyOperator; // The select many operator to use.
@@ -371,7 +371,7 @@ namespace System.Linq.Parallel
             private Mutables? _mutables; // bag of frequently mutated value types [allocate in moveNext to avoid false-sharing]
             private readonly CancellationToken _cancellationToken;
 
-            private class Mutables
+            private sealed class Mutables
             {
                 internal int _currentRightSourceIndex = -1; // The index for the right data source.
                 internal TLeftInput _currentLeftElement = default!; // The current element in the left data source.
@@ -413,7 +413,7 @@ namespace System.Linq.Parallel
                         // Check cancellation every few lhs-enumerations in case none of them are producing
                         // any outputs.  Otherwise, we rely on the consumer of this operator to be performing the checks.
                         if ((_mutables._lhsCount++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // We don't have a "current" right enumerator to use. We have to fetch the next
                         // one. If the left has run out of elements, however, we're done and just return

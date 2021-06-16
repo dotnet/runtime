@@ -171,6 +171,8 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         *pStatus |= PAL_X509ChainHasNotSupportedCriticalExtension;
     else if (CFEqual(keyString, CFSTR("NameConstraints")))
         *pStatus |= PAL_X509ChainInvalidNameConstraints;
+    else if (CFEqual(keyString, CFSTR("PolicyConstraints")))
+        *pStatus |= PAL_X509ChainInvalidPolicyConstraints;
     else if (CFEqual(keyString, CFSTR("UnparseableExtension")))
     {
         // 10.15 introduced new status code value which is not reported by Windows. Ignoring for now.

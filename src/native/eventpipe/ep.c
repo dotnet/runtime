@@ -1,29 +1,8 @@
 #include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
+#if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
-// Option to include all internal source files into ep.c.
-#ifdef EP_INCLUDE_SOURCE_FILES
-#define EP_FORCE_INCLUDE_SOURCE_FILES
-#include "ep-block.c"
-#include "ep-buffer.c"
-#include "ep-buffer-manager.c"
-#include "ep-config.c"
-#include "ep-event.c"
-#include "ep-event-instance.c"
-#include "ep-event-payload.c"
-#include "ep-event-source.c"
-#include "ep-file.c"
-#include "ep-json-file.c"
-#include "ep-metadata-generator.c"
-#include "ep-provider.c"
-#include "ep-sample-profiler.c"
-#include "ep-session.c"
-#include "ep-session-provider.c"
-#include "ep-stack-contents.c"
-#include "ep-stream.c"
-#include "ep-thread.c"
-#else
 #define EP_IMPL_EP_GETTER_SETTER
 #include "ep.h"
 #include "ep-config.h"
@@ -35,12 +14,15 @@
 #include "ep-provider-internals.h"
 #include "ep-session.h"
 #include "ep-sample-profiler.h"
-#endif
 
 static bool _ep_can_start_threads = false;
 
 static ep_rt_session_id_array_t _ep_deferred_enable_session_ids = { 0 };
 static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
+
+static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
+
+static ep_rt_execution_checkpoint_array_t _ep_rundown_execution_checkpoints = { 0 };
 
 /*
  * Forward declares of all static functions.
@@ -74,7 +56,8 @@ enable (
 	bool rundown_requested,
 	IpcStream *stream,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
-	EventPipeSessionSynchronousCallback sync_callback);
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 static
 void
@@ -355,6 +338,37 @@ ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 }
 
 /*
+ * EventPipeExecutionCheckpoint.
+ */
+
+EventPipeExecutionCheckpoint *
+ep_execution_checkpoint_alloc (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	EventPipeExecutionCheckpoint *instance = ep_rt_object_alloc (EventPipeExecutionCheckpoint);
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->name = name ? ep_rt_utf8_string_dup (name) : NULL;
+	instance->timestamp = timestamp;
+
+ep_on_exit:
+	return instance;
+
+ep_on_error:
+	ep_execution_checkpoint_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+void
+ep_execution_checkpoint_free (EventPipeExecutionCheckpoint *execution_checkpoint)
+{
+	ep_return_void_if_nok (execution_checkpoint != NULL);
+	ep_rt_object_free (execution_checkpoint);
+}
+
+/*
  * EventPipe.
  */
 
@@ -410,7 +424,8 @@ enable (
 	bool rundown_requested,
 	IpcStream *stream,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
-	EventPipeSessionSynchronousCallback sync_callback)
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data)
 {
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
 	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
@@ -437,7 +452,8 @@ enable (
 		circular_buffer_size_in_mb,
 		providers,
 		providers_len,
-		sync_callback);
+		sync_callback,
+		callback_additional_data);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -534,7 +550,7 @@ disable_holding_lock (
 				{
 					config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
 					{
-						ep_session_execute_rundown (session);
+						ep_session_execute_rundown (session, &_ep_rundown_execution_checkpoints);
 					}
 					config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
 				}
@@ -631,7 +647,7 @@ write_event (
 	EP_ASSERT (payload != NULL);
 
 	// We can't proceed if tracing is not initialized.
-	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
+	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () >= EP_STATE_INITIALIZED);
 
 	// Exit early if the event is not enabled.
 	ep_return_void_if_nok (ep_event_is_enabled (ep_event));
@@ -669,7 +685,7 @@ write_event_2 (
 	EP_ASSERT (payload != NULL);
 
 	// We can't proceed if tracing is not initialized.
-	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
+	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () >= EP_STATE_INITIALIZED);
 
 	EventPipeThread *const current_thread = ep_thread_get_or_create ();
 	if (!current_thread) {
@@ -751,20 +767,17 @@ get_next_config_value_as_utf8_string (const ep_char8_t **data)
 {
 	EP_ASSERT (data != NULL);
 
-	uint8_t *buffer = NULL;
+	ep_char8_t *buffer = NULL;
 
 	const ep_char8_t *start = NULL;
 	const ep_char8_t *end = NULL;
 	*data = get_next_config_value (*data, &start, &end);
 
 	ptrdiff_t byte_len = end - start;
-	if (byte_len != 0) {
-		buffer = ep_rt_byte_array_alloc (byte_len + 1);
-		memcpy (buffer, start, byte_len);
-		buffer [byte_len] = '\0';
-	}
+	if (byte_len != 0)
+		buffer = ep_rt_utf8_string_dup_range(start, end);
 
-	return (ep_char8_t *)buffer;
+	return buffer;
 }
 
 static
@@ -814,6 +827,22 @@ enable_default_session_via_env_variables (void)
 	if (ep_rt_config_value_get_enable ()) {
 		ep_config = ep_rt_config_value_get_config ();
 		ep_config_output_path = ep_rt_config_value_get_output_path ();
+
+		ep_char8_t pidStr[24];
+		ep_rt_utf8_string_snprintf(pidStr, EP_ARRAY_SIZE (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
+
+		while (true)
+		{
+			if (ep_rt_utf8_string_replace(&ep_config_output_path, "{pid}", pidStr))
+			{
+				// In case there is a second use of {pid} in the output path
+				continue;
+			}
+
+			// No more instances of {pid} in the OutputPath
+			break;
+		}
+
 		ep_circular_mb = ep_rt_config_value_get_circular_mb ();
 		output_path = NULL;
 
@@ -824,9 +853,10 @@ enable_default_session_via_env_variables (void)
 			output_path,
 			ep_circular_mb,
 			ep_config,
-			EP_SESSION_TYPE_FILE,
+			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 			true,
+			NULL,
 			NULL,
 			NULL);
 
@@ -851,8 +881,7 @@ static
 bool
 ipc_stream_factory_any_suspended_ports (void)
 {
-	extern bool ds_ipc_stream_factory_any_suspended_ports (void);
-	return ds_ipc_stream_factory_any_suspended_ports ();
+	return _ep_ipc_stream_factory_suspended_ports_callback ? _ep_ipc_stream_factory_suspended_ports_callback () : false;
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -879,7 +908,8 @@ ep_enable (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback)
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data)
 {
 	ep_return_zero_if_nok (format < EP_SERIALIZATION_FORMAT_COUNT);
 	ep_return_zero_if_nok (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
@@ -888,7 +918,7 @@ ep_enable (
 	ep_requires_lock_not_held ();
 
 	// If the state or arguments are invalid, bail here.
-	if (session_type == EP_SESSION_TYPE_FILE && output_path == NULL)
+	if ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL)
 		return 0;
 	if (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL)
 		return 0;
@@ -909,7 +939,8 @@ ep_enable (
 			rundown_requested,
 			stream,
 			provider_callback_data_queue,
-			sync_callback);
+			sync_callback,
+			callback_additional_data);
 	EP_LOCK_EXIT (section1)
 
 	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
@@ -936,7 +967,8 @@ ep_enable_2 (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback)
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data)
 {
 	const ep_char8_t *providers_config_to_parse = providers_config;
 	int32_t providers_len = 0;
@@ -1013,7 +1045,8 @@ ep_enable_2 (
 		format,
 		rundown_requested,
 		stream,
-		sync_callback);
+		sync_callback,
+		callback_additional_data);
 
 ep_on_exit:
 
@@ -1271,6 +1304,8 @@ ep_init (void)
 	ep_rt_session_id_array_alloc (&_ep_deferred_enable_session_ids);
 	ep_rt_session_id_array_alloc (&_ep_deferred_disable_session_ids);
 
+	ep_rt_execution_checkpoint_array_alloc (&_ep_rundown_execution_checkpoints);
+
 	EP_LOCK_ENTER (section1)
 		ep_volatile_store_eventpipe_state (EP_STATE_INITIALIZED);
 	EP_LOCK_EXIT (section1)
@@ -1289,6 +1324,8 @@ void
 ep_finish_init (void)
 {
 	ep_requires_lock_not_held ();
+
+	ep_rt_init_finish ();
 
 	// Enable streaming for any deferred sessions
 	EP_LOCK_ENTER (section1)
@@ -1347,6 +1384,17 @@ ep_shutdown (void)
 		if (session)
 			ep_disable ((EventPipeSessionID)session);
 	}
+
+	ep_rt_execution_checkpoint_array_iterator_t checkpoint_iterator;
+	EventPipeExecutionCheckpoint *checkpoint;
+	checkpoint_iterator = ep_rt_execution_checkpoint_array_iterator_begin (&_ep_rundown_execution_checkpoints);
+	while (!ep_rt_execution_checkpoint_array_iterator_end (&_ep_rundown_execution_checkpoints, &checkpoint_iterator)) {
+		checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&checkpoint_iterator);
+		if (checkpoint)
+			ep_rt_utf8_string_free (checkpoint->name);
+		ep_rt_execution_checkpoint_array_iterator_next (&checkpoint_iterator);
+	}
+	ep_rt_execution_checkpoint_array_free (&_ep_rundown_execution_checkpoints);
 
 	ep_rt_session_id_array_free (&_ep_deferred_enable_session_ids);
 	ep_rt_session_id_array_free (&_ep_deferred_disable_session_ids);
@@ -1464,6 +1512,35 @@ ep_get_wait_handle (EventPipeSessionID session_id)
 	return session ? ep_rt_wait_event_get_wait_handle (ep_session_get_wait_event (session)) : 0;
 }
 
+bool
+ep_add_rundown_execution_checkpoint (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	ep_requires_lock_not_held ();
+
+	bool result = false;
+
+	EventPipeExecutionCheckpoint *exec_checkpoint = ep_execution_checkpoint_alloc (name, timestamp);
+	ep_raise_error_if_nok (exec_checkpoint != NULL);
+
+	EP_LOCK_ENTER (section1)
+		ep_raise_error_if_nok_holding_lock (ep_rt_execution_checkpoint_array_append (&_ep_rundown_execution_checkpoints, exec_checkpoint), section1);
+		exec_checkpoint = NULL;
+	EP_LOCK_EXIT (section1)
+
+	result = true;
+
+ep_on_exit:
+	ep_requires_lock_not_held ();
+	return result;
+
+ep_on_error:
+	ep_execution_checkpoint_free (exec_checkpoint);
+	EP_ASSERT (result == false);
+	ep_exit_error_handler ();
+}
+
 /*
  * EventPipeProviderCallbackDataQueue.
  */
@@ -1532,7 +1609,16 @@ ep_system_time_set (
 	system_time->milliseconds = milliseconds;
 }
 
+void
+ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback)
+{
+	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
+}
+
+#endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
+#ifndef EP_INCLUDE_SOURCE_FILES
 extern const char quiet_linker_empty_file_warning_eventpipe;
 const char quiet_linker_empty_file_warning_eventpipe = 0;
+#endif

@@ -518,7 +518,7 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 }
 
 void
-mono_lldb_remove_method (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *info)
+mono_lldb_remove_method (MonoMethod *method, MonoJitDynamicMethodInfo *info)
 {
 	int region_id;
 	UnloadCodeRegionEntry *entry;
@@ -564,7 +564,7 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 	udata.code = info->code;
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
-		mono_mem_manager_code_foreach (mono_domain_ambient_memory_manager (mono_get_root_domain ()), find_code_region, &udata);
+		mono_mem_manager_code_foreach (mono_mem_manager_get_ambient (), find_code_region, &udata);
 	if (!udata.found)
 		/* Can happen with AOT */
 		return;
@@ -589,7 +589,7 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 }
 
 void
-mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, gpointer code, guint32 code_len)
+mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, gpointer code, guint32 code_len)
 {
 	/*
 	 * Avoid emitting these for now,
@@ -612,7 +612,7 @@ mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp
 	udata.code = code;
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
-		mono_mem_manager_code_foreach (mono_domain_ambient_memory_manager (mono_get_root_domain ()), find_code_region, &udata);
+		mono_mem_manager_code_foreach (mono_mem_manager_get_ambient (), find_code_region, &udata);
 	g_assert (udata.found);
 
 	region_id = register_codegen_region (udata.region_start, udata.region_size, FALSE);
@@ -673,12 +673,12 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 }
 
 void
-mono_lldb_remove_method (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *info)
+mono_lldb_remove_method (MonoMethod *method, MonoJitDynamicMethodInfo *info)
 {
 }
 
 void
-mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, gpointer code, guint32 code_len)
+mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, gpointer code, guint32 code_len)
 {
 }
 

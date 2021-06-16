@@ -756,20 +756,6 @@ process_object_for_domain_clearing (GCObject *start, MonoDomain *domain)
 	MonoVTable *vt = SGEN_LOAD_VTABLE (start);
 	if (vt->klass == mono_defaults.internal_thread_class)
 		g_assert (mono_object_domain (start) == mono_get_root_domain ());
-	/* The object could be a proxy for an object in the domain
-	   we're deleting. */
-#ifndef DISABLE_REMOTING
-	if (m_class_get_supertypes (mono_defaults.real_proxy_class) && mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
-		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
-
-		/* The server could already have been zeroed out, so
-		   we need to check for that, too. */
-		if (server && (!SGEN_LOAD_VTABLE (server) || mono_object_domain (server) == domain)) {
-			SGEN_LOG (4, "Cleaning up remote pointer in %p to object %p", start, server);
-			((MonoRealProxy*)start)->unwrapped_server = NULL;
-		}
-	}
-#endif
 }
 
 static gboolean
@@ -838,20 +824,6 @@ sgen_finish_concurrent_work (const char *reason, gboolean stw)
 	SGEN_ASSERT (0, !sgen_get_concurrent_collection_in_progress (), "We just ordered a synchronous collection.  Why are we collecting concurrently?");
 
 	sgen_major_collector.finish_sweeping ();
-}
-
-void
-mono_gc_stop_world ()
-{
-	LOCK_GC;
-	sgen_stop_world (0, FALSE);
-}
-
-void
-mono_gc_restart_world ()
-{
-	sgen_restart_world (0, FALSE);
-	UNLOCK_GC;
 }
 
 /*
@@ -1098,7 +1070,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 		return NULL;
 	if (known_instance_size && ALIGN_TO (m_class_get_instance_size (klass), SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
-	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || m_class_has_weak_fields (klass))
+	if (mono_class_has_finalizer (klass) || m_class_has_weak_fields (klass))
 		return NULL;
 	if (m_class_get_rank (klass))
 		return NULL;
@@ -1122,7 +1094,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 		return NULL;
 	if (sgen_has_per_allocation_action)
 		return NULL;
-	g_assert (!mono_class_has_finalizer (klass) && !mono_class_is_marshalbyref (klass));
+	g_assert (!mono_class_has_finalizer (klass));
 
 	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR, mono_profiler_allocations_enabled () ?
 		MANAGED_ALLOCATOR_PROFILER : MANAGED_ALLOCATOR_REGULAR);
@@ -2621,6 +2593,19 @@ mono_gc_collection_count (int generation)
 }
 
 int64_t
+mono_gc_get_generation_size (int generation)
+{
+	if (generation == GENERATION_NURSERY)
+		return (int64_t)sgen_gc_info.total_nursery_size_bytes;
+	else if (generation == GENERATION_OLD)
+		return (int64_t)sgen_gc_info.total_major_size_bytes;
+	else if (generation == 3)
+		return (int64_t)sgen_gc_info.total_los_size_bytes;
+	else
+		return 0;
+}
+
+int64_t
 mono_gc_get_used_size (void)
 {
 	return (int64_t)sgen_gc_get_used_size ();
@@ -2633,20 +2618,31 @@ mono_gc_get_heap_size (void)
 }
 
 void
-mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
-						  gint64* memory_load_bytes,
-						  gint64* total_available_memory_bytes,
-						  gint64* heap_size_bytes,
-						  gint64* fragmented_bytes)
+mono_gc_get_gcmemoryinfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
 	*high_memory_load_threshold_bytes = sgen_gc_info.high_memory_load_threshold_bytes;
 	*fragmented_bytes = sgen_gc_info.fragmented_bytes;
-	
+
 	*heap_size_bytes = sgen_gc_info.heap_size_bytes;
 
 	*memory_load_bytes = sgen_gc_info.memory_load_bytes;
 	*total_available_memory_bytes = sgen_gc_info.total_available_memory_bytes;
-}	
+	*total_committed_bytes = sgen_gc_info.total_committed_bytes;
+}
+
+void mono_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
+{
+	sgen_gc_get_gctimeinfo (time_last_gc_100ns, time_since_last_gc_100ns, time_max_gc_100ns);
+}
 
 MonoGCDescriptor
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
@@ -2757,19 +2753,6 @@ mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
 }
 
 /**
- * mono_gchandle_is_in_domain:
- * \param gchandle a GCHandle's handle.
- * \param domain An application domain.
- * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
- */
-gboolean
-mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain)
-{
-	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (MONO_GC_HANDLE_TO_UINT (gchandle));
-	return domain->domain_id == gchandle_domain->domain_id;
-}
-
-/**
  * mono_gchandle_free_internal:
  * \param gchandle a GCHandle's handle.
  *
@@ -2781,18 +2764,6 @@ void
 mono_gchandle_free_internal (MonoGCHandle gchandle)
 {
 	sgen_gchandle_free (MONO_GC_HANDLE_TO_UINT (gchandle));
-}
-
-/**
- * mono_gchandle_free_domain:
- * \param unloading domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *unloading)
-{
 }
 
 /**

@@ -741,8 +741,8 @@ char* DumpUnicodeString(void* GUICookie,
         if((size_t)pszString & (sizeof(WCHAR)-1))
 #endif
         {
-            L = (cbString+1)*sizeof(WCHAR);
-            pszStringCopy = new WCHAR[cbString+1];
+            L = cbString*sizeof(WCHAR);
+            pszStringCopy = new WCHAR[cbString];
             memcpy(pszStringCopy, pszString, L);
             pszString=pszStringCopy;
         }

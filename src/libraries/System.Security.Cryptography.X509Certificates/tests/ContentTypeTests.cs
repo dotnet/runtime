@@ -10,11 +10,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public class ContentTypeTests
     {
         [Theory]
-        [InlineData("My.pfx", X509ContentType.Pkcs12)]
-        [InlineData("My.cer", X509ContentType.Cert)]
+        [MemberData(nameof(GetFileNamesWithType))]
         public static void TestFileContentType(string fileName, X509ContentType contentType)
         {
-            string fullPath = Path.Combine("TestData", fileName);
+            string fullPath = Path.Combine(TestFiles.TestDataFolder, fileName);
             X509ContentType fileType = X509Certificate2.GetCertContentType(fullPath);
             Assert.Equal(contentType, fileType);
         }
@@ -56,6 +55,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 new object[] { "MultiPrivatePfx", TestData.MultiPrivateKeyPfx, X509ContentType.Pkcs12 },
                 new object[] { "ChainPfx", TestData.ChainPfxBytes, X509ContentType.Pkcs12 },
                 new object[] { "ConcatenatedPem", TestData.ConcatenatedPemFile, X509ContentType.Cert }
+            };
+        }
+
+        public static IEnumerable<object[]> GetFileNamesWithType()
+        {
+            return new[]
+            {
+                new object[] { TestFiles.PfxFileName, X509ContentType.Pkcs12 },
+                new object[] { TestFiles.MyCertFileName, X509ContentType.Cert }
             };
         }
     }

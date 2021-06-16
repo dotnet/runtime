@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -169,5 +168,40 @@ internal static partial class Interop
             int yLength,
             byte[]? x,
             int xLength);
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int[] values)
+        {
+            int max = 0;
+
+            foreach (var i in values)
+            {
+                Debug.Assert(i >= 0);
+                if (i > max)
+                    max = i;
+            }
+
+            return max;
+        }
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int value1, int value2)
+        {
+            Debug.Assert(value1 >= 0);
+            Debug.Assert(value2 >= 0);
+            return (value1 > value2 ? value1 : value2);
+        }
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int value1, int value2, int value3)
+        {
+            return GetMax(GetMax(value1, value2), value3);
+        }
     }
 }

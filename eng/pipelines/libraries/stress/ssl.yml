@@ -10,7 +10,7 @@ schedules:
   displayName: SslStress nightly run
   branches:
     include:
-    - master
+    - main
 
 variables:
   - template: ../variables.yml
@@ -29,7 +29,7 @@ jobs:
   timeoutInMinutes: 120
   pool:
     name: NetCorePublic-Pool
-    queue: BuildPool.Ubuntu.1604.Amd64.Open
+    queue: BuildPool.Ubuntu.1804.Amd64.Open
 
   steps:
   - checkout: self

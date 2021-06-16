@@ -56,8 +56,8 @@ namespace System.Threading.Tasks
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
-        /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
-        private static readonly Task s_canceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
+        /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
+        private static volatile Task? s_canceledTask;
 
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object? _obj;
@@ -148,7 +148,7 @@ namespace System.Threading.Tasks
         public override int GetHashCode() => _obj?.GetHashCode() ?? 0;
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="object"/>.</summary>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ValueTask &&
             Equals((ValueTask)obj);
 
@@ -216,7 +216,8 @@ namespace System.Threading.Tasks
                             return task;
                         }
 
-                        return s_canceledTask;
+                        // Benign race condition to initialize cached task, as identity doesn't matter.
+                        return s_canceledTask ??= Task.FromCanceled(new CancellationToken(canceled: true));
                     }
                     else
                     {
@@ -441,7 +442,7 @@ namespace System.Threading.Tasks
     public readonly struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
         /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
-        private static Task<TResult>? s_canceledTask;
+        private static volatile Task<TResult>? s_canceledTask;
         /// <summary>null if <see cref="_result"/> has the result, otherwise a <see cref="Task{TResult}"/> or a <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly object? _obj;
         /// <summary>The result to be used if the operation completed successfully synchronously.</summary>
@@ -524,7 +525,7 @@ namespace System.Threading.Tasks
             0;
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="object"/>.</summary>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ValueTask<TResult> &&
             Equals((ValueTask<TResult>)obj);
 
@@ -602,13 +603,8 @@ namespace System.Threading.Tasks
                             return task;
                         }
 
-                        Task<TResult>? canceledTask = s_canceledTask;
-                        if (canceledTask == null)
-                        {
-                            // Benign race condition to initialize cached task, as identity doesn't matter.
-                            s_canceledTask = canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
-                        }
-                        return canceledTask;
+                        // Benign race condition to initialize cached task, as identity doesn't matter.
+                        return s_canceledTask ??= Task.FromCanceled<TResult>(new CancellationToken(true));
                     }
                     else
                     {

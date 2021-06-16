@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -578,6 +579,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportStoreSavedAsPfxData()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -612,7 +614,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, storageFlags))
             {
-                using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), TestData.PfxDataPassword, storageFlags))
+                using (ImportedCollection ic = Cert.Import(TestFiles.PfxFile, TestData.PfxDataPassword, storageFlags))
                 {
                     X509Certificate2Collection cc2 = ic.Collection;
                     int count = cc2.Count;
@@ -697,6 +699,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 export is not available")]
         public static void ExportPkcs7()
         {
             TestExportStore(X509ContentType.Pkcs7);
@@ -770,7 +773,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // But, really, the collections should be equivalent
                     // (after being coerced to IEnumerable<X509Certificate2>)
-                    Assert.Equal(collection.OfType<X509Certificate2>(), importedCollection.OfType<X509Certificate2>());
+                    Assert.Equal(collection, importedCollection);
                 }
             }
         }
@@ -781,7 +784,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             var collection = new X509Certificate2Collection();
             try
             {
-                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), (string)null, Cert.EphemeralIfPossible);
+                collection.Import(TestFiles.DummyTcpServerPfxFile, (string)null, Cert.EphemeralIfPossible);
                 collection.Import(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible);
                 Assert.Equal(3, collection.Count);
             }
@@ -801,22 +804,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             try
             {
-                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), (string)null, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible);
+                collection.Import(TestFiles.DummyTcpServerPfxFile, (string)null, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible);
                 collection.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible);
 
                 // Pre-condition, we have multiple private keys
-                int originalPrivateKeyCount = collection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
+                int originalPrivateKeyCount = collection.Count(c => c.HasPrivateKey);
                 Assert.Equal(2, originalPrivateKeyCount);
 
                 byte[] exported = collection.Export(X509ContentType.Pkcs12);
-                
+
                 using (ImportedCollection ic = Cert.Import(exported))
                 {
                     X509Certificate2Collection importedCollection = ic.Collection;
 
                     Assert.Equal(collection.Count, importedCollection.Count);
 
-                    int importedPrivateKeyCount = importedCollection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
+                    int importedPrivateKeyCount = importedCollection.Count(c => c.HasPrivateKey);
                     Assert.Equal(originalPrivateKeyCount, importedPrivateKeyCount);
                 }
             }
@@ -843,7 +846,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     twoWithoutKey,
                 };
 
-                Assert.Equal(1, col.Cast<X509Certificate2>().Count(x => x.HasPrivateKey));
+                Assert.Equal(1, col.Count(x => x.HasPrivateKey));
                 Assert.Equal(2, col.Count);
 
                 byte[] buffer = col.Export(X509ContentType.Pfx);
@@ -1305,7 +1308,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Halfway between microsoftDotCom's NotBefore and NotAfter
                 // This isn't a boundary condition test.
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -1465,7 +1468,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ImportFromPemFile_MultiplePems_Success()
         {
             string pemAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
-    
+
             using (TempFileHolder aggregatePemFile = new TempFileHolder(pemAggregate))
             using(ImportedCollection ic = Cert.ImportFromPemFile(aggregatePemFile.FilePath))
             {
@@ -1613,15 +1616,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
-
-        private static X509Certificate2[] ToArray(this X509Certificate2Collection col)
-        {
-            X509Certificate2[] array = new X509Certificate2[col.Count];
-            for (int i = 0; i < col.Count; i++)
-            {
-                array[i] = col[i];
-            }
-            return array;
-        }
     }
 }

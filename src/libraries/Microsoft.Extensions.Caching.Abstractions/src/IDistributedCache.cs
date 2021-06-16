@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <summary>
         /// Refreshes a value in the cache based on its key, resetting its sliding expiration timeout (if any).
         /// </summary>
-        /// <param name="key">A string identifying the requested calue.</param>
+        /// <param name="key">A string identifying the requested value.</param>
         void Refresh(string key);
 
         /// <summary>

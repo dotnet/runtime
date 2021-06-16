@@ -117,38 +117,42 @@ namespace System.IO.Compression
         /// <summary>Bytes not consumed in output window.</summary>
         public int AvailableBytes => _bytesUsed;
 
-        /// <summary>Copy the decompressed bytes to output array.</summary>
-        public int CopyTo(byte[] output, int offset, int length)
+        /// <summary>Copy the decompressed bytes to output buffer.</summary>
+        public int CopyTo(Memory<byte> output)
         {
             int copy_end;
 
-            if (length > _bytesUsed)
+            if (output.Length > _bytesUsed)
             {
                 // we can copy all the decompressed bytes out
                 copy_end = _end;
-                length = _bytesUsed;
+                output = output.Slice(0, _bytesUsed);
             }
             else
             {
-                copy_end = (_end - _bytesUsed + length) & WindowMask; // copy length of bytes
+                copy_end = (_end - _bytesUsed + output.Length) & WindowMask; // copy length of bytes
             }
 
-            int copied = length;
+            int copied = output.Length;
 
-            int tailLen = length - copy_end;
+            int tailLen = output.Length - copy_end;
             if (tailLen > 0)
             {
                 // this means we need to copy two parts separately
-                // copy tailLen bytes from the end of output window
-                Array.Copy(_window, WindowSize - tailLen,
-                                  output, offset, tailLen);
-                offset += tailLen;
-                length = copy_end;
+                // copy the taillen bytes from the end of the output window
+                _window.AsSpan(WindowSize - tailLen, tailLen).CopyTo(output.Span);
+                output = output.Slice(tailLen, copy_end);
             }
-            Array.Copy(_window, copy_end - length, output, offset, length);
+            _window.AsSpan(copy_end - output.Length, output.Length).CopyTo(output.Span);
             _bytesUsed -= copied;
             Debug.Assert(_bytesUsed >= 0, "check this function and find why we copied more bytes than we have");
             return copied;
+        }
+
+        /// <summary>Copy the decompressed bytes to output array.</summary>
+        public int CopyTo(byte[] output, int offset, int length)
+        {
+            return CopyTo(output.AsMemory(offset, length));
         }
     }
 }

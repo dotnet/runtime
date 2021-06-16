@@ -157,10 +157,10 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 		return NULL_HANDLE_STRING;
 
 	if (size > 0) {
-		result = mono_string_new_utf16_handle (mono_domain_get (), uniname, size, error);
+		result = mono_string_new_utf16_handle (uniname, size, error);
 	}
 	else
-		result = mono_string_new_handle (mono_domain_get (), "", error);
+		result = mono_string_new_handle ("", error);
 
 	if (uniname)
 		g_free (uniname);
@@ -188,7 +188,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token, Mo
 {
 	MonoArrayHandle array;
 	MonoStringHandle str_h;
-	MonoDomain *domain = mono_domain_get ();
 	gint32 size = 0;
 	gboolean created = FALSE;
 
@@ -199,7 +198,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token, Mo
 			int i=0;
 			int num = tg->GroupCount;
 
-			array = mono_array_new_handle (domain, mono_get_string_class (), num, error);
+			array = mono_array_new_handle (mono_get_string_class (), num, error);
 			if (!is_ok (error)) {
 				g_free (tg);
 				return NULL_HANDLE_ARRAY;
@@ -212,7 +211,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token, Mo
 				gunichar2 *uniname = GetSidName (NULL, tg->Groups [i].Sid, &size);
 
 				if (uniname) {
-					MonoString *str = mono_string_new_utf16_checked (domain, uniname, size, error);
+					MonoString *str = mono_string_new_utf16_checked (uniname, size, error);
 					MONO_HANDLE_ASSIGN_RAW (str_h, str);
 					if (!is_ok (error)) {
 						g_free (uniname);
@@ -229,7 +228,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token, Mo
 
 	if (!created) {
 		/* return empty array of string, i.e. string [0] */
-		array = mono_array_new_handle (domain, mono_get_string_class (), 0, error);
+		array = mono_array_new_handle (mono_get_string_class (), 0, error);
 		return_val_if_nok (error, NULL_HANDLE_ARRAY);
 	}
 	return array;

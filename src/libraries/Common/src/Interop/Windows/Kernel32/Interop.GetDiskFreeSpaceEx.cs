@@ -3,9 +3,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         // NOTE: The out parameters are PULARGE_INTEGERs and may require
         // some byte munging magic.

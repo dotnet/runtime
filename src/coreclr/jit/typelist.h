@@ -3,7 +3,8 @@
 
 #define GCS EA_GCREF
 #define BRS EA_BYREF
-#define PS EA_PTRSIZE
+#define EPS EA_PTRSIZE
+#define PS TARGET_POINTER_SIZE
 #define PST (TARGET_POINTER_SIZE / sizeof(int))
 
 #ifdef TARGET_64BIT
@@ -43,8 +44,8 @@ DEF_TP(USHORT  ,"ushort"  , TYP_INT,     TI_SHORT, 2,  2,  4,   1, 2, VTF_INT|VT
 DEF_TP(INT     ,"int"     , TYP_INT,     TI_INT,   4,  4,  4,   1, 4, VTF_INT|VTF_I32,        TYPE_REF_INT)
 DEF_TP(UINT    ,"uint"    , TYP_INT,     TI_INT,   4,  4,  4,   1, 4, VTF_INT|VTF_UNS|VTF_I32,TYPE_REF_INT) // Only used in GT_CAST nodes
 
-DEF_TP(LONG    ,"long"    , TYP_LONG,    TI_LONG,  8, PS, PS,   2, 8, VTF_INT|VTF_I64,        TYPE_REF_LNG)
-DEF_TP(ULONG   ,"ulong"   , TYP_LONG,    TI_LONG,  8, PS, PS,   2, 8, VTF_INT|VTF_UNS|VTF_I64,TYPE_REF_LNG)       // Only used in GT_CAST nodes
+DEF_TP(LONG    ,"long"    , TYP_LONG,    TI_LONG,  8,EPS,EPS,   2, 8, VTF_INT|VTF_I64,        TYPE_REF_LNG)
+DEF_TP(ULONG   ,"ulong"   , TYP_LONG,    TI_LONG,  8,EPS,EPS,   2, 8, VTF_INT|VTF_UNS|VTF_I64,TYPE_REF_LNG)       // Only used in GT_CAST nodes
 
 DEF_TP(FLOAT   ,"float"   , TYP_FLOAT,   TI_FLOAT, 4,  4,  4,   1, 4, VTF_FLT,        TYPE_REF_FLT)
 DEF_TP(DOUBLE  ,"double"  , TYP_DOUBLE,  TI_DOUBLE,8,  8,  8,   2, 8, VTF_FLT,        TYPE_REF_DBL)
@@ -69,6 +70,7 @@ DEF_TP(UNKNOWN ,"unknown" ,TYP_UNKNOWN,  TI_ERROR, 0,  0,  0,   0, 0, VTF_ANY,  
 
 #undef GCS
 #undef BRS
+#undef EPS
 #undef PS
 #undef PST
 #undef VTF_I32

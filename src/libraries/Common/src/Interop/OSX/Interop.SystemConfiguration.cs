@@ -18,10 +18,10 @@ internal static partial class Interop
         internal struct SCDynamicStoreContext
         {
             public CFIndex version;
-            public IntPtr Info;
-            public IntPtr RetainFunc;
-            public IntPtr ReleaseFunc;
-            public CFStringRef CopyDescriptionFunc;
+            public IntPtr info;
+            public IntPtr retain;
+            public IntPtr release;
+            public IntPtr copyDescription;
         }
 
         /// <summary>

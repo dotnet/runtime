@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Configuration.Json
         [Theory]
         [InlineData(null)]
         [InlineData("")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void AddJsonFile_ThrowsIfFilePathIsNullOrEmpty(string path)
         {
             // Arrange
@@ -24,6 +25,7 @@ namespace Microsoft.Extensions.Configuration.Json
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void AddJsonFile_ThrowsIfFileDoesNotExistAtPath()
         {
             // Arrange
@@ -31,7 +33,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
             // Act and Assert
             var ex = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddJsonFile(path).Build());
-            Assert.StartsWith($"The configuration file '{path}' was not found and is not optional. The physical path is '", ex.Message);
+            Assert.StartsWith($"The configuration file '{path}' was not found and is not optional. The expected physical path was '", ex.Message);
         }
     }
 }

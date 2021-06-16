@@ -24,7 +24,7 @@ internal partial class VectorTest
 
     static T[] GetPatternAs<T>() where T : struct
     {
-        T[] pattern = new T[bytePattern.Length]; // should be bytes.Length / sizeof(T) but sizeof(T) doesn't work 
+        T[] pattern = new T[bytePattern.Length]; // should be bytes.Length / sizeof(T) but sizeof(T) doesn't work
                                                  // so we'll settle for a larger than needed array
         Buffer.BlockCopy(bytePattern, 0, pattern, 0, bytePattern.Length);
         return pattern;
@@ -46,6 +46,8 @@ internal partial class VectorTest
     static Vector<Int64>  To_Int64  <T> (Vector<T> from) where T : struct => (Vector<Int64> ) from;
     static Vector<Single> To_Single <T> (Vector<T> from) where T : struct => (Vector<Single>) from;
     static Vector<Double> To_Double <T> (Vector<T> from) where T : struct => (Vector<Double>) from;
+    static Vector<nuint>  To_NUInt  <T> (Vector<T> from) where T : struct => (Vector<nuint>)  from;
+    static Vector<nint>   To_NInt   <T> (Vector<T> from) where T : struct => (Vector<nint>)   from;
 
     // Check the result of casting Vector<T> to a specific vector type.
     static bool Test_Byte   <T>() where T : struct => GetVector<Byte>  () == To_Byte   ( GetVector<T>() );
@@ -58,6 +60,8 @@ internal partial class VectorTest
     static bool Test_Int64  <T>() where T : struct => GetVector<Int64> () == To_Int64  ( GetVector<T>() );
     static bool Test_Single <T>() where T : struct => GetVector<Single>() == To_Single ( GetVector<T>() );
     static bool Test_Double <T>() where T : struct => GetVector<Double>() == To_Double ( GetVector<T>() );
+    static bool Test_NUInt  <T>() where T : struct => GetVector<nuint> () == To_NUInt  ( GetVector<T>() );
+    static bool Test_NInt   <T>() where T : struct => GetVector<nint>  () == To_NInt   ( GetVector<T>() );
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool ReportFailure(bool success, [CallerLineNumber] int line = 0)
@@ -84,6 +88,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <Byte>() );
         succeeded &= ReportFailure( Test_Single<Byte>() );
         succeeded &= ReportFailure( Test_Double<Byte>() );
+        succeeded &= ReportFailure( Test_NUInt <Byte>() );
+        succeeded &= ReportFailure( Test_NInt  <Byte>() );
 
         succeeded &= ReportFailure( Test_Byte  <SByte>() );
         succeeded &= ReportFailure( Test_SByte <SByte>() );
@@ -95,6 +101,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <SByte>() );
         succeeded &= ReportFailure( Test_Single<SByte>() );
         succeeded &= ReportFailure( Test_Double<SByte>() );
+        succeeded &= ReportFailure( Test_NUInt <SByte>() );
+        succeeded &= ReportFailure( Test_NInt  <SByte>() );
 
         succeeded &= ReportFailure( Test_Byte  <UInt16>() );
         succeeded &= ReportFailure( Test_SByte <UInt16>() );
@@ -106,6 +114,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <UInt16>() );
         succeeded &= ReportFailure( Test_Single<UInt16>() );
         succeeded &= ReportFailure( Test_Double<UInt16>() );
+        succeeded &= ReportFailure( Test_NUInt <UInt16>() );
+        succeeded &= ReportFailure( Test_NInt  <UInt16>() );
 
         succeeded &= ReportFailure( Test_Byte  <Int16>() );
         succeeded &= ReportFailure( Test_SByte <Int16>() );
@@ -117,6 +127,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <Int16>() );
         succeeded &= ReportFailure( Test_Single<Int16>() );
         succeeded &= ReportFailure( Test_Double<Int16>() );
+        succeeded &= ReportFailure( Test_NUInt <Int16>() );
+        succeeded &= ReportFailure( Test_NInt  <Int16>() );
 
         succeeded &= ReportFailure( Test_Byte  <UInt32>() );
         succeeded &= ReportFailure( Test_SByte <UInt32>() );
@@ -128,6 +140,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <UInt32>() );
         succeeded &= ReportFailure( Test_Single<UInt32>() );
         succeeded &= ReportFailure( Test_Double<UInt32>() );
+        succeeded &= ReportFailure( Test_NUInt <UInt32>() );
+        succeeded &= ReportFailure( Test_NInt  <UInt32>() );
 
         succeeded &= ReportFailure( Test_Byte  <Int32>() );
         succeeded &= ReportFailure( Test_SByte <Int32>() );
@@ -139,6 +153,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <Int32>() );
         succeeded &= ReportFailure( Test_Single<Int32>() );
         succeeded &= ReportFailure( Test_Double<Int32>() );
+        succeeded &= ReportFailure( Test_NUInt <Int32>() );
+        succeeded &= ReportFailure( Test_NInt  <Int32>() );
 
         succeeded &= ReportFailure( Test_Byte  <UInt64>() );
         succeeded &= ReportFailure( Test_SByte <UInt64>() );
@@ -150,6 +166,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <UInt64>() );
         succeeded &= ReportFailure( Test_Single<UInt64>() );
         succeeded &= ReportFailure( Test_Double<UInt64>() );
+        succeeded &= ReportFailure( Test_NUInt <UInt64>() );
+        succeeded &= ReportFailure( Test_NInt  <UInt64>() );
 
         succeeded &= ReportFailure( Test_Byte  <Int64>() );
         succeeded &= ReportFailure( Test_SByte <Int64>() );
@@ -161,6 +179,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <Int64>() );
         succeeded &= ReportFailure( Test_Single<Int64>() );
         succeeded &= ReportFailure( Test_Double<Int64>() );
+        succeeded &= ReportFailure( Test_NUInt <Int64>() );
+        succeeded &= ReportFailure( Test_NInt  <Int64>() );
 
         succeeded &= ReportFailure( Test_Byte  <Single>() );
         succeeded &= ReportFailure( Test_SByte <Single>() );
@@ -172,6 +192,8 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <Single>() );
         succeeded &= ReportFailure( Test_Single<Single>() );
         succeeded &= ReportFailure( Test_Double<Single>() );
+        succeeded &= ReportFailure( Test_NUInt <Single>() );
+        succeeded &= ReportFailure( Test_NInt  <Single>() );
 
         succeeded &= ReportFailure( Test_Byte  <Double>() );
         succeeded &= ReportFailure( Test_SByte <Double>() );
@@ -183,6 +205,34 @@ internal partial class VectorTest
         succeeded &= ReportFailure( Test_Int64 <Double>() );
         succeeded &= ReportFailure( Test_Single<Double>() );
         succeeded &= ReportFailure( Test_Double<Double>() );
+        succeeded &= ReportFailure( Test_NUInt <Double>() );
+        succeeded &= ReportFailure( Test_NInt  <Double>() );
+
+        succeeded &= ReportFailure( Test_Byte  <nuint>() );
+        succeeded &= ReportFailure( Test_SByte <nuint>() );
+        succeeded &= ReportFailure( Test_UInt16<nuint>() );
+        succeeded &= ReportFailure( Test_Int16 <nuint>() );
+        succeeded &= ReportFailure( Test_UInt32<nuint>() );
+        succeeded &= ReportFailure( Test_Int32 <nuint>() );
+        succeeded &= ReportFailure( Test_UInt64<nuint>() );
+        succeeded &= ReportFailure( Test_Int64 <nuint>() );
+        succeeded &= ReportFailure( Test_Single<nuint>() );
+        succeeded &= ReportFailure( Test_Double<nuint>() );
+        succeeded &= ReportFailure( Test_NUInt <nuint>() );
+        succeeded &= ReportFailure( Test_NInt  <nuint>() );
+
+        succeeded &= ReportFailure( Test_Byte  <nint>() );
+        succeeded &= ReportFailure( Test_SByte <nint>() );
+        succeeded &= ReportFailure( Test_UInt16<nint>() );
+        succeeded &= ReportFailure( Test_Int16 <nint>() );
+        succeeded &= ReportFailure( Test_UInt32<nint>() );
+        succeeded &= ReportFailure( Test_Int32 <nint>() );
+        succeeded &= ReportFailure( Test_UInt64<nint>() );
+        succeeded &= ReportFailure( Test_Int64 <nint>() );
+        succeeded &= ReportFailure( Test_Single<nint>() );
+        succeeded &= ReportFailure( Test_Double<nint>() );
+        succeeded &= ReportFailure( Test_NUInt <nint>() );
+        succeeded &= ReportFailure( Test_NInt  <nint>() );
 
         using (JitLog jitLog = new JitLog())
         {
@@ -196,6 +246,8 @@ internal partial class VectorTest
             succeeded &= ReportFailure( jitLog.Check("op_Explicit", "Int64" ) );
             succeeded &= ReportFailure( jitLog.Check("op_Explicit", "Single") );
             succeeded &= ReportFailure( jitLog.Check("op_Explicit", "Double") );
+            succeeded &= ReportFailure( jitLog.Check("op_Explicit", "IntPtr") );
+            succeeded &= ReportFailure( jitLog.Check("op_Explicit", "UIntPtr") );
         }
 
         return succeeded ? Pass : Fail;

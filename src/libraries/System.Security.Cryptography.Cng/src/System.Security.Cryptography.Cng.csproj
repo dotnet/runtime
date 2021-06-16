@@ -1,22 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenFacadesIgnoreMissingTypes Condition="'$(TargetFramework)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.1;net461-windows;netcoreapp3.0-windows;netcoreapp3.0;net462-windows;net47-windows</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyCng</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'" />
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(TargetsWindows)' == 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetsWindows)' == 'true'" />
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\AesCng.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithmGroup.cs" />
@@ -353,11 +347,8 @@
   <ItemGroup>
     <None Include="@(AsnXml)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
-                        $(TargetFramework.StartsWith('netcoreapp3.0'))">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

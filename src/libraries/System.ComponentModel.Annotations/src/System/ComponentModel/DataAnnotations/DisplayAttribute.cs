@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
@@ -25,6 +26,8 @@ namespace System.ComponentModel.DataAnnotations
         private bool? _autoGenerateField;
         private bool? _autoGenerateFilter;
         private int? _order;
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type? _resourceType;
 
         #endregion
@@ -167,6 +170,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="GetName" />, <see cref="GetDescription" />, <see cref="GetPrompt" />, and <see cref="GetGroupName" />
         ///     methods to return localized values.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public Type? ResourceType
         {
             get => _resourceType;

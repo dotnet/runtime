@@ -32,7 +32,7 @@ namespace System.Numerics
         public static System.Numerics.Matrix3x2 CreateTranslation(System.Numerics.Vector2 position) { throw null; }
         public static System.Numerics.Matrix3x2 CreateTranslation(float xPosition, float yPosition) { throw null; }
         public readonly bool Equals(System.Numerics.Matrix3x2 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly float GetDeterminant() { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix3x2 matrix, out System.Numerics.Matrix3x2 result) { throw null; }
@@ -104,7 +104,7 @@ namespace System.Numerics
         public static System.Numerics.Matrix4x4 CreateWorld(System.Numerics.Vector3 position, System.Numerics.Vector3 forward, System.Numerics.Vector3 up) { throw null; }
         public static bool Decompose(System.Numerics.Matrix4x4 matrix, out System.Numerics.Vector3 scale, out System.Numerics.Quaternion rotation, out System.Numerics.Vector3 translation) { throw null; }
         public readonly bool Equals(System.Numerics.Matrix4x4 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly float GetDeterminant() { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix4x4 matrix, out System.Numerics.Matrix4x4 result) { throw null; }
@@ -136,7 +136,7 @@ namespace System.Numerics
         public static float DotCoordinate(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
         public static float DotNormal(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
         public readonly bool Equals(System.Numerics.Plane other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Plane Normalize(System.Numerics.Plane value) { throw null; }
         public static bool operator ==(System.Numerics.Plane value1, System.Numerics.Plane value2) { throw null; }
@@ -164,7 +164,7 @@ namespace System.Numerics
         public static System.Numerics.Quaternion Divide(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static float Dot(System.Numerics.Quaternion quaternion1, System.Numerics.Quaternion quaternion2) { throw null; }
         public readonly bool Equals(System.Numerics.Quaternion other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Quaternion Inverse(System.Numerics.Quaternion value) { throw null; }
         public readonly float Length() { throw null; }
@@ -192,11 +192,15 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Abs<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Add<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         public static System.Numerics.Vector<T> AndNot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
+        public static System.Numerics.Vector<TTo> As<TFrom, TTo>(this System.Numerics.Vector<TFrom> vector) where TFrom : struct where TTo : struct { throw null; }
         public static System.Numerics.Vector<System.Byte> AsVectorByte<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Double> AsVectorDouble<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int16> AsVectorInt16<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int32> AsVectorInt32<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int64> AsVectorInt64<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        public static System.Numerics.Vector<nint> AsVectorNInt<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> AsVectorNUInt<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.SByte> AsVectorSByte<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Single> AsVectorSingle<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
@@ -296,6 +300,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
     {
@@ -303,6 +308,7 @@ namespace System.Numerics
         public float Y;
         public Vector2(float value) { throw null; }
         public Vector2(float x, float y) { throw null; }
+        public Vector2(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector2 One { get { throw null; } }
         public static System.Numerics.Vector2 UnitX { get { throw null; } }
         public static System.Numerics.Vector2 UnitY { get { throw null; } }
@@ -312,13 +318,15 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector2 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -360,6 +368,7 @@ namespace System.Numerics
         public Vector3(System.Numerics.Vector2 value, float z) { throw null; }
         public Vector3(float value) { throw null; }
         public Vector3(float x, float y, float z) { throw null; }
+        public Vector3(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector3 One { get { throw null; } }
         public static System.Numerics.Vector3 UnitX { get { throw null; } }
         public static System.Numerics.Vector3 UnitY { get { throw null; } }
@@ -370,6 +379,8 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static float Distance(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
@@ -377,7 +388,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Divide(System.Numerics.Vector3 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector3 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -419,6 +430,7 @@ namespace System.Numerics
         public Vector4(System.Numerics.Vector3 value, float w) { throw null; }
         public Vector4(float value) { throw null; }
         public Vector4(float x, float y, float z, float w) { throw null; }
+        public Vector4(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector4 One { get { throw null; } }
         public static System.Numerics.Vector4 UnitW { get { throw null; } }
         public static System.Numerics.Vector4 UnitX { get { throw null; } }
@@ -430,13 +442,15 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector4 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -488,7 +502,7 @@ namespace System.Numerics
         public readonly void CopyTo(T[] destination) { }
         public readonly void CopyTo(T[] destination, int startIndex) { }
         public readonly bool Equals(System.Numerics.Vector<T> other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Vector<T> operator +(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator &(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -501,6 +515,9 @@ namespace System.Numerics
         public static explicit operator System.Numerics.Vector<System.Int16> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Int32> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Int64> (System.Numerics.Vector<T> value) { throw null; }
+        public static explicit operator System.Numerics.Vector<nint> (System.Numerics.Vector<T> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Vector<nuint> (System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator System.Numerics.Vector<System.SByte> (System.Numerics.Vector<T> value) { throw null; }
         public static explicit operator System.Numerics.Vector<System.Single> (System.Numerics.Vector<T> value) { throw null; }

@@ -3169,7 +3169,7 @@ namespace System.Management
     /// <summary>
     /// Converts a String to a ManagementQuery
     /// </summary>
-    internal class ManagementQueryConverter : ExpandableObjectConverter
+    internal sealed class ManagementQueryConverter : ExpandableObjectConverter
     {
 
         /// <summary>

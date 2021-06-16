@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+
+    <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Publish</WasmBuildAppAfterThisTarget>
+    <WasmBuildAppDependsOn>
+        _BeforeWasmBuildApp;
+        _WasmResolveReferences;
+        _WasmAotCompileApp;
+        _WasmStripAOTAssemblies;
+        _WasmBuildNativeCore;
+        _WasmGenerateAppBundle;
+        _AfterWasmBuildApp
+    </WasmBuildAppDependsOn>
+  </PropertyGroup>
+</Project>

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -39,6 +40,98 @@ namespace System.Numerics
             08, 12, 20, 28, 15, 17, 24, 07,
             19, 27, 23, 06, 26, 05, 04, 31
         };
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(int value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(long value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint RoundUpToPowerOf2(uint value)
+        {
+            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported)
+            {
+#if TARGET_64BIT
+                return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
+#else
+                int shift = 32 - LeadingZeroCount(value - 1);
+                return (1u ^ (uint)(shift >> 5)) << shift;
+#endif
+            }
+
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            --value;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            return value + 1;
+        }
+
+
+        /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong RoundUpToPowerOf2(ulong value)
+        {
+            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+            {
+                int shift = 64 - LeadingZeroCount(value - 1);
+                return (1ul ^ (ulong)(shift >> 6)) << shift;
+            }
+
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            --value;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            value |= value >> 32;
+            return value + 1;
+        }
 
         /// <summary>
         /// Count the number of leading zero bits in a mask.
@@ -213,6 +306,32 @@ namespace System.Numerics
                 ref MemoryMarshal.GetReference(Log2DeBruijn),
                 // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
+        }
+
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(uint value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
+        }
+
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(ulong value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
         }
 
         /// <summary>

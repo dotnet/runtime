@@ -16,7 +16,7 @@ namespace System.Net
     {
         public const bool SupportsGetAddrInfoAsync = false;
 
-        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
+        internal static Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         private static SocketError GetSocketErrorForNativeError(int error)
@@ -48,9 +48,9 @@ namespace System.Net
         {
             try
             {
-                hostName = !justAddresses && hostEntry.CanonicalName != null ?
-                    Marshal.PtrToStringAnsi((IntPtr)hostEntry.CanonicalName) :
-                    null;
+                hostName = !justAddresses && hostEntry.CanonicalName != null
+                    ? Marshal.PtrToStringAnsi((IntPtr)hostEntry.CanonicalName)
+                    : null;
 
                 IPAddress[] localAddresses;
                 if (hostEntry.IPAddressCount == 0)
@@ -60,13 +60,13 @@ namespace System.Net
                 else
                 {
                     // getaddrinfo returns multiple entries per address, for each socket type (datagram, stream, etc.).
-                    // Our callers expect just one entry for each address.  So we need to deduplicate the results.
+                    // Our callers expect just one entry for each address. So we need to deduplicate the results.
                     // It's important to keep the addresses in order, since they are returned in the order in which
                     // connections should be attempted.
                     //
                     // We assume that the list returned by getaddrinfo is relatively short; after all, the intent is that
                     // the caller may need to attempt to contact every address in the list before giving up on a connection
-                    // attempt.  So an O(N^2) algorithm should be fine here.  Keep in mind that any "better" algorithm
+                    // attempt. So an O(N^2) algorithm should be fine here. Keep in mind that any "better" algorithm
                     // is likely to involve extra allocations, hashing, etc., and so will probably be more expensive than
                     // this one in the typical (short list) case.
 

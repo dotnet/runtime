@@ -9,6 +9,8 @@
     <!-- Common test files -->
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
+             Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"

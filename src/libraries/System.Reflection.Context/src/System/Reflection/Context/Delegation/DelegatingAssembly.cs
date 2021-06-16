@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Security;
@@ -21,6 +22,7 @@ namespace System.Reflection.Context.Delegation
             UnderlyingAssembly = assembly;
         }
 
+        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
         public override string Location
         {
             get { return UnderlyingAssembly.Location; }
@@ -98,16 +100,19 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetExportedTypes();
         }
 
+        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.GetFile(string)' will throw for assemblies embedded in a single-file app", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3001")]
         public override FileStream GetFile(string name)
         {
             return UnderlyingAssembly.GetFile(name);
         }
 
+        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3001")]
         public override FileStream[] GetFiles()
         {
             return UnderlyingAssembly.GetFiles();
         }
 
+        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.GetFiles(bool)' will throw for assemblies embedded in a single-file app", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3001")]
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             return UnderlyingAssembly.GetFiles(getResourceModules);

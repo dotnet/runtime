@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net.NetworkInformation
 {
-    internal class SystemNetworkInterface : NetworkInterface
+    internal sealed class SystemNetworkInterface : NetworkInterface
     {
         private readonly string _name;
         private readonly string _id;

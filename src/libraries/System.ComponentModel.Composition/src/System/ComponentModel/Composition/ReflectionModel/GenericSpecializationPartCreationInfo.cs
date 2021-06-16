@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class GenericSpecializationPartCreationInfo : IReflectionPartCreationInfo
+    internal sealed class GenericSpecializationPartCreationInfo : IReflectionPartCreationInfo
     {
         private readonly IReflectionPartCreationInfo _originalPartCreationInfo;
         private readonly ReflectionComposablePartDefinition _originalPart;
@@ -550,7 +550,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _originalPartCreationInfo.Origin; }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is GenericSpecializationPartCreationInfo that && (_originalPartCreationInfo.Equals(that._originalPartCreationInfo)) &&
                 (_specialization.IsArrayEqual(that._specialization));

@@ -2,16 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides types for managing access and audit control lists for files and directories.
-
-Commonly Used Types:
-System.Security.AccessControl.DirectoryObjectSecurity
-System.Security.AccessControl.DirectorySecurity
-System.Security.AccessControl.FileSecurity
-System.Security.AccessControl.FileSystemAccessRule
-System.Security.AccessControl.FileSystemAuditRule
-System.Security.AccessControl.FileSystemRights
-System.Security.AccessControl.FileSystemSecurity</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

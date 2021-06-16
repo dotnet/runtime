@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Diagnostics;
 using System.Text;
@@ -39,6 +40,18 @@ namespace System.Text
 
         internal DBCSCodePageEncoding(int codePage, int dataCodePage, EncoderFallback enc, DecoderFallback dec) : base(codePage, dataCodePage, enc, dec)
         {
+        }
+
+        internal static unsafe char ReadChar(char *pChar)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+              return *pChar;
+            }
+            else
+            {
+              return (char)BinaryPrimitives.ReverseEndianness((ushort)*pChar);
+            }
         }
 
         // MBCS data section:
@@ -136,14 +149,14 @@ namespace System.Text
                     while (bytePosition < 0x10000)
                     {
                         // Get the next byte
-                        char input = *pData;
+                        char input = ReadChar(pData);
                         pData++;
 
                         // build our table:
                         if (input == 1)
                         {
                             // Use next data as our byte position
-                            bytePosition = (int)(*pData);
+                            bytePosition = (int)ReadChar(pData);
                             pData++;
                             continue;
                         }
@@ -258,14 +271,14 @@ namespace System.Text
                         while (bytesPosition < 0x10000)
                         {
                             // Get the next byte
-                            char input = *pData;
+                            char input = ReadChar(pData);
                             pData++;
 
                             // build our table:
                             if (input == 1)
                             {
                                 // Use next data as our byte position
-                                bytesPosition = (int)(*pData);
+                                bytesPosition = (int)ReadChar(pData);
                                 pData++;
                             }
                             else if (input < 0x20 && input > 0)
@@ -286,20 +299,20 @@ namespace System.Text
                         // Now pData should be pointing to first word of bytes -> unicode best fit table
                         // (which we're also not using at the moment)
                         int iBestFitCount = 0;
-                        bytesPosition = *pData;
+                        bytesPosition = ReadChar(pData);
                         pData++;
 
                         while (bytesPosition < 0x10000)
                         {
                             // Get the next byte
-                            char input = *pData;
+                            char input = ReadChar(pData);
                             pData++;
 
                             // build our table:
                             if (input == 1)
                             {
                                 // Use next data as our byte position
-                                bytesPosition = (int)(*pData);
+                                bytesPosition = (int)ReadChar(pData);
                                 pData++;
                             }
                             else if (input < 0x20 && input > 0)
@@ -334,7 +347,7 @@ namespace System.Text
                         // Now we know how many best fits we have, so go back & read them in
                         iBestFitCount = 0;
                         pData = pBytes2Unicode;
-                        bytesPosition = *pData;
+                        bytesPosition = ReadChar(pData);
                         pData++;
                         bool bOutOfOrder = false;
 
@@ -342,14 +355,14 @@ namespace System.Text
                         while (bytesPosition < 0x10000)
                         {
                             // Get the next byte
-                            char input = *pData;
+                            char input = ReadChar(pData);
                             pData++;
 
                             // build our table:
                             if (input == 1)
                             {
                                 // Use next data as our byte position
-                                bytesPosition = (int)(*pData);
+                                bytesPosition = (int)ReadChar(pData);
                                 pData++;
                             }
                             else if (input < 0x20 && input > 0)
@@ -421,20 +434,20 @@ namespace System.Text
 
                         // Now were at beginning of Unicode -> Bytes best fit table, need to count them
                         char* pUnicode2Bytes = pData;
-                        int unicodePosition = *(pData++);
+                        int unicodePosition = ReadChar(pData++);
                         iBestFitCount = 0;
 
                         while (unicodePosition < 0x10000)
                         {
                             // Get the next byte
-                            char input = *pData;
+                            char input = ReadChar(pData);
                             pData++;
 
                             // build our table:
                             if (input == 1)
                             {
                                 // Use next data as our byte position
-                                unicodePosition = (int)*pData;
+                                unicodePosition = (int)ReadChar(pData);
                                 pData++;
                             }
                             else if (input < 0x20 && input > 0)
@@ -456,20 +469,20 @@ namespace System.Text
 
                         // Now do it again to fill the array with real values
                         pData = pUnicode2Bytes;
-                        unicodePosition = *(pData++);
+                        unicodePosition = ReadChar(pData++);
                         iBestFitCount = 0;
 
                         while (unicodePosition < 0x10000)
                         {
                             // Get the next byte
-                            char input = *pData;
+                            char input = ReadChar(pData);
                             pData++;
 
                             // build our table:
                             if (input == 1)
                             {
                                 // Use next data as our byte position
-                                unicodePosition = (int)*pData;
+                                unicodePosition = (int)ReadChar(pData);
                                 pData++;
                             }
                             else if (input < 0x20 && input > 0)
@@ -1143,7 +1156,7 @@ namespace System.Text
             return new DBCSDecoder(this);
         }
 
-        internal class DBCSDecoder : DecoderNLS
+        internal sealed class DBCSDecoder : DecoderNLS
         {
             // Need a place for the last left over byte
             internal byte bLeftOver;

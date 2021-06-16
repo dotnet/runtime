@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -13,8 +12,18 @@ namespace Internal.Runtime.InteropServices
 {
     public static class ComponentActivator
     {
+        private const string TrimIncompatibleWarningMessage = "Native hosting is not trim compatible and this warning will be seen if trimming is enabled.";
+
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
+
+        // Use a value defined in https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
+        // To indicate the specific error when IsSupported is false
+        private const int HostFeatureDisabled = unchecked((int)0x800080a7);
+
+        private static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
 
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 
@@ -37,6 +46,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnmanagedCallersOnly]
         public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                                    IntPtr typeNameNative,
@@ -45,6 +55,9 @@ namespace Internal.Runtime.InteropServices
                                                                    IntPtr reserved,
                                                                    IntPtr functionHandle)
         {
+            if (!IsSupported)
+                return HostFeatureDisabled;
+
             try
             {
                 // Validate all parameters first.
@@ -93,6 +106,9 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr reserved,
                                                     IntPtr functionHandle)
         {
+            if (!IsSupported)
+                return HostFeatureDisabled;
+
             try
             {
                 // Validate all parameters first.
@@ -125,6 +141,7 @@ namespace Internal.Runtime.InteropServices
             return 0;
         }
 
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
             IsolatedComponentLoadContext? alc;
@@ -141,6 +158,7 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
                                                          string methodName,

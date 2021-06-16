@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal class NativeMethods
+    internal static class NativeMethods
     {
         internal static HandleRef NullHandleRef => new HandleRef(null, IntPtr.Zero);
 
@@ -16,25 +16,6 @@ namespace System.Drawing
         internal const int  DIB_RGB_COLORS = 0;
         internal const int BI_BITFIELDS = 3;
         internal const int BI_RGB = 0;
-        internal const int BITMAPINFO_MAX_COLORSIZE = 256;
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct BITMAPINFO_FLAT
-        {
-            public int bmiHeader_biSize; // = sizeof(BITMAPINFOHEADER)
-            public int bmiHeader_biWidth;
-            public int bmiHeader_biHeight;
-            public short bmiHeader_biPlanes;
-            public short bmiHeader_biBitCount;
-            public int bmiHeader_biCompression;
-            public int bmiHeader_biSizeImage;
-            public int bmiHeader_biXPelsPerMeter;
-            public int bmiHeader_biYPelsPerMeter;
-            public int bmiHeader_biClrUsed;
-            public int bmiHeader_biClrImportant;
-
-            public fixed byte bmiColors[BITMAPINFO_MAX_COLORSIZE * 4]; // RGBQUAD structs... Blue-Green-Red-Reserved, repeat...
-        }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct BITMAPINFOHEADER

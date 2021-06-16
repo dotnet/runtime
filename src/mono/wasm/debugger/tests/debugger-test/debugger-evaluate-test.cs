@@ -34,7 +34,6 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
-
             var f_s = new EvaluateTestsStructWithProperties();
             f_s.InstanceMethod(100, 200, "test", f_s);
             f_s.GenericInstanceMethod<int>(100, 200, "test", f_s);
@@ -77,6 +76,7 @@ namespace DebuggerTests
         public DateTime dateTime;
         public DateTime DTProp => dateTime.AddMinutes(10);
         public int IntProp => a + 5;
+        public string PropertyThrowException => throw new Exception("error");
         public string SetOnlyProp { set { a = value.Length; } }
         public EvaluateTestsClassWithProperties NullIfAIsNotZero => a != 1908712 ? null : new EvaluateTestsClassWithProperties(0);
         public EvaluateTestsClassWithProperties NewInstance => new EvaluateTestsClassWithProperties(3);

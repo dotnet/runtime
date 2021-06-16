@@ -237,7 +237,7 @@ namespace
         StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
             IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
 
             EX_TRY
@@ -256,9 +256,9 @@ namespace
             IfFailRet(hr);
 
             wszDllPath = ssDllName.GetUnicode();
-#else // !TARGET_UNIX
+#else // HOST_WINDOWS
             return E_FAIL;
-#endif // !TARGET_UNIX
+#endif // HOST_WINDOWS
         }
         _ASSERTE(wszDllPath != nullptr);
 
@@ -856,7 +856,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ WORD CPUGroupInfo::m_initialGroup = 0;
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
-/*static*/ bool CPUGroupInfo::s_hadSingleProcessorAtStartup = false;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 // Calculate greatest common divisor
@@ -990,9 +989,7 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
-    BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
-    BOOL threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+    BOOL enableGCCPUGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
 
     if (!enableGCCPUGroups)
         return;
@@ -1009,29 +1006,19 @@ DWORD LCM(DWORD u, DWORD v)
     m_initialGroup = groupAffinity.Group;
 
     // only enable CPU groups if more than one group exists
-    BOOL hasMultipleGroups = m_nGroups > 1;
-    m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
-    m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
-    m_threadAssignCpuGroups = threadAssignCpuGroups && hasMultipleGroups;
-#endif // TARGET_AMD64 || TARGET_ARM64
-
-    // Determine if the process is affinitized to a single processor (or if the system has a single processor)
-    DWORD_PTR processAffinityMask, systemAffinityMask;
-    if (GetProcessAffinityMask(GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
+    if (m_nGroups > 1)
     {
-        processAffinityMask &= systemAffinityMask;
-        if (processAffinityMask != 0 && // only one CPU group is involved
-            (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
-        {
-            s_hadSingleProcessorAtStartup = true;
-        }
+        m_enableGCCPUGroups = TRUE;
+        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
+        m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
     }
+#endif
 }
 
 /*static*/ BOOL CPUGroupInfo::IsInitialized()
 {
     LIMITED_METHOD_CONTRACT;
-    return (m_initialization == -1);
+    return VolatileLoad(&m_initialization) == -1;
 }
 
 /*static*/ void CPUGroupInfo::EnsureInitialized()
@@ -1052,22 +1039,21 @@ DWORD LCM(DWORD u, DWORD v)
     // Vast majority of time, CPUGroupInfo is initialized in case 1. or 2.
     // The chance of contention will be extremely small, so the following code should be fine
     //
-retry:
     if (IsInitialized())
         return;
 
     if (InterlockedCompareExchange(&m_initialization, 1, 0) == 0)
     {
         InitCPUGroupInfo();
-        m_initialization = -1;
+        VolatileStore(&m_initialization, -1L);
     }
-    else //some other thread started initialization, just wait until complete;
+    else
     {
-        while (m_initialization != -1)
+        // Some other thread started initialization, just wait until complete
+        while (VolatileLoad(&m_initialization) != -1)
         {
             SwitchToThread();
         }
-        goto retry;
     }
 }
 
@@ -1114,7 +1100,6 @@ retry:
     CONTRACTL_END;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
     PROCESSOR_NUMBER proc_no;
@@ -1167,7 +1152,6 @@ retry:
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
-    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     for (i = 0; i < m_nGroups; i++)
@@ -1207,7 +1191,6 @@ found:
 {
     LIMITED_METHOD_CONTRACT;
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    // m_enableGCCPUGroups, m_threadUseAllCpuGroups, and m_threadAssignCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
@@ -1239,15 +1222,40 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 /*static*/ BOOL CPUGroupInfo::CanEnableThreadUseAllCpuGroups()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(m_enableGCCPUGroups || !m_threadUseAllCpuGroups);
     return m_threadUseAllCpuGroups;
 }
 
 /*static*/ BOOL CPUGroupInfo::CanAssignCpuGroupsToThreads()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(m_enableGCCPUGroups || !m_threadAssignCpuGroups);
     return m_threadAssignCpuGroups;
 }
 #endif // HOST_WINDOWS
+
+extern SYSTEM_INFO g_SystemInfo;
+
+int GetTotalProcessorCount()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef HOST_WINDOWS
+    if (CPUGroupInfo::CanEnableGCCPUGroups())
+    {
+        return CPUGroupInfo::GetNumActiveProcessors();
+    }
+    else
+    {
+        return g_SystemInfo.dwNumberOfProcessors;
+    }
+#else // HOST_WINDOWS
+    return PAL_GetTotalCpuCount();
+#endif // HOST_WINDOWS
+}
+
+// The cached number of CPUs available for the current process
+static DWORD g_currentProcessCpuCount = 0;
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -1261,50 +1269,99 @@ int GetCurrentProcessCpuCount()
     }
     CONTRACTL_END;
 
-    static int cCPUs = 0;
+    if (g_currentProcessCpuCount > 0)
+        return g_currentProcessCpuCount;
 
-    if (cCPUs != 0)
-        return cCPUs;
+    DWORD count;
 
-    unsigned int count = 0;
+    // If the configuration value has been set, it takes precedence. Otherwise, take into account
+    // process affinity and CPU quota limit.
 
-#ifdef HOST_WINDOWS
-    DWORD_PTR pmask, smask;
+    DWORD configValue = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProcessorCount);
+    const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
 
-    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
-        count = 1;
+        count = configValue;
     }
     else
     {
-        pmask &= smask;
+#ifdef HOST_WINDOWS
+        CPUGroupInfo::EnsureInitialized();
 
-        while (pmask)
+        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
         {
-            pmask &= (pmask - 1);
-            count++;
+            count = CPUGroupInfo::GetNumActiveProcessors();
+        }
+        else
+        {
+            DWORD_PTR pmask, smask;
+
+            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+            {
+                count = 1;
+            }
+            else
+            {
+                pmask &= smask;
+                count = 0;
+
+                while (pmask)
+                {
+                    pmask &= (pmask - 1);
+                    count++;
+                }
+
+                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+                // than 64 processors, which would leave us with a count of 0.  Since the GC
+                // expects there to be at least one processor to run on (and thus at least one
+                // heap), we'll return 64 here if count is 0, since there are likely a ton of
+                // processors available in that case.
+                if (count == 0)
+                    count = 64;
+            }
         }
 
-        // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-        // than 64 processors, which would leave us with a count of 0.  Since the GC
-        // expects there to be at least one processor to run on (and thus at least one
-        // heap), we'll return 64 here if count is 0, since there are likely a ton of
-        // processors available in that case.  The GC also cannot (currently) handle
-        // the case where there are more than 64 processors, so we will return a
-        // maximum of 64 here.
-        if (count == 0 || count > 64)
-            count = 64;
-    }
+        JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
+
+        if (QueryInformationJobObject(NULL, JobObjectCpuRateControlInformation, &cpuRateControl,
+            sizeof(cpuRateControl), NULL))
+        {
+            const DWORD HardCapEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP;
+            const DWORD MinMaxRateEnabled = JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE;
+            DWORD maxRate = 0;
+
+            if ((cpuRateControl.ControlFlags & HardCapEnabled) == HardCapEnabled)
+            {
+                maxRate = cpuRateControl.CpuRate;
+            }
+            else if ((cpuRateControl.ControlFlags & MinMaxRateEnabled) == MinMaxRateEnabled)
+            {
+                maxRate = cpuRateControl.MaxRate;
+            }
+
+            // The rate is the percentage times 100
+            const DWORD MAXIMUM_CPU_RATE = 10000;
+
+            if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
+            {
+                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                if (cpuLimit < count)
+                    count = cpuLimit;
+            }
+        }
 
 #else // HOST_WINDOWS
-    count = PAL_GetLogicalCpuCountFromOS();
+        count = PAL_GetLogicalCpuCountFromOS();
 
-    uint32_t cpuLimit;
-    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
-        count = cpuLimit;
+        uint32_t cpuLimit;
+        if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
 #endif // HOST_WINDOWS
+    }
 
-    cCPUs = count;
+    _ASSERTE(count > 0);
+    g_currentProcessCpuCount = count;
 
     return count;
 }
@@ -1416,22 +1473,6 @@ bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SI
     if (m_list.IsEmpty())
         return false;
     return(m_list.IsInList(methodName, className, pSigInfo));
-}
-
-/**************************************************************************/
-void ConfigDWORD::init_DontUse_(__in_z LPCWSTR keyName, DWORD defaultVal)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    // make sure that the memory was zero initialized
-    _ASSERTE(m_inited == 0 || m_inited == 1);
-
-    m_value = REGUTIL::GetConfigDWORD_DontUse_(keyName, defaultVal);
-    m_inited = 1;
 }
 
 /**************************************************************************/
@@ -1863,12 +1904,12 @@ HRESULT validateOneArg(
 
     BYTE        elementType;          // Current element type being processed.
     mdToken     token;                  // Embedded token.
-    ULONG       ulArgCnt;               // Argument count for function pointer.
-    ULONG       ulIndex;                // Index for type parameters
-    ULONG       ulRank;                 // Rank of the array.
-    ULONG       ulSizes;                // Count of sized dimensions of the array.
-    ULONG       ulLbnds;                // Count of lower bounds of the array.
-    ULONG       ulCallConv;
+    uint32_t    ulArgCnt;               // Argument count for function pointer.
+    uint32_t    ulIndex;                // Index for type parameters
+    uint32_t    ulRank;                 // Rank of the array.
+    uint32_t    ulSizes;                // Count of sized dimensions of the array.
+    uint32_t    ulLbnds;                // Count of lower bounds of the array.
+    uint32_t    ulCallConv;
 
     HRESULT     hr = S_OK;              // Value returned.
     BOOL        bRepeat = TRUE;         // MODOPT and MODREQ belong to the arg after them
@@ -2090,9 +2131,9 @@ HRESULT validateTokenSig(
     }
     CONTRACTL_END;
 
-    ULONG       ulCallConv;             // Calling convention.
-    ULONG       ulArgCount = 1;         // Count of arguments (1 because of the return type)
-    ULONG       ulTyArgCount = 0;         // Count of type arguments
+    uint32_t    ulCallConv;             // Calling convention.
+    uint32_t    ulArgCount = 1;         // Count of arguments (1 because of the return type)
+    uint32_t    ulTyArgCount = 0;       // Count of type arguments
     ULONG       ulArgIx = 0;            // Starting index of argument (standalone sig: 1)
     ULONG       i;                      // Looping index.
     HRESULT     hr = S_OK;              // Value returned.

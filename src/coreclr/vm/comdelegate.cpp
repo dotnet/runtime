@@ -75,8 +75,8 @@ class ShuffleIterator
     int m_currentGenRegIndex;
     // Current floating point register index (relative to the ArgLocDesc::m_idxFloatReg)
     int m_currentFloatRegIndex;
-    // Current stack slot index (relative to the ArgLocDesc::m_idxStack)
-    int m_currentStackSlotIndex;
+    // Current byte stack index (relative to the ArgLocDesc::m_byteStackIndex)
+    int m_currentByteStackIndex;
 
 #if defined(UNIX_AMD64_ABI)
     // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
@@ -134,7 +134,7 @@ public:
 #endif
         m_currentGenRegIndex(0),
         m_currentFloatRegIndex(0),
-        m_currentStackSlotIndex(0)
+        m_currentByteStackIndex(0)
     {
     }
 
@@ -143,11 +143,16 @@ public:
     {
         return (m_currentGenRegIndex < m_argLocDesc->m_cGenReg) ||
                (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg) ||
-               (m_currentStackSlotIndex < m_argLocDesc->m_cStack);
+               (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize);
     }
 
     // Get next offset to shuffle. There has to be at least one offset left.
-    UINT16 GetNextOfs()
+    // It returns an offset encoded properly for a ShuffleEntry offset.
+    // - For floating register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // - For register arguments it returns regNum | ShuffleEntry::REGMASK.
+    // - For stack arguments it returns stack offset index in stack slots for most architectures. For macOS-arm64,
+    //     it returns an encoded stack offset, see below.
+    int GetNextOfs()
     {
         int index;
 
@@ -157,7 +162,9 @@ public:
         EEClass* eeClass = m_argLocDesc->m_eeClass;
         if (m_argLocDesc->m_eeClass != 0)
         {
-            return GetNextOfsInStruct();
+            index = GetNextOfsInStruct();
+            _ASSERT((index & ShuffleEntry::REGMASK) != 0);
+            return index;
         }
 #endif // UNIX_AMD64_ABI
 
@@ -167,7 +174,7 @@ public:
             index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
             m_currentFloatRegIndex++;
 
-            return (UINT16)index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+            return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
         }
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
@@ -177,15 +184,18 @@ public:
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
-            return (UINT16)index | ShuffleEntry::REGMASK;
+            return index | ShuffleEntry::REGMASK;
         }
 
         // If we get here we must have at least one stack slot left to shuffle (this method should only be called
         // when AnythingToShuffle(pArg) == true).
-        if (m_currentStackSlotIndex < m_argLocDesc->m_cStack)
+        if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {
-            index = m_argLocDesc->m_idxStack + m_currentStackSlotIndex;
-            m_currentStackSlotIndex++;
+            const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
+
+#if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
+            index = byteIndex / TARGET_POINTER_SIZE;
+            m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
             if (index >= ShuffleEntry::REGMASK)
@@ -193,7 +203,68 @@ public:
                 COMPlusThrow(kNotSupportedException);
             }
 
-            return (UINT16)index;
+            // Only Apple Silicon ABI currently supports unaligned stack argument shuffling
+            _ASSERTE(byteIndex == unsigned(index * TARGET_POINTER_SIZE));
+            return index;
+#else
+            // Tha Apple Silicon ABI does not consume an entire stack slot for every argument
+            // Arguments smaller than TARGET_POINTER_SIZE are always aligned to their argument size
+            // But may not begin at the beginning of a stack slot
+            //
+            // The argument location description has been updated to describe the stack offest and
+            // size in bytes.  We will use it as our source of truth.
+            //
+            // The ShuffleEntries will be implemented by the Arm64 StubLinkerCPU::EmitLoadStoreRegImm
+            // using the 12-bit scaled immediate stack offset. The load/stores can be implemented as 1/2/4/8
+            // bytes each (natural binary sizes).
+            //
+            // Each offset is encode as a log2 size and a 12-bit unsigned scaled offset.
+            // We only emit offsets of these natural binary sizes
+            //
+            // We choose the offset based on the ABI stack alignment requirements
+            // - Small integers are shuffled based on their size
+            // - HFA are shuffled based on their element size
+            // - Others are shuffled in full 8 byte chunks.
+            int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
+            int log2Size = 3;
+
+            // If isHFA, shuffle based on field size
+            // otherwise shuffle based on stack size
+            switch(m_argLocDesc->m_hfaFieldSize ? m_argLocDesc->m_hfaFieldSize : m_argLocDesc->m_byteStackSize)
+            {
+                case 1:
+                    log2Size = 0;
+                    break;
+                case 2:
+                    log2Size = 1;
+                    break;
+                case 4:
+                    log2Size = 2;
+                    break;
+                case 3: // Unsupported Size
+                case 5: // Unsupported Size
+                case 6: // Unsupported Size
+                case 7: // Unsupported Size
+                    _ASSERTE(false);
+                    break;
+                default: // Should be a multiple of 8 (TARGET_POINTER_SIZE)
+                    _ASSERTE(bytesRemaining >= TARGET_POINTER_SIZE);
+                    break;
+            }
+
+            m_currentByteStackIndex += (1 << log2Size);
+
+            // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
+            // Arm64 current implementation only supports 12 bit unsigned scaled offset
+            if ((byteIndex >> log2Size) > 0xfff)
+            {
+                COMPlusThrow(kNotSupportedException);
+            }
+
+            _ASSERTE((byteIndex & ((1 << log2Size) - 1)) == 0);
+
+            return (byteIndex >> log2Size) | (log2Size << 12);
+#endif
         }
 
         // There are no more offsets to get, the caller should not have called us
@@ -262,13 +333,16 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
 
         // Locate the next slot to shuffle in the source and destination and encode the transfer into a
         // shuffle entry.
-        entry.srcofs = iteratorSrc.GetNextOfs();
-        entry.dstofs = iteratorDst.GetNextOfs();
+        const int srcOffset = iteratorSrc.GetNextOfs();
+        const int dstOffset = iteratorDst.GetNextOfs();
 
         // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
         // different).
-        if (entry.srcofs != entry.dstofs)
+        if (srcOffset != dstOffset)
         {
+            entry.srcofs = (UINT16)srcOffset;
+            entry.dstofs = (UINT16)dstOffset;
+
             if (shuffleType == ShuffleComputationType::InstantiatingStub)
             {
                 // Instantiating Stub shuffles only support general register to register moves. More complex cases are handled by IL stubs
@@ -281,6 +355,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     return FALSE;
                 }
             }
+
             pShuffleEntryArray->Append(entry);
         }
     }
@@ -605,13 +680,13 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             entry.srcofs = ShuffleOfs(ofsSrc);
             entry.dstofs = ShuffleOfs(ofsDst, stackSizeDelta);
 
-            ofsSrc += STACK_ELEM_SIZE;
-            ofsDst += STACK_ELEM_SIZE;
+            ofsSrc += TARGET_POINTER_SIZE;
+            ofsDst += TARGET_POINTER_SIZE;
 
             if (entry.srcofs != entry.dstofs)
                 pShuffleEntryArray->Append(entry);
 
-            cbSize -= STACK_ELEM_SIZE;
+            cbSize -= TARGET_POINTER_SIZE;
         }
         while (cbSize > 0);
     }
@@ -625,7 +700,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = static_cast<UINT16>(stackSizeDelta);
+    entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
 #else
@@ -745,7 +820,8 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
             pShuffleThunk = pClass->m_pInstRetBuffCallStub;
         }
     }
@@ -753,7 +829,8 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
             pShuffleThunk = pClass->m_pStaticCallStub;
         }
     }
@@ -969,10 +1046,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             flags,
                                             &fIsOpenDelegate))
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         // Initialize the delegate to point to the target method.
         BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
@@ -990,9 +1063,8 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
 FCIMPLEND
 
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
-// (signature matching etc.) have been done at this point and the only major reason we could fail now is on security grounds
-// (someone trying to create a delegate over a method that's not visible to them for instance). This method will initialize the
-// delegate (wrapping it in a wrapper delegate if necessary). Upon return the delegate should be ready for invocation.
+// (signature matching etc.) have been done at this point, this method will simply initialize the delegate, with any required
+// wrapping. The delegate returned will be ready for invocation immediately.
 void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                OBJECTREF     *pRefFirstArg,
                                MethodDesc    *pTargetMethod,
@@ -1011,19 +1083,16 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     CONTRACTL_END;
 
-    // We might have to wrap the delegate in a wrapper delegate depending on the the target method. The following local
-    // keeps track of the real (i.e. non-wrapper) delegate whether or not this is required.
+    // The delegate may be put into a wrapper delegate if our target method requires it. This local
+    // will always hold the real (un-wrapped) delegate.
     DELEGATEREF refRealDelegate = NULL;
     GCPROTECT_BEGIN(refRealDelegate);
 
-    // If we didn't wrap the real delegate in a wrapper delegate then the real delegate is the one passed in.
-    if (refRealDelegate == NULL)
-    {
-        if (NeedsWrapperDelegate(pTargetMethod))
-            refRealDelegate = CreateWrapperDelegate(*pRefThis, pTargetMethod);
-        else
-            refRealDelegate = *pRefThis;
-    }
+    // If needed, convert the delegate into a wrapper and get the real delegate within that.
+    if (NeedsWrapperDelegate(pTargetMethod))
+        refRealDelegate = CreateWrapperDelegate(*pRefThis, pTargetMethod);
+    else
+        refRealDelegate = *pRefThis;
 
     pTargetMethod->EnsureActive();
 
@@ -1132,29 +1201,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86)
-// Marshals a managed method to an unmanaged callback.
-PCODE COMDelegate::ConvertToUnmanagedCallback(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(pMD != NULL);
-        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    // Get UMEntryThunk from the thunk cache.
-    UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
-
-    PCODE pCode = (PCODE)pUMEntryThunk->GetCode();
-    _ASSERTE(pCode != NULL);
-    return pCode;
-}
-#endif // defined(TARGET_X86)
-
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 {
@@ -1208,7 +1254,9 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 GCX_PREEMP();
 
                 pUMThunkMarshInfo = new UMThunkMarshInfo();
-                pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
+
+                ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
                 g_IBCLogger.LogEEClassCOWTableAccess(pMT);
                 if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
@@ -1234,8 +1282,11 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
             PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
 
+            ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+
             // MethodDesc is passed in for profiling to know the method desc of target
-            pUMEntryThunk->LoadTimeInit(
+            uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(
+                pUMEntryThunk,
                 pManagedTargetForDiagnostics,
                 objhnd,
                 pUMThunkMarshInfo, pInvokeMeth);
@@ -1366,31 +1417,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         // Also, mark this delegate as an unmanaged function pointer wrapper.
         delObj->SetInvocationCount(DELEGATE_MARKER_UNMANAGEDFPTR);
     }
-
-#if defined(TARGET_X86)
-    GCPROTECT_BEGIN(delObj);
-
-    Stub *pInterceptStub = NULL;
-
-    {
-        GCX_PREEMP();
-
-        MethodDesc *pStubMD = pClass->m_pForwardStubMD;
-        _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
-
-    }
-
-    if (pInterceptStub != NULL)
-    {
-        // install the outer-most stub to sync block
-        SyncBlock *pSyncBlock = delObj->GetSyncBlock();
-
-        InteropSyncBlockInfo *pInteropInfo = pSyncBlock->GetInteropInfo();
-        VERIFY(pInteropInfo->SetInterceptStub(pInterceptStub));
-    }
-
-    GCPROTECT_END();
-#endif // TARGET_X86
 
     return delObj;
 }
@@ -1591,10 +1617,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     // It's difficult to validate a method code pointer, but at least we'll
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     MethodTable *pMTTarg = NULL;
 
@@ -1907,7 +1929,8 @@ PCODE COMDelegate::TheDelegateInvokeStub()
         if (InterlockedCompareExchangeT<PCODE>(&s_pInvokeStub, pCandidate->GetEntryPoint(), NULL) != NULL)
         {
             // if we are here someone managed to set the stub before us so we release the current
-            pCandidate->DecRef();
+            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
+            candidateWriterHolder.GetRW()->DecRef();
         }
     }
 
@@ -2190,7 +2213,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
         SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -2326,7 +2349,9 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
 
             Stub *pWinner = m_pMulticastStubCache->AttemptToSetStub(hash,pCandidate);
-            pCandidate->DecRef();
+            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
+            candidateWriterHolder.GetRW()->DecRef();
+
             if (!pWinner)
                 COMPlusThrowOM();
 
@@ -2374,7 +2399,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
         SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -2618,11 +2643,6 @@ bool COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (flags & DBF_StaticMethodOnly && !pTargetMethod->IsStatic())
         return false;
     if (flags & DBF_InstanceMethodOnly && pTargetMethod->IsStatic())
-        return false;
-
-    // we don't allow you to bind to methods on Nullable<T> because the unboxing stubs don't know how to
-    // handle this case.
-    if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
         return false;
 
     // Get signatures for the delegate invoke and target methods.

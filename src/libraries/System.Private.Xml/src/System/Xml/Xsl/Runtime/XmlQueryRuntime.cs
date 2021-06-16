@@ -6,11 +6,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.IlGen;
+using System.Xml.Xsl.Xslt;
 using MS.Internal.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
@@ -273,6 +275,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return true if the early bound object identified by "namespaceUri" contains a method that matches "name".
         /// </summary>
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public bool EarlyBoundFunctionExists(string name, string namespaceUri)
         {
             if (_earlyInfo == null)

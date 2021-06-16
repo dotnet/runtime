@@ -13,11 +13,18 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <MSBuildAllProjects>$(MSBuildThisFileFullPath);$(MSBuildAllProjects)</MSBuildAllProjects>
     <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
     <Language>IL</Language>
     <TargetRuntime>Managed</TargetRuntime>
+    <DefaultProjectTypeGuid Condition="'$(DefaultProjectTypeGuid)' == ''">{9A19103F-16F7-4668-BE54-9A1E7A4F7556}</DefaultProjectTypeGuid>
+    <AppDesignerFolder Condition="'$(AppDesignerFolder)' == ''">Properties</AppDesignerFolder>
+    <AlwaysUseNumericalSuffixInItemNames>true</AlwaysUseNumericalSuffixInItemNames>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="Managed" />
+    <ProjectCapability Include="ReferencesFolder" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('windows'))">win</_OSPlatform>

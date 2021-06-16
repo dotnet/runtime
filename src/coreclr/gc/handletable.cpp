@@ -540,21 +540,14 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 
 #ifndef DACCESS_COMPILE
 /*
- * HndWriteBarrier
+ * HndWriteBarrierWorker
  *
  * Resets the generation number for the handle's clump to zero.
  *
  */
-void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
+void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    // unwrap the objectref we were given
-    _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
-
-    _ASSERTE (objref != NULL);
+    _ASSERTE (value != NULL);
 
     // find the write barrier for this handle
     uint8_t *barrier = (uint8_t *)((uintptr_t)handle & HANDLE_SEGMENT_ALIGN_MASK);

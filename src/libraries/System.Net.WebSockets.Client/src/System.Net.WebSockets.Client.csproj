@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\ClientWebSocketDeflateConstants.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs" Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs" Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
@@ -37,6 +38,7 @@
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading.Channels" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" Condition="'$(TargetsBrowser)' == 'true'" />

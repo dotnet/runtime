@@ -114,7 +114,7 @@ public:
 
     // Set a custom attribute
     static
-    void QCALLTYPE DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob, BOOL toDisk, BOOL updateCompilerFlags);
+    void QCALLTYPE DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob);
 
     // functions to set ParamInfo
     static

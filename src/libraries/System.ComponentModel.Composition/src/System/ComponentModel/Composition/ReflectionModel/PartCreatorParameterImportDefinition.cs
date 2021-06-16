@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class PartCreatorParameterImportDefinition : ReflectionParameterImportDefinition, IPartCreatorImportDefinition
+    internal sealed class PartCreatorParameterImportDefinition : ReflectionParameterImportDefinition, IPartCreatorImportDefinition
     {
         private readonly ContractBasedImportDefinition _productImportDefinition;
 

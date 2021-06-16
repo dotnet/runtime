@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object result = Interop.Runtime.BindHostObject(jHandle, Int32Handle, out int exception);
             if (exception != 0)
-                throw new JSException($"HostObject Error binding: {result}");
+                throw new JSException(SR.Format(SR.HostObjectErrorBinding, result));
         }
 
         internal HostObjectBase(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)

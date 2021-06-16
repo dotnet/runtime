@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +14,7 @@
     <NetCoreAppProject Include="@(_allRef)"
                        Exclude="@(NonNetCoreAppProject)" />
     <GeneratedShimProject Include="shims\generated\*.csproj"
-                          Condition="'$(BuildingNETCoreAppVertical)' == 'true'" />
+                          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,18 +51,18 @@
   </Target>
 
   <!-- Generate the ref pack's FrameworkList.xml -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
   <Target Name="GenerateFrameworkListFile"
           DependsOnTargets="GetRefPackFiles"
           AfterTargets="BuildGeneratedShims"
           Inputs="@(RefPackLibFile)"
           Outputs="$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ItemGroup>
       <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
       <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
-      <FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
     </ItemGroup>
 
     <CreateFrameworkListFile Files="@(RefPackLibFile)"
@@ -87,5 +88,5 @@
              Properties="$(TraversalGlobalProperties);_Incremental=true" />
   </Target>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 </Project>

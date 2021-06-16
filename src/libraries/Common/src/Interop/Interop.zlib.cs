@@ -9,8 +9,8 @@ internal static partial class Interop
     internal static partial class zlib
     {
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateInit2_")]
-        internal static extern ZLibNative.ErrorCode DeflateInit2_(
-            ref ZLibNative.ZStream stream,
+        internal static extern unsafe ZLibNative.ErrorCode DeflateInit2_(
+            ZLibNative.ZStream* stream,
             ZLibNative.CompressionLevel level,
             ZLibNative.CompressionMethod method,
             int windowBits,
@@ -18,19 +18,25 @@ internal static partial class Interop
             ZLibNative.CompressionStrategy strategy);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Deflate")]
-        internal static extern ZLibNative.ErrorCode Deflate(ref ZLibNative.ZStream stream, ZLibNative.FlushCode flush);
+        internal static extern unsafe ZLibNative.ErrorCode Deflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);
+
+        [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateReset")]
+        internal static extern unsafe ZLibNative.ErrorCode DeflateReset(ZLibNative.ZStream* stream);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateEnd")]
-        internal static extern ZLibNative.ErrorCode DeflateEnd(ref ZLibNative.ZStream stream);
+        internal static extern unsafe ZLibNative.ErrorCode DeflateEnd(ZLibNative.ZStream* stream);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateInit2_")]
-        internal static extern ZLibNative.ErrorCode InflateInit2_(ref ZLibNative.ZStream stream, int windowBits);
+        internal static extern unsafe ZLibNative.ErrorCode InflateInit2_(ZLibNative.ZStream* stream, int windowBits);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Inflate")]
-        internal static extern ZLibNative.ErrorCode Inflate(ref ZLibNative.ZStream stream, ZLibNative.FlushCode flush);
+        internal static extern unsafe ZLibNative.ErrorCode Inflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);
+
+        [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateReset")]
+        internal static extern unsafe ZLibNative.ErrorCode InflateReset(ZLibNative.ZStream* stream);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateEnd")]
-        internal static extern ZLibNative.ErrorCode InflateEnd(ref ZLibNative.ZStream stream);
+        internal static extern unsafe ZLibNative.ErrorCode InflateEnd(ZLibNative.ZStream* stream);
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Crc32")]
         internal static extern unsafe uint crc32(uint crc, byte* buffer, int len);

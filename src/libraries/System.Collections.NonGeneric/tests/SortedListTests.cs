@@ -255,7 +255,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void EnsureCapacity_NewCapacityLessThanMin_CapsToMaxArrayLength()
+        public void EnsureCapacity_NewCapacityLessThanMin_CapsToArrayMaxLength()
         {
             // A situation like this occurs for very large lengths of SortedList.
             // To avoid allocating several GBs of memory and making this test run for a very
@@ -1537,7 +1537,7 @@ namespace System.Collections.Tests
         private SortedList _sortListGrandDaughter;
         private const int NumberOfElements = 100;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public void GetSyncRootBasic()
         {

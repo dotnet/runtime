@@ -28,7 +28,7 @@ namespace System.Reflection.Emit
     // SymWrapperCore is never instantiated and is used as an encapsulation class.
     // It is our "ISymWrapper.dll" assembly within an assembly.
     //------------------------------------------------------------------------------
-    internal class SymWrapperCore
+    internal sealed class SymWrapperCore
     {
         //------------------------------------------------------------------------------
         // Block instantiation
@@ -502,7 +502,7 @@ namespace System.Reflection.Emit
     //--------------------------------------------------------------------------------------
     internal sealed class PunkSafeHandle : SafeHandle
     {
-        internal PunkSafeHandle()
+        public PunkSafeHandle()
             : base((IntPtr)0, true)
         {
         }

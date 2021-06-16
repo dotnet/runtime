@@ -260,7 +260,6 @@ typedef struct MonoCompileArch {
 #if !defined(MONO_CROSS_COMPILE) && !defined(TARGET_PS3)
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
-#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?

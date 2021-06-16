@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException("Can't declare path segment before entering a directory.");
+                throw new InvalidOperationException(SR.CannotDeclarePathSegment);
             }
 
             if (Frame.IsNotApplicable)
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException("Can't test directory before entering a directory.");
+                throw new InvalidOperationException(SR.CannotTestDirectory);
             }
 
             if (Frame.IsNotApplicable)

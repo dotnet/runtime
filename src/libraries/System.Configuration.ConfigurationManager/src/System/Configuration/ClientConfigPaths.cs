@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -10,7 +11,7 @@ using System.Security;
 
 namespace System.Configuration
 {
-    internal class ClientConfigPaths
+    internal sealed class ClientConfigPaths
     {
         internal const string UserConfigFilename = "user.config";
 
@@ -28,6 +29,8 @@ namespace System.Configuration
         private readonly bool _includesUserConfig;
         private string _companyName;
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code handles single file case")]
         private ClientConfigPaths(string exePath, bool includeUserConfig)
         {
             _includesUserConfig = includeUserConfig;

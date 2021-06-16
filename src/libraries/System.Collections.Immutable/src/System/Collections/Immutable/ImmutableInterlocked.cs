@@ -354,6 +354,10 @@ namespace System.Collections.Immutable
                 }
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
+                if (object.ReferenceEquals(priorCollection, updatedCollection))
+                {
+                    return oldValue;
+                }
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
                 successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
@@ -397,6 +401,10 @@ namespace System.Collections.Immutable
                 }
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
+                if (object.ReferenceEquals(priorCollection, updatedCollection))
+                {
+                    return oldValue;
+                }
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
                 successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop

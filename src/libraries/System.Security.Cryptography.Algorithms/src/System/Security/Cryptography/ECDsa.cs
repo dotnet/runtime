@@ -4,6 +4,7 @@
 using Internal.Cryptography;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Versioning;
@@ -28,6 +29,7 @@ namespace System.Security.Cryptography
 
         protected ECDsa() { }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new ECDsa? Create(string algorithm)
         {
             if (algorithm == null)

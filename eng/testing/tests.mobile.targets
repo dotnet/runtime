@@ -3,51 +3,119 @@
     <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
-    <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
-    <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
+
+    <PublishingTestsRun>true</PublishingTestsRun>
+    <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Suppress linker warnings as these are tests -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+
+    <!-- Reduce library test app size by trimming framework library features  -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
+    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
+    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <!-- The -arg flag for xharness passes the arguments along to the instrumentation app -->
+    <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) --arg=-m=$(XUnitMethodName)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) --arg=-c=$(XUnitClassName)</AdditionalXHarnessArguments>
+  </PropertyGroup>
+
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
+
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
+
+  <UsingTask TaskName="RuntimeConfigParserTask"
+             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
+             Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
+
+  <Target Name="GenerateRuntimeConfig">
+    <PropertyGroup>
+      <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
+      <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+    </ItemGroup>
+
+    <!-- Parse runtimeconfig.template.json file -->
+    <RuntimeConfigParserTask
+        RuntimeConfigFile="$(RuntimeConfigFilePath)"
+        OutputFile="$(ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
+    </RuntimeConfigParserTask>
+  </Target>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
-  <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
+  <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
 
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     </PropertyGroup>
+    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <AotInputAssemblies Include="$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
 
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
-
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
+             Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(BundleDir)" />
+
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        AotModulesTablePath="$(BundleDir)\modules.c"
+        UseLLVM="$(MonoEnableLLVM)"
+        LLVMPath="$(MonoAotCrossDir)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
-        MainLibraryFileName="AndroidTestRunner.dll"
+        Assemblies="@(BundleAssemblies)"
+        MainLibraryFileName="$(MainLibraryFileName)"
+        ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"
         OutputDir="$(BundleDir)"
-        SourceDir="$(PublishDir)">
+        AppDir="$(PublishDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
     </AndroidAppBuilderTask>
@@ -63,56 +131,81 @@
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
-  <UsingTask Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
+  <UsingTask Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"
              TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Import Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
+  <PropertyGroup>
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+  </PropertyGroup>
 
-  <Target Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Name="BundleTestAppleApp">
+  <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm') and '$(DevTeamProvisioning)' == ''"
-           Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
+    <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
+           Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account, or 'adhoc' to sign with an adhoc key.." />
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
     <PropertyGroup>
       <Optimized>true</Optimized>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
+      <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
+    </PropertyGroup>
+    <PropertyGroup>
+      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
     </PropertyGroup>
     <ItemGroup>
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Runtime.WindowsRuntime.dll">
+      <_AotExcludeAssemblies Include="$(PublishDir)System.Runtime.WindowsRuntime.dll" />
+      <_AotExcludeAssemblies Include="@(NativeLibraries->'$(PublishDir)%(Identity)')" />
+
+      <!-- JustInterp only needs to AOT CoreLib, the other assemblies will just get added to BundleAssemblies via _BundleNonAotAssemblies -->
+      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)System.Private.CoreLib.dll" />
+      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' != 'JustInterp'" Include="$(PublishDir)*.dll" />
+
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="@(_AotIncludeAssemblies)" Exclude="@(_AotExcludeAssemblies)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
+      <_BundleNonAotAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Private.CoreLib.dll" />
     </ItemGroup>
 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
+             Condition="'$(RunAOTCompilation)' == 'true'"/>
+    <RemoveDir Directories="$(BundleDir)" />
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\mono-aot-cross"
-        Mode="Full"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross">
+        LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
+    <ItemGroup>
+      <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
+    </ItemGroup>
+
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
-    <RemoveDir Directories="$(BundleDir)" />
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="AppleTestRunner.dll"
+        MainLibraryFileName="$(MainLibraryFileName)"
+        ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        InvariantGlobalization="$(InvariantGlobalization)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
@@ -135,38 +228,40 @@
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
 
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(AppBundlePath)" />
+    <ItemGroup>
+      <_removeFiles Include="$(OutDir)*.*" />
+    </ItemGroup>
+
+    <Delete Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(OutDir)' != ''" Files="@(_removeFiles)" />
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(PublishDir)" />
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
-  <PropertyGroup>
-      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-  </PropertyGroup>
-
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
-
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
+  <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
+  should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
+  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true' And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
     <PropertyGroup>
-      <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmAotDir>$(PublishDir)</WasmAotDir>
-      <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
-      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
-      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <TrimMode>link</TrimMode>
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <WasmSatelliteAssemblies>
-        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
-      </WasmSatelliteAssemblies>
+      <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
+      <ResolvedFileToPublish TrimMode="link" />
 
-      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
+      <!-- Don't trim the main assembly.
+           TrimMode="" is needed so the root assemblies are correctly identified -->
+      <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
 
-      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
-      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
-      <!-- Include files specified by test projects from publish dir -->
-      <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(PublishDir)%(Identity)')" />
+      <!-- Even though we are trimming the test runner assembly, we want it to be treated
+           as a root -->
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -174,16 +269,25 @@
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
+      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
-      <!-- Exclude xunit assemblies as those should be resolved by our own package references -->
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" Condition="!$([System.String]::Copy('%(Filename)').StartsWith('xunit.'))" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+      <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
+      <_resolvedFilesToPublishToFileName Include="@(ResolvedFileToPublish -> '%(FileName)%(Extension)')" />
+
+      <_runnerFilesToPublishToFileName Include="@(_runnerFilesToPublish -> '%(FileName)%(Extension)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_runnerFilesToPublishToFileName>
+      <_runnerFilesToPublishToFileName Remove="@(_resolvedFilesToPublishToFileName)" />
+
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublishToFileName -> '%(OriginalIdentity)')" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;$(BundleTestAppTargets);ArchiveTests" />
+
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(SkipImportRepoLinkerTargets)' != 'true'" />
 </Project>

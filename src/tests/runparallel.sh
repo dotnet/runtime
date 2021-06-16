@@ -31,9 +31,9 @@ function update_results {
     # Initialize counters for bookkeeping.
     countTotalTests=$(wc -l < $playlistFile)
 
-    countFinishedTests=$(cd results.int; grep -r 'RUN_TEST_EXIT_CODE' . | wc -l)
     countPassedTests=$(cd results.int; grep -r 'RUN_TEST_EXIT_CODE=0' . | wc -l)
-    countFailedTests=$((countFinishedTests - countPassedTests))
+    countFailedTests=$(cd results.int; grep -r 'RUN_TEST_EXIT_CODE=[^0]' . | wc -l)
+    countFinishedTests=$((countPassedTests + countFailedTests))
     countIncompleteTests=$((countTotalTests - countFinishedTests))
 
     print_results
@@ -183,7 +183,7 @@ time_start=$(date +"%s")
 rm -rf results.int/* results.int
 
 echo "Prepping tests $(date +%r)"
-xargs -d "\n" -P $NumProc -I{} bash -c prep_test  {} < $playlistFile
+xargs -L 1 -P $NumProc -I{} bash -c prep_test  {} < $playlistFile
 
 
 trap cleanup EXIT
@@ -193,21 +193,17 @@ cp $testEnv results.int
 
 trap handle_ctrl_c INT TERM
 
-xargs -d "\n" -P $NumProc -I{} bash -c 'run_test "{}" >/dev/null 2>&1' < $playlistFile &
+xargs -L 1 -P $NumProc -I{} bash -c 'run_test "{}" >/dev/null 2>&1' < $playlistFile &
 
 while true
 do
     update_results
-    sleep 20 &
-    wait -n %
-    if (( $(jobs %xargs 2>/dev/null | wc -l) == 0 )) ;
+    if (( countIncompleteTests == 0 )) ;
     then
         break
     fi
-
+    sleep 60
     jobs -p > /dev/null
 done
-
-update_results
 
 print_elapsed_time

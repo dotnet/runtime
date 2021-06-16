@@ -109,7 +109,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathResultType ReturnType { get { return _query.StaticType; } }
 
-        private class UndefinedXsltContext : XsltContext
+        private sealed class UndefinedXsltContext : XsltContext
         {
             private readonly IXmlNamespaceResolver _nsResolver;
 

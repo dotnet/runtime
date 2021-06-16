@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -376,5 +377,17 @@
   </data>
   <data name="Log_UnsafeTransformMethod" xml:space="preserve">
     <value>Transform method "{0}" is not on the safe list. Safe transform methods are: {1}.</value>
+  </data>
+  <data name="ElementCombinationMissing" xml:space="preserve">
+    <value>{0} and {1} can only occur in combination</value>
+  </data>
+  <data name="ElementMissing" xml:space="preserve">
+    <value>{0} is missing</value>
+  </data>
+  <data name="MustContainChildElement" xml:space="preserve">
+    <value>{0} must contain child element {1}</value>
+  </data>
+  <data name="WrongRootElement" xml:space="preserve">
+    <value>Root element must be {0} element in namespace {1}</value>
   </data>
 </root>

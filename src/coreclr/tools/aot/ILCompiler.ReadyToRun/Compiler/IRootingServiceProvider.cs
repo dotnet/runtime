@@ -10,6 +10,6 @@ namespace ILCompiler
     /// </summary>
     public interface IRootingServiceProvider
     {
-        void AddCompilationRoot(MethodDesc method, string reason);
+        void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason);
     }
 }

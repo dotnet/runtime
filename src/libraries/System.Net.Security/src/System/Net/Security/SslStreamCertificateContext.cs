@@ -38,34 +38,46 @@ namespace System.Net.Security
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
                 }
 
-                int count = chain.ChainElements.Count - (TrimRootCertificate ? 1 : 2);
-                foreach (X509ChainStatus status in chain.ChainStatus)
+                int count = chain.ChainElements.Count - 1;
+
+                // Some platforms (e.g. Android) can't ignore all verification and will return zero
+                // certificates on failure to build a chain. Treat this as not finding any intermediates.
+                if (count >= 0)
                 {
-                    if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
+#pragma warning disable 0162 // Disable unreachable code warning. TrimRootCertificate is const bool = false on some platforms
+                    if (TrimRootCertificate)
                     {
-                        // The last cert isn't a root cert
-                        count++;
-                        break;
+                        count--;
+                        foreach (X509ChainStatus status in chain.ChainStatus)
+                        {
+                            if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
+                            {
+                                // The last cert isn't a root cert
+                                count++;
+                                break;
+                            }
+                        }
                     }
-                }
+#pragma warning restore 0162
 
-                // Count can be zero for a self-signed certificate, or a cert issued directly from a root.
-                if (count > 0 && chain.ChainElements.Count > 1)
-                {
-                    intermediates = new X509Certificate2[count];
-                    for (int i = 0; i < count; i++)
+                    // Count can be zero for a self-signed certificate, or a cert issued directly from a root.
+                    if (count > 0 && chain.ChainElements.Count > 1)
                     {
-                        intermediates[i] = chain.ChainElements[i + 1].Certificate;
+                        intermediates = new X509Certificate2[count];
+                        for (int i = 0; i < count; i++)
+                        {
+                            intermediates[i] = chain.ChainElements[i + 1].Certificate;
+                        }
                     }
-                }
 
-                // Dispose the copy of the target cert.
-                chain.ChainElements[0].Certificate.Dispose();
+                    // Dispose the copy of the target cert.
+                    chain.ChainElements[0].Certificate.Dispose();
 
-                // Dispose the last cert, if we didn't include it.
-                for (int i = count + 1; i < chain.ChainElements.Count; i++)
-                {
-                    chain.ChainElements[i].Certificate.Dispose();
+                    // Dispose the last cert, if we didn't include it.
+                    for (int i = count + 1; i < chain.ChainElements.Count; i++)
+                    {
+                        chain.ChainElements[i].Certificate.Dispose();
+                    }
                 }
             }
 

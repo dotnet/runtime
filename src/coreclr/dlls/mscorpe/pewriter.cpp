@@ -27,10 +27,6 @@ static INT64 s_minPcRel25;
 static INT64 s_maxPcRel25;
 #endif
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
     /* This is the stub program that says it can't be run in DOS mode */
     /* it is x86 specific, but so is dos so I suppose that is OK */
 static const unsigned char x86StubPgm[] = {
@@ -46,10 +42,6 @@ inline static unsigned roundUp(unsigned len, unsigned align) {
 
 inline static unsigned padLen(unsigned len, unsigned align) {
     return(roundUp(len, align) - len);
-}
-
-inline static bool isExeOrDll(IMAGE_NT_HEADERS* ntHeaders) {
-    return ((ntHeaders->FileHeader.Characteristics & VAL16(IMAGE_FILE_EXECUTABLE_IMAGE)) != 0);
 }
 
 #ifndef IMAGE_DLLCHARACTERISTICS_NO_SEH
@@ -881,7 +873,6 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
     m_dataRvaBase = 0;
     m_rdataRvaBase = 0;
     m_codeRvaBase = 0;
-    m_encMode = FALSE;
 
     virtualPos = 0;
     filePos = 0;
@@ -1093,13 +1084,6 @@ HRESULT PEWriter::setDirectoryEntry(PEWriterSection *section, ULONG entry, ULONG
     return S_OK;
 }
 
-void PEWriter::setEnCRvaBase(ULONG dataBase, ULONG rdataBase)
-{
-    m_dataRvaBase = dataBase;
-    m_rdataRvaBase = rdataBase;
-    m_encMode = TRUE;
-}
-
 //-----------------------------------------------------------------------------
 // These 2 write functions must be implemented here so that they're in the same
 // .obj file as whoever creates the FILE struct. We can't pass a FILE struct
@@ -1280,8 +1264,6 @@ HRESULT PEWriter::linkSortSections(entry * entries,
     //  - empty sections receive no PE section
     //
 
-    bool ExeOrDll = isExeOrDll(m_ntHeaders);
-
     entry *e = entries;
     for (PEWriterSection **cur = getSectStart(); cur < getSectCur(); cur++) {
 
@@ -1296,13 +1278,6 @@ HRESULT PEWriter::linkSortSections(entry * entries,
         //
 
         if ((*cur)->dataLen() == 0)
-            continue;
-
-        //
-        // Special case: omit "text0" from obj's
-        //
-
-        if (!ExeOrDll && strcmp((*cur)->m_name, ".text0") == 0)
             continue;
 
         e->name = (*cur)->m_name;
@@ -1575,8 +1550,6 @@ HRESULT PEWriter::link() {
     // Assign base addresses to all sections, and layout & merge PE sections
     //
 
-    bool ExeOrDll = isExeOrDll(m_ntHeaders);
-
     //
     // Collate by name & sort by index
     //
@@ -1609,17 +1582,7 @@ HRESULT PEWriter::link() {
         // Figure out what file alignment to use.
         //
 
-        unsigned RoundUpVal;
-
-        if (ExeOrDll)
-        {
-            RoundUpVal = 0x0200;
-        }
-        else
-        {
-            // Don't bother padding for objs
-            RoundUpVal = 4;
-        }
+        unsigned RoundUpVal = 0x0200;
 
         m_ntHeaders->OptionalHeader.FileAlignment = VAL32(RoundUpVal);
     }
@@ -1628,15 +1591,8 @@ HRESULT PEWriter::link() {
     // Now, assign a section header & location to each section
     //
 
-    if (ExeOrDll)
-    {
-        iUniqueSections++; // One more for .reloc
-        filePos = sizeof(IMAGE_DOS_HEADER)+sizeof(x86StubPgm) + m_ntHeadersSize;
-    }
-    else
-    {
-        filePos = sizeof(IMAGE_FILE_HEADER);
-    }
+    iUniqueSections++; // One more for .reloc
+    filePos = sizeof(IMAGE_DOS_HEADER)+sizeof(x86StubPgm) + m_ntHeadersSize;
 
     m_ntHeaders->FileHeader.NumberOfSections = VAL16(iUniqueSections);
 
@@ -1681,412 +1637,184 @@ class SectionRVASorter : public CQuickSort<PEWriterSection*>
         }
 };
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
 {
     HRESULT hr;
 
-    bool ExeOrDll = isExeOrDll(m_ntHeaders);
     const unsigned RoundUpVal = VAL32(m_ntHeaders->OptionalHeader.FileAlignment);
 
-    if(ExeOrDll)
+    //
+    // Apply manual relocation for entry point field
+    //
+
+    PESection *textSection;
+    IfFailRet(getSectionCreate(".text", 0, &textSection));
+
+    if (m_ntHeaders->OptionalHeader.AddressOfEntryPoint != VAL32(0))
+        m_ntHeaders->OptionalHeader.AddressOfEntryPoint = VAL32(VAL32(m_ntHeaders->OptionalHeader.AddressOfEntryPoint) + textSection->m_baseRVA);
+
+    //
+    // Apply normal relocs
+    //
+
+    IfFailRet(getSectionCreate(".reloc", sdReadOnly | IMAGE_SCN_MEM_DISCARDABLE,
+                                (PESection **) &reloc));
+    reloc->m_baseRVA = virtualPos;
+    reloc->m_filePos = filePos;
+    reloc->m_header = headersEnd++;
+    strcpy_s((char *)reloc->m_header->Name, sizeof(reloc->m_header->Name),
+                ".reloc");
+    reloc->m_header->Characteristics = VAL32(reloc->m_flags);
+    reloc->m_header->VirtualAddress = VAL32(virtualPos);
+    reloc->m_header->PointerToRawData = VAL32(filePos);
+
+    //
+    // Sort the sections by RVA
+    //
+
+    CQuickArray<PEWriterSection *> sections;
+
+    SIZE_T count = getSectCur() - getSectStart();
+    IfFailRet(sections.ReSizeNoThrow(count));
+    UINT i = 0;
+    PEWriterSection **cur;
+    for(cur = getSectStart(); cur < getSectCur(); cur++, i++)
+        sections[i] = *cur;
+
+    SectionRVASorter sorter(sections.Ptr(), sections.Size());
+
+    sorter.Sort();
+
+    PERelocSection relocSection(reloc);
+
+    cur = sections.Ptr();
+    PEWriterSection **curEnd = cur + sections.Size();
+    while (cur < curEnd)
+    {
+        IfFailRet((*cur)->applyRelocs(m_ntHeaders,
+                                        &relocSection,
+                                        pMapper,
+                                        m_dataRvaBase,
+                                        m_rdataRvaBase,
+                                        m_codeRvaBase));
+        cur++;
+    }
+
+    relocSection.Finish(isPE32());
+    reloc->m_header->Misc.VirtualSize = VAL32(reloc->dataLen());
+
+    // Strip the reloc section if the flag is set
+    if (m_ntHeaders->FileHeader.Characteristics & VAL16(IMAGE_FILE_RELOCS_STRIPPED))
+    {
+        reloc->m_header->Misc.VirtualSize = VAL32(0);
+    }
+
+    reloc->m_header->SizeOfRawData = VAL32(roundUp(VAL32(reloc->m_header->Misc.VirtualSize), RoundUpVal));
+    reloc->m_filePad = padLen(VAL32(reloc->m_header->Misc.VirtualSize), RoundUpVal);
+    filePos += VAL32(reloc->m_header->SizeOfRawData);
+    virtualPos += roundUp(VAL32(reloc->m_header->Misc.VirtualSize),
+                            VAL32(m_ntHeaders->OptionalHeader.SectionAlignment));
+
+    if (reloc->m_header->Misc.VirtualSize == VAL32(0))
     {
         //
-        // Apply manual relocation for entry point field
+        // Omit reloc section from section list.  (It will
+        // still be there but the loader won't see it - this
+        // only works because we've allocated it as the last
+        // section.)
         //
-
-        PESection *textSection;
-        IfFailRet(getSectionCreate(".text", 0, &textSection));
-
-        if (m_ntHeaders->OptionalHeader.AddressOfEntryPoint != VAL32(0))
-            m_ntHeaders->OptionalHeader.AddressOfEntryPoint = VAL32(VAL32(m_ntHeaders->OptionalHeader.AddressOfEntryPoint) + textSection->m_baseRVA);
-
+        m_ntHeaders->FileHeader.NumberOfSections = VAL16(VAL16(m_ntHeaders->FileHeader.NumberOfSections) - 1);
+    }
+    else
+    {
+        IMAGE_DATA_DIRECTORY * pRelocDataDirectory;
         //
-        // Apply normal relocs
+        // Put reloc address in header
         //
-
-        IfFailRet(getSectionCreate(".reloc", sdReadOnly | IMAGE_SCN_MEM_DISCARDABLE,
-                                   (PESection **) &reloc));
-        reloc->m_baseRVA = virtualPos;
-        reloc->m_filePos = filePos;
-        reloc->m_header = headersEnd++;
-        strcpy_s((char *)reloc->m_header->Name, sizeof(reloc->m_header->Name),
-                 ".reloc");
-        reloc->m_header->Characteristics = VAL32(reloc->m_flags);
-        reloc->m_header->VirtualAddress = VAL32(virtualPos);
-        reloc->m_header->PointerToRawData = VAL32(filePos);
-
-#ifdef _DEBUG
-        if (m_encMode)
-            printf("Applying relocs for .rdata section with RVA %x\n", m_rdataRvaBase);
-#endif
-
-        //
-        // Sort the sections by RVA
-        //
-
-        CQuickArray<PEWriterSection *> sections;
-
-        SIZE_T count = getSectCur() - getSectStart();
-        IfFailRet(sections.ReSizeNoThrow(count));
-        UINT i = 0;
-        PEWriterSection **cur;
-        for(cur = getSectStart(); cur < getSectCur(); cur++, i++)
-            sections[i] = *cur;
-
-        SectionRVASorter sorter(sections.Ptr(), sections.Size());
-
-        sorter.Sort();
-
-        PERelocSection relocSection(reloc);
-
-        cur = sections.Ptr();
-        PEWriterSection **curEnd = cur + sections.Size();
-        while (cur < curEnd)
+        if (isPE32())
         {
-            IfFailRet((*cur)->applyRelocs(m_ntHeaders,
-                                          &relocSection,
-                                          pMapper,
-                                          m_dataRvaBase,
-                                          m_rdataRvaBase,
-                                          m_codeRvaBase));
-            cur++;
-        }
-
-        relocSection.Finish(isPE32());
-        reloc->m_header->Misc.VirtualSize = VAL32(reloc->dataLen());
-
-        // Strip the reloc section if the flag is set
-        if (m_ntHeaders->FileHeader.Characteristics & VAL16(IMAGE_FILE_RELOCS_STRIPPED))
-        {
-            reloc->m_header->Misc.VirtualSize = VAL32(0);
-        }
-
-        reloc->m_header->SizeOfRawData = VAL32(roundUp(VAL32(reloc->m_header->Misc.VirtualSize), RoundUpVal));
-        reloc->m_filePad = padLen(VAL32(reloc->m_header->Misc.VirtualSize), RoundUpVal);
-        filePos += VAL32(reloc->m_header->SizeOfRawData);
-        virtualPos += roundUp(VAL32(reloc->m_header->Misc.VirtualSize),
-                              VAL32(m_ntHeaders->OptionalHeader.SectionAlignment));
-
-        if (reloc->m_header->Misc.VirtualSize == VAL32(0))
-        {
-            //
-            // Omit reloc section from section list.  (It will
-            // still be there but the loader won't see it - this
-            // only works because we've allocated it as the last
-            // section.)
-            //
-            m_ntHeaders->FileHeader.NumberOfSections = VAL16(VAL16(m_ntHeaders->FileHeader.NumberOfSections) - 1);
+            pRelocDataDirectory = &(ntHeaders32()->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC]);
         }
         else
         {
-            IMAGE_DATA_DIRECTORY * pRelocDataDirectory;
-            //
-            // Put reloc address in header
-            //
+            pRelocDataDirectory = &(ntHeaders64()->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC]);
+        }
+
+        pRelocDataDirectory->VirtualAddress = reloc->m_header->VirtualAddress;
+        pRelocDataDirectory->Size           = reloc->m_header->Misc.VirtualSize;
+    }
+
+    // compute ntHeader fields that depend on the sizes of other things
+    for(IMAGE_SECTION_HEADER *h = headersEnd-1; h >= headers; h--) {    // go backwards, so first entry takes precedence
+        if (h->Characteristics & VAL32(IMAGE_SCN_CNT_CODE)) {
+            m_ntHeaders->OptionalHeader.BaseOfCode = h->VirtualAddress;
+            m_ntHeaders->OptionalHeader.SizeOfCode =
+                VAL32(VAL32(m_ntHeaders->OptionalHeader.SizeOfCode) + VAL32(h->SizeOfRawData));
+        }
+        if (h->Characteristics & VAL32(IMAGE_SCN_CNT_INITIALIZED_DATA)) {
             if (isPE32())
             {
-                pRelocDataDirectory = &(ntHeaders32()->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC]);
+                ntHeaders32()->OptionalHeader.BaseOfData = h->VirtualAddress;
+            }
+            m_ntHeaders->OptionalHeader.SizeOfInitializedData =
+                VAL32(VAL32(m_ntHeaders->OptionalHeader.SizeOfInitializedData) + VAL32(h->SizeOfRawData));
+        }
+        if (h->Characteristics & VAL32(IMAGE_SCN_CNT_UNINITIALIZED_DATA)) {
+            m_ntHeaders->OptionalHeader.SizeOfUninitializedData =
+                VAL32(VAL32(m_ntHeaders->OptionalHeader.SizeOfUninitializedData) + VAL32(h->SizeOfRawData));
+        }
+    }
+
+    int index;
+    IMAGE_DATA_DIRECTORY * pCurDataDirectory;
+
+    // go backwards, so first entry takes precedence
+    for(cur = getSectCur()-1; getSectStart() <= cur; --cur)
+    {
+        index = (*cur)->getDirEntry();
+
+        // Is this a valid directory entry
+        if (index > 0)
+        {
+            if (isPE32())
+            {
+                _ASSERTE((unsigned)(index) < VAL32(ntHeaders32()->OptionalHeader.NumberOfRvaAndSizes));
+
+                pCurDataDirectory = &(ntHeaders32()->OptionalHeader.DataDirectory[index]);
             }
             else
             {
-                pRelocDataDirectory = &(ntHeaders64()->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC]);
+                _ASSERTE((unsigned)(index) < VAL32(ntHeaders64()->OptionalHeader.NumberOfRvaAndSizes));
+
+                pCurDataDirectory = &(ntHeaders64()->OptionalHeader.DataDirectory[index]);
             }
 
-            pRelocDataDirectory->VirtualAddress = reloc->m_header->VirtualAddress;
-            pRelocDataDirectory->Size           = reloc->m_header->Misc.VirtualSize;
+            pCurDataDirectory->VirtualAddress = VAL32((*cur)->m_baseRVA);
+            pCurDataDirectory->Size           = VAL32((*cur)->dataLen());
         }
+    }
 
-        // compute ntHeader fields that depend on the sizes of other things
-        for(IMAGE_SECTION_HEADER *h = headersEnd-1; h >= headers; h--) {    // go backwards, so first entry takes precedence
-            if (h->Characteristics & VAL32(IMAGE_SCN_CNT_CODE)) {
-                m_ntHeaders->OptionalHeader.BaseOfCode = h->VirtualAddress;
-                m_ntHeaders->OptionalHeader.SizeOfCode =
-                    VAL32(VAL32(m_ntHeaders->OptionalHeader.SizeOfCode) + VAL32(h->SizeOfRawData));
-            }
-            if (h->Characteristics & VAL32(IMAGE_SCN_CNT_INITIALIZED_DATA)) {
-                if (isPE32())
-                {
-                    ntHeaders32()->OptionalHeader.BaseOfData = h->VirtualAddress;
-                }
-                m_ntHeaders->OptionalHeader.SizeOfInitializedData =
-                    VAL32(VAL32(m_ntHeaders->OptionalHeader.SizeOfInitializedData) + VAL32(h->SizeOfRawData));
-            }
-            if (h->Characteristics & VAL32(IMAGE_SCN_CNT_UNINITIALIZED_DATA)) {
-                m_ntHeaders->OptionalHeader.SizeOfUninitializedData =
-                    VAL32(VAL32(m_ntHeaders->OptionalHeader.SizeOfUninitializedData) + VAL32(h->SizeOfRawData));
-            }
-        }
-
-        int index;
-        IMAGE_DATA_DIRECTORY * pCurDataDirectory;
-
-        // go backwards, so first entry takes precedence
-        for(cur = getSectCur()-1; getSectStart() <= cur; --cur)
-        {
-            index = (*cur)->getDirEntry();
-
-            // Is this a valid directory entry
-            if (index > 0)
-            {
-                if (isPE32())
-                {
-                    _ASSERTE((unsigned)(index) < VAL32(ntHeaders32()->OptionalHeader.NumberOfRvaAndSizes));
-
-                    pCurDataDirectory = &(ntHeaders32()->OptionalHeader.DataDirectory[index]);
-                }
-                else
-                {
-                    _ASSERTE((unsigned)(index) < VAL32(ntHeaders64()->OptionalHeader.NumberOfRvaAndSizes));
-
-                    pCurDataDirectory = &(ntHeaders64()->OptionalHeader.DataDirectory[index]);
-                }
-
-                pCurDataDirectory->VirtualAddress = VAL32((*cur)->m_baseRVA);
-                pCurDataDirectory->Size           = VAL32((*cur)->dataLen());
-            }
-        }
-
-        // handle the directory entries specified using the file.
-        for (index=0; index < cEntries; index++)
-        {
-            if (pEntries[index].section)
-            {
-                PEWriterSection *section = pEntries[index].section;
-                _ASSERTE(pEntries[index].offset < section->dataLen());
-
-                if (isPE32())
-                    pCurDataDirectory = &(ntHeaders32()->OptionalHeader.DataDirectory[index]);
-                else
-                    pCurDataDirectory = &(ntHeaders64()->OptionalHeader.DataDirectory[index]);
-
-                pCurDataDirectory->VirtualAddress = VAL32(section->m_baseRVA + pEntries[index].offset);
-                pCurDataDirectory->Size           = VAL32(pEntries[index].size);
-            }
-        }
-
-        m_ntHeaders->OptionalHeader.SizeOfImage = VAL32(virtualPos);
-    } // end if(ExeOrDll)
-    else //i.e., if OBJ
+    // handle the directory entries specified using the file.
+    for (index=0; index < cEntries; index++)
     {
-        //
-        // Clean up note:
-        // I've cleaned up the executable linking path, but the .obj linking
-        // is still a bit strange, what with a "extra" reloc & strtab sections
-        // which are created after the linking step and get treated specially.
-        //
-        reloc = new (nothrow) PEWriterSection(".reloc",
-                                    sdReadOnly | IMAGE_SCN_MEM_DISCARDABLE, 0x4000, 0);
-        if(reloc == NULL) return E_OUTOFMEMORY;
-        strtab = new (nothrow)  PEWriterSection(".strtab",
-                                     sdReadOnly | IMAGE_SCN_MEM_DISCARDABLE, 0x4000, 0); //string table (if any)
-        if(strtab == NULL) return E_OUTOFMEMORY;
-
-        DWORD* TokInSymbolTable = new (nothrow) DWORD[16386];
-        if (TokInSymbolTable == NULL) return E_OUTOFMEMORY;
-
-        m_ntHeaders->FileHeader.SizeOfOptionalHeader = 0;
-        //For each section set VirtualAddress to 0
-        PEWriterSection **cur;
-        for(cur = getSectStart(); cur < getSectCur(); cur++)
+        if (pEntries[index].section)
         {
-            IMAGE_SECTION_HEADER* header = (*cur)->m_header;
-            header->VirtualAddress = VAL32(0);
+            PEWriterSection *section = pEntries[index].section;
+            _ASSERTE(pEntries[index].offset < section->dataLen());
+
+            if (isPE32())
+                pCurDataDirectory = &(ntHeaders32()->OptionalHeader.DataDirectory[index]);
+            else
+                pCurDataDirectory = &(ntHeaders64()->OptionalHeader.DataDirectory[index]);
+
+            pCurDataDirectory->VirtualAddress = VAL32(section->m_baseRVA + pEntries[index].offset);
+            pCurDataDirectory->Size           = VAL32(pEntries[index].size);
         }
-        // Go over section relocations and build the Symbol Table, use .reloc section as buffer:
-        DWORD tk=0, rva=0, NumberOfSymbols=0;
-        BOOL  ToRelocTable = FALSE;
-        IMAGE_SYMBOL is;
-        IMAGE_RELOCATION ir;
-        ULONG StrTableLen = 4; //size itself only
-        char* szSymbolName = NULL;
-        char* pch;
+    }
 
-        PESection *textSection;
-        getSectionCreate(".text", 0, &textSection);
+    m_ntHeaders->OptionalHeader.SizeOfImage = VAL32(virtualPos);
 
-        for(PESectionReloc* rcur = textSection->m_relocStart; rcur < textSection->m_relocCur; rcur++)
-        {
-            switch((int)rcur->type)
-            {
-                case 0x7FFA: // Ptr to symbol name
-#ifdef HOST_64BIT
-                    _ASSERTE(!"this is probably broken!!");
-#endif // HOST_64BIT
-                    szSymbolName = (char*)(UINT_PTR)(rcur->offset);
-                    break;
-
-                case 0x7FFC: // Ptr to file name
-                    TokInSymbolTable[NumberOfSymbols++] = 0;
-                    memset(&is,0,sizeof(IMAGE_SYMBOL));
-                    memcpy(is.N.ShortName,".file\0\0\0",8);
-                    is.Value = 0;
-                    is.SectionNumber = VAL16(IMAGE_SYM_DEBUG);
-                    is.Type = VAL16(IMAGE_SYM_DTYPE_NULL);
-                    is.StorageClass = IMAGE_SYM_CLASS_FILE;
-                    is.NumberOfAuxSymbols = 1;
-                    if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
-                        memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                    else return E_OUTOFMEMORY;
-                    TokInSymbolTable[NumberOfSymbols++] = 0;
-                    memset(&is,0,sizeof(IMAGE_SYMBOL));
-#ifdef HOST_64BIT
-                    _ASSERTE(!"this is probably broken!!");
-#endif // HOST_64BIT
-                    strcpy_s((char*)&is,sizeof(is),(char*)(UINT_PTR)(rcur->offset));
-                    if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
-                        memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                    else return E_OUTOFMEMORY;
-#ifdef HOST_64BIT
-                    _ASSERTE(!"this is probably broken!!");
-#endif // HOST_64BIT
-                    delete (char*)(UINT_PTR)(rcur->offset);
-                    ToRelocTable = FALSE;
-                    tk = 0;
-                    szSymbolName = NULL;
-                    break;
-
-                case 0x7FFB: // compid value
-                    TokInSymbolTable[NumberOfSymbols++] = 0;
-                    memset(&is,0,sizeof(IMAGE_SYMBOL));
-                    memcpy(is.N.ShortName,"@comp.id",8);
-                    is.Value = VAL32(rcur->offset);
-                    is.SectionNumber = VAL16(IMAGE_SYM_ABSOLUTE);
-                    is.Type = VAL16(IMAGE_SYM_DTYPE_NULL);
-                    is.StorageClass = IMAGE_SYM_CLASS_STATIC;
-                    is.NumberOfAuxSymbols = 0;
-                    if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
-                        memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                    else return E_OUTOFMEMORY;
-                    ToRelocTable = FALSE;
-                    tk = 0;
-                    szSymbolName = NULL;
-                    break;
-
-                case 0x7FFF: // Token value, def
-                    tk = rcur->offset;
-                    ToRelocTable = FALSE;
-                    break;
-
-                case 0x7FFE: //Token value, ref
-                    tk = rcur->offset;
-                    ToRelocTable = TRUE;
-                    break;
-
-                case 0x7FFD: //RVA value
-                    rva = rcur->offset;
-                    if(tk)
-                    {
-                        // Add to SymbolTable
-                        DWORD i;
-                        for(i = 0; (i < NumberOfSymbols)&&(tk != TokInSymbolTable[i]); i++);
-                        if(i == NumberOfSymbols)
-                        {
-                            if(szSymbolName && *szSymbolName) // Add "extern" symbol and string table entry
-                            {
-                                TokInSymbolTable[NumberOfSymbols++] = 0;
-                                memset(&is,0,sizeof(IMAGE_SYMBOL));
-                                i++; // so reloc record (if generated) points to COM token symbol
-                                is.N.Name.Long = VAL32(StrTableLen);
-                                is.SectionNumber = VAL16(1); //textSection is the first one
-                                is.StorageClass = IMAGE_SYM_CLASS_EXTERNAL;
-                                is.NumberOfAuxSymbols = 0;
-                                is.Value = VAL32(rva);
-                                if(TypeFromToken(tk) == mdtMethodDef)
-                                {
-                                    is.Type = VAL16(0x20); //IMAGE_SYM_DTYPE_FUNCTION;
-                                }
-                                if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
-                                    memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                                else return E_OUTOFMEMORY;
-                                DWORD l = (DWORD)(strlen(szSymbolName)+1); // don't forget zero terminator!
-                                if((pch = reloc->getBlock(1)))
-                                    memcpy(pch,szSymbolName,1);
-                                else return E_OUTOFMEMORY;
-                                delete szSymbolName;
-                                StrTableLen += l;
-                            }
-                            TokInSymbolTable[NumberOfSymbols++] = tk;
-                            memset(&is,0,sizeof(IMAGE_SYMBOL));
-                            sprintf_s((char*)is.N.ShortName,sizeof(is.N.ShortName),"%08X",tk);
-                            is.SectionNumber = VAL16(1); //textSection is the first one
-                            is.StorageClass = 0x6B; //IMAGE_SYM_CLASS_COM_TOKEN;
-                            is.Value = VAL32(rva);
-                            if(TypeFromToken(tk) == mdtMethodDef)
-                            {
-                                is.Type = VAL16(0x20); //IMAGE_SYM_DTYPE_FUNCTION;
-                                //is.NumberOfAuxSymbols = 1;
-                            }
-                            if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
-                                memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                            else return E_OUTOFMEMORY;
-                            if(is.NumberOfAuxSymbols == 1)
-                            {
-                                BYTE dummy[sizeof(IMAGE_SYMBOL)];
-                                memset(dummy,0,sizeof(IMAGE_SYMBOL));
-                                dummy[0] = dummy[2] = 1;
-                                if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
-                                    memcpy(pch,dummy,sizeof(IMAGE_SYMBOL));
-                                else return E_OUTOFMEMORY;
-                                TokInSymbolTable[NumberOfSymbols++] = 0;
-                            }
-                        }
-                        if(ToRelocTable)
-                        {
-                            IMAGE_SECTION_HEADER* phdr = textSection->m_header;
-                            // Add to reloc table
-                            ir.VirtualAddress = VAL32(rva);
-                            ir.SymbolTableIndex = VAL32(i);
-                            ir.Type = VAL16(IMAGE_REL_I386_SECREL);
-                            if(phdr->PointerToRelocations == 0)
-                                phdr->PointerToRelocations = VAL32(VAL32(phdr->PointerToRawData) + VAL32(phdr->SizeOfRawData));
-                            phdr->NumberOfRelocations = VAL32(VAL32(phdr->NumberOfRelocations) + 1);
-                            if((pch = reloc->getBlock(sizeof(IMAGE_RELOCATION))))
-                                memcpy(pch,&is,sizeof(IMAGE_RELOCATION));
-                            else return E_OUTOFMEMORY;
-                        }
-                    }
-                    ToRelocTable = FALSE;
-                    tk = 0;
-                    szSymbolName = NULL;
-                    break;
-
-                default:
-                    break;
-            } //end switch(cur->type)
-        } // end for all relocs
-        // Add string table counter:
-        if((pch = reloc->getBlock(sizeof(ULONG))))
-            memcpy(pch,&StrTableLen,sizeof(ULONG));
-        else return E_OUTOFMEMORY;
-        reloc->m_header->Misc.VirtualSize = VAL32(reloc->dataLen());
-        if(NumberOfSymbols)
-        {
-            // recompute the actual sizes and positions of all the sections
-            filePos = roundUp(VAL16(m_ntHeaders->FileHeader.NumberOfSections) * sizeof(IMAGE_SECTION_HEADER)+
-                              sizeof(IMAGE_FILE_HEADER), RoundUpVal);
-            for(cur = getSectStart(); cur < getSectCur(); cur++)
-            {
-                IMAGE_SECTION_HEADER* header = (*cur)->m_header;
-                header->Misc.VirtualSize = VAL32((*cur)->dataLen());
-                header->VirtualAddress = VAL32(0);
-                header->SizeOfRawData = VAL32(roundUp(VAL32(header->Misc.VirtualSize), RoundUpVal));
-                header->PointerToRawData = VAL32(filePos);
-
-                filePos += VAL32(header->SizeOfRawData);
-            }
-            m_ntHeaders->FileHeader.Machine = VAL16(0xC0EE); //COM+ EE
-            m_ntHeaders->FileHeader.PointerToSymbolTable = VAL32(filePos);
-            m_ntHeaders->FileHeader.NumberOfSymbols = VAL32(NumberOfSymbols);
-            filePos += roundUp(VAL32(reloc->m_header->Misc.VirtualSize)+strtab->dataLen(),RoundUpVal);
-        }
-        delete[] TokInSymbolTable;
-    } //end if OBJ
-
-    const unsigned headerOffset = (unsigned) (ExeOrDll ? sizeof(IMAGE_DOS_HEADER) + sizeof(x86StubPgm) : 0);
+    const unsigned headerOffset = (unsigned)sizeof(IMAGE_DOS_HEADER) + sizeof(x86StubPgm);
 
     memset(&m_dosHeader, 0, sizeof(IMAGE_DOS_HEADER));
     m_dosHeader.e_magic = VAL16(IMAGE_DOS_SIGNATURE);
@@ -2100,9 +1828,6 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
 
     return(S_OK);   // SUCCESS
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 HRESULT PEWriter::Open(__in LPCWSTR fileName)
 {
@@ -2192,67 +1917,15 @@ HRESULT PEWriter::write(__in LPCWSTR fileName) {
 
     HRESULT hr;
 
-#ifdef ENC_DELTA_HACK
-    PathString szFileName;
-    DWORD len = WszGetEnvironmentVariable(L"COMP_ENC_EMIT", szFileName);
-    _ASSERTE(len < sizeof(szFileName));
-    if (len > 0)
-    {
-        _ASSERTE(!m_pSeedFileDecoder);
-        szFileName.Append(L".dil");
-
-        HANDLE pDelta = WszCreateFile(szFileName,
-                           GENERIC_WRITE,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE,
-                           NULL,
-                           CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL,
-                           NULL );
-        if (pDelta == INVALID_HANDLE_VALUE) {
-            hr = HRESULT_FROM_GetLastError();
-            _ASSERTE(!"failure so open .dil file");
-            goto ErrExit;
-        }
-
-        // write the actual data
-        for (PEWriterSection **cur = getSectStart(); cur < getSectCur(); cur++) {
-            if (strcmp((*cur)->m_name, ".text") == 0)
-            {
-                hr = (*cur)->write(pDelta);
-                CloseHandle(pDelta);
-                pDelta = NULL;
-                if (FAILED(hr))
-                {
-                    _ASSERT(!"failure to write to .dil file");
-                    goto ErrExit;
-                }
-                break;
-            }
-        }
-        PREFIX_ASSUME(!pDelta);
-        return S_OK;
-    }
-#endif
-
-    bool ExeOrDll;
     unsigned RoundUpVal;
-    ExeOrDll = isExeOrDll(m_ntHeaders);
     RoundUpVal = VAL32(m_ntHeaders->OptionalHeader.FileAlignment);
 
     IfFailGo(Open(fileName));
 
-    if(ExeOrDll)
-    {
-        // write the PE headers
-        IfFailGo(Write(&m_dosHeader, sizeof(IMAGE_DOS_HEADER)));
-        IfFailGo(Write(x86StubPgm, sizeof(x86StubPgm)));
-        IfFailGo(Write(m_ntHeaders, m_ntHeadersSize));
-    }
-    else
-    {
-        // write the object file header
-        IfFailGo(Write(&(m_ntHeaders->FileHeader),sizeof(IMAGE_FILE_HEADER)));
-    }
+    // write the PE headers
+    IfFailGo(Write(&m_dosHeader, sizeof(IMAGE_DOS_HEADER)));
+    IfFailGo(Write(x86StubPgm, sizeof(x86StubPgm)));
+    IfFailGo(Write(m_ntHeaders, m_ntHeadersSize));
 
     IfFailGo(Write(headers, (int)(sizeof(IMAGE_SECTION_HEADER)*(headersEnd-headers))));
 
@@ -2267,18 +1940,6 @@ HRESULT PEWriter::write(__in LPCWSTR fileName) {
         }
     }
 
-    // writes for an object file
-    if (!ExeOrDll)
-    {
-        // write the relocs section (Does nothing if relocs section is empty)
-        IfFailGo(reloc->write(m_file));
-        //write string table (obj only, empty for exe or dll)
-        IfFailGo(strtab->write(m_file));
-        int lena = padLen(VAL32(reloc->m_header->Misc.VirtualSize)+strtab->dataLen(), RoundUpVal);
-        if (lena > 0)
-            IfFailGo(Write(NULL, lena));
-    }
-
     return Close();
 
  ErrExit:
@@ -2289,19 +1950,11 @@ HRESULT PEWriter::write(__in LPCWSTR fileName) {
 
 HRESULT PEWriter::write(void ** ppImage)
 {
-    bool ExeOrDll = isExeOrDll(m_ntHeaders);
     const unsigned RoundUpVal = VAL32(m_ntHeaders->OptionalHeader.FileAlignment);
     char *pad = (char *) _alloca(RoundUpVal);
     memset(pad, 0, RoundUpVal);
 
     size_t lSize = filePos;
-    if (!ExeOrDll)
-    {
-        lSize += reloc->dataLen();
-        lSize += strtab->dataLen();
-        lSize += padLen(VAL32(reloc->m_header->Misc.VirtualSize)+strtab->dataLen(),
-                        RoundUpVal);
-    }
 
     // allocate the block we are handing back to the caller
     void * pImage = (void *) ::CoTaskMemAlloc(lSize);
@@ -2315,17 +1968,10 @@ HRESULT PEWriter::write(void ** ppImage)
 
     char *pCur = (char *)pImage;
 
-    if(ExeOrDll)
-    {
-        // PE Header
-        COPY_AND_ADVANCE(pCur, &m_dosHeader, sizeof(IMAGE_DOS_HEADER));
-        COPY_AND_ADVANCE(pCur, x86StubPgm, sizeof(x86StubPgm));
-        COPY_AND_ADVANCE(pCur, m_ntHeaders, m_ntHeadersSize);
-    }
-    else
-    {
-        COPY_AND_ADVANCE(pCur, &(m_ntHeaders->FileHeader), sizeof(IMAGE_FILE_HEADER));
-    }
+    // PE Header
+    COPY_AND_ADVANCE(pCur, &m_dosHeader, sizeof(IMAGE_DOS_HEADER));
+    COPY_AND_ADVANCE(pCur, x86StubPgm, sizeof(x86StubPgm));
+    COPY_AND_ADVANCE(pCur, m_ntHeaders, m_ntHeadersSize);
 
     COPY_AND_ADVANCE(pCur, headers, sizeof(*headers)*(headersEnd - headers));
 
@@ -2338,26 +1984,6 @@ HRESULT PEWriter::write(void ** ppImage)
             len = (*cur)->writeMem((void**)&pCur);
             _ASSERTE(len == (*cur)->dataLen());
             COPY_AND_ADVANCE(pCur, pad, (*cur)->m_filePad);
-        }
-    }
-
-    // !!! Need to jump to the right place...
-
-    if (!ExeOrDll)
-    {
-        // now the relocs (exe, dll) or symbol table (obj) (if any)
-        // write the relocs section (Does nothing if relocs section is empty)
-        reloc->writeMem((void **)&pCur);
-
-        //write string table (obj only, empty for exe or dll)
-        strtab->writeMem((void **)&pCur);
-
-        // final pad
-        size_t len = padLen(VAL32(reloc->m_header->Misc.VirtualSize)+strtab->dataLen(), RoundUpVal);
-        if (len > 0)
-        {
-            // WARNING: macro - must enclose in curly braces
-            COPY_AND_ADVANCE(pCur, pad, len);
         }
     }
 

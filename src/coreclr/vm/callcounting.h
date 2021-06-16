@@ -270,7 +270,7 @@ public:
         NativeCodeVersion activeCodeVersion,
         PCODE codeEntryPoint,
         bool wasMethodCalled,
-        bool *scheduleTieringBackgroundWorkRef);
+        bool *createTieringBackgroundWorker);
     static PCODE OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
     static COUNT_T GetCountOfCodeVersionsPendingCompletion();
     static void CompleteCallCounting();
@@ -278,7 +278,7 @@ public:
 public:
     static void StopAndDeleteAllCallCountingStubs();
 private:
-    static void StopAllCallCounting(TieredCompilationManager *tieredCompilationManager, bool *scheduleTieringBackgroundWorkRef);
+    static void StopAllCallCounting(TieredCompilationManager *tieredCompilationManager);
     static void DeleteAllCallCountingStubs();
     void TrimCollections();
 #endif // !DACCESS_COMPILE

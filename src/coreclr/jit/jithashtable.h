@@ -351,14 +351,14 @@ public:
     // Get an iterator to the first key in the table.
     KeyIterator Begin() const
     {
-        KeyIterator i(this, TRUE);
+        KeyIterator i(this, true);
         return i;
     }
 
     // Get an iterator following the last key in the table.
     KeyIterator End() const
     {
-        return KeyIterator(this, FALSE);
+        return KeyIterator(this, false);
     }
 
     // Get the number of keys currently stored in the table.
@@ -471,7 +471,7 @@ private:
 
 public:
     //------------------------------------------------------------------------
-    // CheckGrowth: Replace the bucket table with a larger one and copy all nodes
+    // Reallocate: Replace the bucket table with a larger one and copy all nodes
     // from the existing bucket table.
     //
     // Notes:
@@ -555,7 +555,7 @@ public:
         //    begin - `true` to construct an "begin" iterator,
         //            `false` to construct an "end" iterator
         //
-        KeyIterator(const JitHashTable* hash, BOOL begin)
+        KeyIterator(const JitHashTable* hash, bool begin)
             : m_table(hash->m_table)
             , m_node(nullptr)
             , m_tableSize(hash->m_tableSizeInfo.prime)

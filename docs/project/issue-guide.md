@@ -38,7 +38,7 @@ We use [milestones](https://github.com/dotnet/runtime/milestones) to prioritize 
 We assign each issue to assignee, when the assignee is ready to pick up the work and start working on it.  If the issue is not assigned to anyone and you want to pick it up, please say so - we will assign the issue to you.  If the issue is already assigned to someone, please coordinate with the assignee before you start working on it.
 
 ### Areas
-Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area typically corresponds to one or more contract assemblies. To view owners for each area in this repository check out the [area-owners.md](https://github.com/dotnet/runtime/blob/master/docs/area-owners.md) page.
+Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area typically corresponds to one or more contract assemblies. To view owners for each area in this repository check out the [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) page.
 
 ### Community Partner Experts
 
@@ -81,7 +81,7 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
 1. PR has **Assignee** set to author of the PR, if it is non-CoreFX engineer, then area owners are co-assignees
     * Motivation #1: Area owners are responsible to do code reviews for PRs from external contributors. CoreFX engineers know how to get code reviews from others.
     * Motivation #2: Assignees will get notifications for anything happening on the PR.
-1. [Optional] Set milestone according to the branch the PR is against (master = 5.0, release/3.0 = 3.0, release/2.1 = 2.1.x, etc.)
+1. [Optional] Set milestone according to the branch the PR is against (main = 6.0, release/5.0 = 5.0)
     * Motivation: Easier to track and audit where which fix ended up and if it needs to be ported into another branch (hence reflecting branch the specific PR ended up and not the abstract issue).
     * Note: This is easily done after merge via simple queries & bulk-edits, you don't have to do this one.
 1. Any other labels on PRs are superfluous and not needed (exceptions: **blocked**, **NO MERGE**)

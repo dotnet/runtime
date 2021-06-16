@@ -307,7 +307,7 @@ namespace System.Reflection.Metadata.Tests
 
                 reader.Reset();
                 Assert.Equal(0, reader.Offset);
-                Assert.Equal(BitConverter.ToDouble(buffer2, 0), reader.ReadDouble());
+                Assert.Equal(BitConverter.Int64BitsToDouble(0x0807060504030201L), reader.ReadDouble());
             }
         }
 

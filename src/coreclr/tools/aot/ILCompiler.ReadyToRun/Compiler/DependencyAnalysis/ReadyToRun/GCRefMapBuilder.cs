@@ -82,8 +82,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // On X86 the Array address method doesn't use IL stubs, and instead has a custom calling convention
             if ((method.Context.Target.Architecture == TargetArchitecture.X86) &&
-                (method.IsArrayAddressMethod()) &&
-                method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                method.IsArrayAddressMethod())
             {
                 hasParamType = true;
             }

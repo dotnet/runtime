@@ -1,31 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.1;net461;net462;net47</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <!-- FEATURE_DSA_HASHDATA is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
-    <DefineConstants Condition="!$(TargetFramework.StartsWith('net4'))">$(DefineConstants);FEATURE_DSA_HASHDATA</DefineConstants>
-    <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
-    <DefineConstants Condition="!$(TargetFramework.StartsWith('net4'))">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
-    <DefineConstants Condition="!$(TargetFramework.StartsWith('net46'))">$(DefineConstants);FEATURE_ECPARAMETERS</DefineConstants>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cng.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Primitives\ref\System.Security.Cryptography.Primitives.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <Reference Include="System.IO" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Handles" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
 </Project>

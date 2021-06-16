@@ -47,6 +47,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     When the <see cref="ValidationContext.MemberName" /> of <paramref name="validationContext" /> is not a valid
         ///     property.
         /// </exception>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static bool TryValidateProperty(object? value, ValidationContext validationContext,
             ICollection<ValidationResult>? validationResults)
         {
@@ -92,6 +93,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" />on <paramref name="validationContext" />.
         /// </exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         public static bool TryValidateObject(
             object instance, ValidationContext validationContext, ICollection<ValidationResult>? validationResults) =>
             TryValidateObject(instance, validationContext, validationResults, false /*validateAllProperties*/);
@@ -129,6 +131,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" />on <paramref name="validationContext" />.
         /// </exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         public static bool TryValidateObject(object instance, ValidationContext validationContext,
             ICollection<ValidationResult>? validationResults, bool validateAllProperties)
         {
@@ -212,6 +215,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         /// <exception cref="ValidationException">When <paramref name="value" /> is invalid for this property.</exception>
+        [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static void ValidateProperty(object? value, ValidationContext validationContext)
         {
             // Throw if value cannot be assigned to this property.  That is not a validation exception.
@@ -242,6 +246,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
         /// </exception>
         /// <exception cref="ValidationException">When <paramref name="instance" /> is found to be invalid.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         public static void ValidateObject(object instance, ValidationContext validationContext)
         {
             ValidateObject(instance, validationContext, false /*validateAllProperties*/);
@@ -267,6 +272,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
         /// </exception>
         /// <exception cref="ValidationException">When <paramref name="instance" /> is found to be invalid.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         public static void ValidateObject(object instance, ValidationContext validationContext,
             bool validateAllProperties)
         {
@@ -325,6 +331,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <returns>A new <see cref="ValidationContext" /> for the <paramref name="instance" /> provided.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         private static ValidationContext CreateValidationContext(object instance, ValidationContext validationContext)
         {
             Debug.Assert(validationContext != null);
@@ -391,6 +398,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
         /// </exception>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         private static IEnumerable<ValidationError> GetObjectValidationErrors(object instance,
             ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError)
         {
@@ -450,6 +458,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
         /// <returns>A list of <see cref="ValidationError" /> instances.</returns>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         private static IEnumerable<ValidationError> GetObjectPropertyValidationErrors(object instance,
             ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError)
         {
@@ -501,6 +510,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     value.
         /// </returns>
         /// <remarks>Ignores indexed properties.</remarks>
+        [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         private static ICollection<KeyValuePair<ValidationContext, object?>> GetPropertyValues(object instance,
             ValidationContext validationContext)
         {
@@ -613,7 +623,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Private helper class to encapsulate a ValidationAttribute with the failed value and the user-visible
         ///     target name against which it was validated.
         /// </summary>
-        private class ValidationError
+        private sealed class ValidationError
         {
             private readonly object? _value;
             private readonly ValidationAttribute? _validationAttribute;

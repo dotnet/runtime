@@ -37,7 +37,7 @@ genTreeOps addrForm(genTreeOps loadForm)
 }
 
 // copy the flags determined by mask from src to dst
-void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
+void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);
@@ -139,7 +139,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
         BlockRange().Remove(indir);
 
-        var_types lclType = comp->lvaGetDesc(addr->AsLclVar())->TypeGet();
+        const GenTreeLclVar* lclAddr = addr->AsLclVar();
+        const unsigned       lclNum  = lclAddr->GetLclNum();
+        LclVarDsc*           varDsc  = comp->lvaGetDesc(lclNum);
+
+        var_types lclType = varDsc->TypeGet();
 
         if (lclType == simdType)
         {
@@ -156,7 +160,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
                 addr->gtFlags |= GTF_VAR_USEASG;
             }
 
-            comp->lvaSetVarDoNotEnregister(addr->AsLclFld()->GetLclNum() DEBUGARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LocalField));
+        }
+        if (varDsc->lvPromotedStruct())
+        {
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_IsStructArg));
         }
 
         addr->gtType = simdType;
@@ -294,14 +302,13 @@ void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
 void Rationalizer::SanityCheck()
 {
     // TODO: assert(!IsLIR());
-    BasicBlock* block;
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* statement : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            ValidateStatement(statement, block);
+            ValidateStatement(stmt, block);
 
-            for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
                 assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
@@ -398,23 +405,25 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
         {
-            if (location->OperGet() == GT_LCL_VAR)
+            if (location->OperIs(GT_LCL_VAR))
             {
-                var_types simdType = location->TypeGet();
-                GenTree*  initVal  = assignment->AsOp()->gtOp2;
-                var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
-                if (baseType != TYP_UNKNOWN)
+                var_types   simdType        = location->TypeGet();
+                GenTree*    initVal         = assignment->AsOp()->gtOp2;
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
                 {
-                    GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
-                    assignment->AsOp()->gtOp2 = simdTree;
-                    value                     = simdTree;
-                    initVal->gtNext           = simdTree;
-                    simdTree->gtPrev          = initVal;
-
-                    simdTree->gtNext = location;
-                    location->gtPrev = simdTree;
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
                 }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
+                assignment->AsOp()->gtOp2 = simdTree;
+                value                     = simdTree;
+                initVal->gtNext           = simdTree;
+                simdTree->gtPrev          = initVal;
+
+                simdTree->gtNext = location;
+                location->gtPrev = simdTree;
             }
         }
 #endif // FEATURE_SIMD
@@ -424,7 +433,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     {
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_PHI_ARG:
             RewriteAssignmentIntoStoreLclCore(assignment, location, value, locationOp);
             BlockRange().Remove(location);
             break;
@@ -734,17 +742,17 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         {
             noway_assert(comp->supportSIMDTypes());
             GenTreeSIMD* simdNode = node->AsSIMD();
-            unsigned     simdSize = simdNode->gtSIMDSize;
+            unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
 
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered
             // type(s).
-            if (simdNode->gtType == TYP_I_IMPL && simdNode->gtSIMDSize == TARGET_POINTER_SIZE)
+            if (simdNode->gtType == TYP_I_IMPL && simdNode->GetSimdSize() == TARGET_POINTER_SIZE)
             {
                 // This happens when it is consumed by a GT_RET_EXPR.
                 // It can only be a Vector2f or Vector2i.
-                assert(genTypeSize(simdNode->gtSIMDBaseType) == 4);
+                assert(genTypeSize(simdNode->GetSimdBaseType()) == 4);
                 simdNode->gtType = TYP_SIMD8;
             }
             // Certain SIMD trees require rationalizing.
@@ -752,7 +760,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->gtSIMDBaseType);
+                unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
                 GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
                                                                       baseTypeSize, OFFSETOF__CORINFO_Array__data);
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
@@ -801,7 +809,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered
             // type(s).
-            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
+            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->GetSimdSize() == TARGET_POINTER_SIZE))
             {
 #ifdef TARGET_ARM64
                 // Special case for GetElement/ToScalar because they take Vector64<T> and return T
@@ -812,7 +820,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 {
                     // This happens when it is consumed by a GT_RET_EXPR.
                     // It can only be a Vector2f or Vector2i.
-                    assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                    assert(genTypeSize(hwIntrinsicNode->GetSimdBaseType()) == 4);
                     hwIntrinsicNode->gtType = TYP_SIMD8;
                 }
             }
@@ -924,7 +932,7 @@ PhaseStatus Rationalizer::DoPhase()
     comp->fgOrder   = Compiler::FGOrderLinear;
 
     RationalizeVisitor visitor(*this);
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         comp->compCurBB = block;
         m_block         = block;
@@ -940,27 +948,30 @@ PhaseStatus Rationalizer::DoPhase()
             continue;
         }
 
-        for (Statement* statement : StatementList(firstStatement))
+        for (Statement* const statement : block->Statements())
         {
             assert(statement->GetTreeList() != nullptr);
             assert(statement->GetTreeList()->gtPrev == nullptr);
             assert(statement->GetRootNode() != nullptr);
             assert(statement->GetRootNode()->gtNext == nullptr);
 
-            BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
-
-            // If this statement has correct offset information, change it into an IL offset
-            // node and insert it into the LIR.
-            if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+            if (!statement->IsPhiDefnStmt()) // Note that we get rid of PHI nodes here.
             {
-                assert(!statement->IsPhiDefnStmt());
-                GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
-                BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
-            }
+                BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
-            m_block = block;
-            visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+                // If this statement has correct offset information, change it into an IL offset
+                // node and insert it into the LIR.
+                if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+                {
+                    assert(!statement->IsPhiDefnStmt());
+                    GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
+                        GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
+                    BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
+                }
+
+                m_block = block;
+                visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+            }
         }
 
         block->bbStmtList = nullptr;

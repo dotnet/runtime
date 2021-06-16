@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net.NetworkInformation
 {
-    internal class SystemIPv4InterfaceProperties : IPv4InterfaceProperties
+    internal sealed class SystemIPv4InterfaceProperties : IPv4InterfaceProperties
     {
         // These are only valid for ipv4 interfaces.
         private readonly bool _haveWins;

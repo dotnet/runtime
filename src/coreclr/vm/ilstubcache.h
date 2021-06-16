@@ -32,27 +32,12 @@ public:
     BYTE    m_rgbBlobData[1];
 };
 
-
 //
 // This class caches MethodDesc's for dynamically generated IL stubs, it is not
 // persisted in NGEN images.
 //
-class ILStubCache : private CClosedHashBase
+class ILStubCache final
 {
-private:
-    //---------------------------------------------------------
-    // Hash entry for CClosedHashBase.
-    //---------------------------------------------------------
-    struct ILCHASHENTRY
-    {
-        // Values:
-        //   NULL  = free
-        //   -1    = deleted
-        //   other = used
-        MethodDesc*     m_pMethodDesc;
-        ILStubHashBlob* m_pBlob;
-    };
-
 public:
 
     //---------------------------------------------------------
@@ -60,16 +45,11 @@ public:
     //---------------------------------------------------------
     ILStubCache(LoaderHeap* heap = NULL);
 
-    //---------------------------------------------------------
-    // Destructor
-    //---------------------------------------------------------
-    virtual ~ILStubCache();
-
     void Init(LoaderHeap* pHeap);
 
     MethodDesc* GetStubMethodDesc(
         MethodDesc *pTargetMD,
-        ILStubHashBlob* pParams,
+        ILStubHashBlob* pHashBlob,
         DWORD dwStubFlags,      // bitmask of NDirectStubFlags
         Module* pSigModule,
         PCCOR_SIGNATURE pSig,
@@ -78,7 +58,7 @@ public:
         bool& bILStubCreator,
         MethodDesc* pLastMD);
 
-    void DeleteEntry(void *pParams);
+    void DeleteEntry(ILStubHashBlob* pHashBlob);
 
     void AddMethodDescChunkWithLockTaken(MethodDesc *pMD);
 
@@ -100,8 +80,7 @@ public:
 
     MethodTable* GetOrCreateStubMethodTable(Module* pLoaderModule);
 
-private:
-
+private: // static
     static MethodDesc* CreateNewMethodDesc(
         LoaderHeap* pCreationHeap,
         MethodTable* pMT,
@@ -112,48 +91,32 @@ private:
         SigTypeContext *pTypeContext,
         AllocMemTracker* pamTracker);
 
-    // *** OVERRIDES FOR CClosedHashBase ***/
+private: // Inner classes
+    struct ILStubCacheEntry
+    {
+        MethodDesc *m_pMethodDesc;
+        ILStubHashBlob *m_pBlob;
+    };
 
-    //*****************************************************************************
-    // Hash is called with a pointer to an element in the table.  You must override
-    // this method and provide a hash algorithm for your element type.
-    //*****************************************************************************
-    virtual unsigned int Hash(             // The key value.
-        void const*  pData);                // Raw data to hash.
-
-    //*****************************************************************************
-    // Compare is used in the typical memcmp way, 0 is eqaulity, -1/1 indicate
-    // direction of miscompare.  In this system everything is always equal or not.
-    //*****************************************************************************
-    virtual unsigned int Compare(          // 0, -1, or 1.
-        void const*  pData,                 // Raw key data on lookup.
-        BYTE*        pElement);             // The element to compare data against.
-
-    //*****************************************************************************
-    // Return true if the element is free to be used.
-    //*****************************************************************************
-    virtual ELEMENTSTATUS Status(           // The status of the entry.
-        BYTE*        pElement);             // The element to check.
-
-    //*****************************************************************************
-    // Sets the status of the given element.
-    //*****************************************************************************
-    virtual void SetStatus(
-        BYTE*         pElement,             // The element to set status for.
-        ELEMENTSTATUS eStatus);             // New status.
-
-    //*****************************************************************************
-    // Returns the internal key value for an element.
-    //*****************************************************************************
-    virtual void* GetKey(                   // The data to hash on.
-        BYTE*        pElement);             // The element to return data ptr for.
+    class ILStubCacheTraits : public DefaultSHashTraits<ILStubCacheEntry>
+    {
+    public:
+        using key_t = const ILStubHashBlob *;
+        static const key_t GetKey(_In_ const element_t& e) { LIMITED_METHOD_CONTRACT; return e.m_pBlob; }
+        static count_t Hash(_In_ key_t key);
+        static bool Equals(_In_ key_t lhs, _In_ key_t rhs);
+        static bool IsNull(_In_ const element_t& e) { LIMITED_METHOD_CONTRACT; return e.m_pMethodDesc == NULL; }
+        static const element_t Null() { LIMITED_METHOD_CONTRACT; return ILStubCacheEntry(); }
+        static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_pMethodDesc == (MethodDesc *)-1; }
+        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; return ILStubCacheEntry{(MethodDesc *)-1, NULL}; }
+    };
 
 private:
     Crst            m_crst;
     LoaderHeap*     m_heap;
     MethodTable*    m_pStubMT;
+    SHash<ILStubCacheTraits> m_hashMap;
 };
-
 
 #ifdef FEATURE_PREJIT
 //========================================================================================

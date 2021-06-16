@@ -31,8 +31,8 @@ public:
     FCDECL1_V(static float, Log10, float x);
     FCDECL2_VI(static float, ModF, float x, float* intptr);
     FCDECL2_VV(static float, Pow, float x, float y);
-    FCDECL2_VI(static float, ScaleB, float x, int n);
     FCDECL1_V(static float, Sin, float x);
+    FCDECL3_VII(static void, SinCos, float x, float* sin, float* cos);
     FCDECL1_V(static float, Sinh, float x);
     FCDECL1_V(static float, Sqrt, float x);
     FCDECL1_V(static float, Tan, float x);

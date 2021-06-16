@@ -5,7 +5,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeEventLogReadHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeEventLogReadHandle() : base(true) { }
+        public SafeEventLogReadHandle() : base(true) { }
 
         protected override bool ReleaseHandle()
         {

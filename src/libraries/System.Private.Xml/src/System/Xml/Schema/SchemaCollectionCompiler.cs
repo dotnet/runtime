@@ -640,7 +640,7 @@ namespace System.Xml.Schema
         private XmlSchemaSimpleType[] CompileBaseMemberTypes(XmlSchemaSimpleType simpleType)
         {
             XmlSchemaSimpleType? unionMember;
-            ArrayList memberTypeDefinitions = new ArrayList();
+            var memberTypeDefinitions = new List<XmlSchemaSimpleType>();
 
             XmlSchemaSimpleTypeUnion mainUnion = (XmlSchemaSimpleTypeUnion)simpleType.Content!;
 
@@ -693,11 +693,11 @@ namespace System.Xml.Schema
             }
 
             //set all types
-            mainUnion.SetBaseMemberTypes((memberTypeDefinitions.ToArray(typeof(XmlSchemaSimpleType)) as XmlSchemaSimpleType[])!);
+            mainUnion.SetBaseMemberTypes(memberTypeDefinitions.ToArray());
             return mainUnion.BaseMemberTypes!;
         }
 
-        private void CheckUnionType(XmlSchemaSimpleType unionMember, ArrayList memberTypeDefinitions, XmlSchemaSimpleType parentType)
+        private void CheckUnionType(XmlSchemaSimpleType unionMember, List<XmlSchemaSimpleType> memberTypeDefinitions, XmlSchemaSimpleType parentType)
         {
             XmlSchemaDatatype unionDatatype = unionMember.Datatype!;
             if (unionMember.DerivedBy == XmlSchemaDerivationMethod.Restriction && (unionDatatype.HasLexicalFacets || unionDatatype.HasValueFacets))
@@ -1560,7 +1560,7 @@ namespace System.Xml.Schema
         {
             decimal minOccurs, maxOccurs;
             CalculateSequenceRange(derivedSequence, out minOccurs, out maxOccurs);
-            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs) || derivedSequence.Items.Count > baseChoice.Items.Count)
+            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs))
             {
                 return false;
             }

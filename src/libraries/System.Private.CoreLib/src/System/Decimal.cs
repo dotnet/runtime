@@ -57,7 +57,7 @@ namespace System
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, ISpanFormattable, ISerializable, IDeserializationCallback
+    public readonly partial struct Decimal : ISpanFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, ISerializable, IDeserializationCallback
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -394,7 +394,7 @@ namespace System
         // if the given object is a boxed Decimal and its value is equal to the
         // value of this Decimal. Returns false otherwise.
         //
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is decimal other &&
             DecCalc.VarDecCmp(in this, in other) == 0;
 
@@ -587,16 +587,14 @@ namespace System
             return true;
         }
 
-        internal static void GetBytes(in decimal d, byte[] buffer)
+        internal static void GetBytes(in decimal d, Span<byte> buffer)
         {
-            Debug.Assert(buffer != null && buffer.Length >= 16, "[GetBytes]buffer != null && buffer.Length >= 16");
+            Debug.Assert(buffer.Length >= 16, "buffer.Length >= 16");
 
-            Span<byte> span = buffer;
-
-            BinaryPrimitives.WriteInt32LittleEndian(span, (int)d.Low);
-            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), (int)d.Mid);
-            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8), (int)d.High);
-            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12), d._flags);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, (int)d.Low);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), (int)d.Mid);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(8), (int)d.High);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(12), d._flags);
         }
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)

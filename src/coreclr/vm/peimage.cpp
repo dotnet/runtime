@@ -887,7 +887,9 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 
 PEImage::PEImage():
+    m_path(),
     m_refCount(1),
+    m_bundleFileLocation(),
     m_bIsTrustedNativeImage(FALSE),
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA
@@ -1026,11 +1028,13 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
 
     PEImageLayout * pLoadLayout = NULL;
 
+    HRESULT loadFailure = S_OK;
     if (m_bIsTrustedNativeImage || IsFile())
     {
-        // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using
-        // regular mapping - but not for native images.
-        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
+        // Try to load all files via LoadLibrary first. If LoadLibrary did not work,
+        // retry using regular mapping.
+        HRESULT* returnDontThrow = m_bIsTrustedNativeImage ? NULL : &loadFailure;
+        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, returnDontThrow);
     }
 
     if (pLoadLayout != NULL)
@@ -1045,21 +1049,25 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
         PEImageLayoutHolder pLayout(PEImageLayout::Map(this));
 
         bool fMarkAnyCpuImageAsLoaded = false;
+
         // Avoid mapping another image if we can. We can only do this for IL-ONLY images
-        // since LoadLibrary is needed if we are to actually load code
+        // since LoadLibrary is needed if we are to actually load code (e.g. IJW).
         if (pLayout->HasCorHeader())
         {
-            if (pLayout->IsILOnly())
+            // IJW images must be successfully loaded by the OS to handle
+            // native dependencies, therefore they cannot be mapped.
+            if (!pLayout->IsILOnly())
             {
-                // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
-                // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
-                fMarkAnyCpuImageAsLoaded = true;
+                // For compat with older CoreCLR versions we will fallback to the
+                // COR_E_BADIMAGEFORMAT error code if a failure wasn't indicated.
+                loadFailure = FAILED(loadFailure) ? loadFailure : COR_E_BADIMAGEFORMAT;
+                EEFileLoadException::Throw(GetPath(), loadFailure);
             }
-            else
-            {
-                // IJW images must be loaded, not mapped
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
+
+            // IL only images will always be mapped. We don't bother doing a conversion
+            // of PE header on 64bit, as done for .NET Framework, since there is no
+            // appcompat burden for CoreCLR on 64bit.
+            fMarkAnyCpuImageAsLoaded = true;
         }
 
         pLayout.SuppressRelease();

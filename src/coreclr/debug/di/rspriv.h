@@ -5973,7 +5973,7 @@ public:
 
     // Moves a method signature from the start of the signature to the location of the return value (passing out the
     // number of generic parameters in the method).
-    static HRESULT SkipToReturn(SigParser &parser, ULONG *genArgCount = 0);
+    static HRESULT SkipToReturn(SigParser &parser, uint32_t *genArgCount = 0);
 
 private:
     // Read the actual bytes of native code into the data member m_rgbCode.
@@ -7461,7 +7461,7 @@ public:
     bool              m_fVarArgFnx;
 
     // the number of arguments, including the var args
-    ULONG             m_allArgsCount;
+    uint32_t          m_allArgsCount;
 
     // This byte array is used to store the signature for vararg methods.
     // It points to the underlying memory used by m_sigParserCached, and it enables us to easily delete

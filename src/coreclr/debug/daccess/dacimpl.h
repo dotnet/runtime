@@ -1312,7 +1312,7 @@ public:
     HRESULT DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJECTREF objRef);
     HRESULT DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags flags, STRINGREF orefStackTrace);
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     HRESULT DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, CLRDATA_ADDRESS ccwPtr);
     HRESULT EnumMemStowedException(CLRDataEnumMemoryFlags flags);
 #endif
@@ -1989,7 +1989,6 @@ private:
         return &pData[mCurr->count++];
     }
 
-
     template <class IntType, class StructType>
     IntType WalkStack(IntType count, StructType refs[], promote_func promote, GCEnumCallback enumFunc)
     {
@@ -2001,12 +2000,36 @@ private:
         _ASSERTE(mCurr == NULL);
         _ASSERTE(mHead.next == NULL);
 
+        class ProfilerFilterContextHolder
+        {
+            Thread* m_pThread;
+
+        public:
+            ProfilerFilterContextHolder() : m_pThread(NULL)
+            {
+            }
+
+            void Activate(Thread* pThread)
+            {
+                m_pThread = pThread;
+            }
+
+            ~ProfilerFilterContextHolder()
+            {
+                if (m_pThread != NULL)
+                    m_pThread->SetProfilerFilterContext(NULL);
+            }
+        };
+
+        ProfilerFilterContextHolder contextHolder;
+        T_CONTEXT ctx;
+
         // Get the current thread's context and set that as the filter context
         if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
         {
-            T_CONTEXT ctx;
             mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
             mThread->SetProfilerFilterContext(&ctx);
+            contextHolder.Activate(mThread);
         }
 
         // Setup GCCONTEXT structs for the stackwalk.
@@ -4037,37 +4060,5 @@ extern unsigned __int64 g_nStackWalk;
 extern unsigned __int64 g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
-
-#ifdef FEATURE_COMWRAPPERS
-
-// Public contract for ExternalObjectContext, keep in sync with definition in
-// interoplibinterface.cpp
-struct ExternalObjectContextDACnterface
-{
-    PTR_VOID identity;
-    INT_PTR _padding1;
-    DWORD SyncBlockIndex;
-    INT64 _padding3;
-};
-
-typedef DPTR(ExternalObjectContextDACnterface) PTR_ExternalObjectContext;
-
-// Public contract for ManagedObjectWrapper, keep in sync with definition in
-// comwrappers.hpp
-struct ManagedObjectWrapperDACInterface
-{
-    PTR_VOID managedObject;
-    INT32 _padding1;
-    INT32 _padding2;
-    INT_PTR _padding3;
-    INT_PTR _padding4;
-    INT_PTR _padding6;
-    LONGLONG _refCount;
-    INT32 _padding7;
-};
-
-typedef DPTR(ManagedObjectWrapperDACInterface) PTR_ManagedObjectWrapper;
-
-#endif // FEATURE_COMWRAPPERS
 
 #endif // #ifndef __DACIMPL_H__

@@ -354,6 +354,7 @@ namespace System.Threading.Channels.Tests
         {
             Channel<int> c = CreateChannel();
             ValueTask write = c.Writer.WriteAsync(42);
+            Assert.True(write.IsCompletedSuccessfully);
             Assert.True(c.Reader.TryRead(out int result));
             Assert.Equal(42, result);
         }
@@ -363,7 +364,51 @@ namespace System.Threading.Channels.Tests
         {
             Channel<int> c = CreateChannel();
             c.Writer.Complete();
-            Assert.False(c.Reader.TryRead(out int result));
+            Assert.False(c.Reader.TryRead(out _));
+        }
+
+        [Fact]
+        public void TryPeek_SucceedsWhenDataAvailable()
+        {
+            Channel<int> c = CreateChannel();
+
+            Assert.True(c.Reader.CanPeek); // all built-in readers support peeking
+
+            for (int i = 0; i < 3; i++)
+            {
+                // Write a value
+                Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);
+
+                // Can peek at the written value
+                Assert.True(c.Reader.TryPeek(out int peekedResult));
+                Assert.Equal(42, peekedResult);
+
+                // Can still read out that value
+                Assert.True(c.Reader.TryRead(out int readResult));
+                Assert.Equal(42, readResult);
+
+                // Peeking no longer finds it
+                Assert.False(c.Reader.TryPeek(out int noResult));
+                Assert.Equal(0, noResult);
+            }
+
+            // Write another value
+            Assert.True(c.Writer.WriteAsync(84).IsCompletedSuccessfully);
+
+            // Mark as completed
+            c.Writer.Complete();
+
+            // Can peek at the written value
+            Assert.True(c.Reader.TryPeek(out int lastPeekedResult));
+            Assert.Equal(84, lastPeekedResult);
+
+            // Can still read out that value
+            Assert.True(c.Reader.TryRead(out int lastReadResult));
+            Assert.Equal(84, lastReadResult);
+
+            // Peeking no longer finds it
+            Assert.False(c.Reader.TryPeek(out int lastNoResult));
+            Assert.Equal(0, lastNoResult);
         }
 
         [Fact]
@@ -1171,9 +1216,10 @@ namespace System.Threading.Channels.Tests
                 Assert.True(vt.IsCompletedSuccessfully);
 
                 Assert.Equal(continueOnCapturedContext != false, schedulerWasFlowed);
-                if (completeBeforeOnCompleted) // OnCompleted will simply queue using a mechanism that happens to flow
+                if (completeBeforeOnCompleted)
                 {
-                    Assert.True(executionContextWasFlowed);
+                    // OnCompleted may or may not flow ExecutionContext here; it's not needed,
+                    // and we avoid it when it's easy, but it's also not wrong to do so.
                 }
                 else
                 {

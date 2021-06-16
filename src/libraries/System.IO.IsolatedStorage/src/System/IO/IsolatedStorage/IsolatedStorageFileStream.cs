@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.IO.IsolatedStorage
 {
@@ -327,11 +328,13 @@ namespace System.IO.IsolatedStorage
             get { return _fs.Handle; }
         }
 
+        [UnsupportedOSPlatform("macos")]
         public override void Unlock(long position, long length)
         {
             _fs.Unlock(position, length);
         }
 
+        [UnsupportedOSPlatform("macos")]
         public override void Lock(long position, long length)
         {
             _fs.Lock(position, length);

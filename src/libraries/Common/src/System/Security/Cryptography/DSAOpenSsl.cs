@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
@@ -12,7 +11,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class DSA : AsymmetricAlgorithm
     {
-        public static new DSA Create()
+        private static DSA CreateCore()
         {
             return new DSAImplementation.DSAOpenSsl();
         }

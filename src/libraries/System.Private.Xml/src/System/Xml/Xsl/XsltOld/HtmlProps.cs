@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Globalization;
 
-    internal class HtmlElementProps
+    internal sealed class HtmlElementProps
     {
         private bool _empty;
         private bool _abrParent;
@@ -133,7 +133,7 @@ namespace System.Xml.Xsl.XsltOld
         }
     }
 
-    internal class HtmlAttributeProps
+    internal sealed class HtmlAttributeProps
     {
         private bool _abr;
         private bool _uri;

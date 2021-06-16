@@ -187,18 +187,21 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
 {
     // Check if we are dealing with a bounds check node.
-    if (treeParent->OperGet() != GT_COMMA)
+    bool isComma        = treeParent->OperIs(GT_COMMA);
+    bool isTopLevelNode = treeParent == stmt->GetRootNode();
+    if (!(isComma || isTopLevelNode))
     {
         return;
     }
 
     // If we are not looking at array bounds check, bail.
-    GenTree* tree = treeParent->AsOp()->gtOp1;
+    GenTree* tree = isComma ? treeParent->AsOp()->gtOp1 : treeParent;
     if (!tree->OperIsBoundsCheck())
     {
         return;
     }
 
+    GenTree*          comma   = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
     m_pCurBndsChk             = bndsChk;
     GenTree* treeIndex        = bndsChk->gtIndex;
@@ -210,8 +213,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     if (m_pCompiler->vnStore->IsVNConstant(arrLenVn))
     {
-        ssize_t  constVal  = -1;
-        unsigned iconFlags = 0;
+        ssize_t      constVal  = -1;
+        GenTreeFlags iconFlags = GTF_EMPTY;
 
         if (m_pCompiler->optIsTreeKnownIntValue(true, bndsChk->gtArrLen, &constVal, &iconFlags))
         {
@@ -246,8 +249,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
     if (m_pCompiler->vnStore->IsVNConstant(idxVn) && (arrSize > 0))
     {
-        ssize_t  idxVal    = -1;
-        unsigned iconFlags = 0;
+        ssize_t      idxVal    = -1;
+        GenTreeFlags iconFlags = GTF_EMPTY;
         if (!m_pCompiler->optIsTreeKnownIntValue(true, treeIndex, &idxVal, &iconFlags))
         {
             return;
@@ -258,7 +261,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         if ((idxVal < arrSize) && (idxVal >= 0))
         {
             JITDUMP("Removing range check\n");
-            m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
+            m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
             return;
         }
     }
@@ -299,7 +302,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     if (BetweenBounds(range, bndsChk->gtArrLen, arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-        m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
+        m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
     }
     return;
 }
@@ -1102,18 +1105,6 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
         return true;
     }
 
-    // If dependent, check if we can use some assertions.
-    if (op1Range->UpperLimit().IsDependent())
-    {
-        MergeAssertion(block, op1, op1Range DEBUGARG(0));
-    }
-
-    // If dependent, check if we can use some assertions.
-    if (op2Range->UpperLimit().IsDependent())
-    {
-        MergeAssertion(block, op2, op2Range DEBUGARG(0));
-    }
-
     JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
 
@@ -1454,9 +1445,9 @@ Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData*
 void RangeCheck::MapMethodDefs()
 {
     // First, gather where all definitions occur in the program and store it in a map.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             MapMethodDefsData data(this, block, stmt);
             m_pCompiler->fgWalkTreePre(stmt->GetRootNodePointer(), MapMethodDefsVisitor, &data, false, true);
@@ -1483,11 +1474,11 @@ void RangeCheck::OptimizeRangeChecks()
 #endif
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (IsOverBudget())
                 {

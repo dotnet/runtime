@@ -12,7 +12,15 @@ namespace System.SpanTests
         [Fact]
         public static void CastReadOnlySpanUIntToUShort()
         {
-            uint[] a = { 0x44332211, 0x88776655 };
+            uint[] a;
+            if (BitConverter.IsLittleEndian)
+            {
+                a = new uint[] { 0x44332211, 0x88776655 };
+            }
+            else
+            {
+                a = new uint[] { 0x22114433, 0x66558877 };
+            }
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
             ReadOnlySpan<ushort> asUShort = MemoryMarshal.Cast<uint, ushort>(span);
 
@@ -23,7 +31,15 @@ namespace System.SpanTests
         [Fact]
         public static void CastReadOnlySpanShortToLong()
         {
-            short[] a = { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
+            short[] a;
+            if (BitConverter.IsLittleEndian)
+            {
+                a = new short[] { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
+            }
+            else
+            {
+                a = new short[] { 0x4567, 0x3456, 0x2345, 0x1234, 0x5678 };
+            }
             ReadOnlySpan<short> span = new ReadOnlySpan<short>(a);
             ReadOnlySpan<long> asLong = MemoryMarshal.Cast<short, long>(span);
 

@@ -30,7 +30,7 @@ set -e
 usage()
 {
   echo "Script that evaluates changed paths and emits an azure devops variable if the changes contained in the current HEAD against the difftarget meet the includepahts/excludepaths filters:"
-  echo "  --difftarget <value>       SHA or branch to diff against. (i.e: HEAD^1, origin/master, 0f4hd36, etc.)"
+  echo "  --difftarget <value>       SHA or branch to diff against. (i.e: HEAD^1, origin/main, 0f4hd36, etc.)"
   echo "  --excludepaths <value>     Escaped list of paths to exclude from diff separated by '+'. (i.e: 'src/libraries/*+'src/installer/*')"
   echo "  --includepaths <value>     Escaped list of paths to include on diff separated by '+'. (i.e: 'src/libraries/System.Private.CoreLib/*')"
   echo "  --subset                   Subset name for which we're evaluating in order to include it in logs"

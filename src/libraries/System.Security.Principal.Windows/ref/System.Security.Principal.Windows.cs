@@ -8,6 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeAccessTokenHandle : System.Runtime.InteropServices.SafeHandle
     {
+        public SafeAccessTokenHandle() : base (default(System.IntPtr), default(bool)) { }
         public SafeAccessTokenHandle(System.IntPtr handle) : base (default(System.IntPtr), default(bool)) { }
         public static Microsoft.Win32.SafeHandles.SafeAccessTokenHandle InvalidHandle { get { throw null; } }
         public override bool IsInvalid { get { throw null; } }
@@ -58,7 +59,7 @@ namespace System.Security.Principal
         public NTAccount(string name) { }
         public NTAccount(string domainName, string accountName) { }
         public override string Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override bool IsValidTargetType(System.Type targetType) { throw null; }
         public static bool operator ==(System.Security.Principal.NTAccount? left, System.Security.Principal.NTAccount? right) { throw null; }
@@ -78,7 +79,7 @@ namespace System.Security.Principal
         public int BinaryLength { get { throw null; } }
         public override string Value { get { throw null; } }
         public int CompareTo(System.Security.Principal.SecurityIdentifier? sid) { throw null; }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(System.Security.Principal.SecurityIdentifier sid) { throw null; }
         public void GetBinaryForm(byte[] binaryForm, int offset) { }
         public override int GetHashCode() { throw null; }

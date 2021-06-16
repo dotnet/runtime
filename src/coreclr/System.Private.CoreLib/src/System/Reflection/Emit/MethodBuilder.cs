@@ -94,8 +94,9 @@ namespace System.Reflection.Emit
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
-                // A method can't be both static and virtual
-                throw new ArgumentException(SR.Arg_NoStaticVirtual);
+                // On an interface, the rule is slighlty different
+                if (((attributes & MethodAttributes.Abstract) == 0))
+                    throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
             m_callingConvention = callingConvention;
@@ -775,8 +776,7 @@ namespace System.Reflection.Emit
 
             TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
                 ((ModuleBuilder)m_module).GetConstructorToken(con),
-                binaryAttribute,
-                false, false);
+                binaryAttribute);
 
             if (IsKnownCA(con))
                 ParseCA(con);
@@ -828,7 +828,7 @@ namespace System.Reflection.Emit
         #endregion
     }
 
-    internal class LocalSymInfo
+    internal sealed class LocalSymInfo
     {
         // This class tracks the local variable's debugging information
         // and namespace information with a given active lexical scope.
@@ -929,7 +929,7 @@ namespace System.Reflection.Emit
             checked { m_iNameSpaceCount++; }
         }
 
-        internal virtual void EmitLocalSymInfo(ISymbolWriter symWriter)
+        internal void EmitLocalSymInfo(ISymbolWriter symWriter)
         {
             int i;
 

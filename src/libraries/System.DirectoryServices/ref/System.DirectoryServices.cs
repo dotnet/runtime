@@ -137,7 +137,7 @@ namespace System.DirectoryServices
         public System.DirectoryServices.SchemaNameCollection SchemaFilter { get { throw null; } }
         public System.DirectoryServices.DirectoryEntry Add(string name, string schemaClassName) { throw null; }
         public System.DirectoryServices.DirectoryEntry Find(string name) { throw null; }
-        public System.DirectoryServices.DirectoryEntry Find(string name, string schemaClassName) { throw null; }
+        public System.DirectoryServices.DirectoryEntry Find(string name, string? schemaClassName) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public void Remove(System.DirectoryServices.DirectoryEntry entry) { }
     }
@@ -145,9 +145,9 @@ namespace System.DirectoryServices
     {
         public DirectoryEntry() { }
         public DirectoryEntry(object adsObject) { }
-        public DirectoryEntry(string path) { }
-        public DirectoryEntry(string path, string username, string password) { }
-        public DirectoryEntry(string path, string username, string password, System.DirectoryServices.AuthenticationTypes authenticationType) { }
+        public DirectoryEntry(string? path) { }
+        public DirectoryEntry(string? path, string? username, string? password) { }
+        public DirectoryEntry(string? path, string? username, string? password, System.DirectoryServices.AuthenticationTypes authenticationType) { }
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.AuthenticationTypes.Secure)]
         public System.DirectoryServices.AuthenticationTypes AuthenticationType { get { throw null; } set { } }
         public System.DirectoryServices.DirectoryEntries Children { get { throw null; } }
@@ -156,11 +156,12 @@ namespace System.DirectoryServices
         public string NativeGuid { get { throw null; } }
         public object NativeObject { get { throw null; } }
         public System.DirectoryServices.ActiveDirectorySecurity ObjectSecurity { get { throw null; } set { } }
-        public System.DirectoryServices.DirectoryEntryConfiguration Options { get { throw null; } }
+        public System.DirectoryServices.DirectoryEntryConfiguration? Options { get { throw null; } }
         public System.DirectoryServices.DirectoryEntry Parent { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public string Password { set { } }
+        public string? Password { set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Path { get { throw null; } set { } }
         public System.DirectoryServices.PropertyCollection Properties { get { throw null; } }
         public string SchemaClassName { get { throw null; } }
@@ -168,22 +169,22 @@ namespace System.DirectoryServices
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool UsePropertyCache { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public string Username { get { throw null; } set { } }
+        public string? Username { get { throw null; } set { } }
         public void Close() { }
         public void CommitChanges() { }
         public System.DirectoryServices.DirectoryEntry CopyTo(System.DirectoryServices.DirectoryEntry newParent) { throw null; }
-        public System.DirectoryServices.DirectoryEntry CopyTo(System.DirectoryServices.DirectoryEntry newParent, string newName) { throw null; }
+        public System.DirectoryServices.DirectoryEntry CopyTo(System.DirectoryServices.DirectoryEntry newParent, string? newName) { throw null; }
         public void DeleteTree() { }
         protected override void Dispose(bool disposing) { }
         public static bool Exists(string path) { throw null; }
-        public object Invoke(string methodName, params object[] args) { throw null; }
-        public object InvokeGet(string propertyName) { throw null; }
-        public void InvokeSet(string propertyName, params object[] args) { }
+        public object? Invoke(string methodName, params object?[]? args) { throw null; }
+        public object? InvokeGet(string propertyName) { throw null; }
+        public void InvokeSet(string propertyName, params object?[]? args) { }
         public void MoveTo(System.DirectoryServices.DirectoryEntry newParent) { }
-        public void MoveTo(System.DirectoryServices.DirectoryEntry newParent, string newName) { }
+        public void MoveTo(System.DirectoryServices.DirectoryEntry newParent, string? newName) { }
         public void RefreshCache() { }
         public void RefreshCache(string[] propertyNames) { }
-        public void Rename(string newName) { }
+        public void Rename(string? newName) { }
     }
     public partial class DirectoryEntryConfiguration
     {
@@ -200,16 +201,17 @@ namespace System.DirectoryServices
     public partial class DirectorySearcher : System.ComponentModel.Component
     {
         public DirectorySearcher() { }
-        public DirectorySearcher(System.DirectoryServices.DirectoryEntry searchRoot) { }
-        public DirectorySearcher(System.DirectoryServices.DirectoryEntry searchRoot, string filter) { }
-        public DirectorySearcher(System.DirectoryServices.DirectoryEntry searchRoot, string filter, string[] propertiesToLoad) { }
-        public DirectorySearcher(System.DirectoryServices.DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, System.DirectoryServices.SearchScope scope) { }
-        public DirectorySearcher(string filter) { }
-        public DirectorySearcher(string filter, string[] propertiesToLoad) { }
-        public DirectorySearcher(string filter, string[] propertiesToLoad, System.DirectoryServices.SearchScope scope) { }
+        public DirectorySearcher(System.DirectoryServices.DirectoryEntry? searchRoot) { }
+        public DirectorySearcher(System.DirectoryServices.DirectoryEntry? searchRoot, string? filter) { }
+        public DirectorySearcher(System.DirectoryServices.DirectoryEntry? searchRoot, string? filter, string[]? propertiesToLoad) { }
+        public DirectorySearcher(System.DirectoryServices.DirectoryEntry? searchRoot, string? filter, string[]? propertiesToLoad, System.DirectoryServices.SearchScope scope) { }
+        public DirectorySearcher(string? filter) { }
+        public DirectorySearcher(string? filter, string[]? propertiesToLoad) { }
+        public DirectorySearcher(string? filter, string[]? propertiesToLoad, System.DirectoryServices.SearchScope scope) { }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool Asynchronous { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string AttributeScopeQuery { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool CacheResults { get { throw null; } set { } }
@@ -217,11 +219,11 @@ namespace System.DirectoryServices
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.DereferenceAlias.Never)]
         public System.DirectoryServices.DereferenceAlias DerefAlias { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public System.DirectoryServices.DirectorySynchronization DirectorySynchronization { get { throw null; } set { } }
+        public System.DirectoryServices.DirectorySynchronization? DirectorySynchronization { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.ExtendedDN.None)]
         public System.DirectoryServices.ExtendedDN ExtendedDN { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("(objectClass=*)")]
-        public string Filter { get { throw null; } set { } }
+        public string? Filter { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(0)]
         public int PageSize { get { throw null; } set { } }
         [System.ComponentModel.EditorAttribute("System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -231,7 +233,7 @@ namespace System.DirectoryServices
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.ReferralChasingOption.External)]
         public System.DirectoryServices.ReferralChasingOption ReferralChasing { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public System.DirectoryServices.DirectoryEntry SearchRoot { get { throw null; } set { } }
+        public System.DirectoryServices.DirectoryEntry? SearchRoot { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.SearchScope.Subtree)]
         public System.DirectoryServices.SearchScope SearchScope { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.SecurityMasks.None)]
@@ -245,29 +247,29 @@ namespace System.DirectoryServices
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool Tombstone { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public System.DirectoryServices.DirectoryVirtualListView VirtualListView { get { throw null; } set { } }
+        public System.DirectoryServices.DirectoryVirtualListView? VirtualListView { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         public System.DirectoryServices.SearchResultCollection FindAll() { throw null; }
-        public System.DirectoryServices.SearchResult FindOne() { throw null; }
+        public System.DirectoryServices.SearchResult? FindOne() { throw null; }
     }
     public partial class DirectoryServicesCOMException : System.Runtime.InteropServices.COMException, System.Runtime.Serialization.ISerializable
     {
         public DirectoryServicesCOMException() { }
         protected DirectoryServicesCOMException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public DirectoryServicesCOMException(string message) { }
-        public DirectoryServicesCOMException(string message, System.Exception inner) { }
+        public DirectoryServicesCOMException(string? message) { }
+        public DirectoryServicesCOMException(string? message, System.Exception? inner) { }
         public int ExtendedError { get { throw null; } }
-        public string ExtendedErrorMessage { get { throw null; } }
+        public string? ExtendedErrorMessage { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase
     {
         public DirectoryServicesPermission() { }
-        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string path) { }
-        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionEntry[] permissionAccessEntries) { }
+        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string? path) { }
+        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionEntry[]? permissionAccessEntries) { }
         public DirectoryServicesPermission(System.Security.Permissions.PermissionState state) { }
-        public System.DirectoryServices.DirectoryServicesPermissionEntryCollection PermissionEntries { get { throw null; } }
+        public System.DirectoryServices.DirectoryServicesPermissionEntryCollection? PermissionEntries { get { throw null; } }
     }
     [System.FlagsAttribute]
     public enum DirectoryServicesPermissionAccess
@@ -280,21 +282,21 @@ namespace System.DirectoryServices
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
-        public DirectoryServicesPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
-        public string Path { get { throw null; } set { } }
+        public DirectoryServicesPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public string? Path { get { throw null; } set { } }
         public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } set { } }
-        public override System.Security.IPermission CreatePermission() { throw null; }
+        public override System.Security.IPermission? CreatePermission() { throw null; }
     }
     public partial class DirectoryServicesPermissionEntry
     {
-        public DirectoryServicesPermissionEntry(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string path) { }
-        public string Path { get { throw null; } }
+        public DirectoryServicesPermissionEntry(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string? path) { }
+        public string? Path { get { throw null; } }
         public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } }
     }
     public partial class DirectoryServicesPermissionEntryCollection : System.Collections.CollectionBase
     {
         internal DirectoryServicesPermissionEntryCollection() { }
-        public System.DirectoryServices.DirectoryServicesPermissionEntry this[int index] { get { throw null; } set { } }
+        public System.DirectoryServices.DirectoryServicesPermissionEntry? this[int index] { get { throw null; } set { } }
         public int Add(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
         public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntryCollection value) { }
         public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntry[] value) { }
@@ -303,24 +305,24 @@ namespace System.DirectoryServices
         public int IndexOf(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
         public void Insert(int index, System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
         protected override void OnClear() { }
-        protected override void OnInsert(int index, object value) { }
-        protected override void OnRemove(int index, object value) { }
-        protected override void OnSet(int index, object oldValue, object newValue) { }
-        public void Remove(System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
+        protected override void OnInsert(int index, object? value) { }
+        protected override void OnRemove(int index, object? value) { }
+        protected override void OnSet(int index, object? oldValue, object? newValue) { }
+        public void Remove(System.DirectoryServices.DirectoryServicesPermissionEntry? value) { }
     }
     public partial class DirectorySynchronization
     {
         public DirectorySynchronization() { }
-        public DirectorySynchronization(byte[] cookie) { }
-        public DirectorySynchronization(System.DirectoryServices.DirectorySynchronization sync) { }
+        public DirectorySynchronization(byte[]? cookie) { }
+        public DirectorySynchronization(System.DirectoryServices.DirectorySynchronization? sync) { }
         public DirectorySynchronization(System.DirectoryServices.DirectorySynchronizationOptions option) { }
-        public DirectorySynchronization(System.DirectoryServices.DirectorySynchronizationOptions option, byte[] cookie) { }
+        public DirectorySynchronization(System.DirectoryServices.DirectorySynchronizationOptions option, byte[]? cookie) { }
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.DirectorySynchronizationOptions.None)]
         public System.DirectoryServices.DirectorySynchronizationOptions Option { get { throw null; } set { } }
         public System.DirectoryServices.DirectorySynchronization Copy() { throw null; }
         public byte[] GetDirectorySynchronizationCookie() { throw null; }
         public void ResetDirectorySynchronizationCookie() { }
-        public void ResetDirectorySynchronizationCookie(byte[] cookie) { }
+        public void ResetDirectorySynchronizationCookie(byte[]? cookie) { }
     }
     [System.FlagsAttribute]
     public enum DirectorySynchronizationOptions : long
@@ -336,9 +338,9 @@ namespace System.DirectoryServices
         public DirectoryVirtualListView() { }
         public DirectoryVirtualListView(int afterCount) { }
         public DirectoryVirtualListView(int beforeCount, int afterCount, int offset) { }
-        public DirectoryVirtualListView(int beforeCount, int afterCount, int offset, System.DirectoryServices.DirectoryVirtualListViewContext context) { }
-        public DirectoryVirtualListView(int beforeCount, int afterCount, string target) { }
-        public DirectoryVirtualListView(int beforeCount, int afterCount, string target, System.DirectoryServices.DirectoryVirtualListViewContext context) { }
+        public DirectoryVirtualListView(int beforeCount, int afterCount, int offset, System.DirectoryServices.DirectoryVirtualListViewContext? context) { }
+        public DirectoryVirtualListView(int beforeCount, int afterCount, string? target) { }
+        public DirectoryVirtualListView(int beforeCount, int afterCount, string? target, System.DirectoryServices.DirectoryVirtualListViewContext? context) { }
         [System.ComponentModel.DefaultValueAttribute(0)]
         public int AfterCount { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(0)]
@@ -346,10 +348,11 @@ namespace System.DirectoryServices
         [System.ComponentModel.DefaultValueAttribute(0)]
         public int BeforeCount { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public System.DirectoryServices.DirectoryVirtualListViewContext DirectoryVirtualListViewContext { get { throw null; } set { } }
+        public System.DirectoryServices.DirectoryVirtualListViewContext? DirectoryVirtualListViewContext { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(0)]
         public int Offset { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Target { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(0)]
         public int TargetPercentage { get { throw null; } set { } }
@@ -409,14 +412,14 @@ namespace System.DirectoryServices
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IDictionary.IsFixedSize { get { throw null; } }
         bool System.Collections.IDictionary.IsReadOnly { get { throw null; } }
-        object System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
+        object? System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
         System.Collections.ICollection System.Collections.IDictionary.Keys { get { throw null; } }
         public System.Collections.ICollection Values { get { throw null; } }
         public bool Contains(string propertyName) { throw null; }
         public void CopyTo(System.DirectoryServices.PropertyValueCollection[] array, int index) { }
         public System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         void System.Collections.IDictionary.Clear() { }
         bool System.Collections.IDictionary.Contains(object value) { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -431,21 +434,21 @@ namespace System.DirectoryServices
     public partial class PropertyValueCollection : System.Collections.CollectionBase
     {
         internal PropertyValueCollection() { }
-        public object this[int index] { get { throw null; } set { } }
+        public object? this[int index] { get { throw null; } set { } }
         public string PropertyName { get { throw null; } }
-        public object Value { get { throw null; } set { } }
-        public int Add(object value) { throw null; }
+        public object? Value { get { throw null; } set { } }
+        public int Add(object? value) { throw null; }
         public void AddRange(System.DirectoryServices.PropertyValueCollection value) { }
-        public void AddRange(object[] value) { }
-        public bool Contains(object value) { throw null; }
-        public void CopyTo(object[] array, int index) { }
-        public int IndexOf(object value) { throw null; }
-        public void Insert(int index, object value) { }
+        public void AddRange(object?[] value) { }
+        public bool Contains(object? value) { throw null; }
+        public void CopyTo(object?[] array, int index) { }
+        public int IndexOf(object? value) { throw null; }
+        public void Insert(int index, object? value) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
-        public void Remove(object value) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
+        public void Remove(object? value) { }
     }
     public enum ReferralChasingOption
     {
@@ -467,37 +470,37 @@ namespace System.DirectoryServices
     {
         internal ResultPropertyValueCollection() { }
         public object this[int index] { get { throw null; } }
-        public bool Contains(object value) { throw null; }
-        public void CopyTo(object[] values, int index) { }
-        public int IndexOf(object value) { throw null; }
+        public bool Contains(object? value) { throw null; }
+        public void CopyTo(object?[] values, int index) { }
+        public int IndexOf(object? value) { throw null; }
     }
     public partial class SchemaNameCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         internal SchemaNameCollection() { }
         public int Count { get { throw null; } }
-        public string this[int index] { get { throw null; } set { } }
+        public string? this[int index] { get { throw null; } set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
-        public int Add(string value) { throw null; }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
+        public int Add(string? value) { throw null; }
         public void AddRange(System.DirectoryServices.SchemaNameCollection value) { }
-        public void AddRange(string[] value) { }
+        public void AddRange(string?[] value) { }
         public void Clear() { }
-        public bool Contains(string value) { throw null; }
-        public void CopyTo(string[] stringArray, int index) { }
+        public bool Contains(string? value) { throw null; }
+        public void CopyTo(string?[] stringArray, int index) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public int IndexOf(string value) { throw null; }
-        public void Insert(int index, string value) { }
-        public void Remove(string value) { }
+        public int IndexOf(string? value) { throw null; }
+        public void Insert(int index, string? value) { }
+        public void Remove(string? value) { }
         public void RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        void System.Collections.ICollection.CopyTo(System.Array? array, int index) { }
+        int System.Collections.IList.Add(object? value) { throw null; }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
     }
     public partial class SearchResult
     {
@@ -552,7 +555,8 @@ namespace System.DirectoryServices
         [System.ComponentModel.DefaultValueAttribute(System.DirectoryServices.SortDirection.Ascending)]
         public System.DirectoryServices.SortDirection Direction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public string PropertyName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? PropertyName { get { throw null; } set { } }
     }
 }
 namespace System.DirectoryServices.ActiveDirectory
@@ -576,28 +580,28 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectoryObjectExistsException() { }
         protected ActiveDirectoryObjectExistsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ActiveDirectoryObjectExistsException(string message) { }
-        public ActiveDirectoryObjectExistsException(string message, System.Exception inner) { }
+        public ActiveDirectoryObjectExistsException(string? message) { }
+        public ActiveDirectoryObjectExistsException(string? message, System.Exception? inner) { }
     }
     public partial class ActiveDirectoryObjectNotFoundException : System.Exception, System.Runtime.Serialization.ISerializable
     {
         public ActiveDirectoryObjectNotFoundException() { }
         protected ActiveDirectoryObjectNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ActiveDirectoryObjectNotFoundException(string message) { }
-        public ActiveDirectoryObjectNotFoundException(string message, System.Exception inner) { }
-        public ActiveDirectoryObjectNotFoundException(string message, System.Type type, string name) { }
-        public string Name { get { throw null; } }
-        public System.Type Type { get { throw null; } }
+        public ActiveDirectoryObjectNotFoundException(string? message) { }
+        public ActiveDirectoryObjectNotFoundException(string? message, System.Exception? inner) { }
+        public ActiveDirectoryObjectNotFoundException(string? message, System.Type? type, string? name) { }
+        public string? Name { get { throw null; } }
+        public System.Type? Type { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class ActiveDirectoryOperationException : System.Exception, System.Runtime.Serialization.ISerializable
     {
         public ActiveDirectoryOperationException() { }
         protected ActiveDirectoryOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ActiveDirectoryOperationException(string message) { }
-        public ActiveDirectoryOperationException(string message, System.Exception inner) { }
-        public ActiveDirectoryOperationException(string message, System.Exception inner, int errorCode) { }
-        public ActiveDirectoryOperationException(string message, int errorCode) { }
+        public ActiveDirectoryOperationException(string? message) { }
+        public ActiveDirectoryOperationException(string? message, System.Exception? inner) { }
+        public ActiveDirectoryOperationException(string? message, System.Exception? inner, int errorCode) { }
+        public ActiveDirectoryOperationException(string? message, int errorCode) { }
         public int ErrorCode { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
@@ -614,7 +618,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         internal ActiveDirectoryReplicationMetadata() { }
         public System.DirectoryServices.ActiveDirectory.ReadOnlyStringCollection AttributeNames { get { throw null; } }
-        public System.DirectoryServices.ActiveDirectory.AttributeMetadata this[string name] { get { throw null; } }
+        public System.DirectoryServices.ActiveDirectory.AttributeMetadata? this[string name] { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.AttributeMetadataCollection Values { get { throw null; } }
         public bool Contains(string attributeName) { throw null; }
         public void CopyTo(System.DirectoryServices.ActiveDirectory.AttributeMetadata[] array, int index) { }
@@ -669,18 +673,18 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectorySchemaClass(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string ldapDisplayName) { }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClassCollection AuxiliaryClasses { get { throw null; } }
-        public string CommonName { get { throw null; } set { } }
-        public System.DirectoryServices.ActiveDirectorySecurity DefaultObjectSecurityDescriptor { get { throw null; } set { } }
-        public string Description { get { throw null; } set { } }
+        public string? CommonName { get { throw null; } set { } }
+        public System.DirectoryServices.ActiveDirectorySecurity? DefaultObjectSecurityDescriptor { get { throw null; } set { } }
+        public string? Description { get { throw null; } set { } }
         public bool IsDefunct { get { throw null; } set { } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaPropertyCollection MandatoryProperties { get { throw null; } }
         public string Name { get { throw null; } }
-        public string Oid { get { throw null; } set { } }
+        public string? Oid { get { throw null; } set { } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaPropertyCollection OptionalProperties { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ReadOnlyActiveDirectorySchemaClassCollection PossibleInferiors { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClassCollection PossibleSuperiors { get { throw null; } }
         public System.Guid SchemaGuid { get { throw null; } set { } }
-        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass SubClassOf { get { throw null; } set { } }
+        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass? SubClassOf { get { throw null; } set { } }
         public System.DirectoryServices.ActiveDirectory.SchemaClassType Type { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -703,17 +707,17 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { }
     }
     public partial class ActiveDirectorySchemaProperty : System.IDisposable
     {
         public ActiveDirectorySchemaProperty(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string ldapDisplayName) { }
-        public string CommonName { get { throw null; } set { } }
-        public string Description { get { throw null; } set { } }
+        public string? CommonName { get { throw null; } set { } }
+        public string? Description { get { throw null; } set { } }
         public bool IsDefunct { get { throw null; } set { } }
         public bool IsInAnr { get { throw null; } set { } }
         public bool IsIndexed { get { throw null; } set { } }
@@ -722,10 +726,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool IsOnTombstonedObject { get { throw null; } set { } }
         public bool IsSingleValued { get { throw null; } set { } }
         public bool IsTupleIndexed { get { throw null; } set { } }
-        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty Link { get { throw null; } }
+        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty? Link { get { throw null; } }
         public int? LinkId { get { throw null; } set { } }
         public string Name { get { throw null; } }
-        public string Oid { get { throw null; } set { } }
+        public string? Oid { get { throw null; } set { } }
         public int? RangeLower { get { throw null; } set { } }
         public int? RangeUpper { get { throw null; } set { } }
         public System.Guid SchemaGuid { get { throw null; } set { } }
@@ -750,9 +754,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { }
     }
@@ -760,13 +764,13 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectoryServerDownException() { }
         protected ActiveDirectoryServerDownException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ActiveDirectoryServerDownException(string message) { }
-        public ActiveDirectoryServerDownException(string message, System.Exception inner) { }
-        public ActiveDirectoryServerDownException(string message, System.Exception inner, int errorCode, string name) { }
-        public ActiveDirectoryServerDownException(string message, int errorCode, string name) { }
+        public ActiveDirectoryServerDownException(string? message) { }
+        public ActiveDirectoryServerDownException(string? message, System.Exception? inner) { }
+        public ActiveDirectoryServerDownException(string? message, System.Exception? inner, int errorCode, string? name) { }
+        public ActiveDirectoryServerDownException(string? message, int errorCode, string? name) { }
         public int ErrorCode { get { throw null; } }
         public override string Message { get { throw null; } }
-        public string Name { get { throw null; } }
+        public string? Name { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class ActiveDirectorySite : System.IDisposable
@@ -775,9 +779,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DirectoryServices.ActiveDirectory.ReadOnlySiteCollection AdjacentSites { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ReadOnlyDirectoryServerCollection BridgeheadServers { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.DomainCollection Domains { get { throw null; } }
-        public System.DirectoryServices.ActiveDirectory.DirectoryServer InterSiteTopologyGenerator { get { throw null; } set { } }
-        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule IntraSiteReplicationSchedule { get { throw null; } set { } }
-        public string Location { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public System.DirectoryServices.ActiveDirectory.DirectoryServer? InterSiteTopologyGenerator { get { throw null; } set { } }
+        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule? IntraSiteReplicationSchedule { get { throw null; } set { } }
+        public string? Location { get { throw null; } set { } }
         public string Name { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteOptions Options { get { throw null; } set { } }
         public System.DirectoryServices.ActiveDirectory.DirectoryServerCollection PreferredRpcBridgeheadServers { get { throw null; } }
@@ -806,9 +811,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { }
     }
@@ -816,10 +821,10 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectorySiteLink(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string siteLinkName) { }
         public ActiveDirectorySiteLink(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string siteLinkName, System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType transport) { }
-        public ActiveDirectorySiteLink(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string siteLinkName, System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType transport, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule schedule) { }
+        public ActiveDirectorySiteLink(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string siteLinkName, System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType transport, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule? schedule) { }
         public int Cost { get { throw null; } set { } }
         public bool DataCompressionEnabled { get { throw null; } set { } }
-        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule InterSiteReplicationSchedule { get { throw null; } set { } }
+        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule? InterSiteReplicationSchedule { get { throw null; } set { } }
         public string Name { get { throw null; } }
         public bool NotificationEnabled { get { throw null; } set { } }
         public bool ReciprocalReplicationEnabled { get { throw null; } set { } }
@@ -863,9 +868,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { }
     }
@@ -889,9 +894,9 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectorySubnet(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string subnetName) { }
         public ActiveDirectorySubnet(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string subnetName, string siteName) { }
-        public string Location { get { throw null; } set { } }
+        public string? Location { get { throw null; } set { } }
         public string Name { get { throw null; } }
-        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySite Site { get { throw null; } set { } }
+        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySite? Site { get { throw null; } set { } }
         public void Delete() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -913,9 +918,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySubnet subnet) { }
         protected override void OnClear() { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySubnet subnet) { }
     }
@@ -954,16 +959,16 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         internal AdamInstance() { }
         public System.DirectoryServices.ActiveDirectory.ConfigurationSet ConfigurationSet { get { throw null; } }
-        public string DefaultPartition { get { throw null; } set { } }
+        public string? DefaultPartition { get { throw null; } set { } }
         public string HostName { get { throw null; } }
         public override System.DirectoryServices.ActiveDirectory.ReplicationConnectionCollection InboundConnections { get { throw null; } }
-        public override string IPAddress { get { throw null; } }
+        public override string? IPAddress { get { throw null; } }
         public int LdapPort { get { throw null; } }
         public override System.DirectoryServices.ActiveDirectory.ReplicationConnectionCollection OutboundConnections { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.AdamRoleCollection Roles { get { throw null; } }
         public override string SiteName { get { throw null; } }
         public int SslPort { get { throw null; } }
-        public override System.DirectoryServices.ActiveDirectory.SyncUpdateCallback SyncFromAllServersCallback { get { throw null; } set { } }
+        public override System.DirectoryServices.ActiveDirectory.SyncUpdateCallback? SyncFromAllServersCallback { get { throw null; } set { } }
         public override void CheckReplicationConsistency() { }
         protected override void Dispose(bool disposing) { }
         ~AdamInstance() { }
@@ -1009,7 +1014,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public ApplicationPartition(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string distinguishedName) { }
         public ApplicationPartition(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string distinguishedName, string objectClass) { }
         public System.DirectoryServices.ActiveDirectory.DirectoryServerCollection DirectoryServers { get { throw null; } }
-        public string SecurityReferenceDomain { get { throw null; } set { } }
+        public string? SecurityReferenceDomain { get { throw null; } set { } }
         public void Delete() { }
         protected override void Dispose(bool disposing) { }
         public System.DirectoryServices.ActiveDirectory.ReadOnlyDirectoryServerCollection FindAllDirectoryServers() { throw null; }
@@ -1041,7 +1046,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public long LocalChangeUsn { get { throw null; } }
         public string Name { get { throw null; } }
         public long OriginatingChangeUsn { get { throw null; } }
-        public string OriginatingServer { get { throw null; } }
+        public string? OriginatingServer { get { throw null; } }
         public int Version { get { throw null; } }
     }
     public partial class AttributeMetadataCollection : System.Collections.ReadOnlyCollectionBase
@@ -1066,10 +1071,10 @@ namespace System.DirectoryServices.ActiveDirectory
         protected virtual void Dispose(bool disposing) { }
         public System.DirectoryServices.ActiveDirectory.AdamInstance FindAdamInstance() { throw null; }
         public System.DirectoryServices.ActiveDirectory.AdamInstance FindAdamInstance(string partitionName) { throw null; }
-        public System.DirectoryServices.ActiveDirectory.AdamInstance FindAdamInstance(string partitionName, string siteName) { throw null; }
+        public System.DirectoryServices.ActiveDirectory.AdamInstance FindAdamInstance(string? partitionName, string siteName) { throw null; }
         public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances() { throw null; }
-        public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string partitionName) { throw null; }
-        public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string partitionName, string siteName) { throw null; }
+        public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string? partitionName) { throw null; }
+        public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string? partitionName, string? siteName) { throw null; }
         public static System.DirectoryServices.ActiveDirectory.ConfigurationSet GetConfigurationSet(System.DirectoryServices.ActiveDirectory.DirectoryContext context) { throw null; }
         public System.DirectoryServices.DirectoryEntry GetDirectoryEntry() { throw null; }
         public System.DirectoryServices.ActiveDirectory.ReplicationSecurityLevel GetSecurityLevel() { throw null; }
@@ -1080,11 +1085,11 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType) { }
         public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string name) { }
-        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string username, string password) { }
-        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string name, string username, string password) { }
+        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string? username, string? password) { }
+        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string name, string? username, string? password) { }
         public System.DirectoryServices.ActiveDirectory.DirectoryContextType ContextType { get { throw null; } }
-        public string Name { get { throw null; } }
-        public string UserName { get { throw null; } }
+        public string? Name { get { throw null; } }
+        public string? UserName { get { throw null; } }
     }
     public enum DirectoryContextType
     {
@@ -1098,12 +1103,12 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         protected DirectoryServer() { }
         public abstract System.DirectoryServices.ActiveDirectory.ReplicationConnectionCollection InboundConnections { get; }
-        public abstract string IPAddress { get; }
+        public abstract string? IPAddress { get; }
         public string Name { get { throw null; } }
         public abstract System.DirectoryServices.ActiveDirectory.ReplicationConnectionCollection OutboundConnections { get; }
         public System.DirectoryServices.ActiveDirectory.ReadOnlyStringCollection Partitions { get { throw null; } }
         public abstract string SiteName { get; }
-        public abstract System.DirectoryServices.ActiveDirectory.SyncUpdateCallback SyncFromAllServersCallback { get; set; }
+        public abstract System.DirectoryServices.ActiveDirectory.SyncUpdateCallback? SyncFromAllServersCallback { get; set; }
         public abstract void CheckReplicationConsistency();
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -1133,9 +1138,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.DirectoryServer server) { }
         protected override void OnClear() { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.DirectoryServer server) { }
     }
@@ -1148,7 +1153,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int DomainModeLevel { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.Forest Forest { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.DomainController InfrastructureRoleOwner { get { throw null; } }
-        public System.DirectoryServices.ActiveDirectory.Domain Parent { get { throw null; } }
+        public System.DirectoryServices.ActiveDirectory.Domain? Parent { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.DomainController PdcRoleOwner { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.DomainController RidRoleOwner { get { throw null; } }
         public void CreateLocalSideOfTrustRelationship(string targetDomainName, System.DirectoryServices.ActiveDirectory.TrustDirection direction, string trustPassword) { }
@@ -1207,12 +1212,12 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DirectoryServices.ActiveDirectory.Forest Forest { get { throw null; } }
         public long HighestCommittedUsn { get { throw null; } }
         public override System.DirectoryServices.ActiveDirectory.ReplicationConnectionCollection InboundConnections { get { throw null; } }
-        public override string IPAddress { get { throw null; } }
+        public override string? IPAddress { get { throw null; } }
         public string OSVersion { get { throw null; } }
         public override System.DirectoryServices.ActiveDirectory.ReplicationConnectionCollection OutboundConnections { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectoryRoleCollection Roles { get { throw null; } }
         public override string SiteName { get { throw null; } }
-        public override System.DirectoryServices.ActiveDirectory.SyncUpdateCallback SyncFromAllServersCallback { get { throw null; } set { } }
+        public override System.DirectoryServices.ActiveDirectory.SyncUpdateCallback? SyncFromAllServersCallback { get { throw null; } set { } }
         public override void CheckReplicationConsistency() { }
         protected override void Dispose(bool disposing) { }
         public virtual System.DirectoryServices.ActiveDirectory.GlobalCatalog EnableGlobalCatalog() { throw null; }
@@ -1319,10 +1324,10 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ForestTrustCollisionException() { }
         protected ForestTrustCollisionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ForestTrustCollisionException(string message) { }
-        public ForestTrustCollisionException(string message, System.Exception inner) { }
-        public ForestTrustCollisionException(string message, System.Exception inner, System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection collisions) { }
-        public System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection Collisions { get { throw null; } }
+        public ForestTrustCollisionException(string? message) { }
+        public ForestTrustCollisionException(string? message, System.Exception? inner) { }
+        public ForestTrustCollisionException(string? message, System.Exception? inner, System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection? collisions) { }
+        public System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection? Collisions { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public enum ForestTrustCollisionType
@@ -1517,8 +1522,8 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class ReplicationConnection : System.IDisposable
     {
         public ReplicationConnection(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string name, System.DirectoryServices.ActiveDirectory.DirectoryServer sourceServer) { }
-        public ReplicationConnection(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string name, System.DirectoryServices.ActiveDirectory.DirectoryServer sourceServer, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule schedule) { }
-        public ReplicationConnection(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string name, System.DirectoryServices.ActiveDirectory.DirectoryServer sourceServer, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule schedule, System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType transport) { }
+        public ReplicationConnection(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string name, System.DirectoryServices.ActiveDirectory.DirectoryServer sourceServer, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule? schedule) { }
+        public ReplicationConnection(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string name, System.DirectoryServices.ActiveDirectory.DirectoryServer sourceServer, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule? schedule, System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType transport) { }
         public ReplicationConnection(System.DirectoryServices.ActiveDirectory.DirectoryContext context, string name, System.DirectoryServices.ActiveDirectory.DirectoryServer sourceServer, System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType transport) { }
         public System.DirectoryServices.ActiveDirectory.NotificationStatus ChangeNotificationStatus { get { throw null; } set { } }
         public bool DataCompressionEnabled { get { throw null; } set { } }
@@ -1527,10 +1532,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool GeneratedByKcc { get { throw null; } set { } }
         public string Name { get { throw null; } }
         public bool ReciprocalReplicationEnabled { get { throw null; } set { } }
-        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule ReplicationSchedule { get { throw null; } set { } }
+        public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchedule? ReplicationSchedule { get { throw null; } set { } }
         public bool ReplicationScheduleOwnedByUser { get { throw null; } set { } }
         public System.DirectoryServices.ActiveDirectory.ReplicationSpan ReplicationSpan { get { throw null; } }
-        public string SourceServer { get { throw null; } }
+        public string? SourceServer { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType TransportType { get { throw null; } }
         public void Delete() { }
         public void Dispose() { }
@@ -1555,7 +1560,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DateTime LastSuccessfulSyncTime { get { throw null; } }
         public string PartitionName { get { throw null; } }
         public System.Guid SourceInvocationId { get { throw null; } }
-        public string SourceServer { get { throw null; } }
+        public string? SourceServer { get { throw null; } }
         public long UpToDatenessUsn { get { throw null; } }
     }
     public partial class ReplicationCursorCollection : System.Collections.ReadOnlyCollectionBase
@@ -1573,7 +1578,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DateTime FirstFailureTime { get { throw null; } }
         public int LastErrorCode { get { throw null; } }
         public string LastErrorMessage { get { throw null; } }
-        public string SourceServer { get { throw null; } }
+        public string? SourceServer { get { throw null; } }
     }
     public partial class ReplicationFailureCollection : System.Collections.ReadOnlyCollectionBase
     {
@@ -1591,10 +1596,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DateTime LastSuccessfulSync { get { throw null; } }
         public string LastSyncMessage { get { throw null; } }
         public int LastSyncResult { get { throw null; } }
-        public string PartitionName { get { throw null; } }
+        public string? PartitionName { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ReplicationNeighbor.ReplicationNeighborOptions ReplicationNeighborOption { get { throw null; } }
         public System.Guid SourceInvocationId { get { throw null; } }
-        public string SourceServer { get { throw null; } }
+        public string? SourceServer { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectoryTransportType TransportType { get { throw null; } }
         public long UsnAttributeFilter { get { throw null; } }
         public long UsnLastObjectChangeSynced { get { throw null; } }
@@ -1631,9 +1636,9 @@ namespace System.DirectoryServices.ActiveDirectory
         internal ReplicationOperation() { }
         public int OperationNumber { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ReplicationOperationType OperationType { get { throw null; } }
-        public string PartitionName { get { throw null; } }
+        public string? PartitionName { get { throw null; } }
         public int Priority { get { throw null; } }
-        public string SourceServer { get { throw null; } }
+        public string? SourceServer { get { throw null; } }
         public System.DateTime TimeEnqueued { get { throw null; } }
     }
     public partial class ReplicationOperationCollection : System.Collections.ReadOnlyCollectionBase
@@ -1647,9 +1652,9 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class ReplicationOperationInformation
     {
         public ReplicationOperationInformation() { }
-        public System.DirectoryServices.ActiveDirectory.ReplicationOperation CurrentOperation { get { throw null; } }
+        public System.DirectoryServices.ActiveDirectory.ReplicationOperation? CurrentOperation { get { throw null; } }
         public System.DateTime OperationStartTime { get { throw null; } }
-        public System.DirectoryServices.ActiveDirectory.ReplicationOperationCollection PendingOperations { get { throw null; } }
+        public System.DirectoryServices.ActiveDirectory.ReplicationOperationCollection? PendingOperations { get { throw null; } }
     }
     public enum ReplicationOperationType
     {
@@ -1689,8 +1694,8 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorCategory ErrorCategory { get { throw null; } }
         public int ErrorCode { get { throw null; } }
         public string ErrorMessage { get { throw null; } }
-        public string SourceServer { get { throw null; } }
-        public string TargetServer { get { throw null; } }
+        public string? SourceServer { get { throw null; } }
+        public string? TargetServer { get { throw null; } }
     }
     public enum SyncFromAllServersEvent
     {
@@ -1703,9 +1708,9 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public SyncFromAllServersOperationException() { }
         protected SyncFromAllServersOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public SyncFromAllServersOperationException(string message) { }
-        public SyncFromAllServersOperationException(string message, System.Exception inner) { }
-        public SyncFromAllServersOperationException(string message, System.Exception inner, System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[] errors) { }
+        public SyncFromAllServersOperationException(string? message) { }
+        public SyncFromAllServersOperationException(string? message, System.Exception? inner) { }
+        public SyncFromAllServersOperationException(string? message, System.Exception? inner, System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[]? errors) { }
         public System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[] ErrorInformation { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
@@ -1720,7 +1725,7 @@ namespace System.DirectoryServices.ActiveDirectory
         PushChangeOutward = 32,
         CrossSite = 64,
     }
-    public delegate bool SyncUpdateCallback(System.DirectoryServices.ActiveDirectory.SyncFromAllServersEvent eventType, string targetServer, string sourceServer, System.DirectoryServices.ActiveDirectory.SyncFromAllServersOperationException exception);
+    public delegate bool SyncUpdateCallback(System.DirectoryServices.ActiveDirectory.SyncFromAllServersEvent eventType, string? targetServer, string? sourceServer, System.DirectoryServices.ActiveDirectory.SyncFromAllServersOperationException? exception);
     public partial class TopLevelName
     {
         internal TopLevelName() { }
@@ -1759,8 +1764,8 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class TrustRelationshipInformation
     {
         internal TrustRelationshipInformation() { }
-        public string SourceName { get { throw null; } }
-        public string TargetName { get { throw null; } }
+        public string? SourceName { get { throw null; } }
+        public string? TargetName { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.TrustDirection TrustDirection { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.TrustType TrustType { get { throw null; } }
     }

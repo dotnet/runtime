@@ -41,6 +41,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
+using System.Runtime.Versioning;
 
 namespace System.Drawing
 {
@@ -576,10 +577,29 @@ namespace System.Drawing
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
-            // only known source of information @ http://blogs.wdevs.com/jdunlap/Default.aspx
             throw new NotImplementedException();
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
+        public void GetContextInfo(out PointF offset)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
+        public void GetContextInfo(out PointF offset, out Region? clip)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        private void CheckErrorStatus(int status)
+        {
+            Gdip.CheckStatus(status);
         }
     }
 }

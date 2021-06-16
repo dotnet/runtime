@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Bit flags for layout
         /// </summary>
-        private class FieldLayoutFlags
+        private static class FieldLayoutFlags
         {
             /// <summary>
             /// True if ContainsGCPointers has been computed
@@ -158,6 +158,27 @@ namespace Internal.TypeSystem
                     ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
                 }
                 return _instanceByteAlignment;
+            }
+        }
+
+        public bool IsZeroSizedReferenceType
+        {
+            get
+            {
+                if (Category != TypeFlags.Class)
+                {
+                    throw new InvalidOperationException("Only reference types are allowed.");
+                }
+
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
+                }
+
+                // test that size without padding is zero:
+                //   _instanceByteCountUnaligned - _instanceByteAlignment == LayoutInt.Zero
+                // simplified to:
+                return _instanceByteCountUnaligned == _instanceByteAlignment;
             }
         }
 

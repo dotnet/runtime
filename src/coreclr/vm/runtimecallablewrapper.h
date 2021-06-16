@@ -91,7 +91,7 @@ struct RCW
     {
         CF_None                 = 0x00,
         // unused               = 0x01,
-        CF_QueryForIdentity     = 0x02, // Need to QI for the real identity IUnknown during creating RCW
+        // unused               = 0x02,
         // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
         // unused               = 0x10,

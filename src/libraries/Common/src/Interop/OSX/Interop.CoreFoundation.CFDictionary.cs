@@ -20,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFDictionaryHandle : SafeHandle
     {
-        private SafeCFDictionaryHandle()
+        public SafeCFDictionaryHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

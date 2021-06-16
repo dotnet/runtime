@@ -7,7 +7,7 @@ namespace System.DirectoryServices.Protocols
 {
     internal sealed class SafeBerHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeBerHandle() : base(true)
+        public SafeBerHandle() : base(true)
         {
             SetHandle(Interop.Ldap.ber_alloc(1));
             if (handle == IntPtr.Zero)
@@ -36,14 +36,14 @@ namespace System.DirectoryServices.Protocols
     {
         internal bool _needDispose;
 
-        internal ConnectionHandle() : base(true)
+        public ConnectionHandle() : base(true)
         {
             SetHandle(Interop.Ldap.ldap_init(null, 389));
 
             if (handle == IntPtr.Zero)
             {
                 int error = Interop.Ldap.LdapGetLastError();
-                if (Utility.IsLdapError((LdapError)error))
+                if (LdapErrorMappings.IsLdapError(error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     throw new LdapException(error, errorMessage);
@@ -61,7 +61,7 @@ namespace System.DirectoryServices.Protocols
             if (value == IntPtr.Zero)
             {
                 int error = Interop.Ldap.LdapGetLastError();
-                if (Utility.IsLdapError((LdapError)error))
+                if (LdapErrorMappings.IsLdapError(error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     throw new LdapException(error, errorMessage);

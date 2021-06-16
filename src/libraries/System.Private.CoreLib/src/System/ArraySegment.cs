@@ -15,6 +15,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -118,7 +119,7 @@ namespace System
             System.Array.Copy(_array!, _offset, destination._array!, destination._offset, _count);
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ArraySegment<T> && Equals((ArraySegment<T>)obj);
 
         public bool Equals(ArraySegment<T> obj) =>

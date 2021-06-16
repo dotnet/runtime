@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Packaging
 {
-    internal class ZipWrappingStream : Stream
+    internal sealed class ZipWrappingStream : Stream
     {
         private readonly Stream _baseStream;
         private readonly ZipArchiveEntry _zipArchiveEntry;

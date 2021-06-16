@@ -252,7 +252,6 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the element of the set at the given index.
             /// </summary>
@@ -275,7 +274,6 @@ namespace System.Collections.Immutable
 
                 return ref _key;
             }
-#endif
 
             #region IEnumerable<T> Members
 

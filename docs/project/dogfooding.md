@@ -27,7 +27,7 @@ To use nightly builds of the entire runtime, follow the steps given in the rest 
 
 ## Install prerequisites
 
-1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/net6/dev/Sdk/dotnet-sdk-win-x64.zip).
+1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x64.zip).
 
 2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use a locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
 
@@ -159,25 +159,25 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 -->
 <!-- BEGIN generated table -->
 
-| Platform | Master |
+| Platform | Main |
 | --- |  :---: |
-| **Windows (x64)** | [![][win-x64-badge-6.0.X]][win-x64-version-6.0.X]<br>[Installer][win-x64-installer-6.0.X] ([Checksum][win-x64-installer-checksum-6.0.X])<br>[zip][win-x64-zip-6.0.X] ([Checksum][win-x64-zip-checksum-6.0.X])<br>[NetHost (zip)][win-x64-nethost-zip-6.0.X]<br>[Symbols (zip)][win-x64-symbols-zip-6.0.X] |
-| **Windows (x86)** | [![][win-x86-badge-6.0.X]][win-x86-version-6.0.X]<br>[Installer][win-x86-installer-6.0.X] ([Checksum][win-x86-installer-checksum-6.0.X])<br>[zip][win-x86-zip-6.0.X] ([Checksum][win-x86-zip-checksum-6.0.X])<br>[NetHost (zip)][win-x86-nethost-zip-6.0.X]<br>[Symbols (zip)][win-x86-symbols-zip-6.0.X] |
-| **Windows (arm64)** | [![][win-arm64-badge-6.0.X]][win-arm64-version-6.0.X]<br>[Installer][win-arm64-installer-6.0.X] ([Checksum][win-arm64-installer-checksum-6.0.X])<br>[zip][win-arm64-zip-6.0.X] ([Checksum][win-arm64-zip-checksum-6.0.X])<br>[NetHost (zip)][win-arm64-nethost-zip-6.0.X]<br>[Symbols (zip)][win-arm64-symbols-zip-6.0.X] |
-| **macOS (x64)** | [![][osx-x64-badge-6.0.X]][osx-x64-version-6.0.X]<br>[Installer][osx-x64-installer-6.0.X] ([Checksum][osx-x64-installer-checksum-6.0.X])<br>[tar.gz][osx-x64-targz-6.0.X] ([Checksum][osx-x64-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][osx-x64-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][osx-x64-symbols-targz-6.0.X] |
-| **macOS (arm64)** | [![][osx-arm64-badge-6.0.X]][osx-arm64-version-6.0.X]<br>[Installer][osx-arm64-installer-6.0.X] ([Checksum][osx-arm64-installer-checksum-6.0.X])<br>[tar.gz][osx-arm64-targz-6.0.X] ([Checksum][osx-arm64-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][osx-arm64-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][osx-arm64-symbols-targz-6.0.X] |
-| **Linux (x64)** (for glibc based OS) | [![][linux-x64-badge-6.0.X]][linux-x64-version-6.0.X]<br>[tar.gz][linux-x64-targz-6.0.X] ([Checksum][linux-x64-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][linux-x64-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][linux-x64-symbols-targz-6.0.X] |
-| **Linux (armhf)** (for glibc based OS) | [![][linux-arm-badge-6.0.X]][linux-arm-version-6.0.X]<br>[tar.gz][linux-arm-targz-6.0.X] ([Checksum][linux-arm-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][linux-arm-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][linux-arm-symbols-targz-6.0.X] |
-| **Linux (arm64)** (for glibc based OS) | [![][linux-arm64-badge-6.0.X]][linux-arm64-version-6.0.X]<br>[tar.gz][linux-arm64-targz-6.0.X] ([Checksum][linux-arm64-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][linux-arm64-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][linux-arm64-symbols-targz-6.0.X] |
-| **Linux-musl (x64)** | [![][linux-musl-x64-badge-6.0.X]][linux-musl-x64-version-6.0.X]<br>[tar.gz][linux-musl-x64-targz-6.0.X] ([Checksum][linux-musl-x64-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][linux-musl-x64-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][linux-musl-x64-symbols-targz-6.0.X] |
-| **Linux-musl (arm)** | [![][linux-musl-arm-badge-6.0.X]][linux-musl-arm-version-6.0.X]<br>[tar.gz][linux-musl-arm-targz-6.0.X] ([Checksum][linux-musl-arm-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][linux-musl-arm-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][linux-musl-arm-symbols-targz-6.0.X] |
-| **Linux-musl (arm64)** | [![][linux-musl-arm64-badge-6.0.X]][linux-musl-arm64-version-6.0.X]<br>[tar.gz][linux-musl-arm64-targz-6.0.X] ([Checksum][linux-musl-arm64-targz-checksum-6.0.X])<br>[NetHost (tar.gz)][linux-musl-arm64-nethost-targz-6.0.X]<br>[Symbols (tar.gz)][linux-musl-arm64-symbols-targz-6.0.X] |
-| **Dpkg Based Systems (x64)** | [![][deb-badge-6.0.X]][deb-version-6.0.X]<br>[Runtime-Deps][deb-runtime-deps-6.0.X] ([Checksum][deb-runtime-deps-checksum-6.0.X])<br>[Host][deb-host-6.0.X] ([Checksum][deb-host-checksum-6.0.X])<br>[App Hosts][deb-apphost-pack-6.0.X] ([Checksum][deb-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][deb-hostfxr-6.0.X] ([Checksum][deb-hostfxr-checksum-6.0.X])<br>[Targeting Pack][deb-targeting-pack-6.0.X] ([Checksum][deb-targeting-pack-checksum-6.0.X])<br>[Shared Framework][deb-sharedfx-6.0.X] ([Checksum][deb-sharedfx-checksum-6.0.X]) |
-| **CentOS 7 (x64)** | [![][centos-7-badge-6.0.X]][centos-7-version-6.0.X]<br>[Runtime-Deps][centos-7-runtime-deps-6.0.X] ([Checksum][centos-7-runtime-deps-checksum-6.0.X])<br>[Host][centos-7-host-6.0.X] ([Checksum][centos-7-host-checksum-6.0.X])<br>[App Hosts][centos-7-apphost-pack-6.0.X] ([Checksum][centos-7-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][centos-7-hostfxr-6.0.X] ([Checksum][centos-7-hostfxr-checksum-6.0.X])<br>[Targeting Pack][centos-7-targeting-pack-6.0.X] ([Checksum][centos-7-targeting-pack-checksum-6.0.X])<br>[Shared Framework][centos-7-sharedfx-6.0.X] ([Checksum][centos-7-sharedfx-checksum-6.0.X]) |
-| **RHEL 7.2 (x64)** | [![][rhel7-badge-6.0.X]][rhel7-version-6.0.X]<br>[Host][rhel7-host-6.0.X] ([Checksum][rhel7-host-checksum-6.0.X])<br>[App Hosts][rhel7-apphost-pack-6.0.X] ([Checksum][rhel7-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][rhel7-hostfxr-6.0.X] ([Checksum][rhel7-hostfxr-checksum-6.0.X])<br>[Targeting Pack][rhel7-targeting-pack-6.0.X] ([Checksum][rhel7-targeting-pack-checksum-6.0.X])<br>[Shared Framework][rhel7-sharedfx-6.0.X] ([Checksum][rhel7-sharedfx-checksum-6.0.X]) |
-| **Fedora 27 (x64)** | [![][fedora-27-badge-6.0.X]][fedora-27-version-6.0.X]<br>[Runtime-Deps][fedora-27-runtime-deps-6.0.X] ([Checksum][fedora-27-runtime-deps-checksum-6.0.X])<br>[Host][fedora-27-host-6.0.X] ([Checksum][fedora-27-host-checksum-6.0.X])<br>[App Hosts][fedora-27-apphost-pack-6.0.X] ([Checksum][fedora-27-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][fedora-27-hostfxr-6.0.X] ([Checksum][fedora-27-hostfxr-checksum-6.0.X])<br>[Targeting Pack][fedora-27-targeting-pack-6.0.X] ([Checksum][fedora-27-targeting-pack-checksum-6.0.X])<br>[Shared Framework][fedora-27-sharedfx-6.0.X] ([Checksum][fedora-27-sharedfx-checksum-6.0.X]) |
-| **SLES 12 (x64)** | [![][sles-12-badge-6.0.X]][sles-12-version-6.0.X]<br>[Runtime-Deps][sles-12-runtime-deps-6.0.X] ([Checksum][sles-12-runtime-deps-checksum-6.0.X])<br>[Host][sles-12-host-6.0.X] ([Checksum][sles-12-host-checksum-6.0.X])<br>[App Hosts][sles-12-apphost-pack-6.0.X] ([Checksum][sles-12-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][sles-12-hostfxr-6.0.X] ([Checksum][sles-12-hostfxr-checksum-6.0.X])<br>[Targeting Pack][sles-12-targeting-pack-6.0.X] ([Checksum][sles-12-targeting-pack-checksum-6.0.X])<br>[Shared Framework][sles-12-sharedfx-6.0.X] ([Checksum][sles-12-sharedfx-checksum-6.0.X]) |
-| **OpenSUSE 42 (x64)** | [![][OpenSUSE-42-badge-6.0.X]][OpenSUSE-42-version-6.0.X]<br>[Runtime-Deps][OpenSUSE-42-runtime-deps-6.0.X] ([Checksum][OpenSUSE-42-runtime-deps-checksum-6.0.X])<br>[Host][OpenSUSE-42-host-6.0.X] ([Checksum][OpenSUSE-42-host-checksum-6.0.X])<br>[App Hosts][OpenSUSE-42-apphost-pack-6.0.X] ([Checksum][OpenSUSE-42-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-6.0.X] ([Checksum][OpenSUSE-42-hostfxr-checksum-6.0.X])<br>[Targeting Pack][OpenSUSE-42-targeting-pack-6.0.X] ([Checksum][OpenSUSE-42-targeting-pack-checksum-6.0.X])<br>[Shared Framework][OpenSUSE-42-sharedfx-6.0.X] ([Checksum][OpenSUSE-42-sharedfx-checksum-6.0.X]) |
+| **Windows (x64)** | <br>[Installer][win-x64-installer-6.0.X] ([Checksum][win-x64-installer-checksum-6.0.X])<br>[zip][win-x64-zip-6.0.X] ([Checksum][win-x64-zip-checksum-6.0.X]) |
+| **Windows (x86)** | <br>[Installer][win-x86-installer-6.0.X] ([Checksum][win-x86-installer-checksum-6.0.X])<br>[zip][win-x86-zip-6.0.X] ([Checksum][win-x86-zip-checksum-6.0.X]) |
+| **Windows (arm64)** | <br>[Installer][win-arm64-installer-6.0.X] ([Checksum][win-arm64-installer-checksum-6.0.X])<br>[zip][win-arm64-zip-6.0.X] ([Checksum][win-arm64-zip-checksum-6.0.X]) |
+| **macOS (x64)** | <br>[Installer][osx-x64-installer-6.0.X] ([Checksum][osx-x64-installer-checksum-6.0.X])<br>[tar.gz][osx-x64-targz-6.0.X] ([Checksum][osx-x64-targz-checksum-6.0.X]) |
+| **macOS (arm64)** | <br>[Installer][osx-arm64-installer-6.0.X] ([Checksum][osx-arm64-installer-checksum-6.0.X])<br>[tar.gz][osx-arm64-targz-6.0.X] ([Checksum][osx-arm64-targz-checksum-6.0.X]) |
+| **Linux (x64)** (for glibc based OS) | <br>[tar.gz][linux-x64-targz-6.0.X] ([Checksum][linux-x64-targz-checksum-6.0.X]) |
+| **Linux (armhf)** (for glibc based OS) | <br>[tar.gz][linux-arm-targz-6.0.X] ([Checksum][linux-arm-targz-checksum-6.0.X]) |
+| **Linux (arm64)** (for glibc based OS) | <br>[tar.gz][linux-arm64-targz-6.0.X] ([Checksum][linux-arm64-targz-checksum-6.0.X]) |
+| **Linux-musl (x64)** | <br>[tar.gz][linux-musl-x64-targz-6.0.X] ([Checksum][linux-musl-x64-targz-checksum-6.0.X]) |
+| **Linux-musl (arm)** | <br>[tar.gz][linux-musl-arm-targz-6.0.X] ([Checksum][linux-musl-arm-targz-checksum-6.0.X]) |
+| **Linux-musl (arm64)** | <br>[tar.gz][linux-musl-arm64-targz-6.0.X] ([Checksum][linux-musl-arm64-targz-checksum-6.0.X]) |
+| **Dpkg Based Systems (x64)** | <br>[Runtime-Deps][deb-runtime-deps-6.0.X] ([Checksum][deb-runtime-deps-checksum-6.0.X])<br>[Host][deb-host-6.0.X] ([Checksum][deb-host-checksum-6.0.X])<br>[App Hosts][deb-apphost-pack-6.0.X] ([Checksum][deb-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][deb-hostfxr-6.0.X] ([Checksum][deb-hostfxr-checksum-6.0.X])<br>[Targeting Pack][deb-targeting-pack-6.0.X] ([Checksum][deb-targeting-pack-checksum-6.0.X])<br>[Shared Framework][deb-sharedfx-6.0.X] ([Checksum][deb-sharedfx-checksum-6.0.X]) |
+| **CentOS 7 (x64)** | <br>[Runtime-Deps][centos-7-runtime-deps-6.0.X] ([Checksum][centos-7-runtime-deps-checksum-6.0.X])<br>[Host][centos-7-host-6.0.X] ([Checksum][centos-7-host-checksum-6.0.X])<br>[App Hosts][centos-7-apphost-pack-6.0.X] ([Checksum][centos-7-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][centos-7-hostfxr-6.0.X] ([Checksum][centos-7-hostfxr-checksum-6.0.X])<br>[Targeting Pack][centos-7-targeting-pack-6.0.X] ([Checksum][centos-7-targeting-pack-checksum-6.0.X])<br>[Shared Framework][centos-7-sharedfx-6.0.X] ([Checksum][centos-7-sharedfx-checksum-6.0.X]) |
+| **RHEL 7.2 (x64)** | <br>[Host][rhel7-host-6.0.X] ([Checksum][rhel7-host-checksum-6.0.X])<br>[App Hosts][rhel7-apphost-pack-6.0.X] ([Checksum][rhel7-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][rhel7-hostfxr-6.0.X] ([Checksum][rhel7-hostfxr-checksum-6.0.X])<br>[Targeting Pack][rhel7-targeting-pack-6.0.X] ([Checksum][rhel7-targeting-pack-checksum-6.0.X])<br>[Shared Framework][rhel7-sharedfx-6.0.X] ([Checksum][rhel7-sharedfx-checksum-6.0.X]) |
+| **Fedora 27 (x64)** | <br>[Runtime-Deps][fedora-27-runtime-deps-6.0.X] ([Checksum][fedora-27-runtime-deps-checksum-6.0.X])<br>[Host][fedora-27-host-6.0.X] ([Checksum][fedora-27-host-checksum-6.0.X])<br>[App Hosts][fedora-27-apphost-pack-6.0.X] ([Checksum][fedora-27-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][fedora-27-hostfxr-6.0.X] ([Checksum][fedora-27-hostfxr-checksum-6.0.X])<br>[Targeting Pack][fedora-27-targeting-pack-6.0.X] ([Checksum][fedora-27-targeting-pack-checksum-6.0.X])<br>[Shared Framework][fedora-27-sharedfx-6.0.X] ([Checksum][fedora-27-sharedfx-checksum-6.0.X]) |
+| **SLES 12 (x64)** | <br>[Runtime-Deps][sles-12-runtime-deps-6.0.X] ([Checksum][sles-12-runtime-deps-checksum-6.0.X])<br>[Host][sles-12-host-6.0.X] ([Checksum][sles-12-host-checksum-6.0.X])<br>[App Hosts][sles-12-apphost-pack-6.0.X] ([Checksum][sles-12-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][sles-12-hostfxr-6.0.X] ([Checksum][sles-12-hostfxr-checksum-6.0.X])<br>[Targeting Pack][sles-12-targeting-pack-6.0.X] ([Checksum][sles-12-targeting-pack-checksum-6.0.X])<br>[Shared Framework][sles-12-sharedfx-6.0.X] ([Checksum][sles-12-sharedfx-checksum-6.0.X]) |
+| **OpenSUSE 42 (x64)** | <br>[Runtime-Deps][OpenSUSE-42-runtime-deps-6.0.X] ([Checksum][OpenSUSE-42-runtime-deps-checksum-6.0.X])<br>[Host][OpenSUSE-42-host-6.0.X] ([Checksum][OpenSUSE-42-host-checksum-6.0.X])<br>[App Hosts][OpenSUSE-42-apphost-pack-6.0.X] ([Checksum][OpenSUSE-42-apphost-pack-checksum-6.0.X])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-6.0.X] ([Checksum][OpenSUSE-42-hostfxr-checksum-6.0.X])<br>[Targeting Pack][OpenSUSE-42-targeting-pack-6.0.X] ([Checksum][OpenSUSE-42-targeting-pack-checksum-6.0.X])<br>[Shared Framework][OpenSUSE-42-sharedfx-6.0.X] ([Checksum][OpenSUSE-42-sharedfx-checksum-6.0.X]) |
 
 <!-- END generated table -->
 
@@ -185,181 +185,181 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 <!-- BEGIN links to include in table -->
 
-[win-x64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_win-x64_Release_version_badge.svg?no-cache
-[win-x64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[win-x64-installer-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x64.exe
-[win-x64-installer-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x64.exe.sha512
-[win-x64-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x64.zip
-[win-x64-zip-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x64.zip.sha512
-[win-x64-nethost-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-win-x64.zip
-[win-x64-symbols-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-win-x64.zip
+[win-x64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_win-x64_Release_version_badge.svg?no-cache
+[win-x64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[win-x64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.exe
+[win-x64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.exe.sha512
+[win-x64-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.zip
+[win-x64-zip-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.zip.sha512
+[win-x64-nethost-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-win-x64.zip
+[win-x64-symbols-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-win-x64.zip
 
-[win-x86-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_win-x86_Release_version_badge.svg?no-cache
-[win-x86-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[win-x86-installer-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x86.exe
-[win-x86-installer-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x86.exe.sha512
-[win-x86-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x86.zip
-[win-x86-zip-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-x86.zip.sha512
-[win-x86-nethost-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-win-x86.zip
-[win-x86-symbols-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-win-x86.zip
+[win-x86-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_win-x86_Release_version_badge.svg?no-cache
+[win-x86-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[win-x86-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.exe
+[win-x86-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.exe.sha512
+[win-x86-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.zip
+[win-x86-zip-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.zip.sha512
+[win-x86-nethost-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-win-x86.zip
+[win-x86-symbols-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-win-x86.zip
 
-[win-arm64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_win-arm64_Release_version_badge.svg?no-cache
-[win-arm64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[win-arm64-installer-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-arm64.exe
-[win-arm64-installer-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-arm64.exe.sha512
-[win-arm64-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-arm64.zip
-[win-arm64-zip-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-win-arm64.zip.sha512
-[win-arm64-nethost-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-win-arm64.zip
-[win-arm64-symbols-zip-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-win-arm64.zip
+[win-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_win-arm64_Release_version_badge.svg?no-cache
+[win-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[win-arm64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.exe
+[win-arm64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.exe.sha512
+[win-arm64-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.zip
+[win-arm64-zip-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.zip.sha512
+[win-arm64-nethost-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-win-arm64.zip
+[win-arm64-symbols-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-win-arm64.zip
 
-[osx-x64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_osx-x64_Release_version_badge.svg?no-cache
-[osx-x64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[osx-x64-installer-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-x64.pkg
-[osx-x64-installer-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-x64.pkg.sha512
-[osx-x64-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-x64.tar.gz
-[osx-x64-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-x64.tar.gz.sha512
-[osx-x64-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-osx-x64.tar.gz
-[osx-x64-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-osx-x64.tar.gz
+[osx-x64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_osx-x64_Release_version_badge.svg?no-cache
+[osx-x64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[osx-x64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.pkg
+[osx-x64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.pkg.sha512
+[osx-x64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.tar.gz
+[osx-x64-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.tar.gz.sha512
+[osx-x64-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-osx-x64.tar.gz
+[osx-x64-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-osx-x64.tar.gz
 
-[osx-arm64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_osx-arm64_Release_version_badge.svg?no-cache
-[osx-arm64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[osx-arm64-installer-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-arm64.pkg
-[osx-arm64-installer-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-arm64.pkg.sha512
-[osx-arm64-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-arm64.tar.gz
-[osx-arm64-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-osx-arm64.tar.gz.sha512
-[osx-arm64-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-osx-arm64.tar.gz
-[osx-arm64-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-osx-arm64.tar.gz
+[osx-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_osx-arm64_Release_version_badge.svg?no-cache
+[osx-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[osx-arm64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.pkg
+[osx-arm64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.pkg.sha512
+[osx-arm64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.tar.gz
+[osx-arm64-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.tar.gz.sha512
+[osx-arm64-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-osx-arm64.tar.gz
+[osx-arm64-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-osx-arm64.tar.gz
 
-[linux-x64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_linux-x64_Release_version_badge.svg?no-cache
-[linux-x64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[linux-x64-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-x64.tar.gz
-[linux-x64-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-x64.tar.gz.sha512
-[linux-x64-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-linux-x64.tar.gz
-[linux-x64-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-linux-x64.tar.gz
+[linux-x64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_linux-x64_Release_version_badge.svg?no-cache
+[linux-x64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[linux-x64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-x64.tar.gz
+[linux-x64-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-x64.tar.gz.sha512
+[linux-x64-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-linux-x64.tar.gz
+[linux-x64-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-linux-x64.tar.gz
 
-[linux-arm-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_linux-arm_Release_version_badge.svg?no-cache
-[linux-arm-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[linux-arm-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-arm.tar.gz
-[linux-arm-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-arm.tar.gz.sha512
-[linux-arm-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-linux-arm.tar.gz
-[linux-arm-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-linux-arm.tar.gz
+[linux-arm-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_linux-arm_Release_version_badge.svg?no-cache
+[linux-arm-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[linux-arm-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-arm.tar.gz
+[linux-arm-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-arm.tar.gz.sha512
+[linux-arm-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-linux-arm.tar.gz
+[linux-arm-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-linux-arm.tar.gz
 
-[linux-arm64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_linux-arm64_Release_version_badge.svg?no-cache
-[linux-arm64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[linux-arm64-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-arm64.tar.gz
-[linux-arm64-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-arm64.tar.gz.sha512
-[linux-arm64-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-linux-arm64.tar.gz
-[linux-arm64-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-linux-arm64.tar.gz
+[linux-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_linux-arm64_Release_version_badge.svg?no-cache
+[linux-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[linux-arm64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-arm64.tar.gz
+[linux-arm64-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-arm64.tar.gz.sha512
+[linux-arm64-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-linux-arm64.tar.gz
+[linux-arm64-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-linux-arm64.tar.gz
 
-[deb-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg?no-cache
-[deb-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[deb-apphost-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.deb
-[deb-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.deb.sha512
-[deb-host-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.deb
-[deb-runtime-deps-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-x64.deb
-[deb-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-x64.deb.sha512
-[deb-host-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.deb.sha512
-[deb-hostfxr-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.deb
-[deb-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.deb.sha512
-[deb-sharedfx-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.deb
-[deb-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.deb.sha512
-[deb-targeting-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.deb
-[deb-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.deb.sha512
+[deb-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg?no-cache
+[deb-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[deb-apphost-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.deb
+[deb-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.deb.sha512
+[deb-host-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.deb
+[deb-runtime-deps-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-x64.deb
+[deb-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-x64.deb.sha512
+[deb-host-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.deb.sha512
+[deb-hostfxr-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.deb
+[deb-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.deb.sha512
+[deb-sharedfx-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.deb
+[deb-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.deb.sha512
+[deb-targeting-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.deb
+[deb-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.deb.sha512
 
-[rhel7-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_rhel.7-x64_Release_version_badge.svg?no-cache
-[rhel7-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[rhel7-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-centos.7-x64.rpm
-[rhel7-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-centos.7-x64.rpm.sha512
-[rhel7-apphost-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm
-[rhel7-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm.sha512
-[rhel7-host-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm
-[rhel7-host-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm.sha512
-[rhel7-hostfxr-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm
-[rhel7-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm.sha512
-[rhel7-sharedfx-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm
-[rhel7-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm.sha512
-[rhel7-targeting-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm
-[rhel7-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm.sha512
+[rhel7-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_rhel.7-x64_Release_version_badge.svg?no-cache
+[rhel7-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[rhel7-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-centos.7-x64.rpm
+[rhel7-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-centos.7-x64.rpm.sha512
+[rhel7-apphost-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm
+[rhel7-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[rhel7-host-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm
+[rhel7-host-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm.sha512
+[rhel7-hostfxr-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm
+[rhel7-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[rhel7-sharedfx-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm
+[rhel7-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm.sha512
+[rhel7-targeting-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm
+[rhel7-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[centos-7-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_centos.7-x64_Release_version_badge.svg?no-cache
-[centos-7-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[centos-7-runtime-deps-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-centos.7-x64.rpm
-[centos-7-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-centos.7-x64.rpm.sha512
-[centos-7-apphost-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm
-[centos-7-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm.sha512
-[centos-7-host-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm
-[centos-7-host-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm.sha512
-[centos-7-hostfxr-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm
-[centos-7-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm.sha512
-[centos-7-sharedfx-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm
-[centos-7-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm.sha512
-[centos-7-targeting-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm
-[centos-7-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm.sha512
+[centos-7-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_centos.7-x64_Release_version_badge.svg?no-cache
+[centos-7-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[centos-7-runtime-deps-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-centos.7-x64.rpm
+[centos-7-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-centos.7-x64.rpm.sha512
+[centos-7-apphost-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm
+[centos-7-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[centos-7-host-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm
+[centos-7-host-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm.sha512
+[centos-7-hostfxr-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm
+[centos-7-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[centos-7-sharedfx-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm
+[centos-7-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm.sha512
+[centos-7-targeting-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm
+[centos-7-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[fedora-27-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_fedora.27-x64_Release_version_badge.svg?no-cache
-[fedora-27-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[fedora-27-runtime-deps-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-fedora.27-x64.rpm
-[fedora-27-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-fedora.27-x64.rpm.sha512
-[fedora-27-apphost-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm
-[fedora-27-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm.sha512
-[fedora-27-host-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm
-[fedora-27-host-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm.sha512
-[fedora-27-hostfxr-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm
-[fedora-27-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm.sha512
-[fedora-27-sharedfx-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm
-[fedora-27-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm.sha512
-[fedora-27-targeting-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm
-[fedora-27-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm.sha512
+[fedora-27-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_fedora.27-x64_Release_version_badge.svg?no-cache
+[fedora-27-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[fedora-27-runtime-deps-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-fedora.27-x64.rpm
+[fedora-27-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-fedora.27-x64.rpm.sha512
+[fedora-27-apphost-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm
+[fedora-27-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[fedora-27-host-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm
+[fedora-27-host-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm.sha512
+[fedora-27-hostfxr-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm
+[fedora-27-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[fedora-27-sharedfx-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm
+[fedora-27-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm.sha512
+[fedora-27-targeting-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm
+[fedora-27-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[sles-12-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_sles.12-x64_Release_version_badge.svg?no-cache
-[sles-12-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[sles-12-runtime-deps-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-sles.12-x64.rpm
-[sles-12-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-sles.12-x64.rpm.sha512
-[sles-12-apphost-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm
-[sles-12-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm.sha512
-[sles-12-host-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm
-[sles-12-host-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm.sha512
-[sles-12-hostfxr-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm
-[sles-12-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm.sha512
-[sles-12-sharedfx-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm
-[sles-12-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm.sha512
-[sles-12-targeting-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm
-[sles-12-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm.sha512
+[sles-12-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_sles.12-x64_Release_version_badge.svg?no-cache
+[sles-12-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[sles-12-runtime-deps-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-sles.12-x64.rpm
+[sles-12-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-sles.12-x64.rpm.sha512
+[sles-12-apphost-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm
+[sles-12-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[sles-12-host-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm
+[sles-12-host-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm.sha512
+[sles-12-hostfxr-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm
+[sles-12-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[sles-12-sharedfx-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm
+[sles-12-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm.sha512
+[sles-12-targeting-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm
+[sles-12-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[OpenSUSE-42-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_opensuse.42-x64_Release_version_badge.svg?no-cache
-[OpenSUSE-42-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[OpenSUSE-42-runtime-deps-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-opensuse.42-x64.rpm
-[OpenSUSE-42-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-deps-opensuse.42-x64.rpm.sha512
-[OpenSUSE-42-apphost-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm
-[OpenSUSE-42-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-apphost-pack-x64.rpm.sha512
-[OpenSUSE-42-host-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm
-[OpenSUSE-42-host-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-host-x64.rpm.sha512
-[OpenSUSE-42-hostfxr-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm
-[OpenSUSE-42-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-hostfxr-x64.rpm.sha512
-[OpenSUSE-42-sharedfx-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm
-[OpenSUSE-42-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-x64.rpm.sha512
-[OpenSUSE-42-targeting-pack-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm
-[OpenSUSE-42-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-targeting-pack-x64.rpm.sha512
+[OpenSUSE-42-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_opensuse.42-x64_Release_version_badge.svg?no-cache
+[OpenSUSE-42-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[OpenSUSE-42-runtime-deps-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-opensuse.42-x64.rpm
+[OpenSUSE-42-runtime-deps-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-deps-opensuse.42-x64.rpm.sha512
+[OpenSUSE-42-apphost-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm
+[OpenSUSE-42-apphost-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-apphost-pack-x64.rpm.sha512
+[OpenSUSE-42-host-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm
+[OpenSUSE-42-host-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-host-x64.rpm.sha512
+[OpenSUSE-42-hostfxr-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm
+[OpenSUSE-42-hostfxr-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-hostfxr-x64.rpm.sha512
+[OpenSUSE-42-sharedfx-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm
+[OpenSUSE-42-sharedfx-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-x64.rpm.sha512
+[OpenSUSE-42-targeting-pack-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm
+[OpenSUSE-42-targeting-pack-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[linux-musl-x64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_linux-musl-x64_Release_version_badge.svg?no-cache
-[linux-musl-x64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[linux-musl-x64-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-musl-x64.tar.gz
-[linux-musl-x64-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-musl-x64.tar.gz.sha512
-[linux-musl-x64-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-linux-musl-x64.tar.gz
-[linux-musl-x64-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-linux-musl-x64.tar.gz
+[linux-musl-x64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_linux-musl-x64_Release_version_badge.svg?no-cache
+[linux-musl-x64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[linux-musl-x64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-musl-x64.tar.gz
+[linux-musl-x64-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-musl-x64.tar.gz.sha512
+[linux-musl-x64-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-linux-musl-x64.tar.gz
+[linux-musl-x64-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-linux-musl-x64.tar.gz
 
-[linux-musl-arm-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_linux-musl-arm_Release_version_badge.svg?no-cache
-[linux-musl-arm-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[linux-musl-arm-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-musl-arm.tar.gz
-[linux-musl-arm-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-musl-arm.tar.gz.sha512
-[linux-musl-arm-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-linux-musl-arm.tar.gz
-[linux-musl-arm-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-linux-musl-arm.tar.gz
+[linux-musl-arm-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_linux-musl-arm_Release_version_badge.svg?no-cache
+[linux-musl-arm-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[linux-musl-arm-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-musl-arm.tar.gz
+[linux-musl-arm-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-musl-arm.tar.gz.sha512
+[linux-musl-arm-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-linux-musl-arm.tar.gz
+[linux-musl-arm-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-linux-musl-arm.tar.gz
 
-[linux-musl-arm64-badge-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/sharedfx_linux-musl-arm64_Release_version_badge.svg?no-cache
-[linux-musl-arm64-version-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/productVersion.txt
-[linux-musl-arm64-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-musl-arm64.tar.gz
-[linux-musl-arm64-targz-checksum-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-linux-musl-arm64.tar.gz.sha512
-[linux-musl-arm64-nethost-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-nethost-linux-musl-arm64.tar.gz
-[linux-musl-arm64-symbols-targz-6.0.X]: https://aka.ms/dotnet/net6/dev/Runtime/dotnet-runtime-symbols-linux-musl-arm64.tar.gz
+[linux-musl-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_linux-musl-arm64_Release_version_badge.svg?no-cache
+[linux-musl-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[linux-musl-arm64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-musl-arm64.tar.gz
+[linux-musl-arm64-targz-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-linux-musl-arm64.tar.gz.sha512
+[linux-musl-arm64-nethost-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-nethost-linux-musl-arm64.tar.gz
+[linux-musl-arm64-symbols-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-symbols-linux-musl-arm64.tar.gz
 
 <!-- END links to include in table -->

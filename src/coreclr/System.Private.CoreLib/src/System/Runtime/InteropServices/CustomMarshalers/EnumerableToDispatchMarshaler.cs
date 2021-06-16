@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
     [SupportedOSPlatform("windows")]
-    internal class EnumerableToDispatchMarshaler : ICustomMarshaler
+    internal sealed class EnumerableToDispatchMarshaler : ICustomMarshaler
     {
         private static readonly EnumerableToDispatchMarshaler s_enumerableToDispatchMarshaler = new EnumerableToDispatchMarshaler();
 

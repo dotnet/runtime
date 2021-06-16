@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <SetIsTrimmable>false</SetIsTrimmable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <Compile Include="TypeForwards.cs" />
@@ -180,8 +179,10 @@
              Link="Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
              Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />

@@ -101,7 +101,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// A memory allocation-free enumerator of <see cref="ImmutableQueue{T}"/>.
         /// </summary>
-        private class EnumeratorObject : IEnumerator<T>
+        private sealed class EnumeratorObject : IEnumerator<T>
         {
             /// <summary>
             /// The original queue being enumerated.

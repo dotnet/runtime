@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIpInterfaceStatistics : IPInterfaceStatistics
+    internal sealed class BsdIpInterfaceStatistics : IPInterfaceStatistics
     {
         private readonly long _outputQueueLength;
         private readonly long _inPackets;

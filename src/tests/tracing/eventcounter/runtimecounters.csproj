@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>0</CLRTestPriority>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- This test is timing sensitive and JIT timing affects the results of the test -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- This test has a secondary thread with an infinite loop -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="runtimecounters.cs" />
+    <ProjectReference Include="../common/common.csproj" />
+  </ItemGroup>
+</Project>

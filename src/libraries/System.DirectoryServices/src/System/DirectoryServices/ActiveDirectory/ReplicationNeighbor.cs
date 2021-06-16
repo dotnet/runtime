@@ -34,10 +34,10 @@ namespace System.DirectoryServices.ActiveDirectory
             PartialAttributeSet = 0x40000000
         }
 
-        private readonly string _sourceServerDN;
+        private readonly string? _sourceServerDN;
 
         private readonly DirectoryServer _server;
-        private string _sourceServer;
+        private string? _sourceServer;
         private readonly Hashtable _nameTable;
 
         internal ReplicationNeighbor(IntPtr addr, DirectoryServer server, Hashtable table)
@@ -48,11 +48,11 @@ namespace System.DirectoryServices.ActiveDirectory
             PartitionName = Marshal.PtrToStringUni(neighbor.pszNamingContext);
             _sourceServerDN = Marshal.PtrToStringUni(neighbor.pszSourceDsaDN);
 
-            string transportDN = Marshal.PtrToStringUni(neighbor.pszAsyncIntersiteTransportDN);
+            string? transportDN = Marshal.PtrToStringUni(neighbor.pszAsyncIntersiteTransportDN);
             if (transportDN != null)
             {
                 string rdn = Utils.GetRdnFromDN(transportDN);
-                string transport = (Utils.GetDNComponents(rdn))[0].Value;
+                string? transport = (Utils.GetDNComponents(rdn))[0].Value;
 
                 if (string.Equals(transport, "SMTP", StringComparison.OrdinalIgnoreCase))
                     TransportType = ActiveDirectoryTransportType.Smtp;
@@ -73,9 +73,9 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = table;
         }
 
-        public string PartitionName { get; }
+        public string? PartitionName { get; }
 
-        public string SourceServer
+        public string? SourceServer
         {
             get
             {
@@ -84,7 +84,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // check whether we have got it before
                     if (_nameTable.Contains(SourceInvocationId))
                     {
-                        _sourceServer = (string)_nameTable[SourceInvocationId];
+                        _sourceServer = (string?)_nameTable[SourceInvocationId];
                     }
                     else if (_sourceServerDN != null)
                     {

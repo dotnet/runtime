@@ -128,7 +128,7 @@ namespace System.Transactions
         public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification, System.Guid promoterType) { throw null; }
         public System.Transactions.Enlistment EnlistVolatile(System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
         public System.Transactions.Enlistment EnlistVolatile(System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public byte[] GetPromotedToken() { throw null; }
         public static bool operator ==(System.Transactions.Transaction? x, System.Transactions.Transaction? y) { throw null; }
@@ -207,7 +207,7 @@ namespace System.Transactions
         private int _dummyPrimitive;
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
         public static bool operator !=(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }

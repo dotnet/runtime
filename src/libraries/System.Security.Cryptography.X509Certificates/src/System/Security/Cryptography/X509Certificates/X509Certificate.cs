@@ -5,6 +5,7 @@ using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text;
@@ -269,7 +270,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             X509Certificate? other = obj as X509Certificate;
             if (other == null)
@@ -277,7 +278,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Equals(other);
         }
 
-        public virtual bool Equals(X509Certificate? other)
+        public virtual bool Equals([NotNullWhen(true)] X509Certificate? other)
         {
             if (other == null)
                 return false;
@@ -349,10 +350,14 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
+            return GetCertHash(hashAlgorithm, Pal!);
+        }
 
+        private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        {
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                hasher.AppendData(Pal!.RawData);
+                hasher.AppendData(certPal.RawData);
                 return hasher.GetHashAndReset();
             }
         }
@@ -381,7 +386,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return GetCertHash(hashAlgorithm).ToHexStringUpper();
+            return GetCertHashString(hashAlgorithm, Pal!);
+        }
+
+        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        {
+            return GetCertHash(hashAlgorithm, certPal).ToHexStringUpper();
         }
 
         // Only use for internal purposes when the returned byte[] will not be mutated

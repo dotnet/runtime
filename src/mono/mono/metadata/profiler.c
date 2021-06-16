@@ -595,6 +595,12 @@ mono_profiler_enable_clauses (void)
 	return mono_profiler_state.clauses = TRUE;
 }
 
+gboolean
+mono_component_profiler_clauses_enabled (void)
+{
+	return mono_profiler_clauses_enabled ();
+}
+
 /**
  * mono_profiler_set_call_instrumentation_filter_callback:
  *
@@ -788,91 +794,6 @@ mono_profiler_started (void)
 	mono_profiler_state.startup_done = TRUE;
 }
 
-void
-mono_profiler_cleanup (void)
-{
-	for (MonoProfilerHandle handle = mono_profiler_state.profilers; handle; handle = handle->next) {
-#define _MONO_PROFILER_EVENT(name) \
-	mono_profiler_set_ ## name ## _callback (handle, NULL); \
-	g_assert (!handle->name ## _cb);
-#define MONO_PROFILER_EVENT_0(name, type) \
-	_MONO_PROFILER_EVENT(name)
-#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
-	_MONO_PROFILER_EVENT(name)
-#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
-	_MONO_PROFILER_EVENT(name)
-#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
-	_MONO_PROFILER_EVENT(name)
-#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
-	_MONO_PROFILER_EVENT(name)
-#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name) \
-	_MONO_PROFILER_EVENT(name)
-#include <mono/metadata/profiler-events.h>
-#undef MONO_PROFILER_EVENT_0
-#undef MONO_PROFILER_EVENT_1
-#undef MONO_PROFILER_EVENT_2
-#undef MONO_PROFILER_EVENT_3
-#undef MONO_PROFILER_EVENT_4
-#undef MONO_PROFILER_EVENT_5
-#undef _MONO_PROFILER_EVENT
-	}
-
-#define _MONO_PROFILER_EVENT(name, type) \
-	g_assert (!mono_profiler_state.name ## _count);
-#define MONO_PROFILER_EVENT_0(name, type) \
-	_MONO_PROFILER_EVENT(name, type)
-#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
-	_MONO_PROFILER_EVENT(name, type)
-#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
-	_MONO_PROFILER_EVENT(name, type)
-#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
-	_MONO_PROFILER_EVENT(name, type)
-#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
-	_MONO_PROFILER_EVENT(name, type)
-#define MONO_PROFILER_EVENT_5(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name, arg5_type, arg5_name)	\
-		_MONO_PROFILER_EVENT(name, type)
-#include <mono/metadata/profiler-events.h>
-#undef MONO_PROFILER_EVENT_0
-#undef MONO_PROFILER_EVENT_1
-#undef MONO_PROFILER_EVENT_2
-#undef MONO_PROFILER_EVENT_3
-#undef MONO_PROFILER_EVENT_4
-#undef MONO_PROFILER_EVENT_5
-#undef _MONO_PROFILER_EVENT
-
-	MonoProfilerHandle head = mono_profiler_state.profilers;
-
-	while (head) {
-		MonoProfilerCleanupCallback cb = (MonoProfilerCleanupCallback)head->cleanup_callback;
-
-		if (cb)
-			cb (head->prof);
-
-		MonoProfilerHandle cur = head;
-		head = head->next;
-
-		g_free (cur);
-	}
-
-	if (mono_profiler_state.code_coverage) {
-		mono_os_mutex_destroy (&mono_profiler_state.coverage_mutex);
-
-		GHashTableIter iter;
-
-		g_hash_table_iter_init (&iter, mono_profiler_state.coverage_hash);
-
-		MonoProfilerCoverageInfo *info;
-
-		while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &info))
-			g_free (info);
-
-		g_hash_table_destroy (mono_profiler_state.coverage_hash);
-	}
-
-	if (mono_profiler_state.sampling_owner)
-		mono_os_sem_destroy (&mono_profiler_state.sampling_semaphore);
-}
-
 static void
 update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *counter)
 {
@@ -976,12 +897,6 @@ struct _MonoProfiler {
 
 static MonoProfiler *current;
 
-static void
-shutdown_cb (MonoProfiler *prof)
-{
-	prof->shutdown_callback (prof->profiler);
-}
-
 void
 mono_profiler_install (MonoLegacyProfiler *prof, MonoLegacyProfileFunc callback)
 {
@@ -989,9 +904,6 @@ mono_profiler_install (MonoLegacyProfiler *prof, MonoLegacyProfileFunc callback)
 	current->handle = mono_profiler_create (current);
 	current->profiler = prof;
 	current->shutdown_callback = callback;
-
-	if (callback)
-		mono_profiler_set_runtime_shutdown_end_callback (current->handle, shutdown_cb);
 }
 
 static void

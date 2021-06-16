@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
-    internal class TimeSpanHeaderParser : BaseHeaderParser
+    internal sealed class TimeSpanHeaderParser : BaseHeaderParser
     {
         internal static readonly TimeSpanHeaderParser Parser = new TimeSpanHeaderParser();
 

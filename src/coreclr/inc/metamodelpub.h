@@ -31,7 +31,7 @@ template<class T> inline T Align4(T p)
     return (T)i;
 }
 
-typedef ULONG RID;
+typedef uint32_t RID;
 
 // check if a rid is valid or not
 #define     InvalidRid(rid) ((rid) == 0)

@@ -134,15 +134,11 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 {
 	int lflags = native_flags;
 
-#ifdef ENABLE_NETCORE
 	// Specifying both will default to LOCAL
 	if (mono_flags & MONO_DL_GLOBAL && !(mono_flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
 	else 
 		lflags |= RTLD_LOCAL;
-#else
-	lflags = mono_flags & MONO_DL_LOCAL ? RTLD_LOCAL : RTLD_GLOBAL;
-#endif
 
 	if (mono_flags & MONO_DL_LAZY)
 		lflags |= RTLD_LAZY;

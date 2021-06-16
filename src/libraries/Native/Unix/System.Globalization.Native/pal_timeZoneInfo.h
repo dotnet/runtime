@@ -16,10 +16,10 @@ typedef enum
     TimeZoneDisplayName_Generic = 0,
     TimeZoneDisplayName_Standard = 1,
     TimeZoneDisplayName_DaylightSavings = 2,
+    TimeZoneDisplayName_GenericLocation = 3,
+    TimeZoneDisplayName_ExemplarCity = 4,
 } TimeZoneDisplayNameType;
 
-PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
-                                                                const UChar* timeZoneId,
-                                                                TimeZoneDisplayNameType type,
-                                                                UChar* result,
-                                                                int32_t resultLength);
+PALEXPORT int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, const char* region, UChar* ianaId, int32_t ianaIdLength);
+PALEXPORT int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* windowsId, int32_t windowsIdLength);
+PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName, const UChar* timeZoneId, TimeZoneDisplayNameType type, UChar* result, int32_t resultLength);

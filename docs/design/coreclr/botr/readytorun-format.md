@@ -5,6 +5,8 @@ Revisions:
 * 1.1 - [Jan Kotas](https://github.com/jkotas) - 2015
 * 3.1 - [Tomas Rylek](https://github.com/trylek) - 2019
 * 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
+* 5.3 - [Tomas Rylek](https://github.com/trylek) - 2021
+* 5.4 - [David Wrighton](https://github.com/davidwrighton) - 2021
 
 # Introduction
 
@@ -58,7 +60,7 @@ The limitations of the current format are:
 # Structures
 
 The structures and accompanying constants are defined in the [readytorun.h]
-(https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/readytorun.h) header file.
+(https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h) header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable
 envelope.
@@ -161,6 +163,8 @@ The following section types are defined and described later in this document:
 | InliningInfo2             |   114 | Image (added in V4.1)
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
+| PgoInstrumentationData    |   117 | Image (added in V5.2)
+| ManifestAssemblyMvids     |   118 | Image (added in V5.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -248,6 +252,10 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_IndirectPInvokeTarget   |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_PInvokeTarget           |  0x2F | Target of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_Check_InstructionSetSupport | 0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
+| READYTORUN_FIXUP_Verify_FieldOffset      | 0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Verify_TypeLayout       | 0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Check_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
 | READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -265,6 +273,7 @@ token, and additional data determined by the flags.
 | READYTORUN_METHOD_SIG_MemberRefToken      |  0x10 | If set, the token is memberref token. If not set, the token is methoddef token.
 | READYTORUN_METHOD_SIG_Constrained         |  0x20 | Constrained type for method resolution. Typespec appended as additional data.
 | READYTORUN_METHOD_SIG_OwnerType           |  0x40 | Method type. Typespec appended as additional data.
+| READYTORUN_METHOD_SIG_UpdateContext       |  0x80 | If set, update the module which is used to parse tokens before performing any token processing. A uint index into the modules table immediately follows the flags
 
 #### Field Signatures
 
@@ -277,6 +286,16 @@ additional data determined by the flags.
 | READYTORUN_FIELD_SIG_IndexInsteadOfToken |  0x08 | Used as an optimization for stable fields. Cannot be combined with `MemberRefToken`.
 | READYTORUN_FIELD_SIG_MemberRefToken      |  0x10 | If set, the token is memberref token. If not set, the token is fielddef token.
 | READYTORUN_FIELD_SIG_OwnerType           |  0x40 | Field type. Typespec appended as additional data.
+
+#### Virtual override signatures
+
+ECMA 335 does not have a natural encoding for describing an overriden method. These signatures are encoded as a ReadyToRunVirtualFunctionOverrideFlags byte, followed by a method signature representing the declaration method, a type signature representing the type which is being devirtualized, and (optionally) a method signature indicating the implementation method.
+
+| ReadyToRunVirtualFunctionOverrideFlags                | Value | Description
+|:------------------------------------------------------|------:|:-----------
+| READYTORUN_VIRTUAL_OVERRIDE_None                      |  0x00 | No flags are set
+| READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden  |  0x01 | If set, then the virtual function has an implementation, which is encoded in the optional method implementation signature.
+
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
@@ -539,6 +558,17 @@ pair; in `Flags`, it has the `READYTORUN_FLAG_COMPONENT` bit set and its section
 the `OwnerCompositeExecutable` section that contains a UTF-8 string encoding the file name of the
 composite R2R executable this MSIL belongs to with extension (without path). Runtime uses this
 information to locate the composite R2R executable with the compiled native code when loading the MSIL.
+
+## ReadyToRunSectionType.PgoInstrumentationData (v5.2+)
+
+**TODO**: document PGO instrumentation data
+
+## ReadyToRunSectionType.ManifestAssemblyMvids (v5.3+)
+
+This section is a binary array of 16-byte MVID records, one for each assembly in the manifest metadata.
+Number of assemblies stored in the manifest metadata is equal to the number of MVID records in the array.
+MVID records are used at runtime to verify that the assemblies loaded match those referenced by the
+manifest metadata representing the versioning bubble.
 
 # Native Format
 

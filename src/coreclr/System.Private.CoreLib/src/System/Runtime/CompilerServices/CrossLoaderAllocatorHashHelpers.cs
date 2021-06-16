@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
     /// data.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    internal class LAHashDependentHashTracker
+    internal sealed class LAHashDependentHashTracker
     {
         private GCHandle _dependentHandle;
         private IntPtr _loaderAllocator;
@@ -27,7 +27,7 @@ namespace System.Runtime.CompilerServices
     /// to LAHashDependentHashTracker's
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    internal class LAHashKeyToTrackers
+    internal sealed class LAHashKeyToTrackers
     {
         private object? _trackerOrTrackerSet;
         private object? _laLocalKeyValueStore;

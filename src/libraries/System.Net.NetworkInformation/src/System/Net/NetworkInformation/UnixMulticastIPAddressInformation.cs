@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class UnixMulticastIPAddressInformation : MulticastIPAddressInformation
+    internal sealed class UnixMulticastIPAddressInformation : MulticastIPAddressInformation
     {
         private readonly IPAddress _address;
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -36,24 +37,42 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static extern int EvpMdSize(IntPtr md);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMd5")]
-        internal static extern IntPtr EvpMd5();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha1")]
-        internal static extern IntPtr EvpSha1();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha256")]
-        internal static extern IntPtr EvpSha256();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha384")]
-        internal static extern IntPtr EvpSha384();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha512")]
-        internal static extern IntPtr EvpSha512();
-
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static extern int GetMaxMdSize();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pbkdf2")]
+        private static unsafe extern int Pbkdf2(
+            byte* pPassword,
+            int passwordLength,
+            byte* pSalt,
+            int saltLength,
+            int iterations,
+            IntPtr digestEvp,
+            byte* pDestination,
+            int destinationLength);
+
+        internal static unsafe int Pbkdf2(
+            ReadOnlySpan<byte> password,
+            ReadOnlySpan<byte> salt,
+            int iterations,
+            IntPtr digestEvp,
+            Span<byte> destination)
+        {
+            fixed (byte* pPassword = password)
+            fixed (byte* pSalt = salt)
+            fixed (byte* pDestination = destination)
+            {
+                return Pbkdf2(
+                    pPassword,
+                    password.Length,
+                    pSalt,
+                    salt.Length,
+                    iterations,
+                    digestEvp,
+                    pDestination,
+                    destination.Length);
+            }
+        }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
     }

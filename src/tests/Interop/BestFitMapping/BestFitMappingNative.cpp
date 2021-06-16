@@ -91,7 +91,7 @@ extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_In(LPSTR pStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(sizeof(char) * len);
-    strncpy(pBack, pStr, len);
+    strcpy(pBack, pStr);
 
     return pBack;
 }
@@ -119,7 +119,7 @@ extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_InOut(LPSTR pStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, pStr, len);
+    strcpy(pBack, pStr);
 
     return pBack;
 }
@@ -135,7 +135,7 @@ extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_InByRef(LPSTR* ppStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, *ppStr, len);
+    strcpy(pBack, *ppStr);
 
     return pBack;
 }
@@ -163,7 +163,7 @@ extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_InOutByRef(LPSTR* ppStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, *ppStr, len);
+    strcpy(pBack, *ppStr);
     return pBack;
 }
 
@@ -187,7 +187,7 @@ extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_In(LPSTR pStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, pStr, len);
+    strcpy(pBack, pStr);
     return pBack;
 }
 
@@ -213,7 +213,7 @@ extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_InOut(LPSTR pStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, pStr, len);
+    strcpy(pBack, pStr);
     return pBack;
 }
 
@@ -227,7 +227,7 @@ extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_InByRef(LPSTR* ppStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, *ppStr, len);
+    strcpy(pBack, *ppStr);
     return pBack;
 }
 
@@ -255,7 +255,7 @@ extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_InOutByRef(LPSTR* ppStr)
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
     LPSTR pBack = (LPSTR)CoreClrAlloc(len);
-    strncpy(pBack, *ppStr, len);
+    strcpy(pBack, *ppStr);
     return pBack;
 }
 

@@ -64,23 +64,16 @@ namespace ILCompiler.DependencyAnalysis.X86
         {
             if (node.RepresentsIndirectionCell)
             {
-                // push eax (arbitrary value)
-                Builder.EmitByte(0x50);
-                // mov eax, [node address]
-                Builder.EmitByte(0x8B);
-                Builder.EmitByte(0x00 | ((byte)Register.EAX << 3) | 0x5);
-                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_HIGHLOW);
-                // xchg [esp], eax; this also restores the previous value of eax
-                Builder.EmitByte(0x87);
-                Builder.EmitByte(0x04);
-                Builder.EmitByte(0x24);
+                // push [node address]
+                Builder.EmitByte(0xFF);
+                Builder.EmitByte(0x35);
             }
             else
             {
                 // push <node address>
                 Builder.EmitByte(0x68);
-                Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_HIGHLOW);
             }
+            Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_HIGHLOW);
         }
 
         public void EmitMOV(Register regDst, Register regSrc)

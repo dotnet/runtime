@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Unicode;
 using Xunit;
 
@@ -19,68 +18,6 @@ namespace System.Text.Encodings.Web.Tests
         private const int UnicodeReplacementChar = '\uFFFD';
 
         private static readonly UTF8Encoding _utf8EncodingThrowOnInvalidBytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-
-        // To future refactorers:
-        // The following GetScalarValueFromUtf16_* tests must not be done as a [Theory].  If done via [InlineData], the invalid
-        // code points will get sanitized with replacement characters before they even reach the test, as the strings are parsed
-        // from the attributes in reflection.  And if done via [MemberData], the XmlWriter used by xunit will throw exceptions
-        // when it attempts to write out the test arguments, due to the invalid text.
-
-        [Fact]
-        public void GetScalarValueFromUtf16_NormalBMPChar_EndOfString()
-        {
-            GetScalarValueFromUtf16("a", 'a');
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_NormalBMPChar_NotEndOfString()
-        {
-            GetScalarValueFromUtf16("ab", 'a');
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_TrailingSurrogate_EndOfString()
-        {
-            GetScalarValueFromUtf16("\uDFFF", UnicodeReplacementChar);
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_TrailingSurrogate_NotEndOfString()
-        {
-            GetScalarValueFromUtf16("\uDFFFx", UnicodeReplacementChar);
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_LeadingSurrogate_EndOfString()
-        {
-            GetScalarValueFromUtf16("\uD800", UnicodeReplacementChar);
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_LeadingSurrogate_NotEndOfString()
-        {
-            GetScalarValueFromUtf16("\uD800x", UnicodeReplacementChar);
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_LeadingSurrogate_NotEndOfString_FollowedByLeadingSurrogate()
-        {
-            GetScalarValueFromUtf16("\uD800\uD800", UnicodeReplacementChar);
-        }
-
-        [Fact]
-        public void GetScalarValueFromUtf16_LeadingSurrogate_NotEndOfString_FollowedByTrailingSurrogate()
-        {
-            GetScalarValueFromUtf16("\uD800\uDFFF", 0x103FF);
-        }
-
-        private void GetScalarValueFromUtf16(string input, int expectedResult)
-        {
-            fixed (char* pInput = input)
-            {
-                Assert.Equal(expectedResult, UnicodeHelpers.GetScalarValueFromUtf16(pInput, endOfString: (input.Length == 1)));
-            }
-        }
 
         [Fact]
         public void GetUtf8RepresentationForScalarValue()
@@ -111,7 +48,7 @@ namespace System.Text.Encodings.Web.Tests
         [Fact]
         public void IsCharacterDefined()
         {
-            Assert.All(ReadListOfDefinedCharacters().Select((defined, idx) => new { defined, idx }), c => Assert.Equal(c.defined, UnicodeHelpers.IsCharacterDefined((char)c.idx)));
+            Assert.All(ReadListOfDefinedCharacters().Select((defined, idx) => new { defined, idx }), c => Assert.Equal(c.defined, UnicodeTestHelpers.IsCharacterDefined((char)c.idx)));
         }
 
         private static bool[] ReadListOfDefinedCharacters()

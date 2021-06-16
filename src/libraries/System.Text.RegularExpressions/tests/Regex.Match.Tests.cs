@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Tests;
@@ -283,6 +284,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty };
             yield return new object[] { "(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty };
             yield return new object[] { "(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty };
+            yield return new object[] { "[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest" };
 
             // No Negation
             yield return new object[] { "[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
@@ -552,13 +554,46 @@ namespace System.Text.RegularExpressions.Tests
                 string input = new string('a', 50) + "@a.a";
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+
+                if ((RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture) == RegexOptions.None)
+                {
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).IsMatch(input));
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Matches(input).Count);
+
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern).Count);
+                }
+
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).IsMatch(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Matches(input).Count);
+
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Count);
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_CachedPattern_NewTimeoutApplies(RegexOptions options)
+        {
+            const string PatternLeadingToLotsOfBacktracking = @"^(\w+\s?)*$";
+            Assert.True(Regex.IsMatch("", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromDays(1)));
+            var sw = Stopwatch.StartNew();
+            Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch("An input string that takes a very very very very very very very very very very very long time!", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromMilliseconds(1)));
+            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
+        }
+
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
         [OuterLoop("Can take several seconds")]
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
         [InlineData(@"a\s+", RegexOptions.None)]
         [InlineData(@"a\s+", RegexOptions.Compiled)]
         [InlineData(@"a\s+ ", RegexOptions.None)]
@@ -571,8 +606,9 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
         [OuterLoop("Can take several seconds")]
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
         public void Match_Timeout_Repetition_Throws(RegexOptions options)

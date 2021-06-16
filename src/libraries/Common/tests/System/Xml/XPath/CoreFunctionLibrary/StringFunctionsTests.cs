@@ -972,8 +972,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var xml = "books.xml";
             var testExpression = @"child::*[substring(name(),0,1)=""b""]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -987,8 +985,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var xml = "books.xml";
             var testExpression = @"child::*[substring-after(name(),""b"")=""ook""]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -1002,8 +998,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var xml = "books.xml";
             var testExpression = @"child::*[normalize-space("" book"")=name()]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 

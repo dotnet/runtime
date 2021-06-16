@@ -7,13 +7,14 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Threading;
 
 namespace System.Text
 {
-    internal class InternalEncoderBestFitFallback : EncoderFallback
+    internal sealed class InternalEncoderBestFitFallback : EncoderFallback
     {
         // Our variables
         internal BaseCodePageEncoding encoding;
@@ -31,7 +32,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 1;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is InternalEncoderBestFitFallback that && encoding.CodePage == that.encoding.CodePage;
 
         public override int GetHashCode() => encoding.CodePage;

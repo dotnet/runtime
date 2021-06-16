@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using MS.Internal.Xml.XPath;
 
-    internal class ActionFrame
+    internal sealed class ActionFrame
     {
         private int _state;         // Action execution state
         private int _counter;       // Counter, for the use of particular action
@@ -318,7 +318,7 @@ namespace System.Xml.Xsl.XsltOld
         }
 
         // special array iterator that iterates over ArrayList of SortKey
-        private class XPathSortArrayIterator : XPathArrayIterator
+        private sealed class XPathSortArrayIterator : XPathArrayIterator
         {
             public XPathSortArrayIterator(List<SortKey> list) : base(list) { }
             public XPathSortArrayIterator(XPathSortArrayIterator it) : base(it) { }

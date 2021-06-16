@@ -246,11 +246,6 @@
     <Compile Include="System\Xml\Cache\XPathNode.cs" />
     <Compile Include="System\Xml\Cache\XPathNodeHelper.cs" />
     <Compile Include="System\Xml\Cache\XPathNodeInfoAtom.cs" />
-    <Compile Include="System\Xml\Cache\Shape.cs" />
-    <Compile Include="System\Xml\Cache\ShapeGenerator.cs" />
-    <Compile Include="System\Xml\Cache\XPathDocumentView.cs" />
-    <Compile Include="System\Xml\Cache\XPathNodeView.cs" />
-    <Compile Include="System\Xml\Cache\XPathNodeViewPropertyDescriptor.cs" />
     <Compile Include="System\Xml\Resolvers\XmlKnownDtds.cs" />
     <Compile Include="System\Xml\Resolvers\XmlPreloadedResolver.cs" />
     <Compile Include="System\Xml\Resolvers\XmlPreloadedResolverAsync.cs" />

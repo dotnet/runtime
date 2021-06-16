@@ -30,7 +30,7 @@ struct _IpcStreamVtable {
 	IpcStreamCloseFunc close_func;
 };
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_IPC_STREAM_GETTER_SETTER) || defined(DS_IMPL_IPC_WIN32_GETTER_SETTER) || defined(DS_IMPL_IPC_POSIX_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_IPC_STREAM_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER)
 struct _IpcStream {
 #else
 struct _IpcStream_Internal {
@@ -38,7 +38,7 @@ struct _IpcStream_Internal {
 	IpcStreamVtable *vtable;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_IPC_STREAM_GETTER_SETTER) && !defined(DS_IMPL_IPC_WIN32_GETTER_SETTER) && !defined(DS_IMPL_IPC_POSIX_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_IPC_STREAM_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER)
 struct _IpcStream {
 	uint8_t _internal [sizeof (struct _IpcStream_Internal)];
 };

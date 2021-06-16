@@ -4,7 +4,7 @@
 namespace System.Net.NetworkInformation
 {
     // Specifies the Multicast addresses for an interface.
-    internal class SystemMulticastIPAddressInformation : MulticastIPAddressInformation
+    internal sealed class SystemMulticastIPAddressInformation : MulticastIPAddressInformation
     {
         private readonly SystemIPAddressInformation _innerInfo;
 

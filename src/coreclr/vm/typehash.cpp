@@ -407,7 +407,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                     if (FAILED(sp.SkipExactlyOne()))
                         break; // return NULL;
 
-                    ULONG data;
+                    uint32_t data;
                     if (FAILED(sp.GetData(&data)))
                         break; // return NULL;
 

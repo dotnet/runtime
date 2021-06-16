@@ -41,7 +41,6 @@ namespace Internal.JitInterface
             if (Interlocked.CompareExchange(ref s_instance, config, null) != null)
                 throw new InvalidOperationException();
 
-#if READYTORUN
             NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
                 IntPtr libHandle = IntPtr.Zero;
@@ -62,9 +61,6 @@ namespace Internal.JitInterface
                 }
                 return libHandle;
             });
-#else
-            Debug.Assert(jitPath == null);
-#endif
 
             CorInfoImpl.Startup();
         }
@@ -144,6 +140,11 @@ namespace Internal.JitInterface
                 TargetArchitecture.ARM64 => "arm64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
+
+            if ((target.Architecture == TargetArchitecture.ARM64) && (target.OperatingSystem == TargetOS.OSX))
+            {
+                targetOSComponent = "unix_osx";
+            }
 
             return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         }

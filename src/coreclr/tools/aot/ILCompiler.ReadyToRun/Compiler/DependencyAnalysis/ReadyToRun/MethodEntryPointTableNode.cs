@@ -83,8 +83,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             VertexArray vertexArray = new VertexArray(arraySection);
             arraySection.Place(vertexArray);
 
-            Section fixupSection = writer.NewSection();
-
             Dictionary<byte[], BlobVertex> uniqueFixups = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
             for (int rid = 0; rid < ridToEntryPoint.Count; rid++)
@@ -98,7 +96,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (fixups != null && !uniqueFixups.TryGetValue(fixups, out fixupBlobVertex))
                     {
                         fixupBlobVertex = new BlobVertex(fixups);
-                        fixupSection.Place(fixupBlobVertex);
                         uniqueFixups.Add(fixups, fixupBlobVertex);
                     }
                     EntryPointVertex entryPointVertex = new EntryPointVertex((uint)entryPoint.MethodIndex, fixupBlobVertex);

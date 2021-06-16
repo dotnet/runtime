@@ -14,7 +14,7 @@ private:
     std::condition_variable m_cv;
     bool m_set = false;
 
-    static VOID DoNothing()
+    static void DoNothing()
     {
 
     }
@@ -57,8 +57,11 @@ public:
 
     void Signal()
     {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        m_set = true;
+        {
+            std::lock_guard<std::mutex> guard(m_mtx);
+            m_set = true;
+        }
+
         m_cv.notify_one();
     }
 };
@@ -70,7 +73,7 @@ private:
     std::condition_variable m_cv;
     bool m_set = false;
 
-    static VOID DoNothing()
+    static void DoNothing()
     {
 
     }
@@ -98,13 +101,17 @@ public:
 
     void Signal()
     {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        m_set = true;
+        {
+            std::lock_guard<std::mutex> guard(m_mtx);
+            m_set = true;
+        }
+
+        m_cv.notify_all();
     }
 
     void Reset()
     {
-        std::unique_lock<std::mutex> lock(m_mtx);
+        std::lock_guard<std::mutex> guard(m_mtx);
         m_set = false;
     }
 };

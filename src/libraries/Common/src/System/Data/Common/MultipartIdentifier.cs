@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Data.Common
 {
-    internal class MultipartIdentifier
+    internal static class MultipartIdentifier
     {
         private const int MaxParts = 4;
         internal const int ServerIndex = 0;

@@ -13,7 +13,6 @@
 #include <glib.h>
 
 #include <mono/arch/sparc/sparc-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 
@@ -34,8 +33,7 @@
 gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
-	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	guint8 *code, *start;
 	int reg;
 

@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class StateMachine
+    internal sealed class StateMachine
     {
         // Constants for the state table
         private const int Init = 0x000000;       // Initial state

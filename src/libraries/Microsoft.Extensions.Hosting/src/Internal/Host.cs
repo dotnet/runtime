@@ -7,24 +7,35 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal class Host : IHost, IAsyncDisposable
+    internal sealed class Host : IHost, IAsyncDisposable
     {
         private readonly ILogger<Host> _logger;
         private readonly IHostLifetime _hostLifetime;
         private readonly ApplicationLifetime _applicationLifetime;
         private readonly HostOptions _options;
+        private readonly IHostEnvironment _hostEnvironment;
+        private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService> _hostedServices;
 
-        public Host(IServiceProvider services, IHostApplicationLifetime applicationLifetime, ILogger<Host> logger,
-            IHostLifetime hostLifetime, IOptions<HostOptions> options)
+        public Host(IServiceProvider services,
+                    IHostEnvironment hostEnvironment,
+                    PhysicalFileProvider defaultProvider,
+                    IHostApplicationLifetime applicationLifetime,
+                    ILogger<Host> logger,
+                    IHostLifetime hostLifetime,
+                    IOptions<HostOptions> options)
         {
             Services = services ?? throw new ArgumentNullException(nameof(services));
             _applicationLifetime = (applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime))) as ApplicationLifetime;
+            _hostEnvironment = hostEnvironment;
+            _defaultProvider = defaultProvider;
+
             if (_applicationLifetime is null)
             {
                 throw new ArgumentException("Replacing IHostApplicationLifetime is not supported.", nameof(applicationLifetime));
@@ -55,7 +66,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (hostedService is BackgroundService backgroundService)
                 {
-                    _ = HandleBackgroundException(backgroundService);
+                    _ = TryExecuteBackgroundServiceAsync(backgroundService);
                 }
             }
 
@@ -65,7 +76,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Started();
         }
 
-        private async Task HandleBackgroundException(BackgroundService backgroundService)
+        private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
             try
             {
@@ -74,6 +85,11 @@ namespace Microsoft.Extensions.Hosting.Internal
             catch (Exception ex)
             {
                 _logger.BackgroundServiceFaulted(ex);
+                if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
+                {
+                    _logger.BackgroundServiceStoppingHost(ex);
+                    _applicationLifetime.StopApplication();
+                }
             }
         }
 
@@ -131,14 +147,34 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public async ValueTask DisposeAsync()
         {
-            switch (Services)
+            // The user didn't change the ContentRootFileProvider instance, we can dispose it
+            if (ReferenceEquals(_hostEnvironment.ContentRootFileProvider, _defaultProvider))
             {
-                case IAsyncDisposable asyncDisposable:
-                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                    break;
-                case IDisposable disposable:
-                    disposable.Dispose();
-                    break;
+                // Dispose the content provider
+                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(false);
+            }
+            else
+            {
+                // In the rare case that the user replaced the ContentRootFileProvider, dispose it and the one
+                // we originally created
+                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(false);
+                await DisposeAsync(_defaultProvider).ConfigureAwait(false);
+            }
+
+            // Dispose the service provider
+            await DisposeAsync(Services).ConfigureAwait(false);
+
+            static async ValueTask DisposeAsync(object o)
+            {
+                switch (o)
+                {
+                    case IAsyncDisposable asyncDisposable:
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        break;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                }
             }
         }
     }

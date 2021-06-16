@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         public const int LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
         public const int LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;

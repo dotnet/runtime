@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -23,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -36,12 +37,12 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {

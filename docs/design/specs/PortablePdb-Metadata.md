@@ -556,7 +556,7 @@ The meaning of the _flags_ byte:
 
 The remaining bits are reserved for future use and have currently no meaning.
 
-> The data can be used to find the reference in a file indexing service such as a symbol server. 
+> The data can be used to find the reference in a file indexing service such as a symbol server.
 > For example, the [Simple Symbol Query Protocol](https://github.com/dotnet/symstore/blob/master/docs/specs/Simple_Symbol_Query_Protocol.md) uses a combination of _file-name_, _time-stamp_ and _file-size_ as a [key](https://github.com/dotnet/symstore/blob/master/docs/specs/SSQP_Key_Conventions.md#pe-timestamp-filesize).
 > Other services might use the MVID as it uniquely identifies the module.
 

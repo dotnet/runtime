@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.Qil
     /// <summary>
     /// A function invocation node which represents a call to an late bound function.
     /// </summary>
-    internal class QilInvokeLateBound : QilBinary
+    internal sealed class QilInvokeLateBound : QilBinary
     {
         //-----------------------------------------------
         // Constructor

@@ -37,12 +37,26 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task Connect(
             Uri uri,
             Func<string, JObject, CancellationToken, Task> onEvent,
-            Func<CancellationToken, Task> send,
             CancellationToken token)
         {
-
             this.onEvent = onEvent;
-            await ConnectWithMainLoops(uri, HandleMessage, send, token);
+
+            RunLoopStopped += (_, args) =>
+            {
+                logger.LogDebug($"Failing {pending_cmds.Count} pending cmds");
+                if (args.reason == RunLoopStopReason.Exception)
+                {
+                    foreach (var cmd in pending_cmds.Values)
+                        cmd.SetException(args.ex);
+                }
+                else
+                {
+                    foreach (var cmd in pending_cmds.Values)
+                        cmd.SetCanceled();
+                }
+            };
+
+            await ConnectWithMainLoops(uri, HandleMessage, token);
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)

@@ -10,35 +10,40 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" />
-    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
-    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" />
-    <Compile Include="AllowedCharsBitmapTests.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\AllowedBmpCodePointsBitmap.cs" Link="System\Text\Encodings\Web\AllowedBmpCodePointsBitmap.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\AsciiByteMap.cs" Link="System\Text\Encodings\Web\AsciiByteMap.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ascii.cs" Link="System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ascii.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\ScalarEscaperBase.cs" Link="System\Text\Encodings\Web\ScalarEscaperBase.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\SpanUtility.cs" Link="System\Text\Encodings\Web\SpanUtility.cs" />
+    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" Link="System\Text\Unicode\UnicodeHelpers.cs" />
+    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" Link="System\Text\Unicode\UnicodeHelpers.generated.cs" />
+    <Compile Include="AsciiByteMapTests.cs" />
+    <Compile Include="AsciiPreescapedDataTests.cs" />
+    <Compile Include="AllowedAsciiCodePointsTests.cs" />
+    <Compile Include="InboxEncoderCommonTests.cs" />
+    <Compile Include="SpanUtilityTests.cs" />
+    <Compile Include="AllowedBmpCodePointsBitmapTests.cs" />
+    <Compile Include="TextEncoderBatteryTests.cs" />
     <Compile Include="TextEncoderTests.cs" />
     <Compile Include="ConfigurableScalarTextEncoder.cs" />
-    <Compile Include="ScalarTestEncoder.cs" />
     <Compile Include="EncoderCommon.cs" />
     <Compile Include="EncoderCommonTests.cs" />
     <Compile Include="EncoderExtensionsTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HtmlEncoderTests.cs" />
-    <Compile Include="IHtmlEncoder.cs" />
-    <Compile Include="IJavaScriptStringEncoder.cs" />
-    <Compile Include="IUrlEncoder.cs" />
-    <Compile Include="JavaScriptStringEncoderTests.cs" />
-    <Compile Include="JavaScriptStringEncoderTests.Relaxed.cs" />
-    <Compile Include="PerformanceTests.cs" />
-    <Compile Include="TemporaryEncoderAdapters.cs" />
-    <Compile Include="TemporaryEncoderExtensions.cs" />
-    <Compile Include="TemporaryInternalTypes.cs" />
+    <Compile Include="JavaScriptEncoderTests.cs" />
+    <Compile Include="JavaScriptEncoderTests.Relaxed.cs" />
     <Compile Include="TextEncoderSettingsTests.cs" />
-    <Compile Include="UnicodeEncoderBase.cs" />
-    <Compile Include="UnicodeEncoderBaseTests.cs" />
     <Compile Include="UnicodeHelpersTests.cs" />
     <Compile Include="UnicodeRangesTests.cs" />
     <Compile Include="UnicodeRangesTests.generated.cs" />
     <Compile Include="UnicodeRangeTests.cs" />
+    <Compile Include="UnicodeTestHelpers.cs" />
     <Compile Include="UrlEncoderTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Compile Include="..\src\Polyfills\System.Text.Rune.netstandard20.cs" Link="Polyfills\System.Text.Rune.netstandard20.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\ThrowHelper.cs" Link="System\Text\Encodings\Web\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
@@ -46,14 +51,12 @@
       <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
       <LogicalName>UnicodeData.txt</LogicalName>
     </EmbeddedResource>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs"
-             Link="System\Text\UnicodeDebug.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs"
-             Link="System\Text\UnicodeUtility.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
     <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 </Project>

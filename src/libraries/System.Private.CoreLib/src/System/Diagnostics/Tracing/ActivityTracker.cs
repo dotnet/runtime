@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
     ///
     /// On any normal event log the event with activityTracker.CurrentActivityId
     /// </summary>
-    internal class ActivityTracker
+    internal sealed class ActivityTracker
     {
         /// <summary>
         /// Called on work item begins.  The activity name = providerName + activityName without 'Start' suffix.
@@ -300,7 +300,7 @@ namespace System.Diagnostics.Tracing
         /// the 'list of live parents' which indicate of those ancestors, which are alive (if they
         /// are not marked dead they are alive).
         /// </summary>
-        private class ActivityInfo
+        private sealed class ActivityInfo
         {
             public ActivityInfo(string name, long uniqueId, ActivityInfo? creator, Guid activityIDToRestore, EventActivityOptions options)
             {
@@ -618,9 +618,9 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     ///
     [EventSource(Name = "Microsoft.Tasks.Nuget")]
-    internal class TplEventSource : EventSource
+    internal sealed class TplEventSource : EventSource
     {
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
             public const EventKeywords Debug = (EventKeywords)0x20000;

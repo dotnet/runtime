@@ -118,7 +118,7 @@ def main(argv):
     elif platform == 'windows':
         bootstrapFilename = "bootstrap.cmd"
 
-    bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/master/" + bootstrapFilename
+    bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
 
     with TempDir() as temp_location:
         bootstrapPath = os.path.join(temp_location, bootstrapFilename)
