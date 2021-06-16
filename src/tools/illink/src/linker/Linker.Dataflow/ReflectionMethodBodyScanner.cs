@@ -37,10 +37,10 @@ namespace Mono.Linker.Dataflow
 			if (methodDefinition == null)
 				return false;
 
-			return
-				GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
+			return GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
 				context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (methodDefinition) ||
-				context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (methodDefinition);
+				context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (methodDefinition)
+				|| methodDefinition.IsPInvokeImpl;
 		}
 
 		public static bool RequiresReflectionMethodBodyScannerForMethodBody (FlowAnnotations flowAnnotations, MethodDefinition methodDefinition)
@@ -75,7 +75,7 @@ namespace Mono.Linker.Dataflow
 		{
 			Scan (methodBody);
 
-			if (methodBody.Method.ReturnType.MetadataType != MetadataType.Void) {
+			if (GetReturnTypeWithoutModifiers (methodBody.Method.ReturnType).MetadataType != MetadataType.Void) {
 				var method = methodBody.Method;
 				var requiredMemberTypes = _context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (method);
 				if (requiredMemberTypes != 0) {
@@ -1729,6 +1729,20 @@ namespace Mono.Linker.Dataflow
 					break;
 
 				default:
+
+					if (calledMethodDefinition.IsPInvokeImpl) {
+						// Is the PInvoke dangerous?
+						bool comDangerousMethod = IsComInterop (calledMethodDefinition.MethodReturnType, calledMethodDefinition.ReturnType);
+						foreach (ParameterDefinition pd in calledMethodDefinition.Parameters) {
+							comDangerousMethod |= IsComInterop (pd, pd.ParameterType);
+						}
+
+						if (comDangerousMethod) {
+							reflectionContext.AnalyzingPattern ();
+							reflectionContext.RecordUnrecognizedPattern (2050, $"P/invoke method '{calledMethodDefinition.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.");
+						}
+					}
+
 					if (requiresDataFlowAnalysis) {
 						reflectionContext.AnalyzingPattern ();
 						for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex++) {
@@ -1755,7 +1769,7 @@ namespace Mono.Linker.Dataflow
 
 					// To get good reporting of errors we need to track the origin of the value for all method calls
 					// but except Newobj as those are special.
-					if (calledMethodDefinition.ReturnType.MetadataType != MetadataType.Void) {
+					if (GetReturnTypeWithoutModifiers (calledMethodDefinition.ReturnType).MetadataType != MetadataType.Void) {
 						methodReturnValue = CreateMethodReturnValue (calledMethodDefinition, returnValueDynamicallyAccessedMemberTypes);
 
 						return true;
@@ -1771,7 +1785,7 @@ namespace Mono.Linker.Dataflow
 			// didn't set the return value (and the method has a return value), we will set it to be an
 			// unknown value with the return type of the method.
 			if (methodReturnValue == null) {
-				if (calledMethod.ReturnType.MetadataType != MetadataType.Void) {
+				if (GetReturnTypeWithoutModifiers (calledMethod.ReturnType).MetadataType != MetadataType.Void) {
 					methodReturnValue = CreateMethodReturnValue (calledMethodDefinition, returnValueDynamicallyAccessedMemberTypes);
 				}
 			}
@@ -1792,6 +1806,64 @@ namespace Mono.Linker.Dataflow
 			}
 
 			return true;
+		}
+
+		bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType)
+		{
+			// This is best effort. One can likely find ways how to get COM without triggering these alarms.
+			// AsAny marshalling of a struct with an object-typed field would be one, for example.
+
+			// This logic roughly corresponds to MarshalInfo::MarshalInfo in CoreCLR,
+			// not trying to handle invalid cases and distinctions that are not interesting wrt
+			// "is this COM?" question.
+
+			NativeType nativeType = NativeType.None;
+			if (marshalInfoProvider.HasMarshalInfo) {
+				nativeType = marshalInfoProvider.MarshalInfo.NativeType;
+			}
+
+			if (nativeType == NativeType.IUnknown || nativeType == NativeType.IDispatch || nativeType == NativeType.IntF) {
+				// This is COM by definition
+				return true;
+			}
+
+			if (nativeType == NativeType.None) {
+				// Resolve will look at the element type
+				var parameterTypeDef = _context.TryResolve (parameterType);
+
+				if (parameterTypeDef != null) {
+					if (parameterTypeDef.IsTypeOf ("System", "Array")) {
+						// System.Array marshals as IUnknown by default
+						return true;
+					} else if (parameterTypeDef.IsTypeOf ("System", "String") ||
+						parameterTypeDef.IsTypeOf ("System.Text", "StringBuilder")) {
+						// String and StringBuilder are special cased by interop
+						return false;
+					}
+
+					if (parameterTypeDef.IsValueType) {
+						// Value types don't marshal as COM
+						return false;
+					} else if (parameterTypeDef.IsInterface) {
+						// Interface types marshal as COM by default
+						return true;
+					} else if (parameterTypeDef.IsMulticastDelegate ()) {
+						// Delegates are special cased by interop
+						return false;
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "CriticalHandle")) {
+						// Subclasses of CriticalHandle are special cased by interop
+						return false;
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "SafeHandle")) {
+						// Subclasses of SafeHandle are special cased by interop
+						return false;
+					} else if (!parameterTypeDef.IsSequentialLayout && !parameterTypeDef.IsExplicitLayout) {
+						// Rest of classes that don't have layout marshal as COM
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 
 		bool AnalyzeGenericInstatiationTypeArray (ValueNode arrayParam, ref ReflectionPatternContext reflectionContext, MethodReference calledMethod, IList<GenericParameter> genericParameters)
