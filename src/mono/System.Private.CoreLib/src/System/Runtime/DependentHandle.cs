@@ -1,19 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
-namespace System.Runtime.CompilerServices
+namespace System.Runtime
 {
     internal struct Ephemeron
     {
-        public object? key;
-        public object? value;
+        public object? Key;
+        public object? Value;
     }
-}
 
-namespace System.Runtime
-{
     //
     // Instead of dependent handles, mono uses arrays of Ephemeron objects.
     //
@@ -24,8 +19,8 @@ namespace System.Runtime
         public DependentHandle(object? target, object? dependent)
         {
             data = new Ephemeron[1];
-            data[0].key = target;
-            data[0].value = dependent;
+            data[0].Key = target;
+            data[0].Value = dependent;
             GC.register_ephemeron_array(data);
         }
 
@@ -52,12 +47,12 @@ namespace System.Runtime
                 return default;
             }
 
-            if (data[0].key == GC.EPHEMERON_TOMBSTONE)
+            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
             {
                 return default;
             }
 
-            return (data[0].key, data[0].value);
+            return (data[0].Key, data[0].Value);
         }
 
         internal object? UnsafeGetTarget()
@@ -86,16 +81,16 @@ namespace System.Runtime
                 return null;
             }
 
-            if (data[0].key == GC.EPHEMERON_TOMBSTONE)
+            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
             {
                 dependent = null;
 
                 return null;
             }
 
-            dependent = data[0].value;
+            dependent = data[0].Value;
 
-            return data[0].key;
+            return data[0].Key;
         }
 
         public void Dispose()
@@ -116,12 +111,12 @@ namespace System.Runtime
                 return default;
             }
 
-            if (data[0].key == GC.EPHEMERON_TOMBSTONE)
+            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
             {
                 return null;
             }
 
-            return data[0].key;
+            return data[0].Key;
         }
 
         private void SetTarget(object? target)
@@ -133,7 +128,7 @@ namespace System.Runtime
                 return;
             }
 
-            data[0].key = target;
+            data[0].Key = target;
         }
 
         private object? GetDependent()
@@ -145,12 +140,12 @@ namespace System.Runtime
                 return default;
             }
 
-            if (data[0].key == GC.EPHEMERON_TOMBSTONE)
+            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
             {
                 return null;
             }
 
-            return data[0].value;
+            return data[0].Value;
         }
 
         private void SetDependent(object? dependent)
@@ -162,7 +157,7 @@ namespace System.Runtime
                 return;
             }
 
-            data[0].value = dependent;
+            data[0].Value = dependent;
         }
     }
 }
