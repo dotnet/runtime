@@ -1,8 +1,5 @@
 project(System.Native C)
 
-include(configure.cmake)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
