@@ -1102,7 +1102,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_compile_post_filter: function (typePtr, boundConverter, js) {
+		_compile_interchange_to_js: function (typePtr, boundConverter, js) {
 			if (!js)
 				return boundConverter;
 			
@@ -1117,14 +1117,14 @@ var BindingSupportLib = {
 			closure[converterKey] = boundConverter;
 
 			var filterExpression = this._create_named_function(
-				"post_filter_for_type" + typePtr,
+				"interchange_to_js_filter_for_type" + typePtr,
 				["value"], js, closure
 			);
 			closure.filter = filterExpression;
 			
 			var bodyJs = `var value = ${converterKey}(js_value), filteredValue = filter(value);\r\n` +
 				"return filteredValue;";
-			var functionName = "post_filtered_converter_for_type" + typePtr;
+			var functionName = "interchange_to_js_for_type" + typePtr;
 			var result = this._create_named_function(
 				functionName, ["js_value"], bodyJs, closure
 			);
@@ -1220,7 +1220,7 @@ var BindingSupportLib = {
 				if (info.error)
 					console.error(`Error while configuring automatic converter for type ${this._get_type_name(typePtr)}: ${info.error}`);
 
-				var postFilter = info.postFilter;
+				var interchangeToJs = info.interchangeToJs;
 
 				var convMethod = info.outputPtr;
 				if (!convMethod) {
@@ -1233,7 +1233,7 @@ var BindingSupportLib = {
 						convMethod, 0, signature, this._get_type_name(typePtr) + "$ToJavaScript"
 					);
 
-					this._struct_unboxer_cache.set (typePtr, this._compile_post_filter (typePtr, boundConverter, postFilter));
+					this._struct_unboxer_cache.set (typePtr, this._compile_interchange_to_js (typePtr, boundConverter, interchangeToJs));
 				}
 			}
 
@@ -1265,7 +1265,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_compile_pre_filter: function (typePtr, boundConverter, js) {
+		_compile_js_to_interchange: function (typePtr, boundConverter, js) {
 			if (!js)
 				return boundConverter;
 			
@@ -1281,12 +1281,12 @@ var BindingSupportLib = {
 			closure[converterKey] = boundConverter;
 
 			var filterExpression = this._create_named_function(
-				"pre_filter_for_type" + typePtr,
+				"interchange_filter_for_type" + typePtr,
 				["value"], js, closure
 			);
 
 			closure.filter = filterExpression;
-			var functionName = "pre_filtered_converter_for_type" + typePtr;
+			var functionName = "js_to_interchange_for_type" + typePtr;
 
 			var bodyJs = "var filteredValue = filter(value);\r\n" +
 				`var convertedResult = ${converterKey}(filteredValue, method, parmIdx);\r\n` +
@@ -1314,7 +1314,7 @@ var BindingSupportLib = {
 				if (info.error)
 					console.error(`Error while configuring automatic converter for type ${this._get_type_name(typePtr)}: ${info.error}`);
 
-				var preFilter = info.preFilter;
+				var jsToInterchange = info.jsToInterchange;
 
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
@@ -1333,7 +1333,7 @@ var BindingSupportLib = {
 					convMethod, 0, signature, methodName
 				);
 
-				var result = this._compile_pre_filter (typePtr, boundConverter, preFilter);
+				var result = this._compile_js_to_interchange (typePtr, boundConverter, jsToInterchange);
 
 				this._automatic_converter_table.set (typePtr, result);
 			}

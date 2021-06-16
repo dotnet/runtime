@@ -10,8 +10,8 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static class DateTimeOffsetMarshaler
     {
-        public static string FromJavaScriptPreFilter => "return BINDING._pre_filter_date(value)";
-        public static string ToJavaScriptPostFilter => "return new Date(value)";
+        public static string JavaScriptToInterchangeTransform => "return BINDING._pre_filter_date(value)";
+        public static string InterchangeToJavaScriptTransform => "return new Date(value)";
 
         public static DateTimeOffset FromJavaScript (double msecsSinceEpoch)
         {

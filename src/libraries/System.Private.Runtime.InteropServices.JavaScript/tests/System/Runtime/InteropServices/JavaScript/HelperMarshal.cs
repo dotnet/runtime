@@ -41,8 +41,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public static class CustomDateMarshaler {
-            public static string FromJavaScriptPreFilter => "return value.toISOString()";
-            public static string ToJavaScriptPostFilter => "return new Date(value)";
+            public static string JavaScriptToInterchangeTransform => "return value.toISOString()";
+            public static string InterchangeToJavaScriptTransform => "return new Date(value)";
 
             public static CustomDate FromJavaScript (string s) {
                 var newDate = DateTime.Parse(s).ToUniversalTime();
@@ -71,10 +71,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public static class CustomVector3Marshaler {
-            public static string FromJavaScriptPreFilter => "let ptr = temp_malloc(4 * 3), view = new Float32Array(Module.HEAPU8.buffer, ptr, 3); " +
+            public static string JavaScriptToInterchangeTransform => "let ptr = temp_malloc(4 * 3), view = new Float32Array(Module.HEAPU8.buffer, ptr, 3); " +
                 "for (var i = 0; i < 3; i++) view[i] = value[i];" +
                 "return ptr;";
-            public static string ToJavaScriptPostFilter => 
+            public static string InterchangeToJavaScriptTransform => 
                 "return [ Module.HEAPF32[((value / 4) | 0) + 0], Module.HEAPF32[((value / 4) | 0) + 1], Module.HEAPF32[((value / 4) | 0) + 2] ]";
 
             public static unsafe CustomVector3 FromJavaScript (float * p) {

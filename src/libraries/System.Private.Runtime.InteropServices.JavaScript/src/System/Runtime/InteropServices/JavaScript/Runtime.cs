@@ -438,8 +438,8 @@ namespace System.Runtime.InteropServices.JavaScript
             if (marshalerType == null)
                 return "null";
 
-            var preFilter = GetAndEscapeStringProperty(marshalerType, "FromJavaScriptPreFilter");
-            var postFilter = GetAndEscapeStringProperty(marshalerType, "ToJavaScriptPostFilter");
+            var jsToInterchange = GetAndEscapeStringProperty(marshalerType, "JavaScriptToInterchangeTransform");
+            var interchangeToJs = GetAndEscapeStringProperty(marshalerType, "InterchangeToJavaScriptTransform");
 
             var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? fromReturnType, out Type? fromParameterType);
             var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? toReturnType, out Type? toParameterType);
@@ -457,7 +457,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             return ("{\n" + $"\"typePtr\": {typePtr}, \n" +
-                $"\"preFilter\": {preFilter}, \"postFilter\": {postFilter}, \n" +
+                $"\"jsToInterchange\": {jsToInterchange}, \"interchangeToJs\": {interchangeToJs}, \n" +
                 $"\"inputPtr\": {inputPtr}, \"outputPtr\": {outputPtr} \n" +
                 "}");
         }
