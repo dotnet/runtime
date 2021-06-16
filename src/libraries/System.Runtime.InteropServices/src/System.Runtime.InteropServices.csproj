@@ -60,7 +60,7 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Unsupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
