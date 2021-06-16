@@ -54,19 +54,11 @@ if (is_browser) {
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
 	};
-
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	var url = new URL (decodeURI (window.location));
-	arguments = [];
-	for (var v of url.searchParams) {
-		if (v [0] == "arg") {
-			arguments.push (v [1]);
-		}
-	}
 }
-//proxyJson(console.log);
 
-if (typeof crypto === 'undefined') {
+if (is_node) {
+	var crypto = require('crypto');
+} else if (typeof crypto === 'undefined') {
 	// **NOTE** this is a simple insecure polyfill for testing purposes only
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
@@ -77,8 +69,9 @@ if (typeof crypto === 'undefined') {
 		}
 	}
 }
-
-if (typeof performance === 'undefined') {
+if (is_node) {
+	var { performance, PerformanceObserver } = require("perf_hooks");
+} else if (typeof performance === 'undefined') {
 	// performance.now() is used by emscripten and doesn't work in JSC
 	var performance = {
 		now: function () {
@@ -87,10 +80,20 @@ if (typeof performance === 'undefined') {
 	}
 }
 
+// get arguments
 let testArguments = [];
 try {
 	if (is_node) {
 		testArguments = process.argv.slice (2);
+
+	}else if (is_browser) {
+		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+		var url = new URL (decodeURI (window.location));
+		for (var param of url.searchParams) {
+			if (param [0] == "arg") {
+				testArguments.push (param [1]);
+			}
+		}
 
 	}else if (typeof arguments === "undefined") {
 		if (typeof scriptArgs !== "undefined") {
@@ -106,10 +109,7 @@ try {
 	console.error(e)
 }
 
-if (is_node) {
-	var { performance, PerformanceObserver } = require("perf_hooks");
-}
-
+// abstract all IO into a compact universally available method so that it is consistent and reliable
 const IOHandler = {
 	load: null,
 	read: null,
@@ -188,8 +188,6 @@ const IOHandler = {
 };
 IOHandler.init();
 // end of all the nice shell glue code.
-
-// set up a global variable to be accessed in App.init
 
 function test_exit (exit_code) {
 	if (is_browser) {
@@ -411,6 +409,7 @@ var App = {
 };
 
 // load the config and runtime files which will start the runtime init and subsiquently the tests
+// uses promise chain as loading is async but we can't use await here
 IOHandler
 	.load ("mono-config.js")
 	.then(function () {
