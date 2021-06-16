@@ -65,19 +65,18 @@ namespace System.Net.Http
 
         private class DynamicHttp2StreamWindowManager : Http2StreamWindowManager
         {
-            private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-            private TimeSpan _lastWindowUpdate;
+            private static readonly double StopWatchToTimesSpan = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
+
+            private long _lastWindowUpdate;
 
             private int _streamWindowThresholdMultiplier = 1;
-            private readonly TimeSpan _start;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
             {
                 _streamWindowThresholdMultiplier = connection._pool.Settings._streamWindowThresholdMultiplier;
                 _stream.TraceFlowControl($" _streamWindowThresholdMultiplier:{_streamWindowThresholdMultiplier} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
-                _lastWindowUpdate = _stopwatch.Elapsed;
-                _start = _lastWindowUpdate;
+                _lastWindowUpdate = Stopwatch.GetTimestamp();
             }
 
             public override void AdjustWindow(int bytesConsumed)
@@ -89,20 +88,19 @@ namespace System.Net.Http
                 }
 
                 int windowSizeIncrement = _delivered;
-                TimeSpan currentTime = _stopwatch.Elapsed;
+                long currentTime = Stopwatch.GetTimestamp();
 
                 if (_connection._rttEstimator!.MinRtt > TimeSpan.Zero)
                 {
                     TimeSpan rtt = _connection._rttEstimator.MinRtt;
-                    TimeSpan dt = currentTime - _lastWindowUpdate;
+                    TimeSpan dt = StopwatchTicksToTimeSpan(currentTime - _lastWindowUpdate);
 
                     if (_delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks * _streamWindowThresholdMultiplier)
                     {
                         windowSizeIncrement += _streamWindowSize;
                         _streamWindowSize *= 2;
 
-                        _stream.TraceFlowControl(
-                            $"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold} | S-T={(currentTime - _start).TotalSeconds} sec {Environment.NewLine}");
+                        _stream.TraceFlowControl($"Updated Stream Window. StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
                     }
                 }
 
@@ -111,6 +109,12 @@ namespace System.Net.Http
 
                 _delivered = 0;
                 _lastWindowUpdate = currentTime;
+            }
+
+            private static TimeSpan StopwatchTicksToTimeSpan(long stopwatchTicks)
+            {
+                long ticks = (long)(StopWatchToTimesSpan * stopwatchTicks);
+                return new TimeSpan(ticks);
             }
         }
 

@@ -148,10 +148,21 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Download20_Data4))]
         public Task Download20_Dynamic_SingleStream_4(string hostName, int ratio, int correction) => Download20_Dynamic_SingleStream(hostName, ratio, correction);
 
-        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, int correction)
+        [Fact]
+        public Task Download20_Dynamic_Test()
         {
             _listener.Enabled = true;
-            _listener.Filter = m =>  m.Contains("[FlowControl]") && m.Contains("Updated");
+            return Download20_Dynamic_SingleStream(BenchmarkServer, 8, 8, true);
+        }
+
+        private async Task Download20_Dynamic_SingleStream(string hostName, int ratio, int correction, bool keepFilter = false)
+        {
+            _listener.Enabled = true;
+            if (!keepFilter)
+            {
+                _listener.Filter = m => m.Contains("[FlowControl]") && m.Contains("Updated");
+            }
+            
             var handler = new SocketsHttpHandler()
             {
                 StreamWindowUpdateRatio = ratio,
@@ -247,7 +258,7 @@ namespace System.Net.Http.Functional.Tests
 
         private double? GetStreamWindowSizeInMegabytes()
         {
-            const string Prefix = "Updated StreamWindowSize: ";
+            const string Prefix = "Updated Stream Window. StreamWindowSize: ";
             string log = _listener.Log2.ToString();
 
             int idx = log.LastIndexOf(Prefix);
@@ -266,7 +277,7 @@ namespace System.Net.Http.Functional.Tests
             string log = _listener.Log2.ToString();
 
             int idx = log.LastIndexOf(Prefix);
-            if (idx < 0) return null;
+            
             ReadOnlySpan<char> text = log.AsSpan().Slice(idx + Prefix.Length);
             text = text.Slice(0, text.IndexOf(' '));
 
