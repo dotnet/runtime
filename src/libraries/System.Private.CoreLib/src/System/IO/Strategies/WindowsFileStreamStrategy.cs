@@ -265,5 +265,50 @@ namespace System.IO.Strategies
                 _filePosition = value;
             }
         }
+
+        public override int Read(byte[] buffer, int offset, int count) => ReadSpan(new Span<byte>(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer) => ReadSpan(buffer);
+
+        private unsafe int ReadSpan(Span<byte> destination)
+        {
+            if (_fileHandle.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if ((_access & FileAccess.Read) == 0)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+            }
+
+            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition, _path);
+            Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
+            _filePosition += r;
+
+            return r;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+            => WriteSpan(new ReadOnlySpan<byte>(buffer, offset, count));
+
+        public override void Write(ReadOnlySpan<byte> buffer) => WriteSpan(buffer);
+
+        private unsafe void WriteSpan(ReadOnlySpan<byte> source)
+        {
+            if (_fileHandle.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if ((_access & FileAccess.Write) == 0)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+            }
+
+            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition, _path);
+            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
+            _filePosition += r;
+
+            UpdateLengthOnChangePosition();
+        }
     }
 }
