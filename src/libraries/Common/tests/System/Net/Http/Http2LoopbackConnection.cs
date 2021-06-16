@@ -722,7 +722,8 @@ namespace System.Net.Test.Common
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (pingAck == null || pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
             {
-                throw new Exception("Expected PING ACK");
+                string faultDetails = pingAck == null ? "" : $" frame.Type:{pingAck.Type} frame.AckFlag: {pingAck.AckFlag}";
+                throw new Exception("Expected PING ACK" + faultDetails);
             }
 
             Assert.Equal(pingData, pingAck.Data);
