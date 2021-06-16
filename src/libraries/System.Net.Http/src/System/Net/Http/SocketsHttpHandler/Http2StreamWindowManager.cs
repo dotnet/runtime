@@ -125,6 +125,7 @@ namespace System.Net.Http
                 Init,
                 Waiting,
                 PingSent,
+                Terminating
             }
 
             private const double PingIntervalInSeconds = 1;
@@ -181,6 +182,7 @@ namespace System.Net.Http
 
                         // Send a PING
                         long payload = Interlocked.Decrement(ref _pingCounter);
+                        _connection.TraceFlowControl("Sending PING in response to DATA.");
                         _connection.LogExceptions(_connection.SendPingAsync(payload, isAck: false));
                         _pingSentTimestamp = now;
                         _status = Status.PingSent;
@@ -192,11 +194,17 @@ namespace System.Net.Http
             {
                 Debug.Assert(payload < 0);
                 if (_staticRtt.HasValue) return;
+                if (_status != Status.PingSent) return;
 
                 if (Interlocked.Read(ref _pingCounter) != payload)
                     ThrowProtocolError();
                 RefreshRtt();
                 _status = Status.Waiting;
+            }
+
+            internal void OnGoAwayReceived()
+            {
+                _status = Status.Terminating;
             }
 
             private void RefreshRtt()

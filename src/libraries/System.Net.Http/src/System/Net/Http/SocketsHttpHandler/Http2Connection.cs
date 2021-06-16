@@ -1688,6 +1688,9 @@ namespace System.Net.Http
             // we could hold pool lock while trying to grab connection lock in Dispose().
             _pool.InvalidateHttp2Connection(this);
 
+            // There is no point sending more PING frames for RTT estimation:
+            _rttEstimator?.OnGoAwayReceived();
+
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
 
             lock (SyncObject)
