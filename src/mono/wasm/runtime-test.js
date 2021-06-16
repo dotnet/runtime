@@ -15,7 +15,7 @@ if (typeof (console) === "undefined"){
 	};
 }
 function proxyMethod (prefix, func, asJson) {
-	let method = function() {
+	return function() {
 		let args = [...arguments];
 		if (asJson) {
 			func (JSON.stringify({
@@ -27,8 +27,6 @@ function proxyMethod (prefix, func, asJson) {
 			func([prefix + args[0], ...args.slice(1)]);
 		}
 	};
-
-	return method;
 };
 
 const methods = ["debug", "trace", "warn", "info", "error"];
