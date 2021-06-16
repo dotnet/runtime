@@ -23,16 +23,9 @@ namespace System.Text.Json.Serialization
         internal abstract ConverterStrategy ConverterStrategy { get; }
 
         /// <summary>
-        /// Can direct Read or Write methods be called (for performance).
-        /// </summary>
-        internal bool CanUseDirectReadOrWrite { get; set; }
-
-        /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
         internal virtual bool CanHaveIdMetadata => true;
-
-        internal bool CanBePolymorphic { get; set; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.

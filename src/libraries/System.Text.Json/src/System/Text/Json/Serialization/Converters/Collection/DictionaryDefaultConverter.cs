@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
                 CreateCollection(ref reader, ref state);
 
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
-                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (elementTypeInfo.CanUseDirectRead && state.Current.NumberHandling == null)
                 {
                     // Process all elements.
                     while (true)

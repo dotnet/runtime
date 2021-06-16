@@ -33,10 +33,18 @@ namespace System.Text.Json.Serialization
             }
 
             WriteStack state = default;
-            state.Initialize(typeof(T), options, supportContinuation: false);
+            JsonConverter converter = state.Initialize(value, options, supportContinuation: false);
+
             try
             {
-                TryWrite(writer, value, options, ref state);
+                if (converter is JsonConverter<T> conv)
+                {
+                    conv.TryWrite(writer, value, options, ref state);
+                }
+                else
+                {
+                    converter.TryWriteAsObject(writer, value, options, ref state);
+                }
             }
             catch
             {

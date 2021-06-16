@@ -234,11 +234,17 @@ namespace System.Text.Json.Serialization.Metadata
         {
             T value = Get!(obj);
 
-            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                value != null &&
-                // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
-                // However JsonConverter<object> that uses ConverterStrategy == Value is an exception.
-                (Converter.CanBePolymorphic || (!Converter.IsValueType && ConverterStrategy != ConverterStrategy.Value)) &&
+            if (
+#if NET6_0_OR_GREATER
+                !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+#else
+                !Converter.IsValueType &&
+#endif
+                Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                value is not null &&
+                // Only perform cycle detection on internal composite converters,
+                // with the exception of the internal JsonConverter<object> which is a Value converter.
+                (ConverterStrategy != ConverterStrategy.Value || ConverterBase is Converters.ObjectConverter) &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.
@@ -357,7 +363,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 success = true;
             }
-            else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            else if (state.Current.JsonTypeInfo.CanUseDirectRead && state.Current.NumberHandling == null)
             {
                 // CanUseDirectReadOrWrite == false when using streams
                 Debug.Assert(!state.IsContinuation);
@@ -422,7 +428,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (state.Current.JsonTypeInfo.CanUseDirectRead && state.Current.NumberHandling == null)
                 {
                     // CanUseDirectReadOrWrite == false when using streams
                     Debug.Assert(!state.IsContinuation);

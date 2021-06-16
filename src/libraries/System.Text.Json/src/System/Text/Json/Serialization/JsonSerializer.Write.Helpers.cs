@@ -47,11 +47,9 @@ namespace System.Text.Json
             else
             {
                 WriteStack state = default;
-                state.Initialize(jsonTypeInfo, supportContinuation: false);
+                JsonConverter converter = state.Initialize(value, jsonTypeInfo, supportContinuation: false);
 
-                JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
                 Debug.Assert(converter != null);
-
                 Debug.Assert(jsonTypeInfo.Options != null);
 
                 WriteCore(converter, writer, value, jsonTypeInfo.Options, ref state);

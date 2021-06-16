@@ -39,6 +39,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
+        private Func<Type, bool>? _supportedPolymorphicTypes;
         private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
@@ -82,6 +83,7 @@ namespace System.Text.Json
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
+            _supportedPolymorphicTypes = options._supportedPolymorphicTypes;
             _referenceHandler = options._referenceHandler;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
@@ -547,6 +549,20 @@ namespace System.Text.Json
                 VerifyMutable();
                 _referenceHandler = value;
                 ReferenceHandlingStrategy = value?.HandlingStrategy ?? ReferenceHandlingStrategy.None;
+            }
+        }
+
+        /// <summary>
+        /// Type predicate configuring what types should be serialized polymorphically.
+        /// Note that this abstraction only governs serialization and offers no support for deserialization.
+        /// </summary>
+        public Func<Type, bool> SupportedPolymorphicTypes
+        {
+            get => _supportedPolymorphicTypes ??= static type => type == JsonTypeInfo.ObjectType;
+            set
+            {
+                VerifyMutable();
+                _supportedPolymorphicTypes = value;
             }
         }
 

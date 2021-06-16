@@ -36,6 +36,22 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonTypeInfo? _elementTypeInfo;
 
         /// <summary>
+        /// Flag indicating that type should be serialized polymorphically.
+        /// NB setting does not govern polymorphic deserialization.
+        /// </summary>
+        internal bool CanBeWritePolymorphic { get; private set; }
+
+        /// <summary>
+        /// Can call Read methods directly (for performance).
+        /// </summary>
+        internal bool CanUseDirectRead { get; private set; }
+
+        /// <summary>
+        /// Can call Write methods directly (for performance).
+        /// </summary>
+        internal bool CanUseDirectWrite { get; private set; }
+
+        /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>
         /// <remarks>
@@ -153,6 +169,8 @@ namespace System.Text.Json.Serialization.Metadata
             Options = options ?? throw new ArgumentNullException(nameof(options));
             // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
+
+            InitializePolymorphismConfiguration(converterStrategy, isInternalConverter: true);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -177,6 +195,8 @@ namespace System.Text.Json.Serialization.Metadata
             Options = options;
 
             JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
+
+            InitializePolymorphismConfiguration(converter.ConverterStrategy, converter.IsInternalConverter);
 
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, runtimeType, converter, typeNumberHandling, Options);
 
@@ -523,6 +543,33 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             DataExtensionProperty = jsonPropertyInfo;
+        }
+
+        private void InitializePolymorphismConfiguration(ConverterStrategy converterStrategy, bool isInternalConverter)
+        {
+            Debug.Assert(Type != null);
+
+            // Resolve polymorphic serialization configuration
+            CanBeWritePolymorphic =
+                Type == JsonTypeInfo.ObjectType ||
+                !Type.IsValueType && !Type.IsSealed && converterStrategy != ConverterStrategy.Value &&
+                    (Options?.SupportedPolymorphicTypes(Type) == true ||
+                     Type.GetCustomAttribute<JsonPolymorphicTypeAttribute>(inherit: false) is not null);
+
+            // For the HandleNull == false case, either:
+            // 1) The default values are assigned in this type's virtual HandleNull property
+            // or
+            // 2) A converter overroad HandleNull and returned false so HandleNullOnRead and HandleNullOnWrite
+            // will be their default values of false.
+            CanUseDirectWrite =
+                !CanBeWritePolymorphic
+                && isInternalConverter
+                && converterStrategy == ConverterStrategy.Value;
+
+            CanUseDirectRead =
+                Type != JsonTypeInfo.ObjectType
+                && isInternalConverter
+                && converterStrategy == ConverterStrategy.Value;
         }
 
         private static JsonParameterInfo AddConstructorParameter(

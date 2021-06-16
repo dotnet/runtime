@@ -587,6 +587,10 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     options.ReferenceHandler = ReferenceHandler.Preserve;
                 }
+                else if (propertyType == typeof(Func<Type, bool>))
+                {
+                    options.SupportedPolymorphicTypes = static type => type == typeof(object);
+                }
                 else if (propertyType.IsValueType)
                 {
                     options.ReadCommentHandling = JsonCommentHandling.Disallow;

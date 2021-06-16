@@ -79,6 +79,7 @@ namespace System.Text.Json
         /// For collections, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current element.
         /// </remarks>
         private JsonPropertyInfo? PolymorphicJsonPropertyInfo;
+        public bool IsPolymorphicReEntryStarted;
 
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
@@ -102,14 +103,22 @@ namespace System.Text.Json
         /// </summary>
         public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
-            return PolymorphicJsonPropertyInfo ?? DeclaredJsonPropertyInfo!;
+            if (IsPolymorphicReEntryStarted)
+            {
+                Debug.Assert(PolymorphicJsonPropertyInfo is not null);
+                return PolymorphicJsonPropertyInfo;
+            }
+
+            return DeclaredJsonPropertyInfo!;
         }
 
         /// <summary>
         /// Initializes the state for polymorphic cases and returns the appropriate converter.
         /// </summary>
-        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options)
+        public JsonConverter InitializePolymorphicReEntry(Type type, JsonSerializerOptions options)
         {
+            Debug.Assert(!IsPolymorphicReEntryStarted);
+
             // For perf, avoid the dictionary lookup in GetOrAddClass() for every element of a collection
             // if the current element is the same type as the previous element.
             if (PolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
@@ -118,22 +127,8 @@ namespace System.Text.Json
                 PolymorphicJsonPropertyInfo = typeInfo.PropertyInfoForTypeInfo;
             }
 
+            IsPolymorphicReEntryStarted = true;
             return PolymorphicJsonPropertyInfo.ConverterBase;
-        }
-
-        public void Reset()
-        {
-            CollectionEnumerator = null;
-            EnumeratorIndex = 0;
-            AsyncEnumerator = null;
-            AsyncEnumeratorIsPendingCompletion = false;
-            IgnoreDictionaryKeyPolicy = false;
-            JsonTypeInfo = null!;
-            OriginalDepth = 0;
-            ProcessedStartToken = false;
-            ProcessedEndToken = false;
-
-            EndProperty();
         }
     }
 }

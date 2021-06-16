@@ -194,7 +194,7 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 WriteStack state = new WriteStack { CancellationToken = cancellationToken };
-                JsonConverter converter = state.Initialize(jsonTypeInfo, supportContinuation: true);
+                JsonConverter converter = state.Initialize(value, jsonTypeInfo, supportContinuation: true);
 
                 bool isFinalBlock;
 

@@ -33,6 +33,14 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
+        protected static JsonTypeInfo GetElementTypeInfo(ref WriteStack state)
+        {
+            JsonTypeInfo typeInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeTypeInfo;
+            Debug.Assert(typeInfo != null); // It should not be possible to have a null JsonTypeInfo
+
+            return typeInfo;
+        }
+
         internal override bool OnTryRead(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -54,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
                 CreateCollection(ref reader, ref state, options);
 
                 JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
-                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (elementTypeInfo.CanUseDirectRead && state.Current.NumberHandling == null)
                 {
                     // Fast path that avoids validation and extra indirection.
                     while (true)

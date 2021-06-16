@@ -88,6 +88,7 @@
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIgnoreAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonPolymorphicTypeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonSerializableAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />

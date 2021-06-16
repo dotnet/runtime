@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
             int index = state.Current.EnumeratorIndex;
             JsonConverter<object?> elementConverter = GetElementConverter(ref state);
 
-            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            if (GetElementTypeInfo(ref state).CanUseDirectWrite && state.Current.NumberHandling == null)
             {
                 // Fast path that avoids validation and extra indirection.
                 for (; index < list.Count; index++)
