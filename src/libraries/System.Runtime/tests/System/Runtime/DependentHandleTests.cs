@@ -42,12 +42,6 @@ namespace System.Runtime.Tests
         }
 
         [Fact]
-        public void GetTargetAndDependent_ThrowsInvalidOperationException()
-        {
-            Assert.Throws<InvalidOperationException>(() => default(DependentHandle).GetTargetAndDependent());
-        }
-
-        [Fact]
         public void Dispose_RepeatedCallsAreFine()
         {
             object key = new(), value = new();

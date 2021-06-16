@@ -19,6 +19,11 @@ namespace System.Runtime
     /// that object having a field or property (or some other strong reference) to a dependent object instance B.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// The <see cref="DependentHandle"/> type is not thread-safe, and consumers are responsible for ensuring that
+    /// <see cref="Dispose"/> is not called concurrently with other APIs. Not doing so results in undefined behavior.
+    /// <para>The <see cref="Target"/> and <see cref="Dependent"/> properties are instead thread-safe.</para>
+    /// </remarks>
     public struct DependentHandle : IDisposable
     {
         // =========================================================================================
@@ -68,6 +73,7 @@ namespace System.Runtime
         /// Gets or sets the target object instance for the current handle.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        /// <remarks>This property is thread-safe.</remarks>
         public object? Target
         {
             get
@@ -98,11 +104,13 @@ namespace System.Runtime
         /// Gets or sets the dependent object instance for the current handle.
         /// </summary>
         /// <remarks>
-        /// If it is necessary to retrieve both <see cref="Target"/> and <see cref="Dependent"/>, it is
-        /// recommended to use <see cref="GetTargetAndDependent"/> instead. This will result in better
-        /// performance and it will reduce the chance of unexpected behavior in some cases.
+        /// If it is needed to retrieve both <see cref="Target"/> and <see cref="Dependent"/>, it is necessary
+        /// to ensure that the returned instance from <see cref="Target"/> will be kept alive until <see cref="Dependent"/>
+        /// is retrieved as well, or it might be collected and result in unexpected behavior. This can be done by storing the
+        /// target in a local and calling <see cref="GC.KeepAlive(object)"/> on it after <see cref="Dependent"/> is accessed.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        /// <remarks>This property is thread-safe.</remarks>
         public object? Dependent
         {
             get
@@ -127,26 +135,6 @@ namespace System.Runtime
 
                 InternalSetDependent(handle, value);
             }
-        }
-
-        /// <summary>
-        /// Retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
-        /// </summary>
-        /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
-        public (object? Target, object? Dependent) GetTargetAndDependent()
-        {
-            IntPtr handle = _handle;
-
-            if (handle == IntPtr.Zero)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-            }
-
-            object? target = InternalGetTarget(handle);
-            object? secondary = InternalGetDependent(handle);
-
-            return (target, secondary);
         }
 
         /// <summary>
@@ -188,6 +176,7 @@ namespace System.Runtime
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
+        /// <remarks>This method is not thread-safe.</remarks>
         public void Dispose()
         {
             // Forces dependentHandle back to non-allocated state (if not already there)
