@@ -231,6 +231,8 @@ namespace System.Runtime
             // moved. The code below is just doing an indirect memory access to read the pointer
             // value stored in this memory region, and then converting that to an object reference.
             // Note that Unsafe.As<IntPtr, object> returns a ref object and does an implicit read.
+            // The (nint) cast is needed to avoid emitting a call to IntPtr::op_Explicit(nint), which
+            // results in the same codegen but has a larger IL and creates more IR nodes at JIT time.
             // The code below just compiles down to the following asm on x64:
             //
             // mov rax, [rcx]
@@ -238,7 +240,7 @@ namespace System.Runtime
             //
             // That is, it's reading the object* pointer the handle points to, and returning it.
             // The object* pointer is just expressed object in C#, as it's a reference type.
-            return Unsafe.As<IntPtr, object>(ref *(IntPtr*)dependentHandle);
+            return Unsafe.As<IntPtr, object>(ref *(IntPtr*)(nint)dependentHandle);
         }
 #endif
 
