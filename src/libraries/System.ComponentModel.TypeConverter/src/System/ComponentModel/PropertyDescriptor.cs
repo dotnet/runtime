@@ -121,6 +121,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public virtual void AddValueChanged(object component, EventHandler handler)
         {
             if (component == null)
@@ -399,6 +400,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public virtual void RemoveValueChanged(object component, EventHandler handler)
         {
             if (component == null)
@@ -465,6 +467,10 @@ namespace System.ComponentModel
         /// from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         /// implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
         /// </summary>
-        public virtual bool SupportsChangeEvents => false;
+        public virtual bool SupportsChangeEvents
+        {
+            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
+            get => false;
+        }
     }
 }

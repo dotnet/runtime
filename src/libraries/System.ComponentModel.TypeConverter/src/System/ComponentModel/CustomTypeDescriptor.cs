@@ -108,6 +108,7 @@ namespace System.ComponentModel
         /// returned. If no parent is provided,this will return an empty
         /// event collection.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public virtual EventDescriptorCollection GetEvents()
         {
             if (_parent != null)

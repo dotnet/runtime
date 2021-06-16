@@ -12,6 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
         // keyword->value currently listed in the connection string
@@ -387,6 +388,7 @@ namespace System.Data.Common
             return attributes;
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -412,6 +414,7 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
@@ -562,16 +565,22 @@ namespace System.Data.Common
             return new PropertyDescriptorCollection(filteredPropertiesArray);
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+        // TODO-NULLABLE: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         string ICustomTypeDescriptor.GetClassName()
         {
             return TypeDescriptor.GetClassName(this, true);
         }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         string ICustomTypeDescriptor.GetComponentName()
         {
             return TypeDescriptor.GetComponentName(this, true);
         }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         AttributeCollection ICustomTypeDescriptor.GetAttributes()
         {
             return TypeDescriptor.GetAttributes(this, true);
@@ -606,6 +615,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetDefaultEvent(this, true);
         }
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
             return TypeDescriptor.GetEvents(this, true);

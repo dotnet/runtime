@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace System.ComponentModel.DataAnnotations
@@ -20,6 +21,7 @@ namespace System.ComponentModel.DataAnnotations
             _isReadOnly = (readOnlyAttribute != null ? readOnlyAttribute.IsReadOnly : false);
         }
 
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         public override void AddValueChanged(object component, EventHandler handler) { _descriptor.AddValueChanged(component, handler); }
 
         public override bool CanResetValue(object component) { return _descriptor.CanResetValue(component); }
@@ -41,6 +43,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public override Type PropertyType { get { return _descriptor.PropertyType; } }
 
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         public override void RemoveValueChanged(object component, EventHandler handler) { _descriptor.RemoveValueChanged(component, handler); }
 
         public override void ResetValue(object component) { _descriptor.ResetValue(component); }
@@ -49,6 +52,10 @@ namespace System.ComponentModel.DataAnnotations
 
         public override bool ShouldSerializeValue(object component) { return _descriptor.ShouldSerializeValue(component); }
 
-        public override bool SupportsChangeEvents { get { return _descriptor.SupportsChangeEvents; } }
+        public override bool SupportsChangeEvents
+        {
+            [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+            get { return _descriptor.SupportsChangeEvents; }
+        }
     }
 }

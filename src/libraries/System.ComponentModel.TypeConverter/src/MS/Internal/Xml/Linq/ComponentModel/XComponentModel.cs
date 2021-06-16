@@ -86,9 +86,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public override bool SupportsChangeEvents
         {
+            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             get { return true; }
         }
 
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public override void AddValueChanged(object component, EventHandler handler)
         {
             bool hasValueChangedHandler = GetValueChangedHandler(component) != null;
@@ -108,6 +110,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             return false;
         }
 
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public override void RemoveValueChanged(object component, EventHandler handler)
         {
             base.RemoveValueChanged(component, handler);
