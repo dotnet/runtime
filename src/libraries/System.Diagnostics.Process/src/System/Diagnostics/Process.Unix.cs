@@ -19,7 +19,10 @@ namespace System.Diagnostics
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
+
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
         private static int s_childrenUsingTerminalCount;
+#endif
 
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a
@@ -510,7 +513,9 @@ namespace System.Diagnostics
             {
                 if (usesTerminal)
                 {
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
                     ConfigureTerminalForChildProcesses(1);
+#endif
                 }
 
                 int childPid;
@@ -559,7 +564,9 @@ namespace System.Diagnostics
                 {
                     // We failed to launch a child that could use the terminal.
                     s_processStartLock.EnterWriteLock();
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
                     ConfigureTerminalForChildProcesses(-1);
+#endif
                     s_processStartLock.ExitWriteLock();
                 }
             }
@@ -1045,6 +1052,7 @@ namespace System.Diagnostics
             }
         }
 
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
         /// <summary>
         /// This method is called when the number of child processes that are using the terminal changes.
         /// It updates the terminal configuration if necessary.
@@ -1072,5 +1080,6 @@ namespace System.Diagnostics
                 }
             }
         }
+#endif
     }
 }

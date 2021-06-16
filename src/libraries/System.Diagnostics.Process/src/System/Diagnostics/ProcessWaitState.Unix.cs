@@ -571,8 +571,10 @@ namespace System.Diagnostics
 
                     if (_usesTerminal)
                     {
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
                         // Update terminal settings before calling SetExited.
                         Process.ConfigureTerminalForChildProcesses(-1);
+#endif
                     }
 
                     SetExited();
