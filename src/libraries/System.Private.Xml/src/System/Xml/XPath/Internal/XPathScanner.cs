@@ -313,23 +313,26 @@ namespace MS.Internal.Xml.XPath
 
         private string ScanName()
         {
-            Debug.Assert(XmlCharType.IsStartNCNameSingleChar(CurrentChar));
-            int start = _xpathExprIndex - 1;
-            int len = 0;
+            ReadOnlySpan<char> span = _xpathExpr.AsSpan(_xpathExprIndex - 1);
 
-            while (true)
+            Debug.Assert(!span.IsEmpty);
+            Debug.Assert(span[0] == CurrentChar);
+            Debug.Assert(XmlCharType.IsStartNCNameSingleChar(span[0]));
+            Debug.Assert(XmlCharType.IsNCNameSingleChar(span[0]));
+
+            int i;
+            for (i = 1; i < span.Length && XmlCharType.IsNCNameSingleChar(span[i]); i++);
+
+            if ((uint)i < (uint)span.Length)
             {
-                if (XmlCharType.IsNCNameSingleChar(CurrentChar))
-                {
-                    NextChar();
-                    len++;
-                }
-                else
-                {
-                    break;
-                }
+                _currentChar = span[i];
+                _xpathExprIndex += i;
+                return span.Slice(0, i).ToString();
             }
-            return _xpathExpr.Substring(start, len);
+
+            _currentChar = '\0';
+            _xpathExprIndex += i - 1;
+            return span.ToString();
         }
 
         public enum LexKind
