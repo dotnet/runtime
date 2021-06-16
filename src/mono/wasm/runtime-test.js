@@ -7,18 +7,6 @@
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
 
-//define arguments for later
-var allRuntimeArguments = [];
-if (is_browser) {
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	var url = new URL (decodeURI (window.location));
-	for (var v of url.searchParams) {
-		if (v [0] == "arg") {
-			allRuntimeArguments.push (v [1]);
-		}
-	}
-}
-
 // if the engine doesn't provide a console
 if (typeof (console) === "undefined") {
 	var console = {
@@ -26,8 +14,37 @@ if (typeof (console) === "undefined") {
 		clear: function () { }
 	};
 }
-
 globalThis.testConsole = console;
+
+//define arguments for later
+var allRuntimeArguments = null;
+try {
+	if (is_browser) {
+		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+		const url = new URL (decodeURI (window.location));
+		allRuntimeArguments = [];
+		for (let param of url.searchParams) {
+			if (param [0] == "arg") {
+				allRuntimeArguments.push (param [1]);
+			}
+		}
+
+	}else if (typeof arguments === "undefined") {
+		if (typeof scriptArgs !== "undefined") {
+			allRuntimeArguments = scriptArgs;
+		
+		}else if (typeof WScript  !== "undefined" && WScript.Arguments){
+			allRuntimeArguments = WScript.Arguments;
+		} else {
+			allRuntimeArguments = [];
+		}
+	} else{
+		allRuntimeArguments = arguments;
+	}
+} catch (e) {
+	console.log(e);
+}
+
 
 function proxyMethod (prefix, func, asJson) {
 	return function() {
@@ -94,27 +111,6 @@ if (typeof performance == 'undefined') {
 		}
 	}
 }
-
-try {
-	if (typeof arguments == "undefined")
-		allRuntimeArguments = WScript.Arguments;
-	else
-		allRuntimeArguments = arguments;
-	var load = WScript.LoadScriptFile;
-	var read = WScript.LoadBinaryFile;
-} catch (e) {
-}
-
-try {
-	if (typeof allRuntimeArguments == "undefined") {
-		if (typeof scriptArgs !== "undefined")
-			allRuntimeArguments = scriptArgs;
-	}
-} catch (e) {
-}
-
-if (allRuntimeArguments === undefined)
-	allRuntimeArguments = [];
 
 //end of all the nice shell glue code.
 
