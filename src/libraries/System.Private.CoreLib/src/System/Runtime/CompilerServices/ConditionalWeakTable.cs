@@ -523,15 +523,10 @@ namespace System.Runtime.CompilerServices
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {
-                    if (_entries[entriesIndex].HashCode == hashCode)
+                    if (_entries[entriesIndex].HashCode == hashCode && _entries[entriesIndex].depHnd.UnsafeGetTargetAndDependent(out value) == key)
                     {
-                        (object? primary, value) = _entries[entriesIndex].depHnd.GetTargetAndDependent();
-
-                        if (primary == key)
-                        {
-                            GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-                            return entriesIndex;
-                        }
+                        GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
+                        return entriesIndex;
                     }
                 }
 
@@ -545,7 +540,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (index < _entries.Length)
                 {
-                    (object? oKey, object? oValue) = _entries[index].depHnd.GetTargetAndDependent();
+                    object? oKey = _entries[index].depHnd.UnsafeGetTargetAndDependent(out object? oValue);
                     GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
                     if (oKey != null)
@@ -597,7 +592,7 @@ namespace System.Runtime.CompilerServices
                 Volatile.Write(ref entry.HashCode, -1);
 
                 // Also, clear the key to allow GC to collect objects pointed to by the entry
-                entry.depHnd.Target = null;
+                entry.depHnd.UnsafeSetTarget(null);
             }
 
             internal void UpdateValue(int entryIndex, TValue newValue)
@@ -607,7 +602,7 @@ namespace System.Runtime.CompilerServices
                 VerifyIntegrity();
                 _invalid = true;
 
-                _entries[entryIndex].depHnd.Dependent = newValue;
+                _entries[entryIndex].depHnd.UnsafeSetDependent(newValue);
 
                 _invalid = false;
             }
@@ -639,7 +634,7 @@ namespace System.Runtime.CompilerServices
                             break;
                         }
 
-                        if (entry.depHnd.IsAllocated && entry.depHnd.Target is null)
+                        if (entry.depHnd.IsAllocated && entry.depHnd.UnsafeGetTarget() is null)
                         {
                             // the entry has expired
                             hasExpiredEntries = true;
@@ -704,7 +699,7 @@ namespace System.Runtime.CompilerServices
                         DependentHandle depHnd = oldEntry.depHnd;
                         if (hashCode != -1 && depHnd.IsAllocated)
                         {
-                            if (depHnd.Target is not null)
+                            if (depHnd.UnsafeGetTarget() is not null)
                             {
                                 ref Entry newEntry = ref newEntries[newEntriesIndex];
 

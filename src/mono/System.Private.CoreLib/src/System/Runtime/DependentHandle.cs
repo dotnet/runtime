@@ -60,6 +60,44 @@ namespace System.Runtime
             return (data[0].key, data[0].value);
         }
 
+        internal object? UnsafeGetTarget()
+        {
+            return GetTarget();
+        }
+
+        internal void UnsafeSetTarget(object? target)
+        {
+            SetTarget(target);
+        }
+
+        internal void UnsafeSetDependent(object? dependent)
+        {
+            SetDependent(dependent);
+        }
+
+        internal object? UnsafeGetTargetAndDependent(out object? dependent)
+        {
+            if (this.data is not Ephemeron[] data)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                dependent = null;
+
+                return null;
+            }
+
+            if (data[0].key == GC.EPHEMERON_TOMBSTONE)
+            {
+                dependent = null;
+
+                return null;
+            }
+
+            dependent = data[0].value;
+
+            return data[0].key;
+        }
+
         public void Dispose()
         {
             data = null!;
@@ -86,7 +124,7 @@ namespace System.Runtime
             return data[0].key;
         }
 
-        private void SetTarget(object? primary)
+        private void SetTarget(object? target)
         {
             if (this.data is not Ephemeron[] data)
             {
@@ -95,7 +133,7 @@ namespace System.Runtime
                 return;
             }
 
-            data[0].key = primary;
+            data[0].key = target;
         }
 
         private object? GetDependent()
@@ -115,7 +153,7 @@ namespace System.Runtime
             return data[0].value;
         }
 
-        private void SetDependent(object? secondary)
+        private void SetDependent(object? dependent)
         {
             if (this.data is not Ephemeron[] data)
             {
@@ -124,7 +162,7 @@ namespace System.Runtime
                 return;
             }
 
-            data[0].value = secondary;
+            data[0].value = dependent;
         }
     }
 }

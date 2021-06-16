@@ -147,6 +147,48 @@ namespace System.Runtime
             return (target, secondary);
         }
 
+        /// <summary>
+        /// Gets the target object instance for the current handle.
+        /// </summary>
+        /// <returns>The target object instance, if present.</returns>
+        /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
+        internal object? UnsafeGetTarget()
+        {
+            return nGetPrimary(_handle);
+        }
+
+        /// <summary>
+        /// Sets the target object instance for the current handle.
+        /// </summary>
+        /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
+        internal void UnsafeSetTarget(object? target)
+        {
+            nSetPrimary(_handle, target);
+        }
+
+        /// <summary>
+        /// Sets the dependent object instance for the current handle.
+        /// </summary>
+        /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
+        internal void UnsafeSetDependent(object? dependent)
+        {
+            nSetSecondary(_handle, dependent);
+        }
+
+        /// <summary>
+        /// Retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
+        /// </summary>
+        /// <param name="dependent">The dependent instance, if available.</param>
+        /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
+        /// <remarks>
+        /// This method mirrors <see cref="GetTargetAndDependent"/>, but without the allocation check.
+        /// The signature is also kept the same as the one for the internal call, to improve the codegen.
+        /// </remarks>
+        internal object? UnsafeGetTargetAndDependent(out object? dependent)
+        {
+            return nGetPrimaryAndSecondary(_handle, out dependent);
+        }
+
         /// <inheritdoc cref="IDisposable.Dispose"/>
         public void Dispose()
         {
