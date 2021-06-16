@@ -14,17 +14,17 @@ namespace System.Runtime
     //
     public struct DependentHandle : IDisposable
     {
-        private Ephemeron[] data;
+        private Ephemeron[]? _data;
 
         public DependentHandle(object? target, object? dependent)
         {
-            data = new Ephemeron[1];
-            data[0].Key = target;
-            data[0].Value = dependent;
-            GC.register_ephemeron_array(data);
+            _data = new Ephemeron[1];
+            _data[0].Key = target;
+            _data[0].Value = dependent;
+            GC.register_ephemeron_array(_data);
         }
 
-        public bool IsAllocated => data is not null;
+        public bool IsAllocated => _data is not null;
 
         public object? Target
         {
@@ -40,7 +40,7 @@ namespace System.Runtime
 
         public (object? Target, object? Dependent) GetTargetAndDependent()
         {
-            if (this.data is not Ephemeron[] data)
+            if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -72,7 +72,7 @@ namespace System.Runtime
 
         internal object? UnsafeGetTargetAndDependent(out object? dependent)
         {
-            if (this.data is not Ephemeron[] data)
+            if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -95,7 +95,7 @@ namespace System.Runtime
 
         public void Dispose()
         {
-            data = null!;
+            _data = null;
         }
 
         private object? GetTarget()
@@ -104,7 +104,7 @@ namespace System.Runtime
             // we provide a separate primary-only accessor for those times we only want the
             // primary.
 
-            if (this.data is not Ephemeron[] data)
+            if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -121,7 +121,7 @@ namespace System.Runtime
 
         private void SetTarget(object? target)
         {
-            if (this.data is not Ephemeron[] data)
+            if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -133,7 +133,7 @@ namespace System.Runtime
 
         private object? GetDependent()
         {
-            if (this.data is not Ephemeron[] data)
+            if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
@@ -150,7 +150,7 @@ namespace System.Runtime
 
         private void SetDependent(object? dependent)
         {
-            if (this.data is not Ephemeron[] data)
+            if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
 
