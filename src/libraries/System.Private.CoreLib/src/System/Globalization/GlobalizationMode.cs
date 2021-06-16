@@ -13,7 +13,6 @@ namespace System.Globalization
         {
             internal static readonly bool PredefinedCulturesOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
             internal static bool Invariant { get; } = GetInvariantSwitchValue();
-            internal static readonly bool AllowInvariantCultureOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.AllowInvariantCultureOnly", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT_CULTURE_ONLY");
         }
 
         // Note: Invariant=true and Invariant=false are substituted at different levels in the ILLink.Substitutions file.
@@ -22,7 +21,7 @@ namespace System.Globalization
         internal static bool Invariant => Settings.Invariant;
 
         internal static bool PredefinedCulturesOnly => !Invariant && Settings.PredefinedCulturesOnly;
-        internal static bool AllowInvariantCultureOnly => Invariant && Settings.AllowInvariantCultureOnly;
+        internal static bool AllowInvariantCultureOnly { get; } = Invariant && AppContextConfigHelper.GetBooleanConfig("System.Globalization.AllowInvariantCultureOnly", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT_CULTURE_ONLY");
 
         private static bool GetInvariantSwitchValue() =>
             AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");

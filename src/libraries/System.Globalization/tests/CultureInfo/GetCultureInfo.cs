@@ -154,11 +154,11 @@ namespace System.Globalization.Tests
             if (enableInvariant)     { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT",              "true"); }
             if (enableInvariantOnly) { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT_CULTURE_ONLY", "true"); }
 
-            RemoteExecutor.Invoke((invarintEnabled, invariantOnlyEnabled) =>
+            RemoteExecutor.Invoke((invariantEnabled, invariantOnlyEnabled) =>
             {
-                bool restrictedMode = bool.Parse(invarintEnabled) && bool.Parse(invariantOnlyEnabled);
+                bool restrictedMode = bool.Parse(invariantEnabled) && bool.Parse(invariantOnlyEnabled);
 
-                // First ensure we can create the current cultures regaldless of the mode we are in
+                // First ensure we can create the current cultures regardless of the mode we are in
                 Assert.NotNull(CultureInfo.CurrentCulture);
                 Assert.NotNull(CultureInfo.CurrentUICulture);
 
