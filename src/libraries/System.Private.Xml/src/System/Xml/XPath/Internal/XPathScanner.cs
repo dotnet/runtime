@@ -9,7 +9,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal sealed class XPathScanner
+    internal struct XPathScanner
     {
         private readonly string _xpathExpr;
         private int _xpathExprIndex;
@@ -18,16 +18,17 @@ namespace MS.Internal.Xml.XPath
         private string? _name;
         private string? _prefix;
         private string? _stringValue;
-        private double _numberValue = double.NaN;
+        private double _numberValue;
         private bool _canBeFunction;
 
-        public XPathScanner(string xpathExpr)
+        public XPathScanner(string xpathExpr) : this()
         {
             if (xpathExpr == null)
             {
                 throw XPathException.Create(SR.Xp_ExprExpected, string.Empty);
             }
             _xpathExpr = xpathExpr;
+            _numberValue = double.NaN;
             NextChar();
             NextLex();
         }
