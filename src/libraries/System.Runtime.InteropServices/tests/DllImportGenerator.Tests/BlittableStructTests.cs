@@ -8,6 +8,9 @@ namespace DllImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_return_instance")]
+        public static partial IntFields DoubleIntFields(IntFields result);
+
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
         public static partial void DoubleIntFieldsByRef(ref IntFields result);
 
@@ -45,6 +48,11 @@ namespace DllImportGenerator.IntegrationTests
             };
 
             var input = initial;
+            {
+                var result = NativeExportsNE.DoubleIntFields(input);
+                Assert.Equal(initial, input);
+                Assert.Equal(expected, result);
+            }
             {
                 var result = new IntFields();
                 NativeExportsNE.DoubleIntFieldsRefReturn(input, ref result);

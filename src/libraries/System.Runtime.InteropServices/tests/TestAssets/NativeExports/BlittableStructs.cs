@@ -11,8 +11,12 @@ namespace NativeExports
         [return: DNNE.C99Type("struct int_fields")]
         public static IntFields DoubleIntFields([DNNE.C99Type("struct int_fields")] IntFields input)
         {
-            //return input;
-            throw new System.NotSupportedException( "This is currently not supported due to: https://github.com/dotnet/runtime/issues/35928");
+            return new IntFields()
+            {
+                a = input.a * 2,
+                b = input.b * 2,
+                c = input.c * 2,
+            };
         }
 
         [UnmanagedCallersOnly(EntryPoint = "blittablestructs_double_intfields_byref")]
