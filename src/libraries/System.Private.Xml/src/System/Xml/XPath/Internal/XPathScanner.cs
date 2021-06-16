@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.XPath;
 
@@ -107,9 +108,19 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SkipSpace()
         {
-            while (XmlCharType.IsWhiteSpace(CurrentChar) && NextChar()) ;
+            if (XmlCharType.IsWhiteSpace(CurrentChar))
+            {
+                SkipKnownSpace();
+            }
+        }
+
+        private void SkipKnownSpace()
+        {
+            Debug.Assert(XmlCharType.IsWhiteSpace(CurrentChar));
+            while (NextChar() && XmlCharType.IsWhiteSpace(CurrentChar));
         }
 
         public bool NextLex()
