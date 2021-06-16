@@ -216,7 +216,7 @@ namespace Microsoft.Extensions.Configuration
                     HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
                         StringComparer.OrdinalIgnoreCase);
 
-                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren().ToList();
+                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
                     List<string> missingPropertyNames = configurationSections
                         .Where(cs => !propertyNames.Contains(cs.Key))
                         .Select(mp => $"'{mp.Key}'")
