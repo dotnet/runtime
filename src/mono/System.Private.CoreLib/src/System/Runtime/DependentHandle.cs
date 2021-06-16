@@ -34,7 +34,7 @@ namespace System.Runtime
 
         public object? Dependent
         {
-            get => GetDependent();
+            get => UnsafeGetDependent();
             set => UnsafeSetDependent(value);
         }
 
@@ -70,6 +70,22 @@ namespace System.Runtime
             return key != GC.EPHEMERON_TOMBSTONE ? key : null;
         }
 
+        internal object? UnsafeGetDependent()
+        {
+            Ephemeron[]? data = _data;
+
+            if (data is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return default;
+            }
+
+            Ephemeron e = data[0];
+
+            return e.Key != GC.EPHEMERON_TOMBSTONE ? e.Value : null;
+        }
+
         internal void UnsafeSetTarget(object? target)
         {
             Ephemeron[]? data = _data;
@@ -98,54 +114,9 @@ namespace System.Runtime
             data[0].Value = dependent;
         }
 
-        internal object? UnsafeGetTargetAndDependent(out object? dependent)
-        {
-            Ephemeron[]? data = _data;
-
-            if (data is null)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-
-                dependent = null;
-
-                return null;
-            }
-
-            Ephemeron e = data[0];
-
-            if (e.Key != GC.EPHEMERON_TOMBSTONE)
-            {
-                dependent = e.Value;
-
-                return e.Key;
-            }
-            else
-            {
-                dependent = null;
-
-                return null;
-            }
-        }
-
         public void Dispose()
         {
             _data = null;
-        }
-
-        private object? GetDependent()
-        {
-            Ephemeron[]? data = _data;
-
-            if (data is null)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-
-                return default;
-            }
-
-            Ephemeron e = data[0];
-
-            return e.Key != GC.EPHEMERON_TOMBSTONE ? e.Value : null;
         }
     }
 }

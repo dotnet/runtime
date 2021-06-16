@@ -160,6 +160,16 @@ namespace System.Runtime
         }
 
         /// <summary>
+        /// Gets the dependent object instance for the current handle.
+        /// </summary>
+        /// <returns>The dependent object instance, if present.</returns>
+        /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
+        internal object? UnsafeGetDependent()
+        {
+            return InternalGetDependent(_handle);
+        }
+
+        /// <summary>
         /// Sets the target object instance for the current handle.
         /// </summary>
         /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
@@ -175,26 +185,6 @@ namespace System.Runtime
         internal void UnsafeSetDependent(object? dependent)
         {
             InternalSetDependent(_handle, dependent);
-        }
-
-        /// <summary>
-        /// Retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
-        /// </summary>
-        /// <param name="dependent">The dependent instance, if available.</param>
-        /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
-        /// <remarks>
-        /// This method mirrors <see cref="GetTargetAndDependent"/>, but without the allocation check.
-        /// The signature is also kept the same as the one for the internal call, to improve the codegen.
-        /// </remarks>
-        internal object? UnsafeGetTargetAndDependent(out object? dependent)
-        {
-            IntPtr handle = _handle;
-
-            object? target = InternalGetTarget(handle);
-
-            dependent = InternalGetDependent(handle);
-
-            return target;
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>

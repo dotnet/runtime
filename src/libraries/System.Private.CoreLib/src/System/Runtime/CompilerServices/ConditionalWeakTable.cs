@@ -523,10 +523,20 @@ namespace System.Runtime.CompilerServices
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {
-                    if (_entries[entriesIndex].HashCode == hashCode && _entries[entriesIndex].depHnd.UnsafeGetTargetAndDependent(out value) == key)
+                    if (_entries[entriesIndex].HashCode == hashCode)
                     {
-                        GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-                        return entriesIndex;
+                        DependentHandle dependentHandle = _entries[entriesIndex].depHnd;
+                        object? target = dependentHandle.UnsafeGetTarget();
+
+                        if (target == key)
+                        {
+                            value = dependentHandle.UnsafeGetDependent();
+
+                            GC.KeepAlive(target); // Ensure the dependent remains alive up until this point
+                            GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
+
+                            return entriesIndex;
+                        }
                     }
                 }
 
@@ -540,13 +550,17 @@ namespace System.Runtime.CompilerServices
             {
                 if (index < _entries.Length)
                 {
-                    object? oKey = _entries[index].depHnd.UnsafeGetTargetAndDependent(out object? oValue);
-                    GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
+                    DependentHandle dependentHandle = _entries[index].depHnd;
+                    object? target = dependentHandle.UnsafeGetTarget();
 
-                    if (oKey != null)
+                    if (target is not null)
                     {
-                        key = Unsafe.As<TKey>(oKey);
-                        value = Unsafe.As<TValue>(oValue);
+                        object? dependent = dependentHandle.UnsafeGetDependent();
+
+                        GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
+
+                        key = Unsafe.As<TKey>(target);
+                        value = Unsafe.As<TValue>(dependent);
                         return true;
                     }
                 }
