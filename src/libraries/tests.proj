@@ -291,7 +291,7 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/51961 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/50959 -->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50957 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
   </ItemGroup>
 
