@@ -47,12 +47,9 @@ namespace System.Runtime
                 return default;
             }
 
-            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
-            {
-                return default;
-            }
+            Ephemeron e = data[0];
 
-            return (data[0].Key, data[0].Value);
+            return e.Key != GC.EPHEMERON_TOMBSTONE ? (e.Key, e.Value) : default;
         }
 
         internal object? UnsafeGetTarget()
@@ -81,16 +78,20 @@ namespace System.Runtime
                 return null;
             }
 
-            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
+            Ephemeron e = data[0];
+
+            if (e.Key != GC.EPHEMERON_TOMBSTONE)
+            {
+                dependent = e.Value;
+
+                return e.Key;
+            }
+            else
             {
                 dependent = null;
 
                 return null;
             }
-
-            dependent = data[0].Value;
-
-            return data[0].Key;
         }
 
         public void Dispose()
@@ -107,12 +108,9 @@ namespace System.Runtime
                 return default;
             }
 
-            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
-            {
-                return null;
-            }
+            object? key = data[0].Key;
 
-            return data[0].Key;
+            return key != GC.EPHEMERON_TOMBSTONE ? key : null;
         }
 
         private void SetTarget(object? target)
@@ -136,12 +134,9 @@ namespace System.Runtime
                 return default;
             }
 
-            if (data[0].Key == GC.EPHEMERON_TOMBSTONE)
-            {
-                return null;
-            }
+            Ephemeron e = data[0];
 
-            return data[0].Value;
+            return e.Key != GC.EPHEMERON_TOMBSTONE ? e.Value : null;
         }
 
         private void SetDependent(object? dependent)
