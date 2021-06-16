@@ -82,8 +82,9 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
-                _stream.Dispose();
-                DisposeSyncHelper();
+                var stream = Interlocked.Exchange(ref _stream, null!);
+                stream.Dispose();
+                DisposeSyncHelper(stream);
             }
         }
 
@@ -92,16 +93,15 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
-                await _stream.DisposeAsync().ConfigureAwait(false);
-                DisposeSyncHelper();
+                var stream = Interlocked.Exchange(ref _stream, null!);
+                await stream.DisposeAsync().ConfigureAwait(false);
+                DisposeSyncHelper(stream);
             }
         }
 
-        private void DisposeSyncHelper()
+        private void DisposeSyncHelper(QuicStream stream)
         {
-            _connection.RemoveStream(_stream);
-            _connection = null!;
-            _stream = null!;
+            Interlocked.Exchange(ref _connection, null!).RemoveStream(stream);
 
             _sendBuffer.Dispose();
             _recvBuffer.Dispose();
@@ -1111,15 +1111,23 @@ namespace System.Net.Http
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
                 case Http3ConnectionException _:
                     // A connection-level protocol error has occurred on our stream.
-                    _connection.Abort(ex);
+                    _connection?.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream?.AbortRead((long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
                 default:
-                    _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                    _stream?.AbortRead((long)Http3ErrorCode.InternalError);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+            }
+        }
+
+        private void CancelResponseContentRead()
+        {
+            if (_responseDataPayloadRemaining != -1) // -1 indicates EOS
+            {
+                _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
             }
         }
 
@@ -1194,6 +1202,7 @@ namespace System.Net.Http
                 {
                     if (disposing)
                     {
+                        _stream.CancelResponseContentRead();
                         // This will remove the stream from the connection properly.
                         _stream.Dispose();
                     }
@@ -1216,6 +1225,7 @@ namespace System.Net.Http
             {
                 if (_stream != null)
                 {
+                    _stream.CancelResponseContentRead();
                     await _stream.DisposeAsync().ConfigureAwait(false);
                     _stream = null!;
                 }

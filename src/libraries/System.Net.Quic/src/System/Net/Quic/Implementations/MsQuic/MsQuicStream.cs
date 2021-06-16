@@ -249,6 +249,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.SendState == SendState.Aborted)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    if (_state.SendErrorCode != -1)
+                    {
+                        throw new QuicStreamAbortedException(_state.SendErrorCode);
+                    }
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
                 else if (_state.SendState == SendState.ConnectionClosed)
