@@ -110,7 +110,7 @@ namespace Microsoft.Win32.SafeHandles
                 Init();
             }
 
-            void Init() // moved to a separate method so InitThreadPoolBindingIfNeeded can be inlined
+            void Init() // moved to a separate method so EnsureThreadPoolBindingInitialized can be inlined
             {
                 lock (this)
                 {
