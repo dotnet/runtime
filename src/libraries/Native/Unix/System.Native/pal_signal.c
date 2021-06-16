@@ -22,7 +22,6 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static struct sigaction g_origSigHandler[NSIG];
 static bool g_origSigHandlerIsSet[NSIG];
 
-
 // Callback invoked for SIGCHLD/SIGCONT/SIGWINCH
 static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL;
 // Callback invoked for SIGCHLD
@@ -34,7 +33,39 @@ static volatile bool g_hasPosixSignalRegistrations[NSIG];
 
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
 
-int SystemNative_GetPlatformSignalNumber(PosixSignal signal)
+static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+{
+    assert(posixSignal != NULL);
+
+    switch (signalCode)
+    {
+        case SIGHUP:
+            *posixSignal = PosixSignalSIGHUP;
+            return true;
+
+        case SIGINT:
+            *posixSignal = PosixSignalSIGINT;
+            return true;
+
+        case SIGQUIT:
+            *posixSignal = PosixSignalSIGQUIT;
+            return true;
+
+        case SIGTERM:
+            *posixSignal = PosixSignalSIGTERM;
+            return true;
+
+        case SIGCHLD:
+            *posixSignal = PosixSignalSIGCHLD;
+            return true;
+
+        default:
+            *posixSignal = signalCode;
+            return false;
+    }
+}
+
+int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
 {
     switch (signal)
     {
@@ -206,7 +237,12 @@ static void* SignalHandlerLoop(void* arg)
         if (usePosixSignalHandler)
         {
             assert(g_posixSignalHandler != NULL);
-            usePosixSignalHandler = g_posixSignalHandler(signalCode) != 0;
+            PosixSignal signal;
+            if (!TryConvertSignalCodeToPosixSignal(signalCode, &signal))
+            {
+                signal = (PosixSignal)0;
+            }
+            usePosixSignalHandler = g_posixSignalHandler(signalCode, signal) != 0;
         }
 
         if (!usePosixSignalHandler)

@@ -78,7 +78,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static int OnPosixSignal(int signo)
+        private static int OnPosixSignal(int signo, PosixSignal signal)
         {
             lock (s_registrations)
             {
@@ -101,14 +101,25 @@ namespace System.Runtime.InteropServices
                             // This is called on the native signal handling thread. We need to move to another thread so
                             // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
                             // on work triggered from the signal handling thread.
-                            // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
+
+                            // For terminate/interrupt signals we use a dedicated Thread
                             // in case the ThreadPool is saturated.
-                            Thread handlerThread = new Thread(HandleSignal)
+                            bool useDedicatedThread = signal == PosixSignal.SIGINT ||
+                                                      signal == PosixSignal.SIGQUIT ||
+                                                      signal == PosixSignal.SIGTERM;
+                            if (useDedicatedThread)
                             {
-                                IsBackground = true,
-                                Name = ".NET Signal Handler"
-                            };
-                            handlerThread.Start((signo, registrations));
+                                Thread handlerThread = new Thread(HandleSignal)
+                                {
+                                    IsBackground = true,
+                                    Name = ".NET Signal Handler"
+                                };
+                                handlerThread.Start((signo, registrations));
+                            }
+                            else
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, registrations));
+                            }
                             return 1;
                         }
                     }
@@ -119,10 +130,13 @@ namespace System.Runtime.InteropServices
 
         private static void HandleSignal(object? state)
         {
-            var (signo, registrations) = ((int, PosixSignalRegistration?[]))state!;
+            HandleSignal(((int, PosixSignalRegistration?[]))state!);
+        }
 
+        private static void HandleSignal((int signo, PosixSignalRegistration?[] registrations) state)
+        {
             PosixSignalContext ctx = new();
-            foreach (PosixSignalRegistration? registration in registrations)
+            foreach (PosixSignalRegistration? registration in state.registrations)
             {
                 if (registration != null)
                 {
@@ -135,7 +149,7 @@ namespace System.Runtime.InteropServices
 
             if (!ctx.Cancel)
             {
-                Interop.Sys.DefaultSignalHandler(signo);
+                Interop.Sys.DefaultSignalHandler(state.signo);
             }
         }
 
