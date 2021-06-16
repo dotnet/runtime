@@ -100,10 +100,6 @@ namespace System.Runtime
 
         private object? GetTarget()
         {
-            // Getting the secondary object is more expensive than getting the first so
-            // we provide a separate primary-only accessor for those times we only want the
-            // primary.
-
             if (_data is not Ephemeron[] data)
             {
                 ThrowHelper.ThrowInvalidOperationException();
