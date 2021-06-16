@@ -1187,17 +1187,17 @@ public:
 
 enum bookkeeping_element
 {
-    card_table_element = 0,
-    brick_table_element = 1,
+    card_table_element,
+    brick_table_element,
 #ifdef CARD_BUNDLE
-    card_bundle_table_element = 2,
+    card_bundle_table_element,
 #endif
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    software_write_watch_table_element = 3,
+    software_write_watch_table_element,
 #endif
-    seg_mapping_table_element = 4,
-    mark_array_element = 5,
-    total_bookkeeping_elements = 6
+    seg_mapping_table_element,
+    mark_array_element,
+    total_bookkeeping_elements
 };
 
 //class definition of the internal class

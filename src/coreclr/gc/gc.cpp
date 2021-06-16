@@ -8561,9 +8561,7 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     layout[card_table_element] = sizeof(card_table_info);
     layout[brick_table_element] = layout[card_table_element] + sizes[card_table_element];
 #ifdef CARD_BUNDLE
-    layout[card_bundle_table_element] = layout[brick_table_element] + sizes[brick_table_element];    
-#else
-    layout[brick_table_element - 1] = layout[brick_table_element] + sizes[brick_table_element];    
+    layout[card_bundle_table_element] = layout[brick_table_element] + sizes[brick_table_element];
 #endif
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     layout[software_write_watch_table_element] = layout[software_write_watch_table_element - 1] + sizes[software_write_watch_table_element - 1];
@@ -8571,14 +8569,11 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     {
         layout[software_write_watch_table_element] = SoftwareWriteWatch::GetTableStartByteOffset(layout[software_write_watch_table_element]);
     }
-#else
-    layout[seg_mapping_table_element - 1] = layout[seg_mapping_table_element - 2] + sizes[seg_mapping_table_element - 2];
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     layout[seg_mapping_table_element] = align_for_seg_mapping_table (layout[seg_mapping_table_element - 1] + sizes[seg_mapping_table_element - 1]);
     layout[mark_array_element] = align_on_page (layout[seg_mapping_table_element] + sizes[seg_mapping_table_element]);
     layout[total_bookkeeping_elements] = align_on_page (layout[mark_array_element] + sizes[mark_array_element]);
 }
-
 
 #ifdef USE_REGIONS
 bool gc_heap::on_used_changed (uint8_t* new_used)
@@ -8605,8 +8600,10 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
                 uint64_t committed_size = (uint64_t)(bookkeeping_data_committed - g_gc_lowest_address);
                 uint64_t total_size = (uint64_t)(g_gc_highest_address - g_gc_lowest_address);
                 assert (committed_size < total_size);
-                uint64_t new_committed_size = min(committed_size * 2, total_size); // Should not overflow?
-                uint8_t* double_commit = g_gc_lowest_address + new_committed_size; // Should not overflow?
+                assert (committed_size < UINT64_MAX / 2);
+                uint64_t new_committed_size = min(committed_size * 2, total_size);
+                assert (UINT64_MAX - new_committed_size >  (uint64_t)g_gc_lowest_address);
+                uint8_t* double_commit = g_gc_lowest_address + new_committed_size;
                 new_bookkeeping_data_committed = max(double_commit, new_used);
                 dprintf (REGIONS_LOG, ("committed_size                           = %ld", committed_size));
                 dprintf (REGIONS_LOG, ("total_size                               = %ld", total_size));
@@ -8710,7 +8707,6 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
                 commit_begin = min (commit_begin, commit_end);
             }
             assert (commit_begin <= commit_end);
-            
 
             dprintf (REGIONS_LOG, ("required = [%p, %p), size = %ld", required_begin, required_end, required_end - required_begin));
             dprintf (REGIONS_LOG, ("commit   = [%p, %p), size = %ld", commit_begin, commit_end, commit_end - commit_begin));
