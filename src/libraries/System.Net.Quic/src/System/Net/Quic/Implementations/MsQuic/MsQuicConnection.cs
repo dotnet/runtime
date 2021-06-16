@@ -126,15 +126,23 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
             _state.Connected = true;
+            _isServer = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
-            _remoteCertificateRequired = false;
-            _isServer = true;
+            _remoteCertificateRequired = remoteCertificateRequired;
+            _revocationMode = revocationMode;
+            _remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            if (_remoteCertificateRequired)
+            {
+                // We need to link connection for the validation callback.
+                _state.Connection = this;
+            }
 
             try
             {
@@ -331,6 +339,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (connection == null)
             {
                 return MsQuicStatusCodes.InvalidState;
+            }
+
+            if (connection._isServer)
+            {
+                state.Connection = null;
             }
 
             try
