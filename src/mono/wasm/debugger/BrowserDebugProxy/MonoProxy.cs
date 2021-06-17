@@ -779,9 +779,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             ExecutionContext context = GetContext(sessionId);
-            if (res.IsErr) {
-                return false;
-            }
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var ret_debugger_cmd = new MemoryStream(newBytes);
             var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
