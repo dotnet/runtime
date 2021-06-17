@@ -8201,6 +8201,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
         genPopCalleeSavedRegisters();
 
+#ifdef TARGET_AMD64
+        // In the case where we have an RSP frame, and no frame pointer reported in the OS unwind info,
+        // but we do have a pushed frame pointer and established frame chain, we do need to pop RBP.
+        if (doubleAlignOrFramePointerUsed())
+        {
+            inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
+        }
+#endif // TARGET_AMD64
+
         // Extra OSR adjust to get to where RBP was saved by the original frame, and
         // restore RBP.
         //
@@ -8218,16 +8227,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize, EA_PTRSIZE);
             inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
         }
-
-#ifdef TARGET_AMD64
-        // In the case where we have an RSP frame, and no frame pointer reported in the OS unwind info,
-        // but we do have a pushed frame pointer and established frame chain, we do need to pop RBP.
-        // For OSR, we already popped RBP above (for x86 and x64).
-        if (doubleAlignOrFramePointerUsed() && !compiler->opts.IsOSR())
-        {
-            inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
-        }
-#endif // TARGET_AMD64
     }
     else
     {
