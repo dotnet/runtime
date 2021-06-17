@@ -35,6 +35,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task TestBaseline_TestWithSkipEnabledCheck_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal static partial class TestWithSkipEnabledCheck
+    {
+        [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = ""Message: When using SkipEnabledCheck, the generated code skips logger.IsEnabled(logLevel) check before calling log. To be used when consumer has already guarded logger method in an IsEnabled check."", SkipEnabledCheck = true)]
+        public static partial void M0(ILogger logger);
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithSkipEnabledCheck.generated.txt", testSourceCode);
+        }
+
+        [Fact]
         public async Task TestBaseline_TestWithDefaultValues_Success()
         {
             string testSourceCode = @"
@@ -139,6 +154,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                 new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
                 new[] { testSourceCode }).ConfigureAwait(false);
 
+            Assert.Empty(d);
             Assert.Single(r);
 
             Assert.True(CompareLines(expectedLines, r[0].SourceText,
