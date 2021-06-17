@@ -2532,7 +2532,7 @@ method_is_reabstracted (MonoMethod *method)
 	/* only on interfaces */
 	/* method is marked "final abstract" */
 	/* FIXME: we need some other way to detect reabstracted methods.  "final" is an incidental detail of the spec. */
-	return method->flags & METHOD_ATTRIBUTE_FINAL && method->flags & METHOD_ATTRIBUTE_ABSTRACT;
+	return m_method_is_final (method) && m_method_is_abstract (method);
 }
 
 static gboolean
@@ -2540,7 +2540,7 @@ method_is_dim (MonoMethod *method)
 {
 	/* only valid on interface methods*/
 	/* method is marked "virtual" but not "virtual abstract" */
-	return method->flags & method->flags & METHOD_ATTRIBUTE_VIRTUAL && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT);
+	return m_method_is_virtual (method) && !m_method_is_abstract (method);
 }
 
 static gboolean
@@ -2582,9 +2582,8 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 	 * the method), then say the target method is null.
 	 */
 	if (method_is_reabstracted (method) &&
-	    ((foundMethod->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	     (mono_class_is_interface (foundMethod->klass) && method_is_dim (foundMethod))
-		    ))
+	    (m_method_is_abstract (foundMethod) ||
+	     (mono_class_is_interface (foundMethod->klass) && method_is_dim (foundMethod))))
 		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
 	else if (mono_class_is_interface (foundMethod->klass) && method_is_reabstracted (foundMethod) && !m_class_is_abstract (klass)) {
 		/* if the method we found is a reabstracted DIM method, but the class isn't abstract, return NULL */
