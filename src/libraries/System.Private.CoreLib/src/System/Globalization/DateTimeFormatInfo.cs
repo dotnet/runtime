@@ -2409,7 +2409,7 @@ namespace System.Globalization
             if (isLetter)
             {
                 ch = Culture.TextInfo.ToLower(ch);
-                if (IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
+                if (!GlobalizationMode.Invariant && IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
                 {
                     if (TryParseHebrewNumber(ref str, out bool badFormat, out tokenValue))
                     {

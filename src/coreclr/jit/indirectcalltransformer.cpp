@@ -80,7 +80,7 @@ public:
     {
         int count = 0;
 
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             count += TransformBlock(block);
         }
@@ -100,7 +100,7 @@ private:
     {
         int count = 0;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             if (compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
@@ -754,8 +754,8 @@ private:
             CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
             const bool             isLateDevirtualization = true;
             const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
-                                          explicitTailCall);
+            compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &context, nullptr,
+                                          isLateDevirtualization, explicitTailCall);
 
             // We know this call can devirtualize or we would not have set up GDV here.
             // So impDevirtualizeCall should succeed in devirtualizing.
@@ -1012,7 +1012,7 @@ private:
                 }
             };
 
-            for (Statement* nextStmt : remainderBlock->Statements())
+            for (Statement* const nextStmt : remainderBlock->Statements())
             {
                 JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
 
@@ -1273,9 +1273,9 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
     assert(!doesMethodHaveGuardedDevirtualization());
     assert(!doesMethodHaveExpRuntimeLookup());
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckForTransformableIndirectCalls);
         }

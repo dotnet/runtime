@@ -30,7 +30,6 @@
 //
 
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Drawing

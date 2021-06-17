@@ -8,7 +8,6 @@
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
       - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
-      - MonoMetadataUpdate - enable experimental method body replacement code (in Directory.Build.props)
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
   -->
 
@@ -76,6 +75,8 @@
     <MonoComponentsStatic Condition="'$(TargetsBrowser)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsAndroid)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <!-- by default, do dynamic components -->
     <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
@@ -412,10 +413,6 @@
     </ItemGroup>
 
     <!-- Devloop features -->
-    <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
-    </ItemGroup>
-
     <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
     </ItemGroup>
@@ -423,7 +420,7 @@
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
-      <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" />
+      <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" Condition="!('$(TargetsiOSSimulator)' == 'true' or '$(TargetstvOSSimulator)' == 'true')"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
@@ -481,6 +478,41 @@
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+
+    <!-- strip -->
+    <PropertyGroup>
+      <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</MonoToolchainPrebuiltOS>
+      <MonoToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</MonoToolchainPrebuiltOS>
+      <MonoToolchainPrebuiltOS Condition="'$(OS)' == 'Windows_NT'">windows-x86_64</MonoToolchainPrebuiltOS>
+      <_MonoRuntimeFilePath>$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' != 'true'">gnu</_LinuxAbi>
+      <_LinuxAbi Condition="'$(TargetsAndroid)' == 'true'">android</_LinuxAbi>
+      <_LinuxFloatAbi Condition="'$(TargetsAndroid)' != 'true'">hf</_LinuxFloatAbi>
+      <_Objcopy>objcopy</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/$(_Objcopy)</_Objcopy>
+    </PropertyGroup>
+    <!-- test viability of objcopy command -->
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
+    </Exec>
+    <PropertyGroup>
+      <!-- if all else fails in finding a valid objcopy, fall back to no-prefix from $PATH (used for x64 on CentOS) -->
+      <_Objcopy Condition="'$(_ObjcopyFound)' != '0'">objcopy</_Objcopy>
+    </PropertyGroup>
+    <ItemGroup>
+      <FilesToStrip Include="$(_MonoRuntimeFilePath)" />
+      <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" />
+    </ItemGroup>
+    <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from %(FilesToStrip.Identity)" Importance="High"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --only-keep-debug %(FilesToStrip.Identity) %(FilesToStrip.Identity).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --strip-unneeded %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --add-gnu-debuglink=%(FilesToStrip.Identity).dbg %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
@@ -620,9 +652,6 @@
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir.TrimEnd('\/'))" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
-      <!-- Devloop features -->
-      <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
-
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
     </ItemGroup>
@@ -705,8 +734,16 @@
     <ItemGroup>
       <_MonoRuntimeComponentsStaticFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(StaticLibExt)" Condition="Exists($(_MonoRuntimeFilePath))" />
       <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" Condition="Exists($(_MonoRuntimeFilePath))" />
+      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt).dwarf" Condition="Exists('$(_MonoRuntimeFilePath).dwarf')" />
+      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt).dbg" Condition="Exists('$(_MonoRuntimeFilePath).dbg')" />
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)" Condition="Exists($(_MonoRuntimeFilePath))">
         <Destination>$(RuntimeBinDir)$(MonoFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath).dbg" Condition="Exists('$(_MonoRuntimeFilePath).dbg')">
+        <Destination>$(RuntimeBinDir)$(MonoFileName).dbg</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath).dwarf" Condition="Exists('$(_MonoRuntimeFilePath).dwarf')">
+        <Destination>$(RuntimeBinDir)$(MonoFileName).dwarf</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)" Condition="Exists($(_MonoRuntimeStaticFilePath)) and '$(_MonoRuntimeStaticFilePath)' != '$(_MonoRuntimeFilePath)'">
         <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>

@@ -3,7 +3,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Requires.cs" />
