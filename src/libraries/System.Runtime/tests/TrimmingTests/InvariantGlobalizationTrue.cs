@@ -28,7 +28,9 @@ class Program
         foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
         {
             // properties and their backing getter methods are OK
-            if ((member is PropertyInfo || member.Name.StartsWith("get_")) || (member is FieldInfo && member.Name.Contains("AllowInvariantCultureOnly")))
+            if ((member is PropertyInfo || member.Name.StartsWith("get_")) ||
+                (member is FieldInfo && member.Name.Contains("AllowInvariantCultureOnly")) ||
+                (member is ConstructorInfo && member.Name.Contains(".cctor")))
             {
                 continue;
             }
