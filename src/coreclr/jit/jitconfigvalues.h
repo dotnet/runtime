@@ -384,10 +384,7 @@ CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, em
 CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
 
 // Ex lclMAX_TRACKED constant.
-// Tested various sizes for max tracked locals. The largest value for which no throughput regression
-// could be measured was 512. Going to 1024 showed the first throughput regressions.
-// We anticipate the larger size will be needed to support better inlining.
-CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 0x200)
+CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 0x400)
 
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
@@ -461,6 +458,8 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 CONFIG_INTEGER(JitExtendedDefaultPolicy, W("JitExtendedDefaultPolicy"), 1)
+CONFIG_INTEGER(JitExtendedDefaultPolicyMaxBBCount, W("JitExtendedDefaultPolicyMaxBBCount"), 12)
+CONFIG_INTEGER(JitExtendedDefaultPolicyMaxILSize, W("JitExtendedDefaultPolicyMaxILSize"), 300)
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)

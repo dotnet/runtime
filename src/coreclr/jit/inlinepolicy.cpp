@@ -1322,41 +1322,62 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
     switch (obs)
     {
         case InlineObservation::CALLEE_IL_CODE_SIZE:
-            {
-                assert(m_IsForceInlineKnown);
-                assert(value != 0);
-                m_CodeSize = static_cast<unsigned>(value);
+        {
+            assert(m_IsForceInlineKnown);
+            assert(value != 0);
+            m_CodeSize = static_cast<unsigned>(value);
 
-                if (m_IsForceInline)
-                {
-                    // Candidate based on force inline
-                    SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-                }
-                else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
-                {
-                    // Candidate based on small size
-                    SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
-                }
-                else if (m_CodeSize <= 1000)
-                {
-                    // Candidate, pending profitability evaluation
-                    SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-                }
-                else
-                {
-                    // Callee too big, not a candidate
-                    SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
-                }
-                break;
+            if (m_IsForceInline)
+            {
+                // Candidate based on force inline
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
+            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            {
+                // Candidate based on small size
+                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+            }
+            else if (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSize())
+            {
+                // Candidate, pending profitability evaluation
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+            else
+            {
+                // Callee too big, not a candidate
+                SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+            }
+            break;
+        }
         case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
             if (!m_IsForceInline && m_IsNoReturn && (value == 1))
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            else if (!m_HasProfile && !m_IsForceInline && (value > MAX_BASIC_BLOCKS + 10))
+            else if (!m_IsForceInline && (value > MAX_BASIC_BLOCKS))
             {
-                SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+                unsigned basicBlockLimit = MAX_BASIC_BLOCKS;
+
+                if (m_IsPrejitRoot)
+                {
+                    basicBlockLimit = JitConfig.JitExtendedDefaultPolicyMaxBBCount();
+                }
+                else
+                {
+                    // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
+                    // or have Profile Data.
+                    basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
+                    if (m_HasProfile && (m_ProfileFrequency > 0.5))
+                    {
+                        basicBlockLimit += 3;
+                    }
+                    basicBlockLimit = min(JitConfig.JitExtendedDefaultPolicyMaxBBCount(), value);
+                }
+                if ((unsigned)value > basicBlockLimit)
+                {
+                    JITDUMP("basicBlockCount=%d > basicBlockLimit=%d\n", basicBlockCount, basicBlockLimit);
+                    SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+                }
             }
             break;
         default:
@@ -1395,14 +1416,9 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
     }
 
-    if (m_IsFromPromotableValueClass)
+    if (m_IsFromValueClass)
     {
-        multiplier += 3;
-        JITDUMP("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
-    }
-    else if (m_IsFromValueClass)
-    {
-        multiplier += 1.0;
+        multiplier += 5.0;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
     }
 
@@ -1431,7 +1447,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_ArgFeedsRangeCheck > 0)
     {
-        multiplier += 0.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1445,7 +1461,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 3.0 + m_ArgIsStructByValue;
+        multiplier += 4.0 + m_ArgIsStructByValue;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1490,7 +1506,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
         // Especially useful with m_IsGenericFromNonGeneric
-        multiplier += 2.0 * m_FoldableBox;
+        multiplier += 3.0 * m_FoldableBox;
         JITDUMP("\nInline has %d foldable BOX ops.  Multiplier increased to %g.", m_FoldableBox, multiplier);
     }
 
@@ -1510,7 +1526,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += 2.0;
+        multiplier += m_BinaryExprWithCns * 1.2;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
                 m_BinaryExprWithCns, multiplier);
     }
@@ -1521,7 +1537,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
         // the end of the functions and don't impact Register Allocations.
         // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
-        multiplier += 3.0 + m_ThrowBlock;
+        multiplier += 3.5 + m_ThrowBlock;
         JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
     }
 
@@ -1565,7 +1581,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         // Normally, we try to note all the places where constant arguments lead to folding/feed tests
         // but just in case:
-        multiplier += m_ArgIsConst;
+        multiplier += m_ArgIsConst * 1.5;
         JITDUMP("\n%d arguments are constants at the callsite.  Multiplier increased to %g.", m_ArgIsConst, multiplier);
     }
 
@@ -1600,7 +1616,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         // E.g. callee has "x / arg0" where arg0 is a const at the call site -
         // we'll avoid a very expensive DIV instruction after inlining.
-        // multiplier += 3.0 + m_DivByCns;
+        multiplier += 3.0 + m_DivByCns;
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
@@ -1608,7 +1624,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     // assume that call sites may pass constants.
     if (m_IsPrejitRoot)
     {
-        multiplier += m_BinaryExprWithCns;
+        multiplier += m_BinaryExprWithCns * 1.5;
     }
 
     switch (m_CallsiteFrequency)
@@ -1643,7 +1659,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_HasProfile)
     {
-        const double profileMaxValue = 1.5;
+        const double profileMaxValue = 2.0;
         // m_ProfileFrequency values:
         //   > 1  -- the callsite is inside a hot loop
         //   1    -- the callsite is as hot as its method's first block
@@ -1658,8 +1674,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  4) Sometimes it's still makes sense to inline methods in cold blocks to improve type/esacape analysis
         //     for the whole caller.
         //
-        const double profileTrustCoef = 0.5;
-        const double profileScale     = 10.0;
+        const double profileTrustCoef = 0.7;
+        const double profileScale     = 7.0;
 
         multiplier *= profileTrustCoef + min(m_ProfileFrequency, profileMaxValue) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
@@ -1671,7 +1687,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // TODO: investigate in which cases it's profitable to inline callees with loops.
         // So far, our micro-benchmarks mostly regress if we ignore m_BackwardJump observation.
         // Allow inlining if only we already collected many other observations such as foldable branches.
-        multiplier *= 0.3;
+        multiplier *= 0.5;
     }
 
     if (m_IsCallsiteInNoReturnRegion)
