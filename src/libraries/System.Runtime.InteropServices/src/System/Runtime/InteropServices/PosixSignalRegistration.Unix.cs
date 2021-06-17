@@ -120,7 +120,7 @@ namespace System.Runtime.InteropServices
                                     IsBackground = true,
                                     Name = ".NET Signal Handler"
                                 };
-                                handlerThread.Start((signo, registrations));
+                                handlerThread.UnsafeStart((signo, registrations));
                             }
                             else
                             {
