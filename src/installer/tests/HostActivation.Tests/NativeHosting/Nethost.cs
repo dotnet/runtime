@@ -180,21 +180,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
-        [InlineData("{0}", true)]
-        [InlineData("{0}\n", true)]
-        [InlineData("{0}\nSome other text", true)]
-        [InlineData("", false)]
-        [InlineData("\n{0}", false)]
-        [InlineData(" {0}", false)]
-        [InlineData("{0} \n", false)]
-        [InlineData("{0} ", false)]
-        public void GetHostFxrPath_InstallLocationFile(string value, bool shouldPass)
+        [InlineData("{0}", false, true)]
+        [InlineData("{0}\n", false, true)]
+        [InlineData("{0}\nSome other text", false, true)]
+        [InlineData("", false, false)]
+        [InlineData("\n{0}", false, false)]
+        [InlineData(" {0}", false, false)]
+        [InlineData("{0} \n", false, false)]
+        [InlineData("{0} ", false, false)]
+        [InlineData("{0}", true, true)]
+        [InlineData("{0}\n", true, true)]
+        [InlineData("{0}\nSome other text", true, true)]
+        [InlineData("", true, false)]
+        [InlineData("\n{0}", true, false)]
+        [InlineData(" {0}", true, false)]
+        [InlineData("{0} \n", true, false)]
+        [InlineData("{0} ", true, false)]
+        public void GetHostFxrPath_InstallLocationFile(string value, bool shouldUseArchSpecificInstallLocation, bool shouldPass)
         {
             string installLocation = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))
             {
-                registeredInstallLocationOverride.SetInstallLocation((sharedState.RepoDirectories.BuildArchitecture, string.Format(value, installLocation)));
+                if (shouldUseArchSpecificInstallLocation)
+                    registeredInstallLocationOverride.SetInstallLocation((sharedState.RepoDirectories.BuildArchitecture, string.Format(value, installLocation)));
+                else
+                    registeredInstallLocationOverride.SetInstallLocation((string.Empty, string.Format(value, installLocation)));
 
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()

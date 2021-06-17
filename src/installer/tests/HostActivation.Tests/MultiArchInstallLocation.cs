@@ -11,7 +11,6 @@ using Xunit;
 
 namespace HostActivation.Tests
 {
-
     public class MultiArchInstallLocation : IClassFixture<MultiArchInstallLocation.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -22,7 +21,7 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void GlobalInstallation_CurrentArchitectureIsUsedIfEnvVarSet()
+        public void EnvironmentVariable_CurrentArchitectureIsUsedIfEnvVarSet()
         {
             var fixture = sharedTestState.PortableAppFixture
                 .Copy();
@@ -34,31 +33,27 @@ namespace HostActivation.Tests
                 .DotNetRoot(fixture.BuiltDotnet.BinPath, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT_{arch}");
+                .And.HaveUsedDotNetRootInstallLocation(arch, fixture.BuiltDotnet.BinPath);
         }
 
         [Fact]
-        public void GlobalInstallation_IfNoArchSpecificEnvVarIsFoundDotnetRootIsUed()
+        public void EnvironmentVariable_IfNoArchSpecificEnvVarIsFoundDotnetRootIsUsed()
         {
             var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
             var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
-            var result = Command.Create(appExe)
+            Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(fixture.BuiltDotnet.BinPath)
-                .Execute();
-
-            result.Should().Pass();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && arch == "X86")
-                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT(x86)=");
-            else
-                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT=");
+                .Execute()
+                .Should().Pass()
+                .And.HaveUsedDotNetRootInstallLocation(fixture.BuiltDotnet.BinPath);
         }
 
         [Fact]
-        public void GlobalInstallation_ArchSpecificDotnetRootIsUsedOverDotnetRoot()
+        public void EnvironmentVariable_ArchSpecificDotnetRootIsUsedOverDotnetRoot()
         {
             var fixture = sharedTestState.PortableAppFixture
                 .Copy();
@@ -72,39 +67,8 @@ namespace HostActivation.Tests
                 .DotNetRoot(dotnet, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT_{arch}=[{dotnet}] as runtime location.")
+                .And.HaveUsedDotNetRootInstallLocation(arch, dotnet)
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
-        }
-
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void GlobalInstallation_WindowsX86(bool setArchSpecificDotnetRoot)
-        {
-            var fixture = sharedTestState.PortableAppFixture
-                .Copy();
-
-            if (RuntimeInformation.OSArchitecture != Architecture.X86)
-                return;
-
-            var appExe = fixture.TestProject.AppExe;
-            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
-            var dotnet = fixture.BuiltDotnet.BinPath;
-            var command = Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(dotnet);
-
-            if (setArchSpecificDotnetRoot)
-                command.DotNetRoot(dotnet, arch);
-
-            var result = command.Execute();
-            result.Should().Pass();
-
-            if (setArchSpecificDotnetRoot)
-                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT_X86=[{dotnet}] as runtime location.");
-            else
-                result.Should().HaveStdErrContaining($"Using environment variable DOTNET_ROOT(x86)=[{dotnet}] as runtime location.");
         }
 
         [Fact]
@@ -133,11 +97,11 @@ namespace HostActivation.Tests
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .DotNetRoot(null)
                     .Execute()
-                    .Should().HaveStdErrContaining($"Found install location path '{path1}'.")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{path1}' ('{arch1}').")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{path2}' ('{arch2}').")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path matching the current OS architecture ('{arch2}'): '{path2}'.")
-                    .And.HaveStdErrContaining($"Using global installation location [{path2}] as runtime location.");
+                    .Should().HaveFoundDefaultInstallLocationInConfigFile(path1)
+                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch1, path1)
+                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch2, path1)
+                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch2, path2)
+                    .And.HaveUsedGlobalInstallLocation(path2);
             }
         }
 
@@ -160,9 +124,9 @@ namespace HostActivation.Tests
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .DotNetRoot(null)
                     .Execute()
-                    .Should().HaveStdErrContaining($"Found install location path 'a/b/c'.")
+                    .Should().HaveFoundDefaultInstallLocationInConfigFile("a/b/c")
                     .And.HaveStdErrContaining($"Only the first line in '{registeredInstallLocationOverride.PathValueOverride}' may not have an architecture prefix.")
-                    .And.HaveStdErrContaining($"Using install location 'a/b/c'.");
+                    .And.HaveUsedConfigFileInstallLocation("a/b/c");
             }
         }
 
@@ -187,8 +151,8 @@ namespace HostActivation.Tests
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .DotNetRoot(null)
                     .Execute()
-                    .Should().HaveStdErrContaining($"Found install location path '{reallyLongPath}'.")
-                    .And.HaveStdErrContaining($"Using install location '{reallyLongPath}'.");
+                    .Should().HaveFoundDefaultInstallLocationInConfigFile(reallyLongPath)
+                    .And.HaveUsedConfigFileInstallLocation(reallyLongPath);
             }
         }
 

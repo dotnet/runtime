@@ -65,18 +65,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public void SetInstallLocation(params (string Architecture, string Path)[] locations)
         {
-            var locationsList = locations.ToList();
-            Debug.Assert(locationsList.Count >= 1);
+            Debug.Assert(locations.Length >= 1);
             if (OperatingSystem.IsWindows())
             {
-                foreach (var location in locationsList)
+                foreach (var location in locations)
+                {
                     using (RegistryKey dotnetLocationKey = key.CreateSubKey($@"Setup\InstalledVersions\{location.Architecture}"))
+                    {
                         dotnetLocationKey.SetValue("InstallLocation", location.Path);
+                    }
+                }
             }
             else
             {
-                File.WriteAllText(PathValueOverride, string.Join (Environment.NewLine,
-                    locationsList.Select(l => string.Format("{0}{1}".ToLower(),
+                File.WriteAllText(PathValueOverride, string.Join(Environment.NewLine,
+                    locations.Select(l => string.Format("{0}{1}",
                         (!string.IsNullOrWhiteSpace(l.Architecture) ? l.Architecture + "=" : ""), l.Path))));
             }
         }

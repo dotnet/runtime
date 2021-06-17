@@ -422,10 +422,12 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
 
     pal::string_t install_location;
+    int current_line = 0;
     bool is_first_line = true, install_location_found = false;
 
     while (pal::get_line_from_file(install_location_file, install_location))
     {
+        current_line++;
         size_t arch_sep = install_location.find(_X('='));
         if (arch_sep == pal::string_t::npos)
         {
@@ -437,6 +439,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
             }
             else
             {
+                trace::warning(_X("Found unprefixed install location path '%s' on line %d."), install_location.c_str(), current_line);
                 trace::warning(_X("Only the first line in '%s' may not have an architecture prefix."), install_location_file_path.c_str());
             }
 
@@ -448,11 +451,11 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         pal::string_t path_to_location = install_location.substr(arch_sep + 1);
 
         trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
-        if (arch_prefix == get_arch())
+        if (strcasecmp(arch_prefix, get_arch()) == 0)
         {
             recv->assign(path_to_location);
             install_location_found = true;
-            trace::verbose(_X("Found architecture-specific install location path matching the current OS architecture ('%s'): '%s'."), arch_prefix.c_str(), path_to_location.c_str());
+            trace::verbose(_X("Found architecture-specific install location path matching the current host architecture ('%s'): '%s'."), arch_prefix.c_str(), path_to_location.c_str());
             break;
         }
 
@@ -489,24 +492,27 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     return true;
 }
 
-bool pal::get_line_from_file(FILE* pFile, pal::string_t& line)
+namespace
 {
-    line = pal::string_t();
-    char buffer[256];
-    while (fgets(buffer, sizeof(buffer), pFile))
+    bool pal::get_line_from_file(FILE* pFile, pal::string_t& line)
     {
-        line += (pal::char_t*)buffer;
-        size_t len = line.length();
-
-        // fgets includes the newline character in the string - so remove it.
-        if (len > 0 && line[len - 1] == '\n')
+        line = pal::string_t();
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pFile))
         {
-            line.pop_back();
-            break;
-        }
-    }
+            line += (pal::char_t*)buffer;
+            size_t len = line.length();
 
-    return !line.empty();
+            // fgets includes the newline character in the string - so remove it.
+            if (len > 0 && line[len - 1] == '\n')
+            {
+                line.pop_back();
+                break;
+            }
+        }
+
+        return !line.empty();
+    }
 }
 
 pal::string_t trim_quotes(pal::string_t stringToCleanup)

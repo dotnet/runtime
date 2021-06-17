@@ -237,9 +237,6 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
-
-    bool get_line_from_file(FILE* pFile, pal::string_t& line);
-
 #endif
 
     inline int snwprintf(char_t* buffer, size_t count, const char_t* format, ...)
