@@ -266,6 +266,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Theory]
+        [InlineData("false")]
+        [InlineData("true")]
+        [InlineData("null")]
+        public async Task UsingSkipEnabledCheck(string skipEnabledCheckValue)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
+                partial class C
+                {{
+                    public partial class WithLoggerMethodUsingSkipEnabledCheck
+                    {{
+                        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"", SkipEnabledCheck = {skipEnabledCheckValue})]
+                        static partial void M1(ILogger logger);
+                    }}
+                }}
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
         [Fact]
         public async Task MissingExceptionType()
         {

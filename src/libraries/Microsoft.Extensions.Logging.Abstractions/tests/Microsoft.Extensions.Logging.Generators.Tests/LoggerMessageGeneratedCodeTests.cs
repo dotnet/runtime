@@ -346,6 +346,32 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public void SkipEnabledCheckTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            logger.Enabled = false;
+            Assert.False(logger.IsEnabled(LogLevel.Information));
+            SkipEnabledCheckExtensions.LoggerMethodWithFalseSkipEnabledCheck(logger);
+            Assert.Null(logger.LastException);
+            Assert.Null(logger.LastFormattedString);
+            Assert.Equal((LogLevel)(-1), logger.LastLogLevel);
+            Assert.Equal(0, logger.CallCount);
+            Assert.Equal(default, logger.LastEventId);
+
+            logger.Reset();
+            logger.Enabled = false;
+            Assert.False(logger.IsEnabled(LogLevel.Debug));
+            SkipEnabledCheckExtensions.LoggerMethodWithTrueSkipEnabledCheck(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("Message: When using SkipEnabledCheck, the generated code skips logger.IsEnabled(logLevel) check before calling log. To be used when consumer has already guarded logger method in an IsEnabled check.", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal("LoggerMethodWithTrueSkipEnabledCheck", logger.LastEventId.Name);
+        }
+
+        [Fact]
         public void NestedClassTests()
         {
             var logger = new MockLogger();

@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             /// <summary>
-            /// Gets the set of logging classes or structs containing methods to output.
+            /// Gets the set of logging classes containing methods to output.
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         continue;
                                     }
 
-                                    (int eventId, int? level, string message, string? eventName) = ExtractAttributeValues(ma.ArgumentList!, sm);
+                                    (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = ExtractAttributeValues(ma.ArgumentList!, sm);
 
                                     IMethodSymbol? methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
                                     if (methodSymbol != null)
@@ -119,6 +119,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             EventName = eventName,
                                             IsExtensionMethod = methodSymbol.IsExtensionMethod,
                                             Modifiers = method.Modifiers.ToString(),
+                                            SkipEnabledCheck = skipEnabledCheck
                                         };
 
                                         ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
@@ -435,12 +436,13 @@ namespace Microsoft.Extensions.Logging.Generators
                 return (loggerField, false);
             }
 
-            private (int eventId, int? level, string message, string? eventName) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
+            private (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
             {
                 int eventId = 0;
                 int? level = null;
                 string? eventName = null;
                 string message = string.Empty;
+                bool skipEnabledCheck = false;
                 foreach (AttributeArgumentSyntax a in args.Arguments)
                 {
                     // argument syntax takes parameters. e.g. EventId = 0
@@ -459,9 +461,13 @@ namespace Microsoft.Extensions.Logging.Generators
                         case "Message":
                             message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
                             break;
+                        case "SkipEnabledCheck":
+                            var flag = (bool?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
+                            skipEnabledCheck = flag == null ? false : flag.Value;
+                            break;
                     }
                 }
-                return (eventId, level, message, eventName);
+                return (eventId, level, message, eventName, skipEnabledCheck);
             }
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
@@ -612,6 +618,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
             public string LoggerField = string.Empty;
+            public bool SkipEnabledCheck;
         }
 
         /// <summary>

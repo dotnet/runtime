@@ -59,5 +59,10 @@ namespace Microsoft.Extensions.Logging
         /// Gets the message text for the logging method.
         /// </summary>
         public string Message { get; set; } = "";
+
+        /// <summary>
+        /// Gets the flag to skip IsEnabled check for the logging method.
+        /// </summary>
+        public bool SkipEnabledCheck { get; set; }
     }
 }
