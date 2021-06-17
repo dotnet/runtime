@@ -4532,15 +4532,53 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_GC_KeepAlive:
             {
-                retNode = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, impPopStack().val);
+                GenTree* objToKeepAlive = impPopStack().val;
 
-                // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
-                // very subtle and hard to observe. Thus we are conservatively marking it with both
-                // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
-                // necessary. The conservative side-effects are unlikely to have negative impact
-                // on code quality in this case.
-                retNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+                if (objToKeepAlive->IsBoxedValue())
+                {
+                    CORINFO_CLASS_HANDLE boxedClass = lvaGetDesc(objToKeepAlive->AsBox()->BoxOp()->AsLclVar())->lvClassHnd;
+                    GenTree*             boxSrc     = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, Compiler::BR_REMOVE_BUT_NOT_NARROW);
 
+                    if (boxSrc != nullptr)
+                    {
+                        unsigned boxTmpNum;
+                        if (boxSrc->OperIsLocal())
+                        {
+                            boxTmpNum = boxSrc->AsLclVarCommon()->GetLclNum();
+                        }
+                        else
+                        {
+                            boxTmpNum             = lvaGrabTemp(true DEBUGARG("Temp for the box source"));
+                            GenTree*   boxTmpAsg  = gtNewTempAssign(boxTmpNum, boxSrc);
+                            Statement* boxAsgStmt = objToKeepAlive->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+                            boxAsgStmt->SetRootNode(boxTmpAsg);
+                        }
+
+                        ClassLayout* layout = typGetObjLayout(boxedClass);
+                        if (layout->HasGCPtr())
+                        {
+                            for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+                            {
+                                if (layout->IsGCPtr(slot))
+                                {
+                                    GenTree* fieldOffset = gtNewIconNode(slot * TARGET_POINTER_SIZE);
+                                    GenTree* boxTmp      = gtNewLclvNode(boxTmpNum, boxSrc->TypeGet());
+                                    GenTree* boxSrcAddr  = gtNewOperNode(GT_ADDR, TYP_BYREF, boxTmp);
+                                    GenTree* fieldAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, boxSrcAddr, fieldOffset);
+                                    GenTree* field       = gtNewIndir(TYP_REF, fieldAddr);
+                                    GenTree* keepalive   = gtNewKeepaliveNode(field);
+
+                                    impAppendStmt(gtNewStmt(keepalive, impCurStmtOffs));
+                                }
+                            }
+                        }
+
+                        retNode = gtNewNothingNode();
+                        break;
+                    }
+                }
+
+                retNode = gtNewKeepaliveNode(objToKeepAlive);
                 break;
             }
 
