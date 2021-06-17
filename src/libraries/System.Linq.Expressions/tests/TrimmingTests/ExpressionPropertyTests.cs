@@ -21,8 +21,6 @@ internal class Program
 
         result = LambdaCreation.Test();
 
-        Type.GetType("foo");
-
         return result;
     }
 
