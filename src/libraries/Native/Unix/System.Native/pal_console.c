@@ -460,7 +460,7 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling()
 {
     static int32_t initialized = 0;
 
-    // Both the Process and Console class call this method for initialization.
+    // The Process, Console and PosixSignalRegistration classes call this method for initialization.
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         if (initialized == 0)
