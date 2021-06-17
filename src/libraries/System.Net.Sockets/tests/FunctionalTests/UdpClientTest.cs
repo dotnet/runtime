@@ -665,7 +665,7 @@ namespace System.Net.Sockets.Tests
             {
                 using (var timeoutCts = new CancellationTokenSource(1))
                 {
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => receiver.ReceiveAsync(timeoutCts.Token).AsTask());
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiver.ReceiveAsync(timeoutCts.Token).AsTask());
                 }
             }
         }
