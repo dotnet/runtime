@@ -15,12 +15,13 @@ namespace Mono.Linker.Steps
 		{
 			public readonly MessageOrigin Origin;
 
-			public Scope (MessageOrigin origin)
+			public Scope (in MessageOrigin origin)
 			{
 				Origin = origin;
 			}
 		}
 
+		readonly LinkContext _context;
 		readonly Stack<Scope> _scopeStack;
 
 		readonly struct LocalScope : IDisposable
@@ -32,7 +33,16 @@ namespace Mono.Linker.Steps
 			{
 				_origin = origin;
 				_scopeStack = scopeStack;
-				_scopeStack.Push (new Scope (origin));
+
+				// Compiler generated methods and types should "inherit" suppression context
+				// from the user defined method from which the compiler generated them.
+				// Detecting which method produced which piece of compiler generated code
+				// is currently not possible in all cases, but in cases where it works
+				// we will store the suppression context in the SuppressionContextMember.
+				// For code which is not compiler generated the suppression context
+				// is the same as the message's origin member.
+				IMemberDefinition suppressionContextMember = _scopeStack.GetSuppressionContext (origin.MemberDefinition);
+				_scopeStack.Push (new Scope (new MessageOrigin (origin.MemberDefinition, origin.ILOffset, suppressionContextMember)));
 			}
 
 			public LocalScope (in Scope scope, MarkScopeStack scopeStack)
@@ -73,8 +83,9 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		public MarkScopeStack ()
+		public MarkScopeStack (LinkContext context)
 		{
+			_context = context;
 			_scopeStack = new Stack<Scope> ();
 		}
 
@@ -108,7 +119,7 @@ namespace Mono.Linker.Steps
 			if (scope.Origin.MemberDefinition is not MethodDefinition)
 				throw new InternalErrorException ($"Trying to update instruction offset of scope stack which is not a method. Current stack scope is '{scope}'.");
 
-			_scopeStack.Push (new Scope (new MessageOrigin (scope.Origin.MemberDefinition, offset)));
+			_scopeStack.Push (new Scope (new MessageOrigin (scope.Origin.MemberDefinition, offset, scope.Origin.SuppressionContextMember)));
 		}
 
 		void Push (in Scope scope)
@@ -126,5 +137,8 @@ namespace Mono.Linker.Steps
 
 		[Conditional ("DEBUG")]
 		public void AssertIsEmpty () => Debug.Assert (_scopeStack.Count == 0);
+
+		IMemberDefinition GetSuppressionContext (IMemberDefinition sourceMember) =>
+			_context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (sourceMember) ?? sourceMember;
 	}
 }

@@ -60,7 +60,7 @@ namespace Mono.Linker.Steps
 		MarkStepContext _markContext;
 		readonly Dictionary<TypeDefinition, bool> _entireTypesMarked; // The value is markBaseAndInterfaceTypes flag used to mark the type
 		DynamicallyAccessedMembersTypeHierarchy _dynamicallyAccessedMembersTypeHierarchy;
-		readonly MarkScopeStack _scopeStack;
+		MarkScopeStack _scopeStack;
 
 		internal DynamicallyAccessedMembersTypeHierarchy DynamicallyAccessedMembersTypeHierarchy {
 			get => _dynamicallyAccessedMembersTypeHierarchy;
@@ -192,7 +192,6 @@ namespace Mono.Linker.Steps
 			_unreachableBodies = new List<(MethodBody, MarkScopeStack.Scope)> ();
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new Dictionary<TypeDefinition, bool> ();
-			_scopeStack = new MarkScopeStack ();
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -204,6 +203,7 @@ namespace Mono.Linker.Steps
 			_context = context;
 			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
 			_markContext = new MarkStepContext ();
+			_scopeStack = new MarkScopeStack (_context);
 			_dynamicallyAccessedMembersTypeHierarchy = new DynamicallyAccessedMembersTypeHierarchy (_context, this, _scopeStack);
 
 			Initialize ();
@@ -2720,14 +2720,34 @@ namespace Mono.Linker.Steps
 			CheckAndReportRequiresUnreferencedCode (method);
 		}
 
+		internal bool ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ()
+		{
+			// Check if the current scope method has RequiresUnreferencedCode on it
+			// since that attribute automatically suppresses all trim analysis warnings.
+			// Check both the immediate origin method as well as suppression context method
+			// since that will be different for compiler generated code.
+			var currentOrigin = _scopeStack.CurrentScope.Origin;
+
+			IMemberDefinition suppressionContextMember = currentOrigin.SuppressionContextMember;
+			if (suppressionContextMember != null &&
+				Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (suppressionContextMember))
+				return true;
+
+			IMemberDefinition originMember = currentOrigin.MemberDefinition;
+			if (suppressionContextMember != originMember && originMember != null &&
+				Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (originMember))
+				return true;
+
+			return false;
+		}
+
 		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method)
 		{
-			var currentScope = _scopeStack.CurrentScope;
+			var currentOrigin = _scopeStack.CurrentScope.Origin;
 
 			// If the caller of a method is already marked with `RequiresUnreferencedCodeAttribute` a new warning should not
 			// be produced for the callee.
-			if (currentScope.Origin.MemberDefinition != null &&
-				Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (currentScope.Origin.MemberDefinition))
+			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
 				return;
 
 			if (Annotations.TryGetLinkerAttribute (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode)) {
@@ -2738,7 +2758,7 @@ namespace Mono.Linker.Steps
 				if (!string.IsNullOrEmpty (requiresUnreferencedCode.Url))
 					message += " " + requiresUnreferencedCode.Url;
 
-				_context.LogWarning (message, 2026, currentScope.Origin, MessageSubCategory.TrimAnalysis);
+				_context.LogWarning (message, 2026, currentOrigin, MessageSubCategory.TrimAnalysis);
 			}
 		}
 

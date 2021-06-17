@@ -707,6 +707,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								string fileName = (string) attr.GetPropertyValue ("FileName");
 								int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 								int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");
+								bool? isCompilerGeneratedCode = (bool?) attr.GetPropertyValue ("CompilerGeneratedCode");
 
 								int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 								var actualMethod = attrProvider as MethodDefinition;
@@ -751,6 +752,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											if (!actualOrigin.ToString ().EndsWith (expectedOrigin, StringComparison.OrdinalIgnoreCase))
 												return false;
 										}
+									} else if (isCompilerGeneratedCode == true) {
+										MethodDefinition methodDefinition = mc.Origin?.MemberDefinition as MethodDefinition;
+										if (methodDefinition != null) {
+											string actualName = methodDefinition.DeclaringType.FullName + "." + methodDefinition.Name;
+											if (actualName.StartsWith (attrProvider.DeclaringType.FullName) &&
+												actualName.Contains ("<" + attrProvider.Name + ">"))
+												return true;
+										}
+
+										return false;
 									} else {
 										if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
 											return true;

@@ -59,9 +59,12 @@ namespace Mono.Linker.Dataflow
 			return context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (fieldDefinition);
 		}
 
-		bool ShouldEnableReflectionPatternReporting (MethodDefinition method)
+		bool ShouldEnableReflectionPatternReporting ()
 		{
-			return !_context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method);
+			if (_markStep.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
+				return false;
+
+			return true;
 		}
 
 		public ReflectionMethodBodyScanner (LinkContext context, MarkStep parent, MarkScopeStack scopeStack)
@@ -79,7 +82,7 @@ namespace Mono.Linker.Dataflow
 				var method = methodBody.Method;
 				var requiredMemberTypes = _context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (method);
 				if (requiredMemberTypes != 0) {
-					var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), _scopeStack.CurrentScope.Origin, method.MethodReturnType);
+					var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (), _scopeStack.CurrentScope.Origin, method.MethodReturnType);
 					reflectionContext.AnalyzingPattern ();
 					RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, MethodReturnValue, method.MethodReturnType);
 					reflectionContext.Dispose ();
@@ -151,9 +154,8 @@ namespace Mono.Linker.Dataflow
 
 			ValueNode valueNode = GetTypeValueNodeFromGenericArgument (genericArgument);
 			var currentScopeOrigin = _scopeStack.CurrentScope.Origin;
-			bool enableReflectionPatternReporting = !(currentScopeOrigin.MemberDefinition is MethodDefinition sourceMethod) || ShouldEnableReflectionPatternReporting (sourceMethod);
 
-			var reflectionContext = new ReflectionPatternContext (_context, enableReflectionPatternReporting, currentScopeOrigin, genericParameter);
+			var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (), currentScopeOrigin, genericParameter);
 			reflectionContext.AnalyzingPattern ();
 			RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, genericParameter);
 			reflectionContext.Dispose ();
@@ -228,7 +230,7 @@ namespace Mono.Linker.Dataflow
 			var requiredMemberTypes = _context.Annotations.FlowAnnotations.GetFieldAnnotation (field);
 			if (requiredMemberTypes != 0) {
 				_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
-				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), _scopeStack.CurrentScope.Origin, field, operation);
+				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (), _scopeStack.CurrentScope.Origin, field, operation);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, valueToStore, field);
 				reflectionContext.Dispose ();
@@ -241,7 +243,7 @@ namespace Mono.Linker.Dataflow
 			if (requiredMemberTypes != 0) {
 				ParameterDefinition parameter = method.Parameters[index - (method.HasImplicitThis () ? 1 : 0)];
 				_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
-				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), _scopeStack.CurrentScope.Origin, parameter, operation);
+				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (), _scopeStack.CurrentScope.Origin, parameter, operation);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, valueToStore, parameter);
 				reflectionContext.Dispose ();
@@ -649,7 +651,7 @@ namespace Mono.Linker.Dataflow
 			_scopeStack.UpdateCurrentScopeInstructionOffset (operation.Offset);
 			var reflectionContext = new ReflectionPatternContext (
 				_context,
-				ShouldEnableReflectionPatternReporting (callingMethodDefinition),
+				ShouldEnableReflectionPatternReporting (),
 				_scopeStack.CurrentScope.Origin,
 				calledMethodDefinition,
 				operation);

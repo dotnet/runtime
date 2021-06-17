@@ -39,7 +39,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresWithMessageAndUrlOnMethod ();
 			TestRequiresOnConstructor ();
 			TestRequiresOnPropertyGetterAndSetter ();
-			TestRequiresSuppressesWarningsFromReflectionAnalysis ();
+			SuppressMethodBodyReferences.Test ();
+			SuppressGenericParameters<TestType, TestType>.Test ();
 			TestDuplicateRequiresAttribute ();
 			TestRequiresUnreferencedCodeOnlyThroughReflection ();
 			TestBaseTypeVirtualMethodRequiresUnreferencedCode ();
@@ -60,7 +61,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresInDynamicDependency ();
 			TestThatTrailingPeriodIsAddedToMessage ();
 			TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ();
-			TestRequiresOnAttributeOnGenericParameter ();
+			RequiresOnAttribute.Test ();
 		}
 
 		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageOnly--.")]
@@ -115,45 +116,113 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			set { }
 		}
 
-		[ExpectedWarning ("IL2026", "Message for --RequiresAndCallsOtherRequiresMethods--.")]
-		static void TestRequiresSuppressesWarningsFromReflectionAnalysis ()
+		[ExpectedNoWarnings]
+		class SuppressMethodBodyReferences
 		{
-			RequiresAndCallsOtherRequiresMethods<TestType> ();
+			static Type _unknownType;
+			static Type GetUnknownType () => null;
+
+			[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeMethod--")]
+			static void RequiresUnreferencedCodeMethod ()
+			{
+			}
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+			static Type _requiresPublicConstructors;
+
+			[RequiresUnreferencedCode ("")]
+			static void TestRUCMethod ()
+			{
+				// Normally this would warn, but with the attribute on this method it should be auto-suppressed
+				RequiresUnreferencedCodeMethod ();
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestParameter ()
+			{
+				_unknownType.RequiresPublicMethods ();
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestReturnValue ()
+			{
+				GetUnknownType ().RequiresPublicEvents ();
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestField ()
+			{
+				_requiresPublicConstructors = _unknownType;
+			}
+
+			[UnconditionalSuppressMessage ("Trimming", "IL2026")]
+			public static void Test ()
+			{
+				TestRUCMethod ();
+				TestParameter ();
+				TestReturnValue ();
+				TestField ();
+			}
 		}
 
-		[RequiresUnreferencedCode ("Message for --RequiresAndCallsOtherRequiresMethods--")]
-		[LogDoesNotContain ("Message for --RequiresUnreferencedCodeMethod--")]
-		[RecognizedReflectionAccessPattern]
-		static void RequiresAndCallsOtherRequiresMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
+		[ExpectedNoWarnings]
+		class SuppressGenericParameters<TUnknown, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] TPublicProperties>
 		{
-			// Normally this would warn, but with the attribute on this method it should be auto-suppressed
-			RequiresUnreferencedCodeMethod ();
+			static Type _unknownType;
 
-			// Normally this would warn due to incompatible annotations, but with the attribute on this method it should be auto-suppressed
-			GetTypeWithPublicMethods ().RequiresPublicFields ();
+			static void GenericMethodRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
 
-			TypeRequiresPublicFields<TPublicMethods>.Method ();
+			class GenericTypeRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> { }
 
-			MethodRequiresPublicFields<TPublicMethods> ();
+			[RequiresUnreferencedCode ("")]
+			static void TestGenericMethod ()
+			{
+				GenericMethodRequiresPublicMethods<TUnknown> ();
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestGenericMethodMismatch ()
+			{
+				GenericMethodRequiresPublicMethods<TPublicProperties> ();
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestGenericType ()
+			{
+				new GenericTypeRequiresPublicFields<TUnknown> ();
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestMakeGenericTypeWithStaticTypes ()
+			{
+				typeof (GenericTypeRequiresPublicFields<>).MakeGenericType (typeof (TUnknown));
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestMakeGenericTypeWithDynamicTypes ()
+			{
+				typeof (GenericTypeRequiresPublicFields<>).MakeGenericType (_unknownType);
+			}
+
+			[RequiresUnreferencedCode ("")]
+			static void TestMakeGenericMethod ()
+			{
+				typeof (SuppressGenericParameters<TUnknown, TPublicProperties>)
+					.GetMethod ("GenericMethodRequiresPublicMethods", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+					.MakeGenericMethod (typeof (TPublicProperties));
+			}
+
+			[UnconditionalSuppressMessage ("Trimming", "IL2026")]
+			public static void Test ()
+			{
+				TestGenericMethod ();
+				TestGenericMethodMismatch ();
+				TestGenericType ();
+				TestMakeGenericTypeWithStaticTypes ();
+				TestMakeGenericTypeWithDynamicTypes ();
+				TestMakeGenericMethod ();
+			}
 		}
-
-		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeMethod--")]
-		static void RequiresUnreferencedCodeMethod ()
-		{
-		}
-
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		static Type GetTypeWithPublicMethods ()
-		{
-			return null;
-		}
-
-		class TypeRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
-		{
-			public static void Method () { }
-		}
-
-		static void MethodRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> () { }
 
 		class TestType { }
 
@@ -426,23 +495,72 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			WarningMessageEndsWithPeriod ();
 		}
 
-		class AttributeWhichRequiresUnreferencedCodeAttribute : Attribute
+		[ExpectedNoWarnings]
+		class RequiresOnAttribute
 		{
-			[RequiresUnreferencedCode ("Message for --AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			public AttributeWhichRequiresUnreferencedCodeAttribute ()
+			class AttributeWhichRequiresUnreferencedCodeAttribute : Attribute
+			{
+				[RequiresUnreferencedCode ("Message for --AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
+				public AttributeWhichRequiresUnreferencedCodeAttribute ()
+				{
+				}
+			}
+
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
+			class GenericTypeWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T>
+			{
+				public static void TestMethod () { }
+			}
+
+			// https://github.com/mono/linker/issues/2094 - should be supported by the analyzer
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
+			static void GenericMethodWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T> () { }
+
+			static void TestRequiresOnAttributeOnGenericParameter ()
+			{
+				GenericTypeWithAttributedParameter<int>.TestMethod ();
+				GenericMethodWithAttributedParameter<int> ();
+			}
+
+			// https://github.com/mono/linker/issues/2094 - should be supported by the analyzer
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
+			[AttributeWhichRequiresUnreferencedCode]
+			class TypeWithAttributeWhichRequires
 			{
 			}
-		}
 
-		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-		class GenericTypeWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T>
-		{
-			public static void TestMethod () { }
-		}
+			// https://github.com/mono/linker/issues/2094 - should be supported by the analyzer
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
+			[AttributeWhichRequiresUnreferencedCode]
+			static void MethodWithAttributeWhichRequires () { }
 
-		static void TestRequiresOnAttributeOnGenericParameter ()
-		{
-			GenericTypeWithAttributedParameter<int>.TestMethod ();
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
+			[AttributeWhichRequiresUnreferencedCode]
+			static int _fieldWithAttributeWhichRequires;
+
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
+			[AttributeWhichRequiresUnreferencedCode]
+			static bool PropertyWithAttributeWhichRequires { get; set; }
+
+			[AttributeWhichRequiresUnreferencedCode]
+			[RequiresUnreferencedCode ("--MethodWhichRequiresWithAttributeWhichRequires--")]
+			static void MethodWhichRequiresWithAttributeWhichRequires () { }
+
+			[ExpectedWarning ("IL2026", "--MethodWhichRequiresWithAttributeWhichRequires--")]
+			static void TestMethodWhichRequiresWithAttributeWhichRequires ()
+			{
+				MethodWhichRequiresWithAttributeWhichRequires ();
+			}
+
+			public static void Test ()
+			{
+				TestRequiresOnAttributeOnGenericParameter ();
+				new TypeWithAttributeWhichRequires ();
+				MethodWithAttributeWhichRequires ();
+				_fieldWithAttributeWhichRequires = 0;
+				PropertyWithAttributeWhichRequires = false;
+				TestMethodWhichRequiresWithAttributeWhichRequires ();
+			}
 		}
 	}
 }
