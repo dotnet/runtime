@@ -89,7 +89,7 @@ namespace HostActivation.Tests
                 registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
                     (string.Empty, path1),
                     (arch1, path1),
-                    (arch2, path2)
+                    (arch2, path2)EnvironmentVariable_IfNoArchSpecificEnvVarIsFoundDotnetR
                 });
 
                 Command.Create(appExe)
@@ -99,7 +99,6 @@ namespace HostActivation.Tests
                     .Execute()
                     .Should().HaveFoundDefaultInstallLocationInConfigFile(path1)
                     .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch1, path1)
-                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch2, path1)
                     .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch2, path2)
                     .And.HaveUsedGlobalInstallLocation(path2);
             }

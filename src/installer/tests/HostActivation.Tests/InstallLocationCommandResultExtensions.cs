@@ -12,7 +12,7 @@ namespace HostActivation.Tests
 {
     internal static class InstallLocationCommandResultExtensions
     {
-        private static bool IsRunningInWoW64() => OperatingSystem.IsWindows() && !Environment.Is64BitProcess && Environment.Is64BitOperatingSystem;
+        private static bool IsRunningInWoW64() => OperatingSystem.IsWindows() && !Environment.Is64BitProcess;
 
         public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
