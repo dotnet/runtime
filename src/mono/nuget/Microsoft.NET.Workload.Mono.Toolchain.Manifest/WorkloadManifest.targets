@@ -24,6 +24,12 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
     </ImportGroup>
 
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64" />
+    </ImportGroup>
+
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
