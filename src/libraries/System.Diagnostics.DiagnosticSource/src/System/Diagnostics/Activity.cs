@@ -1491,7 +1491,6 @@ namespace System.Diagnostics
 
             public void Remove(string key)
             {
-
                 lock (this)
                 {
                     if (_first == null)
@@ -1510,6 +1509,10 @@ namespace System.Diagnostics
                     {
                         if (previous.Next.Value.Key == key)
                         {
+                            if (object.ReferenceEquals(_last, previous.Next))
+                            {
+                                _last = previous;
+                            }
                             previous.Next = previous.Next.Next;
                             return;
                         }
