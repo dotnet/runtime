@@ -370,9 +370,10 @@ static gboolean buffer_replies;
 
 #ifndef TARGET_WASM
 #define GET_TLS_DATA_FROM_THREAD(thread) \
-	DebuggerTlsData *tls; \
+	DebuggerTlsData *tls = NULL; \
 	mono_loader_lock(); \
-	tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread); \
+	if (thread_to_tls != NULL) \
+		tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread); \
 	mono_loader_unlock();
 #define GET_DEBUGGER_TLS() \
 	DebuggerTlsData *tls; \
