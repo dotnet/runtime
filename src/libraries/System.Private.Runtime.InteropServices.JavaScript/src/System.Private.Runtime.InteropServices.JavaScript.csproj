@@ -43,9 +43,4 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <Target Name="DumpProperties" AfterTargets="Build">
-    <Message Importance="High" Text="DumpProperties" />
-    <Message Importance="High" Text="$(ILLinkDescriptorsXml)" />
-    <Message Importance="High" Text="$(ILLinkDescriptorsLibraryBuildXml)" />
-  </Target>
 </Project>

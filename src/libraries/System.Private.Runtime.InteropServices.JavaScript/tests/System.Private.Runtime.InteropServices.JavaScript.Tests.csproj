@@ -3,6 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <ILLinkDescriptorsXml>ILLink.Descriptors.xml</ILLinkDescriptorsXml>
+    <ILLinkDescriptorsLibraryBuildXml>ILLink.Descriptors.xml</ILLinkDescriptorsLibraryBuildXml>
   </PropertyGroup>
   <ItemGroup>
     <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomClass" 
