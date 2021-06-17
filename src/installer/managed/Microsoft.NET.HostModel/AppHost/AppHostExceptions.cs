@@ -69,7 +69,9 @@ namespace Microsoft.NET.HostModel.AppHost
     /// </summary>
     public sealed class AppHostSigningException : AppHostUpdateException
     {
-        internal AppHostSigningException(string signingErrorMessage)
+        public readonly int ExitCode;
+
+        internal AppHostSigningException(int exitCode, string signingErrorMessage)
             : base(signingErrorMessage)
         {
         }

@@ -257,7 +257,7 @@ namespace Microsoft.NET.HostModel.AppHost
             {
                 p.WaitForExit();
                 if (p.ExitCode != 0)
-                    throw new AppHostSigningException(p.StandardError.ReadToEnd());
+                    throw new AppHostSigningException(p.ExitCode, p.StandardError.ReadToEnd());
             }
         }
 
