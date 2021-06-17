@@ -10,13 +10,20 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
+        readonly ITestOutputHelper _output;
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
+
+        public MsQuicTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         [Fact]
         public async Task UnidirectionalAndBidirectionalStreamCountsWork()
@@ -83,9 +90,22 @@ namespace System.Net.Quic.Tests
                 // With trusted root, we should be able to build chain.
                 chain.ChainPolicy.CustomTrustStore.Add(rootCA);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                Assert.True(chain.Build(certificate));
+                bool ret = chain.Build(certificate);
+                if (!ret)
+                {
+                    _output.WriteLine("Chain build failed with {0} elements", chain.ChainElements);
+                    foreach (X509ChainElement element in chain.ChainElements)
+                    {
+                        _output.WriteLine("Element subject {0} and issuer {1}", element.Certificate.Subject, element.Certificate.Issuer);
+                        _output.WriteLine("Element status len {0}", element.ChainElementStatus.Length);
+                        foreach (X509ChainStatus status in element.ChainElementStatus)
+                        {
+                            _output.WriteLine($"Status:  {status.Status}: {status.StatusInformation}");
+                        }
+                    }
+                }
 
-                return true;
+                return ret;
             };
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
@@ -93,6 +113,56 @@ namespace System.Net.Quic.Tests
 
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
+        public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
+        {
+            using QuicListener listener = CreateQuicListener(maxUnidirectionalStreams: 1);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+
+            // No stream openned yet, should return immediately.
+            Assert.True(clientConnection.WaitForAvailableUnidirectionalStreamsAsync().IsCompletedSuccessfully);
+
+            // Open one stream, should wait till it closes.
+            QuicStream stream = clientConnection.OpenUnidirectionalStream();
+            ValueTask waitTask = clientConnection.WaitForAvailableUnidirectionalStreamsAsync();
+            Assert.False(waitTask.IsCompleted);
+            Assert.Throws<QuicException>(() => clientConnection.OpenUnidirectionalStream());
+
+            // Close the stream, the waitTask should finish as a result.
+            stream.Dispose();
+            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
+        public async Task WaitForAvailableBidirectionStreamsAsyncWorks()
+        {
+            using QuicListener listener = CreateQuicListener(maxBidirectionalStreams: 1);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+
+            // No stream openned yet, should return immediately.
+            Assert.True(clientConnection.WaitForAvailableBidirectionalStreamsAsync().IsCompletedSuccessfully);
+
+            // Open one stream, should wait till it closes.
+            QuicStream stream = clientConnection.OpenBidirectionalStream();
+            ValueTask waitTask = clientConnection.WaitForAvailableBidirectionalStreamsAsync();
+            Assert.False(waitTask.IsCompleted);
+            Assert.Throws<QuicException>(() => clientConnection.OpenBidirectionalStream());
+
+            // Close the stream, the waitTask should finish as a result.
+            stream.Dispose();
+            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
         }
 
         [Fact]
@@ -234,7 +304,7 @@ namespace System.Net.Quic.Tests
             int res = await serverStream.ReadAsync(memory);
             Assert.Equal(12, res);
             ReadOnlyMemory<ReadOnlyMemory<byte>> romrom = new ReadOnlyMemory<ReadOnlyMemory<byte>>(new ReadOnlyMemory<byte>[] { helloWorld, helloWorld });
-            
+
             await clientStream.WriteAsync(romrom);
 
             res = await serverStream.ReadAsync(memory);
@@ -254,7 +324,7 @@ namespace System.Net.Quic.Tests
                 {
                     var acceptTask = serverConnection.AcceptStreamAsync();
                     await serverConnection.CloseAsync(errorCode: 0);
-                    // make sure 
+                    // make sure
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
                 });
         }
@@ -392,7 +462,6 @@ namespace System.Net.Quic.Tests
             await (new[] { t1, t2 }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
         [Fact]
         public async Task ManagedAVE_MinimalFailingTest()
         {
@@ -409,6 +478,32 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(0, clientStream.StreamId);
 
                 // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
+            }
+
+            await GetStreamIdWithoutStartWorks().WaitAsync(TimeSpan.FromSeconds(15));
+
+            GC.Collect();
+        }
+
+        [Fact]
+        public async Task DisposingConnection_OK()
+        {
+            async Task GetStreamIdWithoutStartWorks()
+            {
+                using QuicListener listener = CreateQuicListener();
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+                ValueTask clientTask = clientConnection.ConnectAsync();
+                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await clientTask;
+
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Assert.Equal(0, clientStream.StreamId);
+
+                // Dispose all connections before the streams;
+                clientConnection.Dispose();
+                serverConnection.Dispose();
+                listener.Dispose();
             }
 
             await GetStreamIdWithoutStartWorks();

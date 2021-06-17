@@ -13,7 +13,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CryptProtectData(
                   [In] ref DATA_BLOB pDataIn,
-                  [In] string szDataDescr,
+                  [In] string? szDataDescr,
                   [In] ref DATA_BLOB pOptionalEntropy,
                   [In] IntPtr pvReserved,
                   [In] IntPtr pPromptStruct,

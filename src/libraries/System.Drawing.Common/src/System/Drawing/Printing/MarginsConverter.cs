@@ -64,7 +64,7 @@ namespace System.Drawing.Printing
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                    TypeConverter intConverter = GetIntConverter();
                     for (int i = 0; i < values.Length; i++)
                     {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
@@ -79,6 +79,10 @@ namespace System.Drawing.Printing
             }
             return base.ConvertFrom(context, culture, value);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "TypeDescriptor.GetConverter is safe for primitive types.")]
+        private static TypeConverter GetIntConverter() => TypeDescriptor.GetConverter(typeof(int));
 
         /// <summary>
         /// Converts the given object to another type. The most common types to convert
@@ -102,7 +106,7 @@ namespace System.Drawing.Printing
                         culture = CultureInfo.CurrentCulture;
                     }
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                    TypeConverter intConverter = GetIntConverter();
                     string[] args = new string[4];
                     int nArg = 0;
 

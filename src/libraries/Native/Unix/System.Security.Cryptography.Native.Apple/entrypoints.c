@@ -38,6 +38,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_HmacUpdate)
     DllImportEntry(AppleCryptoNative_HmacFinal)
     DllImportEntry(AppleCryptoNative_HmacCurrent)
+    DllImportEntry(AppleCryptoNative_HmacOneShot)
     DllImportEntry(AppleCryptoNative_SecKeychainItemCopyKeychain)
     DllImportEntry(AppleCryptoNative_SecKeychainCreate)
     DllImportEntry(AppleCryptoNative_SecKeychainDelete)

@@ -2064,7 +2064,7 @@ void LinearScan::buildIntervals()
         printf("\n-----------------\n");
         printf("LIVENESS:\n");
         printf("-----------------\n");
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             printf(FMT_BB " use def in out\n", block->bbNum);
             dumpConvertedVarSet(compiler, block->bbVarUse);
@@ -2584,7 +2584,7 @@ void LinearScan::buildIntervals()
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }
@@ -3097,6 +3097,10 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     }
     if (use != nullptr)
     {
+        // If node != rmwNode, then definitely node should be marked as "delayFree".
+        // However, if node == rmwNode, then we can mark node as "delayFree" only
+        // none of the node/rmwNode are the last uses. If either of them are last use,
+        // we can safely reuse the rmwNode as destination.
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
         {
             setDelayFree(use);

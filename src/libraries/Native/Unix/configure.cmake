@@ -220,6 +220,16 @@ check_symbol_exists(
     HAVE_POSIX_FALLOCATE64)
 
 check_symbol_exists(
+    preadv
+    sys/uio.h
+    HAVE_PREADV)
+
+check_symbol_exists(
+    pwritev
+    sys/uio.h
+    HAVE_PWRITEV)
+
+check_symbol_exists(
     ioctl
     sys/ioctl.h
     HAVE_IOCTL)

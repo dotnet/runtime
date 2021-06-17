@@ -4076,8 +4076,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_XEXTRACT_R4:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_I32:
-		case OP_XEXTRACT_I64: {
+		case OP_XEXTRACT_I4:
+		case OP_XEXTRACT_I8: {
 			// TODO
 			g_assert_not_reached();
 			break;
@@ -7235,19 +7235,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1:
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
 			/*amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, 16, 4);*/
 			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE, 4);
+			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I2, TRUE, 4);
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
@@ -7909,7 +7907,7 @@ MONO_RESTORE_WARNING
 
 				/*
 				 * Save the original location of 'this',
-				 * get_generic_info_from_stack_frame () needs this to properly look up
+				 * mono_get_generic_info_from_stack_frame () needs this to properly look up
 				 * the argument value during the handling of async exceptions.
 				 */
 				if (i == 0 && sig->hasthis) {
@@ -8965,6 +8963,8 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 				ins->inst_c1 = MONO_TYPE_R8;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R8, dreg, xreg);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_R8;
 				return ins;
 			}
 		}

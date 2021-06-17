@@ -140,6 +140,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -629,7 +630,9 @@ enum {
 	BB_EXCEPTION_UNSAFE     = 1 << 3,
 	BB_EXCEPTION_HANDLER    = 1 << 4,
 	/* for Native Client, mark the blocks that can be jumped to indirectly */
-	BB_INDIRECT_JUMP_TARGET = 1 << 5 
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 ,
+	/* Contains code with some side effects */
+	BB_HAS_SIDE_EFFECTS = 1 << 6,
 };
 
 typedef struct MonoMemcpyArgs {
@@ -881,6 +884,7 @@ enum {
 	MONO_INST_GC_CALLSITE = 128,
 	/* On comparisons, mark the branch following the condition as likely to be taken */
 	MONO_INST_LIKELY = 128,
+	MONO_INST_NONULLCHECK   = 128,
 };
 
 #define inst_c0 data.op[0].const_val
@@ -1132,6 +1136,9 @@ typedef struct
 {
 	gpointer addr;
 	gpointer arg;
+	MonoMethod *method;
+	/* InterpMethod* */
+	gpointer interp_method;
 } MonoFtnDesc;
 
 typedef enum {
@@ -2294,7 +2301,7 @@ void              mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest,
 void              mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag);
 void              mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag);
 MonoInst*         mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks);
-MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized);
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
@@ -2930,6 +2937,9 @@ mono_arch_load_function (MonoJitICallId jit_icall_id);
 
 MonoGenericContext
 mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info);
+
+gpointer
+mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx);
 
 MonoMemoryManager* mini_get_default_mem_manager (void);
 

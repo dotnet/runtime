@@ -262,81 +262,109 @@ namespace System.IO.Compression
             }
 
 
-            public ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
+            public unsafe ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
                 EnsureNotDisposed();
                 EnsureState(State.NotInitialized);
 
-                ErrorCode errC = Interop.zlib.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
-                _initializationState = State.InitializedForDeflate;
+                fixed (ZStream* stream = &_zStream)
+                {
+                    ErrorCode errC = Interop.zlib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    _initializationState = State.InitializedForDeflate;
 
-                return errC;
+                    return errC;
+                }
             }
 
 
-            public ErrorCode Deflate(FlushCode flush)
-            {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForDeflate);
-                return Interop.zlib.Deflate(ref _zStream, flush);
-            }
-
-
-            public ErrorCode DeflateReset()
-            {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForDeflate);
-                return Interop.zlib.DeflateReset(ref _zStream);
-            }
-
-            public ErrorCode DeflateEnd()
+            public unsafe ErrorCode Deflate(FlushCode flush)
             {
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForDeflate);
 
-                ErrorCode errC = Interop.zlib.DeflateEnd(ref _zStream);
-                _initializationState = State.Disposed;
-
-                return errC;
+                fixed (ZStream* stream = &_zStream)
+                {
+                    return Interop.zlib.Deflate(stream, flush);
+                }
             }
 
 
-            public ErrorCode InflateInit2_(int windowBits)
+            public unsafe ErrorCode DeflateReset()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForDeflate);
+
+                fixed (ZStream* stream = &_zStream)
+                {
+                    return Interop.zlib.DeflateReset(stream);
+                }
+            }
+
+            public unsafe ErrorCode DeflateEnd()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForDeflate);
+
+                fixed (ZStream* stream = &_zStream)
+                {
+                    ErrorCode errC = Interop.zlib.DeflateEnd(stream);
+                    _initializationState = State.Disposed;
+
+                    return errC;
+                }
+            }
+
+
+            public unsafe ErrorCode InflateInit2_(int windowBits)
             {
                 EnsureNotDisposed();
                 EnsureState(State.NotInitialized);
 
-                ErrorCode errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits);
-                _initializationState = State.InitializedForInflate;
+                fixed (ZStream* stream = &_zStream)
+                {
+                    ErrorCode errC = Interop.zlib.InflateInit2_(stream, windowBits);
+                    _initializationState = State.InitializedForInflate;
 
-                return errC;
+                    return errC;
+                }
             }
 
 
-            public ErrorCode Inflate(FlushCode flush)
-            {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-                return Interop.zlib.Inflate(ref _zStream, flush);
-            }
-
-
-            public ErrorCode InflateReset()
-            {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-                return Interop.zlib.InflateReset(ref _zStream);
-            }
-
-            public ErrorCode InflateEnd()
+            public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
 
-                ErrorCode errC = Interop.zlib.InflateEnd(ref _zStream);
-                _initializationState = State.Disposed;
+                fixed (ZStream* stream = &_zStream)
+                {
+                    return Interop.zlib.Inflate(stream, flush);
+                }
+            }
 
-                return errC;
+
+            public unsafe ErrorCode InflateReset()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForInflate);
+
+                fixed (ZStream* stream = &_zStream)
+                {
+                    return Interop.zlib.InflateReset(stream);
+                }
+            }
+
+            public unsafe ErrorCode InflateEnd()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForInflate);
+
+                fixed (ZStream* stream = &_zStream)
+                {
+                    ErrorCode errC = Interop.zlib.InflateEnd(stream);
+                    _initializationState = State.Disposed;
+
+                    return errC;
+                }
             }
 
             // This can work even after XxflateEnd().
