@@ -707,8 +707,8 @@ namespace System.Net.Http.Functional.Tests
                 dribble ? new LoopbackServer.Options { StreamWrapper = s => new DribbleStream(s) } : null);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -761,6 +761,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("xyz")] // non-hex
         [InlineData("7gibberish")] // valid size then gibberish
         [InlineData("7\v\f")] // unacceptable whitespace
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_InvalidChunkSize_ThrowsHttpRequestException(string chunkSize)
         {
             if (UseVersion != HttpVersion.Version11)
@@ -793,6 +794,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_InvalidChunkTerminator_ThrowsHttpRequestException()
         {
             if (UseVersion != HttpVersion.Version11)
@@ -821,6 +823,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task GetAsync_InfiniteChunkSize_ThrowsHttpRequestException()
         {
             if (UseVersion != HttpVersion.Version11)

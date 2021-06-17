@@ -366,7 +366,8 @@ namespace System.Net.Test.Common
             GetHttpResponseHeaders(statusCode, additionalHeaders, content == null ? 0 : content.Length, connectionClose);
 
         public static string CorsHeaders = PlatformDetection.IsBrowser
-                ? "Access-Control-Expose-Headers: *\r\n" +
+                ? "Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE\r\n" +
+                  "Access-Control-Expose-Headers: *\r\n" +
                   "Access-Control-Allow-Headers: *\r\n" +
                   "Access-Control-Allow-Origin: *\r\n"
                 : "";
@@ -951,11 +952,9 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(body).ConfigureAwait(false);
             }
 
-            public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
-            {
-                HttpRequestData requestData = await ReadRequestDataAsync().ConfigureAwait(false);
-
-                if (PlatformDetection.IsBrowser && requestData.Method == "OPTIONS")
+#if TARGET_BROWSER
+            public async Task<HttpRequestData> HandlePreFlight(HttpRequestData requestData) {
+                if (PlatformDetection.IsBrowser && requestData.Method == "OPTIONS" && requestData.Headers.Any(h => h.Name.StartsWith("Access-Control-Request-Method")))
                 {
                     // handle CORS pre-flight
                     await SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
@@ -963,13 +962,23 @@ namespace System.Net.Test.Common
                     // reset state
                     _bodyRead = false;
                     _contentLength = 0;
-                    _readBuffer = new byte[BufferSize];
                     _readStart = 0;
                     _readEnd = 0;
 
                     // wait for real request
-                    requestData = await ReadRequestDataAsync().ConfigureAwait(false);
+                    return await ReadRequestDataAsync().ConfigureAwait(false);
                 }
+                return requestData;
+            }
+#endif
+
+            public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+            {
+                HttpRequestData requestData = await ReadRequestDataAsync().ConfigureAwait(false);
+
+#if TARGET_BROWSER
+                requestData = await HandlePreFlight(requestData);
+#endif
 
                 // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
                 bool hasDate = false;
