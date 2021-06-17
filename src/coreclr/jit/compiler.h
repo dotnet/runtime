@@ -3024,6 +3024,8 @@ public:
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
+    GenTree* gtNewKeepaliveNode(GenTree* op);
+
     GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
     GenTreeCast* gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
