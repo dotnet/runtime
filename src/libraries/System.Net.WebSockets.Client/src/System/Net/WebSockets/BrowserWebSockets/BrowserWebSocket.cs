@@ -374,7 +374,7 @@ namespace System.Net.WebSockets
                 case WebSocketState.Open:
                 case WebSocketState.Connecting:
                     {
-                        await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
+                        await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, _cts.Token).ConfigureAwait(continueOnCapturedContext: true);
                         // The following code is for those browsers that do not set Close and send an onClose event in certain instances i.e. firefox and safari.
                         // chrome will send an onClose event and we tear down the websocket there.
                         if (ReadyStateToDotNetState(_closeStatus) == WebSocketState.CloseSent)
@@ -476,7 +476,7 @@ namespace System.Net.WebSockets
             {
                 if (prevState == (int)InternalState.Connecting)
                     _state = (int)InternalState.CloseSent;
-                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
+                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, _cts.Token).ConfigureAwait(continueOnCapturedContext: true);
             }
         }
 
@@ -579,6 +579,10 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromException(new TaskCanceledException(exc.Message, exc, cancellationToken));
+                }
                 return Task.FromException(exc);
             }
         }
