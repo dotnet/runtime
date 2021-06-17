@@ -665,10 +665,12 @@ byref_arg_is_reference (MonoType *t)
 }
 
 MonoInst*
-mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized)
 {
 	MonoInst *ins = NULL;
 	MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
+
+	*ins_type_initialized = FALSE;
 
 	const char* cmethod_klass_name_space;
 	if (m_class_get_nested_in (cmethod->klass))
@@ -746,7 +748,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, type));
 			mini_type_from_op (cfg, ins, NULL, NULL);
-
+			mini_type_to_eval_stack_type (cfg, fsig->ret, ins);
+			ins->klass = mono_defaults.runtimetype_class;
+			*ins_type_initialized = TRUE;
 			return ins;
 		} else if (!cfg->backend->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
 			int dreg = alloc_ireg (cfg);
@@ -1801,7 +1805,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
-	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality")) {
+	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
+			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		MONO_INST_NEW (cfg, ins, OP_PCEQ);
 		ins->dreg = alloc_preg (cfg);
