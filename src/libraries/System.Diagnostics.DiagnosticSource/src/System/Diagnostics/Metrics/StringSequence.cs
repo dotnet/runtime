@@ -1,0 +1,112 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Numerics;
+using System.Runtime.InteropServices;
+
+namespace System.Diagnostics.Metrics
+{
+    internal partial struct StringSequence1 : IEquatable<StringSequence1>, IStringSequence
+    {
+        public string Value1;
+
+        public StringSequence1(string value1)
+        {
+            Value1 = value1;
+        }
+
+        public override int GetHashCode() => Value1.GetHashCode();
+
+        public bool Equals(StringSequence1 other)
+        {
+            return Value1 == other.Value1;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is StringSequence1 && Equals((StringSequence1)obj);
+        }
+    }
+
+    internal partial struct StringSequence2 : IEquatable<StringSequence2>, IStringSequence
+    {
+        public string Value1;
+        public string Value2;
+
+        public StringSequence2(string value1, string value2)
+        {
+            Value1 = value1;
+            Value2 = value2;
+        }
+
+        public bool Equals(StringSequence2 other)
+        {
+            return Value1 == other.Value1 && Value2 == other.Value2;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is StringSequence2 && Equals((StringSequence2)obj);
+        }
+    }
+
+    internal partial struct StringSequence3 : IEquatable<StringSequence3>, IStringSequence
+    {
+        public string Value1;
+        public string Value2;
+        public string Value3;
+
+        public StringSequence3(string value1, string value2, string value3)
+        {
+            Value1 = value1;
+            Value2 = value2;
+            Value3 = value3;
+        }
+
+        public bool Equals(StringSequence3 other)
+        {
+            return Value1 == other.Value1 && Value2 == other.Value2 && Value3 == other.Value3;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is StringSequence3 && Equals((StringSequence3)obj);
+        }
+    }
+
+    internal partial struct StringSequenceMany : IEquatable<StringSequenceMany>, IStringSequence
+    {
+        private string[] _values;
+
+        public StringSequenceMany(string[] values)
+        {
+            _values = values;
+        }
+
+        public Span<string> AsSpan()
+        {
+            return _values.AsSpan();
+        }
+
+        public bool Equals(StringSequenceMany other)
+        {
+            if (_values.Length != other._values.Length)
+            {
+                return false;
+            }
+            for (int i = 0; i < _values.Length; i++)
+            {
+                if (_values[i] != other._values[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is StringSequenceMany && Equals((StringSequenceMany)obj);
+        }
+    }
+}
