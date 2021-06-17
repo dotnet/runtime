@@ -12,7 +12,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <IsiOSLike Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsiOSLike>
-    <DefineConstants Condition="'$(IsiOSLike)' == 'true'">$(DefineConstants);TARGET_APPLE_MOBILE</DefineConstants>
   </PropertyGroup>  
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
