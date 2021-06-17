@@ -333,6 +333,10 @@ namespace System.Net.Http
             }
             catch (JSException jse)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+                }
                 throw new System.Net.Http.HttpRequestException(jse.Message);
             }
         }
@@ -490,9 +494,20 @@ namespace System.Net.Http
                             _reader = (JSObject)body.Invoke("getReader");
                         }
                     }
-                    catch (JSException)
+                    catch (OperationCanceledException oce)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                        }
+                        throw;
+                    }
+                    catch (JSException jse)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+                        }
                         throw;
                     }
                 }
@@ -523,9 +538,20 @@ namespace System.Net.Http
                             _bufferedBytes = binValue.ToArray();
                     }
                 }
-                catch (JSException)
+                catch (OperationCanceledException oce)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                    }
+                    throw;
+                }
+                catch (JSException jse)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+                    }
                     throw;
                 }
 
