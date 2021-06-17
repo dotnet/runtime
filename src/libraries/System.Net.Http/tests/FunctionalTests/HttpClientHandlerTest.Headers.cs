@@ -105,7 +105,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -167,9 +166,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
+            if (PlatformDetection.IsBrowser && (key == "Content-Location" || key == "Date" || key == "Accept-CharSet"))
+            {
+                // https://fetch.spec.whatwg.org/#forbidden-header-name
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 bool contentHeader = false;
@@ -242,8 +246,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpResponseMessage response = await  client.GetAsync(uri).ConfigureAwait(false);
-                    if(PlatformDetection.IsNotBrowser)
+                    HttpResponseMessage response = await client.GetAsync(uri).ConfigureAwait(false);
+                    // browser sends more headers
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         Assert.Equal(headers.Count, response.Headers.Count());
                     }
