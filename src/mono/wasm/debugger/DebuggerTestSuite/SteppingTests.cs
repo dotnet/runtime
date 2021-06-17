@@ -42,7 +42,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task InspectLocalsDuringStepping2()
+        public async Task InspectLocalsDuringStepping()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
             await SetBreakpoint(debugger_test_loc, 10, 8);
@@ -251,7 +251,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task InspectLocalsDuringSteppingIn2()
+        public async Task InspectLocalsDuringSteppingIn()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 86, 8);
 

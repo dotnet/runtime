@@ -83,14 +83,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var root_res_obj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
                         var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
-                        if (objRet != null)
-                        {
-                            rootObject = await GetValueFromObject(objRet, token);
-                        }
-                        else
-                        {
+                        if (objRet == null)
                             return null;
-                        }
+
+                        rootObject = await GetValueFromObject(objRet, token);
                     }
                     continue;
                 }
