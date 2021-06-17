@@ -14,7 +14,23 @@ namespace System.DirectoryServices.Protocols.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(ReferralChasingOptions.None)]
         [InlineData(ReferralChasingOptions.External)]
-        public void ReferralChasing_Set_GetReturnsExpected(ReferralChasingOptions value)
+        public void ReferralChasing_Set_GetReturnsExpected_On_Windows(ReferralChasingOptions value)
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(ReferralChasingOptions.All, options.ReferralChasing);
+
+                options.ReferralChasing = value;
+                Assert.Equal(value, options.ReferralChasing);
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData(ReferralChasingOptions.None)]
+        [InlineData(ReferralChasingOptions.All)]
+        public void ReferralChasing_Set_GetReturnsExpected_On_Linux(ReferralChasingOptions value)
         {
             using (var connection = new LdapConnection("server"))
             {
