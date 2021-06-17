@@ -220,7 +220,6 @@ namespace System.Net.Http
                     requestObject.SetObjectProperty("headers", jsHeaders);
                 }
 
-
                 WasmHttpReadStream? wasmHttpReadStream = null;
 
                 JSObject abortController = new HostObject("AbortController");
@@ -375,9 +374,9 @@ namespace System.Net.Http
             }
         }
 
-        private sealed class BrowserUnseekableStream : MemoryStream {
+        private sealed class BrowserUnseekableStream : MemoryStream
+        {
             public BrowserUnseekableStream (byte [] data) : base (data, writable: false) { }
-
             public override bool CanSeek => false;
         }
 
