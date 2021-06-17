@@ -349,28 +349,14 @@ namespace System.Text.Json.Serialization
                     ignoreCyclesPopReference = true;
                 }
 
-                if (state.NextValueCanBePolymorphic ||
-                    // only needed to handle the corner case of root-level values of runtime type `System.Object`
-                    // TODO: delegate `System.Object` runtime type serialization to ObjectConverter.
-                    TypeToConvert == JsonTypeInfo.ObjectType)
+                if (state.NextValueCanBePolymorphic)
                 {
-                    Debug.Assert(ConverterStrategy != ConverterStrategy.Value || TypeToConvert == JsonTypeInfo.ObjectType);
+                    Debug.Assert(IsInternalConverter);
+                    Debug.Assert(ConverterStrategy != ConverterStrategy.Value || this is Converters.ObjectConverter);
 
                     Type type = value.GetType();
-                    if (type == JsonTypeInfo.ObjectType)
-                    {
-                        writer.WriteStartObject();
-                        writer.WriteEndObject();
 
-                        if (ignoreCyclesPopReference)
-                        {
-                            state.ReferenceResolver.PopReferenceForCycleDetection();
-                        }
-
-                        return true;
-                    }
-
-                    if (type != TypeToConvert && IsInternalConverter)
+                    if (type != TypeToConvert)
                     {
                         // For internal converter only: Handle polymorphic case and get the new converter.
                         // Custom converter, even though polymorphic converter, get called for reading AND writing.
@@ -408,6 +394,15 @@ namespace System.Text.Json.Serialization
                 }
 
                 VerifyWrite(originalPropertyDepth, writer);
+
+                if (ignoreCyclesPopReference)
+                {
+                    // should only be entered if we're serializing with the
+                    // internal object converter handling values of runtime type object.
+                    Debug.Assert(value?.GetType() == typeof(object) && this is Converters.ObjectConverter);
+                    state.ReferenceResolver.PopReferenceForCycleDetection();
+                }
+
                 return true;
             }
 

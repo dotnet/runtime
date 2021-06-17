@@ -551,8 +551,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Resolve polymorphic serialization configuration
             CanBeWritePolymorphic =
+                isInternalConverter && !Type.IsValueType && !Type.IsSealed &&
                 Type == JsonTypeInfo.ObjectType ||
-                !Type.IsValueType && !Type.IsSealed && converterStrategy != ConverterStrategy.Value &&
+                converterStrategy != ConverterStrategy.Value &&
                     (Options?.SupportedPolymorphicTypes(Type) == true ||
                      Type.GetCustomAttribute<JsonPolymorphicTypeAttribute>(inherit: false) is not null);
 
