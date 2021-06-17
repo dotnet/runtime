@@ -573,9 +573,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret_debugger_cmd_reader;
         }
 
-        internal Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(SessionId sessionId, T command, MemoryStream parms, CancellationToken token) where T : Enum
-        {
-            CommandSet set = command switch {
+        CommandSet GetCommandSetForCommand<T>(T Command) =>
+            command switch {
                 CmdVM => CommandSet.Vm,
                 CmdObject => CommandSet.ObjectRef,
                 CmdString => CommandSet.StringRef,
@@ -593,31 +592,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 CmdPointer => CommandSet.Pointer,
                 _ => throw new Exception ("Unknown CommandSet")
             };
-            return SendDebuggerAgentCommandInternal(sessionId, (int)set, (int)(object)command, parms, token);
-        }
 
-        internal Task<MonoBinaryReader> SendDebuggerAgentCommandWithParms<T>(SessionId sessionId, T command, MemoryStream parms, int type, string extraParm, CancellationToken token) where T : Enum
-        {
-            CommandSet set = command switch {
-                CmdVM => CommandSet.Vm,
-                CmdObject => CommandSet.ObjectRef,
-                CmdString => CommandSet.StringRef,
-                CmdThread => CommandSet.Thread,
-                CmdArray => CommandSet.ArrayRef,
-                CmdEventRequest => CommandSet.EventRequest,
-                CmdFrame => CommandSet.StackFrame,
-                CmdAppDomain => CommandSet.AppDomain,
-                CmdAssembly => CommandSet.Assembly,
-                CmdMethod => CommandSet.Method,
-                CmdType => CommandSet.Type,
-                CmdModule => CommandSet.Module,
-                CmdField => CommandSet.Field,
-                CmdEvent => CommandSet.Event,
-                CmdPointer => CommandSet.Pointer,
-                _ => throw new Exception ("Unknown CommandSet")
-            };
-            return SendDebuggerAgentCommandWithParmsInternal(sessionId, (int)set, (int)(object)command, parms, type, extraParm, token);
-        }
+        internal Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(SessionId sessionId, T command, MemoryStream parms, CancellationToken token) where T : Enum =>
+            SendDebuggerAgentCommandInternal(sessionId, (int)GetCommandSetForCommand(command), (int)(object)command, parms, token);
+
+        internal Task<MonoBinaryReader> SendDebuggerAgentCommandWithParms<T>(SessionId sessionId, T command, MemoryStream parms, int type, string extraParm, CancellationToken token) where T : Enum =>
+            SendDebuggerAgentCommandWithParmsInternal(sessionId, (int)GetCommandSetForCommand(command), (int)(object)command, parms, type, extraParm, token);
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParmsInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, int type, string extraParm, CancellationToken token)
         {
