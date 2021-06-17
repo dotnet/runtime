@@ -56,6 +56,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/class-init.h>
 #include <mono/metadata/reflection-internals.h>
@@ -2526,6 +2527,23 @@ fail:
 }
 
 static gboolean
+method_is_reabstracted (MonoMethod *method)
+{
+	/* only on interfaces */
+	/* method is marked "final abstract" */
+	/* FIXME: we need some other way to detect reabstracted methods.  "final" is an incidental detail of the spec. */
+	return method->flags & METHOD_ATTRIBUTE_FINAL && method->flags & METHOD_ATTRIBUTE_ABSTRACT;
+}
+
+static gboolean
+method_is_dim (MonoMethod *method)
+{
+	/* only valid on interface methods*/
+	/* method is marked "virtual" but not "virtual abstract" */
+	return method->flags & method->flags & METHOD_ATTRIBUTE_VIRTUAL && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT);
+}
+
+static gboolean
 set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int ioffset, MonoClass *klass, MonoArrayHandle targets, MonoArrayHandle methods, int i, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
@@ -2558,9 +2576,26 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 		}
 	}
 
-	if (foundMethod->flags & METHOD_ATTRIBUTE_ABSTRACT)
+	/*
+	 * if the iterface method is reabstracted, and either the found implementation method is abstract, or the found
+	 * implementation method is from another DIM (meaning neither klass nor any of its ancestor classes implemented
+	 * the method), then say the target method is null.
+	 */
+	if (method_is_reabstracted (method) &&
+	    ((foundMethod->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+	     (mono_class_is_interface (foundMethod->klass) && method_is_dim (foundMethod))
+		    ))
 		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
-	else {
+	else if (mono_class_is_interface (foundMethod->klass) && method_is_reabstracted (foundMethod) && !m_class_is_abstract (klass)) {
+		/* if the method we found is a reabstracted DIM method, but the class isn't abstract, return NULL */
+		/*
+		 * (C# doesn't seem to allow constructing such types, it requires the whole class to be abstract - in
+		 * which case we are supposed to return the reabstracted interface method.  But in IL we can make a
+		 * non-abstract class with reabstracted interface methods - which is supposed to fail with an
+		 * EntryPointNotFoundException at invoke time, but does not prevent the class from loading.)
+		 */
+		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
+	} else {
 		MONO_HANDLE_ASSIGN (member, mono_method_get_object_handle (foundMethod, mono_class_is_interface (foundMethod->klass) ? foundMethod->klass : klass, error));
 		goto_if_nok (error, leave);
 		MONO_HANDLE_ARRAY_SETREF (targets, i, member);
@@ -5736,7 +5771,6 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 	return result;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 void
 ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 					   gconstpointer dmeta_bytes, int32_t dmeta_len,
@@ -5753,7 +5787,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	mono_image_load_enc_delta (image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	mono_error_set_pending_exception (error);
 }
-#endif
+
+gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
+{
+        return mono_metadata_update_available ();
+}
 
 MonoBoolean
 ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)
@@ -6631,7 +6669,7 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
-	return mono_compile_method_checked (method, error);
+	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
 
 MonoBoolean

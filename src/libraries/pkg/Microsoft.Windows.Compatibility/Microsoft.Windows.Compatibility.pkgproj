@@ -1,7 +1,6 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
-    <ServiceModelVersion>4.8.0</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
     <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
@@ -15,7 +14,6 @@
     </NS21PrereleaseLibraryPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry" />
     <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry.AccessControl" />
     <PrereleaseLibraryPackage Include="Microsoft.Win32.SystemEvents" />
     <PrereleaseLibraryPackage Include="System.CodeDom" />
@@ -29,18 +27,14 @@
     <PrereleaseLibraryPackage Include="System.DirectoryServices" />
     <PrereleaseLibraryPackage Include="System.DirectoryServices.AccountManagement" />
     <PrereleaseLibraryPackage Include="System.DirectoryServices.Protocols" />
-    <PrereleaseLibraryPackage Include="System.IO.FileSystem.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Packaging" />
-    <PrereleaseLibraryPackage Include="System.IO.Pipes.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Ports" />
     <PrereleaseLibraryPackage Include="System.Management" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
-    <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Pkcs" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.ProtectedData" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Xml" />
     <PrereleaseLibraryPackage Include="System.Security.Permissions" />
-    <PrereleaseLibraryPackage Include="System.Security.Principal.Windows" />
     <PrereleaseLibraryPackage Include="System.ServiceModel.Syndication" />
     <PrereleaseLibraryPackage Include="System.ServiceProcess.ServiceController" />
     <PrereleaseLibraryPackage Include="System.Speech" />
@@ -51,52 +45,58 @@
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
     <!-- Packages we don't build in main anymore -->
-    <LibraryPackage Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <LibraryPackage Include="System.Data.SqlClient" Version="4.8.2" />
-    <LibraryPackage Include="System.Reflection.Emit" Version="4.7.0" />
-    <LibraryPackage Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
-    <LibraryPackage Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
-    <LibraryPackage Include="System.Security.Cryptography.Cng" Version="5.0.0" />
+    <LibraryPackage Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+
+    <!-- Packages which are inbox in NET6 and don't need to be referenced. -->
+    <BeforeNET6LibraryPackage Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Data.DataSetExtensions" Version="$(SystemDataDataSetExtensionsVersion)" />
+    <BeforeNET6LibraryPackage Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
+    <BeforeNET6LibraryPackage Include="System.IO.Pipes.AccessControl" Version="$(SystemIOPipesAccessControlVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Reflection.Emit" Version="$(SystemReflectionEmitVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Reflection.Emit.ILGeneration" Version="$(SystemReflectionEmitILGenerationVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Reflection.Emit.Lightweight" Version="$(SystemReflectionEmitLightweightVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
+    <BeforeNET6LibraryPackage Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
 
     <!-- Service model packages -->
-    <ExternalLibraryPackage Include="System.ServiceModel.Primitives">
-      <Version>$(ServiceModelVersion)</Version>
-    </ExternalLibraryPackage>
-    <ExternalLibraryPackage Include="System.ServiceModel.Duplex">
-      <Version>$(ServiceModelVersion)</Version>
-    </ExternalLibraryPackage>
-    <ExternalLibraryPackage Include="System.ServiceModel.Http">
-      <Version>$(ServiceModelVersion)</Version>
-    </ExternalLibraryPackage>
-    <ExternalLibraryPackage Include="System.ServiceModel.NetTcp">
-      <Version>$(ServiceModelVersion)</Version>
-    </ExternalLibraryPackage>
-    <ExternalLibraryPackage Include="System.ServiceModel.Security">
-      <Version>$(ServiceModelVersion)</Version>
-    </ExternalLibraryPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage);@(NS21PrereleaseLibraryPackage)">
-      <TargetFramework>netcoreapp3.1</TargetFramework>
-    </IndexedDependency>
-    <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage)">
-      <TargetFramework>netstandard2.0</TargetFramework>
-    </IndexedDependency>
-    <IndexedDependency Include="@(LibraryPackage);@(PrereleaseLibraryPackage);@(NS21PrereleaseLibraryPackage)">
-      <TargetFramework>netstandard2.1</TargetFramework>
-    </IndexedDependency>
+    <ExternalLibraryPackage Include="System.ServiceModel.Primitives;
+                                     System.ServiceModel.Duplex;
+                                     System.ServiceModel.Http;
+                                     System.ServiceModel.NetTcp;
+                                     System.ServiceModel.Security"
+                            Version="$(ServiceModelVersion)" />
   </ItemGroup>
 
   <ItemGroup>
-    <Dependency Include="@(ExternalLibraryPackage)">
-      <TargetFramework>netcoreapp3.1</TargetFramework>
-    </Dependency>
-    <Dependency Include="@(ExternalLibraryPackage)">
-      <TargetFramework>netstandard2.0</TargetFramework>
-    </Dependency>
-    <Dependency Include="@(ExternalLibraryPackage)">
-      <TargetFramework>netstandard2.1</TargetFramework>
-    </Dependency>
+    <IndexedDependency Include="@(LibraryPackage);
+                                @(PrereleaseLibraryPackage);
+                                @(NS21PrereleaseLibraryPackage)"
+                       TargetFramework="net6.0" />
+    <IndexedDependency Include="@(BeforeNET6LibraryPackage);
+                                @(LibraryPackage);
+                                @(PrereleaseLibraryPackage);
+                                @(NS21PrereleaseLibraryPackage)"
+                       TargetFramework="netcoreapp3.1" />
+    <IndexedDependency Include="@(BeforeNET6LibraryPackage);
+                                @(LibraryPackage);
+                                @(PrereleaseLibraryPackage);
+                                @(NS21PrereleaseLibraryPackage)"
+                       TargetFramework="netstandard2.1" />
+    <IndexedDependency Include="@(BeforeNET6LibraryPackage);
+                                @(LibraryPackage);
+                                @(PrereleaseLibraryPackage)"
+                       TargetFramework="netstandard2.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Dependency Include="@(ExternalLibraryPackage)"
+                TargetFramework="netcoreapp3.1" />
+    <Dependency Include="@(ExternalLibraryPackage)"
+                TargetFramework="netstandard2.0" />
+    <Dependency Include="@(ExternalLibraryPackage)"
+                TargetFramework="netstandard2.1" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

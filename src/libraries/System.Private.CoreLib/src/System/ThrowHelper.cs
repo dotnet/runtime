@@ -232,6 +232,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
+        {
+            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
             throw new ArgumentNullException(GetArgumentName(argument));
@@ -397,6 +403,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidHandle(string? paramName)
+        {
+            throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
@@ -472,6 +484,18 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedNonNegNum);
         }
 
         [DoesNotReturn]
@@ -739,6 +763,8 @@ namespace System
                     return "destinationArray";
                 case ExceptionArgument.pHandle:
                     return "pHandle";
+                case ExceptionArgument.handle:
+                    return "handle";
                 case ExceptionArgument.other:
                     return "other";
                 case ExceptionArgument.newSize:
@@ -785,6 +811,8 @@ namespace System
                     return "suffix";
                 case ExceptionArgument.buffer:
                     return "buffer";
+                case ExceptionArgument.buffers:
+                    return "buffers";
                 case ExceptionArgument.offset:
                     return "offset";
                 case ExceptionArgument.stream:
@@ -1028,6 +1056,7 @@ namespace System
         destinationIndex,
         destinationArray,
         pHandle,
+        handle,
         other,
         newSize,
         lowerBounds,
@@ -1051,6 +1080,7 @@ namespace System
         prefix,
         suffix,
         buffer,
+        buffers,
         offset,
         stream
     }

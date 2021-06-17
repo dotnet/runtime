@@ -80,6 +80,41 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             await VerifyAgainstBaselineUsingFile("TestWithDynamicLogLevel.generated.txt", testSourceCode);
         }
 
+        [Fact]
+        public async Task TestBaseline_TestWithNestedClass_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    namespace NestedNamespace
+    {
+        public static partial class MultiLevelNestedClass
+        {
+            public partial struct NestedStruct
+            {
+                internal partial record NestedRecord(string Name, string Address)
+                { 
+                    internal static partial class NestedClassTestsExtensions<T1> where T1 : Class1
+                    {
+                        internal static partial class NestedMiddleParentClass
+                        {
+                            internal static partial class Nested<T2> where T2 : Class2
+                            {
+                                [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = ""M9"")]
+                                public static partial void M9(ILogger logger);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        internal class Class1 { }
+        internal class Class2 { }
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithNestedClass.generated.txt", testSourceCode);
+        }
+
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
             string[] expectedLines = await File.ReadAllLinesAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);

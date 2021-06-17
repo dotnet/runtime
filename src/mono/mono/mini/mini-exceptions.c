@@ -782,8 +782,8 @@ unwinder_unwind_frame (Unwinder *unwinder,
 /*
  * This function is async-safe.
  */
-static gpointer
-get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
+gpointer
+mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 {
 	MonoGenericJitInfo *gi;
 	MonoMethod *method;
@@ -1356,7 +1356,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 		/* actual_method might already be set by mono_arch_unwind_frame () */
 		if (!frame.actual_method) {
 			if ((unwind_options & MONO_UNWIND_LOOKUP_ACTUAL_METHOD) && frame.ji)
-				frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
+				frame.actual_method = get_method_from_stack_frame (frame.ji, mono_get_generic_info_from_stack_frame (frame.ji, &ctx));
 			else
 				frame.actual_method = frame.method;
 		}
@@ -1895,7 +1895,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			jmethod = frame.method;
 			actual_method = frame.actual_method;
 		} else {
-			actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
+			actual_method = get_method_from_stack_frame (ji, mono_get_generic_info_from_stack_frame (ji, &ctx));
 		}
 	}
 
@@ -1951,7 +1951,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 
 	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
 		return catch_class;
-	context = mono_get_generic_context_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, ctx));
+	context = mono_get_generic_context_from_stack_frame (ji, mono_get_generic_info_from_stack_frame (ji, ctx));
 
 	/* FIXME: we shouldn't inflate but instead put the
 	   type in the rgctx and fetch it from there.  It
@@ -2315,7 +2315,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			// avoid giant stack traces during a stack overflow
 			if (frame_count < 1000) {
 				trace_ips = g_list_prepend (trace_ips, ip);
-				trace_ips = g_list_prepend (trace_ips, get_generic_info_from_stack_frame (ji, ctx));
+				trace_ips = g_list_prepend (trace_ips, mono_get_generic_info_from_stack_frame (ji, ctx));
 				trace_ips = g_list_prepend (trace_ips, ji);
 			}
 		}

@@ -6210,17 +6210,22 @@ bool Lowering::IndirsAreEquivalent(GenTree* candidate, GenTree* storeInd)
     }
 }
 
-/** Test whether the two given nodes are the same leaves.
- *  Right now, only constant integers and local variables are supported
- */
+//------------------------------------------------------------------------
+// NodesAreEquivalentLeaves: Check whether the two given nodes are the same leaves.
+//
+// Arguments:
+//      tree1 and tree2 are nodes to be checked.
+// Return Value:
+//    Returns true if they are same leaves, false otherwise.
+//
+// static
 bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
 {
-    if (tree1 == nullptr && tree2 == nullptr)
+    if (tree1 == tree2)
     {
         return true;
     }
 
-    // both null, they are equivalent, otherwise if either is null not equivalent
     if (tree1 == nullptr || tree2 == nullptr)
     {
         return false;
@@ -6247,7 +6252,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
     switch (tree1->OperGet())
     {
         case GT_CNS_INT:
-            return tree1->AsIntCon()->gtIconVal == tree2->AsIntCon()->gtIconVal &&
+            return tree1->AsIntCon()->IconValue() == tree2->AsIntCon()->IconValue() &&
                    tree1->IsIconHandle() == tree2->IsIconHandle();
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:

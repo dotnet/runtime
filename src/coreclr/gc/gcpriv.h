@@ -63,7 +63,7 @@ inline void FATAL_GC_ERROR()
 // + creates some pins on our own
 // + creates some ro segs
 // We can add more mechanisms here.
-#define STRESS_REGIONS
+//#define STRESS_REGIONS
 #endif //USE_REGIONS
 
 // FEATURE_STRUCTALIGN was added by Midori. In CLR we are not interested

@@ -347,7 +347,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
@@ -362,7 +361,9 @@ namespace System.Net.Http.Functional.Tests
             }
 
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
-            m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":" + Configuration.Http.SecurePort : Configuration.Http.SecureHost;
+            m.Headers.Host = !PlatformDetection.LocalEchoServerIsAvailable && withPort
+                                ? Configuration.Http.SecureHost + ":" + Configuration.Http.SecurePort
+                                : Configuration.Http.SecureHost;
 
             using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response = await client.SendAsync(TestAsync, m))

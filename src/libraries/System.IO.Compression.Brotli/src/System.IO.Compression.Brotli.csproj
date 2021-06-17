@@ -11,6 +11,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Interop.Brotli.cs" />
+    <!-- The native compression lib uses a BROTLI_BOOL type analogous to the Windows BOOL type -->
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
     <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
     <Compile Include="System\IO\Compression\BrotliUtils.cs" />

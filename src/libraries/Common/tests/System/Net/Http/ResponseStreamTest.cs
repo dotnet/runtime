@@ -128,7 +128,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -148,7 +147,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
