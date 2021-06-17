@@ -22,14 +22,6 @@ typedef void (*SigChldCallback)(int reapAll);
  */
 PALEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
 
-/**
- * Remove our handler and reissue the signal to be picked up by the previously registered handler.
- *
- * In the most common case, this will be the default handler, causing the process to be torn down.
- * It could also be a custom handler registered by other code before us.
- */
-PALEXPORT void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode);
-
 typedef void (*TerminalInvalidationCallback)(void);
 
 /**
@@ -44,7 +36,12 @@ typedef enum
     PosixSignalSIGINT = -2,
     PosixSignalSIGQUIT = -3,
     PosixSignalSIGTERM = -4,
-    PosixSignalSIGCHLD = -5
+    PosixSignalSIGCHLD = -5,
+    PosixSignalSIGWINCH = -6,
+    PosixSignalSIGCONT = -7,
+    PosixSignalSIGTTIN = -8,
+    PosixSignalSIGTTOU = -9,
+    PosixSignalSIGTSTP = -10
 } PosixSignal;
 
 typedef int32_t (*PosixSignalHandler)(int32_t signalCode, PosixSignal signal);
@@ -54,6 +51,11 @@ PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
 PALEXPORT void SystemNative_EnablePosixSignalHandling(int signalCode);
 PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
 PALEXPORT void SystemNative_DefaultSignalHandler(int signalCode);
+
+typedef void (*ConsoleSigTtouHandler)(void);
+
+void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler);
+void UninstallTTOUHandlerForConsole(void);
 
 #ifndef HAS_CONSOLE_SIGNALS
 

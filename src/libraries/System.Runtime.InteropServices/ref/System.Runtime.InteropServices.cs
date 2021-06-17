@@ -802,7 +802,12 @@ namespace System.Runtime.InteropServices
         SIGINT = -2,
         SIGQUIT = -3,
         SIGTERM = -4,
-        SIGCHLD = -5
+        SIGCHLD = -5,
+        SIGCONT = -6,
+        SIGWINCH = -7,
+        SIGTTIN = -8,
+        SIGTTOU = -9,
+        SIGTSTP = -10
     }
     public sealed class PosixSignalContext
     {
