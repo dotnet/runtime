@@ -20,7 +20,6 @@ internal static partial class Interop
         internal static extern void DisablePosixSignalHandling(int signal);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DefaultSignalHandler")]
-        [SuppressGCTransition]
         internal static extern void DefaultSignalHandler(int signal);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
