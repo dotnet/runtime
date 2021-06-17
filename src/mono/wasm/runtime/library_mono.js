@@ -69,7 +69,7 @@ var MonoSupportLib = {
 		_id_table: {},
 
 		pump_message: function () {
-			if (!this.mono_background_exec)
+			if (!MONO.mono_background_exec)
 				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
@@ -77,7 +77,7 @@ var MonoSupportLib = {
 			}
 			while (MONO.pump_count > 0) {
 				--MONO.pump_count;
-				this.mono_background_exec ();
+				MONO.mono_background_exec ();
 			}
 		},
 
@@ -300,20 +300,20 @@ var MonoSupportLib = {
 			if (index === undefined)
 				return;
 
-			this._scratch_root_buffer.set (index, 0);
-			this._scratch_root_free_indices[this._scratch_root_free_indices_count] = index;
-			this._scratch_root_free_indices_count++;
+			MONO._scratch_root_buffer.set (index, 0);
+			MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count] = index;
+			MONO._scratch_root_free_indices_count++;
 		},
 
 		_mono_wasm_claim_scratch_index: function () {
-			if (!this._scratch_root_buffer) {
+			if (!MONO._scratch_root_buffer) {
 				const maxScratchRoots = 8192;
-				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
+				MONO._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
 
-				this._scratch_root_free_indices = new Int32Array (maxScratchRoots);
-				this._scratch_root_free_indices_count = maxScratchRoots;
+				MONO._scratch_root_free_indices = new Int32Array (maxScratchRoots);
+				MONO._scratch_root_free_indices_count = maxScratchRoots;
 				for (var i = 0; i < maxScratchRoots; i++)
-					this._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
+					MONO._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
 
 				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
 					get: this._mono_wasm_root_prototype.get,
@@ -322,11 +322,11 @@ var MonoSupportLib = {
 				});
 			}
 
-			if (this._scratch_root_free_indices_count < 1)
+			if (MONO._scratch_root_free_indices_count < 1)
 				throw new Error ("Out of scratch root space");
 
-			var result = this._scratch_root_free_indices[this._scratch_root_free_indices_count - 1];
-			this._scratch_root_free_indices_count--;
+			var result = MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count - 1];
+			MONO._scratch_root_free_indices_count--;
 			return result;
 		},
 
@@ -423,11 +423,11 @@ var MonoSupportLib = {
 		mono_wasm_new_root: function (value) {
 			var result;
 
-			if (this._scratch_root_free_instances.length > 0) {
-				result = this._scratch_root_free_instances.pop ();
+			if (MONO._scratch_root_free_instances.length > 0) {
+				result = MONO._scratch_root_free_instances.pop ();
 			} else {
 				var index = this._mono_wasm_claim_scratch_index ();
-				var buffer = this._scratch_root_buffer;
+				var buffer = MONO._scratch_root_buffer;
 
 				result = Object.create (this._mono_wasm_root_prototype);
 				result.__buffer = buffer;
@@ -541,11 +541,11 @@ var MonoSupportLib = {
 				this.mono_wasm_enum_frames = Module.cwrap ("mono_wasm_enum_frames", null);
 
 			var bp_id = this.mono_wasm_current_bp_id ();
-			this.active_frames = [];
+			MONO.active_frames = [];
 			this.mono_wasm_enum_frames ();
 
-			var the_frames = this.active_frames;
-			this.active_frames = [];
+			var the_frames = MONO.active_frames;
+			MONO.active_frames = [];
 			return {
 				"breakpoint_id": bp_id,
 				"frames": the_frames,
@@ -845,18 +845,18 @@ var MonoSupportLib = {
 				heapBytes[i] = var_list[i].index;
 			}
 
-			this._async_method_objectId = 0;
+			MONO._async_method_objectId = 0;
 			let { res_ok, res } = this.mono_wasm_get_local_vars_info (scope, heapBytes.byteOffset, var_list.length);
 			Module._free(heapBytes.byteOffset);
 			if (!res_ok)
 				throw new Error (`Failed to get locals for scope ${scope}`);
 
-			if (this._async_method_objectId != 0)
-				this._assign_vt_ids (res, v => ({ containerId: this._async_method_objectId, fieldOffset: v.fieldOffset }));
+			if (MONO._async_method_objectId != 0)
+				this._assign_vt_ids (res, v => ({ containerId: MONO._async_method_objectId, fieldOffset: v.fieldOffset }));
 
 			for (let i in res) {
 				const res_name = res [i].name;
-				if (this._async_method_objectId != 0) {
+				if (MONO._async_method_objectId != 0) {
 					//Async methods are special in the way that local variables can be lifted to generated class fields
 					//value of "this" comes here either
 					if (res_name !== undefined && res_name.indexOf ('>') > 0) {
@@ -957,7 +957,7 @@ var MonoSupportLib = {
 		 * @returns {number}
 		 */
 		_next_id: function () {
-			return ++this._next_id_var;
+			return ++MONO._next_id_var;
 		},
 
 		_extract_and_cache_value_types: function (var_list) {
@@ -1101,14 +1101,14 @@ var MonoSupportLib = {
 			let idStr;
 			if (objectId !== undefined) {
 				idStr = objectId;
-				const old_props = this._id_table [idStr];
+				const old_props = MONO._id_table [idStr];
 				if (old_props === undefined)
 					throw new Error (`ObjectId not found in the id table: ${idStr}`);
 
-				this._id_table [idStr] = Object.assign (old_props, props);
+				MONO._id_table [idStr] = Object.assign (old_props, props);
 			} else {
 				idStr = `dotnet:${scheme}:${JSON.stringify (idArgs)}`;
-				this._id_table [idStr] = props;
+				MONO._id_table [idStr] = props;
 			}
 
 			return idStr;
@@ -1119,7 +1119,7 @@ var MonoSupportLib = {
 		 * @returns {object}
 		 */
 		_get_id_props: function (objectId) {
-			return this._id_table [objectId];
+			return MONO._id_table [objectId];
 		},
 
 		_get_deref_ptr_value: function (objectId) {
@@ -1177,7 +1177,7 @@ var MonoSupportLib = {
 		},
 
 		_cache_call_function_res: function (obj) {
-			const id = `dotnet:cfo_res:${this._next_call_function_res_id++}`;
+			const id = `dotnet:cfo_res:${MONO._next_call_function_res_id++}`;
 			this._call_function_res_cache[id] = obj;
 			return id;
 		},
@@ -1340,8 +1340,8 @@ var MonoSupportLib = {
 		},
 
 		_clear_per_step_state: function () {
-			this._next_id_var = 0;
-			this._id_table = {};
+			MONO._next_id_var = 0;
+			MONO._id_table = {};
 		},
 
 		mono_wasm_debugger_resume: function () {
@@ -1416,11 +1416,11 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
-			this.mono_wasm_runtime_is_ready = true;
+			MONO.mono_wasm_runtime_is_ready = true;
 			this._clear_per_step_state ();
 
 			// FIXME: where should this go?
-			this._next_call_function_res_id = 0;
+			MONO._next_call_function_res_id = 0;
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
@@ -1727,7 +1727,7 @@ var MonoSupportLib = {
 			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
 			var ok = (fn (offset)) === 1;
 			if (ok)
-				this.num_icu_assets_loaded_successfully++;
+				MONO.num_icu_assets_loaded_successfully++;
 			return ok;
 		},
 
@@ -1930,7 +1930,7 @@ var MonoSupportLib = {
 				invariantMode = true;
 
 			if (!invariantMode) {
-				if (this.num_icu_assets_loaded_successfully > 0) {
+				if (MONO.num_icu_assets_loaded_successfully > 0) {
 					console.debug ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (globalization_mode !== "icu") {
 					console.debug ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
