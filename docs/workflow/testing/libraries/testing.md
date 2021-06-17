@@ -1,5 +1,8 @@
 # Testing Libraries
 
+**WARNING** Instructions on this page appear to be unmaintained and do not work as written. See [here](https://github.com/dotnet/runtime/issues/54323) for details.
+
+
 We use the OSS testing framework [xunit](https://github.com/xunit/xunit).
 
 To build the tests and run them you can call the libraries build script. For libraries tests to work, you must have built the coreclr or mono runtime for them to run on.
