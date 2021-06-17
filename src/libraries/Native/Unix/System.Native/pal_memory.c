@@ -8,10 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if HAVE_MALLOC_USABLE_SIZE
-    #include <malloc.h>
-#elif HAVE_MALLOC_SIZE
+#if HAVE_MALLOC_SIZE
     #include <malloc/malloc.h>
+#elif HAVE_MALLOC_USABLE_SIZE
+    #include <malloc.h>
+#elif HAVE_MALLOC_USABLE_SIZE_NP
+    #include <malloc_np.h>
 #else
     #error "Platform doesn't support malloc_usable_size or malloc_size"
 #endif
@@ -65,10 +67,10 @@ void SystemNative_Free(void* ptr)
 
 uintptr_t SystemNative_GetUsableSize(void* ptr)
 {
-#if HAVE_MALLOC_USABLE_SIZE
-    return malloc_usable_size(ptr);
-#elif HAVE_MALLOC_SIZE
+#if HAVE_MALLOC_SIZE
     return malloc_size(ptr);
+#elif HAVE_MALLOC_USABLE_SIZE || HAVE_MALLOC_USABLE_SIZE_NP
+    return malloc_usable_size(ptr);
 #else
     #error "Platform doesn't support malloc_usable_size or malloc_size"
 #endif

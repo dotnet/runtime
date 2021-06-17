@@ -538,6 +538,10 @@ check_symbol_exists(
     malloc.h
     HAVE_MALLOC_USABLE_SIZE)
 check_symbol_exists(
+    malloc_usable_size
+    malloc_np.h
+    HAVE_MALLOC_USABLE_SIZE_NP)
+check_symbol_exists(
     posix_memalign
     stdlib.h
     HAVE_POSIX_MEMALIGN)

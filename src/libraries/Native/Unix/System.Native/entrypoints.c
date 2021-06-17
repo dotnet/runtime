@@ -113,6 +113,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_AlignedRealloc)
     DllImportEntry(SystemNative_Calloc)
     DllImportEntry(SystemNative_Free)
+    DllImportEntry(SystemNative_GetUsableSize)
     DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_MemSet)
     DllImportEntry(SystemNative_Realloc)

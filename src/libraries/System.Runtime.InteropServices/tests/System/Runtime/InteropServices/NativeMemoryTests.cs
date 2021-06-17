@@ -233,7 +233,7 @@ namespace System.Runtime.InteropServices.Tests
 
             for (int i = 0; i < 16; i++)
             {
-                ((byte*)ptr)[i] = i;
+                ((byte*)ptr)[i] = (byte)i;
             }
 
             void* newPtr = NativeMemory.AlignedRealloc(ptr, 32, 16);
@@ -422,7 +422,7 @@ namespace System.Runtime.InteropServices.Tests
 
             for (int i = 0; i < 16; i++)
             {
-                ((byte*)ptr)[i] = i;
+                ((byte*)ptr)[i] = (byte)i;
             }
 
             void* newPtr = NativeMemory.Realloc(ptr, 32);
