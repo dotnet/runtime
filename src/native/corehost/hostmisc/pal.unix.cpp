@@ -393,6 +393,29 @@ bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
     return true;
 }
 
+namespace
+{
+    bool get_line_from_file(FILE* pFile, pal::string_t& line)
+    {
+        line = pal::string_t();
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pFile))
+        {
+            line += (pal::char_t*)buffer;
+            size_t len = line.length();
+
+            // fgets includes the newline character in the string - so remove it.
+            if (len > 0 && line[len - 1] == '\n')
+            {
+                line.pop_back();
+                break;
+            }
+        }
+
+        return !line.empty();
+    }
+}
+
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
     recv->clear();
@@ -425,7 +448,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     int current_line = 0;
     bool is_first_line = true, install_location_found = false;
 
-    while (pal::get_line_from_file(install_location_file, install_location))
+    while (get_line_from_file(install_location_file, install_location))
     {
         current_line++;
         size_t arch_sep = install_location.find(_X('='));
@@ -451,7 +474,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
         pal::string_t path_to_location = install_location.substr(arch_sep + 1);
 
         trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
-        if (strcasecmp(arch_prefix, get_arch()) == 0)
+        if (pal::strcasecmp(arch_prefix.c_str(), get_arch()) == 0)
         {
             recv->assign(path_to_location);
             install_location_found = true;
@@ -490,29 +513,6 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     recv->assign(_X("/usr/share/dotnet"));
 #endif
     return true;
-}
-
-namespace
-{
-    bool pal::get_line_from_file(FILE* pFile, pal::string_t& line)
-    {
-        line = pal::string_t();
-        char buffer[256];
-        while (fgets(buffer, sizeof(buffer), pFile))
-        {
-            line += (pal::char_t*)buffer;
-            size_t len = line.length();
-
-            // fgets includes the newline character in the string - so remove it.
-            if (len > 0 && line[len - 1] == '\n')
-            {
-                line.pop_back();
-                break;
-            }
-        }
-
-        return !line.empty();
-    }
 }
 
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
