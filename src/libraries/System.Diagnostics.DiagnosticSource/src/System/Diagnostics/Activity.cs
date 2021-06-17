@@ -1500,6 +1500,10 @@ namespace System.Diagnostics
                     if (_first.Value.Key == key)
                     {
                         _first = _first.Next;
+                        if (_first is null)
+                        {
+                            _last = null;
+                        }
                         return;
                     }
 

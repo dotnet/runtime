@@ -1606,7 +1606,7 @@ namespace System.Diagnostics.Tests
             }
 
             // Test Deleting last tag
-            activity = new Activity("TagObjects");
+            activity = new Activity("LastTagObjects");
 
             activity.SetTag("hello1", "1");
             activity.SetTag("hello2", "1");
@@ -1622,6 +1622,18 @@ namespace System.Diagnostics.Tests
             Assert.Equal("2", tagObjects[1].Value);
             Assert.Equal("hello4", tagObjects[2].Key);
             Assert.Equal("3", tagObjects[2].Value);
+
+            activity = new Activity("FirstLastTagObjects");
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello1", null); // Delete the first and last tag
+            activity.SetTag("hello2", "2");
+            activity.SetTag("hello3", "3");
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(2, tagObjects.Length);
+            Assert.Equal("hello2", tagObjects[0].Key);
+            Assert.Equal("2", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("3", tagObjects[1].Value);
         }
 
         [Fact]
