@@ -391,7 +391,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -411,10 +410,13 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray), Version = UseVersion };
 
                     request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
-                    request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("utf-8"));
-                    request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
-                    request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
-                    request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue("en-US"));
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("utf-8"));
+                        request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+                        request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
+                        request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue("en-US"));
+                    }
                     request.Headers.Add("Accept-Datetime", "Thu, 31 May 2007 20:35:00 GMT");
                     request.Headers.Add("Access-Control-Request-Method", "GET");
                     request.Headers.Add("Access-Control-Request-Headers", "GET");
@@ -424,7 +426,10 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
                     request.Content.Headers.ContentLength = contentArray.Length;
-                    request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                    }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     request.Headers.Date = DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT");
                     request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
@@ -446,11 +451,14 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("deflate"));
                     request.Headers.Trailer.Add("MyTrailer");
                     request.Headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
-                    request.Headers.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue("Mozilla", "5.0")));
-                    request.Headers.Upgrade.Add(new ProductHeaderValue("HTTPS", "1.3"));
-                    request.Headers.Upgrade.Add(new ProductHeaderValue("IRC", "6.9"));
-                    request.Headers.Upgrade.Add(new ProductHeaderValue("RTA", "x11"));
-                    request.Headers.Upgrade.Add(new ProductHeaderValue("websocket"));
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        request.Headers.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue("Mozilla", "5.0")));
+                        request.Headers.Upgrade.Add(new ProductHeaderValue("HTTPS", "1.3"));
+                        request.Headers.Upgrade.Add(new ProductHeaderValue("IRC", "6.9"));
+                        request.Headers.Upgrade.Add(new ProductHeaderValue("RTA", "x11"));
+                        request.Headers.Upgrade.Add(new ProductHeaderValue("websocket"));
+                    }
                     request.Headers.Via.Add(new ViaHeaderValue("1.0", "fred"));
                     request.Headers.Via.Add(new ViaHeaderValue("1.1", "example.com", null, "(Apache/1.1)"));
                     request.Headers.Warning.Add(new WarningHeaderValue(199, "-", "\"Miscellaneous warning\""));
@@ -486,18 +494,31 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(content, Encoding.ASCII.GetString(requestData.Body));
 
-                    Assert.Equal("utf-8", requestData.GetSingleHeaderValue("Accept-Charset"));
-                    Assert.Equal("gzip, deflate", requestData.GetSingleHeaderValue("Accept-Encoding"));
-                    Assert.Equal("en-US", requestData.GetSingleHeaderValue("Accept-Language"));
-                    Assert.Equal("Thu, 31 May 2007 20:35:00 GMT", requestData.GetSingleHeaderValue("Accept-Datetime"));
-                    Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Method"));
-                    Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Headers"));
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        Assert.Equal("utf-8", requestData.GetSingleHeaderValue("Accept-Charset"));
+                        Assert.Equal("gzip, deflate", requestData.GetSingleHeaderValue("Accept-Encoding"));
+                        Assert.Equal("en-US", requestData.GetSingleHeaderValue("Accept-Language"));
+                        Assert.Equal("Thu, 31 May 2007 20:35:00 GMT", requestData.GetSingleHeaderValue("Accept-Datetime"));
+                        Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Method"));
+                        Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Headers"));
+                    }
                     Assert.Equal("12", requestData.GetSingleHeaderValue("Age"));
                     Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Authorization"));
                     Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Cache-Control"));
-                    Assert.Equal("$Version=1; Skin=new", requestData.GetSingleHeaderValue("Cookie"));
-                    Assert.Equal("Tue, 15 Nov 1994 08:12:31 GMT", requestData.GetSingleHeaderValue("Date"));
-                    Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
+                    if(PlatformDetection.IsNotBrowser)
+                    {
+                        Assert.Equal("$Version=1; Skin=new", requestData.GetSingleHeaderValue("Cookie"));
+                        Assert.Equal("Tue, 15 Nov 1994 08:12:31 GMT", requestData.GetSingleHeaderValue("Date"));
+                        Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
+                        Assert.Equal("http://www.example-social-network.com", requestData.GetSingleHeaderValue("Origin"));
+                        Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Proxy-Authorization"));
+                        Assert.Equal("Mozilla/5.0", requestData.GetSingleHeaderValue("User-Agent"));
+                        Assert.Equal("http://en.wikipedia.org/wiki/Main_Page", requestData.GetSingleHeaderValue("Referer"));
+                        Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));
+                        Assert.Equal("1.0 fred, 1.1 example.com (Apache/1.1)", requestData.GetSingleHeaderValue("Via"));
+                        Assert.Equal("1 (Do Not Track Enabled)", requestData.GetSingleHeaderValue("DNT"));
+                    }
                     Assert.Equal("for=192.0.2.60;proto=http;by=203.0.113.43", requestData.GetSingleHeaderValue("Forwarded"));
                     Assert.Equal("User Name <user@example.com>", requestData.GetSingleHeaderValue("From"));
                     Assert.Equal("\"37060cd8c284d8af7ad3082f209582d\"", requestData.GetSingleHeaderValue("If-Match"));
@@ -506,17 +527,10 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("Wed, 21 Oct 2015 07:28:00 GMT", requestData.GetSingleHeaderValue("If-Range"));
                     Assert.Equal("Sat, 29 Oct 1994 19:43:31 GMT", requestData.GetSingleHeaderValue("If-Unmodified-Since"));
                     Assert.Equal("10", requestData.GetSingleHeaderValue("Max-Forwards"));
-                    Assert.Equal("http://www.example-social-network.com", requestData.GetSingleHeaderValue("Origin"));
                     Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Pragma"));
-                    Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Proxy-Authorization"));
                     Assert.Equal("bytes=500-999", requestData.GetSingleHeaderValue("Range"));
-                    Assert.Equal("http://en.wikipedia.org/wiki/Main_Page", requestData.GetSingleHeaderValue("Referer"));
-                    Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));
-                    Assert.Equal("Mozilla/5.0", requestData.GetSingleHeaderValue("User-Agent"));
-                    Assert.Equal("1.0 fred, 1.1 example.com (Apache/1.1)", requestData.GetSingleHeaderValue("Via"));
                     Assert.Equal("199 - \"Miscellaneous warning\"", requestData.GetSingleHeaderValue("Warning"));
                     Assert.Equal("XMLHttpRequest", requestData.GetSingleHeaderValue("X-Requested-With"));
-                    Assert.Equal("1 (Do Not Track Enabled)", requestData.GetSingleHeaderValue("DNT"));
                     Assert.Equal("client1, proxy1, proxy2", requestData.GetSingleHeaderValue("X-Forwarded-For"));
                     Assert.Equal("en.wikipedia.org:8080", requestData.GetSingleHeaderValue("X-Forwarded-Host"));
                     Assert.Equal("https", requestData.GetSingleHeaderValue("X-Forwarded-Proto"));
@@ -542,7 +556,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(0, requestData.GetHeaderValueCount("Connection"));
                         Assert.Equal(0, requestData.GetHeaderValueCount("Transfer-Encoding"));
                     }
-                    else
+                    else if(PlatformDetection.IsNotBrowser)
                     {
                         // Verify HTTP/1.x headers
                         Assert.Equal("close", requestData.GetSingleHeaderValue("Connection"), StringComparer.OrdinalIgnoreCase); // NetFxHandler uses "Close" vs "close"

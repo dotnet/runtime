@@ -750,6 +750,11 @@ namespace System.Net.Test.Common
             public async Task<List<string>> ReadRequestHeaderAndSendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
             {
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
+
+#if TARGET_BROWSER
+                lines = await HandlePreFlight(lines);
+#endif
+
                 await SendResponseAsync(statusCode, additionalHeaders, content).ConfigureAwait(false);
                 return lines;
             }
@@ -970,6 +975,25 @@ namespace System.Net.Test.Common
                 }
                 return requestData;
             }
+
+            public async Task<List<string>> HandlePreFlight(List<string> lines) {
+                if (PlatformDetection.IsBrowser && lines[0].Contains("OPTIONS") && lines.Any(h => h.StartsWith("Access-Control-Request-Method")))
+                {
+                    // handle CORS pre-flight
+                    await SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+
+                    // reset state
+                    _bodyRead = false;
+                    _contentLength = 0;
+                    _readStart = 0;
+                    _readEnd = 0;
+
+                    // wait for real request
+                    return await ReadRequestHeaderAsync().ConfigureAwait(false);
+                }
+                return lines;
+            }
+
 #endif
 
             public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
