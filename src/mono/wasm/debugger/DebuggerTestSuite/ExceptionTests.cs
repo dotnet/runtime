@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using System.Threading;
 using Xunit;
 
 namespace DebuggerTests
@@ -189,6 +190,46 @@ namespace DebuggerTests
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
             CheckString(exception_members, "message", exception_message);
+        }
+
+        [Fact]
+        public async Task ExceptionTestUncaughtWithReload()
+        {
+            string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
+
+            await SetPauseOnException("uncaught");
+
+            await SendCommand("Page.enable", null);
+            await SendCommand("Page.reload", JObject.FromObject(new
+                                    {
+                                        ignoreCache = true
+                                    }));
+            Thread.Sleep(1000);
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'{entry_method_name}'" +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
+            //stop in the managed caught exception
+            pause_location = await WaitForManagedException(pause_location);
+
+            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
+
+            //stop in the uncaught exception
+            CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
+
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "DebuggerTests.CustomException",
+                uncaught = true
+            }), "exception1.data");
+
+            var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
+            CheckString(exception_members, "message", "not implemented uncaught");
         }
 
         async Task<JObject> WaitForManagedException(JObject pause_location)
