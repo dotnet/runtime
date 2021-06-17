@@ -113,6 +113,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					context.LogMessages = true;
 				};
 			}
+
+			if (ValidatesLogMessages (_testCaseTypeDefinition)) {
+				customizations.CustomizeContext += context => {
+					context.LogMessages = true;
+				};
+			}
 		}
 
 		bool ValidatesReflectionAccessPatterns (TypeDefinition testCaseTypeDefinition)
@@ -130,6 +136,25 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				|| testCaseTypeDefinition.AllMembers ().Concat (testCaseTypeDefinition.AllDefinedTypes ()).Any (m => m.CustomAttributes.Any (attr =>
 					  attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
 					  attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute))))
+				return true;
+
+			return false;
+		}
+
+		bool ValidatesLogMessages (TypeDefinition testCaseTypeDefinition)
+		{
+			if (testCaseTypeDefinition.HasNestedTypes) {
+				var nestedTypes = new Queue<TypeDefinition> (testCaseTypeDefinition.NestedTypes.ToList ());
+				while (nestedTypes.Count > 0) {
+					if (ValidatesLogMessages (nestedTypes.Dequeue ()))
+						return true;
+				}
+			}
+
+			if (testCaseTypeDefinition.AllMembers ().Concat (testCaseTypeDefinition.AllDefinedTypes ()).Append (testCaseTypeDefinition)
+				.Any (m => m.CustomAttributes.Any (attr =>
+					attr.AttributeType.Name == nameof (LogContainsAttribute) ||
+					attr.AttributeType.Name == nameof (LogDoesNotContainAttribute))))
 				return true;
 
 			return false;

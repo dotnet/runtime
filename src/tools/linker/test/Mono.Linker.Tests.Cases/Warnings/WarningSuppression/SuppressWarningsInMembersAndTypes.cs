@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
@@ -27,6 +28,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			int propertyThatTriggersWarning = suppressWarningsInMembers.Property;
 
 			NestedType.Warning ();
+
+			SuppressOnTypeMarkedEntirely.Test ();
 		}
 
 		public static Type TriggerUnrecognizedPattern ()
@@ -96,5 +99,31 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				return 0;
 			}
 		}
+	}
+
+	class SuppressOnTypeMarkedEntirely
+	{
+		// https://github.com/mono/linker/issues/2095
+		// [LogDoesNotContain (nameof(TypeWithSuppression) + " has more than one unconditional suppression")]
+		[LogContains (nameof (TypeWithSuppression) + " has more than one unconditional suppression")]
+		[UnconditionalSuppressMessage ("Test", "IL2026")]
+		class TypeWithSuppression
+		{
+			[ExpectedNoWarnings]
+			public TypeWithSuppression ()
+			{
+				MethodWithRUC ();
+			}
+
+			int _field;
+		}
+
+		public static void Test ()
+		{
+			typeof (TypeWithSuppression).RequiresAll ();
+		}
+
+		[RequiresUnreferencedCode ("")]
+		static void MethodWithRUC () { }
 	}
 }
