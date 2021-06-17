@@ -515,9 +515,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
-                int reqdLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
-                rentedBuffer.AsSpan().Slice(0, reqdLength).CopyTo(buffer);
-                return reqdLength;
+                int readLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
+                rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
+                return readLength;
             }
             finally
             {
