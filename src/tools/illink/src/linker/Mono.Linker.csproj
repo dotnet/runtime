@@ -15,11 +15,19 @@
          used for packages.config which we do not support. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
     <RootNamespace>Mono.Linker</RootNamespace>
+    <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
+    <EnableXlfLocalization>false</EnableXlfLocalization>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="ref\**\*.cs" />
     <Compile Include="..\..\external\corert\**\*.cs" />
+  </ItemGroup>
+
+  <!-- Shared files with analyzer -->
+  <ItemGroup>
+    <EmbeddedResource Include="../ILLink.Shared/SharedStrings.resx" GenerateSource="true" />
+    <Compile Include="../ILLink.Shared/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

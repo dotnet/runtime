@@ -34,6 +34,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
 using System.Text.RegularExpressions;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -1725,7 +1726,7 @@ namespace Mono.Linker.Steps
 
 			if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
 				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
-				// will call MarkType on the attribute type itself). 
+				// will call MarkType on the attribute type itself).
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
 				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
@@ -2009,7 +2010,7 @@ namespace Mono.Linker.Steps
 						string methodName = realMatch.Substring (0, realMatch.Length - 2);
 
 						// It's a call to a method on some member.  Handling this scenario robustly would be complicated and a decent bit of work.
-						// 
+						//
 						// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
 						// method on the current type when it exists on some other type
 						if (methodName.Contains ("."))
@@ -2751,13 +2752,10 @@ namespace Mono.Linker.Steps
 				return;
 
 			if (Annotations.TryGetLinkerAttribute (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode)) {
-				string message = $"Using method '{method.GetDisplayName ()}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.";
-				if (!string.IsNullOrEmpty (requiresUnreferencedCode.Message))
-					message += $" {requiresUnreferencedCode.Message}{(requiresUnreferencedCode.Message.TrimEnd ().EndsWith ('.') ? "" : ".")}";
-
-				if (!string.IsNullOrEmpty (requiresUnreferencedCode.Url))
-					message += " " + requiresUnreferencedCode.Url;
-
+				string formatString = SharedStrings.RequiresUnreferencedCodeMessage;
+				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
+				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
+				string message = string.Format (formatString, method.GetDisplayName (), arg1, arg2);
 				_context.LogWarning (message, 2026, currentOrigin, MessageSubCategory.TrimAnalysis);
 			}
 		}
@@ -2930,7 +2928,7 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// Collect methods that must be marked once a type is determined to be instantiated.
 		///
-		/// This method is virtual in order to give derived mark steps an opportunity to modify the collection of methods that are needed 
+		/// This method is virtual in order to give derived mark steps an opportunity to modify the collection of methods that are needed
 		/// </summary>
 		/// <param name="type"></param>
 		/// <returns></returns>
