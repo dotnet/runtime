@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -228,10 +229,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HEAD")]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
-            if(PlatformDetection.IsBrowser && (method=="DELETE" || method=="OPTIONS")){
-               // [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)] //TODO pre-flight OPTIONS
-               return;
-            }
             using (HttpClient client = CreateHttpClient())
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
@@ -243,8 +240,12 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> requestTask = client.SendAsync(request);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        List<string> headers = await connection.ReadRequestHeaderAsync();
-                        Assert.DoesNotContain(headers, line => line.StartsWith("Content-length"));
+                        var requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
+#if TARGET_BROWSER
+                        requestData = await connection.HandlePreFlight(requestData);
+#endif
+
+                        Assert.DoesNotContain(requestData.Headers, line => line.Name.StartsWith("Content-length"));
 
                         await connection.SendResponseAsync();
                         await requestTask;
