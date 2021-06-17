@@ -89,7 +89,7 @@ namespace HostActivation.Tests
                 registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
                     (string.Empty, path1),
                     (arch1, path1),
-                    (arch2, path2)EnvironmentVariable_IfNoArchSpecificEnvVarIsFoundDotnetR
+                    (arch2, path2)
                 });
 
                 Command.Create(appExe)
