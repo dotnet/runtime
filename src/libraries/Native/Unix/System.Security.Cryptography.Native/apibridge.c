@@ -818,4 +818,63 @@ int local_RSA_test_flags(const RSA *r, int flags)
     return r->flags & flags;
 }
 
+int local_EVP_PKEY_check(EVP_PKEY_CTX* ctx)
+{
+    EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+    if (pkey == NULL)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INPUT_NOT_INITIALIZED, __FILE__, __LINE__);
+        return -1;
+    }
+
+    int id = EVP_PKEY_base_id(pkey);
+
+    switch (id)
+    {
+        case NID_rsaEncryption:
+        {
+            RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+            if (rsa != NULL)
+            {
+                return RSA_check_key(rsa);
+            }
+
+            break;
+        }
+        default:
+            ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
+            return -1;
+    }
+
+    ERR_put_error(ERR_LIB_EVP, 0, EVP_R_NO_KEY_SET, __FILE__, __LINE__);
+    return -1;
+}
+
+int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
+{
+    EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+    if (pkey == NULL)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INPUT_NOT_INITIALIZED, __FILE__, __LINE__);
+        return -1;
+    }
+
+    int id = EVP_PKEY_base_id(pkey);
+
+    switch (id)
+    {
+        case NID_rsaEncryption:
+        {
+            ERR_put_error(ERR_LIB_EVP, 0, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE, __FILE__, __LINE__);
+            return -2;
+        }
+        default:
+            ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
+            return -1;
+    }
+}
+
 #endif

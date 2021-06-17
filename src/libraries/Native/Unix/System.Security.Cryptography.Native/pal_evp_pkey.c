@@ -17,7 +17,7 @@ EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
 
     if (algId != NID_undef && algId != currentAlgId)
     {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INVALID_KEY, __FILE__, __LINE__);
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_WRONG_PUBLIC_KEY_TYPE, __FILE__, __LINE__);
         return NULL;
     }
 

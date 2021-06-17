@@ -30,6 +30,8 @@ int32_t EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx);
 void EVP_MD_CTX_free(EVP_MD_CTX* ctx);
 EVP_MD_CTX* EVP_MD_CTX_new(void);
 RSA* EVP_PKEY_get0_RSA(EVP_PKEY* pkey);
+int EVP_PKEY_check(EVP_PKEY_CTX* ctx);
+int EVP_PKEY_public_check(EVP_PKEY_CTX* ctx);
 int32_t EVP_PKEY_up_ref(EVP_PKEY* pkey);
 void HMAC_CTX_free(HMAC_CTX* ctx);
 HMAC_CTX* HMAC_CTX_new(void);
