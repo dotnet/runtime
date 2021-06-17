@@ -462,8 +462,8 @@ namespace Microsoft.Extensions.Logging.Generators
                             message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
                             break;
                         case "SkipEnabledCheck":
-                            var flag = (bool?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
-                            skipEnabledCheck = flag == null ? false : flag.Value;
+                            bool? flag = (bool?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
+                            skipEnabledCheck = flag.GetValueOrDefault();
                             break;
                     }
                 }
