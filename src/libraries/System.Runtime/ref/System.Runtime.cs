@@ -9602,6 +9602,7 @@ namespace System.Runtime
         public bool IsAllocated { get { throw null; } }
         public object? Target { get { throw null; } set { } }
         public void Dispose() { }
+        public (object? Target, object? Dependent) GetTargetAndDependent() { throw null; }
     }
     public enum GCLargeObjectHeapCompactionMode
     {

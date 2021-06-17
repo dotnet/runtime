@@ -43,6 +43,7 @@ public:
     static FCDECL2(OBJECTHANDLE, InternalInitialize, Object *target, Object *dependent);
     static FCDECL1(Object *, InternalGetTarget, OBJECTHANDLE handle);
     static FCDECL1(Object *, InternalGetDependent, OBJECTHANDLE handle);
+    static FCDECL2(Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
     static FCDECL1(VOID, InternalFree, OBJECTHANDLE handle);
     static FCDECL2(VOID, InternalSetTarget, OBJECTHANDLE handle, Object *target);
     static FCDECL2(VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);

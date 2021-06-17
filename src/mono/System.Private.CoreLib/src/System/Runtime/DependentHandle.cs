@@ -38,6 +38,13 @@ namespace System.Runtime
             set => UnsafeSetDependent(value);
         }
 
+        public (object? Target, object? Dependent) GetTargetAndDependent()
+        {
+            object? target = UnsafeGetTargetAndDependent(out object? dependent);
+
+            return (target, dependent);
+        }
+
         internal object? UnsafeGetTarget()
         {
             Ephemeron[]? data = _data;
@@ -68,6 +75,33 @@ namespace System.Runtime
             Ephemeron e = data[0];
 
             return e.Key != GC.EPHEMERON_TOMBSTONE ? e.Value : null;
+        }
+
+        internal object? UnsafeGetTargetAndDependent(out object? dependent)
+        {
+            Ephemeron[]? data = _data;
+
+            if (data is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                dependent = null;
+
+                return null;
+            }
+
+            Ephemeron e = data[0];
+
+            if (e.Key != GC.EPHEMERON_TOMBSTONE)
+            {
+                dependent = e.Value;
+
+                return e.Key;
+            }
+
+            dependent = null;
+
+            return null;
         }
 
         internal void UnsafeSetTarget(object? target)

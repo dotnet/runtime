@@ -515,6 +515,7 @@ namespace System.Runtime.CompilerServices
             /// Returns -1 if not found (if key expires during FindEntry, this can be treated as "not found.").
             /// Must hold _lock, or be prepared to retry the search while holding _lock.
             /// </summary>
+            /// <remarks>This method requires <paramref name="value"/> to be on the stack to be properly tracked.</remarks>
             internal int FindEntry(TKey key, out object? value)
             {
                 Debug.Assert(key != null); // Key already validated as non-null.
@@ -523,24 +524,15 @@ namespace System.Runtime.CompilerServices
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {
-                    if (_entries[entriesIndex].HashCode == hashCode)
+                    if (_entries[entriesIndex].HashCode == hashCode && _entries[entriesIndex].depHnd.UnsafeGetTargetAndDependent(out value) == key)
                     {
-                        DependentHandle dependentHandle = _entries[entriesIndex].depHnd;
-                        object? target = dependentHandle.UnsafeGetTarget();
+                        GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
 
-                        if (target == key)
-                        {
-                            value = dependentHandle.UnsafeGetDependent();
-
-                            GC.KeepAlive(target); // Ensure the dependent remains alive up until this point
-                            GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
-
-                            return entriesIndex;
-                        }
+                        return entriesIndex;
                     }
                 }
 
-                GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
+                GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
                 value = null;
                 return -1;
             }
@@ -550,17 +542,14 @@ namespace System.Runtime.CompilerServices
             {
                 if (index < _entries.Length)
                 {
-                    DependentHandle dependentHandle = _entries[index].depHnd;
-                    object? target = dependentHandle.UnsafeGetTarget();
+                    object? oKey = _entries[index].depHnd.UnsafeGetTargetAndDependent(out object? oValue);
 
-                    if (target is not null)
+                    GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
+
+                    if (oKey != null)
                     {
-                        object? dependent = dependentHandle.UnsafeGetDependent();
-
-                        GC.KeepAlive(this); // Ensure we don't get finalized while accessing DependentHandle
-
-                        key = Unsafe.As<TKey>(target);
-                        value = Unsafe.As<TValue>(dependent);
+                        key = Unsafe.As<TKey>(oKey);
+                        value = Unsafe.As<TValue>(oValue);
                         return true;
                     }
                 }

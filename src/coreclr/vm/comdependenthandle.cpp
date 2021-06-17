@@ -37,7 +37,9 @@ FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
     FCUnique(0x54);
+
     _ASSERTE(handle != NULL);
+
     return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 FCIMPLEND
@@ -54,6 +56,22 @@ FCIMPL1(Object*, DependentHandle::InternalGetDependent, OBJECTHANDLE handle)
 
     // The dependent is tracked only if target is non-null
     return (target != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
+}
+FCIMPLEND
+
+FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL && outDependent != NULL);
+
+    OBJECTREF target = ObjectFromHandle(handle);
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+
+    // The dependent is tracked only if target is non-null
+    *outDependent = (target != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
+
+    return OBJECTREFToObject(target);
 }
 FCIMPLEND
 

@@ -61,12 +61,13 @@
 
 
 FCFuncStart(gDependentHandleFuncs)
-    FCFuncElement("InternalInitialize",   DependentHandle::InternalInitialize)
-    FCFuncElement("InternalGetTarget",    DependentHandle::InternalGetTarget)
-    FCFuncElement("InternalGetDependent", DependentHandle::InternalGetDependent)
-    FCFuncElement("InternalFree",         DependentHandle::InternalFree)
-    FCFuncElement("InternalSetTarget",    DependentHandle::InternalSetTarget)
-    FCFuncElement("InternalSetDependent", DependentHandle::InternalSetDependent)
+    FCFuncElement("InternalInitialize",            DependentHandle::InternalInitialize)
+    FCFuncElement("InternalGetTarget",             DependentHandle::InternalGetTarget)
+    FCFuncElement("InternalGetDependent",          DependentHandle::InternalGetDependent)
+    FCFuncElement("InternalGetTargetAndDependent", DependentHandle::InternalGetTargetAndDependent)
+    FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
+    FCFuncElement("InternalSetTarget",             DependentHandle::InternalSetTarget)
+    FCFuncElement("InternalSetDependent",          DependentHandle::InternalSetDependent)
 FCFuncEnd()
 
 

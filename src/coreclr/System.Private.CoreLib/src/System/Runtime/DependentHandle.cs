@@ -138,6 +138,29 @@ namespace System.Runtime
         }
 
         /// <summary>
+        /// Atomically retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
+        /// That is, even if <see cref="Target"/> is concurrently set to <see langword="null"/>, calling this method
+        /// will either return <see langword="null"/> for both target and dependent, or return both previous values.
+        /// If <see cref="Target"/> and <see cref="Dependent"/> were used sequentially in this scenario instead, it's
+        /// could be possible to sometimes successfully retrieve the previous target, but then fail to get the dependent.
+        /// </summary>
+        /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        public (object? Target, object? Dependent) GetTargetAndDependent()
+        {
+            IntPtr handle = _handle;
+
+            if (handle == IntPtr.Zero)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+
+            object? target = InternalGetTargetAndDependent(handle, out object? dependent);
+
+            return (target, dependent);
+        }
+
+        /// <summary>
         /// Gets the target object instance for the current handle.
         /// </summary>
         /// <returns>The target object instance, if present.</returns>
@@ -148,13 +171,18 @@ namespace System.Runtime
         }
 
         /// <summary>
-        /// Gets the dependent object instance for the current handle.
+        /// Atomically retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
         /// </summary>
-        /// <returns>The dependent object instance, if present.</returns>
-        /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
-        internal object? UnsafeGetDependent()
+        /// <param name="dependent">The dependent instance, if available.</param>
+        /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
+        /// <remarks>
+        /// This method mirrors <see cref="GetTargetAndDependent"/>, but without the allocation check.
+        /// The signature is also kept the same as the one for the internal call, to improve the codegen.
+        /// Note that <paramref name="dependent"/> is required to be on the stack (or it might not be tracked).
+        /// </remarks>
+        internal object? UnsafeGetTargetAndDependent(out object? dependent)
         {
-            return InternalGetDependent(_handle);
+            return InternalGetTargetAndDependent(_handle, out dependent);
         }
 
         /// <summary>
@@ -208,6 +236,9 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object? InternalGetDependent(IntPtr dependentHandle);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object? InternalGetTargetAndDependent(IntPtr dependentHandle, out object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void InternalSetTarget(IntPtr dependentHandle, object? target);
