@@ -3279,7 +3279,8 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
         }
     }
 
-    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not already marked as spillAfter yet.
+    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not already marked as spillAfter
+    // yet.
     // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
     // singleDefSpill because they will always get spilled at firstRefPosition.
     // This helps in spilling the singleDef at definition
@@ -5932,8 +5933,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
-        (treeNode != nullptr) &&(!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) && (treeNode != nullptr) &&
+             (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.

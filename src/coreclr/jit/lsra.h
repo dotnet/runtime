@@ -2248,7 +2248,7 @@ public:
 
     unsigned char reload : 1;
     unsigned char spillAfter : 1;
-    unsigned char singleDefSpill : 1; 
+    unsigned char singleDefSpill : 1;
     unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
                                  // set.
 

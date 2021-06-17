@@ -4135,7 +4135,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                     }
 
 #endif // DEBUG
-                    varDsc->lvSingleDefRegCandidate     = false;
+                    varDsc->lvSingleDefRegCandidate           = false;
                     varDsc->lvDisqualifySingleDefRegCandidate = true;
                 }
                 else
@@ -4521,7 +4521,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef            = varDsc->lvIsParam;
+            varDsc->lvSingleDef             = varDsc->lvIsParam;
             varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
         }
     }

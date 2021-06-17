@@ -450,7 +450,8 @@ public:
                                                // Currently, it is the criteria to decide if an EH variable can be
                                                // a register candiate or not.
 
-    unsigned char lvDisqualifySingleDefRegCandidate : 1; // tracks variable that are disqualified from register candidancy
+    unsigned char lvDisqualifySingleDefRegCandidate : 1; // tracks variable that are disqualified from register
+                                                         // candidancy
 
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
