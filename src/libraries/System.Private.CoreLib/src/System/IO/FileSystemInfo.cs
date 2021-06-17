@@ -145,8 +145,13 @@ namespace System.IO
         /// Gets the target of the specified link.
         /// </summary>
         /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
-        /// <returns>A <see cref="FileSystemInfo"/> instance if the link exists, independently if the target exists or not; <see langword="null"/> if a link does not exist
-        /// in <see cref="FullName"/>, or this instance does not represent a link.</returns>
+        /// <returns>A <see cref="FileSystemInfo"/> instance if the link exists, independently if the target exists or not; <see langword="null"/> if this file or directory is not a link.</returns>
+        /// <exception cref="IOException">The file or directory does not exist.
+        /// -or-
+        /// The link's file system entry type is inconsistent with that of its target.
+        /// -or-
+        /// Too many levels of symbolic links.</exception>
+        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix.</remarks>
         public FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget = false) =>
             FileSystem.ResolveLinkTarget(FullPath, returnFinalTarget, this is DirectoryInfo);
 

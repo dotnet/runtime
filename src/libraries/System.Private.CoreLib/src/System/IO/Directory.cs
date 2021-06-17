@@ -344,7 +344,13 @@ namespace System.IO
         /// </summary>
         /// <param name="linkPath">The path of the directory link.</param>
         /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
-        /// <returns>A <see cref="DirectoryInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> does not exist.</returns>
+        /// <returns>A <see cref="DirectoryInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> is not a link.</returns>
+        /// <exception cref="IOException">The directory on <paramref name="linkPath"/> does not exist.
+        /// -or-
+        /// The link's file system entry type is inconsistent with that of its target.
+        /// -or-
+        /// Too many levels of symbolic links.</exception>
+        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix.</remarks>
         public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));

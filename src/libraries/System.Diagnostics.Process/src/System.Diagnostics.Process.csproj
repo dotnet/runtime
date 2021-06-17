@@ -233,6 +233,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\Interop.Close.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs"
@@ -261,6 +263,8 @@
              Link="Common\Interop\Unix\Interop.ResourceLimits.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitId.cs"
              Link="Common\Interop\Unix\Interop.WaitId.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitPid.cs"

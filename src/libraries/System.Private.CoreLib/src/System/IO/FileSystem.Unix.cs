@@ -573,7 +573,7 @@ namespace System.IO
         /// <param name="isDirectory">True if the linkPath points to a directory or a symlink to a directory.</param>
         /// <returns>If the specified linkPath represents a link file and it exists, returns a FileInfo if isDirectory
         /// is false, or a DirectoryInfo if isDirectory is true, independently if the target file/directory exists or not.
-        /// If the specified linkPath is not a link file or it does not exist, returns null.</returns>
+        /// If the specified linkPath is not a link, returns null. Throws if the file or directory in linkPath does not exist.</returns>
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             // throws if the current link file does not exist

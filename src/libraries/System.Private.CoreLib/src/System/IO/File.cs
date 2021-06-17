@@ -1017,9 +1017,7 @@ namespace System.IO
         /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
         /// -or-
-        /// <paramref name="path"/> is not an absolute path.
-        /// -or-
-        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains invalid path characters.</exception>
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
         /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
         /// -or-
         /// An I/O error occurred.</exception>
@@ -1036,7 +1034,13 @@ namespace System.IO
         /// </summary>
         /// <param name="linkPath">The path of the file link.</param>
         /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
-        /// <returns>A <see cref="FileInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> does not exist.</returns>
+        /// <returns>A <see cref="FileInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> is not a link.</returns>
+        /// <exception cref="IOException">The file on <paramref name="linkPath"/> does not exist.
+        /// -or-
+        /// The link's file system entry type is inconsistent with that of its target.
+        /// -or-
+        /// Too many levels of symbolic links.</exception>
+        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix.</remarks>
         public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
