@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.XsltOld
         }
     }
 
-    internal class BuiltInRuleTextAction : Action
+    internal sealed class BuiltInRuleTextAction : Action
     {
         private const int ResultStored = 2;
         internal override void Execute(Processor processor, ActionFrame frame)

@@ -210,6 +210,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(4, expressionTreeGeneratedEvent.EventId);
         }
 
+        [Fact]
+        public void EmitsServiceRealizationFailedEvent()
+        {
+            var exception = new Exception("Test error.");
+            DependencyInjectionEventSource.Log.ServiceRealizationFailed(exception);
+
+            var eventName = nameof(DependencyInjectionEventSource.Log.ServiceRealizationFailed);
+            var serviceRealizationFailedEvent = _listener.EventData.Single(e => e.EventName == eventName);
+
+            Assert.Equal("System.Exception: Test error.", GetProperty<string>(serviceRealizationFailedEvent, "exceptionMessage"));
+            Assert.Equal(6, serviceRealizationFailedEvent.EventId);
+        }
+
         private T GetProperty<T>(EventWrittenEventArgs data, string propName)
             => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
 

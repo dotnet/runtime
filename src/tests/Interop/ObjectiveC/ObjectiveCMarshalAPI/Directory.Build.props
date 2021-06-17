@@ -1,0 +1,7 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="../../Directory.Build.props" />
+
+  <!-- Properties for all ObjectiveC managed test assets -->
+  <PropertyGroup>
+  </PropertyGroup>
+</Project>

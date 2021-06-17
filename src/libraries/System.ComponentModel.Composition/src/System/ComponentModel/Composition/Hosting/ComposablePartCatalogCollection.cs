@@ -17,7 +17,7 @@ namespace System.ComponentModel.Composition.Hosting
     ///     It is threadsafe, notifications are not marshalled using a SynchronizationContext.
     ///     It is Disposable.
     /// </summary>
-    internal class ComposablePartCatalogCollection : ICollection<ComposablePartCatalog>, INotifyComposablePartCatalogChanged, IDisposable
+    internal sealed class ComposablePartCatalogCollection : ICollection<ComposablePartCatalog>, INotifyComposablePartCatalogChanged, IDisposable
     {
         private readonly Lock _lock = new Lock();
         private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanged;
@@ -251,7 +251,7 @@ namespace System.ComponentModel.Composition.Hosting
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {

@@ -23,7 +23,7 @@ using Internal.ReadyToRunConstants;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-
+using System.Text;
 
 namespace Internal.JitInterface
 {
@@ -221,8 +221,12 @@ namespace Internal.JitInterface
 
         public bool Equals(MethodWithToken methodWithToken)
         {
-            bool equals = Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType &&
-                   Unboxing == methodWithToken.Unboxing;
+            if (methodWithToken == null)
+                return false;
+
+            bool equals = Method == methodWithToken.Method && Token.Equals(methodWithToken.Token)
+                && OwningType == methodWithToken.OwningType && ConstrainedType == methodWithToken.ConstrainedType
+                && Unboxing == methodWithToken.Unboxing;
             if (equals)
             {
                 Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
@@ -244,6 +248,24 @@ namespace Internal.JitInterface
             sb.Append(Token.ToString());
             if (Unboxing)
                 sb.Append("; UNBOXING");
+        }
+
+        public override string ToString()
+        {
+            StringBuilder debuggingName = new StringBuilder();
+            debuggingName.Append(Method.ToString());
+            if (ConstrainedType != null)
+            {
+                debuggingName.Append(" @ ");
+                debuggingName.Append(ConstrainedType.ToString());
+            }
+
+            debuggingName.Append("; ");
+            debuggingName.Append(Token.ToString());
+            if (Unboxing)
+                debuggingName.Append("; UNBOXING");
+
+            return debuggingName.ToString();
         }
 
         public int CompareTo(MethodWithToken other, TypeSystemComparer comparer)
@@ -341,15 +363,6 @@ namespace Internal.JitInterface
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
-
-        private struct PgoInstrumentationResults
-        {
-            public PgoInstrumentationSchema* pSchema;
-            public uint countSchemaItems;
-            public byte* pInstrumentationData;
-            public HRESULT hr;
-        }
-        Dictionary<MethodDesc, PgoInstrumentationResults> _pgoResults = new Dictionary<MethodDesc, PgoInstrumentationResults>();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -926,7 +939,9 @@ namespace Internal.JitInterface
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
-            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) || methodDesc.IsPInvoke))
+            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) 
+                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod) 
+                || methodDesc.IsPInvoke))
             {
                 if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
                     methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
@@ -962,8 +977,8 @@ namespace Internal.JitInterface
             // within the current version bubble**, but this happens to be good enough because
             // we only do this replacement within CoreLib to replace method bodies in places
             // that we cannot express in C# right now and for p/invokes in large version bubbles).
-            MethodIL methodILDef = methodIL.GetMethodILDefinition();
-            bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
+            MethodILScope methodILDef = methodIL.GetMethodILScopeDefinition();
+            bool isFauxMethodIL = !(methodILDef is IEcmaMethodIL);
             if (isFauxMethodIL)
             {
                 object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
@@ -1023,10 +1038,10 @@ namespace Internal.JitInterface
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            MethodIL methodIL = HandleToObject(module);
+            MethodILScope methodIL = HandleToObject(module);
 
             // If this is not a MethodIL backed by a physical method body, we need to remap the token.
-            Debug.Assert(methodIL.GetMethodILDefinition() is EcmaMethodIL);
+            Debug.Assert(methodIL.GetMethodILScopeDefinition() is EcmaMethodIL);
 
             EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
             ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
@@ -1411,7 +1426,7 @@ namespace Internal.JitInterface
             // Its basic meaning is that shared generic methods always need instantiating
             // stubs as the shared generic code needs the method dictionary parameter that cannot
             // be provided by other means.
-            useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
+            useInstantiatingStub = originalMethod.OwningType.IsArray || originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
 
@@ -1531,7 +1546,7 @@ namespace Internal.JitInterface
                     exactType == MethodBeingCompiled.OwningType)
                 {
                     var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token);
                     if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
                     {
                         pResult->contextHandle = contextFromMethodBeingCompiled();
@@ -1611,7 +1626,8 @@ namespace Internal.JitInterface
             }
 
             methodToCall = targetMethod;
-            MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            bool isArrayConstructor = targetMethod.OwningType.IsArray && targetMethod.IsConstructor;
+            MethodDesc canonMethod = (isArrayConstructor ? null : targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             if (directCall)
             {
@@ -1625,7 +1641,7 @@ namespace Internal.JitInterface
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
-                if (!allowInstParam && canonMethod.RequiresInstArg())
+                if (!allowInstParam && canonMethod != null && canonMethod.RequiresInstArg())
                 {
                     useInstantiatingStub = true;
                 }
@@ -1649,7 +1665,17 @@ namespace Internal.JitInterface
                 const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
                 bool unresolvedLdVirtFtn = ((flags & LdVirtFtnMask) == LdVirtFtnMask) && !resolvedCallVirt;
 
-                if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
+                if (isArrayConstructor)
+                {
+                    // Constructors on arrays are special and don't actually have entrypoints.
+                    // That would be fine by itself and wouldn't need special casing. But
+                    // constructors on SzArray have a weird property that causes them not to have canonical forms.
+                    // int[][] has a .ctor(int32,int32) to construct the jagged array in one go, but its canonical
+                    // form of __Canon[] doesn't have the two-parameter constructor. The canonical form would need
+                    // to have an unlimited number of constructors to cover stuff like "int[][][][][][]..."
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                }
+                else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                 {
                     if (unresolvedLdVirtFtn)
                     {
@@ -1674,7 +1700,7 @@ namespace Internal.JitInterface
                     if (allowInstParam)
                     {
                         useInstantiatingStub = false;
-                        methodToCall = canonMethod;
+                        methodToCall = canonMethod ?? methodToCall;
                     }
 
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
@@ -1815,6 +1841,13 @@ namespace Internal.JitInterface
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != null)
+            {
+                // Defer constrained call / ldftn instructions used for static virtual methods
+                // to runtime resolution.
+                throw new RequiresRuntimeJitException("SVM");
+            }
+
             MethodDesc methodToCall;
             MethodDesc targetMethod;
             TypeDesc constrainedType;
@@ -1901,12 +1934,19 @@ namespace Internal.JitInterface
                             nonUnboxingMethod = rawPinvoke.Target;
                         }
 
-                        // READYTORUN: FUTURE: Direct calls if possible
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.MethodEntrypoint(
-                                ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
-                                isInstantiatingStub: useInstantiatingStub,
-                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+                        if (methodToCall.OwningType.IsArray && methodToCall.IsConstructor)
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = default;
+                        }
+                        else
+                        {
+                            // READYTORUN: FUTURE: Direct calls if possible
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                                _compilation.NodeFactory.MethodEntrypoint(
+                                    ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
+                                    isInstantiatingStub: useInstantiatingStub,
+                                    isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+                        }
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
                         UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
@@ -2152,6 +2192,18 @@ namespace Internal.JitInterface
             }
         }
 
+        private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
+        {
+            TypeDesc type = HandleToObject(handle);
+            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
+                throw new RequiresRuntimeJitException(type.ToString());
+
+            Import typeHandleImport = (Import)_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
+            Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
+            ppIndirection = (void*)ObjectToHandle(typeHandleImport);
+            return null;
+        }
+
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, ref pResult);
@@ -2185,7 +2237,12 @@ namespace Internal.JitInterface
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
                             bool unboxingStub = false;
-                            if ((td.IsValueType) && !md.Signature.IsStatic)
+                            //
+                            // This logic should be kept in sync with MethodTableBuilder::NeedsTightlyBoundUnboxingStub
+                            // Essentially all ValueType virtual methods will require an Unboxing Stub
+                            //
+                            if ((td.IsValueType) && !md.Signature.IsStatic
+                                && md.IsVirtual)
                             {
                                 unboxingStub = true;
                             }
@@ -2327,7 +2384,7 @@ namespace Internal.JitInterface
                 }
 
                 // ENCODE_FIELD_BASE_OFFSET
-                int fieldBaseOffset = pMT.FieldBaseOffset().AsInt;
+                int fieldBaseOffset = ((MetadataType)pMT).FieldBaseOffset().AsInt;
                 Debug.Assert(pResult->offset >= (uint)fieldBaseOffset);
                 pResult->offset -= (uint)fieldBaseOffset;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
@@ -2441,101 +2498,6 @@ namespace Internal.JitInterface
                 _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
             }
             return 0;
-        }
-
-        private PgoSchemaElem[] getPgoInstrumentationResults(MethodDesc method)
-        {
-            return _compilation.ProfileData[method]?.SchemaData;
-        }
-
-        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData)
-        {
-            MethodDesc methodDesc = HandleToObject(ftnHnd);
-
-            if (!_pgoResults.TryGetValue(methodDesc, out PgoInstrumentationResults pgoResults))
-            {
-                var pgoResultsSchemas = getPgoInstrumentationResults(methodDesc);
-                if (pgoResultsSchemas == null)
-                {
-                    pgoResults.hr = HRESULT.E_NOTIMPL;
-                }
-                else
-                {
-                    PgoInstrumentationSchema[] nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
-                    MemoryStream msInstrumentationData = new MemoryStream();
-                    BinaryWriter bwInstrumentationData = new BinaryWriter(msInstrumentationData);
-                    for (int i = 0; i < nativeSchemas.Length; i++)
-                    {
-                        if ((bwInstrumentationData.BaseStream.Position % 8) == 4)
-                        {
-                            bwInstrumentationData.Write(0);
-                        }
-
-                        Debug.Assert((bwInstrumentationData.BaseStream.Position % 8) == 0);
-                        nativeSchemas[i].Offset = new IntPtr(checked((int)bwInstrumentationData.BaseStream.Position));
-                        nativeSchemas[i].ILOffset = pgoResultsSchemas[i].ILOffset;
-                        nativeSchemas[i].Count = pgoResultsSchemas[i].Count;
-                        nativeSchemas[i].Other = pgoResultsSchemas[i].Other;
-                        nativeSchemas[i].InstrumentationKind = (PgoInstrumentationKind)pgoResultsSchemas[i].InstrumentationKind;
-
-                        if (pgoResultsSchemas[i].DataObject == null)
-                        {
-                            bwInstrumentationData.Write(pgoResultsSchemas[i].DataLong);
-                        }
-                        else
-                        {
-                            object dataObject = pgoResultsSchemas[i].DataObject;
-                            if (dataObject is int[] intArray)
-                            {
-                                foreach (int intVal in intArray)
-                                    bwInstrumentationData.Write(intVal);
-                            }
-                            else if (dataObject is long[] longArray)
-                            {
-                                foreach (long longVal in longArray)
-                                    bwInstrumentationData.Write(longVal);
-                            }
-                            else if (dataObject is TypeSystemEntityOrUnknown[] typeArray)
-                            {
-                                foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
-                                {
-                                    IntPtr ptrVal = IntPtr.Zero;
-                                    if (typeVal.AsType != null)
-                                        ptrVal = (IntPtr)ObjectToHandle(typeVal.AsType);
-                                    else
-                                    {
-                                        // The "Unknown types are the values from 1-33
-                                        ptrVal = new IntPtr((typeVal.AsUnknown % 32) + 1);
-                                    }
-
-                                    if (IntPtr.Size == 4)
-                                        bwInstrumentationData.Write((int)ptrVal);
-                                    else
-                                        bwInstrumentationData.Write((long)ptrVal);
-                                }
-                            }
-                        }
-                    }
-
-                    bwInstrumentationData.Flush();
-                    pgoResults.pInstrumentationData = (byte*)GetPin(msInstrumentationData.ToArray());
-                    pgoResults.countSchemaItems = (uint)nativeSchemas.Length;
-                    pgoResults.pSchema = (PgoInstrumentationSchema*)GetPin(nativeSchemas);
-                    pgoResults.hr = HRESULT.S_OK;
-                }
-
-                _pgoResults.Add(methodDesc, pgoResults);
-            }
-
-            pSchema = pgoResults.pSchema;
-            countSchemaItems = pgoResults.countSchemaItems;
-            *pInstrumentationData = pgoResults.pInstrumentationData;
-            return pgoResults.hr;
-        }
-
-        private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
-        {
-            return null;
         }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)

@@ -205,9 +205,6 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
-#include "../binder/inc/coreclrbindercommon.h"
-
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -305,12 +302,8 @@ HRESULT EnsureEEStarted()
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-#ifndef TARGET_UNIX
-        // The sooner we do this, the sooner we avoid probing registry entries.
-        // (Perf Optimization for VSWhidbey:113373.)
-        REGUTIL::InitOptionalConfigCache();
-#endif
-
+        // Initialize our configuration.
+        CLRConfig::Initialize();
 
         BOOL bStarted=FALSE;
 
@@ -496,15 +489,9 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef TARGET_UNIX
-    // On Unix, the GS cookie is stored in a read only data segment
-    DWORD newProtection = PAGE_READWRITE;
-#else // TARGET_UNIX
-    DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !TARGET_UNIX
-
+    // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
+    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
@@ -705,12 +692,12 @@ void EEStartupHelper()
 #endif // TARGET_UNIX
 
 #ifdef STRESS_LOG
-        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog ()) != 0) {
-            unsigned facilities = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LF_ALL);
-            unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
-            unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
-            ULONGLONG totalBytes = REGUTIL::GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            LPWSTR logFilename = REGUTIL::GetConfigString_DontUse_(CLRConfig::UNSUPPORTED_StressLogFilename);
+        if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
+            unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
+            unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
+            unsigned bytesPerThread = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
+            unsigned totalBytes = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
+            CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
@@ -762,9 +749,6 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 #endif
-
-        // Initialize the default Assembly Binder and the binder infrastructure
-        IfFailGoLog(CCoreCLRBinderHelper::Init());
 
         if (g_pConfig != NULL)
         {
@@ -995,10 +979,6 @@ void EEStartupHelper()
 
         Assembly::Initialize();
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         SystemDomain::System()->Init();
 
 #ifdef PROFILING_SUPPORTED
@@ -1040,7 +1020,7 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#endif // CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -1066,7 +1046,6 @@ void EEStartupHelper()
 
         // Perform CoreLib consistency check if requested
         g_CoreLib.CheckExtended();
-
 #endif // _DEBUG
 
 #endif // !CROSSGEN_COMPILE
@@ -1206,7 +1185,7 @@ void WaitForEndOfShutdown()
     // We are shutting down.  GC triggers does not have any effect now.
     CONTRACT_VIOLATION(GCViolation);
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     // After a thread is blocked in WaitForEndOfShutdown, the thread should not enter runtime again,
     // and block at WaitForEndOfShutdown again.
     if (pThread)
@@ -1259,7 +1238,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
 #if defined(FEATURE_COMINTEROP)
     // Get the current thread.
-    Thread * pThisThread = GetThread();
+    Thread * pThisThread = GetThreadNULLOk();
 #endif
 
     // If the process is detaching then set the global state.
@@ -1420,10 +1399,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             // Don't call back in to the profiler if we are being torn down, it might be unloaded
             if (!fIsDllUnloading)
             {
-                BEGIN_PIN_PROFILER(CORProfilerPresent());
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->Shutdown();
-                END_PIN_PROFILER();
+                (&g_profControlBlock)->Shutdown();
+                END_PROFILER_CALLBACK();
             }
 
             g_fEEShutDown |= ShutDown_Profiler;
@@ -1718,7 +1697,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
 #endif
     }
 
-    if (GetThread())
+    if (GetThreadNULLOk())
     {
         GCX_COOP();
         EEShutDownHelper(fIsDllUnloading);
@@ -1896,7 +1875,7 @@ struct TlsDestructionMonitor
         // Don't destroy threads here if we're in shutdown (shutdown will
         // clean up for us instead).
 
-        Thread* thread = GetThread();
+        Thread* thread = GetThreadNULLOk();
         if (thread)
         {
 #ifdef FEATURE_COMINTEROP
@@ -2074,7 +2053,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         InlineSString<LOCALE_NAME_MAX_LENGTH> sParentCulture;
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
-        Thread * pThread = GetThread();
+        Thread * pThread = GetThreadNULLOk();
 
         // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
         // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
@@ -2203,7 +2182,7 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
 
     int Result = 0;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
     // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang

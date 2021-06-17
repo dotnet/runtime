@@ -83,7 +83,11 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
 
     if (m_pSharedPatchBypassBuffer == NULL)
     {
-        m_pSharedPatchBypassBuffer = new (interopsafeEXEC) SharedPatchBypassBuffer();
+        void *pSharedPatchBypassBufferRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(SharedPatchBypassBuffer));
+        ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder((SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX, sizeof(SharedPatchBypassBuffer));
+        new (sharedPatchBypassBufferWriterHolder.GetRW()) SharedPatchBypassBuffer();
+        m_pSharedPatchBypassBuffer = (SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX;
+
         _ASSERTE(m_pSharedPatchBypassBuffer);
         TRACE_ALLOC(m_pSharedPatchBypassBuffer);
     }
@@ -1364,9 +1368,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#else // defined(HOST_OSX) && defined(HOST_ARM64)
+#if !defined(HOST_OSX) || !defined(HOST_ARM64)
         DWORD oldProt;
 
         if (!VirtualProtect(baseAddress,
@@ -1376,7 +1378,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
 
         patch->opcode = CORDbgGetInstruction(patch->address);
 
@@ -1391,7 +1393,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)        
     }
 // TODO: : determine if this is needed for AMD64
 #if defined(TARGET_X86) //REVISIT_TODO what is this?!
@@ -1408,12 +1410,14 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
+
         patch->opcode =
           (unsigned int) *(unsigned short*)(patch->address+1);
 
         _ASSERTE(patch->opcode != CEE_BREAK);
 
-        *(unsigned short *) (patch->address+1) = CEE_BREAK;
+        ExecutableWriterHolder<BYTE> breakpointWriterHolder((BYTE*)patch->address, 2);
+        *(unsigned short *) (breakpointWriterHolder.GetRW()+1) = CEE_BREAK;
 
         if (!VirtualProtect((void *) patch->address, 2, oldProt, &oldProt))
         {
@@ -1460,9 +1464,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#else // defined(HOST_OSX) && defined(HOST_ARM64)
+#if !defined(HOST_OSX) || !defined(HOST_ARM64)
         DWORD oldProt;
 
         if (!VirtualProtect(baseAddress,
@@ -1477,7 +1479,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             InitializePRD(&(patch->opcode));
             return false;
         }
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
 
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patch->address, patch->opcode);
 
@@ -1494,7 +1496,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)        
     }
     else
     {
@@ -1519,7 +1521,8 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 #if defined(TARGET_X86)
         _ASSERTE(*(unsigned short*)(patch->address+1) == CEE_BREAK);
 
-        *(unsigned short *) (patch->address+1)
+        ExecutableWriterHolder<BYTE> breakpointWriterHolder((BYTE*)patch->address, 2);
+        *(unsigned short *) (breakpointWriterHolder.GetRW()+1)
           = (unsigned short) patch->opcode;
 #endif //this makes no sense on anything but X86
         //VERY IMPORTANT to zero out opcode, else we might mistake
@@ -3249,7 +3252,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
     // Either this is the helper thread, or we're manipulating our own context.
     _ASSERTE(
         ThisIsHelperThreadWorker() ||
-        (thread == ::GetThread())
+        (thread == ::GetThreadNULLOk())
     );
 
     CONTEXT *context = GetManagedStoppedCtx(thread);
@@ -3324,7 +3327,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
         MODE_ANY;
 
         // Filter context not set yet b/c we can only set it in COOP, and this may be in preemptive.
-        PRECONDITION(thread == ::GetThread());
+        PRECONDITION(thread == ::GetThreadNULLOk());
         PRECONDITION((g_pEEInterface->GetThreadFilterContext(thread) == NULL));
         PRECONDITION(CheckPointer(pException));
     }
@@ -4409,8 +4412,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         }
         else
         {
+            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, SharedPatchBypassBuffer::cbBufferBypass);
+            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
             if (m_instrAttrib.m_fIsWrite)
             {
@@ -4537,7 +4541,7 @@ void DebuggerPatchSkip::DebuggerDetachClean()
    // 2. Create a "stack walking" implementation for native code and use it to get the current IP and
    // set the IP to the right place.
 
-    Thread *thread = GetThread();
+    Thread *thread = GetThreadNULLOk();
     if (thread != NULL)
     {
         BYTE *patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
@@ -4672,7 +4676,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
         // toggled the GC mode underneath us.
         MODE_ANY;
 
-        PRECONDITION(GetThread() == thread);
+        PRECONDITION(GetThreadNULLOk() == thread);
         PRECONDITION(thread != NULL);
         PRECONDITION(CheckPointer(context));
     }
@@ -6597,8 +6601,6 @@ void DebuggerStepper::StepOut(FramePointer fp, StackTraceTicket ticket)
         "\n", fp.GetSPValue(), this ));
 
     Thread *thread = GetThread();
-
-
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
     ControllerStackInfo info;
 
@@ -7711,7 +7713,7 @@ bool DebuggerStepper::SendEvent(Thread *thread, bool fIpChanged)
     LOG((LF_CORDB, LL_INFO10000, "DS::SE m_fpStepInto:0x%x\n", m_fpStepInto.GetSPValue()));
 
     _ASSERTE(m_fReadyToSend);
-    _ASSERTE(GetThread() == thread);
+    _ASSERTE(GetThreadNULLOk() == thread);
 
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
     _ASSERTE(!ISREDIRECTEDTHREAD(thread));

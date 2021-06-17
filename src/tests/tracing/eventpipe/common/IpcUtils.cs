@@ -252,7 +252,7 @@ namespace Tracing.Tests.Common
         {
             byte[] serializedData = null;
             // Verify things will fit in the size capacity
-            Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0))); ;
+            Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0)));
             byte[] headerBytes = Header.Serialize();
 
             using (var stream = new MemoryStream())
@@ -339,6 +339,53 @@ namespace Tracing.Tests.Common
         }
     }
 
+    public class ProcessInfo2
+    {
+        // uint64_t ProcessId;
+        // GUID RuntimeCookie;
+        // LPCWSTR CommandLine;
+        // LPCWSTR OS;
+        // LPCWSTR Arch;
+        public UInt64 ProcessId;
+        public Guid RuntimeCookie;
+        public string Commandline;
+        public string OS;
+        public string Arch;
+        public string ManagedEntrypointAssemblyName;
+        public string ClrProductVersion;
+
+        public static ProcessInfo2 TryParse(byte[] buf)
+        {
+            var info = new ProcessInfo2();
+            int start = 0;
+            int end = 8; /* sizeof(uint64_t) */
+            info.ProcessId = BitConverter.ToUInt64(buf[start..end]);
+
+            start = end;
+            end = start + 16; /* sizeof(guid) */
+            info.RuntimeCookie = new Guid(buf[start..end]);
+
+            string ParseString(ref int start, ref int end)
+            {
+                start = end;
+                end = start + 4; /* sizeof(uint32_t) */
+                uint nChars = BitConverter.ToUInt32(buf[start..end]);
+
+                start = end;
+                end = start + ((int)nChars * sizeof(char));
+                return System.Text.Encoding.Unicode.GetString(buf[start..end]).TrimEnd('\0');
+            }
+
+            info.Commandline = ParseString(ref start, ref end);
+            info.OS = ParseString(ref start, ref end);
+            info.Arch = ParseString(ref start, ref end);
+            info.ManagedEntrypointAssemblyName = ParseString(ref start, ref end);
+            info.ClrProductVersion = ParseString(ref start, ref end);
+
+            return info;
+        }
+    }
+
     public class IpcClient
     {
         public static IpcMessage SendMessage(Stream stream, IpcMessage message)
@@ -375,7 +422,7 @@ namespace Tracing.Tests.Common
 
     public class ConnectionHelper
     {
-        private static string IpcRootPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\\.\pipe\" : Path.GetTempPath();
+        private static string IpcRootPath { get; } = OperatingSystem.IsWindows() ? @"\\.\pipe\" : Path.GetTempPath();
         public static Stream GetStandardTransport(int processId)
         {
             try
@@ -391,7 +438,7 @@ namespace Tracing.Tests.Common
                 throw new Exception($"Process {processId} seems to be elevated.");
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 string pipeName = $"dotnet-diagnostic-{processId}";
                 var namedPipe = new NamedPipeClientStream(

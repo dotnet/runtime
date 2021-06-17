@@ -29,6 +29,11 @@
     <type fullname="System.Diagnostics.DebuggerVisualizerAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+
+    <!-- Hot reload attributes-->
+    <type fullname="System.Reflection.Metadata.MetadataUpdateHandlerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
   </assembly>
 
   <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">

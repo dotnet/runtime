@@ -146,7 +146,7 @@ void IBCLogger::LogAccessThreadSafeHelper(const void * p, pfnIBCAccessCallback c
     if (p == NULL)
         return;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
     /* This could be called by the concurrent GC thread*/
     /* where GetThread() returns NULL. In such cases,*/

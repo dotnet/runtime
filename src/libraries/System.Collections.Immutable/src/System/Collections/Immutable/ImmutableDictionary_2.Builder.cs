@@ -718,7 +718,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
+    internal sealed class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// The collection to be enumerated.

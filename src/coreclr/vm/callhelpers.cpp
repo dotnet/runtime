@@ -62,10 +62,6 @@ void CallDescrWorkerWithHandler(
 
 #endif
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
 
     CallDescrWorker(pCallDescrData);
@@ -106,7 +102,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     DWORD_PTR ObjRefTable[OBJREF_TABSIZE];
 
     curThread = GetThread();
-    _ASSERTE(curThread != NULL);
 
     static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));

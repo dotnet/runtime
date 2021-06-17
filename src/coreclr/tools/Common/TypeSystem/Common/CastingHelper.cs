@@ -271,17 +271,9 @@ namespace Internal.TypeSystem
             else if (fromParamUnderlyingType.IsPrimitive)
             {
                 TypeDesc toParamUnderlyingType = paramType.UnderlyingType;
-                if (toParamUnderlyingType.IsPrimitive)
+                if (GetNormalizedIntegralArrayElementType(fromParamUnderlyingType) == GetNormalizedIntegralArrayElementType(toParamUnderlyingType))
                 {
-                    if (toParamUnderlyingType == fromParamUnderlyingType)
-                    {
-                        return true;
-                    }
-
-                    if (ArePrimitveTypesEquivalentSize(fromParamUnderlyingType, toParamUnderlyingType))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -289,59 +281,48 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        // Returns true of the two types are equivalent primitive types. Used by array casts.
-        private static bool ArePrimitveTypesEquivalentSize(TypeDesc type1, TypeDesc type2)
+        private static TypeFlags GetNormalizedIntegralArrayElementType(TypeDesc type)
         {
-            Debug.Assert(type1.IsPrimitive && type2.IsPrimitive);
+            Debug.Assert(!type.IsEnum);
 
             // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
             // Enums with interchangeable underlying types are interchangable
             // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
             // Float and double are not interchangable here.
 
-            int sourcePrimitiveTypeEquivalenceSize = type1.GetIntegralTypeMatchSize();
-
-            // Quick check to see if the first type can be matched.
-            if (sourcePrimitiveTypeEquivalenceSize == 0)
+            TypeFlags elementType = type.Category;
+            switch (elementType)
             {
-                return false;
-            }
-
-            int targetPrimitiveTypeEquivalenceSize = type2.GetIntegralTypeMatchSize();
-
-            return sourcePrimitiveTypeEquivalenceSize == targetPrimitiveTypeEquivalenceSize;
-        }
-
-        private static int GetIntegralTypeMatchSize(this TypeDesc type)
-        {
-            Debug.Assert(type.IsPrimitive);
-
-            switch (type.Category)
-            {
-                case TypeFlags.SByte:
                 case TypeFlags.Byte:
-                    return 1;
                 case TypeFlags.UInt16:
-                case TypeFlags.Int16:
-                    return 2;
-                case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    return 4;
-                case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    return 8;
-                case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    return type.Context.Target.PointerSize;
-                default:
-                    return 0;
+                    return elementType - 1;
             }
+
+            return elementType;
         }
+
 
         public static bool IsArrayElementTypeCastableBySize(TypeDesc elementType)
         {
-            TypeDesc underlyingType = elementType.UnderlyingType;
-            return underlyingType.IsPrimitive && GetIntegralTypeMatchSize(underlyingType) != 0;
+            switch (elementType.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.IntPtr:
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool CanCastToClassOrInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)

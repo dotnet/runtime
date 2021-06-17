@@ -8,7 +8,7 @@ namespace System.Xml
     using System.Collections;
     using System.Collections.Generic;
 
-    internal class XPathNodeList : XmlNodeList
+    internal sealed class XPathNodeList : XmlNodeList
     {
         private readonly List<XmlNode?> _list;
         private readonly XPathNodeIterator _nodeIterator;
@@ -83,7 +83,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlNodeListEnumerator : IEnumerator
+    internal sealed class XmlNodeListEnumerator : IEnumerator
     {
         private readonly XPathNodeList _list;
         private int _index;

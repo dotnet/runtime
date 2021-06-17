@@ -60,6 +60,7 @@
     <WriteLinesToFile File="$(_packageTargetsFile)" Overwrite="true" Lines="$(_packageTargetsFileContent)" />
     <ItemGroup>
       <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="build/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
+      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="buildTransitive/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>
 </Project>

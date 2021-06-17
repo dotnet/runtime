@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Microsoft.Extensions.Logging.Console
 {
     [UnsupportedOSPlatform("browser")]
-    internal class ConsoleLogger : ILogger
+    internal sealed class ConsoleLogger : ILogger
     {
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;

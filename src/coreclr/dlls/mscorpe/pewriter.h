@@ -85,8 +85,6 @@ public:
 
     size_t getImageBase();
 
-    void setEnCRvaBase(ULONG dataBase, ULONG rdataBase);
-
     HRESULT getFileTimeStamp(DWORD *pTimeStamp);
 
     IMAGE_NT_HEADERS32* ntHeaders32()    { return (IMAGE_NT_HEADERS32*) m_ntHeaders; }
@@ -113,7 +111,6 @@ public:
 
 private:
     DWORD  m_ilRVA;
-    BOOL   m_encMode;
     ULONG  m_dataRvaBase;
     ULONG  m_rdataRvaBase;
     ULONG  m_codeRvaBase;

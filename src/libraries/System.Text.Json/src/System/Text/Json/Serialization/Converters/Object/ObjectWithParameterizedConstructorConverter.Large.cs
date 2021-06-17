@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -31,7 +33,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
 
-            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>?)frame.JsonClassInfo.CreateObjectWithArgs;
+            var createObject = (JsonTypeInfo.ParameterizedConstructorDelegate<T>?)frame.JsonTypeInfo.CreateObjectWithArgs;
 
             if (createObject == null)
             {
@@ -47,19 +49,23 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            if (classInfo.CreateObjectWithArgs == null)
+            if (typeInfo.CreateObjectWithArgs == null)
             {
-                classInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
+                typeInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
             }
 
-            object[] arguments = ArrayPool<object>.Shared.Rent(classInfo.ParameterCount);
-            foreach (JsonParameterInfo jsonParameterInfo in classInfo.ParameterCache!.Values)
+            List<KeyValuePair<string, JsonParameterInfo?>> cache = typeInfo.ParameterCache!.List;
+            object[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
+            for (int i = 0; i < typeInfo.ParameterCount; i++)
             {
-                if (jsonParameterInfo.ShouldDeserialize)
+                JsonParameterInfo? parameterInfo = cache[i].Value;
+                Debug.Assert(parameterInfo != null);
+
+                if (parameterInfo.ShouldDeserialize)
                 {
-                    arguments[jsonParameterInfo.Position] = jsonParameterInfo.DefaultValue!;
+                    arguments[parameterInfo.Position] = parameterInfo.DefaultValue!;
                 }
             }
 

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class Logger : ILogger
+    internal sealed class Logger : ILogger
     {
         public LoggerInformation[] Loggers { get; set; }
         public MessageLogger[] MessageLoggers { get; set; }

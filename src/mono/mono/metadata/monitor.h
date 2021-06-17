@@ -43,6 +43,9 @@ struct _MonoThreadsSync
 	void *data;
 	MonoCoopMutex *entry_mutex;
 	MonoCoopCond *entry_cond;
+#ifdef HOST_WASM
+	gboolean is_interned;
+#endif
 };
 
 /*
@@ -103,9 +106,6 @@ mono_locks_dump (gboolean include_untaken);
 void
 mono_monitor_init (void);
 
-void
-mono_monitor_cleanup (void);
-
 ICALL_EXTERN_C
 MonoBoolean
 mono_monitor_enter_internal (MonoObject *obj);
@@ -133,5 +133,13 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);
 ICALL_EXPORT
 gint64
 ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void);
+
+#ifdef HOST_WASM
+void
+mono_set_string_interned_internal (MonoObject* obj);
+
+gboolean
+mono_is_string_interned_internal (MonoObject* obj);
+#endif
 
 #endif /* _MONO_METADATA_MONITOR_H_ */

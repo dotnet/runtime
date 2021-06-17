@@ -29,6 +29,7 @@ namespace System.Net.WebSockets
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Net.WebSockets.WebSocket CreateClientWebSocket(System.IO.Stream innerStream, string? subProtocol, int receiveBufferSize, int sendBufferSize, System.TimeSpan keepAliveInterval, bool useZeroMaskingKey, System.ArraySegment<byte> internalBuffer) { throw null; }
         public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string? subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
+        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, System.Net.WebSockets.WebSocketCreationOptions options) { throw null; }
         public static System.ArraySegment<byte> CreateServerBuffer(int receiveBufferSize) { throw null; }
         public abstract void Dispose();
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -41,6 +42,7 @@ namespace System.Net.WebSockets
         public static void RegisterPrefixes() { }
         public abstract System.Threading.Tasks.Task SendAsync(System.ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken);
         public virtual System.Threading.Tasks.ValueTask SendAsync(System.ReadOnlyMemory<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public virtual System.Threading.Tasks.ValueTask SendAsync(System.ReadOnlyMemory<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, System.Net.WebSockets.WebSocketMessageFlags messageFlags, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected static void ThrowOnInvalidState(System.Net.WebSockets.WebSocketState state, params System.Net.WebSockets.WebSocketState[] validStates) { }
     }
     public enum WebSocketCloseStatus
@@ -130,5 +132,26 @@ namespace System.Net.WebSockets
         CloseReceived = 4,
         Closed = 5,
         Aborted = 6,
+    }
+    public sealed partial class WebSocketCreationOptions
+    {
+        public bool IsServer { get { throw null; } set { } }
+        public string? SubProtocol { get { throw null; } set { } }
+        public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
+        public System.Net.WebSockets.WebSocketDeflateOptions? DangerousDeflateOptions { get { throw null; } set { } }
+    }
+    public sealed partial class WebSocketDeflateOptions
+    {
+        public int ClientMaxWindowBits { get { throw null; } set { } }
+        public bool ClientContextTakeover { get { throw null; } set { } }
+        public int ServerMaxWindowBits { get { throw null; } set { } }
+        public bool ServerContextTakeover { get { throw null; } set { } }
+    }
+    [Flags]
+    public enum WebSocketMessageFlags
+    {
+        None = 0,
+        EndOfMessage = 1,
+        DisableCompression = 2
     }
 }

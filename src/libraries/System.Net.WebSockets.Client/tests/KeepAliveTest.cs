@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)] // KeepAlive not supported on browser
+    [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
     public class KeepAliveTest : ClientWebSocketTestBase
     {
         public KeepAliveTest(ITestOutputHelper output) : base(output) { }

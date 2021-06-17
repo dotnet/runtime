@@ -56,6 +56,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/class-init.h>
 #include <mono/metadata/reflection-internals.h>
@@ -205,57 +206,10 @@ ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoErr
 	return result;
 }
 
-MonoObjectHandle
-ves_icall_System_Array_GetValue (MonoArrayHandle arr, MonoArrayHandle indices, MonoError *error)
-{
-	MONO_CHECK_ARG_NULL_HANDLE (indices, NULL_HANDLE);
-
-	MonoClass * const indices_class = mono_handle_class (indices);
-	MonoClass * const array_class = mono_handle_class (arr);
-
-	g_assert (m_class_get_rank (indices_class) == 1);
-
-	if (MONO_HANDLE_GETVAL (indices, bounds) || MONO_HANDLE_GETVAL (indices, max_length) != m_class_get_rank (array_class)) {
-		mono_error_set_argument (error, NULL, NULL);
-		return NULL_HANDLE;
-	}
-
-	gint32 index = 0;
-
-	if (!MONO_HANDLE_GETVAL (arr, bounds)) {
-		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, 0);
-		if (index < 0 || index >= MONO_HANDLE_GETVAL (arr, max_length)) {
-			mono_error_set_index_out_of_range (error);
-			return NULL_HANDLE;
-		}
-
-		return ves_icall_System_Array_GetValueImpl (arr, index, error);
-	}
-	
-	for (gint32 i = 0; i < m_class_get_rank (array_class); i++) {
-		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, i);
-		if ((index < MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound)) ||
-		    (index >= (mono_array_lower_bound_t)MONO_HANDLE_GETVAL (arr, bounds [i].length) + MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound))) {
-			mono_error_set_index_out_of_range (error);
-			return NULL_HANDLE;
-		}
-	}
-
-	MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, 0);
-	gint32 pos = index - MONO_HANDLE_GETVAL (arr, bounds [0].lower_bound);
-	for (gint32 i = 1; i < m_class_get_rank (array_class); i++) {
-		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, i);
-		pos = pos * MONO_HANDLE_GETVAL (arr, bounds [i].length) + index -
-			MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound);
-	}
-
-	return ves_icall_System_Array_GetValueImpl (arr, pos, error);
-}
-
 void
 ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	array_set_value_impl (arr, value, pos, FALSE, TRUE, error);
+	array_set_value_impl (arr, value, pos, TRUE, TRUE, error);
 }
 
 static inline void
@@ -724,67 +678,6 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 leave:
 	return;
-}
-
-void
-ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
-				 MonoArrayHandle idxs, MonoError *error)
-{
-	icallarray_print ("%s\n", __func__);
-
-	MonoArrayBounds dim;
-	MonoClass *ac, *ic;
-	gint32 idx;
-	gint32 i, pos;
-
-	error_init (error);
-
-	if (MONO_HANDLE_IS_NULL (idxs)) {
-		mono_error_set_argument_null (error, "indices", "");
-		return;
-	}
-
-	ic = mono_handle_class (idxs);
-	ac = mono_handle_class (arr);
-
-	g_assert (m_class_get_rank (ic) == 1);
-	if (mono_handle_array_has_bounds (idxs) || MONO_HANDLE_GETVAL (idxs, max_length) != m_class_get_rank (ac)) {
-		mono_error_set_argument (error, NULL, "");
-		return;
-	}
-
-	if (!mono_handle_array_has_bounds (arr)) {
-		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, 0);
-		if (idx < 0 || idx >= MONO_HANDLE_GETVAL (arr, max_length)) {
-			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
-			return;
-		}
-
-		array_set_value_impl (arr, value, idx, TRUE, TRUE, error);
-		return;
-	}
-	
-	gint32 ac_rank = m_class_get_rank (ac);
-	for (i = 0; i < ac_rank; i++) {
-		mono_handle_array_get_bounds_dim (arr, i, &dim);
-		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
-		if ((idx < dim.lower_bound) ||
-		    (idx >= (mono_array_lower_bound_t)dim.length + dim.lower_bound)) {
-			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
-			return;
-		}
-	}
-
-	MONO_HANDLE_ARRAY_GETVAL  (idx, idxs, gint32, 0);
-	mono_handle_array_get_bounds_dim (arr, 0, &dim);
-	pos = idx - dim.lower_bound;
-	for (i = 1; i < ac_rank; i++) {
-		mono_handle_array_get_bounds_dim (arr, i, &dim);
-		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
-		pos = pos * dim.length + idx - dim.lower_bound;
-	}
-
-	array_set_value_impl (arr, value, pos, TRUE, TRUE, error);
 }
 
 void
@@ -1691,7 +1584,6 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
 					  MonoReflectionAssemblyHandle callerAssembly,
 					  MonoBoolean throwOnError,
 					  MonoBoolean ignoreCase,
-					  MonoBoolean reflectionOnly,
 					  MonoError *error)
 {
 	MonoTypeNameParse info;
@@ -2635,6 +2527,23 @@ fail:
 }
 
 static gboolean
+method_is_reabstracted (MonoMethod *method)
+{
+	/* only on interfaces */
+	/* method is marked "final abstract" */
+	/* FIXME: we need some other way to detect reabstracted methods.  "final" is an incidental detail of the spec. */
+	return method->flags & METHOD_ATTRIBUTE_FINAL && method->flags & METHOD_ATTRIBUTE_ABSTRACT;
+}
+
+static gboolean
+method_is_dim (MonoMethod *method)
+{
+	/* only valid on interface methods*/
+	/* method is marked "virtual" but not "virtual abstract" */
+	return method->flags & method->flags & METHOD_ATTRIBUTE_VIRTUAL && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT);
+}
+
+static gboolean
 set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int ioffset, MonoClass *klass, MonoArrayHandle targets, MonoArrayHandle methods, int i, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
@@ -2644,10 +2553,53 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 
 	MONO_HANDLE_ARRAY_SETREF (methods, i, member);
 
-	MONO_HANDLE_ASSIGN (member, mono_method_get_object_handle (m_class_get_vtable (klass) [i + ioffset], klass, error));
-	goto_if_nok (error, leave);
+	MonoMethod* foundMethod = m_class_get_vtable (klass) [i + ioffset];
 
-	MONO_HANDLE_ARRAY_SETREF (targets, i, member);
+	if (mono_class_has_dim_conflicts (klass) && mono_class_is_interface (foundMethod->klass)) {
+		GSList* conflicts = mono_class_get_dim_conflicts (klass);
+		GSList* l;
+		MonoMethod* decl = method;
+
+		if (decl->is_inflated)
+			decl = ((MonoMethodInflated*)decl)->declaring;
+
+		gboolean in_conflict = FALSE;
+		for (l = conflicts; l; l = l->next) {
+			if (decl == l->data) {
+				in_conflict = TRUE;
+				break;
+			}
+		}
+		if (in_conflict) {
+			MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
+			goto leave;
+		}
+	}
+
+	/*
+	 * if the iterface method is reabstracted, and either the found implementation method is abstract, or the found
+	 * implementation method is from another DIM (meaning neither klass nor any of its ancestor classes implemented
+	 * the method), then say the target method is null.
+	 */
+	if (method_is_reabstracted (method) &&
+	    ((foundMethod->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+	     (mono_class_is_interface (foundMethod->klass) && method_is_dim (foundMethod))
+		    ))
+		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
+	else if (mono_class_is_interface (foundMethod->klass) && method_is_reabstracted (foundMethod) && !m_class_is_abstract (klass)) {
+		/* if the method we found is a reabstracted DIM method, but the class isn't abstract, return NULL */
+		/*
+		 * (C# doesn't seem to allow constructing such types, it requires the whole class to be abstract - in
+		 * which case we are supposed to return the reabstracted interface method.  But in IL we can make a
+		 * non-abstract class with reabstracted interface methods - which is supposed to fail with an
+		 * EntryPointNotFoundException at invoke time, but does not prevent the class from loading.)
+		 */
+		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
+	} else {
+		MONO_HANDLE_ASSIGN (member, mono_method_get_object_handle (foundMethod, mono_class_is_interface (foundMethod->klass) ? foundMethod->klass : klass, error));
+		goto_if_nok (error, leave);
+		MONO_HANDLE_ARRAY_SETREF (targets, i, member);
+	}
 		
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
@@ -2673,19 +2625,29 @@ ves_icall_RuntimeType_GetInterfaceMapData (MonoReflectionTypeHandle ref_type, Mo
 	if (ioffset == -1)
 		return;
 
-	int len = mono_class_num_methods (iclass);
-	MonoArrayHandle targets_arr = mono_array_new_handle (mono_defaults.method_info_class, len, error);
-	return_if_nok (error);
-	MONO_HANDLE_ASSIGN (targets, targets_arr);
-
-	MonoArrayHandle methods_arr = mono_array_new_handle (mono_defaults.method_info_class, len, error);
-	return_if_nok (error);
-	MONO_HANDLE_ASSIGN (methods, methods_arr);
-
 	MonoMethod* method;
 	int i = 0;
 	gpointer iter = NULL;
+
+	while ((method = mono_class_get_methods(iclass, &iter))) {
+		if (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
+			i++;
+	}
+	
+	MonoArrayHandle targets_arr = mono_array_new_handle (mono_defaults.method_info_class, i, error);
+	return_if_nok (error);
+	MONO_HANDLE_ASSIGN (targets, targets_arr);
+
+	MonoArrayHandle methods_arr = mono_array_new_handle (mono_defaults.method_info_class, i, error);
+	return_if_nok (error);
+	MONO_HANDLE_ASSIGN (methods, methods_arr);
+
+	i = 0;
+	iter = NULL;
+
 	while ((method = mono_class_get_methods (iclass, &iter))) {
+		if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+			continue;
 		if (!set_interface_map_data_method_object (method, iclass, ioffset, klass, targets, methods, i, error))
 			return;
 		i ++;
@@ -5809,7 +5771,6 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 	return result;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 void
 ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 					   gconstpointer dmeta_bytes, int32_t dmeta_len,
@@ -5826,7 +5787,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	mono_image_load_enc_delta (image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	mono_error_set_pending_exception (error);
 }
-#endif
+
+gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
+{
+        return mono_metadata_update_available ();
+}
 
 MonoBoolean
 ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)
@@ -6704,7 +6669,7 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
-	return mono_compile_method_checked (method, error);
+	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
 
 MonoBoolean
@@ -7300,13 +7265,6 @@ static void
 mono_icall_unlock (void)
 {
 	mono_locks_os_release (&icall_mutex, IcallLock);
-}
-
-void
-mono_icall_cleanup (void)
-{
-	g_hash_table_destroy (icall_hash);
-	mono_os_mutex_destroy (&icall_mutex);
 }
 
 static void

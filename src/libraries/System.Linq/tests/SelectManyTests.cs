@@ -509,19 +509,19 @@ namespace System.Linq.Tests
                 Assert.Equal(Enumerable.Repeat(0, timesCalledMap.Length - index - 1), timesCalledMap.Skip(index + 1));
             }
 
-            Array.Clear(timesCalledMap, 0, timesCalledMap.Length);
+            Array.Clear(timesCalledMap);
 
             // ToArray
             iterator.ToArray();
             Assert.Equal(Enumerable.Repeat(1, timesCalledMap.Length), timesCalledMap);
 
-            Array.Clear(timesCalledMap, 0, timesCalledMap.Length);
+            Array.Clear(timesCalledMap);
 
             // ToList
             iterator.ToList();
             Assert.Equal(Enumerable.Repeat(1, timesCalledMap.Length), timesCalledMap);
 
-            Array.Clear(timesCalledMap, 0, timesCalledMap.Length);
+            Array.Clear(timesCalledMap);
 
             // ToHashSet
             iterator.ToHashSet();

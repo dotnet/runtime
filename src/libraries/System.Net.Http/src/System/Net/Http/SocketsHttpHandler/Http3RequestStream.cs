@@ -10,11 +10,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Net.Http.QPack;
 using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
@@ -264,7 +268,7 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
             catch (Http3ConnectionException ex)
@@ -307,7 +311,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Expected HEADERS as first response frame; recieved {frameType}.");
+                        Trace($"Expected HEADERS as first response frame; received {frameType}.");
                     }
                     throw new HttpRequestException(SR.net_http_invalid_response);
                 }
@@ -582,7 +586,7 @@ namespace System.Net.Http
 
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 

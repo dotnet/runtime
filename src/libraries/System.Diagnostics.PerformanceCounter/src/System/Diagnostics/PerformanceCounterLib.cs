@@ -14,13 +14,13 @@ using System.IO;
 
 using static Interop.Advapi32;
 
-#if NETCOREAPP2_0 || !NETCOREAPP
+#if !NETCOREAPP
 using MemoryMarshal = System.Diagnostics.PerformanceCounterLib;
 #endif
 
 namespace System.Diagnostics
 {
-    internal class PerformanceCounterLib
+    internal sealed class PerformanceCounterLib
     {
         internal const string PerfShimName = "netfxperf.dll";
         private const string PerfShimFullNameSuffix = @"\netfxperf.dll";
@@ -105,7 +105,7 @@ namespace System.Diagnostics
             }
         }
 
-#if NETCOREAPP2_0 || !NETCOREAPP
+#if !NETCOREAPP
         internal static T Read<T>(ReadOnlySpan<byte> span) where T : struct
             => System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
 
@@ -1265,7 +1265,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class PerformanceMonitor
+    internal sealed class PerformanceMonitor
     {
         private PerformanceDataRegistryKey perfDataKey;
         private readonly string machineName;
@@ -1378,7 +1378,7 @@ namespace System.Diagnostics
 
     }
 
-    internal class CategoryEntry
+    internal sealed class CategoryEntry
     {
         internal int NameIndex;
         internal int HelpIndex;
@@ -1676,7 +1676,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class CounterDefinitionSample
+    internal sealed class CounterDefinitionSample
     {
         internal readonly int _nameIndex;
         internal readonly int _counterType;

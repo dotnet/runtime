@@ -214,7 +214,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleForCompilation(
     // If this instantiation doesn't have a unique home then use the ngen module
 
     // OK, we're certainly NGEN'ing.  And if we're NGEN'ing then we're not on the debugger thread.
-    CONSISTENCY_CHECK(((GetThread() && GetAppDomain()) || IsGCThread()) &&
+    CONSISTENCY_CHECK(((GetThreadNULLOk() && GetAppDomain()) || IsGCThread()) &&
         "unexpected: running a load on debug thread but IsCompilationProcess() returned TRUE");
 
     // Save it into its PreferredZapModule if it's always going to be saved there.
@@ -3452,7 +3452,7 @@ void ClassLoader::Notify(TypeHandle typeHnd)
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackClasses());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         // We don't tell profilers about typedescs, as per IF above.  Also, we don't
         // tell profilers about:
         if (
@@ -3465,7 +3465,7 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         {
             LOG((LF_CLASSLOADER, LL_INFO1000, "Notifying profiler of Started1 %p %s\n", pMT, pMT->GetDebugClassName()));
             // Record successful load of the class for the profiler
-            g_profControlBlock.pProfInterface->ClassLoadStarted(TypeHandleToClassID(typeHnd));
+            (&g_profControlBlock)->ClassLoadStarted(TypeHandleToClassID(typeHnd));
 
             //
             // Profiler can turn off TrackClasses during the Started() callback.  Need to
@@ -3474,11 +3474,11 @@ void ClassLoader::Notify(TypeHandle typeHnd)
             if (CORProfilerTrackClasses())
             {
                 LOG((LF_CLASSLOADER, LL_INFO1000, "Notifying profiler of Finished1 %p %s\n", pMT, pMT->GetDebugClassName()));
-                g_profControlBlock.pProfInterface->ClassLoadFinished(TypeHandleToClassID(typeHnd),
+                (&g_profControlBlock)->ClassLoadFinished(TypeHandleToClassID(typeHnd),
                     S_OK);
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
 

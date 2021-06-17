@@ -223,10 +223,12 @@ public:
             }
         }
 
+#ifndef FEATURE_REDHAWK
         if (pMT->Collectible())
         {
             NumOfPointers += 1;
         }
+#endif
 
         return NumOfPointers;
     }

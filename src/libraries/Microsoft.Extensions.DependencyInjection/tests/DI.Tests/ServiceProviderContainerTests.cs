@@ -104,6 +104,31 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 exception.Message);
         }
 
+        [Theory]
+        [MemberData(nameof(FailedOpenGenericTypeTestData))]
+        public void CreatingServiceProviderWithUnresolvableOpenGenericTypesThrows(Type serviceType, Type implementationType, string errorMessage)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient(serviceType, implementationType);
+
+            // Act and Assert
+            var exception = Assert.Throws<ArgumentException>(() => serviceCollection.BuildServiceProvider());
+            Assert.StartsWith(errorMessage, exception.Message);
+        }
+
+        public static IEnumerable<object[]> FailedOpenGenericTypeTestData
+        {
+            get
+            {
+				Type serviceType = typeof(IFakeOpenGenericService<>);
+				// Service type is GenericTypeDefintion, implementation type is ConstructedGenericType
+                yield return new object[] {serviceType, typeof(ClassWithNoConstraints<string>), $"Open generic service type '{serviceType}' requires registering an open generic implementation type."};
+				// Service type is GenericTypeDefintion, implementation type has different generic type definition arity
+                yield return new object[] {serviceType, typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>), $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>)}'."};
+            }
+        }
+
         [Fact]
         public void DoesNotDisposeSingletonInstances()
         {
@@ -367,7 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
 
             await sp.DisposeAsync();
-            
+
             Assert.True(disposable.Disposed);
             Assert.True(asyncDisposable.DisposeAsyncCalled);
             if (includeDelayedAsyncDisposable)
@@ -424,7 +449,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public InnerSingleton(ManualResetEvent mre1, ManualResetEvent mre2)
             {
                 // Making sure ctor gets called only once
-                Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0)); 
+                Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0));
 
                 // Then use mre2 to signal execution reached this ctor call
                 mre2.Set();
@@ -468,13 +493,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     // This waits on InnerSingleton singleton lock that is taken in thread 1
                     innerSingleton = sp.GetRequiredService<InnerSingleton>();
                 });
-                
+
                 mreForThread3.WaitOne();
 
                 // Set a timeout before unblocking execution of both thread1 and thread2 via mre1:
                 Assert.False(mreForThread1.WaitOne(10));
 
-                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1. 
+                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1.
                 // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for InnerSingleton
                 // (rather than trying to instantiating InnerSingleton twice).
                 mreForThread1.Set();
@@ -521,7 +546,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     sb.Append("3");
                     mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
 
-                    // by this time, Thread 2 is holding a singleton lock for Thing2, 
+                    // by this time, Thread 2 is holding a singleton lock for Thing2,
                     // and Thread one holds the lazy lock
                     // the call below to resolve Thing0 does not hang
                     // since singletons do not share the same lock upon resolve anymore.
@@ -871,6 +896,67 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncCallsDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            await scope.DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncPrefersDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            await scope.DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposePrefersServiceDispose()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            scope.Dispose();
+
+            Assert.True(disposable.DisposeCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposeThrowsWhenOnlyDisposeAsyncImplemented()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            var exception = Assert.Throws<InvalidOperationException>(() => scope.Dispose());
+            Assert.Equal(
+                "'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderContainerTests+AsyncDisposable' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.",
+                exception.Message);
+        }
+
+        [Fact]
         public void SingletonServiceCreatedFromFactoryIsDisposedWhenContainerIsDisposed()
         {
             // Arrange
@@ -938,6 +1024,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public abstract T Value { get; }
         }
 
+        private class FakeOpenGenericServiceWithTwoTypeArguments<TVal1, TVal2> : IFakeOpenGenericService<TVal1>
+        {
+            public TVal1 Value { get; }
+            public TVal2 Value2 { get; }
+        }
+
         private class Disposable : IDisposable
         {
             public bool Disposed { get; set; }
@@ -996,11 +1088,74 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation()
+        {
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<A>()
+                                .BuildServiceProvider();
+
+            var singleton = sp.GetRequiredService<A>();
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Same(singleton, sp.GetRequiredService<A>());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+        }
+
+        [Theory]
+        [InlineData(ServiceProviderMode.Default)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        private void ScopedServiceResolvedFromSingletonAfterCompilation2(ServiceProviderMode mode)
+        {
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<A>()
+                                .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>()
+                                .BuildServiceProvider(mode);
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
+        }
+        
+        [Theory]
+        [InlineData(ServiceProviderMode.Default)]
+        [InlineData(ServiceProviderMode.Dynamic)]
+        [InlineData(ServiceProviderMode.Runtime)]
+        [InlineData(ServiceProviderMode.Expressions)]
+        [InlineData(ServiceProviderMode.ILEmit)]
+        private void ScopedServiceResolvedFromSingletonAfterCompilation3(ServiceProviderMode mode)
+        {
+            // Singleton IFakeX<A> -> Scoped A -> Scoped Aa
+            ServiceProvider sp = new ServiceCollection()
+                                .AddScoped<Aa>()
+                                .AddScoped<A>()
+                                .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>()
+                                .BuildServiceProvider(mode);
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
+        }
+
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
             var types = new Type[]
             {
-                typeof(A), typeof(B), typeof(C), typeof(D), typeof(E), 
+                typeof(A), typeof(B), typeof(C), typeof(D), typeof(E),
                 typeof(F), typeof(G), typeof(H), typeof(I), typeof(J)
             };
 
@@ -1043,5 +1198,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private class H { }
         private class I { }
         private class J { }
+        private class Aa
+        {
+            public Aa(A a)
+            {
+                PropertyA = a;
+            }
+            public A PropertyA { get; }
+        }
     }
 }

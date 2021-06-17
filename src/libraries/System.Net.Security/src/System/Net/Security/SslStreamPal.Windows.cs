@@ -111,6 +111,14 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
+        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer )
+        {
+            byte[]? output = Array.Empty<byte>();
+            SecurityStatusPal status =  AcceptSecurityContext(ref credentialsHandle, ref context, Span<byte>.Empty, ref output, sslAuthenticationOptions);
+            outputBuffer = output;
+            return status;
+        }
+
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             Console.WriteLine("AcquireCredentialsHandle called for {0} {1}", UseNewCryptoApi, isServer);

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -189,7 +191,7 @@ namespace System.ComponentModel
             }
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is CategoryAttribute other && other.Category == Category;
 
         public override int GetHashCode() => Category?.GetHashCode() ?? 0;
@@ -197,7 +199,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Looks up the localized name of a given category.
         /// </summary>
-        protected virtual string? GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value, null);
+        protected virtual string? GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value);
 
         public override bool IsDefaultAttribute() => Category == Default.Category;
     }

@@ -251,10 +251,6 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {
@@ -281,7 +277,9 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
             if (CallCountingStubShort::CanUseFor(allocationAddressHolder, targetForMethod))
         #endif
             {
-                stub = new(allocationAddressHolder) CallCountingStubShort(remainingCallCountCell, targetForMethod);
+                ExecutableWriterHolder<void> writerHolder(allocationAddressHolder, sizeInBytes);
+                new(writerHolder.GetRW()) CallCountingStubShort((CallCountingStubShort*)(void*)allocationAddressHolder, remainingCallCountCell, targetForMethod);
+                stub = (CallCountingStub*)(void*)allocationAddressHolder;
                 allocationAddressHolder.SuppressRelease();
                 break;
             }
@@ -290,7 +288,9 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     #ifdef TARGET_AMD64
         sizeInBytes = sizeof(CallCountingStubLong);
         void *allocationAddress = (void *)heap->AllocAlignedMem(sizeInBytes, CallCountingStub::Alignment);
-        stub = new(allocationAddress) CallCountingStubLong(remainingCallCountCell, targetForMethod);
+        ExecutableWriterHolder<void> writerHolder(allocationAddress, sizeInBytes);
+        new(writerHolder.GetRW()) CallCountingStubLong(remainingCallCountCell, targetForMethod);
+        stub = (CallCountingStub*)allocationAddress;
     #else
         UNREACHABLE();
     #endif
@@ -822,7 +822,7 @@ void CallCountingManager::CompleteCallCounting()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == TieredCompilationManager::GetBackgroundWorkerThread());
+    _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
     AppDomain *appDomain = GetAppDomain();
     TieredCompilationManager *tieredCompilationManager = appDomain->GetTieredCompilationManager();
@@ -943,7 +943,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == TieredCompilationManager::GetBackgroundWorkerThread());
+    _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
     // If a number of call counting stubs have completed, we can try to delete them to reclaim some memory. Deleting
     // involves suspending the runtime and will delete all call counting stubs, and after that some call counting stubs may
@@ -1001,7 +1001,7 @@ void CallCountingManager::StopAllCallCounting(TieredCompilationManager *tieredCo
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == TieredCompilationManager::GetBackgroundWorkerThread());
+    _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(tieredCompilationManager != nullptr);

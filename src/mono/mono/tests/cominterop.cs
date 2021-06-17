@@ -1074,7 +1074,7 @@ public class Tests
 	{
 		static TestClass ()
 		{
-			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject)); ;
+			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject));
 		}
 		private static System.IntPtr CreateObject (System.IntPtr aggr)
 		{
@@ -1089,7 +1089,7 @@ public class Tests
 	{
 		static TestActivatorClass ()
 		{
-			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject)); ;
+			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject));
 		}
 		private static System.IntPtr CreateObject (System.IntPtr aggr)
 		{

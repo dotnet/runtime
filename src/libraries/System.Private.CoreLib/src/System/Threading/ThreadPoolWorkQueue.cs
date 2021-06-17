@@ -691,8 +691,8 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (ThreadPool.EnableDispatchAutoreleasePool)
+#if FEATURE_OBJCMARSHAL
+                    if (AutoreleasePool.EnableAutoreleasePool)
                     {
                         DispatchItemWithAutoreleasePool(workItem, currentThread);
                     }
@@ -725,7 +725,12 @@ namespace System.Threading
                     //
                     int currentTickCount = Environment.TickCount;
                     if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTickCount))
+                    {
+                        // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
+                        // to ensure that they would not be heavily delayed.
+                        tl.TransferLocalWork();
                         return false;
+                    }
 
                     // Check if the dispatch quantum has expired
                     if ((uint)(currentTickCount - startTickCount) < DispatchQuantumMs)
@@ -824,21 +829,20 @@ namespace System.Threading
             threadLocalCompletionCountObject = ThreadPool.GetOrCreateThreadLocalCompletionCountObject();
         }
 
+        public void TransferLocalWork()
+        {
+            while (workStealingQueue.LocalPop() is object cb)
+            {
+                workQueue.Enqueue(cb, forceGlobal: true);
+            }
+        }
+
         ~ThreadPoolWorkQueueThreadLocals()
         {
             // Transfer any pending workitems into the global queue so that they will be executed by another thread
             if (null != workStealingQueue)
             {
-                if (null != workQueue)
-                {
-                    object? cb;
-                    while ((cb = workStealingQueue.LocalPop()) != null)
-                    {
-                        Debug.Assert(null != cb);
-                        workQueue.Enqueue(cb, forceGlobal: true);
-                    }
-                }
-
+                TransferLocalWork();
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }

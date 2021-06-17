@@ -20,7 +20,6 @@ set(UTILCODE_COMMON_SOURCES
   stgpooli.cpp
   stgpoolreadonly.cpp
   utsem.cpp
-  peinformation.cpp
   check.cpp
   log.cpp
   arraylist.cpp
@@ -36,7 +35,6 @@ set(UTILCODE_COMMON_SOURCES
   corimage.cpp
   format1.cpp
   prettyprintsig.cpp
-  regutil.cpp
   sha1.cpp
   sigbuilder.cpp
   sigparser.cpp
@@ -114,6 +112,11 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_WIN32)
     target_compile_definitions(utilcodestaticnohost PRIVATE _CRTIMP=) # use static version of crt
+
+    link_natvis_sources_for_target(utilcodestaticnohost INTERFACE utilcode.natvis)
+    link_natvis_sources_for_target(utilcode_crossgen INTERFACE utilcode.natvis)
+    link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    link_natvis_sources_for_target(utilcode INTERFACE utilcode.natvis)
 endif(CLR_CMAKE_HOST_WIN32)
 
 set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)

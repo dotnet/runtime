@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace System.Text
 {
-    internal class Base64Encoding : Encoding
+    internal sealed class Base64Encoding : Encoding
     {
         private static ReadOnlySpan<byte> Char2val => new byte[128] // rely on C# compiler optimization to eliminate allocation
         {
@@ -186,7 +186,7 @@ namespace System.Text
             }
         }
 
-        public unsafe virtual int GetBytes(byte[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public unsafe int GetBytes(byte[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));

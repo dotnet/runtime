@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -10,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
     /// Internal class that is used as a key in the hashtable
     /// of directory entries
     /// </summary>
-    internal class DistinguishedName
+    internal sealed class DistinguishedName
     {
         public DistinguishedName(string dn)
         {
@@ -41,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return result;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is DistinguishedName other)
             {
@@ -81,7 +82,7 @@ namespace System.DirectoryServices.ActiveDirectory
     /// and creates a new directory entry (for a given dn) only if
     /// it doesn't already exist
     /// </summary>
-    internal class DirectoryEntryManager
+    internal sealed class DirectoryEntryManager
     {
         private readonly Hashtable _directoryEntries = new Hashtable();
         private string? _bindingPrefix;

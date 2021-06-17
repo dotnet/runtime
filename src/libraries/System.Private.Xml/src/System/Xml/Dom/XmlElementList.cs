@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
-    internal class XmlElementList : XmlNodeList
+    internal sealed class XmlElementList : XmlNodeList
     {
         private readonly string _asterisk = null!;
         private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
@@ -280,7 +280,7 @@ namespace System.Xml
             Dispose(true);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_listener != null)
             {
@@ -294,7 +294,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlElementListEnumerator : IEnumerator
+    internal sealed class XmlElementListEnumerator : IEnumerator
     {
         private readonly XmlElementList _list;
         private XmlNode? _curElem;
@@ -334,7 +334,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlEmptyElementListEnumerator : IEnumerator
+    internal sealed class XmlEmptyElementListEnumerator : IEnumerator
     {
         public XmlEmptyElementListEnumerator(XmlElementList list)
         {
@@ -355,7 +355,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlElementListListener
+    internal sealed class XmlElementListListener
     {
         private WeakReference<XmlElementList>? _elemList;
         private readonly XmlDocument _doc;

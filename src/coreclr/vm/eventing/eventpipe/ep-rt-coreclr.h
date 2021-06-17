@@ -12,6 +12,7 @@
 #include "fstream.h"
 #include "typestring.h"
 #include "win32threadpool.h"
+#include "clrversion.h"
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
@@ -1161,6 +1162,25 @@ ep_rt_coreclr_config_lock_get (void)
 	return &_ep_rt_coreclr_config_lock_handle;
 }
 
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	return reinterpret_cast<const ep_char8_t*>(GetAppDomain ()->GetRootAssembly ()->GetSimpleName ());
+}
+
+static
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	return reinterpret_cast<const ep_char8_t*>(CLR_PRODUCT_VERSION);
+}
+
 /*
 * Atomics.
 */
@@ -1219,12 +1239,24 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 	return static_cast<int64_t>(InterlockedDecrement64 ((volatile LONG64 *)(value)));
 }
 
+static
+inline
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
+
+EP_RT_DEFINE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
 
 static
 void
@@ -1253,6 +1285,14 @@ ep_rt_init (void)
 		}
 #endif
 	}
+}
+
+static
+inline
+void
+ep_rt_init_finish (void)
+{
+	STATIC_CONTRACT_NOTHROW;
 }
 
 static
@@ -1428,10 +1468,6 @@ void
 ep_rt_prepare_provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-	auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 static
@@ -1584,6 +1620,15 @@ ep_rt_config_value_get_circular_mb (void)
 static
 inline
 bool
+ep_rt_config_value_get_output_streaming (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
+}
+
+static
+inline
+bool
 ep_rt_config_value_get_use_portable_thread_pool (void)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -1616,9 +1661,9 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 
 #ifndef DACCESS_COMPILE
 		// Let the profiler know the provider has been created so it can register if it wants to
-		BEGIN_PIN_PROFILER (CORProfilerIsMonitoringEventPipe ());
-		g_profControlBlock.pProfInterface->EventPipeProviderCreated (provider);
-		END_PIN_PROFILER ();
+		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
+		(&g_profControlBlock)->EventPipeProviderCreated (provider);
+		END_PROFILER_CALLBACK ();
 #endif // DACCESS_COMPILE
 }
 
@@ -1872,10 +1917,11 @@ ep_rt_is_running (void)
 static
 inline
 void
-ep_rt_execute_rundown (void)
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+	//TODO: Write execution checkpoint rundown events.
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeRundown) > 0) {
 		// Ask the runtime to emit rundown events.
 		if (g_fEEStarted && !g_fEEShutDown)
@@ -2728,12 +2774,8 @@ ep_rt_thread_setup (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	EX_TRY
-	{
-		SetupThread ();
-	}
-	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	Thread* thread_handle = SetupThreadNoThrow ();
+	EP_ASSERT (thread_handle != NULL);
 }
 
 static
@@ -2767,7 +2809,7 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return GetThread ();
+	return GetThreadNULLOk ();
 }
 
 static

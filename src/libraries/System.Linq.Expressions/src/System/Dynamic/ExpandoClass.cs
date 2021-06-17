@@ -10,7 +10,7 @@ namespace System.Dynamic
     /// members will share the same class.  Classes are dynamically assigned as the
     /// expando object gains members.
     /// </summary>
-    internal class ExpandoClass
+    internal sealed class ExpandoClass
     {
         private readonly string[] _keys;                            // list of names associated with each element in the data array, sorted
         private readonly int _hashCode;                             // pre-calculated hash code of all the keys the class contains

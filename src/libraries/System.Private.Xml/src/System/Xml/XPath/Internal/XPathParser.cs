@@ -9,7 +9,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class XPathParser
+    internal sealed class XPathParser
     {
         private readonly XPathScanner _scanner;
 

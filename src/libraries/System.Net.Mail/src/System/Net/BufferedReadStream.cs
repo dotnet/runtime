@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal class BufferedReadStream : DelegatedStream
+    internal sealed class BufferedReadStream : DelegatedStream
     {
         private byte[]? _storedBuffer;
         private int _storedLength;

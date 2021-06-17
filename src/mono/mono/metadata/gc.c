@@ -552,13 +552,15 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 }
 
 void
-ves_icall_System_GC_GetGCMemoryInfo (gint64* high_memory_load_threshold_bytes,
-									gint64* memory_load_bytes,
-									gint64* total_available_memory_bytes,
-									gint64* heap_size_bytes,
-									gint64* fragmented_bytes)
+ves_icall_System_GC_GetGCMemoryInfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
-	mono_gc_get_gcmemoryinfo (high_memory_load_threshold_bytes, memory_load_bytes, total_available_memory_bytes, heap_size_bytes,  fragmented_bytes);
+	mono_gc_get_gcmemoryinfo (high_memory_load_threshold_bytes, memory_load_bytes, total_available_memory_bytes, total_committed_bytes, heap_size_bytes, fragmented_bytes);
 }
 
 void
@@ -830,6 +832,8 @@ mono_runtime_do_background_work (void)
 {
 	mono_threads_perform_thread_dump ();
 
+	mono_threads_exiting ();
+
 	finalize_domain_objects ();
 
 	MONO_PROFILER_RAISE (gc_finalizing, ());
@@ -852,6 +856,7 @@ static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
 	gboolean wait = TRUE;
+	gboolean did_init_from_native = FALSE;
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "Finalizer", MonoSetThreadNameFlag_None);
 
@@ -874,6 +879,14 @@ finalizer_thread (gpointer unused)
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
+		/* The Finalizer thread doesn't initialize during creation because base managed
+			libraries may not be loaded yet. However, the first time the Finalizer is
+			to run managed finalizer, we can take this opportunity to initialize. */
+		if (!did_init_from_native) {
+			did_init_from_native = TRUE;
+			mono_thread_init_from_native ();
+		}
+
 		mono_runtime_do_background_work ();
 
 		/* Avoid posting the pending done event until there are pending finalizers */
@@ -890,6 +903,11 @@ finalizer_thread (gpointer unused)
 			mono_coop_mutex_unlock (&pending_done_mutex);
 #endif
 		}
+	}
+
+	/* If the initialization from native was done, do the clean up */
+	if (did_init_from_native) {
+		mono_thread_cleanup_from_native ();
 	}
 
 	mono_finalizer_lock ();
@@ -970,84 +988,6 @@ mono_gc_init (void)
 	if (!mono_runtime_get_no_exec ())
 		init_finalizer_thread ();
 #endif
-}
-
-void
-mono_gc_cleanup (void)
-{
-#ifdef DEBUG
-	g_message ("%s: cleaning up finalizer", __func__);
-#endif
-
-	if (mono_gc_is_null ())
-		return;
-
-	if (!gc_disabled) {
-		finished = TRUE;
-		if (mono_thread_internal_current () != gc_thread) {
-			int ret;
-			gint64 start;
-			const gint64 timeout = 40 * 1000;
-
-			mono_gc_finalize_notify ();
-
-			start = mono_msec_ticks ();
-
-			/* Finishing the finalizer thread, so wait a little bit... */
-			/* MS seems to wait for about 2 seconds per finalizer thread */
-			/* and 40 seconds for all finalizers to finish */
-			for (;;) {
-				gint64 elapsed;
-
-				if (finalizer_thread_exited) {
-					/* Wait for the thread to actually exit. We don't want the wait
-					 * to be alertable, because we assert on the result to be SUCCESS_0 */
-					ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, FALSE);
-					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
-
-					mono_threads_add_joinable_thread ((gpointer)(gsize)MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid));
-					break;
-				}
-
-				elapsed = mono_msec_ticks () - start;
-				if (elapsed >= timeout) {
-					/* timeout */
-
-					/* Set a flag which the finalizer thread can check */
-					suspend_finalizers = TRUE;
-					mono_gc_suspend_finalizers ();
-
-					/* Try to abort the thread, in the hope that it is running managed code */
-					mono_thread_internal_abort (gc_thread);
-
-					/* Wait for it to stop */
-					ret = guarded_wait (gc_thread->handle, 100, FALSE);
-					if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT) {
-						/* The finalizer thread refused to exit, suspend it forever. */
-						mono_thread_internal_suspend_for_shutdown (gc_thread);
-						break;
-					}
-
-					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
-
-					mono_threads_add_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid)));
-					break;
-				}
-
-				mono_finalizer_lock ();
-				if (!finalizer_thread_exited)
-					mono_coop_cond_timedwait (&exited_cond, &finalizer_mutex, timeout - elapsed);
-				mono_finalizer_unlock ();
-			}
-		}
-		gc_thread = NULL;
-		mono_gc_base_cleanup ();
-	}
-
-	mono_reference_queue_cleanup ();
-
-	mono_coop_mutex_destroy (&finalizer_mutex);
-	mono_coop_mutex_destroy (&reference_queue_mutex);
 }
 
 gboolean

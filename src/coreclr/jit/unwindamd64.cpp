@@ -712,8 +712,8 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
         }
     }
 
-    BOOL isFunclet  = (func->funKind != FUNC_ROOT);
-    BOOL isColdCode = isHotCode ? FALSE : TRUE;
+    bool isFunclet  = (func->funKind != FUNC_ROOT);
+    bool isColdCode = !isHotCode;
 
     eeReserveUnwindInfo(isFunclet, isColdCode, unwindCodeBytes);
 }

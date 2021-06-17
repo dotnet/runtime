@@ -19,7 +19,6 @@
 // --------------------------------------------------------------------------------
 class AppDomain;
 class DomainAssembly;
-class DomainModule;
 class Assembly;
 class Module;
 class DynamicMethodTable;
@@ -493,9 +492,6 @@ public:
         return m_pLoaderAllocator;
     }
 
-    // Finds only loaded hmods
-    DomainFile *FindIJWModule(HMODULE hMod);
-
     void SetAssembly(Assembly* pAssembly);
 
     BOOL IsAssembly()
@@ -601,26 +597,6 @@ public:
         return ModuleIterator::Create(this, moduleIterationOption);
     }
 
-    DomainFile *LookupDomainFile(DWORD index)
-    {
-        WRAPPER_NO_CONTRACT;
-        if (index >= m_Modules.GetCount())
-            return NULL;
-        else
-            return dac_cast<PTR_DomainFile>(m_Modules.Get(index));
-    }
-
-    Module *LookupModule(DWORD index)
-    {
-        WRAPPER_NO_CONTRACT;
-        DomainFile *pModule = LookupDomainFile(index);
-        if (pModule == NULL)
-            return NULL;
-        else
-            return pModule->GetModule();
-    }
-
-
     // ------------------------------------------------------------
     // Resource access
     // ------------------------------------------------------------
@@ -678,7 +654,6 @@ public:
 
     friend class AppDomain;
     friend class Assembly;
-    friend class AssemblyNameNative;
 
 #ifndef DACCESS_COMPILE
 public:
@@ -691,12 +666,9 @@ private:
     // Internal routines
     // ------------------------------------------------------------
 
-    void SetSecurityError(Exception *ex);
-
 #ifndef DACCESS_COMPILE
     void Begin();
     void Allocate();
-    void LoadSharers();
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
 #endif
@@ -740,15 +712,8 @@ private:
           _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
           m_NextDomainAssemblyInSameALC = domainAssembly;
       }
-
-    // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
-    inline bool CanUseWithBindingCache()
-    { STATIC_CONTRACT_WRAPPER; return GetFile()->CanUseWithBindingCache(); }
 };
 
 typedef DomainAssembly::ModuleIterator DomainModuleIterator;
 
-// --------------------------------------------------------------------------------
-// DomainModule is a subclass of DomainFile which specifically represents a module.
-// --------------------------------------------------------------------------------
 #endif  // _DOMAINFILE_H_

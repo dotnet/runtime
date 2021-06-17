@@ -363,9 +363,6 @@ mono_marshal_init (void);
 void
 mono_marshal_init_tls (void);
 
-void
-mono_marshal_cleanup (void);
-
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align);
 
@@ -414,7 +411,7 @@ mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype);
 void
 mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info);
 
-WrapperInfo*
+MONO_COMPONENT_API WrapperInfo*
 mono_marshal_get_wrapper_info (MonoMethod *wrapper);
 
 MonoMethod *
@@ -551,9 +548,6 @@ mono_marshal_free_array (gpointer *ptr, int size);
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj);
 
-void
-mono_cominterop_release_all_rcws (void); 
-
 MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
@@ -617,12 +611,12 @@ gpointer
 mono_marshal_lookup_pinvoke (MonoMethod *method);
 
 ICALL_EXPORT
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void);
 
 ICALL_EXPORT
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err);
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err);
 
 ICALL_EXPORT
 mono_bstr

@@ -19,7 +19,7 @@ namespace System.Linq.Parallel
     /// a weakly typed IEnumerable object, allowing it to be accessed as a strongly typed
     /// IEnumerable{object}.
     /// </summary>
-    internal class EnumerableWrapperWeakToStrong : IEnumerable<object?>
+    internal sealed class EnumerableWrapperWeakToStrong : IEnumerable<object?>
     {
         private readonly IEnumerable _wrappedEnumerable; // The wrapped enumerable object.
 
@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<object>)this).GetEnumerator();
+            return ((IEnumerable<object?>)this).GetEnumerator();
         }
 
         public IEnumerator<object?> GetEnumerator()

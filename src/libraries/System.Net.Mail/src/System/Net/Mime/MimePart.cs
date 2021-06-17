@@ -14,7 +14,7 @@ namespace System.Net.Mime
     /// <summary>
     /// Summary description for MimePart.
     /// </summary>
-    internal class MimePart : MimeBasePart, IDisposable
+    internal sealed class MimePart : MimeBasePart, IDisposable
     {
         private Stream? _stream;
         private bool _streamSet;
@@ -301,7 +301,7 @@ namespace System.Net.Mime
             }
         }
 
-        internal class MimePartContext
+        internal sealed class MimePartContext
         {
             internal MimePartContext(BaseWriter writer, LazyAsyncResult result)
             {

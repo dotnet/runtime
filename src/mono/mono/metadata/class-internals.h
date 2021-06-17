@@ -16,6 +16,7 @@
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-compiler.h"
 
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
@@ -94,6 +95,7 @@ struct _MonoMethod {
 struct _MonoMethodWrapper {
 	MonoMethod method;
 	MonoMethodHeader *header;
+	MonoMemoryManager *mem_manager;
 	void *method_data;
 };
 
@@ -402,10 +404,11 @@ struct _MonoMethodInflated {
 	union {
 		MonoMethod method;
 		MonoMethodPInvoke pinvoke;
+		MonoMethodWrapper wrapper;
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
-	MonoImageSet *owner; /* The image set that the inflated method belongs to. */
+	MonoMemoryManager *owner; /* The mem manager that the inflated method belongs to. */
 };
 
 /*
@@ -419,12 +422,8 @@ struct _MonoGenericClass {
 	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
-	/* 
-	 * The image set which owns this generic class. Memory owned by the generic class
-	 * including cached_class should be allocated from the mempool of the image set,
-	 * so it is easy to free.
-	 */
-	MonoImageSet *owner;
+	/* The mem manager which owns this generic class. */
+	MonoMemoryManager *owner;
 };
 
 /* Additional details about a MonoGenericParam */
@@ -901,11 +900,14 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 MonoMethod *
 mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_class (MonoClass *klass);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_type (MonoType *type);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_method (MonoMethodInflated *method);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_class (MonoClass *klass);
+
+MonoMemoryManager*
+mono_metadata_get_mem_manager_for_method (MonoMethodInflated *method);
 
 MONO_API MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
@@ -960,6 +962,7 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+	MonoClass *autoreleasepool_class;
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
@@ -1083,9 +1086,6 @@ mono_reflection_init       (void);
 void
 mono_icall_init            (void);
 
-void
-mono_icall_cleanup         (void);
-
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 
@@ -1130,6 +1130,7 @@ mono_identifier_escape_type_name_chars (const char* identifier);
 char*
 mono_type_get_full_name (MonoClass *klass);
 
+MONO_COMPONENT_API
 char *
 mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format);
 
@@ -1290,7 +1291,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error);
 MonoClass *
 mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
 MonoClass *
@@ -1432,10 +1433,10 @@ mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);
 GSList*
 mono_class_get_dim_conflicts (MonoClass *klass);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_method_has_no_body (MonoMethod *method);
 
 // FIXME Replace all internal callers of mono_method_get_header_checked with
@@ -1444,7 +1445,7 @@ mono_method_has_no_body (MonoMethod *method);
 // And then mark mono_method_get_header_checked as MONO_RT_EXTERNAL_ONLY MONO_API.
 //
 // Internal callers expected to use ERROR_DECL. External callers are not.
-MonoMethodHeader*
+MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
 
 MonoType*
@@ -1540,9 +1541,19 @@ m_field_get_offset (MonoClassField *field)
  */
 
 static inline MonoMemoryManager*
+mono_mem_manager_get_ambient (void)
+{
+	// FIXME: All callers should get a MemoryManager from their callers or context
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
+}
+
+static inline MonoMemoryManager*
 m_image_get_mem_manager (MonoImage *image)
 {
-	return (MonoMemoryManager*)mono_image_get_alc (image)->memory_manager;
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
+	if (!alc)
+		alc = mono_alc_get_default ();
+	return alc->memory_manager;
 }
 
 static inline void *
@@ -1560,10 +1571,13 @@ m_image_alloc0 (MonoImage *image, guint size)
 static inline MonoMemoryManager*
 m_class_get_mem_manager (MonoClass *klass)
 {
-	// FIXME: Generics
+	if (m_class_get_class_kind (klass) == MONO_CLASS_GINST)
+		return mono_class_get_generic_class (klass)->owner;
+	if (m_class_get_rank (klass))
+		return m_class_get_mem_manager (m_class_get_element_class (klass));
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (m_class_get_image (klass));
 	if (alc)
-		return (MonoMemoryManager*)alc->memory_manager;
+		return alc->memory_manager;
 	else
 		/* Dynamic assemblies */
 		return mono_mem_manager_get_ambient ();
@@ -1584,8 +1598,12 @@ m_class_alloc0 (MonoClass *klass, guint size)
 static inline MonoMemoryManager*
 m_method_get_mem_manager (MonoMethod *method)
 {
-	// FIXME:
-	return mono_domain_memory_manager (mono_get_root_domain ());
+	if (method->is_inflated)
+		return ((MonoMethodInflated*)method)->owner;
+	else if (method->wrapper_type && ((MonoMethodWrapper*)method)->mem_manager)
+		return ((MonoMethodWrapper*)method)->mem_manager;
+	else
+		return m_class_get_mem_manager (method->klass);
 }
 
 static inline void *

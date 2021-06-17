@@ -94,7 +94,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackClasses());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         {
             // Calls to the profiler callback may throw, or otherwise fail, if
             // the profiler AVs/throws an unhandled exception/etc. We don't want
@@ -115,7 +115,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             {
                 GCX_PREEMP();
 
-                g_profControlBlock.pProfInterface->ClassUnloadStarted((ClassID) pOwningMT);
+                (&g_profControlBlock)->ClassUnloadStarted((ClassID) pOwningMT);
             }
             EX_CATCH
             {
@@ -125,7 +125,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             }
             EX_END_CATCH(RethrowTerminalExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -178,7 +178,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackClasses());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         {
             // See comments in the call to ClassUnloadStarted for details on this
             // FAULT_NOT_FATAL marker and exception swallowing.
@@ -186,14 +186,14 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             EX_TRY
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ClassUnloadFinished((ClassID) pOwningMT, S_OK);
+                (&g_profControlBlock)->ClassUnloadFinished((ClassID) pOwningMT, S_OK);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH(RethrowTerminalExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -274,7 +274,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         {
             szFieldName = "Invalid FieldDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::InitializeFieldDescForEnC %s\n", szFieldName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::FixupFieldDescForEnC %08x %s\n", fieldDef, szFieldName));
     }
 #endif //LOGGING
 
@@ -1502,7 +1502,7 @@ int MethodTable::GetVectorSize()
             // We need to verify that T (the element or "base" type) is a primitive type.
             TypeHandle typeArg = GetInstantiation()[0];
             CorElementType corType = typeArg.GetSignatureCorElementType();
-            if (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8)
+            if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
             {
                 _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;

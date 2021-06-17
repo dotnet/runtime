@@ -5,7 +5,7 @@ using System.Collections.Specialized;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    internal class ADSearcher
+    internal sealed class ADSearcher
     {
         private readonly DirectorySearcher _searcher;
         private static readonly TimeSpan s_defaultTimeSpan = new TimeSpan(0, 120, 0);

@@ -93,6 +93,15 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.Versioning.TargetPlatformAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- System.ComponentModel -->
     <type fullname="System.ComponentModel.EditorBrowsableAttribute">
@@ -175,6 +184,59 @@
     <!-- Microsoft.CodeAnalysis -->
     <type fullname="Microsoft.CodeAnalysis.EmbeddedAttribute">
       <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <!-- Metadata attributes present in most core SDKs assemblies -->
+  <assembly fullname="*">
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>Serviceable</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>PreferInbox</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>.NETFrameworkAssembly</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>RepositoryUrl</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>SourceCommitUrl</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>CommitHash</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>IsTrimmable</argument>
+        </argument>
+      </attribute>
     </type>
   </assembly>
 </linker>

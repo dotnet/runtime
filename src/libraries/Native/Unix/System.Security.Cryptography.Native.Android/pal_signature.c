@@ -11,10 +11,10 @@ int32_t AndroidCryptoNative_SignWithSignatureObject(JNIEnv* env,
                                                     uint8_t* sig,
                                                     int32_t* siglen)
 {
-    assert(dgst);
-    assert(sig);
-    assert(signatureObject);
-    assert(privateKey);
+    abort_if_invalid_pointer_argument (dgst);
+    abort_if_invalid_pointer_argument (sig);
+    abort_if_invalid_pointer_argument (signatureObject);
+    abort_if_invalid_pointer_argument (privateKey);
     if (!siglen)
     {
         return FAIL;
@@ -23,7 +23,7 @@ int32_t AndroidCryptoNative_SignWithSignatureObject(JNIEnv* env,
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitSign, privateKey);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
-    jbyteArray digestArray = (*env)->NewByteArray(env, dgstlen);
+    jbyteArray digestArray = make_java_byte_array(env, dgstlen);
     (*env)->SetByteArrayRegion(env, digestArray, 0, dgstlen, (const jbyte*)dgst);
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureUpdate, digestArray);
     ReleaseLRef(env, digestArray);
@@ -49,21 +49,21 @@ int32_t AndroidCryptoNative_VerifyWithSignatureObject(JNIEnv* env,
                                                       const uint8_t* sig,
                                                       int32_t siglen)
 {
-    assert(dgst);
-    assert(sig);
-    assert(signatureObject);
-    assert(publicKey);
+    abort_if_invalid_pointer_argument (dgst);
+    abort_if_invalid_pointer_argument (sig);
+    abort_if_invalid_pointer_argument (signatureObject);
+    abort_if_invalid_pointer_argument (publicKey);
 
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitVerify, publicKey);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
-    jbyteArray digestArray = (*env)->NewByteArray(env, dgstlen);
+    jbyteArray digestArray = make_java_byte_array(env, dgstlen);
     (*env)->SetByteArrayRegion(env, digestArray, 0, dgstlen, (const jbyte*)dgst);
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureUpdate, digestArray);
     ReleaseLRef(env, digestArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
-    jbyteArray sigArray = (*env)->NewByteArray(env, siglen);
+    jbyteArray sigArray = make_java_byte_array(env, siglen);
     (*env)->SetByteArrayRegion(env, sigArray, 0, siglen, (const jbyte*)sig);
     jboolean verified = (*env)->CallBooleanMethod(env, signatureObject, g_SignatureVerify, sigArray);
     ReleaseLRef(env, sigArray);

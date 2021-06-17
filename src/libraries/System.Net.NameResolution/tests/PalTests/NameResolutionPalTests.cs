@@ -71,7 +71,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public void TryGetAddrInfo_HostName(bool justAddresses)
         {
             string hostName = NameResolutionPal.GetHostName();
@@ -98,7 +98,6 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47591", TestPlatforms.Android)]
         public void TryGetAddrInfo_ExternalHost(bool justAddresses)
         {
             string hostName = "microsoft.com";
@@ -113,7 +112,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public void TryGetAddrInfo_UnknownHost(bool justAddresses)
         {
             SocketError error = NameResolutionPal.TryGetAddrInfo("test.123", justAddresses, AddressFamily.Unspecified, out string? _, out string[] _, out IPAddress[] _, out int nativeErrorCode);
@@ -162,7 +161,7 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
             string hostName = NameResolutionPal.GetHostName();
@@ -274,7 +273,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public async Task GetAddrInfoAsync_EmptyHost(bool justAddresses)
         {
             if (!NameResolutionPal.SupportsGetAddrInfoAsync)
@@ -321,7 +320,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public async Task GetAddrInfoAsync_HostName(bool justAddresses)
         {
             if (!NameResolutionPal.SupportsGetAddrInfoAsync)
@@ -404,7 +403,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         public async Task GetAddrInfoAsync_UnknownHost(bool justAddresses)
         {
             if (!NameResolutionPal.SupportsGetAddrInfoAsync)

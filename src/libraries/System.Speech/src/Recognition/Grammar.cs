@@ -862,7 +862,7 @@ namespace System.Speech.Recognition
         {
             if (string.IsNullOrEmpty(initParameters))
             {
-                return Array.Empty<NameValuePair>(); ;
+                return Array.Empty<NameValuePair>();
             }
 
             string[] parameters = initParameters.Split(new char[] { ';' }, StringSplitOptions.None);

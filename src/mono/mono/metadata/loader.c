@@ -43,6 +43,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/exception-internals.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
@@ -104,21 +105,6 @@ mono_loader_init ()
 
 		inited = TRUE;
 	}
-}
-
-void
-mono_loader_cleanup (void)
-{
-#ifndef DISABLE_DLLMAP
-	mono_global_dllmap_cleanup ();
-#endif
-	mono_global_loader_cache_cleanup ();
-
-	mono_native_tls_free (loader_lock_nest_id);
-
-	mono_coop_mutex_destroy (&loader_mutex);
-	mono_os_mutex_destroy (&global_loader_data_mutex);
-	loader_lock_inited = FALSE;	
 }
 
 void
@@ -1995,26 +1981,6 @@ mono_method_has_no_body (MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 }
 
-#ifdef ENABLE_METADATA_UPDATE
-static gpointer
-get_method_update_rva (MonoImage *image_base, uint32_t idx)
-{
-	gpointer loc = NULL;
-	uint32_t cur = mono_metadata_update_get_thread_generation ();
-	GList *ptr = image_base->delta_image;
-	/* Go through all the updates that the current thread can see and see
-	 * if they updated the method.  Keep the latest visible update */
-	for (; ptr != NULL; ptr = ptr->next) {
-		MonoImage *image_delta = (MonoImage*) ptr->data;
-		if (image_delta->generation > cur)
-			break;
-		if (image_delta->method_table_update)
-			loc = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
-	}
-	return loc;
-}
-#endif
-
 // FIXME Replace all internal callers of mono_method_get_header_checked with
 // mono_method_get_header_internal; the difference is in error initialization.
 MonoMethodHeader*
@@ -2069,16 +2035,8 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
 
-#ifdef ENABLE_METADATA_UPDATE
-	/* EnC case */
-	if (G_UNLIKELY (img->method_table_update)) {
-		/* pre-computed rva pointer into delta IL image */
-		uint32_t gen = GPOINTER_TO_UINT (g_hash_table_lookup (img->method_table_update, GUINT_TO_POINTER (idx)));
-		if (G_UNLIKELY (gen > 0)) {
-			loc = get_method_update_rva (img, idx);
-		}
-	}
-#endif
+        if (G_UNLIKELY (img->has_updates))
+                loc = mono_metadata_update_get_updated_method_rva (img, idx);
 
 	if (!loc) {
 		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);

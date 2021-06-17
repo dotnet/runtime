@@ -14,7 +14,6 @@
     <OutputPath>$(RuntimeBinDir)</OutputPath>
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

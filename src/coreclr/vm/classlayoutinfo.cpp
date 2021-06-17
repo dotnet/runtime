@@ -612,7 +612,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;
 
     BOOL fParentHasLayout = pParentMT && pParentMT->HasLayout();
-    UINT32 cbAdjustedParentLayoutNativeSize = 0;
+    UINT32 cbAdjustedParentLayoutSize = 0;
     EEClassLayoutInfo *pParentLayoutInfo = NULL;
     if (fParentHasLayout)
     {
@@ -622,11 +622,11 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         // got bumped up to a size of 1 for compatibility reasons, then
         // we need to remove the padding, but ONLY for inheritance situations.
         if (pParentLayoutInfo->IsZeroSized()) {
-            cbAdjustedParentLayoutNativeSize = 0;
+            cbAdjustedParentLayoutSize = 0;
         }
         else
         {
-            cbAdjustedParentLayoutNativeSize = pParentMT->GetNumInstanceFieldBytes();
+            cbAdjustedParentLayoutSize = pParentMT->GetNumInstanceFieldBytes();
         }
     }
 
@@ -653,12 +653,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         DEBUGARG(szName)
         );
 
-    // Type is blittable only if parent is also blittable and is not empty.
-    if (isBlittable && fHasNonTrivialParent)
-    {
-        isBlittable = pParentMT->IsBlittable()  // Check parent
-            && (!pParentLayoutInfo || !pParentLayoutInfo->IsZeroSized()); // Ensure non-zero size
-    }
+    // Type is blittable only if parent is also blittable
+    isBlittable = isBlittable && (fHasNonTrivialParent ? pParentMT->IsBlittable() : TRUE);
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
@@ -668,7 +664,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
     CQuickArray<LayoutRawFieldInfo*> pSortArray;
     pSortArray.ReSizeThrows(cbSortArraySize.Value());
-    SetOffsetsAndSortFields(pInternalImport, cl, pInfoArrayOut, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray.Ptr());
+    SetOffsetsAndSortFields(pInternalImport, cl, pInfoArrayOut, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutSize, pModule, pSortArray.Ptr());
 
     ULONG classSizeInMetadata = 0;
     if (FAILED(pInternalImport->GetClassTotalSize(cl, &classSizeInMetadata)))
@@ -690,14 +686,13 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
 
     BYTE parentManagedAlignmentRequirement = 0;
-    UINT32 parentSize = pParentMT->GetNumInstanceFieldBytes();
     if (pParentMT && (pParentMT->IsManagedSequential() || (pParentMT->GetClass()->HasExplicitFieldOffsetLayout() && pParentMT->IsBlittable())))
     {
         parentManagedAlignmentRequirement = pParentLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
     }
 
     CalculateSizeAndFieldOffsets(
-        parentSize,
+        cbAdjustedParentLayoutSize,
         cInstanceFields,
         fExplicitOffsets,
         pSortArray.Ptr(),

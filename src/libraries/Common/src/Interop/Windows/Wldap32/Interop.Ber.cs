@@ -16,16 +16,7 @@ internal static partial class Interop
         public static extern IntPtr ber_alloc(int option);
 
         [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_printf", CharSet = CharSet.Unicode)]
-        public static extern int ber_printf_emptyarg(SafeBerHandle berElement, string format);
-
-        [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_printf", CharSet = CharSet.Unicode)]
-        public static extern int ber_printf_int(SafeBerHandle berElement, string format, int value);
-
-        [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_printf", CharSet = CharSet.Unicode)]
-        public static extern int ber_printf_bytearray(SafeBerHandle berElement, string format, HGlobalMemHandle value, int length);
-
-        [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_printf", CharSet = CharSet.Unicode)]
-        public static extern int ber_printf_berarray(SafeBerHandle berElement, string format, IntPtr value);
+        public static extern int ber_printf(SafeBerHandle berElement, string format, __arglist);
 
         [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_flatten", CharSet = CharSet.Unicode)]
         public static extern int ber_flatten(SafeBerHandle berElement, ref IntPtr value);
@@ -34,16 +25,7 @@ internal static partial class Interop
         public static extern IntPtr ber_init(berval value);
 
         [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_scanf", CharSet = CharSet.Unicode)]
-        public static extern int ber_scanf(SafeBerHandle berElement, string format);
-
-        [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_scanf", CharSet = CharSet.Unicode)]
-        public static extern int ber_scanf_int(SafeBerHandle berElement, string format, ref int value);
-
-        [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_scanf", CharSet = CharSet.Unicode)]
-        public static extern int ber_scanf_ptr(SafeBerHandle berElement, string format, ref IntPtr value);
-
-        [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_scanf", CharSet = CharSet.Unicode)]
-        public static extern int ber_scanf_bitstring(SafeBerHandle berElement, string format, ref IntPtr value, ref int bitLength);
+        public static extern int ber_scanf(SafeBerHandle berElement, string format, __arglist);
 
         [DllImport(Libraries.Wldap32, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ber_bvfree", CharSet = CharSet.Unicode)]
         public static extern int ber_bvfree(IntPtr value);

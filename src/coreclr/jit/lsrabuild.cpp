@@ -2064,7 +2064,7 @@ void LinearScan::buildIntervals()
         printf("\n-----------------\n");
         printf("LIVENESS:\n");
         printf("-----------------\n");
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             printf(FMT_BB " use def in out\n", block->bbNum);
             dumpConvertedVarSet(compiler, block->bbVarUse);
@@ -2145,8 +2145,9 @@ void LinearScan::buildIntervals()
 
         if (isCandidateVar(argDsc))
         {
-            Interval* interval = getIntervalForLocalVar(varIndex);
-            regMaskTP mask     = allRegs(TypeGet(argDsc));
+            Interval*       interval = getIntervalForLocalVar(varIndex);
+            const var_types regType  = argDsc->GetRegisterType();
+            regMaskTP       mask     = allRegs(regType);
             if (argDsc->lvIsRegArg)
             {
                 // Set this interval as currently assigned to that register
@@ -2333,7 +2334,7 @@ void LinearScan::buildIntervals()
         }
 
         LIR::Range& blockRange = LIR::AsRange(block);
-        for (GenTree* node : blockRange.NonPhiNodes())
+        for (GenTree* node : blockRange)
         {
             // We increment the location of each tree node by 2 so that the node definition, if any,
             // is at a new location and doesn't interfere with the uses.
@@ -2583,7 +2584,7 @@ void LinearScan::buildIntervals()
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }
@@ -3096,6 +3097,10 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     }
     if (use != nullptr)
     {
+        // If node != rmwNode, then definitely node should be marked as "delayFree".
+        // However, if node == rmwNode, then we can mark node as "delayFree" only
+        // none of the node/rmwNode are the last uses. If either of them are last use,
+        // we can safely reuse the rmwNode as destination.
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
         {
             setDelayFree(use);
@@ -3207,7 +3212,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     }
 
     regMaskTP defCandidates = RBM_NONE;
-    var_types type          = varDsc->TypeGet();
+    var_types type          = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
     if (varTypeIsByte(type))
@@ -3337,12 +3342,11 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    RefPosition* internalFloatDef = nullptr;
     if (varTypeIsSIMD(storeLoc) && !op1->IsCnsIntOrI() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
         // Need an additional register to extract upper 4 bytes of Vector3,
         // it has to be float for x86.
-        internalFloatDef = buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+        buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
     }
 #endif // FEATURE_SIMD
 
@@ -3359,6 +3363,16 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         {
             BuildUse(op1, RBM_NONE, i);
         }
+#if defined(FEATURE_SIMD) && defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        {
+            if (varTypeIsSIMD(storeLoc) && op1->IsCall())
+            {
+                // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
+                buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+            }
+        }
+#endif // FEATURE_SIMD && TARGET_X86 && TARGET_WINDOWS
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {

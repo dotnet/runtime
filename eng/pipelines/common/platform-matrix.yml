@@ -116,7 +116,7 @@ jobs:
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
-        image: ubuntu-18.04-cross-arm-alpine-20200818211451-14441ae
+        image: ubuntu-16.04-cross-arm-alpine-20210409142327-044d5b9
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -180,6 +180,31 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: linux-x64
+      platform: Linux_x64
+      container:
+        image: centos-7-source-build-20210408124356-5d87b80
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+        buildingOnSourceBuildImage: true
+
 # WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
@@ -194,7 +219,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20210223133559-4800846
+        image: ubuntu-18.04-webassembly-20210519131124-ba00c14
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -203,6 +228,8 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WebAssembly on Windows
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml
@@ -214,7 +241,7 @@ jobs:
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
-      platform: Browser_wasm
+      platform: Browser_wasm_win
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -417,7 +444,7 @@ jobs:
       osGroup: tvOSSimulator
       archType: x64
       targetRid: tvossimulator-x64
-      platform: tvOSSimulatorim_x64
+      platform: tvOSSimulator_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}

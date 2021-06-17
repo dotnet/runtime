@@ -3,5 +3,8 @@
     <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator" feature="System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting" featurevalue="false">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
   </assembly>
 </linker>

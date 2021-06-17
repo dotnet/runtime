@@ -7,8 +7,11 @@
     "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"
     -->
     <Features>$(Features.Replace('strict', '')</Features>
+
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="AccessTests.cs" />
     <Compile Include="ArrayHandling.cs" />
     <Compile Include="AssignmentTests.cs" />
@@ -26,7 +29,6 @@
     <Compile Include="IntegerBinaryOperationTests.cs" />
     <Compile Include="IntegerUnaryOperationTests.cs" />
     <Compile Include="IsEventTests.cs" />
-    <Compile Include="IsExternalInit.cs" />
     <Compile Include="NamedArgumentTests.cs" />
     <Compile Include="NullableEnumUnaryOperationTest.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />

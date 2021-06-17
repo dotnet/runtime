@@ -433,7 +433,7 @@ namespace System.Xml.Xsl.Qil
     }
 
     //for checking the depth of QilNode to avoid StackOverflow in visit stage
-    internal class QilDepthChecker
+    internal sealed class QilDepthChecker
     {
         private const int MAX_QIL_DEPTH = 800;
         private readonly Dictionary<QilNode, bool> _visitedRef = new Dictionary<QilNode, bool>();

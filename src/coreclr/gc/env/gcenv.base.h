@@ -72,13 +72,14 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
     return (HRESULT)(x) <= 0 ? (HRESULT)(x) : (HRESULT) (((x) & 0x0000FFFF) | (7 << 16) | 0x80000000);
 }
 
-#define S_OK                    0x0
-#define E_FAIL                  0x80004005
-#define E_OUTOFMEMORY           0x8007000E
-#define E_INVALIDARG            0x80070057
-#define COR_E_EXECUTIONENGINE   0x80131506
-#define CLR_E_GC_BAD_AFFINITY_CONFIG 0x8013200A
-#define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT 0x8013200B
+#define S_OK                                   0x0
+#define E_FAIL                                 0x80004005
+#define E_OUTOFMEMORY                          0x8007000E
+#define COR_E_EXECUTIONENGINE                  0x80131506
+#define CLR_E_GC_BAD_AFFINITY_CONFIG           0x8013200A
+#define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
+#define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
+#define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460

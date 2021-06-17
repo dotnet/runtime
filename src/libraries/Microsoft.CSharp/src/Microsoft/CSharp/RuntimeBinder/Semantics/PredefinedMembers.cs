@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -197,12 +198,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static readonly MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
         private static readonly PropertySymbol[] _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static PropertySymbol LoadProperty(PREDEFPROP property)
         {
             PredefinedPropertyInfo info = GetPropInfo(property);
             return LoadProperty(property, NameManager.GetPredefinedName(info.name), info.getter);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static PropertySymbol LoadProperty(
             PREDEFPROP predefProp,
             Name propertyName,
@@ -221,8 +224,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return property;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static AggregateSymbol GetPredefAgg(PredefinedType pt) => SymbolLoader.GetPredefAgg(pt);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static CType LoadTypeFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
@@ -263,6 +268,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static TypeArray LoadTypeArrayFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
@@ -296,18 +302,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 #endif
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static PropertySymbol GetProperty(PREDEFPROP property)
         {
             Debug.Assert(property >= 0 && property < PREDEFPROP.PP_COUNT);
             return _properties[(int)property] ?? (_properties[(int)property] = LoadProperty(property));
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static MethodSymbol GetMethod(PREDEFMETH method)
         {
             Debug.Assert(method >= 0 && method < PREDEFMETH.PM_COUNT);
             return _methods[(int)method] ?? (_methods[(int)method] = LoadMethod(method));
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static MethodSymbol LoadMethod(
                         AggregateSymbol type,
                         int[] signature,
@@ -363,6 +372,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static MethodSymbol LoadMethod(PREDEFMETH method)
         {
             PredefinedMethodInfo info = GetMethInfo(method);

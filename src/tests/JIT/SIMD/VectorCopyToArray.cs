@@ -10,6 +10,14 @@ internal partial class VectorTest
     private const int Pass = 100;
     private const int Fail = -1;
 
+    private const int DefaultSeed = 20010415;
+    private static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
     private class VectorCopyToArrayTest<T> where T : struct, IComparable<T>, IEquatable<T>
     {
         public static int VectorCopyToArray(int size, Random random)
@@ -121,7 +129,7 @@ internal partial class VectorTest
     private static int Main()
     {
         int returnVal = Pass;
-        Random random = new Random(100);
+        Random random = new Random(Seed);
 
         if (VectorCopyToArrayTest<Single>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
         if (VectorCopyToArrayTest<Single>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
@@ -143,6 +151,10 @@ internal partial class VectorTest
         if (VectorCopyToArrayTest<uint>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
         if (VectorCopyToArrayTest<ulong>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
         if (VectorCopyToArrayTest<ulong>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nint>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nint>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nuint>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nuint>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("CopyTo(ref)", "Single")) returnVal = Fail;
@@ -165,6 +177,10 @@ internal partial class VectorTest
         if (!jitLog.Check("CopyTo(ref,int)", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("CopyTo(ref)", "UInt64")) returnVal = Fail;
         if (!jitLog.Check("CopyTo(ref,int)", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref)", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref,int)", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref)", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref,int)", "UIntPtr")) returnVal = Fail;
         jitLog.Dispose();
 
         return returnVal;

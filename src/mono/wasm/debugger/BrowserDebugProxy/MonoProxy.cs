@@ -322,6 +322,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         return await Step(id, StepKind.Into, token);
                     }
+                case "Debugger.setVariableValue":
+                    {
+                        if (!DotnetObjectId.TryParse(args?["callFrameId"], out DotnetObjectId objectId))
+                            return false;
+                        switch (objectId.Scheme)
+                        {
+                            case "scope":
+                                return await OnSetVariableValue(id,
+                                    int.Parse(objectId.Value),
+                                    args?["variableName"]?.Value<string>(),
+                                    args?["newValue"],
+                                    token);
+                            default:
+                                return false;
+                        }
+                    }
 
                 case "Debugger.stepOut":
                     {
@@ -468,6 +484,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             return false;
+        }
+
+        private async Task<bool> OnSetVariableValue(MessageId id, int scopeId, string varName, JToken varValue, CancellationToken token)
+        {
+            ExecutionContext ctx = GetContext(id);
+            Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
+            if (scope == null)
+                return false;
+            var varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
+            if (varIds == null)
+                return false;
+            var varToSetValue = varIds.FirstOrDefault(v => v.Name == varName);
+            if (varToSetValue == null)
+                return false;
+            Result res = await SendMonoCommand(id, MonoCommands.SetVariableValue(scopeId, varToSetValue.Index, varName, varValue["value"].Value<string>()), token);
+            if (res.IsOk)
+                SendResponse(id, Result.Ok(new JObject()), token);
+            else
+                SendResponse(id, Result.Err($"Unable to set '{varValue["value"].Value<string>()}' to variable '{varName}'"), token);
+            return true;
         }
 
         private async Task<Result> RuntimeGetProperties(MessageId id, DotnetObjectId objectId, JToken args, CancellationToken token)

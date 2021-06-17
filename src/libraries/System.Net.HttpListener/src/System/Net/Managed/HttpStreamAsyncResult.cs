@@ -34,7 +34,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal class HttpStreamAsyncResult : IAsyncResult
+    internal sealed class HttpStreamAsyncResult : IAsyncResult
     {
         private object _locker = new object();
         private ManualResetEvent? _handle;

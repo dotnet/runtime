@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         private CountsOfThreadsProcessingUserCallbacks _countsOfThreadsProcessingUserCallbacks;
 

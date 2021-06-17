@@ -212,6 +212,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Failing connection attempts take long on windows")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
         public async Task GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo()
         {
             using Socket portReserver = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -289,11 +290,18 @@ namespace System.Net.Http.Functional.Tests
 
                 cts.Cancel();
 
-                await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
-                await Assert.ThrowsAsync<TaskCanceledException>(() => t2);
-                await Assert.ThrowsAsync<TaskCanceledException>(() => t3);
-                await Assert.ThrowsAsync<TaskCanceledException>(() => t4);
-                await Assert.ThrowsAsync<TaskCanceledException>(() => t5);
+                async Task ValidateCancellationAsync(Task t)
+                {
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => t);
+                    Assert.Equal(cts.Token, tce.CancellationToken);
+
+                }
+
+                await ValidateCancellationAsync(t1);
+                await ValidateCancellationAsync(t2);
+                await ValidateCancellationAsync(t3);
+                await ValidateCancellationAsync(t4);
+                await ValidateCancellationAsync(t5);
             }
         }
 
@@ -350,6 +358,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetStringAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -370,6 +379,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -382,7 +392,9 @@ namespace System.Net.Http.Functional.Tests
                     var cts = new CancellationTokenSource();
                     cts.Cancel();
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                    Assert.Equal(cts.Token, tce.CancellationToken);
+
                     onClientFinished.Release();
                 },
                 async server =>
@@ -393,6 +405,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetStringAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -402,7 +415,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using HttpClient httpClient = CreateHttpClient();
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                    Assert.Equal(cts.Token, tce.CancellationToken);
                 },
                 async server =>
                 {
@@ -426,6 +440,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1, 0)]
         [InlineData(1, 1)]
         [InlineData(1, 2)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetAsync_ContentCanBeCanceled(int getMode, int cancelMode)
         {
             // cancelMode:
@@ -516,6 +531,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -537,6 +553,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -549,7 +566,9 @@ namespace System.Net.Http.Functional.Tests
                     var cts = new CancellationTokenSource();
                     cts.Cancel();
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                    Assert.Equal(cts.Token, tce.CancellationToken);
+
                     onClientFinished.Release();
                 },
                 async server =>
@@ -560,6 +579,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -569,7 +589,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using HttpClient httpClient = CreateHttpClient();
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                    Assert.Equal(cts.Token, tce.CancellationToken);
                 },
                 async server =>
                 {
@@ -587,6 +608,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetStreamAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -611,6 +633,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetStreamAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -623,7 +646,9 @@ namespace System.Net.Http.Functional.Tests
                     var cts = new CancellationTokenSource();
                     cts.Cancel();
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                    Assert.Equal(cts.Token, tce.CancellationToken);
+
                     onClientFinished.Release();
                 },
                 async server =>
@@ -634,6 +659,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetStreamAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -643,7 +669,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using HttpClient httpClient = CreateHttpClient();
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                    TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                    Assert.Equal(cts.Token, tce.CancellationToken);
                 },
                 async server =>
                 {
@@ -682,7 +709,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public void CancelAllPending_AllPendingOperationsCanceled(bool withInfiniteTimeout)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -700,7 +727,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -729,14 +756,14 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
                 Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
                 OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
-                Assert.Null(e.InnerException);
+                Assert.Equal(e.CancellationToken, token);
             }
         }
 
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
-        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -746,7 +773,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, cts.Token);
                 cts.Cancel();
                 OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
-                Assert.Null(e.InnerException);
+                Assert.Equal(e.CancellationToken, cts.Token);
             }
         }
 
@@ -821,7 +848,8 @@ namespace System.Net.Http.Functional.Tests
 
                 cts.Cancel();
 
-                await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
+                TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
+                Assert.Equal(cts.Token, tce.CancellationToken);
             }
         }
 
@@ -889,6 +917,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -941,6 +970,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -966,6 +996,7 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.Equal(cts.Token, ex.CancellationToken);
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
@@ -986,6 +1017,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39056")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task Send_TimeoutRequestContent_Throws()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -1028,6 +1060,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1050,6 +1083,7 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.Equal(cts.Token, ex.CancellationToken);
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
@@ -1076,6 +1110,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public void Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
@@ -1116,12 +1151,6 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version11 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version11 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
-                if (QuicImplementationProviders.Default.IsSupported)
-                {
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                }
 
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, HttpVersion.Version11 };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
@@ -1129,31 +1158,13 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
-                if (QuicImplementationProviders.Default.IsSupported)
-                {
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, HttpVersion.Version20 };
-                    yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
-                }
-
-                if (QuicImplementationProviders.Default.IsSupported)
-                {
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version30, useSsl, useSsl ? HttpVersion.Version30 : HttpVersion.Version11 };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
-                    yield return new object[] { HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version30, useSsl, useSsl ? (object)HttpVersion.Version30 : typeof(HttpRequestException) };
-                }
             }
         }
 
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
@@ -1202,9 +1213,10 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [OuterLoop("Uses external server")]
         [Theory]
+        [OuterLoop("Uses external servers")]
         [MemberData(nameof(VersionSelectionMemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
         public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             RemoteServer remoteServer = null;
@@ -1415,5 +1427,31 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientSendTest_Sync(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;
+    }
+
+    public sealed class CustomHttpClientTest
+    {
+        private sealed class CustomHttpClient : HttpClientHandler
+        {
+            public Task<HttpResponseMessage> PublicSendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default) =>
+                SendAsync(request, cancellationToken);
+
+            public HttpResponseMessage PublicSend(HttpRequestMessage request, CancellationToken cancellationToken = default) =>
+                Send(request, cancellationToken);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void Send_NullRequest_ThrowsException()
+        {
+            using var client = new CustomHttpClient();
+            AssertExtensions.Throws<ArgumentNullException>("request", () => client.PublicSend(null));
+        }
+
+        [Fact]
+        public async Task SendAsync_NullRequest_ThrowsException()
+        {
+            using var client = new CustomHttpClient();
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.PublicSendAsync(null));
+        }
     }
 }

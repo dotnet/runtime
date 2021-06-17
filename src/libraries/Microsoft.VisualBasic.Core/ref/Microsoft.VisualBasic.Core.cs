@@ -197,7 +197,9 @@ namespace Microsoft.VisualBasic
     public sealed partial class Conversion
     {
         internal Conversion() { }
-        public static object CTypeDynamic(object? Expression, System.Type TargetType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression's underlying type cannot be statically analyzed and its members may be trimmed")]
+        public static object CTypeDynamic(object? Expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type TargetType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression's underlying type cannot be statically analyzed and its members may be trimmed")]
         public static TargetType CTypeDynamic<TargetType>(object? Expression) { throw null; }
         public static string ErrorToString() { throw null; }
         public static string ErrorToString(int ErrorNumber) { throw null; }
@@ -347,6 +349,7 @@ namespace Microsoft.VisualBasic
         public static void FileClose(params int[] FileNumbers) { }
         public static void FileCopy(string Source, string Destination) { }
         public static System.DateTime FileDateTime(string PathName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target object type could not be statically analyzed and may be trimmed")]
         public static void FileGet(int FileNumber, ref System.Array Value, long RecordNumber = (long)-1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
         public static void FileGet(int FileNumber, ref bool Value, long RecordNumber = (long)-1) { }
         public static void FileGet(int FileNumber, ref byte Value, long RecordNumber = (long)-1) { }
@@ -359,10 +362,13 @@ namespace Microsoft.VisualBasic
         public static void FileGet(int FileNumber, ref long Value, long RecordNumber = (long)-1) { }
         public static void FileGet(int FileNumber, ref float Value, long RecordNumber = (long)-1) { }
         public static void FileGet(int FileNumber, ref string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target object type could not be statically analyzed and may be trimmed")]
         public static void FileGet(int FileNumber, ref System.ValueType Value, long RecordNumber = (long)-1) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target object type could not be statically analyzed and may be trimmed")]
         public static void FileGetObject(int FileNumber, ref object Value, long RecordNumber = (long)-1) { }
         public static long FileLen(string PathName) { throw null; }
         public static void FileOpen(int FileNumber, string FileName, Microsoft.VisualBasic.OpenMode Mode, Microsoft.VisualBasic.OpenAccess Access = Microsoft.VisualBasic.OpenAccess.Default, Microsoft.VisualBasic.OpenShare Share = Microsoft.VisualBasic.OpenShare.Default, int RecordLength = -1) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePut(int FileNumber, System.Array Value, long RecordNumber = (long)-1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
         public static void FilePut(int FileNumber, bool Value, long RecordNumber = (long)-1) { }
         public static void FilePut(int FileNumber, byte Value, long RecordNumber = (long)-1) { }
@@ -375,9 +381,11 @@ namespace Microsoft.VisualBasic
         public static void FilePut(int FileNumber, long Value, long RecordNumber = (long)-1) { }
         public static void FilePut(int FileNumber, float Value, long RecordNumber = (long)-1) { }
         public static void FilePut(int FileNumber, string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = (long)-1) { }
         [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static void FilePut(object FileNumber, object Value, object RecordNumber) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePutObject(int FileNumber, object Value, long RecordNumber = (long)-1) { }
         public static void FileWidth(int FileNumber, int RecordWidth) { }
         public static int FreeFile() { throw null; }
@@ -391,19 +399,32 @@ namespace Microsoft.VisualBasic
         public static void Input(int FileNumber, ref short Value) { }
         public static void Input(int FileNumber, ref int Value) { }
         public static void Input(int FileNumber, ref long Value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target object type could not be statically analyzed and may be trimmed")]
         public static void Input(int FileNumber, ref object Value) { }
         public static void Input(int FileNumber, ref float Value) { }
         public static void Input(int FileNumber, ref string Value) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static string InputString(int FileNumber, int CharCount) { throw null; }
         public static void Kill(string PathName) { }
         public static string LineInput(int FileNumber) { throw null; }
         public static long Loc(int FileNumber) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Lock(int FileNumber) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Lock(int FileNumber, long Record) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
         public static long LOF(int FileNumber) { throw null; }
         public static void MkDir(string Path) { }
@@ -419,11 +440,20 @@ namespace Microsoft.VisualBasic
         public static Microsoft.VisualBasic.SpcInfo SPC(short Count) { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB() { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB(short Column) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Unlock(int FileNumber) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Unlock(int FileNumber, long Record) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Unlock(int FileNumber, long FromRecord, long ToRecord) { }
         public static void Write(int FileNumber, params object[] Output) { }
         public static void WriteLine(int FileNumber, params object[] Output) { }
@@ -500,9 +530,11 @@ namespace Microsoft.VisualBasic
         public static void AppActivate(string Title) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Beep() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The type of ObjectRef cannot be statically analyzed and its members may be trimmed.")]
         public static object? CallByName(object? ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object?[] Args) { throw null; }
         public static object? Choose(double Index, params object?[] Choice) { throw null; }
         public static string Command() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The COM object to be created cannot be statically analyzed and may be trimmed")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object CreateObject(string ProgId, string? ServerName = "") { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -511,6 +543,7 @@ namespace Microsoft.VisualBasic
         public static string Environ(int Expression) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string[,]? GetAllSettings(string AppName, string Section) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The COM component to be returned cannot be statically analyzed and may be trimmed")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object? GetObject(string? PathName = null, string? Class = null) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -631,6 +664,7 @@ namespace Microsoft.VisualBasic
         public static int Len(short Expression) { throw null; }
         public static int Len(int Expression) { throw null; }
         public static int Len(long Expression) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object's type cannot be statically analyzed and its members may be trimmed")]
         public static int Len(object? Expression) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Len(sbyte Expression) { throw null; }
@@ -770,9 +804,11 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Conversions
     {
         internal Conversions() { }
-        public static object? ChangeType(object? Expression, System.Type TargetType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression origin object cannot be statically analyzed and may be trimmed")]
+        public static object? ChangeType(object? Expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type TargetType) { throw null; }
         [System.ObsoleteAttribute("do not use this method", true)]
-        public static object FallbackUserDefinedConversion(object Expression, System.Type TargetType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression origin object cannot be statically analyzed and may be trimmed")]
+        public static object FallbackUserDefinedConversion(object Expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type TargetType) { throw null; }
         public static string FromCharAndCount(char Value, int Count) { throw null; }
         public static string FromCharArray(char[] Value) { throw null; }
         public static string FromCharArraySubset(char[] Value, int StartIndex, int Length) { throw null; }
@@ -890,30 +926,38 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal LateBinding() { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateCall(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
+        public static void LateCall(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static object? LateGet(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
+        public static object? LateGet(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateIndexGet(object o, object?[]? args, string?[]? paramnames) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSet(object o, object?[] args, string?[]? paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSetComplex(object o, object?[] args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateSet(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
+        public static void LateSet(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateSetComplex(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
+        public static void LateSetComplex(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class LikeOperator
     {
         internal LikeOperator() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The types of source and pattern cannot be statically analyzed so the like operator may be trimmed")]
         public static object LikeObject(object? Source, object? Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
         public static bool LikeString(string? Source, string? Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
     }
@@ -930,39 +974,57 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal NewLateBinding() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackCall(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackGet(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackIndexSet(object Instance, object[] Arguments, string[] ArgumentNames) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackIndexSetComplex(object Instance, object[] Arguments, string[] ArgumentNames, bool OptimisticSet, bool RValueBase) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackInvokeDefault1(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackInvokeDefault2(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackSet(object Instance, string MemberName, object[] Arguments) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackSetComplex(object Instance, string MemberName, object[] Arguments, bool OptimisticSet, bool RValueBase) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateCall(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateCallInvokeDefault(object? Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateGet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateGetInvokeDefault(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateIndexGet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSetComplex(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool OptimisticSet, bool RValueBase) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase, Microsoft.VisualBasic.CallType CallType) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSetComplex(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -974,8 +1036,10 @@ namespace Microsoft.VisualBasic.CompilerServices
         public sealed partial class ForLoopControl
         {
             internal ForLoopControl() { }
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The types of the parameters cannot be statically analyzed and may be trimmed")]
             public static bool ForLoopInitObj(object Counter, object Start, object Limit, object StepValue, ref object LoopForResult, ref object CounterResult) { throw null; }
             public static bool ForNextCheckDec(decimal count, decimal limit, decimal StepValue) { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The types of the parameters cannot be statically analyzed and may be trimmed")]
             public static bool ForNextCheckObj(object Counter, object LoopObj, ref object CounterResult) { throw null; }
             public static bool ForNextCheckR4(float count, float limit, float StepValue) { throw null; }
             public static bool ForNextCheckR8(double count, double limit, double StepValue) { throw null; }
@@ -993,7 +1057,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static object GetObjectValuePrimitive(object? o) { throw null; }
         public static object IDivObj(object? o1, object? o2) { throw null; }
         public static bool LikeObj(object? vLeft, object? vRight, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
-        public static object ModObj(object? o1, object?o2) { throw null; }
+        public static object ModObj(object? o1, object? o2) { throw null; }
         public static object MulObj(object? o1, object? o2) { throw null; }
         public static object NegObj(object? obj) { throw null; }
         public static object NotObj(object? obj) { throw null; }
@@ -1010,36 +1074,65 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Operators
     {
         internal Operators() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? AddObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? AndObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? CompareObjectEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? CompareObjectGreater(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? CompareObjectGreaterEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? CompareObjectLess(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? CompareObjectLessEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? CompareObjectNotEqual(object? Left, object? Right, bool TextCompare) { throw null; }
         public static int CompareString(string? Left, string? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? ConcatenateObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static bool ConditionalCompareObjectEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static bool ConditionalCompareObjectGreater(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static bool ConditionalCompareObjectGreaterEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static bool ConditionalCompareObjectLess(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static bool ConditionalCompareObjectLessEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static bool ConditionalCompareObjectNotEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? DivideObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? ExponentObject(object? Left, object? Right) { throw null; }
         [System.ObsoleteAttribute("do not use this method", true)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? FallbackInvokeUserDefinedOperator(object? vbOp, object?[]? arguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? IntDivideObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? LeftShiftObject(object? Operand, object? Amount) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? ModObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? MultiplyObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? NegateObject(object? Operand) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? NotObject(object? Operand) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? OrObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? PlusObject(object? Operand) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? RightShiftObject(object? Operand, object? Amount) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? SubtractObject(object? Left, object? Right) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? XorObject(object? Left, object? Right) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false, AllowMultiple=false)]
@@ -1128,6 +1221,7 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Versioned
     {
         internal Versioned() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The method name cannot and type cannot be statically analyzed so it may be trimmed")]
         public static object? CallByName(object? Instance, string MethodName, Microsoft.VisualBasic.CallType UseCallType, params object?[]? Arguments) { throw null; }
         public static bool IsNumeric(object? Expression) { throw null; }
         public static string? SystemTypeName(string? VbName) { throw null; }

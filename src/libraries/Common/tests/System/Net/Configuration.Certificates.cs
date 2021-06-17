@@ -16,8 +16,8 @@ namespace System.Net.Test.Common
     {
         public static partial class Certificates
         {
-            private const string CertificatePassword = "testcertificate";
-            private const string TestDataFolder = "TestData";
+            private const string CertificatePassword = "PLACEHOLDER";
+            private const string TestDataFolder = "TestDataCertificates";
             private const int MutexTimeoutMs = 120_000;
 
             private static readonly X509Certificate2 s_serverCertificate;
@@ -37,10 +37,9 @@ namespace System.Net.Test.Common
                 {
                     try
                     {
-                        string contosoPfxSuffix = PlatformSupport.IsRC2Supported ? ".pfx" : ".noRC2.pfx";
-                        byte[] serverCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, $"testservereku.contoso.com{contosoPfxSuffix}"));
-                        byte[] clientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, $"testclienteku.contoso.com{contosoPfxSuffix}"));
-                        byte[] noEKUCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, $"testnoeku.contoso.com{contosoPfxSuffix}"));
+                        byte[] serverCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testservereku.contoso.com.pfx"));
+                        byte[] clientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testclienteku.contoso.com.pfx"));
+                        byte[] noEKUCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testnoeku.contoso.com.pfx"));
                         byte[] selfSignedServerCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testselfsignedservereku.contoso.com.pfx"));
                         byte[] selfSignedClientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testselfsignedclienteku.contoso.com.pfx"));
 
@@ -64,7 +63,7 @@ namespace System.Net.Test.Common
                     }
                 }
             }
-            
+
             // These Get* methods make a copy of the certificates so that consumers own the lifetime of the
             // certificates handed back.  Consumers are expected to dispose of their certs when done with them.
 

@@ -71,7 +71,7 @@ internal static partial class Interop
             }
 
             // Couldn't get a message, so manufacture one.
-            return string.Format("Unknown error (0x{0:x})", errorCode);
+            return $"Unknown error (0x{errorCode:x})";
         }
 
         private static string GetAndTrimString(Span<char> buffer)

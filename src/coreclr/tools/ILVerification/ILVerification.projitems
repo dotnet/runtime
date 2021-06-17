@@ -46,6 +46,12 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ModuleDesc.cs">
       <Link>TypeSystem\Common\ModuleDesc.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\NotFoundBehavior.cs">
+      <Link>TypeSystem\Common\NotFoundBehavior.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ResolutionFailure.cs">
+      <Link>TypeSystem\Common\ResolutionFailure.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemEntity.cs">
       <Link>TypeSystem\Common\TypeSystemEntity.cs</Link>
     </Compile>

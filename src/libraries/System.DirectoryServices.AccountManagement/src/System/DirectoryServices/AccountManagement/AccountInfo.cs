@@ -11,7 +11,7 @@ namespace System.DirectoryServices.AccountManagement
 #if TESTHOOK
     public class AccountInfo
 #else
-    internal class AccountInfo
+    internal sealed class AccountInfo
 #endif
     {
         //

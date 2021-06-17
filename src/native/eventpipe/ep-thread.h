@@ -263,6 +263,9 @@ struct _EventPipeThreadSessionState_Internal {
 	// a buffer for this session. It is set back to null when
 	// event writing is suspended during session disable.
 	// protected by the buffer manager lock.
+	// This field can be read outside the lock when
+	// the buffer allocation logic is estimating how many
+	// buffers a given thread has used (see: ep_thread_session_state_get_buffer_count_estimate and its uses).
 	EventPipeBufferList *buffer_list;
 #ifdef EP_CHECKED_BUILD
 	// protected by the buffer manager lock.
@@ -310,6 +313,9 @@ ep_thread_session_state_free (EventPipeThreadSessionState *thread_session_state)
 
 EventPipeThread *
 ep_thread_session_state_get_thread (const EventPipeThreadSessionState *thread_session_state);
+
+uint32_t
+ep_thread_session_state_get_buffer_count_estimate(const EventPipeThreadSessionState *thread_session_state);
 
 // _Requires_lock_held (thread)
 EventPipeBuffer *

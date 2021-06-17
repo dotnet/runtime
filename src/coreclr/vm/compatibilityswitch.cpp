@@ -23,7 +23,7 @@ FCIMPL1(StringObject*, CompatibilitySwitch::GetValue, StringObject* switchNameUN
     HELPER_METHOD_FRAME_BEGIN_RET_1(name);
     CLRConfig::ConfigStringInfo info;
     info.name = name->GetBuffer();
-    info.options = CLRConfig::EEConfig_default;
+    info.options = CLRConfig::LookupOptions::Default;
     LPWSTR strVal = CLRConfig::GetConfigValue(info);
     refName = StringObject::NewString(strVal);
     HELPER_METHOD_FRAME_END();

@@ -12,8 +12,6 @@ using System.Text;
 using System.Threading;
 using System.Security;
 
-using Internal.IO;
-
 namespace System
 {
     public sealed partial class TimeZoneInfo
@@ -22,10 +20,40 @@ namespace System
         private const string ZoneTabFileName = "zone.tab";
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
-        private const string FallbackCultureName = "en-US";
+
+        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
+        // (This list is not likely to change.)
+        private static readonly string[] s_UtcAliases = new[] {
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UCT",
+            "UTC",
+            "Universal",
+            "Zulu"
+        };
+
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
+            _id = id;
+
+            HasIanaId = true;
+
+            // Handle UTC and its aliases
+            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
+            {
+                _standardDisplayName = GetUtcStandardDisplayName();
+                _daylightDisplayName = _standardDisplayName;
+                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
+                _baseUtcOffset = TimeSpan.Zero;
+                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                return;
+            }
+
             TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
@@ -40,12 +68,8 @@ namespace System
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime, out futureTransitionsPosixFormat);
 
-            _id = id;
-            _displayName = LocalId;
-            _baseUtcOffset = TimeSpan.Zero;
-
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
-            // NOTE: read the display strings from the tzfile now in case they can't be loaded later
+            // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
             // from the globalization data.
             DateTime utcNow = DateTime.UtcNow;
             for (int i = 0; i < dts.Length && dts[i] <= utcNow; i++)
@@ -80,23 +104,14 @@ namespace System
                 }
             }
 
-            // Use abbrev as the fallback
+            // Set fallback values using abbreviations, base offset, and id
+            // These are expected in environments without time zone globalization data
             _standardDisplayName = standardAbbrevName;
-            _daylightDisplayName = daylightAbbrevName;
-            _displayName = _standardDisplayName;
+            _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
+            _displayName = $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}";
 
-            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture, ref _displayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture, ref _standardDisplayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture, ref _daylightDisplayName);
-
-            if (_standardDisplayName == _displayName)
-            {
-                if (_baseUtcOffset >= TimeSpan.Zero)
-                    _displayName = $"(UTC+{_baseUtcOffset:hh\\:mm}) {_standardDisplayName}";
-                else
-                    _displayName = $"(UTC-{_baseUtcOffset:hh\\:mm}) {_standardDisplayName}";
-            }
+            // Try to populate the display names from the globalization data
+            TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -220,36 +235,6 @@ namespace System
             {
                 TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
             }
-        }
-
-        private static unsafe string? GetAlternativeId(string id)
-        {
-            if (!GlobalizationMode.Invariant)
-            {
-                if (id.Equals("utc", StringComparison.OrdinalIgnoreCase))
-                {
-                    //special case UTC as ICU will convert it to "Etc/GMT" which is incorrect name for UTC.
-                    return "Etc/UTC";
-                }
-                foreach (char c in id)
-                {
-                    // ICU uses some characters as a separator and trim the id at that character.
-                    // while we should fail if the Id contained one of these characters.
-                    if (c == '\\' || c == '\n' || c == '\r')
-                    {
-                        return null;
-                    }
-                }
-
-                char* buffer = stackalloc char[100];
-                int length = Interop.Globalization.WindowsIdToIanaId(id, buffer, 100);
-                if (length > 0)
-                {
-                    return new string(buffer, 0, length);
-                }
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -988,7 +973,7 @@ namespace System
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -1031,7 +1016,7 @@ namespace System
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -1068,7 +1053,7 @@ namespace System
                         noDaylightTransitions: true);
                 }
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -1296,8 +1281,7 @@ namespace System
             {
                 if (date[0] != 'J')
                 {
-                    // should be n Julian day format which we don't support.
-                    //
+                    // should be n Julian day format.
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
                     // n would be a relative number from the beginning of the year. which should handle if the
@@ -1313,11 +1297,30 @@ namespace System
                     // 0                30 31              58 59              89      334            364
                     // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
                     //
-                    //
                     // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
                     // while in non leap year the rule will start at Mar 2.
                     //
-                    // If we need to support n format, we'll have to have a floating adjustment rule support this case.
+                    // This n Julian day format is very uncommon and mostly  used for convenience to specify dates like January 1st
+                    // which we can support without any major modification to the Adjustment rules. We'll support this rule  for day
+                    // numbers less than 59 (up to Feb 28). Otherwise we'll skip this POSIX rule.
+                    // We've never encountered any time zone file using this format for days beyond Feb 28.
+
+                    if (int.TryParse(date, out int julianDay) && julianDay < 59)
+                    {
+                        int d, m;
+                        if (julianDay <= 30) // January
+                        {
+                            m = 1;
+                            d = julianDay + 1;
+                        }
+                        else // February
+                        {
+                            m = 2;
+                            d = julianDay - 30;
+                        }
+
+                        return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), m, d);
+                    }
 
                     // Since we can't support this rule, return null to indicate to skip the POSIX rule.
                     return null;
@@ -1330,7 +1333,7 @@ namespace System
         }
 
         /// <summary>
-        /// Parses a string like Jn or n into month and day values.
+        /// Parses a string like Jn into month and day values.
         /// </summary>
         private static void TZif_ParseJulianDay(ReadOnlySpan<char> date, out int month, out int day)
         {
@@ -1788,6 +1791,20 @@ namespace System
             V2,
             V3,
             // when adding more versions, ensure all the logic using TZVersion is still correct
+        }
+
+        // Helper function for string array search. (LINQ is not available here.)
+        private static bool StringArrayContains(string value, string[] source, StringComparison comparison)
+        {
+            foreach (string s in source)
+            {
+                if (string.Equals(s, value, comparison))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

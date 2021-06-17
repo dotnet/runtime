@@ -1,6 +1,7 @@
 # Users referenced in this file will automatically be requested as reviewers for PRs that modify the given paths.
 # See https://help.github.com/articles/about-code-owners/
 
+/src/libraries/Common/src/Interop/                                  @dotnet/platform-deps-team
 /src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
 /src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
 /src/libraries/System.Text.Json/                                    @steveharter @layomia @Jozkee @eiriktsarpalis
@@ -28,9 +29,9 @@
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek @CoffeeFlux
 
-/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @CoffeeFlux
+/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @CoffeeFlux @imhameed
 /src/mono/mono/mini/*cfgdump* @vargaz
-/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad
+/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad @imhameed
 /src/mono/mono/mini/*llvm* @vargaz @imhameed @EgorBo
 /src/mono/mono/mini/*ppc* @vargaz
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
@@ -50,5 +51,7 @@
 /src/mono/mono/utils/mono-merp* @lambdageek @naricc @imhameed
 /src/mono/mono/utils/mono-state* @lambdageek
 /src/mono/mono/utils/mono-threads* @lambdageek @vargaz
+
+/src/mono/dlls @thaystg @lambdageek
 
 /src/mono/netcore @marek-safar @akoeplinger @vargaz @steveisok

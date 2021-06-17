@@ -3,10 +3,13 @@
     <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
 
+    <_projectDirName>$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))</_projectDirName>
+    <IsReferenceAssembly Condition="'$(_projectDirName)' == 'ref'">true</IsReferenceAssembly>
+    <IsSourceProject Condition="'$(_projectDirName)' == 'src'">true</IsSourceProject>
+    <IsGeneratorProject Condition="'$(_projectDirName)' == 'gen'">true</IsGeneratorProject>
+
     <!-- Set OutDirName to change BaseOutputPath and BaseIntermediateOutputPath to include the ref subfolder. -->
-    <_sepChar>$([System.IO.Path]::DirectorySeparatorChar)</_sepChar>
-    <IsReferenceAssembly Condition="$(MSBuildProjectFullPath.Contains('$(_sepChar)ref$(_sepChar)'))">true</IsReferenceAssembly>
-    <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$(_sepChar)ref</OutDirName>
+    <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref</OutDirName>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
@@ -14,23 +17,18 @@
 
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
-    <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- Remove once is fixed: https://github.com/dotnet/roslyn/issues/42344 -->
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" Condition="'$(UseTargetFrameworkSDK)' != 'false'" />
 
   <PropertyGroup>
-    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</BuildTargetFramework>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
-    <!-- Initialize BuildSettings from the individual properties. -->
-    <BuildSettings>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
-    <BuildSettings Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
@@ -57,16 +55,12 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(TargetFramework)'))</_targetFrameworkValue>
-    <_targetFrameworkValue>$([MSBuild]::ValueOrDefault('$(_targetFrameworkValue)', '$(NetCoreAppCurrent)'))</_targetFrameworkValue>
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_targetFrameworkValue)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
-    <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
+    <RunApiCompatForSrc>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunApiCompatForSrc>
+    <RunMatchingRefApiCompat>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunMatchingRefApiCompat>
     <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
@@ -76,14 +70,10 @@
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
-                                           '$(BuildAllConfigurations)' == 'true'">true</BuildingNETCoreAppVertical>
-    <BinPlaceTestSharedFramework Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceTestSharedFramework>
-  </PropertyGroup>
-
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
+
+  <Import Sdk="Microsoft.DotNet.PackageValidation" Project="Sdk.props" Condition="'$(IsSourceProject)' == 'true'" />
 
   <PropertyGroup>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
@@ -96,7 +86,9 @@
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
+    <!-- TODO: Remove condition when all libraries migrated from pkgprojs to NuGet's Pack Task. -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
+    <IsPackable Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) and '$(IsSourceProject)' == 'true'">true</IsPackable>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
@@ -143,9 +135,6 @@
 
     <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
-
-    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>

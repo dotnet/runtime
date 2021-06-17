@@ -59,7 +59,6 @@
 //-------------------------------------------------------------------------
 class  InstructionFormat;
 class  Stub;
-class  InterceptStub;
 class  CheckDuplicatedStructLayouts;
 class  CodeBasedStubCache;
 struct  CodeLabel;
@@ -282,19 +281,6 @@ public:
         //---------------------------------------------------------------
         Stub *Link(LoaderHeap *heap, DWORD flags = 0);
 
-        //---------------------------------------------------------------
-        // Generate the actual stub. The returned stub has a refcount of 1.
-        // No other methods (other than the destructor) should be called
-        // after calling Link(). The linked stub must have its increment
-        // increased by one prior to calling this method. This method
-        // does not increment the reference count of the interceptee.
-        //
-        // Throws exception on failure.
-        //---------------------------------------------------------------
-        Stub *LinkInterceptor(Stub* interceptee, void *pRealAddr)
-            { WRAPPER_NO_CONTRACT; return LinkInterceptor(NULL,interceptee, pRealAddr); }
-        Stub *LinkInterceptor(LoaderHeap *heap, Stub* interceptee, void *pRealAddr);
-
     private:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
         CodeLabel     *m_pFirstCodeLabel;   // linked list of CodeLabels
@@ -413,7 +399,7 @@ private:
 
         CodeRun *GetLastCodeRunIfAny();
 
-        bool EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap);
+        bool EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, LoaderHeap* pHeap);
 
 #if defined(TARGET_AMD64) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
         UNWIND_CODE *AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots = 0);
@@ -457,7 +443,6 @@ struct CodeLabel
 
 enum NewStubFlags
 {
-    NEWSTUB_FL_INTERCEPT        = 0x00000001,
     NEWSTUB_FL_MULTICAST        = 0x00000002,
     NEWSTUB_FL_EXTERNAL         = 0x00000004,
     NEWSTUB_FL_LOADERHEAP       = 0x00000008
@@ -483,7 +468,6 @@ class Stub
         MULTICAST_DELEGATE_BIT = 0x80000000,
         EXTERNAL_ENTRY_BIT     = 0x40000000,
         LOADER_HEAP_BIT        = 0x20000000,
-        INTERCEPT_BIT          = 0x10000000,
         UNWIND_INFO_BIT        = 0x08000000,
 
         PATCH_OFFSET_MASK      = UNWIND_INFO_BIT - 1,
@@ -523,12 +507,6 @@ class Stub
         //-------------------------------------------------------------------
         // Used by the debugger to help step through stubs
         //-------------------------------------------------------------------
-        BOOL IsIntercept()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_patchOffset & INTERCEPT_BIT) != 0;
-        }
-
         BOOL IsMulticastDelegate()
         {
             LIMITED_METHOD_CONTRACT;
@@ -587,11 +565,6 @@ class Stub
             _ASSERTE(HasUnwindInfo());
 
             TADDR info = dac_cast<TADDR>(this);
-
-            if (IsIntercept())
-            {
-                info -= 2 * sizeof(TADDR);
-            }
 
             return PTR_StubUnwindInfoHeaderSuffix
                 (info - sizeof(StubUnwindInfoHeaderSuffix));
@@ -827,79 +800,6 @@ class Stub
 };
 
 
-/*
- * The InterceptStub hides a reference to the real stub at a negative offset.
- * When this stub is deleted it decrements the real stub cleaning it up as
- * well. The InterceptStub is created by the Stublinker.
- *
- * <TODO>@TODO: Intercepted stubs need have a routine that will find the
- *        last real stub in the chain.</TODO>
- *        The stubs are linked - GetInterceptedStub will return either
- *        a pointer to the next intercept stub (if there is one), or NULL,
- *        indicating end-of-chain.  GetRealAddr will return the address of
- *        the "real" code, which may, in fact, be another thunk (for example),
- *        and thus should be traced as well.
- */
-
-typedef DPTR(class InterceptStub) PTR_InterceptStub;
-class InterceptStub : public Stub
-{
-    friend class Stub;
-    public:
-        //-------------------------------------------------------------------
-        // This creates stubs.
-        //-------------------------------------------------------------------
-        static Stub* NewInterceptedStub(LoaderHeap *pHeap,
-                                        UINT numCodeBytes,
-                                        Stub* interceptee,
-                                        void* pRealAddr
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                                        , UINT nUnwindInfoSize = 0
-#endif
-                                        );
-
-        //---------------------------------------------------------------
-        // Expose key offsets and values for stub generation.
-        //---------------------------------------------------------------
-        int GetNegativeOffset()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return sizeof(TADDR) + GetNegativeOffsetRealAddr();
-        }
-
-        PTR_PTR_Stub GetInterceptedStub()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return dac_cast<PTR_PTR_Stub>(
-                dac_cast<TADDR>(this) - GetNegativeOffset());
-        }
-
-        int GetNegativeOffsetRealAddr()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return sizeof(TADDR);
-        }
-
-        PTR_TADDR GetRealAddr()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return dac_cast<PTR_TADDR>(
-                dac_cast<TADDR>(this) - GetNegativeOffsetRealAddr());
-        }
-
-        static Stub*     NewInterceptedStub(void* pCode,
-                                            Stub* interceptee,
-                                            void* pRealAddr);
-
-protected:
-        void ReleaseInterceptedStub();
-
-#ifdef _DEBUG
-        InterceptStub()  // Intercept stubs are only created by NewInterceptedStub.
-        { LIMITED_METHOD_CONTRACT; }
-#endif
-};
-
 //-------------------------------------------------------------------------
 // Each platform encodes the "branch" instruction in a different
 // way. We use objects derived from InstructionFormat to abstract this
@@ -1071,7 +971,7 @@ class InstructionFormat
         }
 
         virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode) = 0;
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pCodeBuffer, UINT variationCode, BYTE *pDataBuffer) = 0;
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pCodeBufferRX, BYTE *pCodeBufferRW, UINT variationCode, BYTE *pDataBuffer) = 0;
         virtual UINT GetHotSpotOffset(UINT refsize, UINT variationCode)
         {
             WRAPPER_NO_CONTRACT;

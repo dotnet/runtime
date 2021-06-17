@@ -332,7 +332,7 @@ namespace System.Net.NetworkInformation
         {
             Debug.Assert(hexAddress.Length == 32);
             byte[] addressBytes = new byte[16];
-            if (isNetworkOrder)
+            if (isNetworkOrder || !BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < 16; i++)
                 {

@@ -151,10 +151,10 @@ namespace System.Net.Http.Tests
             headers.Add("Accept-Charset", "utf-8");
             headers.AcceptCharset.Add(new StringWithQualityHeaderValue("iso-8859-5", 0.5));
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (var header in headers.NonValidated)
             {
                 Assert.Equal("Accept-Charset", header.Key);
-                Assert.Equal("utf-8, iso-8859-5; q=0.5, invalid value", header.Value);
+                Assert.Equal("utf-8, iso-8859-5; q=0.5, invalid value", header.Value.ToString());
             }
         }
 
@@ -656,10 +656,10 @@ namespace System.Net.Http.Tests
             headers.Add("User-Agent", "custom2/1.1");
             headers.UserAgent.Add(new ProductInfoHeaderValue("(comment)"));
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (var header in headers.NonValidated)
             {
                 Assert.Equal("User-Agent", header.Key);
-                Assert.Equal("custom2/1.1 (comment) custom\u4F1A", header.Value);
+                Assert.Equal("custom2/1.1 (comment) custom\u4F1A", header.Value.ToString());
             }
         }
 
@@ -720,8 +720,18 @@ namespace System.Net.Http.Tests
             Assert.False(headers.Contains("From"),
                 "Header store should not contain a header 'From' after setting it to null.");
 
-            Assert.Throws<FormatException>(() => { headers.From = " "; });
-            Assert.Throws<FormatException>(() => { headers.From = "invalid email address"; });
+            // values are not validated, so invalid values are accepted
+            headers.From = " ";
+            Assert.Equal(" ", headers.From);
+
+            headers.From = "invalid email address";
+            Assert.Equal("invalid email address", headers.From);
+
+            // Null and empty string are equivalent. Setting to empty means remove the From header value (if any).
+            headers.From = string.Empty;
+            Assert.Null(headers.From);
+            Assert.False(headers.Contains("From"),
+                "Header store should not contain a header 'From' after setting it to string.Empty.");
         }
 
         [Fact]
@@ -739,14 +749,15 @@ namespace System.Net.Http.Tests
         [Fact]
         public void From_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
+            // values are not validated, so invalid values are accepted
             headers.TryAddWithoutValidation("From", " info@example.com ,");
-            Assert.Null(headers.GetParsedValues(KnownHeaders.From.Descriptor));
+            Assert.Equal("info@example.com ,", headers.GetParsedValues(KnownHeaders.From.Descriptor));
             Assert.Equal(1, headers.GetValues("From").Count());
-            Assert.Equal(" info@example.com ,", headers.GetValues("From").First());
+            Assert.Equal("info@example.com ,", headers.GetValues("From").First());
 
             headers.Clear();
             headers.TryAddWithoutValidation("From", "info@");
-            Assert.Null(headers.GetParsedValues(KnownHeaders.From.Descriptor));
+            Assert.Equal("info@", headers.GetParsedValues(KnownHeaders.From.Descriptor));
             Assert.Equal(1, headers.GetValues("From").Count());
             Assert.Equal("info@", headers.GetValues("From").First());
         }

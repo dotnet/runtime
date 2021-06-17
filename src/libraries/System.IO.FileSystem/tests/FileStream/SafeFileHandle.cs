@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_SafeFileHandle : FileSystemTest
     {
         [Fact]
@@ -66,13 +66,13 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLegacyFileStreamEnabled))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNet5CompatFileStreamEnabled))]
         public async Task ThrowWhenHandlePositionIsChanged_sync()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: false);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsLegacyFileStreamEnabled))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNet5CompatFileStreamEnabled))]
         public async Task ThrowWhenHandlePositionIsChanged_async()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: true);
@@ -110,7 +110,7 @@ namespace System.IO.Tests
                         && OperatingSystem.IsWindows()
                         // ReadAsync which in this case (single byte written to buffer) calls FlushAsync is now 100% async
                         // so it does not complete synchronously anymore
-                        && PlatformDetection.IsLegacyFileStreamEnabled) 
+                        && PlatformDetection.IsNet5CompatFileStreamEnabled) 
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }

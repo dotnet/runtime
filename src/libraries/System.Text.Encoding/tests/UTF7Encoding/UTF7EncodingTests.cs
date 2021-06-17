@@ -52,6 +52,7 @@ namespace System.Text.Tests
             yield return new object[] { Encoding.UTF7 };
             yield return new object[] { Encoding.GetEncoding("utf-7") };
         }
+
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         public void WebName(UTF7Encoding encoding)

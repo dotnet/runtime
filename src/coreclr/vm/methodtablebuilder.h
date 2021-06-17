@@ -1325,6 +1325,7 @@ private:
         bool fIsEnum;
         bool fNoSanityChecks;
         bool fSparse;                           // Set to true if a sparse interface is being used.
+        bool fHasVirtualStaticMethods;          // Set to true if the interface type declares virtual static methods.
 
         // Com Interop, ComWrapper classes extend from ComObject
         bool fIsComObjectType;                  // whether this class is an instance of ComObject class
@@ -1496,7 +1497,7 @@ private:
         AddNonVirtualMethod(bmtMDMethod * pMethod)
         {
             INDEBUG(SealVirtualSlotSection());
-            CONSISTENCY_CHECK(!IsMdVirtual(pMethod->GetDeclAttrs()));
+            CONSISTENCY_CHECK(!IsMdVirtual(pMethod->GetDeclAttrs()) || IsMdStatic(pMethod->GetDeclAttrs()));
             pMethod->SetSlotIndex(pSlotTable->GetSlotCount());
             if (!pSlotTable->AddMethodSlot(bmtMethodSlot(pMethod, pMethod)))
                 return false;
@@ -2984,7 +2985,8 @@ private:
                                 LoaderAllocator *pAllocator,
                                 BOOL isIFace,
                                 BOOL fDynamicStatics,
-                                BOOL fHasGenericsStaticsInfo
+                                BOOL fHasGenericsStaticsInfo,
+                                BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap
 #endif

@@ -6,12 +6,12 @@ using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
         /// </summary>
-        private partial class HillClimbing
+        private sealed partial class HillClimbing
         {
             private const int LogCapacity = 200;
             private const int DefaultSampleIntervalMsLow = 10;
@@ -33,6 +33,7 @@ namespace System.Threading
                 Stabilizing,
                 Starvation,
                 ThreadTimedOut,
+                CooperativeBlocking,
             }
 
             // SOS's ThreadPool command depends on the names of all fields
@@ -321,10 +322,12 @@ namespace System.Threading
                 newThreadWaveMagnitude = Math.Max(newThreadWaveMagnitude, 1);
 
                 //
-                // Make sure our control setting is within the ThreadPool's limits
+                // Make sure our control setting is within the ThreadPool's limits. When some threads are blocked due to
+                // cooperative blocking, ensure that hill climbing does not decrease the thread count below the expected
+                // minimum.
                 //
                 int maxThreads = threadPoolInstance._maxThreads;
-                int minThreads = threadPoolInstance._minThreads;
+                int minThreads = threadPoolInstance.MinThreadsGoal;
 
                 _currentControlSetting = Math.Min(maxThreads - newThreadWaveMagnitude, _currentControlSetting);
                 _currentControlSetting = Math.Max(minThreads, _currentControlSetting);
@@ -355,7 +358,11 @@ namespace System.Threading
                 // If all of this caused an actual change in thread count, log that as well.
                 //
                 if (newThreadCount != currentThreadCount)
+                {
                     ChangeThreadCount(newThreadCount, state);
+                    _secondsElapsedSinceLastChange = 0;
+                    _completionsSinceLastChange = 0;
+                }
 
                 //
                 // Return the new thread count and sample interval.  This is randomized to prevent correlations with other periodic
@@ -377,11 +384,14 @@ namespace System.Threading
             private void ChangeThreadCount(int newThreadCount, StateOrTransition state)
             {
                 _lastThreadCount = newThreadCount;
-                _currentSampleMs = _randomIntervalGenerator.Next(_sampleIntervalMsLow, _sampleIntervalMsHigh + 1);
+
+                if (state != StateOrTransition.CooperativeBlocking) // this can be noisy
+                {
+                    _currentSampleMs = _randomIntervalGenerator.Next(_sampleIntervalMsLow, _sampleIntervalMsHigh + 1);
+                }
+
                 double throughput = _secondsElapsedSinceLastChange > 0 ? _completionsSinceLastChange / _secondsElapsedSinceLastChange : 0;
                 LogTransition(newThreadCount, throughput, state);
-                _secondsElapsedSinceLastChange = 0;
-                _completionsSinceLastChange = 0;
             }
 
             private void LogTransition(int newThreadCount, double throughput, StateOrTransition stateOrTransition)

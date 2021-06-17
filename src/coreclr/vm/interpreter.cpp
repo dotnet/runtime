@@ -3313,8 +3313,6 @@ bool Interpreter::MethodHandlesException(OBJECTREF orThrowable)
 
     if (orThrowable != NULL)
     {
-        PTR_Thread pCurThread = GetThread();
-
         // Don't catch ThreadAbort and other uncatchable exceptions
         if (!IsUncatchable(&orThrowable))
         {
@@ -9038,18 +9036,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case CORINFO_INTRINSIC_StringLength:
-            DoStringLength(); didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_StringGetChar:
-            DoStringGetChar(); didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_GetTypeFromHandle:
-            // This is an identity transformation.  (At least until I change LdToken to
-            // return a RuntimeTypeHandle struct...which is a TODO.)
-            DoGetTypeFromHandle();
-            didIntrinsic = true;
-            break;
         case CORINFO_INTRINSIC_ByReference_Ctor:
             DoByReferenceCtor();
             didIntrinsic = true;
