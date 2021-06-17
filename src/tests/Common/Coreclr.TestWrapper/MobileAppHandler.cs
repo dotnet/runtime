@@ -104,9 +104,9 @@ namespace CoreclrTestLib
                     }
                     catch {}
 
-                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {3}, end: {4})",
+                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
                             cmdStr, timeout, startTime.ToString(), endTime.ToString());
-                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {3}, end: {4})",
+                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
                             cmdStr, timeout, startTime.ToString(), endTime.ToString());
                     
                     process.Kill(entireProcessTree: true);

@@ -53,6 +53,7 @@ namespace System.Runtime.ExceptionServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void SetCurrentStackTrace_IncludedInExceptionStackTrace()
         {
             Exception e;
