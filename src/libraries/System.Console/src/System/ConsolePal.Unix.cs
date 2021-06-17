@@ -1444,23 +1444,21 @@ namespace System
 
         internal sealed class ControlCHandlerRegistrar
         {
-            private bool _handlerRegistered;
-            private IDisposable? _sigIntRegistration;
-            private IDisposable? _sigQuitRegistration;
+            private PosixSignalRegistration? _sigIntRegistration;
+            private PosixSignalRegistration? _sigQuitRegistration;
 
             internal unsafe void Register()
             {
-                Debug.Assert(s_initialized); // by CancelKeyPress add.
+                Debug.Assert(_sigIntRegistration is null);
 
-                Debug.Assert(!_handlerRegistered);
                 _sigIntRegistration = PosixSignalRegistration.Create(PosixSignal.SIGINT, HandlePosixSignal);
                 _sigQuitRegistration = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, HandlePosixSignal);
-                _handlerRegistered = true;
             }
 
             internal void Unregister()
             {
-                Debug.Assert(_handlerRegistered);
+                Debug.Assert(_sigIntRegistration is not null);
+
                 _sigIntRegistration?.Dispose();
                 _sigQuitRegistration?.Dispose();
             }
