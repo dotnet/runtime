@@ -1125,7 +1125,7 @@ namespace System.Net.Http
 
         private void CancelResponseContentRead()
         {
-            if (_responseDataPayloadRemaining != -1) // -1 indicates EOS
+            if (Volatile.Read(ref _responseDataPayloadRemaining) != -1) // -1 indicates EOS
             {
                 _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
             }
@@ -1166,7 +1166,7 @@ namespace System.Net.Http
                         // End of stream.
                         CopyTrailersToResponseMessage(response);
 
-                        _responseDataPayloadRemaining = -1; // Set to -1 to indicate EOS.
+                        Volatile.Write(ref _responseDataPayloadRemaining, -1); // Set to -1 to indicate EOS.
                         return false;
                 }
             }

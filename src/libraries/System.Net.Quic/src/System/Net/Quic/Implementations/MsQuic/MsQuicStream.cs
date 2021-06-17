@@ -69,6 +69,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public string LogId = null!; // set in ctor.
         }
 
         // inbound.
@@ -94,12 +96,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] inbound {(_canWrite ? "bi" : "uni")}directional stream created " +
-                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+                    $"{_state.LogId} inbound {(_canWrite ? "bi" : "uni")}directional stream created " +
+                        $"in {_state.ConnectionState.LogId}.");
             }
         }
 
@@ -134,12 +138,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] outbound {(_canRead ? "bi" : "uni")}directional stream created " +
-                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+                    $"{_state.LogId} outbound {(_canRead ? "bi" : "uni")}directional stream created " +
+                        $"in {_state.ConnectionState.LogId}.");
             }
         }
 
@@ -297,7 +303,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] reading into Memory of '{destination.Length}' bytes.");
+                NetEventSource.Info(_state, $"{_state.LogId} reading into Memory of '{destination.Length}' bytes.");
             }
 
             lock (_state)
@@ -564,7 +570,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] disposed");
+                NetEventSource.Info(_state, $"{_state.LogId} disposed");
             }
         }
 
@@ -586,7 +592,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] received event {evt.Type}");
+                NetEventSource.Info(state, $"{state.LogId} received event {evt.Type}");
             }
 
             try
@@ -738,7 +744,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.LogId} completing resettable event source.");
 
                 if (state.ReadState == ReadState.None)
                 {
@@ -810,7 +816,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.LogId} completing resettable event source.");
 
                 if (state.ReadState == ReadState.None)
                 {
@@ -1100,7 +1106,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             long errorCode = state.ConnectionState.AbortErrorCode;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] handling Connection#{state.ConnectionState.GetHashCode()} close" +
+                NetEventSource.Info(state, $"{state.LogId} handling {state.ConnectionState.LogId} close" +
                     (errorCode != -1 ? $" with code {errorCode}" : ""));
             }
 

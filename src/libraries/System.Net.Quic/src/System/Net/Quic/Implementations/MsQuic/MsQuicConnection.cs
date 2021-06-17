@@ -61,6 +61,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleReader = true,
                 SingleWriter = true,
             });
+
+            public string LogId = null!; // set in ctor.
         }
 
         // constructor for inbound connections
@@ -88,9 +90,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] inbound connection created");
+                NetEventSource.Info(_state, $"{_state.LogId} inbound connection created");
             }
         }
 
@@ -127,9 +131,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] outbound connection created");
+                NetEventSource.Info(_state, $"{_state.LogId} outbound connection created");
             }
         }
 
@@ -294,18 +300,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
                     if (!success && NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] remote  certificate rejected by verification callback");
+                        NetEventSource.Error(state, $"{state.LogId} remote  certificate rejected by verification callback");
                     return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
+                    NetEventSource.Info(state, $"{state.LogId} certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
 
                 return (sslPolicyErrors == SslPolicyErrors.None) ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] certificate validation failed ${ex.Message}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"{state.LogId} certificate validation failed ${ex.Message}");
             }
 
             return MsQuicStatusCodes.InternalError;
@@ -439,7 +445,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] received event {connectionEvent.Type}");
+                NetEventSource.Info(state, $"{state.LogId} received event {connectionEvent.Type}");
             }
 
             try
