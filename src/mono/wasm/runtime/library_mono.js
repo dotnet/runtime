@@ -70,7 +70,7 @@ var MonoSupportLib = {
 
 		pump_message: function () {
 			if (!MONO.mono_background_exec)
-				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
+				MONO.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
 				MONO.timeout_queue.shift()();
