@@ -337,9 +337,13 @@ namespace System.Runtime.InteropServices.JavaScript
             var returnMtype = GetMarshalTypeFromType(returnType);
             var sb = new StringBuilder();
             sb.Append("{ ");
-            sb.Append($"\"result\": {MakeMarshalTypeRecord(returnType, returnMtype)}, ");
-            sb.Append($"\"typePtr\": {typePtr}, \"methodPtr\": {methodPtr}, ");
-            sb.Append("\"parameters\": [");
+            sb.Append("\"result\": ");
+            sb.Append(MakeMarshalTypeRecord(returnType, returnMtype));
+            sb.Append(", \"typePtr\": ");
+            sb.Append(typePtr.ToInt32());
+            sb.Append(", \"methodPtr\": ");
+            sb.Append(methodPtr.ToInt32());
+            sb.Append(", \"parameters\": [");
 
             int i = 0;
             foreach (var p in mb.GetParameters()) {
@@ -407,10 +411,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new WasmInteropException($"{type.Name} must have a static {name} method");
 
             var p = info.GetParameters();
-            if ((p.Length != 1) || (p[0].ParameterType == null))
+            if ((p.Length != 1) || (p[0].ParameterType is null))
                 throw new WasmInteropException($"Method {type.Name}.{name} must accept exactly one parameter");
 
-            if (info.ReturnType == null)
+            if (info.ReturnType is null)
                 throw new WasmInteropException($"Method {type.Name}.{name} must have a return value");
 
             parameterType = p[0].ParameterType;
@@ -439,19 +443,19 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var type = Type.GetTypeFromHandle(typeHandle);
             var marshalerType = Type.GetType(marshalerFullName) ?? type.Assembly.GetType(marshalerFullName);
-            if (marshalerType == null)
+            if (marshalerType is null)
                 return "null";
 
             var jsToInterchange = GetAndEscapeStringProperty(marshalerType, "JavaScriptToInterchangeTransform");
             var interchangeToJs = GetAndEscapeStringProperty(marshalerType, "InterchangeToJavaScriptTransform");
 
-            var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? fromReturnType, out Type? fromParameterType);
-            var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? toReturnType, out Type? toParameterType);
+            var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type fromReturnType, out Type fromParameterType);
+            var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type toReturnType, out Type toParameterType);
 
             if (fromReturnType != type)
                 throw new WasmInteropException($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
 
-            if (type.IsValueType && (toParameterType != null)) {
+            if (type.IsValueType && !(toParameterType is null)) {
                 var typeMatches = toParameterType.GetElementType() == type;
                 if (!typeMatches || !(toParameterType.IsPointer || toParameterType.IsByRef))
                     throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be 'in {type.Name}' or '{type.Name}*' but was {toParameterType}");
@@ -467,7 +471,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         private static MarshalType GetMarshalTypeFromType (Type? type) {
-            if (type == null)
+            if (type is null)
                 return MarshalType.VOID;
 
             var typeCode = Type.GetTypeCode(type);
@@ -557,7 +561,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.OBJECT;
         }
 
-        private static char? GetCallSignatureCharacterForMarshalType (MarshalType t, char? defaultValue) {
+        private static char GetCallSignatureCharacterForMarshalType (MarshalType t, char? defaultValue) {
             switch (t) {
                 case MarshalType.BOOL:
                 case MarshalType.INT:
@@ -588,7 +592,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     return 'm';
                 default:
                     if (defaultValue.HasValue)
-                        return defaultValue;
+                        return defaultValue.Value;
                     else
                         throw new WasmInteropException($"Unsupported marshal type {t}");
             }
@@ -608,18 +612,14 @@ namespace System.Runtime.InteropServices.JavaScript
             if (parmsLength == 0)
                 return string.Empty;
 
-            var sb = new StringBuilder();
-            for (int c = 0; c < parmsLength; c++) {
-                Type t = parms[c].ParameterType;
+            var result = new char[parmsLength];
+            for (int i = 0; i < parmsLength; i++) {
+                Type t = parms[i].ParameterType;
                 var mt = GetMarshalTypeFromType(t);
-                var csc = GetCallSignatureCharacterForMarshalType(mt, null);
-                if (csc.HasValue)
-                    sb.Append(csc.Value);
-                else
-                    throw new WasmInteropException ("No signature character for marshal type " + mt);
+                result[i] = GetCallSignatureCharacterForMarshalType(mt, null);
             }
 
-            return sb.ToString();
+            return new string(result);
         }
 
         public static void SetupJSContinuation(Task task, JSObject continuationObj)
