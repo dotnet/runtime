@@ -50,7 +50,7 @@ if (is_browser) {
 		console.log("browser: Console websocket connected.");
 	};
 	consoleWebSocket.onerror = function(event) {
-		console.log(`websocket error: ${event}`);
+		console.error(`websocket error: ${event}`);
 	};
 }
 
@@ -104,7 +104,7 @@ try {
 		testArguments = arguments;
 	}
 } catch (e) {
-	console.error(e)
+	console.error(e);
 }
 
 // abstract all IO into a compact universally available method so that it is consistent and reliable
@@ -257,7 +257,7 @@ var Module = {
 		console.log ("ABORT: " + x);
 		const err = new Error();
 		console.log ("Stacktrace: \n");
-		console.log (err.stack);
+		console.err (err.stack);
 		test_exit (1);
 	},
 
@@ -307,7 +307,7 @@ const App = {
 		console.info("Initializing.....");
 
 		for (let i = 0; i < profilers.length; ++i) {
-			const init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
+			const init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string']);
 			init ("");
 		}
 
@@ -317,7 +317,7 @@ const App = {
 		}
 
 		if (testArguments[0] == "--regression") {
-			const exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
+			const exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string']);
 
 			let res = 0;
 				try {
@@ -351,7 +351,7 @@ const App = {
 			const main_argc = testArguments.length - 2 + 1;
 			const main_argv = Module._malloc (main_argc * 4);
 			aindex = 0;
-			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32")
+			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32");
 			aindex += 1;
 			for (let i = 2; i < testArguments.length; ++i) {
 				Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [i]), "i32");
@@ -402,6 +402,6 @@ IOHandler
 		IOHandler.load ("dotnet.js");
 	})
 	.catch(function(err) {
-		console.error(err)
+		console.error(err);
 		fail_exec("failed to load the mono-config.js or dotnet.js files");
 	});
