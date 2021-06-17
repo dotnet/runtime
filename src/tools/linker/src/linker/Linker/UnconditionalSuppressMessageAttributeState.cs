@@ -45,29 +45,45 @@ namespace Mono.Linker
 
 		public bool IsSuppressed (int id, MessageOrigin warningOrigin, out SuppressMessageInfo info)
 		{
-			info = default;
-			if (warningOrigin.MemberDefinition == null)
-				return false;
+			// Check for suppressions on both the suppression context as well as the original member
+			// (if they're different). This is to correctly handle compiler generated code
+			// which needs to use suppressions from both the compiler generated scope
+			// as well as the original user defined method.
+			IMemberDefinition suppressionContextMember = warningOrigin.SuppressionContextMember;
+			if (IsSuppressed (id, suppressionContextMember, out info))
+				return true;
 
-			IMemberDefinition elementContainingWarning = warningOrigin.MemberDefinition;
-			ModuleDefinition module = GetModuleFromProvider (warningOrigin.MemberDefinition);
-			DecodeModuleLevelAndGlobalSuppressMessageAttributes (module);
-			while (elementContainingWarning != null) {
-				if (IsSuppressed (id, elementContainingWarning, out info))
-					return true;
-
-				elementContainingWarning = elementContainingWarning.DeclaringType;
-			}
-
-			// Check if there's an assembly or module level suppression.
-			if (IsSuppressed (id, module, out info) ||
-				IsSuppressed (id, module.Assembly, out info))
+			IMemberDefinition originMember = warningOrigin.MemberDefinition;
+			if (suppressionContextMember != originMember && IsSuppressed (id, originMember, out info))
 				return true;
 
 			return false;
 		}
 
-		bool IsSuppressed (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
+		bool IsSuppressed (int id, IMemberDefinition warningOriginMember, out SuppressMessageInfo info)
+		{
+			info = default;
+			if (warningOriginMember == null)
+				return false;
+
+			ModuleDefinition module = GetModuleFromProvider (warningOriginMember);
+			DecodeModuleLevelAndGlobalSuppressMessageAttributes (module);
+			while (warningOriginMember != null) {
+				if (IsSuppressedOnElement (id, warningOriginMember, out info))
+					return true;
+
+				warningOriginMember = warningOriginMember.DeclaringType;
+			}
+
+			// Check if there's an assembly or module level suppression.
+			if (IsSuppressedOnElement (id, module, out info) ||
+				IsSuppressedOnElement (id, module.Assembly, out info))
+				return true;
+
+			return false;
+		}
+
+		bool IsSuppressedOnElement (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
 		{
 			info = default;
 			if (provider == null)
