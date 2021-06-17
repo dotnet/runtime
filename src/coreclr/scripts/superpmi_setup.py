@@ -250,7 +250,8 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
             # Make the exclude check case-insensitive
-            if name.lower() in [filename.lower() for filename in exclude_files]:
+            exclude_files_lower = [filename.lower() for filename in exclude_files]
+            if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = path.join(file_path, name)
 
