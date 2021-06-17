@@ -158,17 +158,6 @@ static void RestoreSignalHandler(int sig)
 
 static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
 {
-    // Signal handler for signals where we want our background thread to do the real processing.
-    // It simply writes the signal code to a pipe that's read by the thread.
-    uint8_t signalCodeByte = (uint8_t)sig;
-    ssize_t writtenBytes;
-    while ((writtenBytes = write(g_signalPipe[1], &signalCodeByte, 1)) < 0 && errno == EINTR);
-
-    if (writtenBytes != 1)
-    {
-        abort(); // fatal error
-    }
-
     if (sig == SIGCONT)
     {
         ConsoleSigTtouHandler consoleTtouHandler = g_consoleTtouHandler;
@@ -178,17 +167,34 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
         }
     }
 
-    // Delegate to any saved handler we may have
-    // We assume the original SIGCHLD handler will not reap our children.
-    if (sig == SIGCONT || sig == SIGCHLD || sig == SIGWINCH)
+    // Signals that can be canceled through the PosixSignal API are handled later.
+    // For other signals, we immediately invoke the original handler.
+    if (sig != SIGQUIT &&
+        sig != SIGTERM &&
+        sig != SIGINT)
     {
         struct sigaction* origHandler = OrigActionFor(sig);
-        if (origHandler->sa_sigaction != NULL &&
-            (void*)origHandler->sa_sigaction != (void*)SIG_DFL &&
-            (void*)origHandler->sa_sigaction != (void*)SIG_IGN)
+        if (origHandler->sa_flags & SA_SIGINFO)
         {
+            assert(origHandler->sa_sigaction);
             origHandler->sa_sigaction(sig, siginfo, context);
         }
+        else if (origHandler->sa_handler != SIG_IGN &&
+                 origHandler->sa_handler != SIG_DFL)
+        {
+            origHandler->sa_handler(sig);
+        }
+    }
+
+    // Perform further processing on background thread.
+    // Write the signal code to a pipe that's read by the thread.
+    uint8_t signalCodeByte = (uint8_t)sig;
+    ssize_t writtenBytes;
+    while ((writtenBytes = write(g_signalPipe[1], &signalCodeByte, 1)) < 0 && errno == EINTR);
+
+    if (writtenBytes != 1)
+    {
+        abort(); // fatal error
     }
 }
 
@@ -196,18 +202,11 @@ void SystemNative_DefaultSignalHandler(int signalCode)
 {
     // Perform the default runtime action for the signal.
 
-    if (signalCode == SIGCHLD ||
-        signalCode == SIGCONT ||
-        signalCode == SIGWINCH)
+    if (signalCode == SIGQUIT ||
+        signalCode == SIGTERM ||
+        signalCode == SIGINT)
     {
-        // The default disposition does nothing.
-        // If there is a non-default disposition, it was called from SignalHandler.
-    }
-    // Terminate the process using the original handler.
-    else if (signalCode == SIGQUIT ||
-             signalCode == SIGTERM ||
-             signalCode == SIGINT)
-    {
+        // Terminate the process using the original handler.
 #ifdef HAS_CONSOLE_SIGNALS
         UninitializeTerminal();
 #endif
