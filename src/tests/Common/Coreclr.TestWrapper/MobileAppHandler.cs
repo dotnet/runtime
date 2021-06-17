@@ -120,8 +120,18 @@ namespace CoreclrTestLib
         private static string ConvertCmd2Arg(string cmd)
         {
             cmd.Replace("\"", "\"\"");
-            var result = $"-c \"{cmd}\"";
-            return result;
+
+            string cmdPrefix;
+            if(OperatingSystem.IsWindows())
+            {
+                cmdPrefix = "/c";
+            }
+            else
+            {
+                cmdPrefix = "-c";
+            }
+            
+            return $"{cmdPrefix} \"{cmd}\"";
         }
     }
 }
