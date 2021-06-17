@@ -573,7 +573,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret_debugger_cmd_reader;
         }
 
-        CommandSet GetCommandSetForCommand<T>(T Command) =>
+        internal CommandSet GetCommandSetForCommand<T>(T command) =>
             command switch {
                 CmdVM => CommandSet.Vm,
                 CmdObject => CommandSet.ObjectRef,
