@@ -1795,7 +1795,6 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvSingleDefRegCandidate)
             {
                 newInt->isSingleDef = true;
-                setIntervalAsSpilled(newInt);
             }
 
             if (varDsc->lvLiveInOutOfHndlr)
@@ -3279,6 +3278,17 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
             fromRefPosition->spillAfter = true;
         }
     }
+
+    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not already marked as spillAfter yet.
+    // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
+    // singleDefSpill because they will always get spilled at firstRefPosition.
+    // This helps in spilling the singleDef at definition
+    if (interval->isSingleDef && RefTypeIsDef(interval->firstRefPosition->refType) &&
+        !interval->firstRefPosition->spillAfter)
+    {
+        interval->firstRefPosition->singleDefSpill = true;
+    }
+
     assert(toRefPosition != nullptr);
 
 #ifdef DEBUG
@@ -3961,16 +3971,16 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 //
 // Arguments:
 //    currentBlock   - the BasicBlock we are about to allocate registers for
-//    allocationPass - true if we are currently allocating registers (versus writing them back)
 //
 // Return Value:
 //    None
 //
 // Notes:
-//    During the allocation pass, we use the outVarToRegMap of the selected predecessor to
-//    determine the lclVar locations for the inVarToRegMap.
-//    During the resolution (write-back) pass, we only modify the inVarToRegMap in cases where
-//    a lclVar was spilled after the block had been completed.
+//    During the allocation pass (allocationPassComplete = false), we use the outVarToRegMap
+//    of the selected predecessor to determine the lclVar locations for the inVarToRegMap.
+//    During the resolution (write-back when allocationPassComplete = true) pass, we only
+//    modify the inVarToRegMap in cases where a lclVar was spilled after the block had been
+//    completed.
 void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
     // If we have no register candidates we should only call this method during allocation.
@@ -5861,9 +5871,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
     }
 
-    bool reload     = currentRefPosition->reload;
-    bool spillAfter = currentRefPosition->spillAfter;
-    bool writeThru  = currentRefPosition->writeThru;
+    bool reload         = currentRefPosition->reload;
+    bool spillAfter     = currentRefPosition->spillAfter;
+    bool writeThru      = currentRefPosition->writeThru;
+    bool singleDefSpill = currentRefPosition->singleDefSpill;
 
     // In the reload case we either:
     // - Set the register to REG_STK if it will be referenced only from the home location, or
@@ -5922,7 +5933,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
     }
     else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
-             (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
+        (treeNode != nullptr) &&(!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.
@@ -5932,10 +5943,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
         interval->physReg = REG_NA;
-        if (treeNode != nullptr)
-        {
-            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
-        }
+        writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
     }
     else // Not reload and Not pure-def that's spillAfter
     {
@@ -6002,7 +6010,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                 }
             }
-            assert(interval->isSpilled);
+            assert(interval->isSpilled || interval->isSingleDef);
             interval->physReg = REG_NA;
             varDsc->SetRegNum(REG_STK);
         }
@@ -6017,6 +6025,23 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             // to retain these defs, and to ensure that they write.
             if (!currentRefPosition->lastUse)
             {
+                treeNode->gtFlags |= GTF_SPILLED;
+                if (treeNode->IsMultiReg())
+                {
+                    treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+                }
+            }
+        }
+
+        if (singleDefSpill && (treeNode != nullptr))
+        {
+            // This is the first (and only def) of a single-def var (only defs are marked 'singleDef').
+            // If this is already marked as SPILL, we need to definitely spill the variable.
+            // As such, do not mark it as GTF_SPILLED because that will keep the value in register alive.
+            // TODO: See if the last point really matters.
+            if ((treeNode->gtFlags & GTF_SPILL) == 0)
+            {
+                treeNode->gtFlags |= GTF_SPILL;
                 treeNode->gtFlags |= GTF_SPILLED;
                 if (treeNode->IsMultiReg())
                 {
@@ -8941,6 +8966,10 @@ void RefPosition::dump(LinearScan* linearScan)
     if (this->spillAfter)
     {
         printf(" spillAfter");
+    }
+    if (this->singleDefSpill)
+    {
+        printf(" singleDefSpill");
     }
     if (this->writeThru)
     {

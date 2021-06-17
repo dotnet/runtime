@@ -2159,15 +2159,16 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     // Dev10 804810 - failing this assert can lead to bad codegen and runtime crashes
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
+                    LclVarDsc* varDsc = emitComp->lvaTable + var;
+
 #ifdef UNIX_AMD64_ABI
-                    LclVarDsc* varDsc         = emitComp->lvaTable + var;
                     bool       isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
                     // Register passed args could have a stack offset of 0.
                     noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI
-
+                    bool isSingleDefSpill = varDsc->lvSingleDefRegCandidate;
                     // OSR transitioning to RBP frame currently can have mid-frame FP
-                    noway_assert(((int)offs < 0) || emitComp->opts.IsOSR());
+                    noway_assert(((int)offs < 0) || isSingleDefSpill || emitComp->opts.IsOSR());
 #endif // !UNIX_AMD64_ABI
                 }
 

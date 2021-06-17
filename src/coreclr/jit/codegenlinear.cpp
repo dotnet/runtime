@@ -873,9 +873,9 @@ void CodeGen::genSpillVar(GenTree* tree)
         var_types lclType = varDsc->GetActualRegisterType();
         emitAttr  size    = emitTypeSize(lclType);
 
-        // If this is a write-thru variable, we don't actually spill at a use, but we will kill the var in the reg
-        // (below).
-        if (!varDsc->lvLiveInOutOfHndlr)
+        // If this is a write-thru or a single-def variable, we don't actually spill at a use,
+        // but we will kill the var in the reg (below).
+        if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSingleDefRegCandidate)
         {
             instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
@@ -883,7 +883,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
-        // GTF_SPILLED on a write-thru def, for which we should not be calling this method.
+        // GTF_SPILLED on a write-thru/single-def def, for which we should not be calling this method.
         assert((tree->gtFlags & GTF_SPILLED) == 0);
 
         // Remove the live var from the register.
@@ -919,7 +919,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     else
     {
         // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar.
-        assert(varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0));
+        assert((varDsc->lvLiveInOutOfHndlr | varDsc->lvSingleDefRegCandidate) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
 #ifdef USING_VARIABLE_LIVE_RANGE
