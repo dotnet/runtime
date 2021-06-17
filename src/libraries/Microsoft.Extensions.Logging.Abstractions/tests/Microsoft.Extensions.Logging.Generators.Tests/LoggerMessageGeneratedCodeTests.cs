@@ -178,6 +178,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(string.Empty, logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M5(logger, LogLevel.Trace);
+            Assert.Null(logger.LastException);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(-1, logger.LastEventId.Id);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M6(logger, LogLevel.Trace);
+            Assert.Null(logger.LastException);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(6, logger.LastEventId.Id);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]

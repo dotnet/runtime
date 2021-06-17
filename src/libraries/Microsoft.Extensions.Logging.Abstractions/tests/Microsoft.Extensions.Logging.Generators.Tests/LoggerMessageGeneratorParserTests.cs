@@ -65,6 +65,65 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task WithNullLevel_GeneratorWontFail()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = null, Message = ""This is a message with {foo}"")]
+                    static partial void M1(ILogger logger, string foo);
+                }
+            ");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.MissingLogLevel.Id, diagnostics[0].Id);
+        }
+
+        [Fact]
+        public async Task WithNullEventId_GeneratorWontFail()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = null, Level = LogLevel.Debug, Message = ""This is a message with {foo}"")]
+                    static partial void M1(ILogger logger, string foo);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task WithNullMessage_GeneratorWontFail()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = null)]
+                    static partial void M1(ILogger logger, string foo);
+                }
+            ");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
+            Assert.Contains("Argument 'foo' is not referenced from the logging message", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task WithNullSkipEnabledCheck_GeneratorWontFail()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""This is a message with {foo}"", SkipEnabledCheck = null)]
+                    static partial void M1(ILogger logger, string foo);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
         public async Task MissingTemplate()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

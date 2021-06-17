@@ -35,6 +35,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task TestBaseline_TestWithDefaultValues_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal static partial class TestWithDefaultValues
+    {
+        [LoggerMessage]
+        public static partial void M0(ILogger logger, LogLevel level);
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithDefaultValues.generated.txt", testSourceCode);
+        }
+
+        [Fact]
         public async Task TestBaseline_TestWithTwoParams_Success()
         {
             string testSourceCode = @"
@@ -124,7 +139,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                 new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
                 new[] { testSourceCode }).ConfigureAwait(false);
 
-            Assert.Empty(d);
             Assert.Single(r);
 
             Assert.True(CompareLines(expectedLines, r[0].SourceText,
