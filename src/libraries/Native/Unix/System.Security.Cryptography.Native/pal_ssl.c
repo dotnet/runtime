@@ -660,7 +660,7 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 
     if (rsa != NULL)
     {
-        if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
+        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
         {
             rsa = NULL;
         }

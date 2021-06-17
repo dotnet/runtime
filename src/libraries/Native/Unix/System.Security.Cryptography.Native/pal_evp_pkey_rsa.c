@@ -314,16 +314,6 @@ done:
     return ret;
 }
 
-RSA* CryptoNative_EvpPkeyGetRsa(EVP_PKEY* pkey)
-{
-    return EVP_PKEY_get1_RSA(pkey);
-}
-
-int32_t CryptoNative_EvpPkeySetRsa(EVP_PKEY* pkey, RSA* rsa)
-{
-    return EVP_PKEY_set1_RSA(pkey, rsa);
-}
-
 static int HasNoPrivateKey(const RSA* rsa)
 {
     if (rsa == NULL)
