@@ -433,7 +433,7 @@ namespace System.Runtime.InteropServices.Tests
                 Assert.True(((byte*)newPtr)[i] == i);
             }
 
-            NativeMemory.AlignedFree(newPtr);
+            NativeMemory.Free(newPtr);
         }
     }
 }
