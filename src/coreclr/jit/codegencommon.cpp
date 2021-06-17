@@ -8159,7 +8159,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     //    "When a frame pointer is not used, the epilog must use add RSP,constant to deallocate the fixed part of the
     //    stack. It may not use lea RSP,constant[RSP] instead. This restriction exists so the unwind code has fewer
     //    patterns to recognize when searching for epilogs."
-    // 
+    //
     // Otherwise, we must use `add RSP, constant`, as stated. So, we need to use the same condition
     // as genFnProlog() used in determining whether to report the frame pointer in the unwind data.
     // This is a subset of the `doubleAlignOrFramePointerUsed()` cases.
@@ -8167,7 +8167,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     if (removeEbpFrame)
     {
         const bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
-        removeEbpFrame = removeEbpFrame && reportUnwindData;
+        removeEbpFrame              = removeEbpFrame && reportUnwindData;
     }
 #endif // TARGET_AMD64
 
