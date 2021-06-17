@@ -571,12 +571,18 @@ namespace System.Data.Common
             Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         string ICustomTypeDescriptor.GetClassName()
         {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use GetClassName overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
             return TypeDescriptor.GetClassName(this, true);
         }
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         string ICustomTypeDescriptor.GetComponentName()
         {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use GetClassName overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
             return TypeDescriptor.GetComponentName(this, true);
         }
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
