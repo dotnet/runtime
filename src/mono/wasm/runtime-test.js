@@ -257,7 +257,7 @@ var Module = {
 		console.log ("ABORT: " + x);
 		const err = new Error();
 		console.log ("Stacktrace: \n");
-		console.err (err.stack);
+		console.error (err.stack);
 		test_exit (1);
 	},
 
