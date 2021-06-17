@@ -95,6 +95,12 @@ namespace System.Runtime.InteropServices
                                 registrations[i] = registration;
                                 hasRegistrations = true;
                             }
+                            else
+                            {
+                                // WeakReference no longer holds an object. PosixSignalRegistration got finalized.
+                                signalRegistrations.RemoveAt(i);
+                                i--;
+                            }
                         }
                         if (hasRegistrations)
                         {
@@ -171,11 +177,19 @@ namespace System.Runtime.InteropServices
                     List<WeakReference<PosixSignalRegistration>> signalRegistrations = s_registrations[_signo];
                     for (int i = 0; i < signalRegistrations.Count; i++)
                     {
-                        if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration) &&
-                            object.ReferenceEquals(this, registration))
+                        if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration))
                         {
+                            if (object.ReferenceEquals(this, registration))
+                            {
+                                signalRegistrations.RemoveAt(i);
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // WeakReference no longer holds an object. PosixSignalRegistration got finalized.
                             signalRegistrations.RemoveAt(i);
-                            break;
+                            i--;
                         }
                     }
                     if (signalRegistrations.Count == 0)
@@ -184,6 +198,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
+                // Synchronize with _handler invocations.
                 lock (_gate)
                 {
                     _registered = false;
