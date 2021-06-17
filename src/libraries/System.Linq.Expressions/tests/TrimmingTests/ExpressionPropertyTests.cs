@@ -13,25 +13,67 @@ using System.Reflection;
 /// </summary>
 internal class Program
 {
-    class TestType
+    static int Main(string[] args)
     {
-        public bool _testPropertyValue;
+        int result = ExplicitCreation.Test();
+        if (result != 100)
+            return result;
 
-        public bool TestProperty { 
-            get => _testPropertyValue;
-            set { _testPropertyValue = value; }
+        result = LambdaCreation.Test();
+
+        Type.GetType("foo");
+
+        return result;
+    }
+
+    class ExplicitCreation
+    {
+        class TestType
+        {
+            public bool _testPropertyValue;
+
+            public bool TestProperty { 
+                get => _testPropertyValue;
+                set { _testPropertyValue = value; }
+            }
+        }
+
+        public static int Test()
+        {
+            var obj = new TestType();
+            var param = Expression.Parameter(typeof(TestType));
+            var prop = Expression.Property(param, typeof(TestType).GetMethod("get_TestProperty"));
+            ((PropertyInfo)prop.Member).SetValue(obj, true);
+            if (obj._testPropertyValue != true)
+                return -1;
+
+            return 100;
         }
     }
 
-    static int Main(string[] args)
+    class LambdaCreation
     {
-        var obj = new TestType();
-        var param = Expression.Parameter(typeof(TestType));
-        var prop = Expression.Property(param, typeof(TestType).GetMethod("get_TestProperty"));
-        ((PropertyInfo)prop.Member).SetValue(obj, true);
-        if (obj._testPropertyValue != true)
-            return -1;
+        class TestType
+        {
+            public bool _testPropertyValue;
 
-        return 100;
+            public bool TestProperty { 
+                get => _testPropertyValue;
+                set { _testPropertyValue = value; }
+            }
+        }
+
+        public static int Test()
+        {
+            var obj = new TestType ();
+            Expression<Func<TestType, bool>> expression = t => t.TestProperty;
+            var prop = ((MemberExpression)expression.Body);
+            ((PropertyInfo)prop.Member).SetValue(obj, true);
+
+            if (obj._testPropertyValue != true)
+                return -2;
+
+            return 100;
+        }
     }
 }
