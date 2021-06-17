@@ -32,13 +32,18 @@ namespace System.Runtime.InteropServices
             // The C standard and POSIX requires size to be a multiple of alignment and we want an "empty" allocation for zero
             // POSIX additionally requires alignment to be at least sizeof(void*)
 
-            // The adjustment for byteCount can overflow here, but such overflow is "harmless". This is because of the requirement
-            // that alignment be a power of two and that byteCount be a multiple of alignment. Given both of these constraints
-            // we should only overflow for byteCount > (nuint.MaxValue & ~(alignment - 1)). When such an overflow occurs we will
-            // get a result that is less than alignment which will cause the allocation to fail.
+            // The adjustment for byteCount can overflow here, and such overflow is generally "harmless". This is because of the
+            // requirement that alignment be a power of two and that byteCount be a multiple of alignment. Given both of these
+            // constraints we should only overflow for byteCount > (nuint.MaxValue & ~(alignment - 1)). When such an overflow
+            // occurs we will get a result that is less than alignment which will cause the allocation to fail.
+            //
+            // However, posix_memalign differs from aligned_alloc in that it may return a valid pointer for zero and we need to
+            // ensure we OOM for this scenario (which can occur for `nuint.MaxValue`) and so we have to check the adjusted size.
 
             nuint adjustedAlignment = Math.Max(alignment, (uint)sizeof(void*));
-            void* result = Interop.Sys.AlignedAlloc(adjustedAlignment, (byteCount != 0) ? (byteCount + (adjustedAlignment - 1)) & ~(adjustedAlignment - 1) : adjustedAlignment);
+            nuint adjustedByteCount = (byteCount != 0) ? (byteCount + (adjustedAlignment - 1)) & ~(adjustedAlignment - 1) : adjustedAlignment;
+
+            void* result = (adjustedByteCount < byteCount) ? null : Interop.Sys.AlignedAlloc(adjustedAlignment, adjustedByteCount);
 
             if (result == null)
             {
@@ -88,13 +93,18 @@ namespace System.Runtime.InteropServices
             // The C standard and POSIX requires size to be a multiple of alignment and we want an "empty" allocation for zero
             // POSIX additionally requires alignment to be at least sizeof(void*)
 
-            // The adjustment for byteCount can overflow here, but such overflow is "harmless". This is because of the requirement
-            // that alignment be a power of two and that byteCount be a multiple of alignment. Given both of these constraints
-            // we should only overflow for byteCount > (nuint.MaxValue & ~(alignment - 1)). When such an overflow occurs we will
-            // get a result that is less than alignment which will cause the allocation to fail.
+            // The adjustment for byteCount can overflow here, and such overflow is generally "harmless". This is because of the
+            // requirement that alignment be a power of two and that byteCount be a multiple of alignment. Given both of these
+            // constraints we should only overflow for byteCount > (nuint.MaxValue & ~(alignment - 1)). When such an overflow
+            // occurs we will get a result that is less than alignment which will cause the allocation to fail.
+            //
+            // However, posix_memalign differs from aligned_alloc in that it may return a valid pointer for zero and we need to
+            // ensure we OOM for this scenario (which can occur for `nuint.MaxValue`) and so we have to check the adjusted size.
 
             nuint adjustedAlignment = Math.Max(alignment, (uint)sizeof(void*));
-            void* result = Interop.Sys.AlignedRealloc(ptr, adjustedAlignment, (byteCount != 0) ? (byteCount + (adjustedAlignment - 1)) & ~(adjustedAlignment - 1) : adjustedAlignment);
+            nuint adjustedByteCount = (byteCount != 0) ? (byteCount + (adjustedAlignment - 1)) & ~(adjustedAlignment - 1) : adjustedAlignment;
+
+            void* result = (adjustedByteCount < byteCount) ? null : Interop.Sys.AlignedRealloc(ptr, adjustedAlignment, adjustedByteCount);
 
             if (result == null)
             {
