@@ -20,10 +20,6 @@ namespace System.Diagnostics
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
-#if !TARGET_APPLE_MOBILE
-        private static int s_childrenUsingTerminalCount;
-#endif
-
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a
         /// special mode by enabling the native property SeDebugPrivilege on the current thread.
@@ -511,12 +507,10 @@ namespace System.Diagnostics
             s_processStartLock.EnterReadLock();
             try
             {
-#if !TARGET_APPLE_MOBILE
                 if (usesTerminal)
                 {
                     ConfigureTerminalForChildProcesses(1);
                 }
-#endif
 
                 int childPid;
 
@@ -560,7 +554,6 @@ namespace System.Diagnostics
             {
                 s_processStartLock.ExitReadLock();
 
-#if !TARGET_APPLE_MOBILE
                 if (_waitStateHolder == null && usesTerminal)
                 {
                     // We failed to launch a child that could use the terminal.
@@ -568,7 +561,6 @@ namespace System.Diagnostics
                     ConfigureTerminalForChildProcesses(-1);
                     s_processStartLock.ExitWriteLock();
                 }
-#endif
             }
         }
 
@@ -1052,34 +1044,15 @@ namespace System.Diagnostics
             }
         }
 
-#if !TARGET_APPLE_MOBILE
         /// <summary>
         /// This method is called when the number of child processes that are using the terminal changes.
         /// It updates the terminal configuration if necessary.
         /// </summary>
         internal static void ConfigureTerminalForChildProcesses(int increment)
         {
-            Debug.Assert(increment != 0);
-
-            int childrenUsingTerminalRemaining = Interlocked.Add(ref s_childrenUsingTerminalCount, increment);
-            if (increment > 0)
-            {
-                Debug.Assert(s_processStartLock.IsReadLockHeld);
-
-                // At least one child is using the terminal.
-                Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: true);
-            }
-            else
-            {
-                Debug.Assert(s_processStartLock.IsWriteLockHeld);
-
-                if (childrenUsingTerminalRemaining == 0)
-                {
-                    // No more children are using the terminal.
-                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
-                }
-            }
+            ConfigureTerminalForChildProcessesInner(increment);
         }
-#endif
+
+        static partial void ConfigureTerminalForChildProcessesInner(int increment);
     }
 }

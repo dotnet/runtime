@@ -569,13 +569,11 @@ namespace System.Diagnostics
                 {
                     _exitCode = exitCode;
 
-#if !TARGET_APPLE_MOBILE
                     if (_usesTerminal)
                     {
                         // Update terminal settings before calling SetExited.
                         Process.ConfigureTerminalForChildProcesses(-1);
                     }
-#endif
 
                     SetExited();
 

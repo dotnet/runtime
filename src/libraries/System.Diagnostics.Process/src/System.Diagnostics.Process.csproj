@@ -270,8 +270,9 @@
              Link="Common\Interop\Unix\System.Native\Interop.Access.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' != 'true'">
-     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
+    <Compile Include="System\Diagnostics\Process.Unix.ConfigureTerminalForChildProcesses.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
