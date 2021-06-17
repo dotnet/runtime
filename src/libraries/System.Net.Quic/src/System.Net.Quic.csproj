@@ -17,6 +17,7 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicAlpnHelper.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicEnums.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicLogHelper.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicNativeMethods.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusHelper.cs" />
