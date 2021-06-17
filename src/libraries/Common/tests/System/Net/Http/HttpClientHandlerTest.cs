@@ -875,6 +875,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Slow response")]
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "This is blocking forever on Browser, there is infinite default timeout")]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
         {
             if (UseVersion != HttpVersion.Version11)
@@ -890,7 +891,11 @@ namespace System.Net.Http.Functional.Tests
 
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
+                        HttpRequestData requestData = await connection.ReadRequestDataAsync();
+#if TARGET_BROWSER
+                        await connection.HandlePreFlight(requestData);
+#endif
+                        await connection.WriteStringAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             LoopbackServer.CorsHeaders +
