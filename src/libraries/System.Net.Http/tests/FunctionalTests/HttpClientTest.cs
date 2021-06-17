@@ -436,6 +436,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1, 0)]
         [InlineData(1, 1)]
         [InlineData(1, 2)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetAsync_ContentCanBeCanceled(int getMode, int cancelMode)
         {
             // cancelMode:
@@ -956,6 +957,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -1044,6 +1046,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1093,6 +1096,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
