@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Immutable;
+using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -18,10 +19,10 @@ namespace ILLink.RoslynAnalyzer
 
 		static readonly DiagnosticDescriptor s_requiresUnreferencedCodeRule = new DiagnosticDescriptor (
 			IL2026,
-			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeTitle),
-			Resources.ResourceManager, typeof (Resources)),
-			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeMessage),
-			Resources.ResourceManager, typeof (Resources)),
+			new LocalizableResourceString (nameof (SharedStrings.RequiresUnreferencedCodeTitle),
+			SharedStrings.ResourceManager, typeof (SharedStrings)),
+			new LocalizableResourceString (nameof (SharedStrings.RequiresUnreferencedCodeMessage),
+			SharedStrings.ResourceManager, typeof (SharedStrings)),
 			DiagnosticCategory.Trimming,
 			DiagnosticSeverity.Warning,
 			isEnabledByDefault: true);
@@ -50,10 +51,7 @@ namespace ILLink.RoslynAnalyzer
 		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
 		{
 			var message = (string) requiresAttribute!.ConstructorArguments[0].Value!;
-			if (!string.IsNullOrEmpty (message))
-				message = $" {message}{(message.TrimEnd ().EndsWith (".") ? "" : ".")}";
-
-			return message;
+			return MessageFormat.FormatRequiresAttributeMessageArg (message);
 		}
 	}
 }

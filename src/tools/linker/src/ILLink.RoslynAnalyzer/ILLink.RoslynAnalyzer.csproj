@@ -8,12 +8,18 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
     <None Include="Microsoft.NET.ILLink.Analyzers.props" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Shared files with the linker -->
+  <ItemGroup>
+    <EmbeddedResource Include="../ILLink.Shared/SharedStrings.resx" GenerateSource="true" />
+    <Compile Include="../ILLink.Shared/**/*.cs" />
   </ItemGroup>
 
 
