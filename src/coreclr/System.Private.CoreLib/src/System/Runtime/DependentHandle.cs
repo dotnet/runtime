@@ -67,7 +67,7 @@ namespace System.Runtime
         /// <summary>
         /// Gets a value indicating whether this handle has been allocated or not.
         /// </summary>
-        public bool IsAllocated => _handle != IntPtr.Zero;
+        public bool IsAllocated => (nint)_handle != 0;
 
         /// <summary>
         /// Gets or sets the target object instance for the current handle.
@@ -80,7 +80,7 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
 
-                if (handle == IntPtr.Zero)
+                if ((nint)handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -91,7 +91,7 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
 
-                if (handle == IntPtr.Zero)
+                if ((nint)handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -117,7 +117,7 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
 
-                if (handle == IntPtr.Zero)
+                if ((nint)handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -128,7 +128,7 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
 
-                if (handle == IntPtr.Zero)
+                if ((nint)handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -150,7 +150,7 @@ namespace System.Runtime
         {
             IntPtr handle = _handle;
 
-            if (handle == IntPtr.Zero)
+            if ((nint)handle == 0)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
@@ -207,13 +207,14 @@ namespace System.Runtime
         /// <remarks>This method is not thread-safe.</remarks>
         public void Dispose()
         {
-            // Forces dependentHandle back to non-allocated state (if not already there)
-            // and frees the handle if needed.
+            // Forces the DependentHandle back to non-allocated state
+            // (if not already there) and frees the handle if needed.
+            IntPtr handle = _handle;
 
-            if (_handle != IntPtr.Zero)
+            if ((nint)handle != 0)
             {
-                IntPtr handle = _handle;
                 _handle = IntPtr.Zero;
+
                 InternalFree(handle);
             }
         }
