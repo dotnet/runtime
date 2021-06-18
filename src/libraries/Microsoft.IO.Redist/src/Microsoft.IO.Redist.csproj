@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net472</TargetFrameworks>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
@@ -34,6 +34,8 @@
              Link="Microsoft\IO\File.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\FileInfo.cs"
              Link="Microsoft\IO\FileInfo.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.cs"
+             Link="Microsoft\IO\FileSystem.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.Win32.cs"
              Link="Microsoft\IO\FileSystem.Win32.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\FileSystem.Windows.cs"
@@ -66,6 +68,10 @@
              Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs"
+             Link="Common\Interop\Windows\Interop.CreateSymbolicLink.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs"
+             Link="Interop\Windows\Interop.DeviceIoControl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs"
              Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_BASIC_INFO.cs"
@@ -84,6 +90,8 @@
              Link="Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs"
              Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
+             Link="Common\Interop\Windows\Interop.GetFinalPathNameByHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs"
              Link="Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs"
@@ -96,6 +104,8 @@
              Link="Interop\Windows\Kernel32\Interop.GetTempPathW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
              Link="Interop\Windows\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.REPARSE_DATA_BUFFER.cs"
+             Link="Interop\Windows\Interop.REPARSE_DATA_BUFFER.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
              Link="Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs"

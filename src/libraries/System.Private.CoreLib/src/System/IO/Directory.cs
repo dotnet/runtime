@@ -351,7 +351,7 @@ namespace System.IO
         /// -or-
         /// Too many levels of symbolic links.</exception>
         /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix.</remarks>
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: true);
