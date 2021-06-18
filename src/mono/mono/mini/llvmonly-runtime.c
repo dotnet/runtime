@@ -115,9 +115,10 @@ mini_llvmonly_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 MonoFtnDesc*
 mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg)
 {
-	MonoFtnDesc *ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, 2 * sizeof (gpointer));
+	MonoFtnDesc *ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, sizeof (MonoFtnDesc));
 	ftndesc->addr = addr;
 	ftndesc->arg = arg;
+	ftndesc->method = m;
 
 	return ftndesc;
 }
