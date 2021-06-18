@@ -825,8 +825,7 @@ namespace System
             else
             {
                 ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)startIndex);
-                var span = new Span<T>(ref first, count);
-                span.Fill(value);
+                new Span<T>(ref first, count).Fill(value);
             }
         }
 
