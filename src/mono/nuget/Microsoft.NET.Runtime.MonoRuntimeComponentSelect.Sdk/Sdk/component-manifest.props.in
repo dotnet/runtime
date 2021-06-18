@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '${TemplateRuntimeIdentifier}'">
+    <_MonoRuntimeComponentLinking>${TemplateMonoRuntimeComponentLinking}</_MonoRuntimeComponentLinking>
+    <_MonoRuntimeComponentSharedLibExt>${TemplateMonoRuntimeComponentSharedLibExt}<_MonoRuntimeComponentSharedLibExt>
+    <_MonoRuntimeComponentStaticLibExt>${TemplateMonoRuntimeComponentStaticLibExt}<_MonoRuntimeComponentStaticLibExt>
+  </PropertyGroup>
+  <ItemGroup>
+    <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" />
+  </ItemGroup>
+</Project>

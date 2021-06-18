@@ -1,0 +1,31 @@
+<Project DefaultTarget="Hello">
+  <PropertyGroup>
+    <_MonoRuntimeComponentSharedLibExt>.dylib</_MonoRuntimeComponentSharedLibExt>
+    <_MonoRuntimeComponentStaticLibExt>.a</_MonoRuntimeComponentStaticLibExt>
+    <_MonoRuntimeComponentLinking Condition="'$(_MonoRuntimeComponentLinking)' == ''">dynamic</_MonoRuntimeComponentLinking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- this should come from the runtime pack -->
+    <_MonoRuntimeAvailableComponents Include="hot_reload;diagnostics_tracing" />
+  </ItemGroup>
+  
+  <Target Name="Hello" DependsOnTargets="SelectComponents;PrintComponents">
+  </Target>
+
+  <Target Name="SelectComponents">
+    <ItemGroup>
+      <_MonoComponent Include="hot_reload"/>
+    </ItemGroup>
+    <Message Text="Available Components: @(_MonoRuntimeComponentName)" Importance="High" />
+    <Message Text="Selected Components: @(_MonoComponent)" Importance="High"/>
+  </Target>
+
+  <Target Name="PrintComponents" DependsOnTargets="_MonoSelectRuntimeComponents">
+    <Message Importance="High" Text="Selected : @(_MonoRuntimeSelectedComponents) %(ComponentLib)" />
+    <Message Importance="High" Text="Stubbed out : @(_MonoRuntimeSelectedStubComponents) %(ComponentStubLib)" />
+    <Message Importance="High" Text="Linking with lib @(_MonoRuntimeComponentLink) Stub: %(IsStub) Linking: %(Linking) Component: %(ComponentName)"/>
+  </Target>
+
+  <Import Project="component-manifest.targets" />
+</Project>
