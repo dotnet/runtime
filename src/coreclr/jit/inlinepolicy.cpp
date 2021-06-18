@@ -1481,7 +1481,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 3.0 * m_FoldableBranch;
+        multiplier += 4.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -1658,13 +1658,12 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_HasProfile)
     {
-        const double profileMaxValue = 1.5;
+        const double profileMaxValue = 1.3;
         // m_ProfileFrequency values:
         //   > 1  -- the callsite is inside a hot loop
         //   1    -- the callsite is as hot as its method's first block
         //   ~= 0 -- the callsite is cold.
         //
-
         // There are still cases when a (semi-)hot blocks can be marked as cold:
         //  1) We don't support context-sensitive instrumentation in Dynamic PGO mode
         //  2) The Static PGO that we ship can be slightly irrelevant for the current app
@@ -1673,8 +1672,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  4) Sometimes it's still makes sense to inline methods in cold blocks to improve type/esacape analysis
         //     for the whole caller.
         //
-        const double profileTrustCoef = 0.3;
-        const double profileScale     = 8.0;
+        const double profileTrustCoef = 0.4;
+        const double profileScale     = 5.0;
 
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
@@ -1682,11 +1681,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_BackwardJump)
     {
-        JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump);
-        // TODO: investigate in which cases it's profitable to inline callees with loops.
-        // So far, our micro-benchmarks mostly regress if we ignore m_BackwardJump observation.
-        // Allow inlining if only we already collected many other observations such as foldable branches.
-        multiplier *= 0.3;
+        multiplier *= 0.75;
+        JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump, multiplier);
     }
 
     if (m_IsCallsiteInNoReturnRegion)
