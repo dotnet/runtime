@@ -33,7 +33,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 if (!(value == ReferralChasingOptions.None || value == ReferralChasingOptions.All))
                 {
-                    throw new PlatformNotSupportedException($"Only {nameof(ReferralChasingOptions.None)} and {nameof(ReferralChasingOptions.All)} are supported in Linux.");
+                    throw new PlatformNotSupportedException(SR.ReferralChasingOptionsNotSupported);
                 }
 
                 SetBoolValueHelper(LdapOption.LDAP_OPT_REFERRALS, value == ReferralChasingOptions.All);
