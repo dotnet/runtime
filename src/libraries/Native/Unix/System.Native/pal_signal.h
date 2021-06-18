@@ -13,7 +13,7 @@
  */
 int32_t InitializeSignalHandlingCore(void);
 
-typedef void (*SigChldCallback)(int reapAll);
+typedef int32_t (*SigChldCallback)(int32_t reapAll, int32_t configureConsole);
 
 /**
  * Hooks up the specified callback for notifications when SIGCHLD is received.
@@ -23,6 +23,8 @@ typedef void (*SigChldCallback)(int reapAll);
 PALEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
 
 typedef void (*TerminalInvalidationCallback)(void);
+
+PALEXPORT void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void));
 
 /**
  * Hooks up the specified callback for notifications when SIGCHLD, SIGCONT, SIGWINCH are received.

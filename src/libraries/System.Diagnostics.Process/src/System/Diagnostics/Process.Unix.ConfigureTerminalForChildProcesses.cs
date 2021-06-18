@@ -9,7 +9,7 @@ namespace System.Diagnostics
     {
         private static int s_childrenUsingTerminalCount;
 
-        static partial void ConfigureTerminalForChildProcessesInner(int increment)
+        static partial void ConfigureTerminalForChildProcessesInner(int increment, bool configureConsole)
         {
             Debug.Assert(increment != 0);
 
@@ -17,6 +17,7 @@ namespace System.Diagnostics
             if (increment > 0)
             {
                 Debug.Assert(s_processStartLock.IsReadLockHeld);
+                Debug.Assert(configureConsole);
 
                 // At least one child is using the terminal.
                 Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: true);
@@ -25,7 +26,7 @@ namespace System.Diagnostics
             {
                 Debug.Assert(s_processStartLock.IsWriteLockHeld);
 
-                if (childrenUsingTerminalRemaining == 0)
+                if (childrenUsingTerminalRemaining == 0 && configureConsole)
                 {
                     // No more children are using the terminal.
                     Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);

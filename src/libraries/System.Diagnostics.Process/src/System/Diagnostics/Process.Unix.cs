@@ -1023,6 +1023,7 @@ namespace System.Diagnostics
 
                     // Register our callback.
                     Interop.Sys.RegisterForSigChld(&OnSigChild);
+                    Interop.Sys.SetDelayedSigChildConsoleConfigurationHandler(&DelayedSigChildConsoleConfiguration);
 
                     s_initialized = true;
                 }
@@ -1030,13 +1031,43 @@ namespace System.Diagnostics
         }
 
         [UnmanagedCallersOnly]
-        private static void OnSigChild(int reapAll)
+        private static int OnSigChild(int reapAll, int configureConsole)
+        {
+            // configureConsole is non zero when there are PosixSignalRegistrations that
+            // may Cancel the terminal configuration that happens when there are no more
+            // children using the terminal.
+            // When the registrations don't cancel the terminal configuration,
+            // DelayedSigChildConsoleConfiguration will be called.
+
+            // Lock to avoid races with Process.Start
+            s_processStartLock.EnterWriteLock();
+            try
+            {
+                int childrenUsingTerminalPre = s_childrenUsingTerminalCount;
+                ProcessWaitState.CheckChildren(reapAll != 0, configureConsole != 0);
+                int childrenUsingTerminalPost = s_childrenUsingTerminalCount;
+
+                // return whether console configuration was skipped.
+                return childrenUsingTerminalPre > 0 && childrenUsingTerminalPost == 0 && configureConsole == 0 ? 1 : 0;
+            }
+            finally
+            {
+                s_processStartLock.ExitWriteLock();
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void DelayedSigChildConsoleConfiguration()
         {
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
             try
             {
-                ProcessWaitState.CheckChildren(reapAll != 0);
+                if (s_childrenUsingTerminalCount == 0)
+                {
+                    // No more children are using the terminal.
+                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
+                }
             }
             finally
             {
@@ -1048,11 +1079,11 @@ namespace System.Diagnostics
         /// This method is called when the number of child processes that are using the terminal changes.
         /// It updates the terminal configuration if necessary.
         /// </summary>
-        internal static void ConfigureTerminalForChildProcesses(int increment)
+        internal static void ConfigureTerminalForChildProcesses(int increment, bool configureConsole = true)
         {
-            ConfigureTerminalForChildProcessesInner(increment);
+            ConfigureTerminalForChildProcessesInner(increment, configureConsole);
         }
 
-        static partial void ConfigureTerminalForChildProcessesInner(int increment);
+        static partial void ConfigureTerminalForChildProcessesInner(int increment, bool configureConsole);
     }
 }

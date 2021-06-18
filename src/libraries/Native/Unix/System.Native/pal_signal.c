@@ -26,6 +26,8 @@ static bool g_handlerIsInstalled[NSIG];
 static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL;
 // Callback invoked for SIGCHLD
 static volatile SigChldCallback g_sigChldCallback = NULL;
+static volatile bool g_sigChldConsoleConfigurationDelayed;
+static void (*g_sigChldConsoleConfigurationCallback)(void);
 // Callback invoked for for SIGTTOU while terminal settings are changed.
 static volatile ConsoleSigTtouHandler g_consoleTtouHandler;
 
@@ -200,7 +202,8 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
 
 void SystemNative_DefaultSignalHandler(int signalCode)
 {
-    // Perform the default runtime action for the signal.
+    // Performs action the runtime performs on signal that is cancelable
+    // using the PosixSignal API.
 
     if (signalCode == SIGQUIT ||
         signalCode == SIGTERM ||
@@ -213,6 +216,22 @@ void SystemNative_DefaultSignalHandler(int signalCode)
         // Restore the original signal handler and invoke it.
         RestoreSignalHandler(signalCode);
         kill(getpid(), signalCode);
+    }
+    else if (signalCode == SIGCHLD)
+    {
+        if (g_sigChldConsoleConfigurationDelayed)
+        {
+            g_sigChldConsoleConfigurationDelayed = false;
+
+            assert(g_sigChldConsoleConfigurationCallback);
+            g_sigChldConsoleConfigurationCallback();
+        }
+    }
+    else if (signalCode == SIGCONT)
+    {
+#ifdef HAS_CONSOLE_SIGNALS
+        ReinitializeTerminal();
+#endif
     }
 }
 
@@ -255,6 +274,7 @@ static void* SignalHandlerLoop(void* arg)
             }
         }
 
+        bool usePosixSignalHandler = g_hasPosixSignalRegistrations[signalCode - 1];
         if (signalCode == SIGCHLD)
         {
             // When the original disposition is SIG_IGN, children that terminated did not become zombies.
@@ -284,18 +304,13 @@ static void* SignalHandlerLoop(void* arg)
 
             if (callback != NULL)
             {
-                callback(reapAll ? 1 : 0);
+                if (callback(reapAll ? 1 : 0, usePosixSignalHandler ? 0 : 1 /* configureConsole */))
+                {
+                    g_sigChldConsoleConfigurationDelayed = true;
+                }
             }
         }
-        else if (signalCode == SIGCONT)
-        {
-            // TODO: should this be cancelable?
-#ifdef HAS_CONSOLE_SIGNALS
-            ReinitializeTerminal();
-#endif
-        }
 
-        bool usePosixSignalHandler = g_hasPosixSignalRegistrations[signalCode - 1];
         if (usePosixSignalHandler)
         {
             assert(g_posixSignalHandler != NULL);
@@ -388,6 +403,13 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
         InstallSignalHandler(SIGCHLD);
     }
     pthread_mutex_unlock(&lock);
+}
+
+void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
+{
+    assert(g_sigChldConsoleConfigurationCallback == NULL);
+
+    g_sigChldConsoleConfigurationCallback = callback;
 }
 
 static bool CreateSignalHandlerThread(int* readFdPtr)
