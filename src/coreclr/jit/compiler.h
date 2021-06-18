@@ -3024,7 +3024,7 @@ public:
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
-    GenTree* gtNewKeepaliveNode(GenTree* op);
+    GenTree* gtNewKeepAliveNode(GenTree* op);
 
     GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
@@ -4156,6 +4156,8 @@ protected:
                                      bool                 readonlyCall,
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
+
+    GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
     GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
