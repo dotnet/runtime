@@ -155,6 +155,8 @@ namespace System.Text.Json
                     _count++;
                 }
             }
+
+            Debug.Assert(PropertyPath() is not null);
         }
 
         public void Pop(bool success)

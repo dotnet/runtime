@@ -220,7 +220,12 @@ namespace System.Text.Json.Serialization
             // Remember if we were a continuation here since Push() may affect IsContinuation.
             bool wasContinuation = state.IsContinuation;
 
+#if DEBUG
+            // DEBUG: ensure push/pop operations preserve stack integrity
+            JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
+#endif
             state.Push();
+            Debug.Assert(TypeToConvert.IsAssignableFrom(state.Current.JsonTypeInfo.Type));
 
 #if !DEBUG
             // For performance, only perform validation on internal converters on debug builds.
@@ -257,6 +262,9 @@ namespace System.Text.Json.Serialization
 
                         value = default;
                         state.Pop(true);
+#if DEBUG
+                        Debug.Assert(ReferenceEquals(originalJsonTypeInfo, state.Current.JsonTypeInfo));
+#endif
                         return true;
                     }
 
@@ -288,6 +296,9 @@ namespace System.Text.Json.Serialization
             }
 
             state.Pop(success);
+#if DEBUG
+            Debug.Assert(ReferenceEquals(originalJsonTypeInfo, state.Current.JsonTypeInfo));
+#endif
             return success;
         }
 
@@ -298,6 +309,9 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
+        /// <summary>
+        /// Overridden by the nullable converter to prevent boxing of values by the JIT.
+        /// </summary>
         internal virtual bool IsNull(in T value) => value == null;
 
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
@@ -416,7 +430,12 @@ namespace System.Text.Json.Serialization
 
             bool isContinuation = state.IsContinuation;
 
+#if DEBUG
+            // DEBUG: ensure push/pop operations preserve stack integrity
+            JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
+#endif
             state.Push();
+            Debug.Assert(TypeToConvert.IsAssignableFrom(state.Current.JsonTypeInfo.Type));
 
             if (!isContinuation)
             {
@@ -432,6 +451,9 @@ namespace System.Text.Json.Serialization
             }
 
             state.Pop(success);
+#if DEBUG
+            Debug.Assert(ReferenceEquals(originalJsonTypeInfo, state.Current.JsonTypeInfo));
+#endif
 
             if (ignoreCyclesPopReference)
             {
