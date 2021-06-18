@@ -39,6 +39,10 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
         {
             arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i],
                                                                         comp->lvaTable[arrIndex->indLcls[i]].lvType));
+
+            // Clear the range check flag: we guarantee that all necessary range checking has already
+            // been done by the time this array index expression is invoked.
+            arr->gtFlags &= ~GTF_INX_RNGCHK;
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
@@ -395,26 +399,30 @@ void LoopCloneContext::PrintBlockConditions(unsigned loopNum)
 {
     printf("Block conditions:\n");
 
-    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = blockConditions[loopNum];
-    if (levelCond == nullptr || levelCond->Size() == 0)
+    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* blockConds = blockConditions[loopNum];
+    if (blockConds == nullptr || blockConds->Size() == 0)
     {
         printf("No block conditions\n");
         return;
     }
 
-    for (unsigned i = 0; i < levelCond->Size(); ++i)
+    for (unsigned i = 0; i < blockConds->Size(); ++i)
     {
-        printf("%d = {", i);
-        for (unsigned j = 0; j < ((*levelCond)[i])->Size(); ++j)
-        {
-            if (j != 0)
-            {
-                printf(" & ");
-            }
-            (*((*levelCond)[i]))[j].Print();
-        }
-        printf("}\n");
+        PrintBlockLevelConditions(i, (*blockConds)[i]);
     }
+}
+void LoopCloneContext::PrintBlockLevelConditions(unsigned level, JitExpandArrayStack<LC_Condition>* levelCond)
+{
+    printf("%d = ", level);
+    for (unsigned j = 0; j < levelCond->Size(); ++j)
+    {
+        if (j != 0)
+        {
+            printf(" & ");
+        }
+        (*levelCond)[j].Print();
+    }
+    printf("\n");
 }
 #endif
 
@@ -650,19 +658,19 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
 {
     if (conditions[loopNum] == nullptr)
     {
-        JITDUMP("NO conditions");
+        printf("NO conditions");
         return;
     }
     if (conditions[loopNum]->Size() == 0)
     {
-        JITDUMP("Conditions were optimized away! Will always take cloned path.");
+        printf("Conditions were optimized away! Will always take cloned path.");
         return;
     }
     for (unsigned i = 0; i < conditions[loopNum]->Size(); ++i)
     {
         if (i != 0)
         {
-            JITDUMP(" & ");
+            printf(" & ");
         }
         (*conditions[loopNum])[i].Print();
     }
@@ -711,6 +719,9 @@ void LoopCloneContext::CondToStmtInBlock(Compiler*                          comp
     comp->fgInsertStmtAtEnd(block, stmt);
 
     // Remorph.
+    JITDUMP("Loop cloning condition tree before morphing:\n");
+    DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
+    JITDUMP("\n");
     comp->fgMorphBlockStmt(block, stmt DEBUGARG("Loop cloning condition"));
 }
 
@@ -1000,9 +1011,9 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                     return false;
             }
         }
-        JITDUMP("Conditions: (");
+        JITDUMP("Conditions: ");
         DBEXEC(verbose, context->PrintConditions(loopNum));
-        JITDUMP(")\n");
+        JITDUMP("\n");
         return true;
     }
     return false;
@@ -1164,10 +1175,6 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         printf("Deref condition tree:\n");
         for (unsigned i = 0; i < nodes.Size(); ++i)
         {
-            if (i != 0)
-            {
-                printf(",");
-            }
             nodes[i]->Print();
             printf("\n");
         }
@@ -1185,10 +1192,10 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
     // So add 1 after rank * 2.
     unsigned condBlocks = (unsigned)maxRank * 2 + 1;
 
-    // Heuristic to not create too many blocks. Defining as 5 allows, effectively, loop cloning on
-    // triply-nested loops.
+    // Heuristic to not create too many blocks. Defining as 3 allows, effectively, loop cloning on
+    // doubly-nested loops.
     // REVIEW: make this based on a COMPlus configuration, at least for debug?
-    const unsigned maxAllowedCondBlocks = 5;
+    const unsigned maxAllowedCondBlocks = 3;
     if (condBlocks > maxAllowedCondBlocks)
     {
         JITDUMP("> Too many condition blocks (%u > %u)\n", condBlocks, maxAllowedCondBlocks);
@@ -1476,8 +1483,9 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
                                                     BasicBlock*       head,
                                                     BasicBlock*       slowHead)
 {
-    JITDUMP("Inserting loop cloning conditions\n");
+    JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loopNum);
     assert(context->HasBlockConditions(loopNum));
+    assert(head->bbJumpKind == BBJ_COND);
 
     BasicBlock*                                              curCond   = head;
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = context->GetBlockConditions(loopNum);
@@ -1486,10 +1494,15 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
         bool isHeaderBlock = (curCond == head);
 
         // Flip the condition if header block.
+        JITDUMP("Adding loop " FMT_LP " level %u block conditions to " FMT_BB "\n    ", loopNum, i, curCond->bbNum);
+        DBEXEC(verbose, context->PrintBlockLevelConditions(i, (*levelCond)[i]));
         context->CondToStmtInBlock(this, *((*levelCond)[i]), curCond, /*reverse*/ isHeaderBlock);
 
         // Create each condition block ensuring wiring between them.
-        BasicBlock* tmp     = fgNewBBafter(BBJ_COND, isHeaderBlock ? slowHead : curCond, /*extendRegion*/ true);
+        BasicBlock* tmp = fgNewBBafter(BBJ_COND, isHeaderBlock ? slowHead : curCond, /*extendRegion*/ true);
+        tmp->inheritWeight(head);
+        tmp->bbNatLoopNum = head->bbNatLoopNum;
+
         curCond->bbJumpDest = isHeaderBlock ? tmp : slowHead;
 
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", curCond->bbNum, curCond->bbJumpDest->bbNum);
@@ -1502,13 +1515,13 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
         }
 
         curCond = tmp;
-
-        curCond->inheritWeight(head);
-        curCond->bbNatLoopNum = head->bbNatLoopNum;
-        JITDUMP("Created new " FMT_BB " for new level %u\n", curCond->bbNum, i);
     }
 
     // Finally insert cloning conditions after all deref conditions have been inserted.
+    JITDUMP("Adding loop " FMT_LP " cloning conditions to " FMT_BB "\n", loopNum, curCond->bbNum);
+    JITDUMP("    ");
+    DBEXEC(verbose, context->PrintConditions(loopNum));
+    JITDUMP("\n");
     context->CondToStmtInBlock(this, *(context->GetConditions(loopNum)), curCond, /*reverse*/ false);
     return curCond;
 }
@@ -2235,6 +2248,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
         // Check that the array object local variable is invariant within the loop body.
         if (!optIsStackLocalInvariant(info->loopNum, arrIndex.arrLcl))
         {
+            JITDUMP("V%02d is not loop invariant\n", arrIndex.arrLcl);
             return WALK_SKIP_SUBTREES;
         }
 

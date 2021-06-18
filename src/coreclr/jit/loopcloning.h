@@ -739,6 +739,7 @@ struct LoopCloneContext
 #ifdef DEBUG
     // Print the block conditions for the loop.
     void PrintBlockConditions(unsigned loopNum);
+    void PrintBlockLevelConditions(unsigned level, JitExpandArrayStack<LC_Condition>* levelCond);
 #endif
 
     // Does the loop have block conditions?
