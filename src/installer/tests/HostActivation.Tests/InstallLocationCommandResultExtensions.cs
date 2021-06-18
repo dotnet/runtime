@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
+using Xunit;
 
 namespace HostActivation.Tests
 {
@@ -14,16 +15,20 @@ namespace HostActivation.Tests
     {
         private static bool IsRunningInWoW64(string rid) => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem && rid.Equals("win-x86");
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation, string rid)
         {
-            return assertion.HaveUsedDotNetRootInstallLocation(installLocation, null, null);
+            return assertion.HaveUsedDotNetRootInstallLocation(installLocation, rid, null);
         }
 
         public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion,
             string installLocation,
-            string arch,
-            string rid)
+            string rid,
+            string arch)
         {
+            // If no arch is passed and we are on Windows, we need the used RID for determining whether or not we are running on WoW64.
+            if (string.IsNullOrEmpty(arch))
+                Assert.NotNull(rid);
+
             string expectedEnvironmentVariable = !string.IsNullOrEmpty(arch) ? $"DOTNET_ROOT_{arch.ToUpper()}" :
                 IsRunningInWoW64(rid) ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
 
