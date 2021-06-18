@@ -1246,6 +1246,8 @@ var BindingSupportLib = {
 			// TODO: Solve this by using a temporary unbox buffer, or using a different spot in the unbox buffer
 			if (this._is_unboxing_struct)
 				throw new Error("Re-entrant struct unboxing detected. This is not currently supported.");
+			if (!mono_obj)
+				throw new Error("Struct to unbox was null");
 
 			try {
 				this._is_unboxing_struct = true;
