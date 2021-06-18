@@ -143,7 +143,7 @@ const IOHandler = {
 			} else if (is_node) { // NodeJS
 				const fs = require ('fs');
 				readFunc = function (path) {
-					return fs.readFileSync(path);
+					return fs.readFileSync(path).toString();
 				};
 			} else if (is_browser) {  // vanila JS in browser
 				readFunc = fetch;
@@ -159,13 +159,20 @@ const IOHandler = {
 	},
 
 	fetch: function(asset, params) {
-		if (is_node || is_browser) {
+		if (is_browser) {
 			return fetch (asset, params);
+
 		} else {
 			return new Promise ((resolve, reject) => {
 				let bytes = null, error = null;
 				try {
-					bytes = read (asset, 'binary');
+					if (is_node){
+						const fs = require ('fs');
+						const buffer = fs.readFileSync(asset);
+						bytes = buffer.buffer;
+					} else {
+						bytes = read (asset, 'binary');
+					}
 				} catch (exc) {
 					error = exc;
 				}
@@ -250,7 +257,7 @@ while (testArguments !== undefined && testArguments.length > 0) {
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
 // must be var as dotnet.js uses it
-var Module = {
+globalThis.Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
 	onAbort: function(x) {
@@ -264,7 +271,7 @@ var Module = {
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (let variable in setenv) {
-			MONO.mono_wasm_setenv (variable, setenv [variable]);
+			Module.MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
 		if (!enable_gc) {
@@ -293,7 +300,7 @@ var Module = {
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
-		MONO.mono_load_runtime_and_bcl_args (config);
+		Module.MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };
 
@@ -336,7 +343,7 @@ const App = {
 		}
 
 		if (runtime_args.length > 0)
-			MONO.mono_wasm_set_runtime_options (runtime_args);
+			Module.MONO.mono_wasm_set_runtime_options (runtime_args);
 
 		if (testArguments[0] == "--run") {
 			// Run an exe
@@ -386,7 +393,7 @@ const App = {
 
 		const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
 		try {
-			return BINDING.call_static_method(fqn, args || [], signature);
+			return Module.BINDING.call_static_method(fqn, args || [], signature);
 		} catch (exc) {
 			console.error("exception thrown in", fqn);
 			throw exc;
