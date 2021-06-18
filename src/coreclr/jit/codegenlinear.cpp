@@ -175,15 +175,18 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
-         ////////////
-         //compiler->opts.dspCode    = true;
-         //compiler->opts.dspEHTable = true;
-         //compiler->opts.dspGCtbls  = true;
-         //compiler->opts.disAsm2    = true;
-         //compiler->opts.dspUnwind  = true;
-         //compiler->verbose         = true;
-         //compiler->codeGen->setVerbose(true);
-     ///////////
+    //if (compiler->info.compMethodHashPrivate == 0x939467e2)
+    //{
+    //    //////////
+    //     compiler->opts.dspCode    = true;
+    //     compiler->opts.dspEHTable = true;
+    //     compiler->opts.dspGCtbls  = true;
+    //     compiler->opts.disAsm2    = true;
+    //     compiler->opts.dspUnwind  = true;
+    //     compiler->verbose         = true;
+    //     compiler->codeGen->setVerbose(true);
+    //    /////////
+    //}
 
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -2059,7 +2062,7 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     // spilled, i.e. write-thru).
     // An EH var use is always valid on the stack (so we don't need to actually spill it),
     // but the GTF_SPILL flag records the fact that the register value is going dead.
-    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef))
+    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->lvLiveInOutOfHndlr/* && !varDsc->lvSpillAtSingleDef*/))
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.
