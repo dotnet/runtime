@@ -12,16 +12,20 @@ namespace HostActivation.Tests
 {
     internal static class InstallLocationCommandResultExtensions
     {
-        private static bool IsRunningInWoW64() => OperatingSystem.IsWindows() && !Environment.Is64BitProcess;
+        private static bool IsRunningInWoW64(string rid) => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem && rid.Equals("win-x86");
 
         public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
-            return assertion.HaveUsedDotNetRootInstallLocation(null, installLocation);
+            return assertion.HaveUsedDotNetRootInstallLocation(installLocation, null, null);
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string arch, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion,
+            string installLocation,
+            string arch,
+            string rid)
         {
-            string expectedEnvironmentVariable = !string.IsNullOrEmpty(arch) ? $"DOTNET_ROOT_{arch.ToUpper()}" : IsRunningInWoW64() ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
+            string expectedEnvironmentVariable = !string.IsNullOrEmpty(arch) ? $"DOTNET_ROOT_{arch.ToUpper()}" :
+                IsRunningInWoW64(rid) ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
 
             return assertion.HaveStdErrContaining($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.");
         }
@@ -41,7 +45,7 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Found install location path '{installLocation}'.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveFoundArchSpecificInstallLocationInConfigFile(this CommandResultAssertions assertion, string arch, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveFoundArchSpecificInstallLocationInConfigFile(this CommandResultAssertions assertion, string installLocation, string arch)
         {
             return assertion.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{arch}').");
         }

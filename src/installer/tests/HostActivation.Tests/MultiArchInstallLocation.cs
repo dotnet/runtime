@@ -33,7 +33,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(fixture.BuiltDotnet.BinPath, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(arch, fixture.BuiltDotnet.BinPath);
+                .And.HaveUsedDotNetRootInstallLocation(fixture.BuiltDotnet.BinPath, arch, fixture.CurrentRid);
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(dotnet, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(arch, dotnet)
+                .And.HaveUsedDotNetRootInstallLocation(dotnet, arch, fixture.CurrentRid)
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
         }
 
@@ -98,8 +98,8 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().HaveFoundDefaultInstallLocationInConfigFile(path1)
-                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch1, path1)
-                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(arch2, path2)
+                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(path1, arch1)
+                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(path2, arch2)
                     .And.HaveUsedGlobalInstallLocation(path2);
             }
         }
