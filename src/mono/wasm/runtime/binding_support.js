@@ -536,24 +536,25 @@ var BindingSupportLib = {
 			if (mono_obj === 0)
 				return undefined;
 
-			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer, this._unbox_buffer_size);
+			var unbox_buffer = this._unbox_buffer;
+			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, unbox_buffer, this._unbox_buffer_size);
 			switch (type) {
 				case 1: // int
-					return Module.HEAP32[this._unbox_buffer / 4];
+					return Module.HEAP32[unbox_buffer / 4];
 				case 4: // struct
-					return this._unbox_struct_rooted (this._unbox_buffer, mono_obj);
+					return this._unbox_struct_rooted (unbox_buffer, mono_obj);
 				case 25: // uint32
-					return Module.HEAPU32[this._unbox_buffer / 4];
+					return Module.HEAPU32[unbox_buffer / 4];
 				case 24: // float32
-					return Module.HEAPF32[this._unbox_buffer / 4];
+					return Module.HEAPF32[unbox_buffer / 4];
 				case 2: // float64
-					return Module.HEAPF64[this._unbox_buffer / 8];
+					return Module.HEAPF64[unbox_buffer / 8];
 				case 8: // boolean
-					return (Module.HEAP32[this._unbox_buffer / 4]) !== 0;
+					return (Module.HEAP32[unbox_buffer / 4]) !== 0;
 				case 28: // char
-					return String.fromCharCode(Module.HEAP32[this._unbox_buffer / 4]);
+					return String.fromCharCode(Module.HEAP32[unbox_buffer / 4]);
 				default:
-					var klass = Module.HEAPU32[this._unbox_buffer / 4];
+					var klass = Module.HEAPU32[unbox_buffer / 4];
 					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type, klass);
 			}
 		},
@@ -1244,7 +1245,7 @@ var BindingSupportLib = {
 
 		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
 			// TODO: Solve this by using a temporary unbox buffer, or using a different spot in the unbox buffer
-			if (this._is_unboxing_struct)
+			if (this._is_unboxing_struct && (this._unbox_buffer === unbox_buffer))
 				throw new Error("Re-entrant struct unboxing detected. This is not currently supported.");
 			if (!mono_obj)
 				throw new Error("Struct to unbox was null");
@@ -1252,10 +1253,12 @@ var BindingSupportLib = {
 			try {
 				this._is_unboxing_struct = true;
 				var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
-				var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
+				var pClassPtr = ((unbox_buffer / 4) | 0) + 1;
+				var classPtr = Module.HEAP32[pClassPtr];
 				var dataOffset = unbox_buffer + 8;
-				if (!classPtr)
-					throw new Error("classPtr is null or undefined");
+				if (!classPtr) {
+					throw new Error(`classPtr for struct obj at address ${mono_obj} is null or undefined`);
+				}
 
 				var typePtr = this.mono_wasm_class_get_type(classPtr);
 				var unboxer = this._get_struct_unboxer_for_type(typePtr);
@@ -1931,12 +1934,15 @@ var BindingSupportLib = {
 				scratchResultRoot: MONO.mono_wasm_new_root (),
 				scratchExceptionRoot: MONO.mono_wasm_new_root ()
 			};
+			const unboxBufferSize = 8192;
 			var closure = {
 				library_mono: MONO,
 				binding_support: this,
 				method: method,
 				this_arg: this_arg,
 				token: token,
+				unbox_buffer: Module._malloc(unboxBufferSize),
+				unbox_buffer_size: unboxBufferSize
 			};
 
 			var converterKey = "converter_" + converter.name;
@@ -2022,8 +2028,7 @@ var BindingSupportLib = {
 					//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
 					//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
 					//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-					"    let unbox_buffer = binding_support._unbox_buffer;",
-					"    let resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, binding_support._unbox_buffer_size);",
+					"    let resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, unbox_buffer_size);",
 					"    switch (resultType) {",
 					"    case 1:", // int
 					"        result = Module.HEAP32[unbox_buffer / 4]; break;",

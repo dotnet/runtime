@@ -817,6 +817,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_ERROR_BUFFER_TOO_SMALL 512
 #define MARSHAL_ERROR_NULL_CLASS_POINTER 513
 #define MARSHAL_ERROR_NULL_TYPE_POINTER 514
+#define MARSHAL_ERROR_UNSUPPORTED_TYPE 515
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -1005,6 +1006,13 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	}
 	
 	int mono_type = mono_type_get_type (type);
+
+	if (mono_type == MONO_TYPE_GENERICINST) {
+		// HACK: While the 'any other type' fallback is valid for classes, it will do the 
+		//  wrong thing for structs, so we need to make sure the valuetype handler is used
+		if (mono_type_generic_inst_is_valuetype (type))
+			mono_type = MONO_TYPE_VALUETYPE;
+	}
 	
 	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
 
@@ -1083,13 +1091,17 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			//  have to call back into the native runtime later to get it
 			*resultP = klass;
 			obj = NULL;
-			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+			int fallbackResultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+			assert (fallbackResultType != MARSHAL_TYPE_VT);
+			return fallbackResultType;
 	}
 
 	// We successfully performed a fast unboxing here so use the type information
 	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
 	obj = NULL;
-	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	int resultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	assert (resultType != MARSHAL_TYPE_VT);
+	return resultType;
 }
 
 // FIXME: This function is retained specifically because runtime-test.js uses it
@@ -1223,18 +1235,6 @@ void build_signature_info_record (MonoType *type, int* resultMtype, MonoClass** 
 	}
 	*resultMtype = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 	*resultClass = klass;
-
-	/*
-	const char * tname = mono_type_get_name (type);
-	EM_ASM({
-		var mtype = $0;
-		var type = $1;
-		var tname = Module.UTF8ToString ($2);
-		var klass = $3;
-		var mono_type = $4;
-		console.log (mtype, type, tname, klass, mono_type);
-	}, *resultMtype, *resultType, tname, klass, mono_type);
-	*/
 }
 
 // FIXME
@@ -1286,15 +1286,7 @@ mono_wasm_create_method_signature_info (MonoClass *klass, MonoMethod *method)
 	
 	// ((char *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
 
-	EM_ASM({
-		console.debug("creating signature info for method result", Module.UTF8ToString ($0));
-	}, mono_method_get_full_name (method));
-
 	build_signature_info_record (mono_signature_get_return_type (sig), &result->result_marshal_type, &result->result_class);
-
-	EM_ASM({
-		console.debug("creating signature info for method params", Module.UTF8ToString ($0));
-	}, mono_method_get_full_name (method));
 
 	int i = 0;
 	void *iter = 0;
