@@ -330,7 +330,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
             var mb = MethodFromPointers(typePtr, methodPtr);
-            if (mb == null)
+            if (mb is null)
                 return null;
 
             var returnType = (mb as MethodInfo)?.ReturnType ?? typeof(void);
@@ -366,7 +366,7 @@ namespace System.Runtime.InteropServices.JavaScript
             );
 
             var value = info?.GetValue(null) as string;
-            if (value == null)
+            if (value is null)
                 return "null";
 
             var sb = new StringBuilder();
@@ -407,7 +407,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var info = type.GetMethod(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
-            if (info == null)
+            if (info is null)
                 throw new WasmInteropException($"{type.Name} must have a static {name} method");
 
             var p = info.GetParameters();
@@ -603,8 +603,8 @@ namespace System.Runtime.InteropServices.JavaScript
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
-            MethodBase? mb = objForRuntimeType == null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
-            if (mb == null)
+            MethodBase? mb = objForRuntimeType is null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
+            if (mb is null)
                 return string.Empty;
 
             ParameterInfo[] parms = mb.GetParameters();
@@ -624,9 +624,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
-            if (task == null)
+            if (task is null)
                 throw new ArgumentNullException(nameof(task));
-            if (continuationObj == null)
+            if (continuationObj is null)
                 throw new ArgumentNullException(nameof(continuationObj));
 
             if (task.IsCompleted)
@@ -638,7 +638,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 try
                 {
-                    if (task.Exception == null)
+                    if (task.Exception is null)
                     {
                         object? result;
                         Type task_type = task.GetType();
@@ -726,7 +726,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 #if DEBUG_HANDLE
-            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
+            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref is null) ? 0 : _anyref.RefCount)}");
 #endif
             return _addRefSucceeded;
         }
