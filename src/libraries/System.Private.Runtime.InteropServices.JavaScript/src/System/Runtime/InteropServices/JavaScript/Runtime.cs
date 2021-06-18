@@ -598,7 +598,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
+        public static string GetCallSignature(IntPtr methodHandle, object? objForRuntimeType)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
@@ -699,8 +699,11 @@ namespace System.Runtime.InteropServices.JavaScript
             return o?.ToString() ?? string.Empty;
         }
 
-        public static bool SafeHandleAddRef(SafeHandle safeHandle)
+        public static bool SafeHandleAddRef(SafeHandle? safeHandle)
         {
+            if (safeHandle is null)
+                throw new ArgumentNullException(nameof(safeHandle));
+
             bool _addRefSucceeded = false;
 #if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
@@ -731,8 +734,11 @@ namespace System.Runtime.InteropServices.JavaScript
             return _addRefSucceeded;
         }
 
-        public static void SafeHandleRelease(SafeHandle safeHandle)
+        public static void SafeHandleRelease(SafeHandle? safeHandle)
         {
+            if (safeHandle is null)
+                throw new ArgumentNullException(nameof(safeHandle));
+
             safeHandle.DangerousRelease();
 #if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
@@ -766,6 +772,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
         {
+            if (safeHandle is null)
+                throw new ArgumentNullException(nameof(safeHandle));
+
 #if DEBUG_HANDLE
             Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
 #endif
