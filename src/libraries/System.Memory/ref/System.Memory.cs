@@ -151,8 +151,8 @@ namespace System
         {
             private readonly object _dummy;
             private readonly int _dummyPrimitive;
-            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<char> destination, out bool success) { throw null; }
-            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<char> destination, IFormatProvider? provider, out bool success) { throw null; }
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<char> destination, out bool shouldAppend) { throw null; }
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<char> destination, IFormatProvider? provider, out bool shouldAppend) { throw null; }
             public bool AppendLiteral(string value) { throw null; }
             public bool AppendFormatted(System.ReadOnlySpan<char> value) { throw null; }
             public bool AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { throw null; }

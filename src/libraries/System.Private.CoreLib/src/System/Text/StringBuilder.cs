@@ -2635,7 +2635,7 @@ namespace System.Text
             // than an ArgumentNullException.
 
             /// <summary>The associated StringBuilder to which to append.</summary>
-            private readonly StringBuilder _stringBuilder;
+            internal readonly StringBuilder _stringBuilder;
             /// <summary>Optional provider to pass to IFormattable.ToString or ISpanFormattable.TryFormat calls.</summary>
             private readonly IFormatProvider? _provider;
             /// <summary>Whether <see cref="_provider"/> provides an ICustomFormatter.</summary>
