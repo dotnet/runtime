@@ -126,7 +126,7 @@ while (($# > 0)); do
       ;;
     --wasmaot)
       wasmaot=true
-      shift 
+      shift 1
       ;;
     --compare)
       compare=true
@@ -270,7 +270,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
     if[ "$wasmaot" == "true" ]]; then
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode aot --runtimeSrcDir $wasm_runtime_loc"
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode aot --runtimeSrcDir $wasm_dotnet_path"
     else
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
     fi
@@ -325,4 +325,4 @@ Write-PipelineSetVariable -name "_BuildConfig" -value "$architecture.$kind.$fram
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
-Write-PipelineSetVariable -name "runtimeSrcDir" -value "$wasm_runtime_loc" -is_multi_job_variable false
+Write-PipelineSetVariable -name "runtimeSrcDir" -value "$wasm_dotnet_path" -is_multi_job_variable false
