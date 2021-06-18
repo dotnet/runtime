@@ -1,24 +1,15 @@
 # Testing Libraries
 
-## Pre-requisites
-Before tests can run the following steps must happen:
-1. Build a runtime (either Mono or coreclr)
-2. Build the libraries
-3. Testhost deployment: Binaries must be arranged into a directory layout that tools/tests expect
-4. Build the tests
+## Full Build and Test Run
 
-Using build.cmd/sh these steps can either be accomplished independently or the testing and all the pre-requisites can be automated in a single command. See the [Building instructions](../../building/libraries/README.md) for more options on how to build pieces independently.
-
-## All-in-one Examples
-
-These examples automate all pre-requisite steps and the test run in a single command from a clean enlistment.
+These example commands automate the test run and all pre-requisite build steps in a single command from a clean enlistment.
 
 - Build all pre-requisites (clr + libs) and tests and run them using CoreCLR:
 ```
 build.cmd/sh -subset clr+libs+libs.tests -test
 ```
 
-- Build all pre-requisites (mono + libs) and tests and run them using mono:
+- Build all pre-requisites (mono + libs) and tests and run them using Mono:
 ```
 build.cmd/sh -subset mono+libs+libs.tests -test
 ```
@@ -33,37 +24,58 @@ build.cmd/sh -subset clr+libs+libs.tests -test -rc Release
 build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 ```
 
-## Partial workflow examples
+## Partial Build and Test Runs
 
-These examples allow portions of the workflow to be isolated and done individually:
+Doing full build and test runs takes a long time and is very inefficient if you need to iterate on a change.
+For greater control and efficiency individual parts of the build + testing workflow can be run in isolation. 
+See the [Building instructions](../../building/libraries/README.md) for more info on build options.
 
-- Build only the tests but not run them:
+### Test Run Pre-requisites
+Before any tests can run we need a complete build to run them on. Specifically:
+1. Build a runtime (clr or mono)
 ```
-build.cmd/sh -subset libs.tests
+build.cmd/sh -subset clr
+```
+OR
+```
+build.cmd/sh -subset mono
+```
+2. Build all the libraries
+```
+build.cmd/sh -subset libs
 ```
 
-- Builds and run all tests in release configuration. 
-_Pre-requisite: Build runtime+libs and deploy testhost directory_:
+Building the `libs` subset automatically copies all product binaries into a testhost folder in the bin directory.
+This is where the tests will load the binaries from during the run. If you later [rebuild any of product binaries](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md#iterating-on-systemprivatecorelib-changes)
+using the individual library build projects you must also build the `libs.pretest` subset to copy the new binaries to testhost.
+```
+build.cmd/sh -subset libs.pretest
+```
+TODO: Is this a special case only for S.P.C or it is required for all libraries?
+
+### Running tests for all libraries
+
+- Build and run all tests in release configuration. 
 ```
 build.cmd/sh -subset libs.tests -test -c Release
 ```
 
-- The following example shows how to pass extra msbuild properties to ignore tests ignored in CI.
-_Pre-requisite: Build runtime+libs and deploy testhost directory_:
+- Build the tests without running them
 ```
-build.cmd/sh -subset libs.tests -test /p:WithoutCategories=IgnoreForCI
+build.cmd/sh -subset libs.tests
 ```
 
-- Unless you specifiy `-testnobuild`, test assemblies are implicitly built when invoking the `Test` action.
-The following shows how to only test the libraries without building them.
-_Pre-requisite: Build runtime+libs, deploy testhost directory, build tests_:
+- Run the tests without building them
 ```
 build.cmd/sh -subset libs.tests -test -testnobuild
 ```
 
-## Running tests on the command line
+- The following example shows how to pass extra msbuild properties to ignore tests ignored in CI.
+```
+build.cmd/sh -subset libs.tests -test /p:WithoutCategories=IgnoreForCI
+```
 
-To build tests you need to specify the `test` subset when invoking build.cmd/sh: `build.cmd/sh -subset libs.tests`.
+### Running tests for a single library
 
 The easiest (and recommended) way to build and run the tests for a specific library, is to invoke the `Test` target on that library:
 ```cmd
@@ -83,21 +95,21 @@ dotnet build /t:Test /p:TargetArchitecture=x86
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
-#### Running a single test on the command line
+### Running a single test on the command line
 
 To quickly run or debug a single test from the command line, set the XunitMethodName property, e.g.:
 ```cmd
 dotnet build /t:Test /p:XunitMethodName={FullyQualifiedNamespace}.{ClassName}.{MethodName}
 ```
 
-#### Running outer loop tests
+### Running outer loop tests
 
 To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable, but which are more comprehensive):
 ```cmd
 dotnet build /t:Test /p:Outerloop=true
 ```
 
-#### Running tests on a different target framework
+### Running tests on a different target framework
 
 Each test project can potentially have multiple target frameworks. There are some tests that might be OS-specific, or might be testing an API that is available only on some target frameworks, so the `TargetFrameworks` property specifies the valid target frameworks. By default we will build and run only the default build target framework which is `net5.0`. The rest of the `TargetFrameworks` will need to be built and ran by specifying the `BuildTargetFramework` option, e.g.:
 ```cmd
