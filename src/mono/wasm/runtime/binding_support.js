@@ -1156,35 +1156,40 @@ var BindingSupportLib = {
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
 				var aqn = this._get_type_aqn (typePtr);
-				var table = MONO._custom_marshaler_name_table;
-				var marshalerAQN = table[aqn];
-				if (!marshalerAQN) {
-					for (var k in table) {
-						// Perform a loose match against the assembly-qualified type names,
-						//  because in some cases it is not possible or convenient to
-						//  include the full string (i.e. version, culture, etc)
-						var isMatch = k.startsWith(aqn) || aqn.startsWith(k);
-						if (isMatch) {
-							marshalerAQN = table[k];
-							break;
+				if (!aqn.startsWith("System.Object, System.Private.CoreLib, ")) {
+					var table = MONO._custom_marshaler_name_table;
+					var marshalerAQN = table[aqn];
+					if (!marshalerAQN) {
+						for (var k in table) {
+							// Perform a loose match against the assembly-qualified type names,
+							//  because in some cases it is not possible or convenient to
+							//  include the full string (i.e. version, culture, etc)
+							var isMatch = k.startsWith(aqn) || aqn.startsWith(k);
+							if (isMatch) {
+								marshalerAQN = table[k];
+								break;
+							}
 						}
 					}
-				}
-				if (!marshalerAQN) {
-					if (!this._has_logged_custom_marshaler_table) {
-						console.warn(`/// Type '${aqn}' has no registered custom marshaler. Dumping custom marshaler table: ///`);
-						for (var k in table)
-							console.log(k, table[k]);
-					} else {
-						console.warn(`/// Type '${aqn}' has no registered custom marshaler. ///`);
+
+					if (!marshalerAQN) {
+						if (!this._has_logged_custom_marshaler_table) {
+							this._has_logged_custom_marshaler_table = true;
+							console.log(`WARNING: Type '${aqn}' has no registered custom marshaler. A dump of the marshaler table follows:`);
+							for (var k in table)
+								console.log(`  ${k}: ${table[k]}`);
+						}
+						this._custom_marshaler_info_cache[typePtr] = null;
+						return null;
 					}
-					this._custom_marshaler_info_cache[typePtr] = null;
-					return null;
+					var json = this.get_custom_marshaler_info (typePtr, marshalerAQN);
+					result = JSON.parse(json);
+					if (!result)
+						throw new Error (`Configured custom marshaler for ${aqn} could not be loaded: ${marshalerAQN}`);
+				} else {
+					result = null;
 				}
-				var json = this.get_custom_marshaler_info (typePtr, marshalerAQN);
-				result = JSON.parse(json);
-				if (!result)
-					throw new Error (`Configured custom marshaler for ${aqn} could not be loaded: ${marshalerAQN}`);
+
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);
