@@ -33,6 +33,7 @@ namespace System.IO
         /// </summary>
         private static bool GetIsCaseSensitive()
         {
+#if NET6_0_OR_GREATER
             // Return a constant for mobile platforms without resorting to I/O
             if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
                 return true;
@@ -40,6 +41,7 @@ namespace System.IO
                 return false;
             if (OperatingSystem.IsAndroid())
                 return false;
+#endif
             return GetIsCaseSensitiveByProbing();
         }
 
