@@ -120,9 +120,17 @@ const IOHandler = {
 				loadFunc = WScript.LoadScriptFile;
 
 			} else if (is_node) { // NodeJS
-				const fs = require ('fs');
-				loadFunc = function (file) {
-					eval (fs.readFileSync(file).toString());
+				loadFunc = async function (file) {
+					let req = require(file);
+
+					// sometimes the require returns a function which returns a promise (such as in dotnet.js).
+					// othertimes it returns the variable or object that is needed. We handle both cases
+					if (typeof(req) === 'function') {
+						req = await req(Module); // pass Module so emsdk can use it
+					}
+
+					// add to the globalThis the file under the namespace of the upercase filename without js extension
+					globalThis[file.substring(2,file.length - 3).replace("-","_").toUpperCase()] = req;
 				};
 			} else if (is_browser) { // vanila JS in browser
 				loadFunc = function (file) {
@@ -132,7 +140,7 @@ const IOHandler = {
 				}
 			}
 		}
-		IOHandler.load = async (file) => loadFunc(file);
+		IOHandler.load = async (file) => await loadFunc(file);
 
 		// read: function that just reads a file into a variable
 		let readFunc = globalThis.read; // shells (v8, JavaScriptCore, Spidermonkey)
@@ -257,7 +265,7 @@ while (testArguments !== undefined && testArguments.length > 0) {
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
 // must be var as dotnet.js uses it
-globalThis.Module = {
+var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
 	onAbort: function(x) {
@@ -278,17 +286,17 @@ globalThis.Module = {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		config.loaded_cb = function () {
-			let wds = FS.stat (working_dir);
-			if (wds === undefined || !FS.isDir (wds.mode)) {
+		MONO_CONFIG.loaded_cb = function () {
+			let wds = Module.FS.stat (working_dir);
+			if (wds === undefined || !Module.FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
 				return;
 			}
 
-			FS.chdir (working_dir);
+			Module.FS.chdir (working_dir);
 			App.init ();
 		};
-		config.fetch_file_cb = function (asset) {
+		MONO_CONFIG.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
@@ -300,7 +308,7 @@ globalThis.Module = {
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
-		Module.MONO.mono_load_runtime_and_bcl_args (config);
+		Module.MONO.mono_load_runtime_and_bcl_args (MONO_CONFIG);
 	},
 };
 
@@ -404,10 +412,8 @@ const App = {
 // load the config and runtime files which will start the runtime init and subsiquently the tests
 // uses promise chain as loading is async but we can't use await here
 IOHandler
-	.load ("mono-config.js")
-	.then(function () {
-		IOHandler.load ("dotnet.js");
-	})
+	.load ("./mono-config.js")
+	.then(IOHandler.load ("./dotnet.js"))
 	.catch(function(err) {
 		console.error(err);
 		fail_exec("failed to load the mono-config.js or dotnet.js files");
