@@ -35,7 +35,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
@@ -112,7 +112,7 @@
     <GenerateAOTProps
         Properties="@(_WasmPropertiesToPass)"
         Items="@(_WasmItemsToPass)"
-        OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
+        OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
