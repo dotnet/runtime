@@ -184,6 +184,49 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCustomKey, json);
         }
 
+        public enum ETestEnum
+        {
+            TestValue1 = 1,
+            TestValue2 = 2,
+        }
+
+        [Fact]
+        public static void EnumSerialization_DictionaryPolicy_Honored_CamelCase()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
+            string value = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"testValue1\":1}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"testValue2\":2}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1, [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"testValue1\":1,\"testValue2\":2}", value);
+        }
+
+        [Fact]
+        public static void EnumSerialization_DictionaryPolicy_Honored_None()
+        {
+            Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
+            string value = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"TestValue1\":1}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"TestValue2\":2}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1, [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"TestValue1\":1,\"TestValue2\":2}", value);
+        }
+
         [Fact]
         public static void NullNamePolicy()
         {

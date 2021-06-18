@@ -60,7 +60,16 @@ namespace System.Text.Json.Serialization.Converters
 
                 T value = (T)values.GetValue(i)!;
                 ulong key = ConvertToUInt64(value);
-                string name = names[i];
+                string name;
+
+                if (serializerOptions.DictionaryKeyPolicy != null)
+                {
+                    name = serializerOptions.DictionaryKeyPolicy.ConvertName(names[i]);
+                }
+                else
+                {
+                    name = names[i];
+                }
 
                 _nameCache.TryAdd(
                     key,
