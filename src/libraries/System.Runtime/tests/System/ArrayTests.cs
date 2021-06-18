@@ -4253,24 +4253,74 @@ namespace System.Tests
 
         public class Bar
         {
+            public string Value { get; set; }
         }
 
         public class Foo
         {
         }
 
+        private static Bar[] CreateBarArray()
+        {
+            return new Bar[]
+            {
+                new Bar() { Value = "0" },
+                new Bar() { Value = "1" },
+                new Bar() { Value = "2" },
+                new Bar() { Value = "3" },
+            };
+        }
+
+        private static int[] CreateInt32Array() => new int[] { 0, 1, 2, 3 };
+
         [Fact]
         public static void Fill_Casting()
         {
-            Bar[] barArray = new Bar[2];
-            Array.Fill<object>(barArray, new Bar());
+            Bar[] barArray1 = CreateBarArray();
+            Array.Fill<object>(barArray1, new Bar() { Value = "x" });
+            Assert.Equal(Enumerable.Repeat("x", barArray1.Length), barArray1.Select(e => e.Value));
+
+            Bar[] barArray2 = CreateBarArray();
+            Array.Fill<object>(barArray2, new Bar() { Value = "x" }, 1, 2);
+            Assert.Equal(new string[] { "0", "x", "x", "3" }, barArray2.Select(e => e.Value));
+
+            uint[] uintArray1 = (uint[])(object)CreateInt32Array();
+            Array.Fill<uint>(uintArray1, 42);
+            Assert.Equal(Enumerable.Repeat(42, uintArray1.Length), uintArray1);
+
+            uint[] uintArray2 = (uint[])(object)CreateInt32Array();
+            Array.Fill<uint>(uintArray2, 42, 1, 2);
+            Assert.Equal(new int[] { 0, 42, 42, 3 }, uintArray2);
         }
 
         [Fact]
         public static void Fill_Casting_Invalid()
         {
-            Bar[] barArray = new Bar[2];
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo()));
+            Bar[] barArray1 = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray1, new Foo()));
+
+            Bar[] barArray2 = CreateBarArray();
+            try
+            {
+                Array.Fill<object>(barArray2, new Foo());
+            }
+            catch (ArrayTypeMismatchException)
+            {
+                Assert.Equal(CreateBarArray(), barArray2);
+            }
+
+            Bar[] barArray3 = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray3, new Foo(), 1, 2));
+
+            Bar[] barArray4 = CreateBarArray();
+            try
+            {
+                Array.Fill<object>(barArray4, new Foo(), 1, 2);
+            }
+            catch (ArrayTypeMismatchException)
+            {
+                Assert.Equal(CreateBarArray(), barArray4);
+            }
         }
 
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
