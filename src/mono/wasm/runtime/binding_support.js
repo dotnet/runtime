@@ -1171,6 +1171,13 @@ var BindingSupportLib = {
 					}
 				}
 				if (!marshalerAQN) {
+					if (!this._has_logged_custom_marshaler_table) {
+						console.warn(`/// Type '${aqn}' has no registered custom marshaler. Dumping custom marshaler table: ///`);
+						for (var k in table)
+							console.log(k, table[k]);
+					} else {
+						console.warn(`/// Type '${aqn}' has no registered custom marshaler. ///`);
+					}
 					this._custom_marshaler_info_cache[typePtr] = null;
 					return null;
 				}
