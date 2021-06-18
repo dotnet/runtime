@@ -388,7 +388,6 @@ namespace System.Data.Common
             return attributes;
         }
 
-        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -414,7 +413,16 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
-        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
+        private PropertyDescriptorCollection GetPropertiesOfThis()
+        {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
+            return TypeDescriptor.GetProperties(this, true);
+        }
+
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
@@ -423,7 +431,7 @@ namespace System.Data.Common
                 // show all strongly typed properties (not already added)
                 // except ConnectionString iff BrowsableConnectionString
                 Attribute[]? attributes;
-                foreach (PropertyDescriptor reflected in TypeDescriptor.GetProperties(this, true))
+                foreach (PropertyDescriptor reflected in GetPropertiesOfThis())
                 {
                     Debug.Assert(reflected != null);
                     if (ADP.ConnectionString != reflected.Name)
@@ -572,7 +580,7 @@ namespace System.Data.Common
         string ICustomTypeDescriptor.GetClassName()
         {
             // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
-            // We cannot use GetClassName overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
             Type thisType = GetType();
             return TypeDescriptor.GetClassName(this, true);
         }
@@ -581,7 +589,7 @@ namespace System.Data.Common
         string ICustomTypeDescriptor.GetComponentName()
         {
             // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
-            // We cannot use GetClassName overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
             Type thisType = GetType();
             return TypeDescriptor.GetComponentName(this, true);
         }
@@ -626,7 +634,7 @@ namespace System.Data.Common
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
             // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
-            // We cannot use GetClassName overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
             Type thisType = GetType();
             return TypeDescriptor.GetEvents(this, true);
         }

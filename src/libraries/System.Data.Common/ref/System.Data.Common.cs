@@ -2131,7 +2131,6 @@ namespace System.Data.Common
         protected internal void ClearPropertyDescriptors() { }
         public virtual bool ContainsKey(string keyword) { throw null; }
         public virtual bool EquivalentTo(System.Data.Common.DbConnectionStringBuilder connectionStringBuilder) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The Type of component cannot be statically discovered.")]
         protected virtual void GetProperties(System.Collections.Hashtable propertyDescriptors) { }
         public virtual bool Remove(string keyword) { throw null; }
         public virtual bool ShouldSerialize(string keyword) { throw null; }

@@ -86,6 +86,26 @@ namespace DbConnectionStringBuilderTrimmingTests
                 throw new Exception("Event with DisplayName not found");
             }
 
+            bool propertyFound = false;
+            foreach (DictionaryEntry kv in dcsb2.GetProperties2())
+            {
+                PropertyDescriptor val = (PropertyDescriptor)kv.Value;
+                if (val.Name == "TestProperty")
+                {
+                    if (propertyFound)
+                    {
+                        throw new Exception("More than one property TestProperty found.");
+                    }
+
+                    propertyFound = true;
+                }
+            }
+
+            if (!propertyFound)
+            {
+                throw new Exception("Property not found");
+            }
+
             return 100;
         }
     }
@@ -100,8 +120,16 @@ namespace DbConnectionStringBuilderTrimmingTests
         public event Action TestEvent2;
 #pragma warning restore CS0067
 
+        public string TestProperty { get; set; }
         public ISite Site { get => new TestSite(); set => throw new NotImplementedException(); }
         public void Dispose() { }
+
+        public Hashtable GetProperties2()
+        {
+            Hashtable propertyDescriptors = new Hashtable();
+            GetProperties(propertyDescriptors);
+            return propertyDescriptors;
+        }
     }
 
     class TestSite : INestedSite
