@@ -1,0 +1,217 @@
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+
+public class KeepAliveBoxFieldsTest
+{
+    private static string _failedTest;
+    private static string _failedFieldName;
+
+    public static int Main()
+    {
+        TestLocalsOneBlock();
+        Reset();
+        TestImplicitByrefsOneBlock();
+        Reset();
+        TestExplicitByrefsOneBlock();
+        Reset();
+
+        return 100;
+    }
+
+    public static void TestLocalsOneBlock()
+    {
+        var s1 = new ComplexStructWithExplicitLayout();
+        s1.ObjectField = new Reporter("s1.ObjectField", nameof(TestLocalsOneBlock));
+        s1.AnotherObjectField = new Reporter("s1.AnotherObjectField", nameof(TestLocalsOneBlock));
+        s1.StructWithRef.ObjectField = new Reporter("s1.StructWithRef.ObjectField", nameof(TestLocalsOneBlock));
+        var s2 = new SimpleStructWithExplicitLayout();
+        s2.ObjectField = new Reporter("s2.ObjectField", nameof(TestLocalsOneBlock));
+        var s3 = new SimpleStructWithAutoLayout();
+        s3.ObjectField = new Reporter("s3.ObjectField", nameof(TestLocalsOneBlock));
+        s3.AnotherObjectField = new Reporter("s3.AnotherObjectField", nameof(TestLocalsOneBlock));
+        var s4 = new SingleObjectStruct();
+        s4.ObjectField = new Reporter("s4.ObjectField", nameof(TestLocalsOneBlock));
+        var s5 = new StructWithoutObjectFields();
+        var s6src = new SingleObjectStruct();
+        s6src.ObjectField = new Reporter("s6src.ObjectField", nameof(TestLocalsOneBlock));
+        var s6 = new SingleObjectStruct?(s6src);
+
+        GC.Collect(2, GCCollectionMode.Forced);
+        GC.WaitForPendingFinalizers();
+
+        GC.KeepAlive(s1);
+        GC.KeepAlive(s2);
+        GC.KeepAlive(s3);
+        GC.KeepAlive(s4);
+        GC.KeepAlive(s5);
+        GC.KeepAlive(s6);
+
+        CheckSuccess();
+    }
+
+    public static void TestImplicitByrefsOneBlock()
+    {
+        var s1 = new ComplexStructWithExplicitLayout();
+        s1.ObjectField = new Reporter("s1.ObjectField", nameof(TestImplicitByrefsOneBlock));
+        s1.AnotherObjectField = new Reporter("s1.AnotherObjectField", nameof(TestImplicitByrefsOneBlock));
+        s1.StructWithRef.ObjectField = new Reporter("s1.StructWithRef.ObjectField", nameof(TestImplicitByrefsOneBlock));
+        var s2 = new SimpleStructWithExplicitLayout();
+        s2.ObjectField = new Reporter("s2.ObjectField", nameof(TestImplicitByrefsOneBlock));
+        var s3 = new SimpleStructWithAutoLayout();
+        s3.ObjectField = new Reporter("s3.ObjectField", nameof(TestImplicitByrefsOneBlock));
+        s3.AnotherObjectField = new Reporter("s3.AnotherObjectField", nameof(TestImplicitByrefsOneBlock));
+        var s4 = new SingleObjectStruct();
+        s4.ObjectField = new Reporter("s4.ObjectField", nameof(TestImplicitByrefsOneBlock));
+        var s5 = new StructWithoutObjectFields();
+        var s6src = new SingleObjectStruct();
+        s6src.ObjectField = new Reporter("s6src.ObjectField", nameof(TestImplicitByrefsOneBlock));
+        var s6 = new SingleObjectStruct?(s6src);
+
+        TestImplicitByrefsOneBlockInner(s1, s2, s3, s4, s5, s6);
+    }
+
+    public static void TestImplicitByrefsOneBlockInner(
+        ComplexStructWithExplicitLayout s1,
+        SimpleStructWithExplicitLayout s2,
+        SimpleStructWithAutoLayout s3,
+        SingleObjectStruct s4,
+        StructWithoutObjectFields s5,
+        SingleObjectStruct? s6)
+    {
+        GC.Collect(2, GCCollectionMode.Forced);
+        GC.WaitForPendingFinalizers();
+
+        GC.KeepAlive(s1);
+        GC.KeepAlive(s2);
+        GC.KeepAlive(s3);
+        GC.KeepAlive(s4);
+        GC.KeepAlive(s5);
+        GC.KeepAlive(s6);
+
+        CheckSuccess();
+    }
+
+    public static void TestExplicitByrefsOneBlock()
+    {
+        var s1 = new ComplexStructWithExplicitLayout();
+        s1.ObjectField = new Reporter("s1.ObjectField", nameof(TestExplicitByrefsOneBlock));
+        s1.AnotherObjectField = new Reporter("s1.AnotherObjectField", nameof(TestExplicitByrefsOneBlock));
+        s1.StructWithRef.ObjectField = new Reporter("s1.StructWithRef.ObjectField", nameof(TestExplicitByrefsOneBlock));
+        var s2 = new SimpleStructWithExplicitLayout();
+        s2.ObjectField = new Reporter("s2.ObjectField", nameof(TestExplicitByrefsOneBlock));
+        var s3 = new SimpleStructWithAutoLayout();
+        s3.ObjectField = new Reporter("s3.ObjectField", nameof(TestExplicitByrefsOneBlock));
+        s3.AnotherObjectField = new Reporter("s3.AnotherObjectField", nameof(TestExplicitByrefsOneBlock));
+        var s4 = new SingleObjectStruct();
+        s4.ObjectField = new Reporter("s4.ObjectField", nameof(TestExplicitByrefsOneBlock));
+        var s5 = new StructWithoutObjectFields();
+        var s6src = new SingleObjectStruct();
+        s6src.ObjectField = new Reporter("s6src.ObjectField", nameof(TestExplicitByrefsOneBlock));
+        var s6 = new SingleObjectStruct?(s6src);
+
+        TestExplicitByrefsOneBlockInner(ref s1, ref s2, ref s3, ref s4, ref s5, ref s6);
+    }
+
+    public static void TestExplicitByrefsOneBlockInner(
+        ref ComplexStructWithExplicitLayout s1,
+        ref SimpleStructWithExplicitLayout s2,
+        ref SimpleStructWithAutoLayout s3,
+        ref SingleObjectStruct s4,
+        ref StructWithoutObjectFields s5,
+        ref SingleObjectStruct? s6)
+    {
+        GC.Collect(2, GCCollectionMode.Forced);
+        GC.WaitForPendingFinalizers();
+
+        GC.KeepAlive(s1);
+        GC.KeepAlive(s2);
+        GC.KeepAlive(s3);
+        GC.KeepAlive(s4);
+        GC.KeepAlive(s5);
+        GC.KeepAlive(s6);
+
+        CheckSuccess();
+    }
+
+    public class Reporter
+    {
+        private readonly string _fieldName;
+        private readonly string _test;
+
+        public Reporter(string fieldName, string test) => (_fieldName, _test) = (fieldName, test);
+
+        ~Reporter()
+        {
+            _failedTest = _test;
+            _failedFieldName = _fieldName;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CheckSuccess()
+    {
+        if (_failedTest is not null || _failedFieldName is not null)
+        {
+            Console.Error.WriteLine($"{_failedTest} failed to keep {_failedFieldName} alive");
+            Environment.Exit(-1);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Reset()
+    {
+        GC.Collect(2, GCCollectionMode.Forced);
+        GC.WaitForPendingFinalizers();
+
+        _failedTest = null;
+        _failedFieldName = null;
+    }
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct ComplexStructWithExplicitLayout
+{
+    [FieldOffset(0)]
+    public int IntegerField;
+    [FieldOffset(1)]
+    public byte ByteField;
+    [FieldOffset(8)]
+    public object ObjectField;
+
+    [FieldOffset(17)]
+    public byte AnotherByteField;
+
+    [FieldOffset(24)]
+    public SimpleStructWithExplicitLayout StructWithRef;
+
+    [FieldOffset(80)]
+    public object AnotherObjectField;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct SimpleStructWithExplicitLayout
+{
+    [FieldOffset(8)]
+    public object ObjectField;
+}
+
+public struct SimpleStructWithAutoLayout
+{
+    public object ObjectField;
+    public object AnotherObjectField;
+}
+
+public struct SingleObjectStruct
+{
+    public object ObjectField;
+}
+
+public struct StructWithoutObjectFields
+{
+    public int IntegerField;
+    public short ShortField;
+    public long LongField;
+    public Vector128<int> VectorField;
+}
