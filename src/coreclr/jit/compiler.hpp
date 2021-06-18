@@ -1344,7 +1344,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline GenTree* Compiler::gtNewKeepaliveNode(GenTree* op)
+inline GenTree* Compiler::gtNewKeepAliveNode(GenTree* op)
 {
     GenTree* keepalive = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, op);
 
