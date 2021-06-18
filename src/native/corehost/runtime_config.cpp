@@ -89,7 +89,9 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     const auto& properties = opts_obj.FindMember(_X("configProperties"));
     if (properties != opts_obj.MemberEnd())
     {
-        for (const auto& property : properties->value.GetObject())
+        const auto& properties_obj = properties->value.GetObject();
+        m_properties.reserve(properties_obj.MemberCount());
+        for (const auto& property : properties_obj)
         {
             if (property.value.IsString())
             {

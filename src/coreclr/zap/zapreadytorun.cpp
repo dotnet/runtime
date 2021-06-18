@@ -787,6 +787,7 @@ static_assert_no_msg((int)READYTORUN_METHOD_SIG_SlotInsteadOfToken   == (int)ENC
 static_assert_no_msg((int)READYTORUN_METHOD_SIG_MemberRefToken       == (int)ENCODE_METHOD_SIG_MemberRefToken);
 static_assert_no_msg((int)READYTORUN_METHOD_SIG_Constrained          == (int)ENCODE_METHOD_SIG_Constrained);
 static_assert_no_msg((int)READYTORUN_METHOD_SIG_OwnerType            == (int)ENCODE_METHOD_SIG_OwnerType);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_UpdateContext        == (int)ENCODE_METHOD_SIG_UpdateContext);
 
 //
 // READYTORUN_FIELD_SIG
@@ -852,6 +853,9 @@ static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)EN
 
 static_assert_no_msg((int)READYTORUN_FIXUP_Verify_FieldOffset         == (int)ENCODE_VERIFY_FIELD_OFFSET);
 static_assert_no_msg((int)READYTORUN_FIXUP_Verify_TypeLayout          == (int)ENCODE_VERIFY_TYPE_LAYOUT);
+
+static_assert_no_msg((int)READYTORUN_FIXUP_Check_VirtualFunctionOverride  == (int)ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE);
+static_assert_no_msg((int)READYTORUN_FIXUP_Verify_VirtualFunctionOverride == (int)ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE);
 
 //
 // READYTORUN_EXCEPTION

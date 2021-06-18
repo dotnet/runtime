@@ -16,6 +16,8 @@ namespace System.Dynamic.Utils
             .Select(i => i.GetGenericTypeDefinition())
             .ToArray();
 
+        private static readonly ConstructorInfo s_nullableConstructor = typeof(Nullable<>).GetConstructor(typeof(Nullable<>).GetGenericArguments())!;
+
         public static Type GetNonNullableType(this Type type) => IsNullableType(type) ? type.GetGenericArguments()[0] : type;
 
         public static Type GetNullableType(this Type type)
@@ -29,15 +31,11 @@ namespace System.Dynamic.Utils
             return type;
         }
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T> ctor will be preserved by the DynamicDependency.")]
-        public static ConstructorInfo GetNullableConstructor(Type nullableType, Type nonNullableType)
+        public static ConstructorInfo GetNullableConstructor(Type nullableType)
         {
             Debug.Assert(nullableType.IsNullableType());
-            Debug.Assert(!nonNullableType.IsNullableType() && nonNullableType.IsValueType);
 
-            return nullableType.GetConstructor(new Type[] { nonNullableType })!;
+            return (ConstructorInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableConstructor);
         }
 
         public static bool IsNullableType(this Type type) => type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);

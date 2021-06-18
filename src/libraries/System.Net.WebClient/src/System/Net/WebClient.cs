@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Cache;
-using System.Net.Http;
 using System.Security;
 using System.Text;
 using System.Threading;

@@ -263,7 +263,7 @@ namespace System.Net.Http
                         await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
                     }
 
-                    int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
+                    int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                     Debug.Assert(headerValuesCount > 0, "No values for header??");
                     if (headerValuesCount > 0)
                     {

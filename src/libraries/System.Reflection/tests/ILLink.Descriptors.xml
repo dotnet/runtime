@@ -1,4 +1,15 @@
 <linker>
+  <!--
+ IList` implementation on `ArrayList` was getting trimmed
+
+```
+  fail: [FAIL] System.Reflection.Tests.TypeInfoTests.IsAssignable(type: typeof(System.Collections.IList), c: typeof(System.Collections.ArrayList), expected: True)
+  info: Assert.Equal() Failure
+  info: Expected: True
+  info: Actual:   False
+  info:    at System.Reflection.Tests.TypeInfoTests.IsAssignable(Type type, Type c, Boolean expected) in /Users/radical/dev/r3/src/libraries/System.Reflection/tests/TypeInfoTests.cs:line 580
+  info:    at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture) in /Users/radical/dev/r3/src/mono/System.Private.CoreLib/src/System/Reflection/RuntimeMethodInfo.cs:line 378
+  -->
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Collections.ArrayList" />
   </assembly>

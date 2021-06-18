@@ -39,7 +39,7 @@
         PALTestsDir=$(_PALTestsDir)
       </_PropertiesToPass>
 
-      
+
       <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
@@ -47,7 +47,7 @@
         DotNetCliPackageType=$(DotNetCliPackageType);
         DotNetCliVersion=$(DotNetCliVersion)
       </_PropertiesToPass>
-    </PropertyGroup>  
+    </PropertyGroup>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
@@ -95,7 +95,7 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
@@ -168,7 +168,7 @@
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
       <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
-      
+
       <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
       <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
     </ItemGroup>
@@ -194,7 +194,7 @@
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
       <_ProjectsToBuild Include="testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -202,7 +202,7 @@
   </Target>
 
   <Target Name="PreparePALTestArchive">
-    <Exec Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" 
+    <Exec Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'"
           WorkingDirectory="$(PALTestsDir)"
           Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
@@ -234,7 +234,7 @@
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
-    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix> 
+    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
@@ -251,10 +251,11 @@
   <!-- WARNING: HelixPreCommand ItemGroup is intentionally minimal and should be kept that way. -->
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
-    <HelixPreCommand Include="set RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
+    <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="set CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
@@ -268,9 +269,13 @@
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
-    <HelixPreCommand Include="export RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
+    <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
@@ -286,6 +291,7 @@
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">

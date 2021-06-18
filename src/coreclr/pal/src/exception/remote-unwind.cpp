@@ -123,7 +123,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -1606,6 +1606,17 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
+#elif defined(TARGET_S390X)
+    GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R8, &contextPointers->R8);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R9, &contextPointers->R9);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R10, &contextPointers->R10);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R11, &contextPointers->R11);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R12, &contextPointers->R12);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
 #else
 #error unsupported architecture
 #endif
@@ -1658,6 +1669,19 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_AARCH64_X29, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_AARCH64_X30, (unw_word_t *) &winContext->Lr);
     TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
+#elif defined(TARGET_S390X)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
+    unw_get_reg(cursor, UNW_S390X_R6, (unw_word_t *) &winContext->R6);
+    unw_get_reg(cursor, UNW_S390X_R7, (unw_word_t *) &winContext->R7);
+    unw_get_reg(cursor, UNW_S390X_R8, (unw_word_t *) &winContext->R8);
+    unw_get_reg(cursor, UNW_S390X_R9, (unw_word_t *) &winContext->R9);
+    unw_get_reg(cursor, UNW_S390X_R10, (unw_word_t *) &winContext->R10);
+    unw_get_reg(cursor, UNW_S390X_R11, (unw_word_t *) &winContext->R11);
+    unw_get_reg(cursor, UNW_S390X_R12, (unw_word_t *) &winContext->R12);
+    unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
+    unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
+    TRACE("sp %p pc %p lr %p\n", winContext->R15, winContext->PSWAddr, winContext->R14);
 #else
 #error unsupported architecture
 #endif
@@ -1746,6 +1770,18 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_AARCH64_X30:  *valp = (unw_word_t)winContext->Lr; break;
     case UNW_AARCH64_SP:   *valp = (unw_word_t)winContext->Sp; break;
     case UNW_AARCH64_PC:   *valp = (unw_word_t)winContext->Pc; break;
+#elif defined(TARGET_S390X)
+    case UNW_S390X_R6:     *valp = (unw_word_t)winContext->R6; break;
+    case UNW_S390X_R7:     *valp = (unw_word_t)winContext->R7; break;
+    case UNW_S390X_R8:     *valp = (unw_word_t)winContext->R8; break;
+    case UNW_S390X_R9:     *valp = (unw_word_t)winContext->R9; break;
+    case UNW_S390X_R10:    *valp = (unw_word_t)winContext->R10; break;
+    case UNW_S390X_R11:    *valp = (unw_word_t)winContext->R11; break;
+    case UNW_S390X_R12:    *valp = (unw_word_t)winContext->R12; break;
+    case UNW_S390X_R13:    *valp = (unw_word_t)winContext->R13; break;
+    case UNW_S390X_R14:    *valp = (unw_word_t)winContext->R14; break;
+    case UNW_S390X_R15:    *valp = (unw_word_t)winContext->R15; break;
+    case UNW_S390X_IP:     *valp = (unw_word_t)winContext->PSWAddr; break;
 #else
 #error unsupported architecture
 #endif

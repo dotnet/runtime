@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Collections.Generic;
 
 namespace System.Xml.Schema
 {
@@ -679,7 +678,7 @@ namespace System.Xml.Schema
         private XmlSchemaRedefine? _redefine;
 
         private readonly ValidationEventHandler? _validationEventHandler;
-        private readonly ArrayList _unhandledAttributes = new ArrayList();
+        private readonly List<XmlAttribute> _unhandledAttributes = new List<XmlAttribute>();
         private Dictionary<string, string>? _namespaces;
 
         internal XsdBuilder(
@@ -799,7 +798,7 @@ namespace System.Xml.Schema
                 }
                 if (_unhandledAttributes.Count != 0)
                 {
-                    _xso.SetUnhandledAttributes((XmlAttribute[])_unhandledAttributes.ToArray(typeof(System.Xml.XmlAttribute)));
+                    _xso.SetUnhandledAttributes(_unhandledAttributes.ToArray());
                     _unhandledAttributes.Clear();
                 }
             }

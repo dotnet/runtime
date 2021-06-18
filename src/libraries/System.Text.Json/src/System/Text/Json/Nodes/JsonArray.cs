@@ -98,7 +98,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">
         ///   The object to be added to the end of the <see cref="JsonArray"/>.
         /// </param>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
         public void Add<T>(T? value)
         {
             if (value == null)

@@ -430,11 +430,16 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     // COM imported classes have special constructors
     if (pMT->IsComObjectType()
 #ifdef FEATURE_COMINTEROP
-        && pMT != g_pBaseCOMObject
+        && (g_pBaseCOMObject == NULL || pMT != g_pBaseCOMObject)
 #endif // FEATURE_COMINTEROP
     )
     {
 #ifdef FEATURE_COMINTEROP
+        if (g_pBaseCOMObject == NULL)
+        {
+            COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
+        }
+
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
 

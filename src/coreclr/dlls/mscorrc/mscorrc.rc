@@ -745,7 +745,10 @@ BEGIN
         IDS_PROF_V2PROFILER_DISABLED            "Loading profiler failed.   The profiler that was configured to load was designed for an older version of the CLR.  You can use the COMPlus_ProfAPI_ProfilerCompatibilitySetting environment variable to allow older profilers to be loaded by the current version of the CLR.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Profiler CLSID: '%s'."
         IDS_PROF_V2PROFILER_ENABLED             "A profiler designed for an older version of the CLR was loaded because of the environment variable setting below.  Older profilers will continue to work in many cases, but if you encounter problems, please consider upgrading the profiler or changing the setting of the environment variable.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Environment variable setting: %s=%s.  Profiler CLSID: '%s'."
         IDS_PROF_PROFILER_DISABLED              "Profilers will not be loaded by the current version of the CLR because of the environment variable setting below.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Environment variable setting: %s=%s. Profiler CLSID: '%s'."
+        IDS_E_PROF_NOTIFICATION_DISABLED        "Profiler was prevented from loading notification profiler due to app settings."
+        IDS_E_PROF_NOTIFICATION_LIMIT_EXCEEDED  "Notification profiler was prevented from loading because the limit of notification profilers was reached."
         IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC    "Profiler timed out on waiting for concurrent GC to finish after '%d' milliseconds. Please configure your profiler to increase its attaching time out value or consult the documentation for the COMPlus_ProfAPI_AttachProfilerMinTimeoutInMs environment variable and try again. Profiler CLSID: '%s'."
+        IDS_PROF_ALREADY_LOADED                 "A request was made to load a profiler when a profiler was already loaded."
   END
 
 

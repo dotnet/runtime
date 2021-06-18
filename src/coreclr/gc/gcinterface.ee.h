@@ -4,7 +4,7 @@
 #ifndef _GCINTERFACE_EE_H_
 #define _GCINTERFACE_EE_H_
 
-enum EtwGCRootFlags
+enum EtwGCRootFlags: int32_t
 {
     kEtwGCRootFlagsPinning =            0x1,
     kEtwGCRootFlagsWeakRef =            0x2,
@@ -12,7 +12,7 @@ enum EtwGCRootFlags
     kEtwGCRootFlagsRefCounted =         0x8,
 };
 
-enum EtwGCRootKind
+enum EtwGCRootKind: int32_t
 {
     kEtwGCRootKindStack =               0,
     kEtwGCRootKindFinalizer =           1,

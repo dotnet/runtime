@@ -147,7 +147,8 @@ jobs:
     jobParameters:
       testGroup: outerloop
       readyToRun: true
-      displayNameArgs: R2R
+      crossgen2: true
+      displayNameArgs: R2R_CG2
       liveLibrariesBuildConfig: Release
 
 #

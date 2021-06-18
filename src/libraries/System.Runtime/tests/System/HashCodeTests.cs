@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 public static class HashCodeTests
@@ -119,6 +121,70 @@ public static class HashCodeTests
         expected.Add("Hello");
 
         Assert.Equal(expected.ToHashCode(), hc.ToHashCode());
+    }
+
+    [Fact]
+    public static void HashCode_AddBytes_AllValuesHashed()
+    {
+        // This code depends on HashCode having a private _length field that maps to the number
+        // of Int32 values Add'd, as well as exactly how AddBytes partitions the incoming bytes.
+        // If the implementation changes, this test may need to be updated accordingly.
+
+        FieldInfo lengthField = typeof(HashCode).GetField("_length", BindingFlags.Instance | BindingFlags.NonPublic);
+        int expectedLength = 0;
+        HashCode hc = default;
+        for (int i = 1; i < 100; i++)
+        {
+            hc.AddBytes(Enumerable.Range(1, i).Select(i => (byte)i).ToArray());
+            expectedLength += Math.DivRem(i, 4, out int remainder) + remainder;
+            Assert.Equal(expectedLength, (int)(uint)lengthField.GetValue(hc));
+        }
+    }
+
+    [Fact]
+    public static void HashCode_AddBytes_VariousLengthsHashed()
+    {
+        static void Populate(ref HashCode hc)
+        {
+            hc.AddBytes(new byte[0]);
+            hc.AddBytes(new byte[] { 1 });
+            hc.AddBytes(new byte[] { 1, 2 });
+            hc.AddBytes(new byte[] { 1, 2, 3 });
+            hc.AddBytes(new byte[] { 1, 2, 3, 4 });
+            hc.AddBytes(new byte[] { 1, 2, 3, 4, 5 });
+            hc.AddBytes(Enumerable.Range(0, 10_000).Select(i => (byte)i).ToArray());
+        }
+
+        var hc1 = new HashCode();
+        Populate(ref hc1);
+
+        var hc2 = new HashCode();
+        Populate(ref hc2);
+
+        Assert.Equal(hc1.ToHashCode(), hc2.ToHashCode());
+    }
+
+    [Fact]
+    public static void HashCode_AddBytes_AlignmentDoesntImpactResult()
+    {
+        byte[] data = Enumerable.Range(0, 32).Select(_ => (byte)42).ToArray();
+        for (int length = 1; length < 10; length++)
+        {
+            int? result = null;
+            for (int i = 0; i < data.Length - length; i++)
+            {
+                var hc = new HashCode();
+                hc.AddBytes(new ReadOnlySpan<byte>(data, i, length));
+                if (result is null)
+                {
+                    result = hc.ToHashCode();
+                }
+                else
+                {
+                    Assert.Equal(result.Value, hc.ToHashCode());
+                }
+            }
+        }
     }
 
     [Fact]

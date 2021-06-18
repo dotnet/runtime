@@ -4,9 +4,13 @@
 using System;
 using System.ComponentModel;
 using System.Configuration;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
+#if NET5_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class MemoryCacheElement : ConfigurationElement
     {
         private static readonly ConfigurationProperty s_propName =

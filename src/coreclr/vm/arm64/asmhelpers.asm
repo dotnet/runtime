@@ -289,7 +289,7 @@ ThePreStubPatchLabel
     LEAF_END
 
 ;-----------------------------------------------------------------------------
-; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck)
+; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 ;
 ; Update shadow copies of the various state info required for barrier
 ;

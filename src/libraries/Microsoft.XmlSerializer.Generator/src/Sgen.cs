@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -28,9 +27,9 @@ namespace Microsoft.XmlSerializer.Generator
         private int Run(string[] args)
         {
             string assembly = null;
-            List<string> types = new List<string>();
+            var types = new List<string>();
             string codePath = null;
-            var errs = new ArrayList();
+            var errs = new List<string>();
             bool force = false;
             bool proxyOnly = false;
             bool disableRun = true;
@@ -247,8 +246,8 @@ namespace Microsoft.XmlSerializer.Generator
                 }
             }
 
-            var mappings = new ArrayList();
-            var importedTypes = new ArrayList();
+            var mappings = new List<XmlMapping>();
+            var importedTypes = new List<Type>();
             var importer = new XmlReflectionImporter();
 
             for (int i = 0; i < types.Length; i++)
@@ -296,8 +295,8 @@ namespace Microsoft.XmlSerializer.Generator
 
             if (importedTypes.Count > 0)
             {
-                var serializableTypes = (Type[])importedTypes.ToArray(typeof(Type));
-                var allMappings = (XmlMapping[])mappings.ToArray(typeof(XmlMapping));
+                var serializableTypes = importedTypes.ToArray();
+                var allMappings = mappings.ToArray();
 
                 bool gac = assembly.GlobalAssemblyCache;
                 outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
@@ -406,7 +405,7 @@ namespace Microsoft.XmlSerializer.Generator
             return arg.Equals(shortName, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private void ImportType(Type type, ArrayList mappings, ArrayList importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
+        private void ImportType(Type type, List<XmlMapping> mappings, List<Type> importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
         {
             XmlTypeMapping xmlTypeMapping = null;
             var localImporter = new XmlReflectionImporter();

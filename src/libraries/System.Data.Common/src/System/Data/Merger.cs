@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -104,7 +105,7 @@ namespace System.Data
                             DataColumn targetColumn = targetTable.Columns[dc.ColumnName]!;
                             if (!existingColumns!.Contains(targetColumn))
                             {
-                                targetColumn.Expression = dc.Expression;
+                                targetColumn.CopyExpressionFrom(dc);
                             }
                         }
                     }
@@ -405,7 +406,7 @@ namespace System.Data
                     {
                         for (int i = oldCount; i < targetTable.Columns.Count; i++)
                         {
-                            targetTable.Columns[i].Expression = table.Columns[targetTable.Columns[i].ColumnName]!.Expression;
+                            targetTable.Columns[i].CopyExpressionFrom(table.Columns[targetTable.Columns[i].ColumnName]!);
                         }
                     }
 

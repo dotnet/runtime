@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.IO.Strategies;
-using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,29 +16,26 @@ namespace System.IO
         internal const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
 
-        /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
-        private static int s_cachedSerializationSwitch;
-
         private readonly FileStreamStrategy _strategy;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
-            : this(handle, access, true, DefaultBufferSize, false)
+            : this(handle, access, true, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
-            : this(handle, access, ownsHandle, DefaultBufferSize, false)
+            : this(handle, access, ownsHandle, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
-            : this(handle, access, ownsHandle, bufferSize, false)
+            : this(handle, access, ownsHandle, bufferSize, DefaultIsAsync)
         {
         }
 
@@ -68,7 +64,7 @@ namespace System.IO
             }
         }
 
-        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize)
         {
             if (handle.IsInvalid)
             {
@@ -78,17 +74,27 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
             }
-            else if (bufferSize <= 0)
+            else if (bufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(bufferSize));
             }
             else if (handle.IsClosed)
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
-            else if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
+        }
+
+        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            ValidateHandle(handle, access, bufferSize);
+
+            if (isAsync && !handle.IsAsync)
             {
-                throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
+                ThrowHelper.ThrowArgumentException_HandleNotAsync(nameof(handle));
+            }
+            else if (!isAsync && handle.IsAsync)
+            {
+                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
             }
         }
 
@@ -98,8 +104,10 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, FileStreamHelpers.GetDefaultIsAsync(handle, DefaultIsAsync))
         {
+            ValidateHandle(handle, access, bufferSize);
+
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, handle.IsAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
@@ -144,16 +152,11 @@ namespace System.IO
         /// </summary>
         /// <param name="path">A relative or absolute path for the file that the current <see cref="System.IO.FileStream" /> instance will encapsulate.</param>
         /// <param name="options">An object that describes optional <see cref="System.IO.FileStream" /> parameters to use.</param>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> or <paramref name="options" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
         /// -or-
         /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
         /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"><see cref="System.IO.FileStreamOptions.BufferSize" /> is negative.
-        /// -or-
-        /// <see cref="System.IO.FileStreamOptions.PreallocationSize" /> is negative.
-        /// -or-
-        /// <see cref="System.IO.FileStreamOptions.Mode" />, <see cref="System.IO.FileStreamOptions.Access" />, or <see cref="System.IO.FileStreamOptions.Share" /> contain an invalid value.</exception>
         /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="System.IO.FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error, such as specifying <see langword="FileMode.CreateNew" /> when the file specified by <paramref name="path" /> already exists, occurred.
         ///  -or-
@@ -169,13 +172,8 @@ namespace System.IO
         /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <see cref="System.IO.FileStreamOptions.Options" /> , but file encryption is not supported on the current platform.</exception>
         /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
         public FileStream(string path, FileStreamOptions options)
-            : this(path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize)
         {
-        }
-
-        private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
-        {
-            if (path == null)
+            if (path is null)
             {
                 throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
             }
@@ -183,61 +181,31 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
-
-            // don't include inheritable in our bounds check for share
-            FileShare tempshare = share & ~FileShare.Inheritable;
-            string? badArg = null;
-
-            if (mode < FileMode.CreateNew || mode > FileMode.Append)
+            else if (options is null)
             {
-                badArg = nameof(mode);
+                throw new ArgumentNullException(nameof(options));
             }
-            else if (access < FileAccess.Read || access > FileAccess.ReadWrite)
+            else if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
             {
-                badArg = nameof(access);
+                throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(options));
             }
-            else if (tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete))
+            else if ((options.Access & FileAccess.Write) == 0)
             {
-                badArg = nameof(share);
-            }
-
-            if (badArg != null)
-            {
-                throw new ArgumentOutOfRangeException(badArg, SR.ArgumentOutOfRange_Enum);
-            }
-
-            // NOTE: any change to FileOptions enum needs to be matched here in the error validation
-            if (options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
-            }
-            else if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            else if (preallocationSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(preallocationSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            // Write access validation
-            if ((access & FileAccess.Write) == 0)
-            {
-                if (mode == FileMode.Truncate || mode == FileMode.CreateNew || mode == FileMode.Create || mode == FileMode.Append)
+                if (options.Mode == FileMode.Truncate || options.Mode == FileMode.CreateNew || options.Mode == FileMode.Create || options.Mode == FileMode.Append)
                 {
-                    // No write access, mode and access disagree but flag access since mode comes first
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, mode, access), nameof(access));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, options.Mode, options.Access), nameof(options));
                 }
             }
 
-            if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
-            {
-                throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
-            }
-            else if ((access & FileAccess.Write) == FileAccess.Write)
-            {
-                SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
-            }
+            FileStreamHelpers.SerializationGuard(options.Access);
+
+            _strategy = FileStreamHelpers.ChooseStrategy(
+                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
+        }
+
+        private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        {
+            FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize, options, preallocationSize);
 
             _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
         }
@@ -253,7 +221,7 @@ namespace System.IO
         {
             if (position < 0 || length < 0)
             {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(position < 0 ? nameof(position) : nameof(length));
             }
             else if (_strategy.IsClosed)
             {
@@ -271,7 +239,7 @@ namespace System.IO
         {
             if (position < 0 || length < 0)
             {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(position < 0 ? nameof(position) : nameof(length));
             }
             else if (_strategy.IsClosed)
             {

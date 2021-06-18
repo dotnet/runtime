@@ -2,15 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides support for accessing and modifying the Windows Registry.
-
-Commonly Used Types:
-Microsoft.Win32.RegistryKey
-Microsoft.Win32.Registry
-Microsoft.Win32.RegistryValueKind
-Microsoft.Win32.RegistryHive
-Microsoft.Win32.RegistryView</PackageDescription>
   </PropertyGroup>
 </Project>

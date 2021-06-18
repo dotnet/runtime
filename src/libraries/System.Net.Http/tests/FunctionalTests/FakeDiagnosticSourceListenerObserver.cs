@@ -71,11 +71,6 @@ namespace System.Net.Http.Functional.Tests
             _writeObserverEnabled = writeObserverEnabled;
         }
 
-        public void Disable()
-        {
-            _writeObserverEnabled = (name, arg1, arg2) => false;
-        }
-
         private bool IsEnabled(string s, object arg1, object arg2)
         {
             return _writeObserverEnabled.Invoke(s, arg1, arg2);

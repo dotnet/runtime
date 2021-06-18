@@ -42,6 +42,9 @@ mono_llvm_create_ee (LLVMExecutionEngineRef *ee);
 void
 mono_llvm_dispose_ee (MonoEERef *mono_ee);
 
+void
+mono_llvm_optimize_method (LLVMValueRef method);
+
 gpointer
 mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame);
 

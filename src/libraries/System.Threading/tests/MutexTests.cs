@@ -406,7 +406,6 @@ namespace System.Threading.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
         {
             string fileName = GetTestFilePath();

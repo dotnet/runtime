@@ -145,6 +145,9 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 
 class ProfToEEInterfaceImpl : public ICorProfilerInfo12
 {
+private:
+    ProfilerInfo *m_pProfilerInfo;
+
 public:
 
     // Internal Housekeeping
@@ -155,6 +158,12 @@ public:
     ProfToEEInterfaceImpl();
     virtual ~ProfToEEInterfaceImpl();
     HRESULT Init();
+
+    void SetProfilerInfo(ProfilerInfo *pProfilerInfo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pProfilerInfo = pProfilerInfo;
+    }
 
     // IUnknown
     ULONG STDMETHODCALLTYPE AddRef();
@@ -694,7 +703,6 @@ public:
 protected:
 
     // Internal Helper Functions
-
     static void EventPipeCallbackHelper(EventPipeProvider *provider,
                                         DWORD eventId,
                                         DWORD eventVersion,
@@ -706,7 +714,8 @@ protected:
                                         LPCGUID pRelatedActivityId,
                                         Thread *pEventThread,
                                         ULONG numStackFrames,
-                                        UINT_PTR stackFrames[]);
+                                        UINT_PTR stackFrames[],
+                                        void *additionalData);
 
     HRESULT GetCodeInfoHelper(FunctionID functionId,
                                ReJITID  reJitId,

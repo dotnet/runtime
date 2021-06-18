@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                     else
                     {
-                        X509ChainElement certElement = chain.ChainElements.OfType<X509ChainElement>().Single();
+                        X509ChainElement certElement = chain.ChainElements.Single();
                         const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.HasNotSupportedCriticalExtension;
                         X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
                         Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");

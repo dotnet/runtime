@@ -453,21 +453,12 @@ namespace System.Diagnostics.Tests
 
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
-
-            // https://github.com/dotnet/runtime/issues/24426 -- returns "-19" and not "19"
-            if (!PlatformDetection.IsWindowsSubsystemForLinux)
-            {
-                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
-            }
+            SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
 
             try
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
-                // https://github.com/dotnet/runtime/issues/24426 -- returns "11" and not "-11"
-                if (!PlatformDetection.IsWindowsSubsystemForLinux)
-                {
-                    SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
-                }
+                SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
                 _process.PriorityClass = originalPriority;
             }
             catch (Win32Exception ex)

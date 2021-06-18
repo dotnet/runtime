@@ -282,6 +282,7 @@ namespace System.Configuration
 
             if (streamName == null) return null;
 
+#pragma warning disable SYSLIB0014 // WebClient is obsolete.
             // scheme is http
             WebClient client = new WebClient();
 
@@ -298,6 +299,7 @@ namespace System.Configuration
                 fileData = client.DownloadData(streamName);
             }
             catch { }
+#pragma warning restore SYSLIB0014
 
             if (fileData == null) return null;
 

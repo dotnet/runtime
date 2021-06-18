@@ -168,12 +168,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public int ProtocolVersion
-        {
-            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
-            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
-        }
-
         public string HostName
         {
             get => GetStringValueHelper(LdapOption.LDAP_OPT_HOST_NAME, false);
@@ -783,6 +777,33 @@ namespace System.DirectoryServices.Protocols
 
             int temp = value;
             int error = LdapPal.SetIntOption(_connection._ldapHandle, option, ref temp);
+
+            ErrorChecking.CheckAndSetLdapError(error);
+        }
+
+        private IntPtr GetPtrValueHelper(LdapOption option)
+        {
+            if (_connection._disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            IntPtr outValue = new IntPtr(0);
+            int error = LdapPal.GetPtrOption(_connection._ldapHandle, option, ref outValue);
+            ErrorChecking.CheckAndSetLdapError(error);
+
+            return outValue;
+        }
+
+        private void SetPtrValueHelper(LdapOption option, IntPtr value)
+        {
+            if (_connection._disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            IntPtr temp = value;
+            int error = LdapPal.SetPtrOption(_connection._ldapHandle, option, ref temp);
 
             ErrorChecking.CheckAndSetLdapError(error);
         }

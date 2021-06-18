@@ -1572,7 +1572,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31380")]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()

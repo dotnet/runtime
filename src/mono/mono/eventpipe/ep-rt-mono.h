@@ -20,9 +20,13 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/metadata-internals.h>
+#include <runtime_version.h>
+#include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -599,6 +603,9 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 
+EP_RT_DEFINE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+
 static
 inline
 void
@@ -1173,13 +1180,13 @@ ep_rt_is_running (void)
 static
 inline
 void
-ep_rt_execute_rundown (void)
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
 		if (/*is_running &&*/ !ep_rt_process_shutdown ()) {
-			extern void ep_rt_mono_execute_rundown (void);
-			ep_rt_mono_execute_rundown ();
+			extern void ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+			ep_rt_mono_execute_rundown (execution_checkpoints);
 		}
 	}
 }
@@ -1820,6 +1827,22 @@ ep_rt_diagnostics_command_line_get (void)
 	return cmd_line;
 }
 
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	return (const ep_char8_t *)m_image_get_assembly_name (mono_assembly_get_main ()->image);
+}
+
+static
+inline
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	return (const ep_char8_t *)EGLIB_TOSTRING (RuntimeProductVersion);
+}
+
 /*
  * Thread.
  */
@@ -2163,7 +2186,110 @@ bool
 ep_rt_mono_write_event_module_load (MonoImage *image);
 
 bool
+ep_rt_mono_write_event_module_unload (MonoImage *image);
+
+bool
 ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_type_load_start (MonoType *type);
+
+bool
+ep_rt_mono_write_event_type_load_stop (MonoType *type);
+
+bool
+ep_rt_mono_write_event_exception_thrown (MonoObject *object);
+
+bool
+ep_rt_mono_write_event_exception_clause (
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
+	const uint8_t *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_start (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_stop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_wait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
+	double throughput,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_stats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_enqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	bool multi_dequeues,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_dequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_working_thread_count (
+	uint16_t count,
+	uint16_t clr_instance_id);
 
 /*
 * EventPipe provider callbacks.

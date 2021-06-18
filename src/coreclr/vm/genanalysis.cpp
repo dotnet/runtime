@@ -81,6 +81,7 @@ uint32_t gcGenAnalysisBufferMB = 0;
         EP_SERIALIZATION_FORMAT_NETTRACE_V4,
         false,
         nullptr,
+        nullptr,
         nullptr
     );
     if (gcGenAnalysisEventPipeSessionId > 0)

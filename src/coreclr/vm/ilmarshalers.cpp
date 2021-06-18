@@ -2496,10 +2496,14 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
 
 bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
 {
+    // [COMPAT] For correctness, we can't marshal via pinning if we might need to marshal differently at runtime.
+    // See calls to EmitExactTypeCheck where we check the runtime type of the object being marshalled.
+    // However, we previously supported pinning non-sealed blittable classes, even though that could result
+    // in some data still being unmarshalled if a subclass is provided. This optimization is incorrect,
+    // but libraries like NAudio have taken a hard dependency on this incorrect behavior, so we need to preserve it.
     return IsCLRToNative(m_dwMarshalFlags) &&
         !IsByref(m_dwMarshalFlags) &&
-        !IsFieldMarshal(m_dwMarshalFlags) &&
-        m_pargs->m_pMT->IsSealed(); // We can't marshal via pinning if we might need to marshal differently at runtime. See calls to EmitExactTypeCheck where we check the runtime type of the object being marshalled.
+        !IsFieldMarshal(m_dwMarshalFlags);
 }
 
 void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
@@ -3663,7 +3667,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCo
     EmitLoadNativeValue(pslILEmit);                 // dest
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_ARRAY_DATA, 1, 1);
+    pslILEmit->EmitCALL(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_MDARRAY, 1, 1);
     pslILEmit->EmitCONV_I();
 
     EmitLoadManagedValue(pslILEmit);
@@ -3707,7 +3711,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* ps
     pslILEmit->EmitSTLOC(m_dwPinnedLocalNum);
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_ARRAY_DATA, 1, 1);
+    pslILEmit->EmitCALL(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_MDARRAY, 1, 1);
     pslILEmit->EmitCONV_I();
 
     pslILEmit->EmitLDLOC(m_dwOffsetLocalNum);

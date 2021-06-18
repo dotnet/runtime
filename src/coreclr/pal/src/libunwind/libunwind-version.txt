@@ -4,3 +4,4 @@ https://github.com/libunwind/libunwind/commit/9165d2a150d707d3037c2045f2cdc0fabd
 Remove upstream CMakelist.txt & src/CMakelist.txt, keep .NET Core custom version
 Keep .NET Core oop directory
 Apply https://github.com/libunwind/libunwind/pull/186
+Apply https://github.com/libunwind/libunwind/pull/245

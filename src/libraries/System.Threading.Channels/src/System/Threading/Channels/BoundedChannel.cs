@@ -74,6 +74,8 @@ namespace System.Threading.Channels
 
             public override bool CanCount => true;
 
+            public override bool CanPeek => true;
+
             public override int Count
             {
                 get
@@ -105,6 +107,25 @@ namespace System.Threading.Channels
                     if (!parent._items.IsEmpty)
                     {
                         item = DequeueItemAndPostProcess();
+                        return true;
+                    }
+                }
+
+                item = default;
+                return false;
+            }
+
+            public override bool TryPeek([MaybeNullWhen(false)] out T item)
+            {
+                BoundedChannel<T> parent = _parent;
+                lock (parent.SyncObj)
+                {
+                    parent.AssertInvariants();
+
+                    // Peek at an item if there is one.
+                    if (!parent._items.IsEmpty)
+                    {
+                        item = parent._items.PeekHead();
                         return true;
                     }
                 }

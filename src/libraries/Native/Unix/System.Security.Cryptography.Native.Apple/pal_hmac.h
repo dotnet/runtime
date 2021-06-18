@@ -51,3 +51,17 @@ Computes the HMAC of the accumulated data in ctx without resetting the state.
 Returns 1 on success, 0 on error.
 */
 PALEXPORT int32_t AppleCryptoNative_HmacCurrent(const HmacCtx* ctx, uint8_t* pbOutput);
+
+/*
+Computes the HMAC of data with a key in to the pOutput buffer in one step.
+
+Return 1 on success, 0 on error, and negative values for invalid input.
+*/
+PALEXPORT int32_t AppleCryptoNative_HmacOneShot(PAL_HashAlgorithm algorithm,
+                                                const uint8_t* pKey,
+                                                int32_t cbKey,
+                                                const uint8_t* pBuf,
+                                                int32_t cbBuf,
+                                                uint8_t* pOutput,
+                                                int32_t cbOutput,
+                                                int32_t* pcbDigest);

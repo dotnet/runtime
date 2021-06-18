@@ -213,7 +213,7 @@ LEAF_END ThePreStubPatch, _TEXT
     LEAF_END_MARKED \name, _TEXT
 .endm
 
-// void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck)
+// void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 //
 // Update shadow copies of the various state info required for barrier
 //
@@ -232,6 +232,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     // x12 will be used for pointers
 
     mov x8, x0
+    mov x9, x1 
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]
@@ -272,6 +273,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
 #ifdef FEATURE_WRITEBARRIER_COPY
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
     ldr  x12, [x12]
+    add  x12, x12, x9
 #else // FEATURE_WRITEBARRIER_COPY
     adr  x12, LOCAL_LABEL(wbs_begin)
 #endif // FEATURE_WRITEBARRIER_COPY

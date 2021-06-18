@@ -17,7 +17,7 @@ namespace ILCompiler
         private bool _profileGuidedCompileRestrictionSet;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
-            TypeSystemContext context,
+            CompilerTypeSystemContext context,
             bool isCompositeBuildMode,
             bool isInputBubble,
             IEnumerable<EcmaModule> compilationModuleSet,

@@ -82,14 +82,6 @@ namespace System.Reflection
             return (RuntimeType)DeclaringType;
         }
 
-        private RuntimeType ReflectedTypeInternal
-        {
-            get
-            {
-                return (RuntimeType)ReflectedType;
-            }
-        }
-
         internal RuntimeModule GetRuntimeModule()
         {
             return GetDeclaringTypeInternal().GetRuntimeModule();

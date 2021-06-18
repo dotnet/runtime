@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -123,7 +124,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             using (var ms = new MemoryStream(inputBytes))
             using (var cs = new CryptoStream(ms, transform, CryptoStreamMode.Read))
             {
-                int bytesRead = cs.Read(outputBytes, 0, outputBytes.Length);
+                int bytesRead = ReadAll(cs, outputBytes);
                 string outputString = Text.Encoding.ASCII.GetString(outputBytes, 0, bytesRead);
                 Assert.Equal(expected, outputString);
             }
@@ -195,7 +196,7 @@ namespace System.Security.Cryptography.Encoding.Tests
                 using (var ms = new MemoryStream(inputBytes))
                 using (var cs = new CryptoStream(ms, transform, CryptoStreamMode.Read))
                 {
-                    int bytesRead = cs.Read(outputBytes, 0, outputBytes.Length);
+                    int bytesRead = ReadAll(cs, outputBytes);
 
                     // Missing padding bytes not supported (no exception, however)
                     Assert.NotEqual(inputBytes.Length, bytesRead);
@@ -230,7 +231,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             using (var ms = new MemoryStream(inputBytes))
             using (var cs = new CryptoStream(ms, base64Transform, CryptoStreamMode.Read))
             {
-                int bytesRead = cs.Read(outputBytes, 0, outputBytes.Length);
+                int bytesRead = ReadAll(cs, outputBytes);
                 string outputString = Text.Encoding.ASCII.GetString(outputBytes, 0, bytesRead);
                 Assert.Equal(expected, outputString);
             }
@@ -240,7 +241,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             using (var ms = new MemoryStream(inputBytes))
             using (var cs = new CryptoStream(ms, base64Transform, CryptoStreamMode.Read))
             {
-                int bytesRead = cs.Read(outputBytes, 0, outputBytes.Length);
+                int bytesRead = ReadAll(cs, outputBytes);
                 string outputString = Text.Encoding.ASCII.GetString(outputBytes, 0, bytesRead);
                 Assert.Equal(expected, outputString);
             }
@@ -292,6 +293,23 @@ namespace System.Security.Cryptography.Encoding.Tests
                 Assert.True(transform.CanTransformMultipleBlocks);
                 Assert.True(transform.CanReuseTransform);
             }
+        }
+
+        private static int ReadAll(Stream stream, Span<byte> buffer)
+        {
+            int totalRead = 0;
+            while (totalRead < buffer.Length)
+            {
+                int bytesRead = stream.Read(buffer.Slice(totalRead));
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
+                totalRead += bytesRead;
+            }
+
+            return totalRead;
         }
     }
 }

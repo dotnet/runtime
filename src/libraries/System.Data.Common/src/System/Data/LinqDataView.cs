@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -82,7 +83,7 @@ namespace System.Data
                     return null;
                 }
             }
-
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -230,7 +231,7 @@ namespace System.Data
         #endregion
 
         #region IBindingList
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
         /// <summary>
         /// Clears both expression-based and DataView's string-based sorting.

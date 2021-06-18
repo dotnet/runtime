@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -317,8 +317,8 @@ namespace System.Net.Mail
 
             System.Diagnostics.Debug.Assert(_readState == ReadState.Status0);
 
-            StringBuilder builder = new StringBuilder();
-            ArrayList lines = new ArrayList();
+            var builder = new StringBuilder();
+            var lines = new List<LineInfo>();
             int statusRead = 0;
 
             for (int start = 0, read = 0; ;)
@@ -354,7 +354,7 @@ namespace System.Net.Mail
                     if (oneLine)
                     {
                         _bufferedStream.Push(_byteBuffer, start, read - start);
-                        return (LineInfo[])lines.ToArray(typeof(LineInfo));
+                        return lines.ToArray();
                     }
                     builder = new StringBuilder();
                 }
@@ -362,7 +362,7 @@ namespace System.Net.Mail
                 {
                     lines.Add(new LineInfo(_statusCode, builder.ToString(0, builder.Length - 2))); // return everything except CRLF
                     _bufferedStream.Push(_byteBuffer, start, read - start);
-                    return (LineInfo[])lines.ToArray(typeof(LineInfo));
+                    return lines.ToArray();
                 }
             }
         }
@@ -370,7 +370,7 @@ namespace System.Net.Mail
         private sealed class ReadLinesAsyncResult : LazyAsyncResult
         {
             private StringBuilder? _builder;
-            private ArrayList? _lines;
+            private List<LineInfo>? _lines;
             private readonly SmtpReplyReaderFactory _parent;
             private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
             private int _read;
@@ -406,7 +406,7 @@ namespace System.Net.Mail
                 System.Diagnostics.Debug.Assert(_parent._readState == ReadState.Status0);
 
                 _builder = new StringBuilder();
-                _lines = new ArrayList();
+                _lines = new List<LineInfo>();
 
                 Read();
             }
@@ -415,7 +415,7 @@ namespace System.Net.Mail
             {
                 ReadLinesAsyncResult thisPtr = (ReadLinesAsyncResult)result;
                 thisPtr.InternalWaitForCompletion();
-                return (LineInfo[])thisPtr._lines!.ToArray(typeof(LineInfo));
+                return thisPtr._lines!.ToArray();
             }
 
             private void Read()

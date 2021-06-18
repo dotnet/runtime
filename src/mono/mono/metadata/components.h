@@ -11,6 +11,12 @@
 #include <mono/component/diagnostics_server.h>
 
 void
+mono_component_event_pipe_100ns_ticks_start (void);
+
+gint64
+mono_component_event_pipe_100ns_ticks_stop (void);
+
+void
 mono_components_init (void);
 
 /* Declare each component's getter function here */

@@ -14,7 +14,6 @@ using System.Net.Security;
 
 namespace System.Net.Http
 {
-    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
@@ -49,11 +48,6 @@ namespace System.Net.Http
         private int _haveServerQpackDecodeStream;
         private int _haveServerQpackEncodeStream;
 
-        // Manages MAX_STREAM count from server.
-        private long _maximumRequestStreams;
-        private long _requestStreamsRemaining;
-        private readonly Queue<TaskCompletionSourceWithCancellation<bool>> _waitingRequests = new Queue<TaskCompletionSourceWithCancellation<bool>>();
-
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
 
@@ -86,8 +80,6 @@ namespace System.Net.Http
             bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
             string altUsedValue = altUsedDefaultPort ? authority.IdnHost : authority.IdnHost + ":" + authority.Port.ToString(Globalization.CultureInfo.InvariantCulture);
             _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
-
-            _maximumRequestStreams = _requestStreamsRemaining = connection.GetRemoteAvailableBidirectionalStreamCount();
 
             // Errors are observed via Abort().
             _ = SendSettingsAsync();
@@ -166,45 +158,34 @@ namespace System.Net.Http
         {
             Debug.Assert(async);
 
-            // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-
-            TaskCompletionSourceWithCancellation<bool>? waitForAvailableStreamTcs = null;
-
-            lock (SyncObj)
-            {
-                long remaining = _requestStreamsRemaining;
-
-                if (remaining > 0)
-                {
-                    _requestStreamsRemaining = remaining - 1;
-                }
-                else
-                {
-                    waitForAvailableStreamTcs = new TaskCompletionSourceWithCancellation<bool>();
-                    _waitingRequests.Enqueue(waitForAvailableStreamTcs);
-                }
-            }
-
-            if (waitForAvailableStreamTcs != null)
-            {
-                await waitForAvailableStreamTcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
-            }
-
             // Allocate an active request
-
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
+            ValueTask waitTask = default;
 
             try
             {
-                lock (SyncObj)
+                while (true)
                 {
-                    if (_connection != null)
+                    lock (SyncObj)
                     {
-                        quicStream = _connection.OpenBidirectionalStream();
-                        requestStream = new Http3RequestStream(request, this, quicStream);
-                        _activeRequests.Add(quicStream, requestStream);
+                        if (_connection == null)
+                        {
+                            break;
+                        }
+
+                        if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        {
+                            quicStream = _connection.OpenBidirectionalStream();
+                            requestStream = new Http3RequestStream(request, this, quicStream);
+                            _activeRequests.Add(quicStream, requestStream);
+                            break;
+                        }
+                        waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
                     }
+
+                    // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
+                    await waitTask.ConfigureAwait(false);
                 }
 
                 if (quicStream == null)
@@ -212,8 +193,6 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
-                // 0-byte write to force QUIC to allocate a stream ID.
-                await quicStream.WriteAsync(Array.Empty<byte>(), cancellationToken).ConfigureAwait(false);
                 requestStream!.StreamId = quicStream.StreamId;
 
                 bool goAway;
@@ -243,76 +222,6 @@ namespace System.Net.Http
             finally
             {
                 requestStream?.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Waits for MAX_STREAMS to be raised by the server.
-        /// </summary>
-        private Task WaitForAvailableRequestStreamAsync(CancellationToken cancellationToken)
-        {
-            TaskCompletionSourceWithCancellation<bool> tcs;
-
-            lock (SyncObj)
-            {
-                long remaining = _requestStreamsRemaining;
-
-                if (remaining > 0)
-                {
-                    _requestStreamsRemaining = remaining - 1;
-                    return Task.CompletedTask;
-                }
-
-                tcs = new TaskCompletionSourceWithCancellation<bool>();
-                _waitingRequests.Enqueue(tcs);
-            }
-
-            // Note: cancellation on connection shutdown is handled in CancelWaiters.
-            return tcs.WaitWithCancellationAsync(cancellationToken).AsTask();
-        }
-
-        /// <summary>
-        /// Cancels any waiting SendAsync calls.
-        /// </summary>
-        /// <remarks>Requires <see cref="SyncObj"/> to be held.</remarks>
-        private void CancelWaiters()
-        {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
-
-            while (_waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
-            {
-                tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure));
-            }
-        }
-
-        // TODO: how do we get this event? -> HandleEventStreamsAvailable reports currently available Uni/Bi streams
-        private void OnMaximumStreamCountIncrease(long newMaximumStreamCount)
-        {
-            lock (SyncObj)
-            {
-                if (newMaximumStreamCount <= _maximumRequestStreams)
-                {
-                    return;
-                }
-
-                IncreaseRemainingStreamCount(newMaximumStreamCount - _maximumRequestStreams);
-                _maximumRequestStreams = newMaximumStreamCount;
-            }
-        }
-
-        private void IncreaseRemainingStreamCount(long delta)
-        {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
-            Debug.Assert(delta > 0);
-
-            _requestStreamsRemaining += delta;
-
-            while (_requestStreamsRemaining != 0 && _waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
-            {
-                if (tcs.TrySetResult(true))
-                {
-                    --_requestStreamsRemaining;
-                }
             }
         }
 
@@ -358,7 +267,6 @@ namespace System.Net.Http
                     _connectionClosedTask = _connection.CloseAsync((long)connectionResetErrorCode).AsTask();
                 }
 
-                CancelWaiters();
                 CheckForShutdown();
             }
 
@@ -396,7 +304,6 @@ namespace System.Net.Http
                     }
                 }
 
-                CancelWaiters();
                 CheckForShutdown();
             }
 
@@ -413,8 +320,6 @@ namespace System.Net.Http
             {
                 bool removed = _activeRequests.Remove(stream);
                 Debug.Assert(removed == true);
-
-                IncreaseRemainingStreamCount(1);
 
                 if (ShuttingDown)
                 {

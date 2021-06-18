@@ -46,7 +46,6 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(AddRange_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53042", framework: TargetFrameworkMonikers.Netcoreapp, runtimes: TestRuntimes.CoreCLR)]
         public void Ctor_Array_Works(TItem[] value)
         {
             var collection = CtorArray(value);
@@ -55,7 +54,6 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(AddRange_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53042", framework: TargetFrameworkMonikers.Netcoreapp, runtimes: TestRuntimes.CoreCLR)]
         public void Ctor_CodeStatementCollection_Works(TItem[] value)
         {
             var collection = CtorCollection(CtorArray(value));
@@ -64,7 +62,6 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(AddRange_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53042", framework: TargetFrameworkMonikers.Netcoreapp, runtimes: TestRuntimes.CoreCLR)]
         public void AddRange_CodeStatementArray_Works(TItem[] value)
         {
             var collection = Ctor();
@@ -74,7 +71,6 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(AddRange_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53042", framework: TargetFrameworkMonikers.Netcoreapp, runtimes: TestRuntimes.CoreCLR)]
         public void AddRange_CodeStatementCollection_Works(TItem[] value)
         {
             var collection = Ctor();

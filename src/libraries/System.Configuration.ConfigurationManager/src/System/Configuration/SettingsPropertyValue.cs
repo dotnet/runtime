@@ -101,7 +101,9 @@ namespace System.Configuration
                         {
                             using (MemoryStream ms = new MemoryStream((byte[])SerializedValue))
                             {
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
                                 value = (new BinaryFormatter()).Deserialize(ms);
+#pragma warning restore SYSLIB0011
                             }
                         }
                         else
@@ -212,7 +214,9 @@ namespace System.Configuration
                         byte[] buffer = Convert.FromBase64String(serializedValue);
                         using (MemoryStream ms = new MemoryStream(buffer))
                         {
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
                             return (new BinaryFormatter()).Deserialize(ms);
+#pragma warning restore SYSLIB0011
                         }
                     }
                     else
@@ -249,8 +253,10 @@ namespace System.Configuration
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
+#pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
                     BinaryFormatter bf = new BinaryFormatter();
                     bf.Serialize(ms, _value);
+#pragma warning restore SYSLIB0011
                     return ms.ToArray();
                 }
             }

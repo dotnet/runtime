@@ -36,8 +36,8 @@
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
 
     <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
-    <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'mono-aot-cross'))</MonoAotCrossCompilerPath>
-    <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' != ''">
@@ -48,9 +48,13 @@
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmAppBuilder'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmBuildTasks'))</WasmBuildTasksDir>
 
-    <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross', 'mono-aot-cross'))</MonoAotCrossCompilerPath>
-    <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+  </ItemGroup>
 
   <PropertyGroup>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>

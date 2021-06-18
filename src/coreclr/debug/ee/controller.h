@@ -288,7 +288,7 @@ public:
     // "PatchBypass" must be the first field of this class for alignment to be correct.
     BYTE    PatchBypass[MAX_INSTRUCTION_LENGTH];
 #if defined(TARGET_AMD64)
-    const static int cbBufferBypass = 0x10;
+    const static int cbBufferBypass = 0x20;
     BYTE    BypassBuffer[cbBufferBypass];
 
     UINT_PTR                RipTargetFixup;

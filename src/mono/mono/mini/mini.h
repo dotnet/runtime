@@ -140,6 +140,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
@@ -629,7 +630,9 @@ enum {
 	BB_EXCEPTION_UNSAFE     = 1 << 3,
 	BB_EXCEPTION_HANDLER    = 1 << 4,
 	/* for Native Client, mark the blocks that can be jumped to indirectly */
-	BB_INDIRECT_JUMP_TARGET = 1 << 5 
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 ,
+	/* Contains code with some side effects */
+	BB_HAS_SIDE_EFFECTS = 1 << 6,
 };
 
 typedef struct MonoMemcpyArgs {
@@ -881,6 +884,7 @@ enum {
 	MONO_INST_GC_CALLSITE = 128,
 	/* On comparisons, mark the branch following the condition as likely to be taken */
 	MONO_INST_LIKELY = 128,
+	MONO_INST_NONULLCHECK   = 128,
 };
 
 #define inst_c0 data.op[0].const_val
@@ -1132,6 +1136,9 @@ typedef struct
 {
 	gpointer addr;
 	gpointer arg;
+	MonoMethod *method;
+	/* InterpMethod* */
+	gpointer interp_method;
 } MonoFtnDesc;
 
 typedef enum {
@@ -1605,6 +1612,8 @@ typedef struct {
 
 	/* pointer to context datastructure used for graph dumping */
 	MonoGraphDumper *gdump_ctx;
+
+	gboolean *clause_is_dead;
 
 	/* Stats */
 	int stat_allocate_var;
@@ -2292,7 +2301,7 @@ void              mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest,
 void              mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag);
 void              mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag);
 MonoInst*         mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks);
-MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized);
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
@@ -2891,38 +2900,6 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
-/* SIMD operations */
-typedef enum {
-	SIMD_OP_AES_IMC,
-	SIMD_OP_AES_ENC,
-	SIMD_OP_AES_ENCLAST,
-	SIMD_OP_AES_DEC,
-	SIMD_OP_AES_DECLAST,
-	SIMD_OP_ARM64_CRC32B,
-	SIMD_OP_ARM64_CRC32H,
-	SIMD_OP_ARM64_CRC32W,
-	SIMD_OP_ARM64_CRC32X,
-	SIMD_OP_ARM64_CRC32CB,
-	SIMD_OP_ARM64_CRC32CH,
-	SIMD_OP_ARM64_CRC32CW,
-	SIMD_OP_ARM64_CRC32CX,
-	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64,
-	SIMD_OP_ARM64_AES_AESMC,
-	SIMD_OP_ARM64_SHA1C,
-	SIMD_OP_ARM64_SHA1H,
-	SIMD_OP_ARM64_SHA1M,
-	SIMD_OP_ARM64_SHA1P,
-	SIMD_OP_ARM64_SHA1SU0,
-	SIMD_OP_ARM64_SHA1SU1,
-	SIMD_OP_ARM64_SHA256H,
-	SIMD_OP_ARM64_SHA256H2,
-	SIMD_OP_ARM64_SHA256SU0,
-	SIMD_OP_ARM64_SHA256SU1,
-	SIMD_OP_ARM64_PMULL64_LOWER,
-	SIMD_OP_ARM64_PMULL64_UPPER,
-} SimdOp;
-
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
@@ -2960,6 +2937,9 @@ mono_arch_load_function (MonoJitICallId jit_icall_id);
 
 MonoGenericContext
 mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info);
+
+gpointer
+mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx);
 
 MonoMemoryManager* mini_get_default_mem_manager (void);
 

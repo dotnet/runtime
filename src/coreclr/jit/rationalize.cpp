@@ -302,14 +302,13 @@ void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
 void Rationalizer::SanityCheck()
 {
     // TODO: assert(!IsLIR());
-    BasicBlock* block;
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* statement : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            ValidateStatement(statement, block);
+            ValidateStatement(stmt, block);
 
-            for (GenTree* tree = statement->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
                 assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
@@ -933,7 +932,7 @@ PhaseStatus Rationalizer::DoPhase()
     comp->fgOrder   = Compiler::FGOrderLinear;
 
     RationalizeVisitor visitor(*this);
-    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
         comp->compCurBB = block;
         m_block         = block;
@@ -949,7 +948,7 @@ PhaseStatus Rationalizer::DoPhase()
             continue;
         }
 
-        for (Statement* statement : StatementList(firstStatement))
+        for (Statement* const statement : block->Statements())
         {
             assert(statement->GetTreeList() != nullptr);
             assert(statement->GetTreeList()->gtPrev == nullptr);

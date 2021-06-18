@@ -30,7 +30,8 @@ namespace System.Net.Http.Functional.Tests
             }
 
         }
-        [OuterLoop("Uses external server")]
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersAndReadModes))]
         public async Task GetStreamAsync_ReadToEnd_Success(Configuration.Http.RemoteServer remoteServer, int readMode)
         {
@@ -125,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -144,7 +145,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -168,7 +169,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetStreamAsync_ReadZeroBytes_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -183,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled(Configuration.Http.RemoteServer remoteServer)
         {
@@ -227,6 +228,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 #if NETCOREAPP
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
@@ -241,6 +243,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]
@@ -255,6 +258,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]

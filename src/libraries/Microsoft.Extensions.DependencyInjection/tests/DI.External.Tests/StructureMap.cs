@@ -8,6 +8,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class StructureMapDependencyInjectionSpecificationTests: SkippableDependencyInjectionSpecificationTests
     {
+        public override bool SupportsIServiceProviderIsService => false;
+
         public override string[] SkippedTests => new[]
         {
             "DisposesInReverseOrderOfCreation",

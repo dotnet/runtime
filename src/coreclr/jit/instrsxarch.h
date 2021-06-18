@@ -51,69 +51,71 @@
 //    id                nm                  um      mr            mi            rm            a4            rr           flags
 INST5(invalid,          "INVALID",          IUM_RD, BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,    INS_FLAGS_None)
 
-INST5(push,             "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_FLAGS_None)
-INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_FLAGS_None)
+INST5(push,             "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_FLAGS_None )
+INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_FLAGS_None )
 // Does not affect the stack tracking in the emitter
-INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_FLAGS_None)
-INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_FLAGS_None)
+INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_FLAGS_None )
+INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_FLAGS_None )
 
-INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000040,    INS_FLAGS_WritesFlags)
-INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C0FE,    INS_FLAGS_WritesFlags)
-INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000048,    INS_FLAGS_WritesFlags)
-INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C8FE,    INS_FLAGS_WritesFlags)
+INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000040,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
+INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C0FE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
+INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000048,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
+INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C8FE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
 
 // Multi-byte opcodes without modrm are represented in mixed endian fashion.
 // See comment around quarter way through this file for more information.
-INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None)
+INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None )
 
 //    id                nm                  um      mr            mi            rm            a4                         flags
-INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  INS_FLAGS_WritesFlags)
-INST4(or,               "or",               IUM_RW, 0x000008,     0x000880,     0x00000A,     0x00000C,                  INS_FLAGS_WritesFlags)
-INST4(adc,              "adc",              IUM_RW, 0x000010,     0x001080,     0x000012,     0x000014,                  INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST4(sbb,              "sbb",              IUM_RW, 0x000018,     0x001880,     0x00001A,     0x00001C,                  INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST4(and,              "and",              IUM_RW, 0x000020,     0x002080,     0x000022,     0x000024,                  INS_FLAGS_WritesFlags)
-INST4(sub,              "sub",              IUM_RW, 0x000028,     0x002880,     0x00002A,     0x00002C,                  INS_FLAGS_WritesFlags)
-INST4(xor,              "xor",              IUM_RW, 0x000030,     0x003080,     0x000032,     0x000034,                  INS_FLAGS_WritesFlags)
-INST4(cmp,              "cmp",              IUM_RD, 0x000038,     0x003880,     0x00003A,     0x00003C,                  INS_FLAGS_WritesFlags)
-INST4(test,             "test",             IUM_RD, 0x000084,     0x0000F6,     0x000084,     0x0000A8,                  INS_FLAGS_WritesFlags)
-INST4(mov,              "mov",              IUM_WR, 0x000088,     0x0000C6,     0x00008A,     0x0000B0,                  INS_FLAGS_None)
+INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
+INST4(or,               "or",               IUM_RW, 0x000008,     0x000880,     0x00000A,     0x00000C,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
+INST4(adc,              "adc",              IUM_RW, 0x000010,     0x001080,     0x000012,     0x000014,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )
+INST4(sbb,              "sbb",              IUM_RW, 0x000018,     0x001880,     0x00001A,     0x00001C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )
+INST4(and,              "and",              IUM_RW, 0x000020,     0x002080,     0x000022,     0x000024,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
+INST4(sub,              "sub",              IUM_RW, 0x000028,     0x002880,     0x00002A,     0x00002C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
+INST4(xor,              "xor",              IUM_RW, 0x000030,     0x003080,     0x000032,     0x000034,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
+INST4(cmp,              "cmp",              IUM_RD, 0x000038,     0x003880,     0x00003A,     0x00003C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
+INST4(test,             "test",             IUM_RD, 0x000084,     0x0000F6,     0x000084,     0x0000A8,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
+INST4(mov,              "mov",              IUM_WR, 0x000088,     0x0000C6,     0x00008A,     0x0000B0,                  INS_FLAGS_None )
 
-INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     0x00008D,     BAD_CODE,                  INS_FLAGS_None)
+INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     0x00008D,     BAD_CODE,                  INS_FLAGS_None )
 
 //    id                nm                  um      mr            mi            rm                                       flags
 
 // Note that emitter has only partial support for BT. It can only emit the reg,reg form
 // and the registers need to be reversed to get the correct encoding.
-INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                INS_FLAGS_WritesFlags)
+INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 
-INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                INS_FLAGS_WritesFlags)
-INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                INS_FLAGS_WritesFlags)
+INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF  )
+INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 
-INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_FLAGS_None)
+INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_FLAGS_None )
 #ifdef TARGET_AMD64
-INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x4800000063,                            INS_FLAGS_None)
+INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x4800000063,                            INS_FLAGS_None )
 #endif
-INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_FLAGS_None)
+INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_FLAGS_None )
 
-INST3(cmovo,            "cmovo",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0040,                                INS_FLAGS_ReadsFlags)
-INST3(cmovno,           "cmovno",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0041,                                INS_FLAGS_ReadsFlags)
-INST3(cmovb,            "cmovb",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0042,                                INS_FLAGS_ReadsFlags)
-INST3(cmovae,           "cmovae",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0043,                                INS_FLAGS_ReadsFlags)
-INST3(cmove,            "cmove",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0044,                                INS_FLAGS_ReadsFlags)
-INST3(cmovne,           "cmovne",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0045,                                INS_FLAGS_ReadsFlags)
-INST3(cmovbe,           "cmovbe",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0046,                                INS_FLAGS_ReadsFlags)
-INST3(cmova,            "cmova",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0047,                                INS_FLAGS_ReadsFlags)
-INST3(cmovs,            "cmovs",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0048,                                INS_FLAGS_ReadsFlags)
-INST3(cmovns,           "cmovns",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0049,                                INS_FLAGS_ReadsFlags)
-INST3(cmovp,            "cmovp",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004A,                                INS_FLAGS_ReadsFlags)
-INST3(cmovnp,           "cmovnp",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004B,                                INS_FLAGS_ReadsFlags)
-INST3(cmovl,            "cmovl",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004C,                                INS_FLAGS_ReadsFlags)
-INST3(cmovge,           "cmovge",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004D,                                INS_FLAGS_ReadsFlags)
-INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004E,                                INS_FLAGS_ReadsFlags)
-INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                INS_FLAGS_ReadsFlags)
+INST3(cmovo,            "cmovo",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0040,                                Reads_OF )
+INST3(cmovno,           "cmovno",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0041,                                Reads_OF )
+INST3(cmovb,            "cmovb",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0042,                                Reads_CF )
+INST3(cmovae,           "cmovae",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0043,                                Reads_CF )
+INST3(cmove,            "cmove",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0044,                                Reads_ZF )
+INST3(cmovne,           "cmovne",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0045,                                Reads_ZF )
+INST3(cmovbe,           "cmovbe",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0046,                                Reads_ZF | Reads_CF )
+INST3(cmova,            "cmova",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0047,                                Reads_ZF | Reads_CF )
+INST3(cmovs,            "cmovs",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0048,                                Reads_SF )
+INST3(cmovns,           "cmovns",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0049,                                Reads_SF )
+INST3(cmovp,            "cmovp",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004A,                                Reads_PF )
+INST3(cmovnp,           "cmovnp",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004B,                                Reads_PF )
+INST3(cmovl,            "cmovl",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004C,                                Reads_OF       | Reads_SF                                                                      )
+INST3(cmovge,           "cmovge",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004D,                                Reads_OF       | Reads_SF                                                                      )
+INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004E,                                Reads_OF       | Reads_SF      | Reads_ZF                                                      )
+INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                Reads_OF       | Reads_SF      | Reads_ZF                                                      )
 
-INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_FLAGS_None)
-INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                INS_FLAGS_WritesFlags) // op1 *= op2
+INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_FLAGS_None )
+INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 
 //    id                nm                  um      mr            mi            rm                                       flags
 
@@ -121,25 +123,25 @@ INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     
 // as 2-operand instructions with the target register being implicit
 // implicit_reg = op1*op2_icon
 #define INSTMUL INST3
-INSTMUL(imul_AX,        "imul",             IUM_RD, BAD_CODE,     0x000068,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_CX,        "imul",             IUM_RD, BAD_CODE,     0x000868,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_DX,        "imul",             IUM_RD, BAD_CODE,     0x001068,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_BX,        "imul",             IUM_RD, BAD_CODE,     0x001868,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_SP,        "imul",             IUM_RD, BAD_CODE,     BAD_CODE,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_BP,        "imul",             IUM_RD, BAD_CODE,     0x002868,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_SI,        "imul",             IUM_RD, BAD_CODE,     0x003068,     BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_DI,        "imul",             IUM_RD, BAD_CODE,     0x003868,     BAD_CODE,                                INS_FLAGS_WritesFlags)
+INSTMUL(imul_AX,        "imul",             IUM_RD, BAD_CODE,     0x000068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_CX,        "imul",             IUM_RD, BAD_CODE,     0x000868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_DX,        "imul",             IUM_RD, BAD_CODE,     0x001068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_BX,        "imul",             IUM_RD, BAD_CODE,     0x001868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_SP,        "imul",             IUM_RD, BAD_CODE,     BAD_CODE,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_BP,        "imul",             IUM_RD, BAD_CODE,     0x002868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_SI,        "imul",             IUM_RD, BAD_CODE,     0x003068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_DI,        "imul",             IUM_RD, BAD_CODE,     0x003868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 
 #ifdef TARGET_AMD64
 
-INSTMUL(imul_08,        "imul",             IUM_RD, BAD_CODE,     0x4400000068, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_09,        "imul",             IUM_RD, BAD_CODE,     0x4400000868, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_10,        "imul",             IUM_RD, BAD_CODE,     0x4400001068, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_11,        "imul",             IUM_RD, BAD_CODE,     0x4400001868, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_12,        "imul",             IUM_RD, BAD_CODE,     0x4400002068, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_13,        "imul",             IUM_RD, BAD_CODE,     0x4400002868, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_14,        "imul",             IUM_RD, BAD_CODE,     0x4400003068, BAD_CODE,                                INS_FLAGS_WritesFlags)
-INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, BAD_CODE,                                INS_FLAGS_WritesFlags)
+INSTMUL(imul_08,        "imul",             IUM_RD, BAD_CODE,     0x4400000068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_09,        "imul",             IUM_RD, BAD_CODE,     0x4400000868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_10,        "imul",             IUM_RD, BAD_CODE,     0x4400001068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_11,        "imul",             IUM_RD, BAD_CODE,     0x4400001868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_12,        "imul",             IUM_RD, BAD_CODE,     0x4400002068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_13,        "imul",             IUM_RD, BAD_CODE,     0x4400002868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_14,        "imul",             IUM_RD, BAD_CODE,     0x4400003068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 
 #endif // TARGET_AMD64
 
@@ -301,10 +303,10 @@ INST3(cvttpd2dq,        "cvttpd2dq",        IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(cvtdq2pd,         "cvtdq2pd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xE6),                            INS_FLAGS_None)    // cvt packed DWORDs to doubles
 
 // SSE2 comparison instructions
-INST3(comiss,           "comiss",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2F),                            INS_FLAGS_None)    // ordered compare singles
-INST3(comisd,           "comisd",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2F),                            INS_FLAGS_None)    // ordered compare doubles
-INST3(ucomiss,          "ucomiss",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2E),                            INS_FLAGS_None)    // unordered compare singles
-INST3(ucomisd,          "ucomisd",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2E),                            INS_FLAGS_None)    // unordered compare doubles
+INST3(comiss,           "comiss",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2F),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // ordered compare singles
+INST3(comisd,           "comisd",           IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2F),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // ordered compare doubles
+INST3(ucomiss,          "ucomiss",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKFLT(0x2E),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // unordered compare singles
+INST3(ucomisd,          "ucomisd",          IUM_RD, BAD_CODE,     BAD_CODE,     PCKDBL(0x2E),                            Resets_OF  | Resets_SF     | Writes_ZF     | Resets_AF     | Writes_PF     | Writes_CF                     )  // unordered compare doubles
 
 // SSE2 packed single/double comparison operations.
 // Note that these instructions not only compare but also overwrite the first source.
@@ -583,6 +585,13 @@ INST3(vfnmsub213ss,     "fnmsub213ss",      IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(vfnmsub231ss,     "fnmsub231ss",      IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xBF),                             INS_Flags_IsDstDstSrcAVXInstruction)    //
 INST3(LAST_FMA_INSTRUCTION, "LAST_FMA_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
+INST3(FIRST_AVXVNNI_INSTRUCTION, "FIRST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+INST3(vpdpbusd,          "pdpbusd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x50),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Unsigned and Signed Bytes
+INST3(vpdpwssd,          "pdpwssd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x52),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Signed Word Integers
+INST3(vpdpbusds,         "pdpbusds",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x51),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Unsigned and Signed Bytes with Saturation
+INST3(vpdpwssds,         "pdpwssds",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x53),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply and Add Signed Word Integers with Saturation
+INST3(LAST_AVXVNNI_INSTRUCTION, "LAST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+
 // BMI1
 INST3(FIRST_BMI_INSTRUCTION, "FIRST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 INST3(andn,             "andn",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF2),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Logical AND NOT
@@ -593,10 +602,10 @@ INST3(bextr,            "bextr",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // BMI2
 INST3(rorx,             "rorx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0xF0),                             INS_FLAGS_None)
-INST3(pdep,             "pdep",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Parallel Bits Deposit
-INST3(pext,             "pext",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Parallel Bits Extract
-INST3(bzhi,             "bzhi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Zero High Bits Starting with Specified Bit Position
-INST3(mulx,             "mulx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF6),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Unsigned Multiply Without Affecting Flags
+INST3(pdep,             "pdep",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Parallel Bits Deposit
+INST3(pext,             "pext",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Parallel Bits Extract
+INST3(bzhi,             "bzhi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Zero High Bits Starting with Specified Bit Position
+INST3(mulx,             "mulx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF6),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Unsigned Multiply Without Affecting Flags
 
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
@@ -606,88 +615,94 @@ INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, 
 INST3(crc32,            "crc32",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF2, 0x0F, 0x38, 0xF0),           INS_FLAGS_None)
 
 // BMI1
-INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBC),                            INS_FLAGS_None)    // Count the Number of Trailing Zero Bits
+INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBC),                            Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF )    // Count the Number of Trailing Zero Bits
 
 // LZCNT
-INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBD),                            INS_FLAGS_None)
+INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBD),                            Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF )
 
 // POPCNT
-INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            INS_FLAGS_None)
+INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF )
 
 //    id                nm                  um      mr            mi                                                     flags
-INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,                                              INS_FLAGS_None)
-INST2(loop,             "loop",             IUM_RD, BAD_CODE,     0x0000E2,                                              INS_FLAGS_None)
-INST2(call,             "call",             IUM_RD, 0x0010FF,     0x0000E8,                                              INS_FLAGS_WritesFlags)
+INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,                                              INS_FLAGS_None )
+INST2(loop,             "loop",             IUM_RD, BAD_CODE,     0x0000E2,                                              INS_FLAGS_None )
+INST2(call,             "call",             IUM_RD, 0x0010FF,     0x0000E8,                                              INS_FLAGS_None )
 
-INST2(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,                                              INS_FLAGS_WritesFlags)
-INST2(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,                                              INS_FLAGS_WritesFlags)
-INST2(rol_N,            "rol",              IUM_RW, 0x0000C0,     0x0000C0,                                              INS_FLAGS_WritesFlags)
-INST2(ror,              "ror",              IUM_RW, 0x0008D2,     BAD_CODE,                                              INS_FLAGS_WritesFlags)
-INST2(ror_1,            "ror",              IUM_RW, 0x0008D0,     0x0008D0,                                              INS_FLAGS_WritesFlags)
-INST2(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,                                              INS_FLAGS_WritesFlags)
+INST2(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF     )
+INST2(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,                                              Writes_OF                                                                      | Writes_CF     )
+INST2(rol_N,            "rol",              IUM_RW, 0x0000C0,     0x0000C0,                                              Undefined_OF                                                                   | Writes_CF     )
+INST2(ror,              "ror",              IUM_RW, 0x0008D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF     )
+INST2(ror_1,            "ror",              IUM_RW, 0x0008D0,     0x0008D0,                                              Writes_OF                                                                      | Writes_CF     )
+INST2(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,                                              Undefined_OF                                                                   | Writes_CF     )
 
-INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,                                              INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              INS_FLAGS_ReadsFlags | INS_FLAGS_WritesFlags)
-INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              INS_FLAGS_WritesFlags)
-INST2(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,                                              INS_FLAGS_WritesFlags)
-INST2(shl_N,            "shl",              IUM_RW, 0x0020C0,     0x0020C0,                                              INS_FLAGS_WritesFlags)
-INST2(shr,              "shr",              IUM_RW, 0x0028D2,     BAD_CODE,                                              INS_FLAGS_WritesFlags)
-INST2(shr_1,            "shr",              IUM_RW, 0x0028D0,     0x0028D0,                                              INS_FLAGS_WritesFlags)
-INST2(shr_N,            "shr",              IUM_RW, 0x0028C0,     0x0028C0,                                              INS_FLAGS_WritesFlags)
-INST2(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,                                              INS_FLAGS_WritesFlags)
-INST2(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,                                              INS_FLAGS_WritesFlags)
-INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,                                              INS_FLAGS_WritesFlags)
+INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )
+INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              Writes_OF                                                                      | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )
+INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              Undefined_OF                                                                   | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      ) 
+INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )
+INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              Writes_OF                                                                      | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )   
+INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              Undefined_OF                                                                   | Writes_CF
+                                                                                                                                                                                                        | Reads_CF      )
+INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(shl_N,            "shl",              IUM_RW, 0x0020C0,     0x0020C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(shr,              "shr",              IUM_RW, 0x0028D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(shr_1,            "shr",              IUM_RW, 0x0028D0,     0x0028D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(shr_N,            "shr",              IUM_RW, 0x0028C0,     0x0028C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
 
 
 //    id                nm                  um      mr                                                                   flags
-INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            INS_FLAGS_None)
-INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            INS_FLAGS_None)
+INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            Reads_DF )
+INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            Reads_DF )
 #if defined(TARGET_AMD64)
-INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            INS_FLAGS_None)
+INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            Reads_DF )
 #endif // defined(TARGET_AMD64)
-INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            INS_FLAGS_None)
-INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            INS_FLAGS_None)
+INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            Reads_DF   )
+INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            Reads_DF   )
 #if defined(TARGET_AMD64)
-INST1(movsq,            "movsq",            IUM_RD, 0x00A548,                                                            INS_FLAGS_None)
-#endif // defined(TARGET_AMD64)
-
-INST1(r_stosb,          "rep stosb",        IUM_RD, 0x00AAF3,                                                            INS_FLAGS_None)
-INST1(r_stosd,          "rep stosd",        IUM_RD, 0x00ABF3,                                                            INS_FLAGS_None)
-#if defined(TARGET_AMD64)
-INST1(r_stosq,          "rep stosq",        IUM_RD, 0xF3AB48,                                                            INS_FLAGS_None)
-#endif // defined(TARGET_AMD64)
-INST1(stosb,            "stosb",            IUM_RD, 0x0000AA,                                                            INS_FLAGS_None)
-INST1(stosd,            "stosd",            IUM_RD, 0x0000AB,                                                            INS_FLAGS_None)
-#if defined(TARGET_AMD64)
-INST1(stosq,            "stosq",            IUM_RD, 0x00AB48,                                                            INS_FLAGS_None)
+INST1(movsq,            "movsq",            IUM_RD, 0x00A548,                                                            Reads_DF   )
 #endif // defined(TARGET_AMD64)
 
-INST1(int3,             "int3",             IUM_RD, 0x0000CC,                                                            INS_FLAGS_None)
-INST1(nop,              "nop",              IUM_RD, 0x000090,                                                            INS_FLAGS_None)
-INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None)
-INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None)
+INST1(r_stosb,          "rep stosb",        IUM_RD, 0x00AAF3,                                                            Reads_DF   )
+INST1(r_stosd,          "rep stosd",        IUM_RD, 0x00ABF3,                                                            Reads_DF   )
+#if defined(TARGET_AMD64)
+INST1(r_stosq,          "rep stosq",        IUM_RD, 0xF3AB48,                                                            Reads_DF   )
+#endif // defined(TARGET_AMD64)
+INST1(stosb,            "stosb",            IUM_RD, 0x0000AA,                                                            Reads_DF   )
+INST1(stosd,            "stosd",            IUM_RD, 0x0000AB,                                                            Reads_DF   )
+#if defined(TARGET_AMD64)
+INST1(stosq,            "stosq",            IUM_RD, 0x00AB48,                                                            Reads_DF   )
+#endif // defined(TARGET_AMD64)
+
+INST1(int3,             "int3",             IUM_RD, 0x0000CC,                                                            INS_FLAGS_None )
+INST1(nop,              "nop",              IUM_RD, 0x000090,                                                            INS_FLAGS_None )
+INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
+INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
 
 
-INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            INS_FLAGS_WritesFlags)
-INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_WritesFlags)
+INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
+INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None )
 
-INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_WritesFlags)
-INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            INS_FLAGS_WritesFlags)
-INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            INS_FLAGS_WritesFlags) // edx:eax = eax*op1
-INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            INS_FLAGS_WritesFlags)
-INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            INS_FLAGS_WritesFlags)
+INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None)
+INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
+INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
+INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 
-INST1(sahf,             "sahf",             IUM_RD, 0x00009E,                                                            INS_FLAGS_WritesFlags)
+INST1(sahf,             "sahf",             IUM_RD, 0x00009E,                                                            Restore_SF_ZF_AF_PF_CF )
 
-INST1(xadd,             "xadd",             IUM_RW, 0x0F00C0,                                                            INS_FLAGS_WritesFlags)
-INST1(cmpxchg,          "cmpxchg",          IUM_RW, 0x0F00B0,                                                            INS_FLAGS_WritesFlags)
+INST1(xadd,             "xadd",             IUM_RW, 0x0F00C0,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
+INST1(cmpxchg,          "cmpxchg",          IUM_RW, 0x0F00B0,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
 
-INST1(shld,             "shld",             IUM_RW, 0x0F00A4,                                                            INS_FLAGS_WritesFlags)
-INST1(shrd,             "shrd",             IUM_RW, 0x0F00AC,                                                            INS_FLAGS_WritesFlags)
+INST1(shld,             "shld",             IUM_RW, 0x0F00A4,                                                            Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST1(shrd,             "shrd",             IUM_RW, 0x0F00AC,                                                            Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
 
 // For RyuJIT/x86, we follow the x86 calling convention that requires
 // us to return floating point value on the x87 FP stack, so we need
@@ -697,22 +712,22 @@ INST1(fld,              "fld",              IUM_WR, 0x0000D9,                   
 INST1(fstp,             "fstp",             IUM_WR, 0x0018D9,                                                            INS_FLAGS_x87Instr)
 #endif // TARGET_X86
 
-INST1(seto,             "seto",             IUM_WR, 0x0F0090,                                                            INS_FLAGS_ReadsFlags)
-INST1(setno,            "setno",            IUM_WR, 0x0F0091,                                                            INS_FLAGS_ReadsFlags)
-INST1(setb,             "setb",             IUM_WR, 0x0F0092,                                                            INS_FLAGS_ReadsFlags)
-INST1(setae,            "setae",            IUM_WR, 0x0F0093,                                                            INS_FLAGS_ReadsFlags)
-INST1(sete,             "sete",             IUM_WR, 0x0F0094,                                                            INS_FLAGS_ReadsFlags)
-INST1(setne,            "setne",            IUM_WR, 0x0F0095,                                                            INS_FLAGS_ReadsFlags)
-INST1(setbe,            "setbe",            IUM_WR, 0x0F0096,                                                            INS_FLAGS_ReadsFlags)
-INST1(seta,             "seta",             IUM_WR, 0x0F0097,                                                            INS_FLAGS_ReadsFlags)
-INST1(sets,             "sets",             IUM_WR, 0x0F0098,                                                            INS_FLAGS_ReadsFlags)
-INST1(setns,            "setns",            IUM_WR, 0x0F0099,                                                            INS_FLAGS_ReadsFlags)
-INST1(setp,             "setp",             IUM_WR, 0x0F009A,                                                            INS_FLAGS_ReadsFlags)
-INST1(setnp,            "setnp",            IUM_WR, 0x0F009B,                                                            INS_FLAGS_ReadsFlags)
-INST1(setl,             "setl",             IUM_WR, 0x0F009C,                                                            INS_FLAGS_ReadsFlags)
-INST1(setge,            "setge",            IUM_WR, 0x0F009D,                                                            INS_FLAGS_ReadsFlags)
-INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            INS_FLAGS_ReadsFlags)
-INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            INS_FLAGS_ReadsFlags)
+INST1(seto,             "seto",             IUM_WR, 0x0F0090,                                                            Reads_OF )
+INST1(setno,            "setno",            IUM_WR, 0x0F0091,                                                            Reads_OF )
+INST1(setb,             "setb",             IUM_WR, 0x0F0092,                                                            Reads_CF )
+INST1(setae,            "setae",            IUM_WR, 0x0F0093,                                                            Reads_CF )
+INST1(sete,             "sete",             IUM_WR, 0x0F0094,                                                            Reads_ZF )
+INST1(setne,            "setne",            IUM_WR, 0x0F0095,                                                            Reads_ZF )
+INST1(setbe,            "setbe",            IUM_WR, 0x0F0096,                                                            Reads_ZF | Reads_CF )
+INST1(seta,             "seta",             IUM_WR, 0x0F0097,                                                            Reads_ZF | Reads_CF )
+INST1(sets,             "sets",             IUM_WR, 0x0F0098,                                                            Reads_SF )
+INST1(setns,            "setns",            IUM_WR, 0x0F0099,                                                            Reads_SF )
+INST1(setp,             "setp",             IUM_WR, 0x0F009A,                                                            Reads_PF )
+INST1(setnp,            "setnp",            IUM_WR, 0x0F009B,                                                            Reads_PF )
+INST1(setl,             "setl",             IUM_WR, 0x0F009C,                                                            Reads_OF       | Reads_SF  )
+INST1(setge,            "setge",            IUM_WR, 0x0F009D,                                                            Reads_OF       | Reads_SF  )
+INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
+INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 
 #ifdef TARGET_AMD64
 // A jump with rex prefix. This is used for register indirect
@@ -720,43 +735,43 @@ INST1(setg,             "setg",             IUM_WR, 0x0F009F,                   
 INST1(rex_jmp,          "rex.jmp",          IUM_RD, 0x0020FE,                                                            INS_FLAGS_None)
 #endif
 
-INST1(i_jmp,            "jmp",              IUM_RD, 0x0020FE,                                                            INS_FLAGS_None)
+INST1(i_jmp,            "jmp",              IUM_RD, 0x0020FE,                                                            INS_FLAGS_None )
 
-INST0(jmp,              "jmp",              IUM_RD, 0x0000EB,                                                            INS_FLAGS_None)
-INST0(jo,               "jo",               IUM_RD, 0x000070,                                                            INS_FLAGS_ReadsFlags)
-INST0(jno,              "jno",              IUM_RD, 0x000071,                                                            INS_FLAGS_ReadsFlags)
-INST0(jb,               "jb",               IUM_RD, 0x000072,                                                            INS_FLAGS_ReadsFlags)
-INST0(jae,              "jae",              IUM_RD, 0x000073,                                                            INS_FLAGS_ReadsFlags)
-INST0(je,               "je",               IUM_RD, 0x000074,                                                            INS_FLAGS_ReadsFlags)
-INST0(jne,              "jne",              IUM_RD, 0x000075,                                                            INS_FLAGS_ReadsFlags)
-INST0(jbe,              "jbe",              IUM_RD, 0x000076,                                                            INS_FLAGS_ReadsFlags)
-INST0(ja,               "ja",               IUM_RD, 0x000077,                                                            INS_FLAGS_ReadsFlags)
-INST0(js,               "js",               IUM_RD, 0x000078,                                                            INS_FLAGS_ReadsFlags)
-INST0(jns,              "jns",              IUM_RD, 0x000079,                                                            INS_FLAGS_ReadsFlags)
-INST0(jp,               "jp",               IUM_RD, 0x00007A,                                                            INS_FLAGS_ReadsFlags)
-INST0(jnp,              "jnp",              IUM_RD, 0x00007B,                                                            INS_FLAGS_ReadsFlags)
-INST0(jl,               "jl",               IUM_RD, 0x00007C,                                                            INS_FLAGS_ReadsFlags)
-INST0(jge,              "jge",              IUM_RD, 0x00007D,                                                            INS_FLAGS_ReadsFlags)
-INST0(jle,              "jle",              IUM_RD, 0x00007E,                                                            INS_FLAGS_ReadsFlags)
-INST0(jg,               "jg",               IUM_RD, 0x00007F,                                                            INS_FLAGS_ReadsFlags)
+INST0(jmp,              "jmp",              IUM_RD, 0x0000EB,                                                            INS_FLAGS_None )
+INST0(jo,               "jo",               IUM_RD, 0x000070,                                                            Reads_OF )
+INST0(jno,              "jno",              IUM_RD, 0x000071,                                                            Reads_OF )
+INST0(jb,               "jb",               IUM_RD, 0x000072,                                                            Reads_CF )
+INST0(jae,              "jae",              IUM_RD, 0x000073,                                                            Reads_CF )
+INST0(je,               "je",               IUM_RD, 0x000074,                                                            Reads_ZF )
+INST0(jne,              "jne",              IUM_RD, 0x000075,                                                            Reads_ZF )
+INST0(jbe,              "jbe",              IUM_RD, 0x000076,                                                            Reads_ZF | Reads_CF )
+INST0(ja,               "ja",               IUM_RD, 0x000077,                                                            Reads_ZF | Reads_CF )
+INST0(js,               "js",               IUM_RD, 0x000078,                                                            Reads_SF )
+INST0(jns,              "jns",              IUM_RD, 0x000079,                                                            Reads_SF )
+INST0(jp,               "jp",               IUM_RD, 0x00007A,                                                            Reads_PF )
+INST0(jnp,              "jnp",              IUM_RD, 0x00007B,                                                            Reads_PF )
+INST0(jl,               "jl",               IUM_RD, 0x00007C,                                                            Reads_OF       | Reads_SF  )
+INST0(jge,              "jge",              IUM_RD, 0x00007D,                                                            Reads_OF       | Reads_SF  )
+INST0(jle,              "jle",              IUM_RD, 0x00007E,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
+INST0(jg,               "jg",               IUM_RD, 0x00007F,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 
-INST0(l_jmp,            "jmp",              IUM_RD, 0x0000E9,                                                            INS_FLAGS_None)
-INST0(l_jo,             "jo",               IUM_RD, 0x00800F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jno,            "jno",              IUM_RD, 0x00810F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jb,             "jb",               IUM_RD, 0x00820F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jae,            "jae",              IUM_RD, 0x00830F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_je,             "je",               IUM_RD, 0x00840F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jne,            "jne",              IUM_RD, 0x00850F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jbe,            "jbe",              IUM_RD, 0x00860F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_ja,             "ja",               IUM_RD, 0x00870F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_js,             "js",               IUM_RD, 0x00880F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jns,            "jns",              IUM_RD, 0x00890F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jp,             "jp",               IUM_RD, 0x008A0F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jnp,            "jnp",              IUM_RD, 0x008B0F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jl,             "jl",               IUM_RD, 0x008C0F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jge,            "jge",              IUM_RD, 0x008D0F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jle,            "jle",              IUM_RD, 0x008E0F,                                                            INS_FLAGS_ReadsFlags)
-INST0(l_jg,             "jg",               IUM_RD, 0x008F0F,                                                            INS_FLAGS_ReadsFlags)
+INST0(l_jmp,            "jmp",              IUM_RD, 0x0000E9,                                                            INS_FLAGS_None )
+INST0(l_jo,             "jo",               IUM_RD, 0x00800F,                                                            Reads_OF )
+INST0(l_jno,            "jno",              IUM_RD, 0x00810F,                                                            Reads_OF )
+INST0(l_jb,             "jb",               IUM_RD, 0x00820F,                                                            Reads_CF )
+INST0(l_jae,            "jae",              IUM_RD, 0x00830F,                                                            Reads_CF )
+INST0(l_je,             "je",               IUM_RD, 0x00840F,                                                            Reads_ZF )
+INST0(l_jne,            "jne",              IUM_RD, 0x00850F,                                                            Reads_ZF )
+INST0(l_jbe,            "jbe",              IUM_RD, 0x00860F,                                                            Reads_ZF | Reads_CF )
+INST0(l_ja,             "ja",               IUM_RD, 0x00870F,                                                            Reads_ZF | Reads_CF )
+INST0(l_js,             "js",               IUM_RD, 0x00880F,                                                            Reads_SF )
+INST0(l_jns,            "jns",              IUM_RD, 0x00890F,                                                            Reads_SF )
+INST0(l_jp,             "jp",               IUM_RD, 0x008A0F,                                                            Reads_PF )
+INST0(l_jnp,            "jnp",              IUM_RD, 0x008B0F,                                                            Reads_PF )
+INST0(l_jl,             "jl",               IUM_RD, 0x008C0F,                                                            Reads_OF       | Reads_SF  )
+INST0(l_jge,            "jge",              IUM_RD, 0x008D0F,                                                            Reads_OF       | Reads_SF  )
+INST0(l_jle,            "jle",              IUM_RD, 0x008E0F,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
+INST0(l_jg,             "jg",               IUM_RD, 0x008F0F,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 
 INST0(align,            "align",            IUM_RD, BAD_CODE,                                                            INS_FLAGS_None)
 

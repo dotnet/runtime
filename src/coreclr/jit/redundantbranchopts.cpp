@@ -21,7 +21,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     bool madeChanges = false;
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Skip over any removed blocks.
         //
@@ -40,7 +40,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     // Reset visited flags, in case we set any.
     //
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
     }
@@ -264,17 +264,38 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     assert(domBlock->bbJumpKind == BBJ_COND);
 
     // If the dominating block is not the immediate dominator
-    // we would need to duplicate a lot of code to thread
-    // the jumps. Pass for now.
+    // we might need to duplicate a lot of code to thread
+    // the jumps. See if that's the case.
     //
-    if (domBlock != block->bbIDom)
+    const bool isIDom = domBlock == block->bbIDom;
+    if (!isIDom)
     {
-        JITDUMP(" -- not idom, so no threading\n");
-        return false;
+        // Walk up the dom tree until we hit dom block.
+        //
+        // If none of the doms in the stretch are BBJ_COND,
+        // then we must have already optimized them, and
+        // so should not have to duplicate code to thread.
+        //
+        BasicBlock* idomBlock = block->bbIDom;
+        while ((idomBlock != nullptr) && (idomBlock != domBlock))
+        {
+            if (idomBlock->bbJumpKind == BBJ_COND)
+            {
+                JITDUMP(" -- " FMT_BB " not closest branching dom, so no threading\n", idomBlock->bbNum);
+                return false;
+            }
+            JITDUMP(" -- bypassing %sdom " FMT_BB " as it was already optimized\n",
+                    (idomBlock == block->bbIDom) ? "i" : "", idomBlock->bbNum);
+            idomBlock = idomBlock->bbIDom;
+        }
+
+        // If we didn't bail out above, we should have reached domBlock.
+        //
+        assert(idomBlock == domBlock);
     }
 
-    JITDUMP("Both successors of IDom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", domBlock->bbNum,
-            block->bbNum);
+    JITDUMP("Both successors of %sdom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", isIDom ? "i" : "",
+            domBlock->bbNum, block->bbNum);
 
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
@@ -290,7 +311,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     Statement* const lastStmt = block->lastStmt();
 
-    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         GenTree* const tree = stmt->GetRootNode();
 
@@ -368,9 +389,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     BasicBlock* const trueTarget        = block->bbJumpDest;
     BasicBlock* const falseTarget       = block->bbNext;
 
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* const predBlock = pred->getBlock();
         numPreds++;
 
         // Treat switch preds as ambiguous for now.
@@ -489,10 +509,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // flow directly by changing their jump targets to the appropriate successor,
     // provided it's a permissable flow in our EH model.
     //
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* const predBlock = pred->getBlock();
-
         if (predBlock->bbJumpKind == BBJ_SWITCH)
         {
             // Skip over switch preds, they will continue to flow to block.
@@ -612,7 +630,7 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
         return true;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
     }

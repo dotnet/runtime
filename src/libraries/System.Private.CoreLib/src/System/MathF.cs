@@ -325,7 +325,7 @@ namespace System
 
             // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
-            uint bits = (uint)BitConverter.SingleToInt32Bits(x);
+            uint bits = BitConverter.SingleToUInt32Bits(x);
             int exponent = float.ExtractExponentFromBits(bits);
 
             if (exponent <= 0x7E)
@@ -381,7 +381,7 @@ namespace System
                 bits &= ~roundBitsMask;
             }
 
-            return BitConverter.Int32BitsToSingle((int)bits);
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

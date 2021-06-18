@@ -10,10 +10,6 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        internal const uint NT_ERROR_STATUS_DISK_FULL = 0xC000007F;
-        internal const uint NT_ERROR_STATUS_FILE_TOO_LARGE = 0xC0000904;
-        internal const uint NT_STATUS_INVALID_PARAMETER = 0xC000000D;
-
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
@@ -76,7 +72,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe (uint status, IntPtr handle) CreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal static unsafe (uint status, IntPtr handle) NtCreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             // For mitigating local elevation of privilege attack through named pipes
             // make sure we always call NtCreateFile with SECURITY_ANONYMOUS so that the
@@ -120,7 +116,7 @@ internal static partial class Interop
 
         private static DesiredAccess GetDesiredAccess(FileAccess access, FileMode fileMode, FileOptions options)
         {
-            DesiredAccess result = 0;
+            DesiredAccess result = DesiredAccess.FILE_READ_ATTRIBUTES | DesiredAccess.SYNCHRONIZE; // default values used by CreateFileW
 
             if ((access & FileAccess.Read) != 0)
             {
@@ -134,13 +130,9 @@ internal static partial class Interop
             {
                 result |= DesiredAccess.FILE_APPEND_DATA;
             }
-            if ((options & FileOptions.Asynchronous) == 0)
+            if ((options & FileOptions.DeleteOnClose) != 0)
             {
-                result |= DesiredAccess.SYNCHRONIZE; // required by FILE_SYNCHRONOUS_IO_NONALERT
-            }
-            if ((options & FileOptions.DeleteOnClose) != 0 || fileMode == FileMode.Create)
-            {
-                result |= DesiredAccess.DELETE; // required by FILE_DELETE_ON_CLOSE and FILE_SUPERSEDE (which deletes a file if it exists)
+                result |= DesiredAccess.DELETE; // required by FILE_DELETE_ON_CLOSE
             }
 
             return result;
@@ -190,7 +182,8 @@ internal static partial class Interop
         }
 
         private static ObjectAttributes GetObjectAttributes(FileShare share)
-            => (share & FileShare.Inheritable) != 0 ? ObjectAttributes.OBJ_INHERIT : 0;
+            => ObjectAttributes.OBJ_CASE_INSENSITIVE | // default value used by CreateFileW
+                ((share & FileShare.Inheritable) != 0 ? ObjectAttributes.OBJ_INHERIT : 0);
 
         /// <summary>
         /// File creation disposition when calling directly to NT APIs.

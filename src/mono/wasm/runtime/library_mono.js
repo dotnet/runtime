@@ -487,15 +487,54 @@ var MonoSupportLib = {
 		mono_text_decoder: undefined,
 		string_decoder: {
 			copy: function (mono_string) {
-				if (mono_string == 0)
+				if (mono_string === 0)
 					return null;
 
-				if (!this.mono_wasm_string_convert)
-					this.mono_wasm_string_convert = Module.cwrap ("mono_wasm_string_convert", null, ['number']);
+				if (!this.mono_wasm_string_root)
+					this.mono_wasm_string_root = MONO.mono_wasm_new_root ();
+				this.mono_wasm_string_root.value = mono_string;
 
-				this.mono_wasm_string_convert (mono_string);
-				var result = this.result;
-				this.result = undefined;
+				if (!this.mono_wasm_string_get_data)
+					this.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
+				
+				if (!this.mono_wasm_string_decoder_buffer)
+					this.mono_wasm_string_decoder_buffer = Module._malloc(12);
+				
+				let ppChars = this.mono_wasm_string_decoder_buffer + 0,
+					pLengthBytes = this.mono_wasm_string_decoder_buffer + 4,
+					pIsInterned = this.mono_wasm_string_decoder_buffer + 8;
+				
+				this.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
+
+				// TODO: Is this necessary?
+				if (!this.mono_wasm_empty_string)
+					this.mono_wasm_empty_string = "";
+
+				let result = this.mono_wasm_empty_string;
+				let lengthBytes = Module.HEAP32[pLengthBytes / 4],
+					pChars = Module.HEAP32[ppChars / 4],
+					isInterned = Module.HEAP32[pIsInterned / 4];
+
+				if (pLengthBytes && pChars) {
+					if (
+						isInterned && 
+						MONO.interned_string_table && 
+						MONO.interned_string_table.has(mono_string)
+					) {
+						result = MONO.interned_string_table.get(mono_string);
+						// console.log("intern table cache hit", mono_string, result.length);
+					} else {
+						result = this.decode(pChars, pChars + lengthBytes, false);
+						if (isInterned) {
+							if (!MONO.interned_string_table)
+								MONO.interned_string_table = new Map();
+							// console.log("interned", mono_string, result.length);
+							MONO.interned_string_table.set(mono_string, result);
+						}
+					}						
+				}
+
+				this.mono_wasm_string_root.value = 0;
 				return result;
 			},
 			decode: function (start, end, save) {

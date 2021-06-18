@@ -1511,7 +1511,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     if (IsComImport() && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
 #ifdef FEATURE_COMINTEROP
-        // ComImport classes must either extend from Object
+        // ComImport classes must extend from Object
         MethodTable* pMTParent = GetParentMethodTable();
         if ((pMTParent == NULL) || (pMTParent != g_pObjectClass))
         {
@@ -1524,19 +1524,14 @@ MethodTableBuilder::BuildMethodTableThrowing(
             BuildMethodTableThrowException(IDS_CLASSLOAD_COMIMPCANNOTHAVELAYOUT);
         }
 
-        if (pMTParent == g_pObjectClass)
+        if (g_pBaseCOMObject != NULL)
         {
-            // ComImport classes ultimately extend from our __ComObject or RuntimeClass class
-            MethodTable *pCOMMT = g_pBaseCOMObject;
-
-            _ASSERTE(pCOMMT);
-
             // We could have had COM interop classes derive from System._ComObject,
             // but instead we have them derive from System.Object, have them set the
             // ComImport bit in the type attributes, and then we swap out the parent
             // type under the covers.
-            bmtInternal->pType->SetParentType(CreateTypeChain(pCOMMT, Substitution()));
-            bmtInternal->pParentMT = pCOMMT;
+            bmtInternal->pType->SetParentType(CreateTypeChain(g_pBaseCOMObject, Substitution()));
+            bmtInternal->pParentMT = g_pBaseCOMObject;
         }
 #endif
         // if the current class is imported
@@ -6315,13 +6310,13 @@ MethodTableBuilder::PlaceMethodImpls()
             {
                 // The declaration is on the type being built
                 bmtMDMethod * pCurDeclMethod = hDeclMethod.AsMDMethod();
-    
+
                 mdToken mdef = pCurDeclMethod->GetMethodSignature().GetToken();
                 if (bmtMethodImpl->IsBody(mdef))
                 {   // A method declared on this class cannot be both a decl and an impl
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MULTIPLEOVERRIDES, mdef);
                 }
-    
+
                 if (IsInterface())
                 {
                     // Throws
@@ -6348,7 +6343,7 @@ MethodTableBuilder::PlaceMethodImpls()
             else
             {
                 bmtRTMethod * pCurDeclMethod = hDeclMethod.AsRTMethod();
-    
+
                 if (IsInterface())
                 {
                     // Throws

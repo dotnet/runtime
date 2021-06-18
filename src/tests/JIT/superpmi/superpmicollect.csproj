@@ -11,8 +11,8 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test takes a long time to complete -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- https://github.com/dotnet/runtime/issues/12709 -->
-    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm'">true</JitOptimizationSensitive>
+    <!-- https://github.com/dotnet/runtime/issues/53321 -->
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'OSX'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

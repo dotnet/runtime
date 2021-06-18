@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public sealed class X509ChainElementCollection : ICollection, IEnumerable
+    public sealed class X509ChainElementCollection : ICollection, IEnumerable<X509ChainElement>
     {
         private readonly X509ChainElement[] _elements;
 
@@ -81,5 +82,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return new X509ChainElementEnumerator(this);
         }
+
+        IEnumerator<X509ChainElement> IEnumerable<X509ChainElement>.GetEnumerator() => GetEnumerator();
     }
 }

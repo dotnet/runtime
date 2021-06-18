@@ -63,6 +63,9 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.CBool:
                         return context.GetWellKnownType(WellKnownType.Byte);
 
+                case MarshallerKind.VariantBool:
+                    return context.GetWellKnownType(WellKnownType.Int16);
+
                 case MarshallerKind.Enum:
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.Decimal:
@@ -162,6 +165,14 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.ComInterface:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
+#if !READYTORUN
+                case MarshallerKind.Variant:
+                    return InteropTypes.GetVariant(context);
+#endif
+
+                case MarshallerKind.OleCurrency:
+                    return context.GetWellKnownType(WellKnownType.Int64);
+
                 case MarshallerKind.Unknown:
                 default:
                     throw new NotSupportedException();
@@ -253,6 +264,9 @@ namespace Internal.TypeSystem.Interop
                             case NativeTypeKind.U1:
                             case NativeTypeKind.I1:
                                 return MarshallerKind.CBool;
+
+                            case NativeTypeKind.VariantBool:
+                                return MarshallerKind.VariantBool;
 
                             default:
                                 return MarshallerKind.Invalid;
@@ -355,6 +369,8 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Decimal;
                     else if (nativeType == NativeTypeKind.LPStruct && !isField)
                         return MarshallerKind.BlittableStructPtr;
+                    else if (nativeType == NativeTypeKind.Currency)
+                        return MarshallerKind.OleCurrency;
                     else
                         return MarshallerKind.Invalid;
                 }
@@ -434,7 +450,7 @@ namespace Internal.TypeSystem.Interop
                 {
                     case NativeTypeKind.Array:
                         {
-                            if (isField || isReturn)
+                            if (isField)
                                 return MarshallerKind.Invalid;
 
                             var arrayType = (ArrayType)type;
@@ -569,7 +585,7 @@ namespace Internal.TypeSystem.Interop
                     || nativeType == NativeTypeKind.IUnknown)
                     return MarshallerKind.ComInterface;
                 else
-                    return MarshallerKind.Invalid;
+                    return MarshallerKind.Variant;
             }
             else if (InteropTypes.IsStringBuilder(context, type))
             {
@@ -794,6 +810,11 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.UnicodeString;
                     case NativeTypeKind.LPUTF8Str:
                         return MarshallerKind.UTF8String;
+                    case NativeTypeKind.BStr:
+                    case NativeTypeKind.TBStr:
+                        return MarshallerKind.BSTRString;
+                    case NativeTypeKind.AnsiBStr:
+                        return MarshallerKind.AnsiBSTRString;
                     default:
                         return MarshallerKind.Invalid;
                 }

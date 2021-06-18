@@ -19,8 +19,20 @@
 
   <ItemGroup>
     <NativeRuntimeAsset Include="$(MonoAotCrossDir)$(TargetCrossRid)\**" TargetPath="tools/" />
-    <NativeRuntimeAsset Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.Sdk.props" TargetPath="Sdk/Sdk.props" />
+    <NativeRuntimeAsset Include="$(MonoAotCrossDir)$(TargetCrossRid).Sdk.props" TargetPath="Sdk/Sdk.props" />
   </ItemGroup>
+
+  <Target Name="WriteAotSdkProps" BeforeTargets="ValidateProperties">
+    <ItemGroup>
+      <_SdkPropsProperties Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value="" />
+      <_SdkPropsProperties Condition="$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value=".exe" />
+      <_SdkPropsProperties Include="TargetRid" Value="$(TargetCrossRid)" />
+    </ItemGroup>
+    <GenerateFileFromTemplate
+      TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"
+      Properties="@(_SdkPropsProperties)"
+      OutputPath="$(MonoAotCrossDir)$(TargetCrossRid).Sdk.props" />
+  </Target>
 
   <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />

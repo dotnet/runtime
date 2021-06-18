@@ -66,6 +66,11 @@ struct PatchpointInfo
         return m_genericContextArgOffset;
     }
 
+    bool HasGenericContextArgOffset() const
+    {
+        return m_genericContextArgOffset != -1;
+    }
+
     void SetGenericContextArgOffset(int offset)
     {
         m_genericContextArgOffset = offset;

@@ -57,6 +57,7 @@ mono_trace_push (GLogLevelFlags level, MonoTraceMask mask);
 void 
 mono_trace_pop (void);
 
+MONO_COMPONENT_API
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 

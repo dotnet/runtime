@@ -346,6 +346,47 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public void NestedClassTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            NestedClassTestsExtensions<ABC>.NestedMiddleParentClass.NestedClass.M8(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M8", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NonStaticNestedClassTestsExtensions<ABC>.NonStaticNestedMiddleParentClass.NestedClass.M9(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M9", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NestedStruct.Logger.M10(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M10", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NestedRecord.Logger.M11(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M11", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MultiLevelNestedClass.NestedStruct.NestedRecord.Logger.M12(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M12", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+        }
+
+        [Fact]
         public void TemplateTests()
         {
             var logger = new MockLogger();

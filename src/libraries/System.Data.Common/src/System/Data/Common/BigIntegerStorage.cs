@@ -4,6 +4,7 @@
 using System.Numerics;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -149,11 +150,13 @@ namespace System.Data.Common
             base.SetCapacity(capacity);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             return BigInteger.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             return ((BigInteger)value).ToString("D", System.Globalization.CultureInfo.InvariantCulture);

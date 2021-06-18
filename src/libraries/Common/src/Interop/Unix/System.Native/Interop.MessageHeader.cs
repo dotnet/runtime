@@ -8,12 +8,6 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal unsafe struct IOVector
-        {
-            public byte* Base;
-            public UIntPtr Count;
-        }
-
         internal unsafe struct MessageHeader
         {
             public byte* SocketAddress;

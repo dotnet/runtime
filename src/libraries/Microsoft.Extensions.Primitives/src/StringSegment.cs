@@ -76,28 +76,12 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the value of this segment as a <see cref="string"/>.
         /// </summary>
-        public string Value
-        {
-            get
-            {
-                if (HasValue)
-                {
-                    return Buffer.Substring(Offset, Length);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
+        public string Value => HasValue ? Buffer.Substring(Offset, Length) : null;
 
         /// <summary>
         /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
-        public bool HasValue
-        {
-            get { return Buffer != null; }
-        }
+        public bool HasValue => Buffer != null;
 
         /// <summary>
         /// Gets the <see cref="char"/> at a specified position in the current <see cref="StringSegment"/>.
@@ -125,6 +109,48 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <returns>The <see cref="ReadOnlySpan{T}"/> from this <see cref="StringSegment"/>.</returns>
         public ReadOnlySpan<char> AsSpan() => Buffer.AsSpan(Offset, Length);
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
+        /// at the position specified by <paramref name="start"/>, and has the remaining length.
+        /// </summary>
+        /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with the remaining chars that begins at <paramref name="start"/> in
+        /// this <see cref="StringSegment"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
+        public ReadOnlySpan<char> AsSpan(int start)
+        {
+            if (!HasValue || start < 0)
+            {
+                ThrowInvalidArguments(start, Length - start, ExceptionArgument.start);
+            }
+
+            return Buffer.AsSpan(Offset + start, Length - start);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> from the current <see cref="StringSegment"/> that starts
+        /// at the position specified by <paramref name="start"/>, and has the specified <paramref name="length"/>.
+        /// </summary>
+        /// <param name="start">The zero-based starting character position in this <see cref="StringSegment"/>.</param>
+        /// <param name="length">The number of characters in the span.</param>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> with length <paramref name="length"/> that begins at
+        /// <paramref name="start"/> in this <see cref="StringSegment"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> or <paramref name="length"/> is less than zero, or <paramref name="start"/> + <paramref name="length"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
+        public ReadOnlySpan<char> AsSpan(int start, int length)
+        {
+            if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
+            {
+                ThrowInvalidArguments(start, length, ExceptionArgument.start);
+            }
+
+            return Buffer.AsSpan(Offset + start, length);
+        }
 
         /// <summary>
         /// Gets a <see cref="ReadOnlyMemory{T}"/> from the current <see cref="StringSegment"/>.
@@ -372,7 +398,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length);
+                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
 
             return Buffer.Substring(Offset + offset, length);
@@ -405,7 +431,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length);
+                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
             }
 
             return new StringSegment(Buffer, Offset + offset, length);
@@ -669,7 +695,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
-        private void ThrowInvalidArguments(int offset, int length)
+        private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart)
         {
             throw GetInvalidArgumentsException(HasValue);
 
@@ -677,12 +703,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (!hasValue)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (offset < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (length < 0)

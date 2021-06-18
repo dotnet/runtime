@@ -97,7 +97,7 @@ struct LookupHolder
 {
     static void InitializeStatic();
 
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken);
+    void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken);
 
     LookupStub*    stub()         { LIMITED_METHOD_CONTRACT;  return &_stub;    }
 
@@ -317,7 +317,7 @@ struct DispatchHolder
 {
     static void InitializeStatic();
 
-    void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT,
+    void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT,
                      DispatchStub::DispatchStubType type);
 
     static size_t GetHolderSize(DispatchStub::DispatchStubType type)
@@ -453,7 +453,8 @@ struct ResolveHolder
 {
     static void  InitializeStatic();
 
-    void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+    void  Initialize(ResolveHolder* pResolveHolderRX, 
+                     PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32* counterAddr);
 
@@ -573,7 +574,7 @@ void LookupHolder::InitializeStatic()
     lookupInit.part3 [1]           = 0xE0;
 }
 
-void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
+void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
 {
     _stub = lookupInit;
 
@@ -632,7 +633,7 @@ void DispatchHolder::InitializeStatic()
     dispatchLongInit.part5 [1]        = 0xE0;
 };
 
-void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT,
+void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT,
                                DispatchStub::DispatchStubType type)
 {
     //
@@ -650,17 +651,18 @@ void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expe
     //
     if (type == DispatchStub::e_TYPE_SHORT)
     {
-        DispatchStubShort *shortStub = const_cast<DispatchStubShort *>(stub()->getShortStub());
+        DispatchStubShort *shortStubRW = const_cast<DispatchStubShort *>(stub()->getShortStub());
+        DispatchStubShort *shortStubRX = const_cast<DispatchStubShort *>(pDispatchHolderRX->stub()->getShortStub());
 
         // initialize the static data
-        *shortStub = dispatchShortInit;
+        *shortStubRW = dispatchShortInit;
 
         // fill in the dynamic data
-        size_t displ = (failTarget - ((PCODE) &shortStub->_failDispl + sizeof(DISPL)));
+        size_t displ = (failTarget - ((PCODE) &shortStubRX->_failDispl + sizeof(DISPL)));
         CONSISTENCY_CHECK(FitsInI4(displ));
-        shortStub->_failDispl   = (DISPL) displ;
-        shortStub->_implTarget  = (size_t) implTarget;
-        CONSISTENCY_CHECK((PCODE)&shortStub->_failDispl + sizeof(DISPL) + shortStub->_failDispl == failTarget);
+        shortStubRW->_failDispl   = (DISPL) displ;
+        shortStubRW->_implTarget  = (size_t) implTarget;
+        CONSISTENCY_CHECK((PCODE)&shortStubRX->_failDispl + sizeof(DISPL) + shortStubRX->_failDispl == failTarget);
     }
     else
     {
@@ -769,7 +771,8 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part10 [1]             = 0xE0;
 };
 
-void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX, 
+                                PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32* counterAddr)
 {

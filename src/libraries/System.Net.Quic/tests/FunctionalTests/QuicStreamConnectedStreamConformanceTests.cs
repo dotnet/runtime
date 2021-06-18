@@ -92,7 +92,7 @@ namespace System.Net.Quic.Tests
                 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
             };
         }
-        
+
         protected abstract QuicImplementationProvider Provider { get; }
 
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()

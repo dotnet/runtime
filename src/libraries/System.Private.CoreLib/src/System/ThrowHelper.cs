@@ -234,6 +234,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
+        {
+            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
             throw new ArgumentNullException(GetArgumentName(argument));
@@ -405,6 +411,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidHandle(string? paramName)
+        {
+            throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
@@ -480,6 +492,24 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        [DoesNotReturn]
+        internal static void ArgumentOutOfRangeException_Enum_Value()
+        {
+            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -756,6 +786,8 @@ namespace System
                     return "destinationArray";
                 case ExceptionArgument.pHandle:
                     return "pHandle";
+                case ExceptionArgument.handle:
+                    return "handle";
                 case ExceptionArgument.other:
                     return "other";
                 case ExceptionArgument.newSize:
@@ -802,6 +834,8 @@ namespace System
                     return "suffix";
                 case ExceptionArgument.buffer:
                     return "buffer";
+                case ExceptionArgument.buffers:
+                    return "buffers";
                 case ExceptionArgument.offset:
                     return "offset";
                 case ExceptionArgument.stream:
@@ -964,6 +998,8 @@ namespace System
                     return SR.Argument_InvalidFlag;
                 case ExceptionResource.CancellationTokenSource_Disposed:
                     return SR.CancellationTokenSource_Disposed;
+                case ExceptionResource.Argument_AlignmentMustBePow2:
+                    return SR.Argument_AlignmentMustBePow2;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1045,6 +1081,7 @@ namespace System
         destinationIndex,
         destinationArray,
         pHandle,
+        handle,
         other,
         newSize,
         lowerBounds,
@@ -1068,6 +1105,7 @@ namespace System
         prefix,
         suffix,
         buffer,
+        buffers,
         offset,
         stream
     }
@@ -1145,5 +1183,6 @@ namespace System
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
         CancellationTokenSource_Disposed,
+        Argument_AlignmentMustBePow2,
     }
 }

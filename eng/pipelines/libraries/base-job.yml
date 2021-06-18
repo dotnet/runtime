@@ -80,7 +80,6 @@ jobs:
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
           - _testModeArg: /p:TestAssemblies=false /p:TestPackages=true
-          - _extraHelixArguments: /p:TestPackages=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'

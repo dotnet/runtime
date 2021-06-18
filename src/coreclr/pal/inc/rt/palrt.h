@@ -1215,6 +1215,14 @@ typedef struct _DISPATCHER_CONTEXT {
     BOOLEAN ControlPcIsUnwound;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
+#elif defined(HOST_S390X)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // S390X does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #else
 
 #error Unknown architecture for defining DISPATCHER_CONTEXT.

@@ -1343,7 +1343,7 @@ namespace Microsoft.Win32
                 _delegate.DynamicInvoke((object[]?)arg);
             }
 
-            public override bool Equals(object? other)
+            public override bool Equals([NotNullWhen(true)] object? other)
             {
                 return other is SystemEventInvokeInfo otherInvoke && otherInvoke._delegate.Equals(_delegate);
             }

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -68,16 +69,19 @@ namespace System.Data
             BindTable(table);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return _val;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             return Eval();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             return Eval();

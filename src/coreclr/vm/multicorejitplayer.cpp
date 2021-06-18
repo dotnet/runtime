@@ -87,7 +87,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
                 "%p %p %d %d StoredMethodCode",
                 pMD,
                 codeInfo.GetEntryPoint(),
-                (int)codeInfo.WasTier0Jit(),
+                (int)codeInfo.WasTier0(),
                 (int)codeInfo.JitSwitchedToOptimized()));
         }
 #endif
@@ -131,7 +131,7 @@ MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDes
                     "%p %p %d %d QueryAndRemoveMethodCode",
                     pMethod,
                     codeInfo.GetEntryPoint(),
-                    (int)codeInfo.WasTier0Jit(),
+                    (int)codeInfo.WasTier0(),
                     (int)codeInfo.JitSwitchedToOptimized()));
             }
 #endif
@@ -521,7 +521,9 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
 
 #ifndef DACCESS_COMPILE
 MulticoreJitPrepareCodeConfig::MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
-    PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE), m_wasTier0Jit(false)
+    // Method code that was pregenerated and loaded is recorded in the multi-core JIT profile, so enable multi-core JIT to also
+    // look up pregenerated code to help parallelize the work
+    PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, TRUE), m_wasTier0(false)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -548,9 +550,9 @@ MulticoreJitCodeInfo::MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitP
     _ASSERTE((m_entryPointAndTierInfo & (TADDR)TierInfo::Mask) == 0);
 
 #ifdef FEATURE_TIERED_COMPILATION
-    if (pConfig->WasTier0Jit())
+    if (pConfig->WasTier0())
     {
-        m_entryPointAndTierInfo |= (TADDR)TierInfo::WasTier0Jit;
+        m_entryPointAndTierInfo |= (TADDR)TierInfo::WasTier0;
     }
 
     if (pConfig->JitSwitchedToOptimized())
@@ -890,7 +892,6 @@ HRESULT MulticoreJitProfilePlayer::HandleNonGenericMethodInfoRecord(unsigned mod
             // Similar to Module::FindMethod + Module::FindMethodThrowing,
             // except it calls GetMethodDescFromMemberDefOrRefOrSpec with strictMetadataChecks=FALSE to allow generic instantiation
             MethodDesc * pMethod = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(pModule, token, NULL, FALSE, FALSE);
-
             CompileMethodInfoRecord(pModule, pMethod, false);
         }
         else
@@ -1292,7 +1293,6 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 unsigned curdata1 = * (const unsigned *) pCurBuf;
                 unsigned currcdTyp = curdata1 >> RECORD_TYPE_OFFSET;
                 unsigned curmoduleIndex = curdata1 & MODULE_MASK;
-                unsigned curflags = curdata1 & METHOD_FLAGS_MASK;
 
                 if (currcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
                 {

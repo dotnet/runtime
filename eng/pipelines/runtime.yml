@@ -758,11 +758,11 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - windows_x64
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
+      useHelix: false
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

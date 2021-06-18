@@ -1386,5 +1386,22 @@ namespace System.Numerics
             Debug.Assert((index >= 0) && (index < Vector<T>.Count));
             Unsafe.Add(ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector)), index) = value;
         }
+
+        /// <summary>
+        /// Returns the sum of all elements inside the vector.
+        /// </summary>
+        [Intrinsic]
+        public static T Sum<T>(Vector<T> value)
+            where T : struct
+        {
+            T sum = default;
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                sum = Scalar<T>.Add(sum, value.GetElementUnsafe(index));
+            }
+
+            return sum;
+        }
     }
 }

@@ -715,6 +715,11 @@ public:
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
             const bool isValueType = (m_argType == ELEMENT_TYPE_VALUETYPE);
             const bool isFloatHfa = (isValueType && !m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA());
+            if (isFloatHfa)
+            {
+                CorInfoHFAElemType type = m_argTypeHandle.GetHFAType();
+                pLoc->setHFAFieldSize(type);
+            }
             pLoc->m_byteStackSize = StackElemSize(byteArgSize, isValueType, isFloatHfa);
         }
     }

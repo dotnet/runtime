@@ -74,6 +74,42 @@ namespace System.IO.Tests
         }
     }
 
+    public class FileInfo_Open_options_as : FileStream_ctor_options_as
+    {
+        protected override FileStream CreateFileStream(string path, FileMode mode)
+        {
+            return new FileInfo(path).Open(
+                new FileStreamOptions {
+                    Mode = mode,
+                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite,
+                    PreallocationSize = PreallocationSize
+                });
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
+        {
+            return new FileInfo(path).Open(
+                new FileStreamOptions {
+                    Mode = mode,
+                    Access = access,
+                    PreallocationSize = PreallocationSize
+                });
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        {
+            return new FileInfo(path).Open(
+                new FileStreamOptions {
+                    Mode = mode,
+                    Access = access,
+                    Share = share,
+                    Options = options,
+                    BufferSize = bufferSize,
+                    PreallocationSize = PreallocationSize
+                });
+        }
+    }
+
     public class FileInfo_OpenSpecial : FileStream_ctor_str_fm_fa_fs
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)

@@ -26,6 +26,14 @@ namespace ILCompiler
         public virtual bool VersionsWithType(TypeDesc typeDesc) => ContainsType(typeDesc);
 
         /// <summary>
+        /// Returns true when all of the tokens necessary to refer to a given type belong to the same version
+        /// bubble as the compilation module group. By default return the same outcome as VersionsWithType.
+        /// </summary>
+        /// <param name="typeDesc">Type to check</param>
+        /// <returns>True if the given type can safely be referred to within the current compilation module group</returns>
+        public virtual bool VersionsWithTypeReference(TypeDesc typeDesc) => VersionsWithType(typeDesc);
+
+        /// <summary>
         /// Returns true when a given method belongs to the same version bubble as the compilation module group.
         /// By default return the same outcome as ContainsMethodBody.
         /// </summary>

@@ -118,7 +118,6 @@
     <Folder Include="Legacy\Manual\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="..\src\System.IO.Ports.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

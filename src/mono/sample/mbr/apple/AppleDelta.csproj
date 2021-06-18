@@ -3,8 +3,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\</MicrosoftNetCoreAppRuntimePackDir>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <MonoForceInterpreter>true</MonoForceInterpreter>
@@ -28,16 +27,6 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
   </PropertyGroup>
-
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
-  </Target>
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
@@ -63,7 +52,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="AppleDelta"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
 	NativeMainSource="$(MSBuildThisFileDirectory)\main.m"
         MainLibraryFileName="AppleDelta.dll"

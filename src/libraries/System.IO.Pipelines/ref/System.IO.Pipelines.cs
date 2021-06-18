@@ -71,6 +71,7 @@ namespace System.IO.Pipelines
         public abstract void Advance(int bytes);
         public virtual System.IO.Stream AsStream(bool leaveOpen = false) { throw null; }
         public abstract void CancelPendingFlush();
+        public virtual bool CanGetUnflushedBytes => throw null;
         public abstract void Complete(System.Exception? exception = null);
         public virtual System.Threading.Tasks.ValueTask CompleteAsync(System.Exception? exception = null) { throw null; }
         protected internal virtual System.Threading.Tasks.Task CopyFromAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -80,6 +81,7 @@ namespace System.IO.Pipelines
         public abstract System.Span<byte> GetSpan(int sizeHint = 0);
         [System.ObsoleteAttribute("OnReaderCompleted may not be invoked on all implementations of PipeWriter. This will be removed in a future release.")]
         public virtual void OnReaderCompleted(System.Action<System.Exception?, object?> callback, object? state) { }
+        public virtual long UnflushedBytes => throw null;
         public virtual System.Threading.Tasks.ValueTask<System.IO.Pipelines.FlushResult> WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public readonly partial struct ReadResult

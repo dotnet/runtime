@@ -366,7 +366,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public async Task TestFaulting()
         {
             for (int trial = 0; trial < 3; trial++)

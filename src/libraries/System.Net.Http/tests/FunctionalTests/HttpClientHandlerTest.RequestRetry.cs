@@ -19,6 +19,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task GetAsyncOnNewConnection_RetryOnConnectionClosed_Success()
         {
             await LoopbackServer.CreateClientAndServerAsync(async url =>

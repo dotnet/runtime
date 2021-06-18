@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Caching.Configuration;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
@@ -36,6 +37,12 @@ namespace System.Runtime.Caching
         private CacheMemoryMonitor _cacheMemoryMonitor;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("browser")]
+        private static bool _configSupported => !OperatingSystem.IsBrowser();
+#else
+        private static bool _configSupported => true;
+#endif
 
         // private
 
@@ -117,7 +124,7 @@ namespace System.Runtime.Caching
         private void InitializeConfiguration(NameValueCollection config)
         {
             MemoryCacheElement element = null;
-            if (!_memoryCache.ConfigLess)
+            if (!_memoryCache.ConfigLess && _configSupported)
             {
                 MemoryCacheSection section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
                 if (section != null)
@@ -126,7 +133,7 @@ namespace System.Runtime.Caching
                 }
             }
 
-            if (element != null)
+            if (element != null && _configSupported)
             {
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;

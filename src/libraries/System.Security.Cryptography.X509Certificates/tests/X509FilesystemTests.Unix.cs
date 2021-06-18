@@ -634,7 +634,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509Certificate2Collection storeACerts = storeATracker.Collection;
                 X509Certificate2Collection storeBCerts = storeBTracker.Collection;
 
-                Assert.Equal(storeACerts.OfType<X509Certificate2>(), storeBCerts.OfType<X509Certificate2>());
+                Assert.Equal(storeACerts, storeBCerts);
             }
         }
 

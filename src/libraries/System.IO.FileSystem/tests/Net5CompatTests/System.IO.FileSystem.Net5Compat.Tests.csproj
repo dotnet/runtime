@@ -19,10 +19,12 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Remove="..\**\*.Unix.cs" />
     <Compile Remove="..\**\*.Browser.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="Common\Interop\Windows\Interop.MemOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs" Link="Common\Interop\Windows\Interop.VirtualAlloc_Ptr.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Remove="..\**\*.Unix.cs" />

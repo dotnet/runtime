@@ -2311,10 +2311,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	 *   in 1 or 2 integer registers.
 	 */
 	switch (cinfo->ret.storage) {
-	case RegTypeGeneral:
 	case RegTypeNone:
+		linfo->ret.storage = LLVMArgNone;
+		break;
+	case RegTypeGeneral:
 	case RegTypeFP:
 	case RegTypeIRegPair:
+		linfo->ret.storage = LLVMArgNormal;
 		break;
 	case RegTypeStructByAddr:
 		if (sig->pinvoke) {

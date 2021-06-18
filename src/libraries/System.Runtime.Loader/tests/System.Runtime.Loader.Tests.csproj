@@ -39,6 +39,8 @@
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.csproj" />
+
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
@@ -53,6 +55,9 @@
       <!-- Don't modify EnC test assemblies -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll'))"
           Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>

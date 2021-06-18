@@ -17,6 +17,9 @@
     <IncludeVersionInMacOSComponentName>false</IncludeVersionInMacOSComponentName>
     <MacOSScriptsDirectory>osx_scripts/host</MacOSScriptsDirectory>
     <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
+    <RpmScriptsDirectory>$(MSBuildThisFileDirectory)rpm_scripts/host</RpmScriptsDirectory>
+    <RpmAfterInstallScript>$(RpmScriptsDirectory)/after_install.sh</RpmAfterInstallScript>
+    <RpmAfterRemoveScript>$(RpmScriptsDirectory)/after_remove.sh</RpmAfterRemoveScript>
   </PropertyGroup>
 
   <ItemGroup>
@@ -68,6 +71,8 @@
     <ItemGroup>
       <DebJsonProperty Include="symlinks" Object="{ &quot;dotnet&quot;: &quot;/usr/bin/dotnet&quot; }" />
       <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/dotnet-host&quot; ]" />
+      <RpmJsonProperty Include="after_install_source" Object="&quot;$(RpmAfterInstallScript)&quot;" />
+      <RpmJsonProperty Include="after_remove_source" Object="&quot;$(RpmAfterRemoveScript)&quot;" />
       <PackageConflictsProperty Include="package_conflicts" Object="[ &quot;dotnet&quot;, &quot;dotnet-nightly&quot; ]" />
       <DebJsonProperty Include="@(PackageConflictsProperty)" />
       <RpmJsonProperty Include="@(PackageConflictsProperty)" />

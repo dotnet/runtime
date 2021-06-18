@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics.CodeAnalysis;
 
 internal static partial class Interop
 {
@@ -411,7 +412,7 @@ internal static partial class Interop
 
             public bool Equals(X509VerifyStatusCode other) => Code == other.Code;
 
-            public override bool Equals(object? obj) => obj is X509VerifyStatusCode other && Equals(other);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is X509VerifyStatusCode other && Equals(other);
 
             public override int GetHashCode() => Code.GetHashCode();
 

@@ -72,5 +72,30 @@ namespace System.IO.Tests
                 Assert.Equal(encoding.EncodingName, reader.CurrentEncoding.EncodingName);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(DetectEncoding_EncodingRoundtrips_MemberData))]
+        public void DetectEncoding_EncodingRoundtrips_Path(Encoding encoding)
+        {
+            const string Text = "This is some text for testing.";
+            string path = GetTestFilePath();
+
+            using (var writer = new StreamWriter(path, false, encoding))
+            {
+                writer.Write(Text);
+            }
+
+            using (var reader = new StreamReader(path, detectEncodingFromByteOrderMarks: true))
+            {
+                Assert.Equal(Text, reader.ReadToEnd());
+                Assert.Equal(encoding.EncodingName, reader.CurrentEncoding.EncodingName);
+            }
+
+            using (var reader = new StreamReader(path, encoding))
+            {
+                Assert.Equal(Text, reader.ReadToEnd());
+                Assert.Equal(encoding.EncodingName, reader.CurrentEncoding.EncodingName);
+            }
+        }
     }
 }
