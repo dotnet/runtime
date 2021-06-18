@@ -109,8 +109,8 @@ try {
 
 // abstract all IO into a compact universally available method so that it is consistent and reliable
 const IOHandler = {
-	load: null,
-	read: null,
+	load: null, // load js file into project and evaluate it
+	read: null, // return the contents of a file as a string
 
 	init: function() {
 		// load: function that loads and executes a script
@@ -152,17 +152,17 @@ const IOHandler = {
 		IOHandler.read = async (file) => await readFunc(file);
 	},
 
-	writeContentToFile: function(content, path) {
+	writeContentToFile: function(content, path) { // writes a string to a file
 		const stream = FS.open(path, 'w+');
 		FS.write(stream, content, 0, content.length, 0);
 		FS.close(stream);
 	},
 
-	fetch: function(asset, params) {
+	fetch: function(asset, params) { // returns an async fetch request in the form of {ok: boolean, url: string, arrayBuffer: Promise<Uint8Array>}
 		if (is_browser) {
 			return fetch (asset, params);
 
-		} else {
+		} else { // shells and node
 			return new Promise ((resolve, reject) => {
 				let bytes = null, error = null;
 				try {
