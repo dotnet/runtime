@@ -45,7 +45,9 @@ namespace System.Runtime.InteropServices
             {
                 if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                 {
-                    throw new Exception(); // TODO: can this throw Win32Exception?
+                    // We can't use Win32Exception because that causes a cycle with
+                    // Microsoft.Win32.Primitives.
+                    Interop.CheckIo(-1);
                 }
                 Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
                 s_initialized = true;
