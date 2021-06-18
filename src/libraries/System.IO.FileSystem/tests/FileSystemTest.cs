@@ -55,32 +55,6 @@ namespace System.IO.Tests
             }
         }
 
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
-
-        private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
-        {
-            // Verify file symlink creation
-            string path = Path.GetTempFileName();
-            string linkPath = path + ".link";
-            bool success = MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false);
-            try { File.Delete(path); } catch { }
-            try { File.Delete(linkPath); } catch { }
-
-            // Verify directory symlink creation
-            path = Path.GetTempFileName();
-            linkPath = path + ".link";
-            success = success && MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true);
-            try { Directory.Delete(path); } catch { }
-            try { Directory.Delete(linkPath); } catch { }
-
-            return success;
-        });
-
         public static string GetNamedPipeServerStreamName()
         {
             if (PlatformDetection.IsInAppContainer)
