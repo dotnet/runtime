@@ -253,13 +253,10 @@ namespace System.Text.Json
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             int stackSize = Math.Max(_count, _continuationCount);
-            if (stackSize > 1)
+            for (int i = 0; i < stackSize - 1; i++)
             {
-                for (int i = 0; i < stackSize - 1; i++)
-                {
-                    Debug.Assert(_previous[i].AsyncEnumerator is null);
-                    DisposeFrame(_previous[i].CollectionEnumerator, ref exception);
-                }
+                Debug.Assert(_previous[i].AsyncEnumerator is null);
+                DisposeFrame(_previous[i].CollectionEnumerator, ref exception);
             }
 
             if (exception is not null)
@@ -294,12 +291,9 @@ namespace System.Text.Json
             exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
 
             int stackSize = Math.Max(_count, _continuationCount);
-            if (stackSize > 1)
+            for (int i = 0; i < stackSize - 1; i++)
             {
-                for (int i = 0; i < stackSize - 1; i++)
-                {
-                    exception = await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator, exception).ConfigureAwait(false);
-                }
+                exception = await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator, exception).ConfigureAwait(false);
             }
 
             if (exception is not null)
@@ -353,7 +347,7 @@ namespace System.Text.Json
 
             return sb.ToString();
 
-            void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
+            static void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
             {
                 // Append the property name.
                 string? propertyName = frame.DeclaredJsonPropertyInfo?.MemberInfo?.Name;
@@ -366,7 +360,7 @@ namespace System.Text.Json
                 AppendPropertyName(sb, propertyName);
             }
 
-            void AppendPropertyName(StringBuilder sb, string? propertyName)
+            static void AppendPropertyName(StringBuilder sb, string? propertyName)
             {
                 if (propertyName != null)
                 {

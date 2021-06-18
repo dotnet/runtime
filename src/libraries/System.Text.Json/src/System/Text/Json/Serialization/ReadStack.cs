@@ -258,8 +258,7 @@ namespace System.Text.Json
 
                 if (frame.JsonTypeInfo != null && frame.IsProcessingEnumerable())
                 {
-                    IEnumerable? enumerable = (IEnumerable?)frame.ReturnValue;
-                    if (enumerable == null)
+                    if (frame.ReturnValue is not IEnumerable enumerable)
                     {
                         return;
                     }
