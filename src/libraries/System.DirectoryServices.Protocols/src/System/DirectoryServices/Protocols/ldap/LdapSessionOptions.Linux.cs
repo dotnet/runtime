@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ReferralChasingOptions));
                 }
-                if (!(value == ReferralChasingOptions.None || value == ReferralChasingOptions.All))
+                if (value != ReferralChasingOptions.None || value != ReferralChasingOptions.All)
                 {
                     throw new PlatformNotSupportedException(SR.ReferralChasingOptionsNotSupported);
                 }
