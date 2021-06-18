@@ -466,10 +466,9 @@ namespace System.IO
                 }
             }
 
-            byte[]? buffer = null;
+            byte[]? buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE); ;
             try
             {
-                buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
                 bool success = Interop.Kernel32.DeviceIoControl(
                     handle,
                     dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
@@ -536,32 +535,83 @@ namespace System.IO
                 return null;
             }
 
+            // We try to open the final file, not the Reparse Point.
             using SafeFileHandle handle = OpenSafeFileHandle(linkPath,
                     Interop.Kernel32.FileOperations.OPEN_EXISTING |
                     Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);
 
             if (handle.IsInvalid)
             {
-                Win32Marshal.GetExceptionForLastWin32Error(linkPath);
+                // If the handle fails with "not found", is becuse the link was broken.
+                // We need to fallback to manually traverse the link targets and return the target of the last resolved link.
+                int error = Marshal.GetLastWin32Error();
+                if (error == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                    error == Interop.Errors.ERROR_PATH_NOT_FOUND)
+                {
+                    return GetFinalLinkTargetSlow(linkPath);
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(error, linkPath);
             }
 
-            char* buffer = stackalloc char[Interop.Kernel32.MAX_PATH];
-            uint res = Interop.Kernel32.GetFinalPathNameByHandle(handle, buffer, Interop.Kernel32.MAX_PATH, Interop.Kernel32.FILE_NAME_NORMALIZED);
-
-            // If the function fails because lpszFilePath is too small to hold the string plus the terminating null character,
-            // the return value is the required buffer size, in TCHARs. This value includes the size of the terminating null character.
-            // .NET dev note: This should never happen.
-            Debug.Assert(res <= Interop.Kernel32.MAX_PATH);
-
-            // If the function fails for any other reason, the return value is zero.
-            if (res == 0)
+            const int InitialBufferSize = 4096;
+            char[]? buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
+            try
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(linkPath);
+                uint result = GetFinalPathNameByHandle(handle, buffer);
+
+                // If the function fails because lpszFilePath is too small to hold the string plus the terminating null character,
+                // the return value is the required buffer size, in TCHARs. This value includes the size of the terminating null character.
+                if (result > InitialBufferSize)
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                    buffer = null;
+                    buffer = ArrayPool<char>.Shared.Rent((int)result);
+
+                    result = GetFinalPathNameByHandle(handle, buffer);
+                }
+
+                // If the function fails for any other reason, the return value is zero.
+                if (result == 0)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(linkPath);
+                }
+
+                // If the function succeeds, the return value is the length of the string received by lpszFilePath, in TCHARs.
+                // This value does not include the size of the terminating null character.
+                return new string(buffer, 0, (int)result);
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                }
             }
 
-            // If the function succeeds, the return value is the length of the string received by lpszFilePath, in TCHARs.
-            // This value does not include the size of the terminating null character.
-            return new string(buffer, 0, (int)res);
+            uint GetFinalPathNameByHandle(SafeFileHandle handle, char[] buffer)
+            {
+                fixed (char* bufPtr = buffer)
+                {
+                    return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
+                }
+            }
+
+            string? GetFinalLinkTargetSlow(string linkPath)
+            {
+                // Since all these paths will be passed to CreateFile, which takes a string anyway, it is pointless to use span.
+                // I am not sure if it's possible to change CreateFile's param to ROS<char> and avoid all these allocations.
+                string? current = GetImmediateLinkTarget(linkPath, isDirectory, throwOnNotFound: false, normalize: true);
+                string? prev = null;
+
+                while (current != null)
+                {
+                    prev = current;
+                    current = GetImmediateLinkTarget(current, isDirectory, throwOnNotFound: false, normalize: true);
+                }
+
+                return prev;
+            }
         }
 
         private static unsafe SafeFileHandle OpenSafeFileHandle(string path, int flags)
