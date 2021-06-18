@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
@@ -273,7 +274,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus status = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -361,7 +362,7 @@ namespace System.Net.Http.Functional.Tests
                         activityStopResponseLogged = GetProperty<HttpResponseMessage>(kvp.Value, "Response");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -426,7 +427,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -484,7 +485,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.False(request.Headers.TryGetValues("traceparent", out var _));
                         Assert.False(request.Headers.TryGetValues("tracestate", out var _));
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -536,7 +537,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
                     {
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -625,7 +626,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -664,7 +665,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -813,44 +814,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedActivityPropagationWithoutListener()
-        {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                Activity parent = new Activity("parent").Start();
-
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                    async uri =>
-                    {
-                        await GetAsync(useVersion, testAsync, uri);
-                    },
-                    async server =>
-                    {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
-                        AssertHeadersAreInjected(requestData, parent);
-                    });
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity()
-        {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                    async uri =>
-                    {
-                        await GetAsync(useVersion, testAsync, uri);
-                    },
-                    async server =>
-                    {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
-                        AssertNoHeadersAreInjected(requestData);
-                    });
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
-        }
-
         [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true")]
         [InlineData("1")]
@@ -914,6 +877,117 @@ namespace System.Net.Http.Functional.Tests
                     },
                     async server => await server.HandleRequestAsync());
             }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true, true, true)]    // Activity was set and ActivitySource created an Activity
+        [InlineData(true, false, true, true)]   // Activity was set and ActivitySource created an Activity
+        [InlineData(true, null, true, true)]    // Activity was set and ActivitySource created an Activity
+        [InlineData(true, true, false, true)]   // Activity was set, ActivitySource chose not to create an Activity, but a DiagnosticListener requested one
+        [InlineData(true, false, false, false)] // Activity was set but ActivitySource chose not to create an Activity
+        [InlineData(true, null, false, false)]  // Activity was set but ActivitySource chose not to create an Activity
+        [InlineData(true, true, null, true)]    // Activity was set and there is no ActivitySource
+        [InlineData(true, false, null, true)]   // Activity was set and there is no ActivitySource
+        [InlineData(true, null, null, true)]    // Activity was set and there is no ActivitySource
+        [InlineData(false, true, true, true)]   // DiagnosticListener requested an Activity and ActivitySource created an Activity
+        [InlineData(false, true, false, true)]  // DiagnosticListener requested an Activity, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(false, true, null, true)]   // DiagnosticListener requested an Activity, there was no ActivitySource, so an Activity was manually created
+        [InlineData(false, false, true, false, false)]  // No Activity is set and DiagnosticListener does not want one (ActivitySource does not come into play)
+        [InlineData(false, false, false, false, false)] // No Activity is set and DiagnosticListener does not want one (ActivitySource does not come into play)
+        [InlineData(false, false, null, false, false)]  // No Activity is set and DiagnosticListener does not want one (ActivitySource does not come into play)
+        [InlineData(false, null, true, false, false)]   // No Activity is set and there is no DiagnosticListener (ActivitySource does not come into play)
+        [InlineData(false, null, false, false, false)]  // No Activity is set and there is no DiagnosticListener (ActivitySource does not come into play)
+        [InlineData(false, null, null, false, false)]   // No Activity is set and there is no DiagnosticListener (ActivitySource does not come into play)
+        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity, bool shouldHaveActivity, bool activitySourceShouldMakeASamplingDecision = true)
+        {
+            string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity},{shouldHaveActivity},{activitySourceShouldMakeASamplingDecision}";
+
+            RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            {
+                bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
+                bool currentActivitySet = parameters[0].Value;
+                bool? diagnosticListenerActivityEnabled = parameters[1];
+                bool? activitySourceCreatesActivity = parameters[2];
+                bool shouldHaveActivity = parameters[3].Value;
+                bool activitySourceShouldMakeASamplingDecision = parameters[4].Value && activitySourceCreatesActivity.HasValue;
+
+                bool madeASamplingDecision = false;
+                if (activitySourceCreatesActivity.HasValue)
+                {
+                    var listener = new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        Sample = Sample
+                    };
+
+                    ActivitySamplingResult Sample(ref ActivityCreationOptions<ActivityContext> options)
+                    {
+                        madeASamplingDecision = true;
+                        return activitySourceCreatesActivity.Value ? ActivitySamplingResult.AllData : ActivitySamplingResult.None;
+                    }
+
+                    ActivitySource.AddActivityListener(listener);
+                }
+
+                bool listenerCallbackWasCalled = false;
+                IDisposable listenerSubscription = new MemoryStream(); // Dummy disposable
+                if (diagnosticListenerActivityEnabled.HasValue)
+                {
+                    var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(_ => listenerCallbackWasCalled = true);
+
+                    diagnosticListenerObserver.Enable(name => !name.Contains("HttpRequestOut") || diagnosticListenerActivityEnabled.Value);
+
+                    listenerSubscription = DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
+                }
+
+                Activity activity = currentActivitySet ? new Activity("parent").Start() : null;
+
+                if (!currentActivitySet)
+                {
+                    // Listen to new activity creations if an Activity was created without a parent
+                    // (when a DiagnosticListener forced one to be created)
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        ActivityStarted = created =>
+                        {
+                            Assert.Null(activity);
+                            activity = created;
+                        }
+                    });
+                }
+
+                using (listenerSubscription)
+                {
+                    await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            await GetAsync(useVersion, testAsync, uri);
+                        },
+                        async server =>
+                        {
+                            HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
+
+                            if (shouldHaveActivity)
+                            {
+                                Assert.NotNull(activity);
+                                AssertHeadersAreInjected(requestData, activity);
+                            }
+                            else
+                            {
+                                AssertNoHeadersAreInjected(requestData);
+
+                                if (!currentActivitySet)
+                                {
+                                    Assert.Null(activity);
+                                }
+                            }
+                        });
+                }
+
+                Assert.Equal(activitySourceShouldMakeASamplingDecision, madeASamplingDecision);
+                Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
         }
 
         private static T GetProperty<T>(object obj, string propertyName)
