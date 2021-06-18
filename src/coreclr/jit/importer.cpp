@@ -5295,7 +5295,7 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
     if (opts.OptimizationEnabled() && objToKeepAlive->IsBoxedValue())
     {
         CORINFO_CLASS_HANDLE boxedClass = lvaGetDesc(objToKeepAlive->AsBox()->BoxOp()->AsLclVar())->lvClassHnd;
-        GenTree*             boxSrc     = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, Compiler::BR_REMOVE_BUT_NOT_NARROW);
+        GenTree*             boxSrc = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, Compiler::BR_REMOVE_BUT_NOT_NARROW);
 
         if (boxSrc != nullptr)
         {
@@ -5346,7 +5346,7 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
         }
     }
 
-    return gtNewKeepAliveNode(objToKeepAlive);;
+    return gtNewKeepAliveNode(objToKeepAlive);
 }
 
 bool Compiler::verMergeEntryStates(BasicBlock* block, bool* changed)
