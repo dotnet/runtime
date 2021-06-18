@@ -4117,6 +4117,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
+                varDsc->lvSpillAtSingleDef = false;
 
                 if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
                 {
@@ -4557,6 +4558,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                         // count those in our heuristic for register allocation, since they always
                         // must be stored, so there's no value in enregistering them at defs; only
                         // if there are enough uses to justify it.
+                        // 
+                        //TODO: May be applicable for single-def as well.
                         if (varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
                             ((node->gtFlags & GTF_VAR_DEF) != 0))
                         {
@@ -7495,10 +7498,15 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" EH-live");
     }
-    if (varDsc->lvSingleDef)
+    if (varDsc->lvSpillAtSingleDef)
+    {
+        printf(" spill-single-def");
+    }
+    else if (varDsc->lvSingleDefRegCandidate)
     {
         printf(" single-def");
     }
+    
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
         printf(" double-align");

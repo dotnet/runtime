@@ -196,9 +196,9 @@ BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr)
+                if (varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef)
                 {
-                    // An EH var is always spilled at defs, and we'll decrease the weight by half,
+                    // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
                     weight = weight / 2;
                 }
@@ -1800,7 +1800,7 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvLiveInOutOfHndlr)
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
-                setIntervalAsSpilled(newInt);
+                setIntervalAsSpilled(newInt); // TODO: Explore what happens if we mark interval as spilled right here.
             }
 
             INTRACK_STATS(regCandidateVarCount++);
@@ -6044,11 +6044,16 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             {
                 treeNode->gtFlags |= GTF_SPILL;
                 treeNode->gtFlags |= GTF_SPILLED;
+
+
                 if (treeNode->IsMultiReg())
                 {
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
                 }
             }
+
+            // TODO: See if this can be outside the if-check.
+            varDsc->lvSpillAtSingleDef = true;
         }
     }
 
@@ -9714,12 +9719,12 @@ void LinearScan::dumpLsraAllocationEvent(
 
         case LSRA_EVENT_DONE_KILL_GC_REFS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Done       ");
+            printf("Done          ");
             break;
 
         case LSRA_EVENT_NO_GC_KILLS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("None       ");
+            printf("None          ");
             break;
 
         // Block boundaries

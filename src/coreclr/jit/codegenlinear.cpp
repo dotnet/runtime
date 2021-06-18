@@ -175,6 +175,16 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
+         ////////////
+         //compiler->opts.dspCode    = true;
+         //compiler->opts.dspEHTable = true;
+         //compiler->opts.dspGCtbls  = true;
+         //compiler->opts.disAsm2    = true;
+         //compiler->opts.dspUnwind  = true;
+         //compiler->verbose         = true;
+         //compiler->codeGen->setVerbose(true);
+     ///////////
+
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
 #ifdef DEBUG
@@ -229,7 +239,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     newRegByrefSet |= varDsc->lvRegMask();
                 }
-                if (!varDsc->lvLiveInOutOfHndlr)
+                if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
                 {
 #ifdef DEBUG
                     if (verbose && VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varIndex))
@@ -240,7 +250,7 @@ void CodeGen::genCodeForBBlist()
                     VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varIndex);
                 }
             }
-            if ((!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr) && compiler->lvaIsGCTracked(varDsc))
+            if ((!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef) && compiler->lvaIsGCTracked(varDsc))
             {
 #ifdef DEBUG
                 if (verbose && !VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varIndex))
@@ -875,7 +885,7 @@ void CodeGen::genSpillVar(GenTree* tree)
 
         // If this is a write-thru or a single-def variable, we don't actually spill at a use,
         // but we will kill the var in the reg (below).
-        if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSingleDefRegCandidate)
+        if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
         {
             instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
@@ -919,7 +929,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     else
     {
         // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar.
-        assert((varDsc->lvLiveInOutOfHndlr | varDsc->lvSingleDefRegCandidate) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
+        assert((varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
 #ifdef USING_VARIABLE_LIVE_RANGE
@@ -1055,7 +1065,7 @@ void CodeGen::genUnspillLocal(
         }
 #endif // USING_VARIABLE_LIVE_RANGE
 
-        if (!varDsc->lvLiveInOutOfHndlr)
+        if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
         {
 #ifdef DEBUG
             if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
@@ -2049,7 +2059,7 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     // spilled, i.e. write-thru).
     // An EH var use is always valid on the stack (so we don't need to actually spill it),
     // but the GTF_SPILL flag records the fact that the register value is going dead.
-    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->lvLiveInOutOfHndlr)
+    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef))
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.

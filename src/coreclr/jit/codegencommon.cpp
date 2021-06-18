@@ -554,7 +554,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         // If this is going live, the register must not have a variable in it, except
         // in the case of an exception variable, which may be already treated as live
         // in the register.
-        assert(varDsc->lvLiveInOutOfHndlr || ((regSet.GetMaskVars() & regMask) == 0));
+        assert(varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
 }
@@ -736,7 +736,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
         bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
         bool       isInReg    = varDsc->lvIsInReg();
-        bool       isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        bool       isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef;
 
         if (isInReg)
         {
@@ -778,7 +778,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         {
             // If this variable is going live in a register, it is no longer live on the stack,
             // unless it is an EH var, which always remains live on the stack.
-            if (!varDsc->lvLiveInOutOfHndlr)
+            if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
             {
 #ifdef DEBUG
                 if (VarSetOps::IsMember(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex))
@@ -3704,7 +3704,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
 
             regArgTab[regArgNum + i].processed = false;
-            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
+            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && (varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef));
 
             /* mark stack arguments since we will take care of those first */
             regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
@@ -4762,7 +4762,7 @@ void CodeGen::genCheckUseBlockInit()
                     {
                         if (!varDsc->lvRegister)
                         {
-                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr)
+                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef)
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
@@ -7125,7 +7125,7 @@ void CodeGen::genFnProlog()
         }
 
         bool isInReg    = varDsc->lvIsInReg();
-        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef;
 
         // Note that 'lvIsInReg()' will only be accurate for variables that are actually live-in to
         // the first block. This will include all possibly-uninitialized locals, whose liveness
@@ -11422,7 +11422,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             {
                 varReg = REG_STK;
             }
-            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr)
+            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr || fieldVarDsc->lvSpillAtSingleDef)
             {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {

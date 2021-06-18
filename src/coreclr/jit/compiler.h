@@ -450,6 +450,8 @@ public:
                                                // Currently, it is the criteria to decide if an EH variable can be
                                                // a register candiate or not.
 
+    unsigned char lvSpillAtSingleDef : 1;
+
     unsigned char lvDisqualifySingleDefRegCandidate : 1; // tracks variable that are disqualified from register
                                                          // candidancy
 
