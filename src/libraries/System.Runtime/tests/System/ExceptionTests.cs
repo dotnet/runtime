@@ -92,6 +92,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void Exception_TargetSite_OtherMethod()
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => ThrowException());
@@ -99,6 +100,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void Exception_TargetSite_Rethrow()
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => RethrowException());

@@ -37,11 +37,6 @@
         <target state="new">Logging methods cannot have a body</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodInNestedTypeMessage">
-        <source>Logging class cannot be in nested types</source>
-        <target state="new">Logging class cannot be in nested types</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodIsGenericMessage">
         <source>Logging methods cannot be generic</source>
         <target state="new">Logging methods cannot be generic</target>

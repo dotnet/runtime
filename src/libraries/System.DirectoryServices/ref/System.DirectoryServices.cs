@@ -707,9 +707,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { }
     }
@@ -754,9 +754,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { }
     }
@@ -811,9 +811,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { }
     }
@@ -868,9 +868,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { }
     }
@@ -918,9 +918,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySubnet subnet) { }
         protected override void OnClear() { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySubnet subnet) { }
     }
@@ -1138,9 +1138,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.DirectoryServer server) { }
         protected override void OnClear() { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.DirectoryServer server) { }
     }
