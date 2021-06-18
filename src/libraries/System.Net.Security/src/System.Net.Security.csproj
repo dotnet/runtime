@@ -231,7 +231,17 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs"
-             Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs" />
+	    Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs" />
+	        <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCloseStore.cs"
+			Link="Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs" />
+	        <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertOpenStore.cs"
+			Link="Common\Interop\Windows\Crypt32\Interop.CertOpenStore.cs" />
+		<Compile Include="..\..\System.Windows.Extensions\src/System\Security\Cryptography\X509Certificates\SafeX509Handles.cs" />
+			<!---			Link="Common\Interop\Windows\Crypt32\Interop.CertOpenStore.cs" /> -->
+		<Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
+			Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+		<compile Include="..\..\System.Security.Cryptography.X509Certificates/src/Internal/Cryptography/Pal.Windows/Native/Primitives.cs" />
+
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
