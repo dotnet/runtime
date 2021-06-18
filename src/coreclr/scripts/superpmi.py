@@ -1621,8 +1621,12 @@ class SuperPMIReplay:
                 if return_code == 0:
                     logging.info("Clean SuperPMI replay")
                 else:
-                    files_with_replay_failures.append(mch_file)
                     result = False
+                    # Don't report as replay failure missing data (return code 3).
+                    # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                    # reported as a replay failure.
+                    if return_code != 3:
+                        files_with_replay_failures.append(mch_file)
 
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
@@ -2017,7 +2021,7 @@ class SuperPMIReplayAsmDiffs:
                     summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
                     summary_file = summary_file_info[1]
                     with open(summary_file, "r") as read_fh:
-                        write_fh.write(summary_mch_filename + ":\n\n")
+                        write_fh.write("## " + summary_mch_filename + ":\n\n")
                         shutil.copyfileobj(read_fh, write_fh)
 
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
