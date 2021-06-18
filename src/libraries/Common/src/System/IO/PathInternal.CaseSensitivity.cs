@@ -31,13 +31,28 @@ namespace System.IO
         /// <summary>
         /// Determines whether the file system is case sensitive.
         /// </summary>
+        private static bool GetIsCaseSensitive()
+        {
+            // Return a constant for mobile platforms without resorting to I/O
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
+                return true;
+            if (OperatingSystem.IsBrowser())
+                return false;
+            if (OperatingSystem.IsAndroid())
+                return false;
+            return GetIsCaseSensitiveByProbing();
+        }
+
+        /// <summary>
+        /// Determines whether the file system is case sensitive by creating a file in a temp folder and observing the result.
+        /// </summary>
         /// <remarks>
         /// Ideally we'd use something like pathconf with _PC_CASE_SENSITIVE, but that is non-portable,
         /// not supported on Windows or Linux, etc. For now, this function creates a tmp file with capital letters
         /// and then tests for its existence with lower-case letters.  This could return invalid results in corner
         /// cases where, for example, different file systems are mounted with differing sensitivities.
         /// </remarks>
-        private static bool GetIsCaseSensitive()
+        private static bool GetIsCaseSensitiveByProbing()
         {
             try
             {
