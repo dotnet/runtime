@@ -81,6 +81,13 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
+        public static SecurityStatusPal Peek(ref SafeDeleteSslContext? securityContext)
+        {
+            int ret = Interop.Ssl.SslPeek(((SafeDeleteSslContext)securityContext!).SslContext);
+            return new SecurityStatusPal(ret == 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.InternalError);
+        }
+
+
         public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? securityContext, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
         {
 //            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
@@ -103,7 +110,7 @@ namespace System.Net.Security
 
             int ret = Interop.Ssl.SslRenegotiate(((SafeDeleteSslContext)securityContext).SslContext);
             Console.WriteLine("RENEGO {1} ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext).SslContext), ret);
-            return new SecurityStatusPal(ret == 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.InternalError);
+            return new SecurityStatusPal(ret == 1 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.InternalError);
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
@@ -165,7 +172,7 @@ Console.WriteLine("RENEGO ? {0} done ? {1}", Interop.Ssl.IsSslRenegotiatePending
                     outputSize == output!.Length ? output :
                     new Span<byte>(output, 0, outputSize).ToArray();
 
-                return new SecurityStatusPal(done && !Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext) ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
+                return new SecurityStatusPal(done ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
             }
             catch (Exception exc)
             {

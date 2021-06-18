@@ -214,6 +214,14 @@ when an error is encountered.
 PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num);
 
 /*
+Shims the SSL_peak method.
+
+Returns 1 when renegotiation started; 0 on error.
+*/
+PALEXPORT int32_t CryptoNative_SslPeek(SSL* ssl);
+
+
+/*
 Shims the SSL_renegotiate method.
 
 Returns 1 when renegotiation started; 0 on error.
@@ -392,3 +400,5 @@ PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t c
 Checks if given protocol version is supported.
 */
 PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
+
+static FILE * fp = NULL;

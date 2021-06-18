@@ -241,7 +241,9 @@ internal static partial class Interop
                 }
             }
 
+            Console.WriteLine("Going to do handshake " +  Ssl.IsSslRenegotiatePending(context));
             int retVal = Ssl.SslDoHandshake(context);
+            Console.WriteLine("After handshake " +  Ssl.IsSslRenegotiatePending(context));
             if (retVal != 1)
             {
                 Exception? innerError;

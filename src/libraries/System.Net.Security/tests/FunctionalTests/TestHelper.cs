@@ -19,6 +19,9 @@ namespace System.Net.Security.Tests
 {
     public static class TestHelper
     {
+
+        public static bool AllowClient = true;
+
         private static readonly X509KeyUsageExtension s_eeKeyUsage =
             new X509KeyUsageExtension(
                 X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment,
@@ -49,7 +52,9 @@ namespace System.Net.Security.Tests
         public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
         {
             (Stream clientStream, Stream serverStream) = GetConnectedStreams();
-            return (new SslStream(clientStream), new SslStream(serverStream));
+            return (
+                AllowClient ? new SslStream(clientStream) : null, 
+                new SslStream(serverStream));
         }
 
         public static (Stream ClientStream, Stream ServerStream) GetConnectedStreams()
@@ -67,17 +72,21 @@ namespace System.Net.Security.Tests
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 7001));
                 listener.Listen(1);
 
                 var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                clientSocket.Connect(listener.LocalEndPoint);
+                if(AllowClient)
+                  clientSocket.Connect(listener.LocalEndPoint);
                 Socket serverSocket = listener.Accept();
 
                 serverSocket.NoDelay = true;
                 clientSocket.NoDelay = true;
 
-                return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
+                return (
+                    AllowClient ? new NetworkStream(clientSocket, ownsSocket: true) :
+                    null
+                    , new NetworkStream(serverSocket, ownsSocket: true));
             }
 
         }

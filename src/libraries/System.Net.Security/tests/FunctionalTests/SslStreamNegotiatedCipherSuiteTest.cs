@@ -575,10 +575,15 @@ namespace System.Net.Security.Tests
             if (!CipherSuitesPolicySupported)
                 return null;
 
-            var ret = new List<TlsCipherSuite>();
-            AllowOneOnOneSide(GetNonTls13CipherSuites(), (cs) => false, (cs) => ret.Add(cs));
+            // var ret = new Lazy<List<TlsCipherSuite>>(()=>{
+            //     var ret = new List<TlsCipherSuite>();
+            //     AllowOneOnOneSide(GetNonTls13CipherSuites(), (cs) => false, (cs) => ret.Add(cs));
+            //     return ret;
+            // });
+            
+            
 
-            return ret;
+            return new List<TlsCipherSuite>();
         }
 
         private static bool RequiredByTls13Spec(TlsCipherSuite cs)

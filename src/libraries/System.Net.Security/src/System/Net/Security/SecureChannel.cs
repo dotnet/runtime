@@ -1121,6 +1121,12 @@ Console.WriteLine("VerifyRemoteCertificate called, remote is {0}", certificate);
             return SslStreamPal.Renegotiate(_securityContext!);
         }
 
+
+        public SecurityStatusPal Peek()
+        {
+            return SslStreamPal.Peek(ref _securityContext!);
+        }
+
         private ProtocolToken GenerateAlertToken()
         {
             byte[]? nextmsg = null;

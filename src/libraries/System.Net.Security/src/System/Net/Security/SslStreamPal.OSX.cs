@@ -221,7 +221,12 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(securityContext.SslContext);
         }
 
-        public static int Renegotiate(SafeDeleteContext securityContext)
+        public static SecurityStatusPal Peek(ref SafeDeleteSslContext? securityContext)
+        {
+           throw  new PlatformNotSupportedException();
+        }
+
+        public static SecurityStatusPal Renegotiate(SafeDeleteContext securityContext)
         {
             throw  new PlatformNotSupportedException();
         }

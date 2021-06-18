@@ -831,19 +831,6 @@ namespace System.Net.Security
             return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
         }
 
-        // public virtual async Task<X509Certificate?> GetRemoteCertificate()
-        // {
-        //     ThrowIfExceptionalOrNotAuthenticated();
-
-        //     Console.WriteLine("Calling GetRemoteCertificate ???");
-        //     _sslAuthenticationOptions!.RemoteCertRequired = true;
-        //     //await ProcessAuthentication(true)!.ConfigureAwait(false);
-        //    // await ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
-        //    await Renegotiate(new AsyncReadWriteAdapter(InnerStream, CancellationToken.None), false, null, false, renego: true).ConfigureAwait(false);
-        //    Console.WriteLine("Calling GetRemoteCertificate Finished!!!");
-        //     return RemoteCertificate;
-        // }
-
         private void ThrowIfExceptional()
         {
             ExceptionDispatchInfo? e = _exception;

@@ -285,6 +285,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_BioWrite)
     DllImportEntry(CryptoNative_EnsureLibSslInitialized)
     DllImportEntry(CryptoNative_GetOpenSslCipherSuiteName)
+    DllImportEntry(CryptoNative_SslPeek)
     DllImportEntry(CryptoNative_SslRenegotiate)
     DllImportEntry(CryptoNative_IsSslRenegotiatePending)
     DllImportEntry(CryptoNative_IsSslStateOK)

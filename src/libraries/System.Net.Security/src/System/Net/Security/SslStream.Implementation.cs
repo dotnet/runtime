@@ -305,13 +305,13 @@ namespace System.Net.Security
             }
         }
 
-/*
-         private async Task Renegotiate<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false, bool renego = false)
+
+        private async Task Renegotiate<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false, bool renego = false)
             where TIOAdapter : IReadWriteAdapter
         {
-            int foo = _context!.Renegotiate();
+            SecurityStatusPal foo = _context!.Renegotiate();
 
-            if (foo < 0 ){
+            if (foo.ErrorCode != SecurityStatusPalErrorCode.OK ){
 
                 await ForceAuthenticationAsync(adapter, false, null, isApm).ConfigureAwait(false);
 
@@ -320,6 +320,8 @@ namespace System.Net.Security
 
 //            ProtocolToken message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
             Console.WriteLine("Renegotiate: Next message?????? ---------------------------------------------");
+
+            // Ask for "Hello Request" message
             ProtocolToken message = _context!.NextMessage(reAuthenticationData);
             Console.WriteLine("Writig {0} {1}", message.Size, message.Status);
             if (message.Size > 0)
@@ -338,57 +340,44 @@ namespace System.Net.Security
 
             // Console.WriteLine("Renegotiate ?????");
             // _context!.Renegotiate();
+            _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
+            do {
 
-do {
-
-           //   message = _context!.NextMessage(reAuthenticationData);
-           Console.WriteLine("Renegotiate: Waiting for ReceiveBlobAsync?????? ---------------------------------------------");
-           message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
-            Console.WriteLine("Writng2 {0} and {1}", message.Size, message.Status);
-            if (message.Size > 0)
-            {
-                await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
-                await adapter.FlushAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                    Console.WriteLine("Renegotiate WTF???? --------------------------------");
-                    _context!.Renegotiate();
-                    Console.WriteLine("Renegotiate WTF!!! --------------------------------");
-                    message = _context!.NextMessage(reAuthenticationData);
-                    Console.WriteLine("Writng3 {0} ", message.Size);
+                    Console.WriteLine("Renegotiate: Waiting for ReceiveBlobAsync?????? ---------------------------------------------");
+                    message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                    Console.WriteLine("Writng2 {0} and {1}", message.Size, message.Status);
                     if (message.Size > 0)
                     {
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                         await adapter.FlushAsync().ConfigureAwait(false);
                     }
+                    if (message.Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded)
+                    {
+                        Console.WriteLine("Renegotiate: finished with {0} ---------------------------------------------", message.Status.ErrorCode);
+                    }
+            } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
+            var crt = CertificateValidationPal.GetRemoteCertificate(_context!._securityContext!);
 
-            }
-            if (message.Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded)
-            {
-                Console.WriteLine("Renegotiate: finished with {0} ---------------------------------------------", message.Status.ErrorCode);
-                break;
-            }
-} while (true);
-            var remoteCert = CertificateValidationPal.GetRemoteCertificate(_context!._securityContext!);
+            ProtocolToken? alertToken = null;
+           if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+           {
+Console.WriteLine(" CompleteHandshakefailed!");
+           }
 
-//            ProtocolToken? alertToken = null;
-//            if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
-//            {
-//Console.WriteLine(" CompleteHandshakefailed!");
-//            }
-            Console.WriteLine("Renegotiate is NONE {0}", remoteCert);
-//            //await ReceiveBlobAsync(adapter, true);
+            Console.WriteLine("Renegotiate is NONE {0}", crt);
+
+//            await ReceiveBlobAsync(adapter, true);
 //            byte[] buffer = new byte[32000];
 //            int len = await ReadAsyncInternal(adapter, buffer, true).ConfigureAwait(false);
 //            Console.WriteLine("REad done with {0}", len);
 
-*/
+}
 
         // This will initiate renegotiation or PHA for Tls1.3
         private async Task RenegotiateAsync(CancellationToken cancellationToken)
         {
+
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "NegotiateClientCertificateAsync", "renegotiate"));
@@ -406,14 +395,18 @@ do {
             }
 
             _sslAuthenticationOptions!.RemoteCertRequired = true;
-            IReadWriteAdapter adapter = new AsyncReadWriteAdapter(InnerStream, cancellationToken);
 
+            byte[]? reAuthenticationData = null;
             try
             {
-                SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
-                if (nextmsg?.Length > 0)
+                await Renegotiate(new AsyncReadWriteAdapter(InnerStream, cancellationToken), false, reAuthenticationData, false, renego: true).ConfigureAwait(false);
+                /*
+                SecurityStatusPal status = _context!.Renegotiate();
+
+                ProtocolToken message = _context!.NextMessage(reAuthenticationData);
+                if (message.Size > 0)
                 {
-                    await adapter.WriteAsync(nextmsg, 0, nextmsg.Length).ConfigureAwait(false);
+                    await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                     await adapter.FlushAsync().ConfigureAwait(false);
                 }
 
@@ -428,8 +421,43 @@ do {
                     throw SslStreamPal.GetException(status);
                 }
 
+                // If Windows:
                 // Issue empty read to get renegotiation going.
-                await ReadAsyncInternal(adapter, Memory<byte>.Empty, renegotiation: true).ConfigureAwait(false);
+                //await ReadAsyncInternal(adapter, Memory<byte>.Empty, renegotiation: true).ConfigureAwait(false);
+
+                do {
+
+                //   message = _context!.NextMessage(reAuthenticationData);
+                    Console.WriteLine("Renegotiate: Waiting for ReceiveBlobAsync?????? ---------------------------------------------");
+                    message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                    Console.WriteLine("Writng2 {0} and {1}", message.Size, message.Status);
+                    if (message.Size > 0)
+                    {
+                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                            Console.WriteLine("Renegotiate WTF???? --------------------------------");
+                            _context!.Renegotiate();
+                            Console.WriteLine("Renegotiate WTF!!! --------------------------------");
+                            message = _context!.NextMessage(reAuthenticationData);
+                            Console.WriteLine("Writng3 {0} ", message.Size);
+                            if (message.Size > 0)
+                            {
+                                await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                                await adapter.FlushAsync().ConfigureAwait(false);
+                            }
+
+
+                    }
+                    if (message.Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded)
+                    {
+                        Console.WriteLine("Renegotiate: finished with {0} ---------------------------------------------", message.Status.ErrorCode);
+                        break;
+                    }
+                } while (true);
+                */
             }
             finally
             {
@@ -498,7 +526,7 @@ do {
                     int size = 0;
                     if (message.Size > 0)
                     {
-                    Console.WriteLine("Senfing2 {0}", message.Size);
+                        Console.WriteLine("Senfing2 {0}", message.Size);
                         payload = message.Payload;
                         size = message.Size;
                     }
@@ -640,6 +668,8 @@ do {
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
+                // During renegotiation the client hello is encrypted. Possibly race condition when the encrypted client hello flag is 0x01 but the content of the message is encrypted.
+                // Assume the Client Hello is not encrypted. It doesn't apply for renegotiation.
                 if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                     (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
                     _sslAuthenticationOptions!.ServerOptionDelegate != null))
