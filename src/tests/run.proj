@@ -648,6 +648,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+      <MonoInterp>false</MonoInterp>
+      <MonoInterp Condition="'$(RuntimeVariant)' == 'monointerpreter'">true</MonoInterp>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />

@@ -533,10 +533,6 @@ handle_arguments_local() {
             __Mono=1
             __MonoAot=1
             ;;
-        
-        monointerpreter|-monointerpreter)
-            __MonoInterp="true"
-            ;;
 
         *)
             __UnprocessedBuildArgs+=("$1")
@@ -591,7 +587,6 @@ __CMakeArgs=""
 __priority1=
 __Mono=0
 __MonoAot=0
-__MonoInterp="false"
 CORE_ROOT=
 
 source $__RepoRootDir/src/coreclr/_build-commons.sh
@@ -655,7 +650,7 @@ echo "${__MsgPrefix}Test build successful."
 echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
 if [ "$__TargetOS" == "Android" ]; then
-    build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true" "/p:MonoInterp=$__MonoInterp"
+    build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
 fi
 
 if [[ "$__RunTests" -ne 0 ]]; then
