@@ -96,15 +96,22 @@
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
         Name="%(_WasmPropertyNames.Identity)"
-        ConditionToUse="%(_WasmPropertyNames.ConditionToUse)" />
+        ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
 
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
       <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+
+      <!-- Example of passing items to the project
+
+          <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
+
+      -->
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->
     <GenerateAOTProps
         Properties="@(_WasmPropertiesToPass)"
+        Items="@(_WasmItemsToPass)"
         OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
