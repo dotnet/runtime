@@ -72,8 +72,20 @@ namespace System.Numerics
         public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
 
         /// <summary>
-        /// Round the given integral value up to a power of 2.
+        /// Evaluate whether a given integral value is a power of 2.
         /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPow2(nuint value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>Round the given integral value up to a power of 2.</summary>
         /// <param name="value">The value.</param>
         /// <returns>
         /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.

@@ -5022,6 +5022,13 @@ immediate_unroll_commit_default (ImmediateUnrollCtx *ictx, LLVMValueRef value)
 	LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
 }
 
+static void
+immediate_unroll_unreachable_default (ImmediateUnrollCtx *ictx)
+{
+	immediate_unroll_default (ictx);
+	LLVMBuildUnreachable (ictx->ctx->builder);
+}
+
 static LLVMValueRef
 immediate_unroll_end (ImmediateUnrollCtx *ictx, LLVMBasicBlockRef *continuation)
 {
@@ -7409,13 +7416,32 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef lhs_t = LLVMTypeOf (lhs);
 			int vec_width = mono_llvm_get_prim_size_bits (lhs_t);
 			int elem_width = mono_llvm_get_prim_size_bits (elt_t);
-			LLVMTypeRef ret_t = LLVMVectorType (elt_t, vec_width / elem_width);
+			int elements = vec_width / elem_width;
+			element_ix = LLVMBuildAnd (builder, element_ix, const_int32 (elements - 1), "extract");
+			LLVMTypeRef ret_t = LLVMVectorType (elt_t, elements);
 			LLVMValueRef src = LLVMBuildBitCast (builder, lhs, ret_t, "extract");
 			LLVMValueRef result = LLVMBuildExtractElement (builder, src, element_ix, "extract");
 			if (zext)
 				result = LLVMBuildZExt (builder, result, i4_t, "extract_zext");
 			else if (sext)
 				result = LLVMBuildSExt (builder, result, i4_t, "extract_sext");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_XINSERT_I1:
+		case OP_XINSERT_I2:
+		case OP_XINSERT_I4:
+		case OP_XINSERT_I8:
+		case OP_XINSERT_R4:
+		case OP_XINSERT_R8: {
+			MonoTypeEnum primty = inst_c1_type (ins);
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
+			int elements = LLVMGetVectorSize (ret_t);
+			LLVMValueRef element_ix = LLVMBuildAnd (builder, arg3, const_int32 (elements - 1), "xinsert");
+			LLVMValueRef vec = convert (ctx, lhs, ret_t);
+			LLVMValueRef val = convert_full (ctx, rhs, elem_t, primitive_type_is_unsigned (primty));
+			LLVMValueRef result = LLVMBuildInsertElement (builder, vec, val, element_ix, "xinsert");
 			values [ins->dreg] = result;
 			break;
 		}
@@ -7783,46 +7809,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 
 			values [ins->dreg] = LLVMBuildSExt (builder, pcmp, retType, "");
-			break;
-		}
-		case OP_XINSERT_I2: {
-			LLVMBasicBlockRef bbs [64];
-			LLVMValueRef switch_ins;
-			LLVMValueRef vector = lhs;
-			LLVMValueRef value = rhs;
-			LLVMValueRef index = values [ins->sreg3];
-			LLVMValueRef phi_values [64];
-			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			int i;
-
-			/*
-			 * Many SIMD opcodes require an immediate operand, but can be called with a non-immediate.
-			 * To handle these cases, generate a switch statement with one case for all possible
-			 * values of the immediate.
-			 * switch (index) {
-			 * case i:
-			 *   res = <op> (val, i)
-			 *   break;
-			 * }
-			 */
-			g_assert (nelems <= 64);
-			for (i = 0; i < nelems; ++i)
-				bbs [i] = gen_bb (ctx, "XINSERT_CASE_BB");
-			cbb = gen_bb (ctx, "XINSERT_COND_BB");
-
-			switch_ins = LLVMBuildSwitch (builder, LLVMBuildAnd (builder, index, const_int32 (0xf), ""), bbs [0], 0);
-			for (i = 0; i < nelems; ++i) {
-				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
-				LLVMPositionBuilderAtEnd (builder, bbs [i]);
-				phi_values [i] = LLVMBuildInsertElement (builder, vector, convert (ctx, value, LLVMGetElementType (LLVMTypeOf (vector))), LLVMConstInt (LLVMInt32Type (), i, FALSE), "");
-				LLVMBuildBr (builder, cbb);
-			}
-
-			LLVMPositionBuilderAtEnd (builder, cbb);
-			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
-			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, nelems);
-
-			ctx->bblocks [bb->block_num].end_bblock = cbb;
 			break;
 		}
 		case OP_CVTDQ2PS: {
@@ -8443,7 +8429,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_SSE2_CMPSD: id = INTRINS_SSE_CMPSD; break;
 			default: g_assert_not_reached (); break;
 			}
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			int elements = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			int mask_values [MAX_VECTOR_ELEMS] = { 0 };
+			for (int i = 1; i < elements; ++i) {
+				mask_values [i] = elements + i;
+			}
+			LLVMValueRef result = call_intrins (ctx, id, args, "");
+			result = LLVMBuildShuffleVector (builder, result, lhs, create_const_vector_i32 (mask_values, elements), "");
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_SSE_COMISS: {
@@ -8914,16 +8907,37 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = convert (ctx, abs, typ);
 			break;
 		}
-		
+
 		case OP_SSSE3_ALIGNR: {
-			LLVMValueRef mask_values [16];
-			for (int i = 0; i < 16; i++)
-				mask_values [i] = LLVMConstInt (LLVMInt32Type (), i + ins->inst_c0, FALSE);
-			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
-				convert (ctx, rhs, sse_i1_t),
-				convert (ctx, lhs, sse_i1_t),
-				LLVMConstVector (mask_values, 16), "");
-			values [ins->dreg] = convert (ctx, shuffled, type_to_sse_type (ins->inst_c1));
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMValueRef zero = LLVMConstNull (v128_i1_t);
+			LLVMValueRef hivec = convert (ctx, lhs, v128_i1_t);
+			LLVMValueRef lovec = convert (ctx, rhs, v128_i1_t);
+			LLVMValueRef rshift_amount = convert (ctx, arg3, i1_t);
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 32, rshift_amount, v128_i1_t, "ssse3_alignr");
+			LLVMValueRef mask_values [16]; // 128-bit vector, 8-bit elements, 16 total elements
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				LLVMValueRef hi = NULL;
+				LLVMValueRef lo = NULL;
+				if (i <= 16) {
+					for (int j = 0; j < 16; j++)
+						mask_values [j] = const_int32 (i + j);
+					lo = lovec;
+					hi = hivec;
+				} else {
+					for (int j = 0; j < 16; j++)
+						mask_values [j] = const_int32 (i + j - 16);
+					lo = hivec;
+					hi = zero;
+				}
+				LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, lo, hi, LLVMConstVector (mask_values, 16), "ssse3_alignr");
+				immediate_unroll_commit (&ictx, i, shuffled);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, zero);
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+			values [ins->dreg] = convert (ctx, result, ret_t);
 			break;
 		}
 
@@ -8989,30 +9003,40 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_MPSADBW_IMM: {
-			LLVMValueRef args [3];
-			args [0] = LLVMBuildBitCast (ctx->builder, lhs, sse_i1_t, "");
-			args [1] = LLVMBuildBitCast (ctx->builder, rhs, sse_i1_t, "");
-			args [2] = LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE);
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_MPSADBW, args, dname);
+		case OP_SSE41_MPSADBW: {
+			LLVMValueRef args [] = {
+				convert (ctx, lhs, sse_i1_t),
+				convert (ctx, rhs, sse_i1_t),
+				NULL,
+			};
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			// Only 3 bits (bits 0-2) are used by mpsadbw and llvm.x86.sse41.mpsadbw
+			int used_bits = 0x7;
+			ctl = LLVMBuildAnd (builder, ctl, const_int8 (used_bits), "sse41_mpsadbw");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, used_bits + 1, ctl, v128_i2_t, "sse41_mpsadbw");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [2] = const_int8 (i);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_SSE_MPSADBW, args, "sse41_mpsadbw");
+				immediate_unroll_commit (&ictx, i, result);
+			}
+			immediate_unroll_unreachable_default (&ictx);
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
-		case OP_SSE41_INSERT: {
-			if (ins->inst_c1 == MONO_TYPE_R4) {
-				// special case for <float> overload
-				LLVMValueRef args [3];
-				args [0] = values [ins->sreg1];
-				args [1] = values [ins->sreg2];
-				args [2] = convert (ctx, values [ins->sreg3], LLVMInt8Type ());
-				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_INSERTPS, args, dname);
-			} else {
-				// other overloads are implemented with `insertelement`
-				values [ins->dreg] = LLVMBuildInsertElement (builder, 
-					values [ins->sreg1], 
-					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (inst_c1_type (ins))),
-					convert (ctx, values [ins->sreg3], LLVMInt8Type ()), dname);
+		case OP_SSE41_INSERTPS: {
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			LLVMValueRef args [] = { lhs, rhs, NULL };
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 256, ctl, v128_r4_t, "sse41_insertps");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [2] = const_int8 (i);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_SSE_INSERTPS, args, dname);
+				immediate_unroll_commit (&ictx, i, result);
 			}
+			immediate_unroll_unreachable_default (&ictx);
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
@@ -9157,15 +9181,37 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_PCLMULQDQ_IMM: {
-			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_PCLMULQDQ, args, "");
+		case OP_PCLMULQDQ: {
+			LLVMValueRef args [] = { lhs, rhs, NULL };
+			LLVMValueRef ctl = convert (ctx, arg3, i1_t);
+			// Only bits 0 and 4 of the immediate operand are used by PCLMULQDQ.
+			ctl = LLVMBuildAnd (builder, ctl, const_int8 (0x11), "pclmulqdq");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 1 << 2, ctl, v128_i8_t, "pclmulqdq");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int imm = ((i & 0x2) << 3) | (i & 0x1);
+				args [2] = const_int8 (imm);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_PCLMULQDQ, args, "pclmulqdq");
+				immediate_unroll_commit (&ictx, imm, result);
+			}
+			immediate_unroll_unreachable_default (&ictx);
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 
-		case OP_AES_KEYGEN_IMM: {
-			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_AESNI_AESKEYGENASSIST, args, "");
+		case OP_AES_KEYGENASSIST: {
+			LLVMValueRef roundconstant = convert (ctx, rhs, i1_t);
+			LLVMValueRef args [] = { convert (ctx, lhs, v128_i8_t), NULL };
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 256, roundconstant, v128_i8_t, "aes_keygenassist");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [1] = const_int8 (i);
+				LLVMValueRef result = call_intrins (ctx, INTRINS_AESNI_AESKEYGENASSIST, args, "aes_keygenassist");
+				immediate_unroll_commit (&ictx, i, result);
+			}
+			immediate_unroll_unreachable_default (&ictx);
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+			values [ins->dreg] = convert (ctx, result, v128_i1_t);
 			break;
 		}
 #endif
@@ -9275,12 +9321,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_CTTZ32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64, args, "");
 			break;
 		}
-		case OP_BEXTR32:
-		case OP_BEXTR64: {
+		case OP_BMI1_BEXTR32:
+		case OP_BMI1_BEXTR64: {
 			LLVMValueRef args [2];
 			args [0] = lhs;
-			args [1] = convert (ctx, rhs, ins->opcode == OP_BEXTR32 ? LLVMInt32Type () : LLVMInt64Type ()); // cast ushort to u32/u64
-			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_BEXTR32 ? INTRINS_BEXTR_I32 : INTRINS_BEXTR_I64, args, "");
+			args [1] = convert (ctx, rhs, ins->opcode == OP_BMI1_BEXTR32 ? i4_t : i8_t); // cast ushort to u32/u64
+			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_BMI1_BEXTR32 ? INTRINS_BEXTR_I32 : INTRINS_BEXTR_I64, args, "");
 			break;
 		}
 		case OP_BZHI32:
@@ -9301,8 +9347,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef rx = LLVMBuildZExt (ctx->builder, rhs, LLVMInt128Type (), "");
 			LLVMValueRef mulx = LLVMBuildMul (ctx->builder, lx, rx, "");
 			if (!only_high) {
+				LLVMValueRef addr = convert (ctx, arg3, LLVMPointerType (is_64 ? i8_t : i4_t, 0));
 				LLVMValueRef lowx = LLVMBuildTrunc (ctx->builder, mulx, is_64 ? LLVMInt64Type () : LLVMInt32Type (), "");
-				LLVMBuildStore (ctx->builder, lowx, values [ins->sreg3]);
+				LLVMBuildStore (ctx->builder, lowx, addr);
 			}
 			LLVMValueRef shift = LLVMConstInt (LLVMInt128Type (), is_64 ? 64 : 32, FALSE);
 			LLVMValueRef highx = LLVMBuildLShr (ctx->builder, mulx, shift, "");
@@ -9416,24 +9463,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef result = call_intrins (ctx, id, &arg0, "");
 			if (getLowerElement)
 				result = vector_from_scalar (ctx, ret_t, result);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_XINSERT_I1:
-		case OP_XINSERT_I2:
-		case OP_XINSERT_I4:
-		case OP_XINSERT_I8:
-		case OP_XINSERT_R4:
-		case OP_XINSERT_R8: {
-			/* TODO: Scalar types smaller than i32 seem to be
-			 * normalized to i32 via zero or sign extension.
-			 * Is this still necessary?
-			 */
-			LLVMTypeRef t = LLVMTypeOf (lhs);
-			LLVMTypeRef elem_t = LLVMGetElementType (t);
-			MonoTypeEnum primty = inst_c1_type (ins);
-			LLVMValueRef val = convert_full (ctx, rhs, elem_t, primitive_type_is_unsigned (primty));
-			LLVMValueRef result = LLVMBuildInsertElement (builder, lhs, val, arg3, "xinsert");
 			values [ins->dreg] = result;
 			break;
 		}

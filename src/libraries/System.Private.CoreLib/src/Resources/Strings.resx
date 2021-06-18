@@ -813,6 +813,9 @@
   <data name="Argument_AdjustmentRulesOutOfOrder" xml:space="preserve">
     <value>The elements of the AdjustmentRule array must be in chronological order and must not overlap.</value>
   </data>
+  <data name="Argument_AlignmentMustBePow2" xml:space="preserve">
+    <value>The alignment must be a power of two.</value>
+  </data>
   <data name="Argument_AlreadyACCW" xml:space="preserve">
     <value>The object already has a CCW associated with it.</value>
   </data>

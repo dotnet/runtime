@@ -48,11 +48,10 @@ namespace System.IO
                     return !File.Exists(lowerCased);
                 }
             }
-            catch (Exception exc)
+            catch
             {
-                // In case something goes terribly wrong, we don't want to fail just because
-                // of a casing test, so we assume case-insensitive-but-preserving.
-                Debug.Fail("Casing test failed: " + exc);
+                // In case something goes wrong (e.g. temp pointing to a privilieged directory), we don't
+                // want to fail just because of a casing test, so we assume case-insensitive-but-preserving.
                 return false;
             }
         }
