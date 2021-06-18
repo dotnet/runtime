@@ -64,18 +64,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             await VerifyAgainstBaselineUsingFile("TestWithDefaultValues.generated.txt", testSourceCode);
         }
 
-        [Fact]
-        public async Task TestBaseline_TestWithTwoParams_Success()
+        [Theory]
+        [InlineData("EventId = 0, Level = LogLevel.Error, Message = \"M0 {a1} {a2}\"")]
+        [InlineData("eventId: 0, level: LogLevel.Error, message: \"M0 {a1} {a2}\"")]
+        [InlineData("0, LogLevel.Error, \"M0 {a1} {a2}\"")]
+        [InlineData("0, LogLevel.Error, \"M0 {a1} {a2}\", SkipEnabledCheck = false")]
+        public async Task TestBaseline_TestWithTwoParams_Success(string argumentList)
         {
-            string testSourceCode = @"
+            string testSourceCode = $@"
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
-{
+{{
     internal static partial class TestWithTwoParams
-    {
-        [LoggerMessage(EventId = 0, Level = LogLevel.Error, Message = ""M0 {a1} {a2}"")]
+    {{
+        [LoggerMessage({argumentList})]
         public static partial void M0(ILogger logger, int a1, System.Collections.Generic.IEnumerable<int> a2);
-    }
-}";
+    }}
+}}";
             await VerifyAgainstBaselineUsingFile("TestWithTwoParams.generated.txt", testSourceCode);
         }
 

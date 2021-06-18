@@ -119,6 +119,7 @@ namespace Microsoft.Extensions.Logging
     public sealed partial class LoggerMessageAttribute : System.Attribute
     {
         public LoggerMessageAttribute() { }
+        public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string message) { }
         public int EventId { get { throw null; } set { } }
         public string? EventName { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel Level { get { throw null; } set { } }

@@ -359,6 +359,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
             Assert.Equal("CustomEventName", logger.LastEventId.Name);
+
+            logger.Reset();
+            EventNameTestExtensions.CustomEventName(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("CustomEventName", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal("CustomEventName", logger.LastEventId.Name);
         }
 
         [Fact]

@@ -443,6 +443,9 @@ namespace Microsoft.Extensions.Logging.Generators
                     // e.g. is null as [LoggerMessage]
                     return (-1, null, string.Empty, null, false);
                 }
+                // supporting one constructor arg shape:
+                //   (eventId, level, message)
+                int numPositional = 0;
                 int eventId = -1; // default eventId value when not provided is -1
                 int? level = null;
                 string? eventName = null;
@@ -451,25 +454,79 @@ namespace Microsoft.Extensions.Logging.Generators
                 foreach (AttributeArgumentSyntax a in args.Arguments)
                 {
                     // argument syntax takes parameters. e.g. EventId = 0
-                    Debug.Assert(a.NameEquals != null);
-                    switch (a.NameEquals.Name.ToString())
+                    if (a.NameEquals != null)
                     {
-                        case "EventId":
-                            eventId = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value ?? -1;
-                            break;
-                        case "EventName":
-                            eventName = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                            break;
-                        case "Level":
-                            level = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
-                            break;
-                        case "Message":
-                            message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                            break;
-                        case "SkipEnabledCheck":
-                            bool? flag = (bool?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
-                            skipEnabledCheck = flag.GetValueOrDefault();
-                            break;
+                        switch (a.NameEquals.Name.ToString())
+                        {
+                            case "EventId":
+                                eventId = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value ?? -1;
+                                break;
+                            case "EventName":
+                                eventName = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                            case "Level":
+                                level = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
+                                break;
+                            case "Message":
+                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                            case "SkipEnabledCheck":
+                                bool? flag = (bool?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
+                                skipEnabledCheck = flag.GetValueOrDefault();
+                                break;
+                        }
+                    }
+                    else if (a.NameColon != null)
+                    {
+                        // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
+                        switch (a.NameColon.Name.ToString())
+                        {
+                            case "eventId":
+                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+
+                            case "level":
+                                level = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+
+                            case "message":
+                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                        }
+                    }
+                    else
+                    {
+#pragma warning disable S109 // Magic numbers should not be used
+                        // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
+                        switch (numPositional)
+                        {
+                            // event id
+                            case 0:
+                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+
+                            // log level or message
+                            case 1:
+                                var o = sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                if (o is int l)
+                                {
+                                    level = l;
+                                }
+                                else
+                                {
+                                    message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                }
+
+                                break;
+
+                            // message
+                            case 2:
+                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                        }
+#pragma warning restore S109 // Magic numbers should not be used
+
+                        numPositional++;
                     }
                 }
                 return (eventId, level, message, eventName, skipEnabledCheck);
