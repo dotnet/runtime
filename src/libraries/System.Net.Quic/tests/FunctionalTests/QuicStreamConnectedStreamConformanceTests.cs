@@ -21,6 +21,7 @@ namespace System.Net.Quic.Tests
     public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
+        protected override bool UsableAfterCanceledReads => false;
 
         // TODO: These are all hanging, likely due to Stream close behavior.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
@@ -41,8 +42,6 @@ namespace System.Net.Quic.Tests
         public override Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException() => base.ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException();
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public override Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode) => base.Read_DataStoredAtDesiredOffset(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_CancelPendingRead_DoesntImpactSubsequentReads() => base.ReadAsync_CancelPendingRead_DoesntImpactSubsequentReads();
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public override Task ZeroByteRead_BlocksUntilDataAvailableOrNops(ReadWriteMode mode) => base.ZeroByteRead_BlocksUntilDataAvailableOrNops(mode);
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
