@@ -25,6 +25,7 @@ namespace System.Net.Test.Common
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
         private TaskCompletionSource<PingFrame> _expectPingFrame;
+        private bool _respondToPing;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
@@ -200,8 +201,8 @@ namespace System.Net.Test.Common
 
             if (_expectPingFrame != null && header.Type == FrameType.Ping)
             {
-                _expectPingFrame.SetResult(PingFrame.ReadFrom(header, data));
-                _expectPingFrame = null;
+                PingFrame pingFrame = PingFrame.ReadFrom(header, data);
+                await ProcessExpectedPingFrame(pingFrame);
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
@@ -227,6 +228,18 @@ namespace System.Net.Test.Common
                 default:
                     return header;
             }
+        }
+
+        private async Task ProcessExpectedPingFrame(PingFrame pingFrame)
+        {
+            _expectPingFrame.SetResult(pingFrame);
+            if (_respondToPing && !pingFrame.AckFlag)
+            {
+                await SendPingAckAsync(pingFrame.Data);
+            }
+
+            _expectPingFrame = null;
+            _respondToPing = false;
         }
 
         // Reset and return underlying networking objects.
@@ -264,11 +277,13 @@ namespace System.Net.Test.Common
         }
 
         // Set up loopback server to expect PING frames among other frames.
-        // Once PING frame is read in ReadFrameAsync, the returned task is completed.
+        // Once PING frame is read in ReadFrameAsync or PingPong, the returned task is completed.
         // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
-        public Task<PingFrame> ExpectPingFrameAsync()
+        public Task<PingFrame> ExpectPingFrameAsync(bool respond = false)
         {
             _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
+            _respondToPing = respond;
+
             return _expectPingFrame.Task;
         }
 
@@ -289,6 +304,24 @@ namespace System.Net.Test.Common
             if (frame.StreamId != streamId)
             {
                 throw new Exception($"Expected RST_STREAM on stream {streamId}, actual streamId={frame.StreamId}");
+            }
+        }
+
+        public async Task ReadAllPingFrames(bool respond = false)
+        {
+            Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
+            while (frame != null)
+            {
+                PingFrame pingFrame = frame as PingFrame;
+                if (pingFrame == null)
+                {
+                    throw new Exception($"Unexpected frame received: {frame}");
+                }
+                if (respond)
+                {
+                    await SendPingAckAsync(pingFrame.Data);
+                }
+                frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             }
         }
 
@@ -720,6 +753,14 @@ namespace System.Net.Test.Common
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
+
+            // Not an ack, but we are expecting a PING frame:
+            if (pingAck != null && !pingAck.AckFlag && _expectPingFrame != null)
+            {
+                await ProcessExpectedPingFrame(pingAck);
+                pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
+            }
+
             if (pingAck == null || pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
             {
                 string faultDetails = pingAck == null ? "" : $" frame.Type:{pingAck.Type} frame.AckFlag: {pingAck.AckFlag}";
@@ -733,6 +774,7 @@ namespace System.Net.Test.Common
         {
             _expectPingFrame?.TrySetCanceled();
             _expectPingFrame = null;
+            _respondToPing = false;
 
             Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
             Assert.NotNull(frame);

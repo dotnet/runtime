@@ -1074,6 +1074,9 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame dataFrame = new DataFrame(new byte[10], FrameFlags.EndStream, 0, streamId);
                 await connection.WriteFrameAsync(dataFrame);
 
+                // We may receive an RTT PING in response to the DATA:
+                _ = connection.ExpectPingFrameAsync(respond: true);
+
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1191,6 +1194,8 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ValidAndInvalidProtocolErrorsAndBool))]
         public async Task ResetResponseStream_FrameReceived_Ignored(ProtocolErrors error, bool dataFrame)
         {
+            using var listener = new LogHttpEventListener(_output);
+            listener.Enabled = true;
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
@@ -2431,7 +2436,23 @@ namespace System.Net.Http.Functional.Tests
         {
             await requestStream.WriteAsync(data);
             await requestStream.FlushAsync();
-            DataFrame dataFrame = (DataFrame)await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+            // TODO: Shall we make this a configurable?
+            TimeSpan timeout = TimeSpan.FromSeconds(30);
+
+            Frame frame = await connection.ReadFrameAsync(timeout);
+
+            if (frame is PingFrame pingFrame)
+            {
+                // We may receive an RTT estimation PING when sending data:
+                Assert.False(pingFrame.AckFlag);
+                await connection.SendPingAckAsync(pingFrame.Data);
+
+                frame = await connection.ReadFrameAsync(timeout);
+            }
+
+            DataFrame dataFrame = (DataFrame)frame;
+            
             Assert.True(data.Span.SequenceEqual(dataFrame.Data.Span));
         }
 
@@ -2667,6 +2688,8 @@ namespace System.Net.Http.Functional.Tests
                     // Send data on response stream and complete it, but don't read it on the client yet
                     await connection.SendResponseDataAsync(streamId, contentBytes, endStream: true);
 
+                    // We may have received an RTT ping
+                    _ = connection.ExpectPingFrameAsync(true);
                     // Pingpong to ensure it's processed by client
                     await connection.PingPong();
 
@@ -2790,6 +2813,7 @@ namespace System.Net.Http.Functional.Tests
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
+
                     // Attempting to write on the request body should now fail with OperationCanceledException.
                     Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
 
@@ -2797,6 +2821,9 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
                 }
+
+                // We are expecting a few RTT PING frames in response to the DATA sent by the server. We should not receive any other frames at this point.
+                await connection.ReadAllPingFrames(respond: true).WaitAsync(TimeSpan.FromSeconds(5));
 
                 // On handler dispose, client should shutdown the connection without sending additional frames.
                 await connection.WaitForClientDisconnectAsync();
