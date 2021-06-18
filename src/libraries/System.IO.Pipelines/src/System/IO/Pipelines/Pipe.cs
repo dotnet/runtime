@@ -1009,6 +1009,8 @@ namespace System.IO.Pipelines
             return result;
         }
 
+        internal long GetUnflushedBytes() => _unflushedBytes;
+
         private void GetFlushResult(ref FlushResult result)
         {
             // Change the state from to be canceled -> observed
