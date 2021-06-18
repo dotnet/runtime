@@ -4298,29 +4298,11 @@ namespace System.Tests
         {
             Bar[] barArray1 = CreateBarArray();
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray1, new Foo()));
+            Assert.Equal(CreateBarArray(), barArray1);
 
             Bar[] barArray2 = CreateBarArray();
-            try
-            {
-                Array.Fill<object>(barArray2, new Foo());
-            }
-            catch (ArrayTypeMismatchException)
-            {
-                Assert.Equal(CreateBarArray(), barArray2);
-            }
-
-            Bar[] barArray3 = CreateBarArray();
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray3, new Foo(), 1, 2));
-
-            Bar[] barArray4 = CreateBarArray();
-            try
-            {
-                Array.Fill<object>(barArray4, new Foo(), 1, 2);
-            }
-            catch (ArrayTypeMismatchException)
-            {
-                Assert.Equal(CreateBarArray(), barArray4);
-            }
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray2, new Foo(), 1, 2));
+            Assert.Equal(CreateBarArray(), barArray2);
         }
 
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
