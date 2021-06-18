@@ -784,6 +784,10 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
                 if (!cumulativeInstanceFieldPos.IsIndeterminate)
                 {
+                    if (requiresAlignedBase && type.BaseType.IsZeroSizedReferenceType && ((MetadataType)type.BaseType).HasLayout())
+                    {
+                        cumulativeInstanceFieldPos += LayoutInt.One;
+                    }
                     AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8, requiresAlignedBase);
                 }
             }
