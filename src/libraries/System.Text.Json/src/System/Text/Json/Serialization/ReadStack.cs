@@ -171,7 +171,10 @@ namespace System.Text.Json
             }
 
             SetConstructorArgumentState();
-            Debug.Assert(JsonPath() is not null);
+#if DEBUG
+            // Ensure the method is always exercised in debug builds.
+            _ = JsonPath();
+#endif
         }
 
         public void Pop(bool success)

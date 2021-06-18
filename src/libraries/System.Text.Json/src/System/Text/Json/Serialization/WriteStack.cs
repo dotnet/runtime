@@ -150,7 +150,10 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(PropertyPath() is not null);
+#if DEBUG
+            // Ensure the method is always exercised in debug builds.
+            _ = PropertyPath();
+#endif
         }
 
         public void Pop(bool success)
