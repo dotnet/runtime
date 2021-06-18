@@ -158,22 +158,27 @@ namespace System.IO
 
         protected static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
         {
+#if NETFRAMEWORK
+            Process symLinkProcess = new Process();
+            symLinkProcess.StartInfo = GetWindowsStartInfo(targetPath, linkPath, isDirectory);
+#else
             if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()) // OSes that don't support Process.Start()
             {
                 return false;
             }
-
             Process symLinkProcess = new Process();
+
             if (OperatingSystem.IsWindows())
             {
-                symLinkProcess.StartInfo.FileName = "cmd";
-                symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath));
+                symLinkProcess.StartInfo = GetWindowsStartInfo(targetPath, linkPath, isDirectory);
             }
             else
             {
                 symLinkProcess.StartInfo.FileName = "/bin/ln";
                 symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
             }
+            
+#endif
             symLinkProcess.StartInfo.RedirectStandardOutput = true;
             symLinkProcess.Start();
 
@@ -182,9 +187,12 @@ namespace System.IO
                 symLinkProcess.WaitForExit();
                 return (0 == symLinkProcess.ExitCode);
             }
-            else
+
+            return false;
+
+            static ProcessStartInfo GetWindowsStartInfo(string targetPath, string linkPath, bool isDirectory)
             {
-                return false;
+                return new ProcessStartInfo("cmd", string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath)));
             }
         }
 

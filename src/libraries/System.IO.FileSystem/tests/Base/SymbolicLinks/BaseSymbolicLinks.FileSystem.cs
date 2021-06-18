@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -257,6 +257,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void DetectLinkReferenceToSelf()
+        {
+            // link
+            //  ^    \
+            //   \___/
+
+            string linkPath = GetRandomFilePath();
+            FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, linkPath);
+
+            // Can get target without following symlinks
+            FileSystemInfo linkTarget = ResolveLinkTarget(linkPath, expectedLinkTarget: linkPath);
+
+            // Cannot get target when following symlinks
+            Assert.Throws<IOException>(() => ResolveLinkTarget(linkPath, expectedLinkTarget: linkPath, returnFinalTarget: true));
+        }
+
+        [Fact]
         public void CreateSymbolicLink_WrongTargetType()
         {
             // dirLink -> file
@@ -343,6 +360,15 @@ namespace System.IO.Tests
             AssertIsCorrectTypeAndDirectoryAttribute(finalTarget);
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertPathEquals(filePath, finalTarget.FullName);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ExecWait_OutputCaptured()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                
+            }).Dispose();
         }
     }
 }
