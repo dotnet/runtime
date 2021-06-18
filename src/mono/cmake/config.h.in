@@ -1070,9 +1070,6 @@
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
 
-/* Enable runtime support for metadata updates */
-#cmakedefine ENABLE_METADATA_UPDATE 1
-
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS
 

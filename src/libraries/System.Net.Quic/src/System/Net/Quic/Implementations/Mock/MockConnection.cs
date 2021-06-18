@@ -371,14 +371,19 @@ namespace System.Net.Quic.Implementations.Mock
 
             public void Decrement()
             {
+                TaskCompletionSource? availableTcs = null;
                 lock (_syncRoot)
                 {
                     --_actualCount;
                     if (!_availableTcs.Task.IsCompleted)
                     {
-                        _availableTcs.SetResult();
+                        availableTcs = _availableTcs;
                         _availableTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                     }
+                }
+                if (availableTcs is not null)
+                {
+                    availableTcs.SetResult();
                 }
             }
 
@@ -396,7 +401,18 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             public ValueTask WaitForAvailableStreams(CancellationToken cancellationToken)
-                => new ValueTask(_availableTcs.Task.WaitAsync(cancellationToken));
+            {
+                TaskCompletionSource availableTcs;
+                lock (_syncRoot)
+                {
+                    if (_actualCount > 0)
+                    {
+                        return default;
+                    }
+                    availableTcs = _availableTcs;
+                }
+                return new ValueTask(availableTcs.Task.WaitAsync(cancellationToken));
+            }
 
             public void CloseWaiters()
                 => _availableTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));

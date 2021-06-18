@@ -13,7 +13,7 @@ internal static partial class Interop
     {
         Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
         memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
-        if (Interop.Kernel32.GlobalMemoryStatusEx(&memoryStatus) != 0)
+        if (Interop.Kernel32.GlobalMemoryStatusEx(&memoryStatus) != Interop.BOOL.FALSE)
         {
             ulong totalVirtual = memoryStatus.ullTotalVirtual;
             if (nativeSize >= totalVirtual)
