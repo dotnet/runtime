@@ -3154,7 +3154,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
+    <!-- <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
             <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem JIT.HardwareIntrinsics)</Issue>
         </ExcludeList>
@@ -3176,5 +3176,5 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/**">
             <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem PayloadGroup0)</Issue>
         </ExcludeList>
-    </ItemGroup>
+    </ItemGroup> -->
 </Project>
