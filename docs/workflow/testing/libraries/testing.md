@@ -13,24 +13,24 @@ Using build.cmd/sh these steps can either be accomplished independently or the t
 
 These examples automate all pre-requisite steps and the test run in a single command from a clean enlistment.
 
-- Run all tests using clr:
+- Build all pre-requisites (clr + libs) and tests and run them using CoreCLR:
 ```
-build.cmd/sh -subset clr+libs -test
+build.cmd/sh -subset clr+libs+libs.tests -test
 ```
 
-- Run all tests using mono:
+- Build all pre-requisites (mono + libs) and tests and run them using mono:
 ```
-build.cmd/sh -subset mono+libs -test
+build.cmd/sh -subset mono+libs+libs.tests -test
 ```
 
 - Run all tests - Builds clr in release, libs+tests in debug:
 ```
-build.cmd/sh -subset clr+libs -test -rc Release
+build.cmd/sh -subset clr+libs+libs.tests -test -rc Release
 ```
 
 - Run all tests - Build mono and libs for x86 architecture:
 ```
-build.cmd/sh -subset mono+libs -test -arch x86
+build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 ```
 
 ## Partial workflow examples
