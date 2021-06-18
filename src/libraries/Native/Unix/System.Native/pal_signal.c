@@ -200,7 +200,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     }
 }
 
-void SystemNative_DefaultSignalHandler(int signalCode)
+void SystemNative_HandleNonCanceledPosixSignal(int signalCode)
 {
     // Performs action the runtime performs on signal that is cancelable
     // using the PosixSignal API.
@@ -324,7 +324,7 @@ static void* SignalHandlerLoop(void* arg)
 
         if (!usePosixSignalHandler)
         {
-            SystemNative_DefaultSignalHandler(signalCode);
+            SystemNative_HandleNonCanceledPosixSignal(signalCode);
         }
     }
 }

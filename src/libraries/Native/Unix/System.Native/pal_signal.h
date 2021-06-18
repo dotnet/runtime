@@ -52,7 +52,7 @@ PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandl
 PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
 PALEXPORT void SystemNative_EnablePosixSignalHandling(int signalCode);
 PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
-PALEXPORT void SystemNative_DefaultSignalHandler(int signalCode);
+PALEXPORT void SystemNative_HandleNonCanceledPosixSignal(int signalCode);
 
 typedef void (*ConsoleSigTtouHandler)(void);
 

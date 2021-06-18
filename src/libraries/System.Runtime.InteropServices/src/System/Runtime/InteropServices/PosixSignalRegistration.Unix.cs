@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices
 
             if (!ctx.Cancel)
             {
-                Interop.Sys.DefaultSignalHandler(state.signo);
+                Interop.Sys.HandleNonCanceledPosixSignal(state.signo);
             }
         }
 
