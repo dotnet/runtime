@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
@@ -779,6 +780,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             };
         }
 
+#pragma warning disable CS1998
+        public static async Task<int> RegularTaskReturningConstant (int i) {
+            return i;
+        }
+
+        public static async ValueTask<int> ValueTaskReturningConstant (int i) {
+            return i;
+        }
+#pragma warning restore CS1998
+    
     }
 
     public enum TestEnum : uint {

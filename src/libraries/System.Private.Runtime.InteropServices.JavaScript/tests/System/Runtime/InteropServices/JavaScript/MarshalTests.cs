@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using Xunit;
@@ -1031,6 +1032,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(1, HelperMarshal._vec3Value.X);
             Assert.Equal(2.5, HelperMarshal._vec3Value.Y);
             Assert.Equal(4, HelperMarshal._vec3Value.Z);
+        }
+
+        [Fact]
+        public static void MarshalTask()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(
+                @"var t = App.call_test_method ('RegularTaskReturningConstant', [ 7 ], 'i'); " +
+                @"App.call_test_method ('InvokeInt', [ t.__for_automated_test_use_only__task_result ], 'i'); "
+            );
+
+            Assert.Equal(7, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void MarshalValueTask()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(
+                @"var t = App.call_test_method ('ValueTaskReturningConstant', [ 9 ], 'i'); " +
+                @"App.call_test_method ('InvokeInt', [ t.__for_automated_test_use_only__task_result ], 'i'); "
+            );
+
+            Assert.Equal(9, HelperMarshal._intValue);
         }
     }
 }

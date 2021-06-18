@@ -453,10 +453,20 @@ var BindingSupportLib = {
 			var cont_obj = null;
 			var promise = new Promise (function (resolve, reject) {
 				cont_obj = {
-					resolve: resolve,
-					reject: reject
+					__resolve: resolve,
+					__reject: reject,
 				};
 			});
+			cont_obj.resolve = function (value) {
+				promise.__for_automated_test_use_only__task_result = value;
+				cont_obj.__resolve(value);
+			};
+			cont_obj.reject = function (err) {
+				promise.__for_automated_test_use_only__task_error = err;
+				cont_obj.__reject(err);
+			};
+			promise.__for_automated_test_use_only__task_result = undefined;
+			promise.__for_automated_test_use_only__task_error = undefined;
 
 			this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
 			obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
