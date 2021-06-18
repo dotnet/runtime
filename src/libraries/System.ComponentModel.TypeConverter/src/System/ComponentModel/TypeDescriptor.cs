@@ -1018,7 +1018,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of events for a specified type of component.
         /// </summary>
-        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public static EventDescriptorCollection GetEvents(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
         {
@@ -2747,7 +2746,6 @@ namespace System.ComponentModel
                     return _handler.GetEditor(_instance, editorBaseType);
                 }
 
-                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
                 {
                     return _handler.GetEvents(_instance);
@@ -3069,7 +3067,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
             {
                 EventDescriptorCollection events = _primary.GetEvents() ?? _secondary.GetEvents();
@@ -3471,7 +3468,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3804,7 +3801,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.

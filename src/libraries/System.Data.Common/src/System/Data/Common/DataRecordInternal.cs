@@ -343,7 +343,6 @@ namespace System.Data.Common
         }
 #nullable enable
 
-        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
             return new EventDescriptorCollection(null);

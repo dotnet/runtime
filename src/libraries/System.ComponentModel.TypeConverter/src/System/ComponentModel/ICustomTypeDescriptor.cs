@@ -53,7 +53,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the events for this instance of a component.
         /// </summary>
-        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         EventDescriptorCollection GetEvents();
 
         /// <summary>

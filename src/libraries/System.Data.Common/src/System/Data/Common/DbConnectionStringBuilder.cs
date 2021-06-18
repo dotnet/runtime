@@ -621,9 +621,13 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetDefaultEvent(this, true);
         }
-        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use GetClassName overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
             return TypeDescriptor.GetEvents(this, true);
         }
         [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]

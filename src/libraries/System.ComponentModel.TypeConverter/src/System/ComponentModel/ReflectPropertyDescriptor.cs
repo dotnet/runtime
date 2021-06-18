@@ -246,7 +246,6 @@ namespace System.ComponentModel
         /// </summary>
         private EventDescriptor ChangedEventValue
         {
-            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             get
             {
                 if (!_state[s_bitChangedQueried])
@@ -264,7 +263,6 @@ namespace System.ComponentModel
         /// </summary>
         private EventDescriptor IPropChangedEventValue
         {
-            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             get
             {
                 if (!_state[s_bitIPropChangedQueried])
@@ -483,7 +481,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public override void AddValueChanged(object component, EventHandler handler)
         {
             if (component == null)
@@ -966,7 +963,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public override void RemoveValueChanged(object component, EventHandler handler)
         {
             if (component == null)
@@ -1201,11 +1197,6 @@ namespace System.ComponentModel
         /// from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         /// implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
         /// </summary>
-        public override bool SupportsChangeEvents
-        {
-            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
-
-            get => IPropChangedEventValue != null || ChangedEventValue != null;
-        }
+        public override bool SupportsChangeEvents => IPropChangedEventValue != null || ChangedEventValue != null;
     }
 }

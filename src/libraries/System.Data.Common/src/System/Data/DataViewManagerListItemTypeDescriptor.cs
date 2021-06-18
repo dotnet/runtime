@@ -78,7 +78,6 @@ namespace System.Data
         /// provides.  If the component is sited, the site may add or remove
         /// additional events.
         /// </summary>
-        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
 
         /// <summary>
