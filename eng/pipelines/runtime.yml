@@ -982,7 +982,6 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
 # Only when Mono is changed
