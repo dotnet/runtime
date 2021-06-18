@@ -1,50 +1,62 @@
 # Testing Libraries
 
-**WARNING** Instructions on this page appear to be unmaintained and do not work as written. See [here](https://github.com/dotnet/runtime/issues/54323) for details.
+## Pre-requisites
+Before tests can run the following steps must happen:
+1. Build a runtime (either Mono or coreclr)
+2. Build the libraries
+3. Testhost deployment: Binaries must be arranged into a directory layout that tools/tests expect
+4. Build the tests
 
+Using build.cmd/sh these steps can either be accomplished independently or the testing and all the pre-requisites can be automated in a single command. See the [Building instructions](../../building/libraries/README.md) for more options on how to build pieces independently.
 
-We use the OSS testing framework [xunit](https://github.com/xunit/xunit).
+## All-in-one Examples
 
-To build the tests and run them you can call the libraries build script. For libraries tests to work, you must have built the coreclr or mono runtime for them to run on.
+These examples automate all pre-requisite steps and the test run in a single command from a clean enlistment.
 
-**Examples**
-- The following shows how to build only the tests but not run them:
+- Run all tests using clr:
+```
+build.cmd/sh -subset clr+libs -test
+```
+
+- Run all tests using mono:
+```
+build.cmd/sh -subset mono+libs -test
+```
+
+- Run all tests - Builds clr in release, libs+tests in debug:
+```
+build.cmd/sh -subset clr+libs -test -rc Release
+```
+
+- Run all tests - Build mono and libs for x86 architecture:
+```
+build.cmd/sh -subset mono+libs -test -arch x86
+```
+
+## Partial workflow examples
+
+These examples allow portions of the workflow to be isolated and done individually:
+
+- Build only the tests but not run them:
 ```
 build.cmd/sh -subset libs.tests
 ```
 
-- The following builds and runs all tests using clr:
-```
-build.cmd/sh -subset clr+libs.tests -test
-```
-
-- The following builds and runs all tests using mono:
-```
-build.cmd/sh -subset mono+libs.tests -test
-```
-
-- The following builds and runs all tests in release configuration:
+- Builds and run all tests in release configuration. 
+_Pre-requisite: Build runtime+libs and deploy testhost directory_:
 ```
 build.cmd/sh -subset libs.tests -test -c Release
 ```
 
-- The following builds clr in release, libs in debug and runs all tests:
-```
-build.cmd/sh -subset clr+libs+libs.tests -test -rc Release
-```
-
-- The following builds mono and libs for x86 architecture and runs all tests:
-```
-build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
-```
-
-- The following example shows how to pass extra msbuild properties to ignore tests ignored in CI:
+- The following example shows how to pass extra msbuild properties to ignore tests ignored in CI.
+_Pre-requisite: Build runtime+libs and deploy testhost directory_:
 ```
 build.cmd/sh -subset libs.tests -test /p:WithoutCategories=IgnoreForCI
 ```
 
-Unless you specifiy `-testnobuild`, test assemblies are implicitly built when invoking the `Test` action.
-- The following shows how to only test the libraries without building them
+- Unless you specifiy `-testnobuild`, test assemblies are implicitly built when invoking the `Test` action.
+The following shows how to only test the libraries without building them.
+_Pre-requisite: Build runtime+libs, deploy testhost directory, build tests_:
 ```
 build.cmd/sh -subset libs.tests -test -testnobuild
 ```
