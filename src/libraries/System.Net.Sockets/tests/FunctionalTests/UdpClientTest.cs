@@ -682,6 +682,12 @@ namespace System.Net.Sockets.Tests
 
                 await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]));
                 await AssertReceiveAsync(receiver);
+
+                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), null);
+                await AssertReceiveAsync(receiver);
+
+                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), null, 0);
+                await AssertReceiveAsync(receiver);
             }
         }
 
@@ -691,6 +697,46 @@ namespace System.Net.Sockets.Tests
             Assert.NotNull(result.RemoteEndPoint);
             Assert.NotNull(result.Buffer);
             Assert.InRange(result.Buffer.Length, 1, int.MaxValue);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
+        public async Task SendAsync_Connected_PreCanceled_Throws()
+        {
+            using (var receiver = new UdpClient("localhost", 0))
+            using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new CancellationToken(true)).AsTask());
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
+        public async Task SendAsync_With_HostName_PreCanceled_Throws(bool ipv4)
+        {
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+
+            using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
+            using (var sender = new UdpClient(new IPEndPoint(address, 0)))
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port, new CancellationToken(true)).AsTask());
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendAsync_PreCanceled_Throws(bool ipv4)
+        {
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+
+            using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
+            using (var sender = new UdpClient(new IPEndPoint(address, 0)))
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), new CancellationToken(true)).AsTask());
+            }
         }
 
         [Fact]
