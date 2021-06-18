@@ -24,32 +24,32 @@ namespace System.SpanTests
         [InlineData(-16, 1)]
         public void LengthAndHoleArguments_Valid(int literalLength, int formattedCount)
         {
-            bool success;
+            bool shouldAppend;
 
-            new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[Math.Max(0, literalLength)], out success);
-            Assert.True(success);
+            new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[Math.Max(0, literalLength)], out shouldAppend);
+            Assert.True(shouldAppend);
 
-            new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[1 + Math.Max(0, literalLength)], out success);
-            Assert.True(success);
+            new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[1 + Math.Max(0, literalLength)], out shouldAppend);
+            Assert.True(shouldAppend);
 
             if (literalLength > 0)
             {
-                new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[literalLength - 1], out success);
-                Assert.False(success);
+                new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[literalLength - 1], out shouldAppend);
+                Assert.False(shouldAppend);
             }
 
             foreach (IFormatProvider provider in new IFormatProvider[] { null, new ConcatFormatter(), CultureInfo.InvariantCulture, CultureInfo.CurrentCulture, new CultureInfo("en-US"), new CultureInfo("fr-FR") })
             {
-                new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[Math.Max(0, literalLength)], out success);
-                Assert.True(success);
+                new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[Math.Max(0, literalLength)], out shouldAppend);
+                Assert.True(shouldAppend);
 
-                new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[1 + Math.Max(0, literalLength)], out success);
-                Assert.True(success);
+                new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[1 + Math.Max(0, literalLength)], out shouldAppend);
+                Assert.True(shouldAppend);
 
                 if (literalLength > 0)
                 {
-                    new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[literalLength - 1], out success);
-                    Assert.False(success);
+                    new MemoryExtensions.TryWriteInterpolatedStringHandler(literalLength, formattedCount, new char[literalLength - 1], out shouldAppend);
+                    Assert.False(shouldAppend);
                 }
             }
         }
@@ -417,8 +417,8 @@ namespace System.SpanTests
         {
             var buffer = new char[100];
 
-            MemoryExtensions.TryWriteInterpolatedStringHandler b = new MemoryExtensions.TryWriteInterpolatedStringHandler(0, 0, buffer.AsSpan(0, 0), out bool success);
-            Assert.True(success);
+            MemoryExtensions.TryWriteInterpolatedStringHandler b = new MemoryExtensions.TryWriteInterpolatedStringHandler(0, 0, buffer.AsSpan(0, 0), out bool shouldAppend);
+            Assert.True(shouldAppend);
 
             Assert.True(b.AppendLiteral(""));
             Assert.True(b.AppendFormatted((object)"", alignment: 0, format: "X2"));
@@ -445,8 +445,8 @@ namespace System.SpanTests
 
             for (int i = 0; i <= 29; i++)
             {
-                MemoryExtensions.TryWriteInterpolatedStringHandler b = new MemoryExtensions.TryWriteInterpolatedStringHandler(0, 0, buffer, out bool success);
-                Assert.True(success);
+                MemoryExtensions.TryWriteInterpolatedStringHandler b = new MemoryExtensions.TryWriteInterpolatedStringHandler(0, 0, buffer, out bool shouldAppend);
+                Assert.True(shouldAppend);
 
                 Assert.True(b.AppendLiteral(new string('s', bufferLength)));
 
@@ -497,8 +497,8 @@ namespace System.SpanTests
             var provider = new ConstFormatter(" ");
 
             {
-                MemoryExtensions.TryWriteInterpolatedStringHandler b = new MemoryExtensions.TryWriteInterpolatedStringHandler(0, 0, buffer.AsSpan(0, 0), provider, out bool success);
-                Assert.True(success);
+                MemoryExtensions.TryWriteInterpolatedStringHandler b = new MemoryExtensions.TryWriteInterpolatedStringHandler(0, 0, buffer.AsSpan(0, 0), provider, out bool shouldAppend);
+                Assert.True(shouldAppend);
 
                 // don't use custom formatter
                 Assert.True(b.AppendLiteral(""));

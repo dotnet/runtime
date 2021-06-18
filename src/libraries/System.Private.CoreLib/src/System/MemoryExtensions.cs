@@ -2167,27 +2167,6 @@ namespace System
             /// <param name="value">The value to write.</param>
             public bool AppendFormatted(string? value)
             {
-                // Fast-path for no custom formatter and a non-null string that fits in the current destination buffer.
-                if (!_hasCustomFormatter &&
-                    value is not null &&
-                    value.TryCopyTo(_destination.Slice(_pos)))
-                {
-                    _pos += value.Length;
-                    return true;
-                }
-
-                return AppendFormattedSlow(value);
-            }
-
-            /// <summary>Writes the specified value to the handler.</summary>
-            /// <param name="value">The value to write.</param>
-            /// <remarks>
-            /// Slow path to handle a custom formatter, potentially null value,
-            /// or a string that doesn't fit in the current buffer.
-            /// </remarks>
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            private bool AppendFormattedSlow(string? value)
-            {
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format: null);
