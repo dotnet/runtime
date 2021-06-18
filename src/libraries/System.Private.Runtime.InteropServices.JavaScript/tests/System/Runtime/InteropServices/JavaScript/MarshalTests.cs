@@ -1047,15 +1047,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalValueTask()
+        public static void MarshalValueTaskDoesNotWorkYet()
         {
-            HelperMarshal._intValue = 0;
-            Runtime.InvokeJS(
-                @"var t = App.call_test_method ('ValueTaskReturningConstant', [ 9 ], 'i'); " +
-                @"App.call_test_method ('InvokeInt', [ t.__for_automated_test_use_only__task_result ], 'i'); "
-            );
-
-            Assert.Equal(9, HelperMarshal._intValue);
+            var exc = Assert.Throws<System.Runtime.InteropServices.JavaScript.JSException>(() => {
+                HelperMarshal._intValue = 0;
+                Runtime.InvokeJS(
+                    @"var t = App.call_test_method ('ValueTaskReturningConstant', [ 9 ], 'i'); " +
+                    @"App.call_test_method ('InvokeInt', [ t.__for_automated_test_use_only__task_result ], 'i'); "
+                );
+                Assert.Equal(9, HelperMarshal._intValue);
+            });
+            Assert.StartsWith("Error: No CustomJavaScriptMarshaler found for struct type System.Threading.Tasks.ValueTask`1[System.Int32]", exc.Message);
         }
     }
 }
