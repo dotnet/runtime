@@ -622,7 +622,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return new string(result);
         }
 
-        public static void SetupJSContinuation(Task task, JSObject continuationObj)
+        public static void SetupJSContinuation(Task? task, JSObject? continuationObj)
         {
             if (task is null)
                 throw new ArgumentNullException(nameof(task));
