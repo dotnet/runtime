@@ -31,18 +31,17 @@ For greater control and efficiency individual parts of the build + testing workf
 See the [Building instructions](../../building/libraries/README.md) for more info on build options.
 
 ### Test Run Pre-requisites
-Before any tests can run we need a complete build to run them on. Specifically:
-1. Build a runtime (clr or mono)
+Before any tests can run we need a complete build to run them on. This requires building (1) a runtime, and
+(2) all the libraries. Examples:
+
+- Build release clr + debug libraries
 ```
-build.cmd/sh -subset clr
+build.cmd/sh -subset clr+libs -rc Release
 ```
-OR
+
+- Build release mono + debug libraries
 ```
-build.cmd/sh -subset mono
-```
-2. Build all the libraries
-```
-build.cmd/sh -subset libs
+build.cmd/sh -subset clr+libs -rc Release
 ```
 
 Building the `libs` subset automatically copies all product binaries into a testhost folder in the bin directory.
