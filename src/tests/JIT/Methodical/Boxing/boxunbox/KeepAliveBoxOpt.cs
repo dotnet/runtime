@@ -18,6 +18,10 @@ public class KeepAliveBoxFieldsTest
         Reset();
         TestClassWrapperOneBlock();
         Reset();
+        TestFinallyLocals();
+        Reset();
+        TestThrowCatchFinallyLocals();
+        Reset();
 
         return 100;
     }
@@ -179,6 +183,89 @@ public class KeepAliveBoxFieldsTest
         GC.KeepAlive(c6.Field);
 
         CheckSuccess();
+    }
+
+    public static void TestFinallyLocals()
+    {
+        var s1 = new ComplexStructWithExplicitLayout();
+        var s2 = new SimpleStructWithExplicitLayout();
+        var s3 = new SimpleStructWithAutoLayout();
+        var s4 = new SingleObjectStruct();
+        var s5 = new StructWithoutObjectFields();
+        var s6 = new SingleObjectStruct?();
+
+        try
+        {
+            s1.ObjectField = new Reporter("s1.ObjectField", nameof(TestFinallyLocals));
+            s1.AnotherObjectField = new Reporter("s1.AnotherObjectField", nameof(TestFinallyLocals));
+            s1.StructWithRef.ObjectField = new Reporter("s1.StructWithRef.ObjectField", nameof(TestFinallyLocals));
+            s2.ObjectField = new Reporter("s2.ObjectField", nameof(TestFinallyLocals));
+            s3.ObjectField = new Reporter("s3.ObjectField", nameof(TestFinallyLocals));
+            s3.AnotherObjectField = new Reporter("s3.AnotherObjectField", nameof(TestFinallyLocals));
+            s4.ObjectField = new Reporter("s4.ObjectField", nameof(TestFinallyLocals));
+            var s6src = new SingleObjectStruct();
+            s6src.ObjectField = new Reporter("s6src.ObjectField", nameof(TestFinallyLocals));
+            s6 = new SingleObjectStruct?(s6src);
+
+            GC.Collect(2, GCCollectionMode.Forced);
+            GC.WaitForPendingFinalizers();
+        }
+        finally
+        {
+            GC.KeepAlive(s1);
+            GC.KeepAlive(s2);
+            GC.KeepAlive(s3);
+            GC.KeepAlive(s4);
+            GC.KeepAlive(s5);
+            GC.KeepAlive(s6);
+
+            CheckSuccess();
+        }
+    }
+
+    public static void TestThrowCatchFinallyLocals()
+    {
+        var s1 = new ComplexStructWithExplicitLayout();
+        var s2 = new SimpleStructWithExplicitLayout();
+        var s3 = new SimpleStructWithAutoLayout();
+        var s4 = new SingleObjectStruct();
+        var s5 = new StructWithoutObjectFields();
+        var s6 = new SingleObjectStruct?();
+
+        try
+        {
+            s1.ObjectField = new Reporter("s1.ObjectField", nameof(TestThrowCatchFinallyLocals));
+            s1.AnotherObjectField = new Reporter("s1.AnotherObjectField", nameof(TestThrowCatchFinallyLocals));
+            s1.StructWithRef.ObjectField = new Reporter("s1.StructWithRef.ObjectField", nameof(TestThrowCatchFinallyLocals));
+            s2.ObjectField = new Reporter("s2.ObjectField", nameof(TestThrowCatchFinallyLocals));
+            s3.ObjectField = new Reporter("s3.ObjectField", nameof(TestThrowCatchFinallyLocals));
+            s3.AnotherObjectField = new Reporter("s3.AnotherObjectField", nameof(TestThrowCatchFinallyLocals));
+            s4.ObjectField = new Reporter("s4.ObjectField", nameof(TestThrowCatchFinallyLocals));
+            var s6src = new SingleObjectStruct();
+            s6src.ObjectField = new Reporter("s6src.ObjectField", nameof(TestThrowCatchFinallyLocals));
+            s6 = new SingleObjectStruct?(s6src);
+
+            GC.Collect(2, GCCollectionMode.Forced);
+            GC.WaitForPendingFinalizers();
+
+            throw new Exception();
+        }
+        catch
+        {
+            GC.Collect(2, GCCollectionMode.Forced);
+            GC.WaitForPendingFinalizers();
+        }
+        finally
+        {
+            GC.KeepAlive(s1);
+            GC.KeepAlive(s2);
+            GC.KeepAlive(s3);
+            GC.KeepAlive(s4);
+            GC.KeepAlive(s5);
+            GC.KeepAlive(s6);
+
+            CheckSuccess();
+        }
     }
 
     public class Reporter
