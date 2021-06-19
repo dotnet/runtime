@@ -47,14 +47,14 @@ public class KeepAliveBoxFieldsTest
         GC.Collect(2, GCCollectionMode.Forced);
         GC.WaitForPendingFinalizers();
 
+        CheckSuccess();
+
         GC.KeepAlive(s1);
         GC.KeepAlive(s2);
         GC.KeepAlive(s3);
         GC.KeepAlive(s4);
         GC.KeepAlive(s5);
         GC.KeepAlive(s6);
-
-        CheckSuccess();
     }
 
     public static void TestImplicitByrefsOneBlock()
@@ -89,14 +89,14 @@ public class KeepAliveBoxFieldsTest
         GC.Collect(2, GCCollectionMode.Forced);
         GC.WaitForPendingFinalizers();
 
+        CheckSuccess();
+
         GC.KeepAlive(s1);
         GC.KeepAlive(s2);
         GC.KeepAlive(s3);
         GC.KeepAlive(s4);
         GC.KeepAlive(s5);
         GC.KeepAlive(s6);
-
-        CheckSuccess();
     }
 
     public static void TestExplicitByrefsOneBlock()
@@ -131,14 +131,14 @@ public class KeepAliveBoxFieldsTest
         GC.Collect(2, GCCollectionMode.Forced);
         GC.WaitForPendingFinalizers();
 
+        CheckSuccess();
+
         GC.KeepAlive(s1);
         GC.KeepAlive(s2);
         GC.KeepAlive(s3);
         GC.KeepAlive(s4);
         GC.KeepAlive(s5);
         GC.KeepAlive(s6);
-
-        CheckSuccess();
     }
 
     public static void TestClassWrapperOneBlock()
@@ -175,14 +175,14 @@ public class KeepAliveBoxFieldsTest
         GC.Collect(2, GCCollectionMode.Forced);
         GC.WaitForPendingFinalizers();
 
+        CheckSuccess();
+
         GC.KeepAlive(c1.Field);
         GC.KeepAlive(c2.Field);
         GC.KeepAlive(c3.Field);
         GC.KeepAlive(c4.Field);
         GC.KeepAlive(c5.Field);
         GC.KeepAlive(c6.Field);
-
-        CheckSuccess();
     }
 
     public static void TestFinallyLocals()
@@ -212,14 +212,14 @@ public class KeepAliveBoxFieldsTest
         }
         finally
         {
+            CheckSuccess();
+
             GC.KeepAlive(s1);
             GC.KeepAlive(s2);
             GC.KeepAlive(s3);
             GC.KeepAlive(s4);
             GC.KeepAlive(s5);
             GC.KeepAlive(s6);
-
-            CheckSuccess();
         }
     }
 
@@ -257,14 +257,14 @@ public class KeepAliveBoxFieldsTest
         }
         finally
         {
+            CheckSuccess();
+
             GC.KeepAlive(s1);
             GC.KeepAlive(s2);
             GC.KeepAlive(s3);
             GC.KeepAlive(s4);
             GC.KeepAlive(s5);
             GC.KeepAlive(s6);
-
-            CheckSuccess();
         }
     }
 
