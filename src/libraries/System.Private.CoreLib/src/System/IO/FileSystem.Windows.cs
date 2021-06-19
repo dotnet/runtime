@@ -492,7 +492,8 @@ namespace System.IO
                 }
 
                 ReadOnlySpan<byte> bufferSpan = new(buffer);
-                ref readonly Interop.Kernel32.REPARSE_DATA_BUFFER rdb = ref MemoryMarshal.AsRef<Interop.Kernel32.REPARSE_DATA_BUFFER>(bufferSpan);
+                success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.REPARSE_DATA_BUFFER rdb);
+                Debug.Assert(success);
 
                 // Only symbolic links are supported at the moment.
                 if ((rdb.ReparseTag & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0)
