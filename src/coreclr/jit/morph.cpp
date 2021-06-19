@@ -12094,7 +12094,8 @@ DONE_MORPHING_CHILDREN:
     GenTree*      temp;
     GenTree*      cns1;
     GenTree*      cns2;
-    size_t        ival1, ival2;
+    size_t        ival1;
+    // size_t        ival2;
     GenTree*      lclVarTree;
     GenTree*      effectiveOp1;
     FieldSeqNode* fieldSeq = nullptr;
@@ -12155,418 +12156,13 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-
-            /* Make sure we're allowed to do this */
-
-            if (optValnumCSE_phase)
+            tree = fgOptimizeEqualityComparison(tree->AsOp());
+            oper = tree->OperGet();
+            if (tree->OperIsSimple())
             {
-                // It is not safe to reorder/delete CSE's
-                break;
+                op1 = tree->gtGetOp1();
+                op2 = tree->gtGetOp2IfPresent();
             }
-
-            // Pattern-matching optimization:
-            //    (a % c) ==/!= 0
-            // for power-of-2 constant `c`
-            // =>
-            //    a & (c - 1) ==/!= 0
-            // For integer `a`, even if negative.
-            if (opts.OptimizationEnabled())
-            {
-                GenTree* op1 = tree->AsOp()->gtOp1;
-                GenTree* op2 = tree->AsOp()->gtOp2;
-                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1->TypeGet()) && op2->IsIntegralConst(0))
-                {
-                    GenTree* op1op2 = op1->AsOp()->gtOp2;
-                    if (op1op2->IsCnsIntOrI())
-                    {
-                        ssize_t modValue = op1op2->AsIntCon()->IconValue();
-                        if (isPow2(modValue))
-                        {
-                            op1->SetOper(GT_AND);                                 // Change % => &
-                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
-                        }
-                    }
-                }
-            }
-
-            cns2 = op2;
-
-            /* Check for "(expr +/- icon1) ==/!= (non-zero-icon2)" */
-
-            if (cns2->gtOper == GT_CNS_INT && cns2->AsIntCon()->gtIconVal != 0)
-            {
-                op1 = tree->AsOp()->gtOp1;
-
-                /* Since this can occur repeatedly we use a while loop */
-
-                while ((op1->gtOper == GT_ADD || op1->gtOper == GT_SUB) && (op1->AsOp()->gtOp2->gtOper == GT_CNS_INT) &&
-                       (op1->gtType == TYP_INT) && (op1->gtOverflow() == false))
-                {
-                    /* Got it; change "x+icon1==icon2" to "x==icon2-icon1" */
-
-                    ival1 = op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                    ival2 = cns2->AsIntCon()->gtIconVal;
-
-                    if (op1->gtOper == GT_ADD)
-                    {
-                        ival2 -= ival1;
-                    }
-                    else
-                    {
-                        ival2 += ival1;
-                    }
-                    cns2->AsIntCon()->gtIconVal = ival2;
-
-#ifdef TARGET_64BIT
-                    // we need to properly re-sign-extend or truncate as needed.
-                    cns2->AsIntCon()->TruncateOrSignExtend32();
-#endif // TARGET_64BIT
-
-                    op1 = tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1;
-                }
-            }
-
-            //
-            // Here we look for the following tree
-            //
-            //                        EQ/NE
-            //                        /  \.
-            //                      op1   CNS 0/1
-            //
-            ival2 = INT_MAX; // The value of INT_MAX for ival2 just means that the constant value is not 0 or 1
-
-            // cast to unsigned allows test for both 0 and 1
-            if ((cns2->gtOper == GT_CNS_INT) && (((size_t)cns2->AsIntConCommon()->IconValue()) <= 1U))
-            {
-                ival2 = (size_t)cns2->AsIntConCommon()->IconValue();
-            }
-            else // cast to UINT64 allows test for both 0 and 1
-                if ((cns2->gtOper == GT_CNS_LNG) && (((UINT64)cns2->AsIntConCommon()->LngValue()) <= 1ULL))
-            {
-                ival2 = (size_t)cns2->AsIntConCommon()->LngValue();
-            }
-
-            if (ival2 != INT_MAX)
-            {
-                // If we don't have a comma and relop, we can't do this optimization
-                //
-                if ((op1->gtOper == GT_COMMA) && (op1->AsOp()->gtOp2->OperIsCompare()))
-                {
-                    // Here we look for the following transformation
-                    //
-                    //                  EQ/NE                    Possible REVERSE(RELOP)
-                    //                  /  \                           /      \.
-                    //               COMMA CNS 0/1             ->   COMMA   relop_op2
-                    //              /   \                          /    \.
-                    //             x  RELOP                       x     relop_op1
-                    //               /    \.
-                    //         relop_op1  relop_op2
-                    //
-                    //
-                    //
-                    GenTree* comma = op1;
-                    GenTree* relop = comma->AsOp()->gtOp2;
-
-                    GenTree* relop_op1 = relop->AsOp()->gtOp1;
-
-                    bool reverse = ((ival2 == 0) == (oper == GT_EQ));
-
-                    if (reverse)
-                    {
-                        gtReverseCond(relop);
-                    }
-
-                    relop->AsOp()->gtOp1 = comma;
-                    comma->AsOp()->gtOp2 = relop_op1;
-
-                    // Comma now has fewer nodes underneath it, so we need to regenerate its flags
-                    comma->gtFlags &= ~GTF_ALL_EFFECT;
-                    comma->gtFlags |= (comma->AsOp()->gtOp1->gtFlags) & GTF_ALL_EFFECT;
-                    comma->gtFlags |= (comma->AsOp()->gtOp2->gtFlags) & GTF_ALL_EFFECT;
-
-                    noway_assert((relop->gtFlags & GTF_RELOP_JMP_USED) == 0);
-                    noway_assert((relop->gtFlags & GTF_REVERSE_OPS) == 0);
-                    relop->gtFlags |=
-                        tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE | GTF_ALL_EFFECT);
-
-                    return relop;
-                }
-
-                if (op1->gtOper == GT_COMMA)
-                {
-                    // Here we look for the following tree
-                    // and when the LCL_VAR is a temp we can fold the tree:
-                    //
-                    //                        EQ/NE                  EQ/NE
-                    //                        /  \                   /  \.
-                    //                     COMMA  CNS 0/1  ->     RELOP CNS 0/1
-                    //                     /   \                   / \.
-                    //                   ASG  LCL_VAR
-                    //                  /  \.
-                    //           LCL_VAR   RELOP
-                    //                      / \.
-                    //
-
-                    GenTree* asg = op1->AsOp()->gtOp1;
-                    GenTree* lcl = op1->AsOp()->gtOp2;
-
-                    /* Make sure that the left side of the comma is the assignment of the LCL_VAR */
-                    if (asg->gtOper != GT_ASG)
-                    {
-                        goto SKIP;
-                    }
-
-                    /* The right side of the comma must be a LCL_VAR temp */
-                    if (lcl->gtOper != GT_LCL_VAR)
-                    {
-                        goto SKIP;
-                    }
-
-                    unsigned lclNum = lcl->AsLclVarCommon()->GetLclNum();
-                    noway_assert(lclNum < lvaCount);
-
-                    /* If the LCL_VAR is not a temp then bail, a temp has a single def */
-                    if (!lvaTable[lclNum].lvIsTemp)
-                    {
-                        goto SKIP;
-                    }
-
-                    /* If the LCL_VAR is a CSE temp then bail, it could have multiple defs/uses */
-                    // Fix 383856 X86/ARM ILGEN
-                    if (lclNumIsCSE(lclNum))
-                    {
-                        goto SKIP;
-                    }
-
-                    /* We also must be assigning the result of a RELOP */
-                    if (asg->AsOp()->gtOp1->gtOper != GT_LCL_VAR)
-                    {
-                        goto SKIP;
-                    }
-
-                    /* Both of the LCL_VAR must match */
-                    if (asg->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lclNum)
-                    {
-                        goto SKIP;
-                    }
-
-                    /* If right side of asg is not a RELOP then skip */
-                    if (!asg->AsOp()->gtOp2->OperIsCompare())
-                    {
-                        goto SKIP;
-                    }
-
-                    /* Set op1 to the right side of asg, (i.e. the RELOP) */
-                    op1 = asg->AsOp()->gtOp2;
-
-                    DEBUG_DESTROY_NODE(asg->AsOp()->gtOp1);
-                    DEBUG_DESTROY_NODE(lcl);
-                }
-
-                if (op1->OperIsCompare())
-                {
-                    // Here we look for the following tree
-                    //
-                    //                        EQ/NE           ->      RELOP/!RELOP
-                    //                        /  \                       /    \.
-                    //                     RELOP  CNS 0/1
-                    //                     /   \.
-                    //
-                    // Note that we will remove/destroy the EQ/NE node and move
-                    // the RELOP up into it's location.
-
-                    /* Here we reverse the RELOP if necessary */
-
-                    bool reverse = ((ival2 == 0) == (oper == GT_EQ));
-
-                    if (reverse)
-                    {
-                        gtReverseCond(op1);
-                    }
-
-                    noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
-                    op1->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
-
-                    DEBUG_DESTROY_NODE(tree);
-                    return op1;
-                }
-
-                //
-                // Now we check for a compare with the result of an '&' operator
-                //
-                // Here we look for the following transformation:
-                //
-                //                        EQ/NE                  EQ/NE
-                //                        /  \                   /  \.
-                //                      AND   CNS 0/1  ->      AND   CNS 0
-                //                     /   \                  /   \.
-                //                RSZ/RSH   CNS 1            x     CNS (1 << y)
-                //                  /  \.
-                //                 x   CNS_INT +y
-
-                if (op1->gtOper == GT_AND)
-                {
-                    GenTree* andOp    = op1;
-                    GenTree* rshiftOp = andOp->AsOp()->gtOp1;
-
-                    if ((rshiftOp->gtOper != GT_RSZ) && (rshiftOp->gtOper != GT_RSH))
-                    {
-                        goto SKIP;
-                    }
-
-                    if (!rshiftOp->AsOp()->gtOp2->IsCnsIntOrI())
-                    {
-                        goto SKIP;
-                    }
-
-                    ssize_t shiftAmount = rshiftOp->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-
-                    if (shiftAmount < 0)
-                    {
-                        goto SKIP;
-                    }
-
-                    if (!andOp->AsOp()->gtOp2->IsIntegralConst(1))
-                    {
-                        goto SKIP;
-                    }
-
-                    if (andOp->gtType == TYP_INT)
-                    {
-                        if (shiftAmount > 31)
-                        {
-                            goto SKIP;
-                        }
-
-                        UINT32 newAndOperand = ((UINT32)1) << shiftAmount;
-
-                        andOp->AsOp()->gtOp2->AsIntCon()->gtIconVal = newAndOperand;
-
-                        // Reverse the cond if necessary
-                        if (ival2 == 1)
-                        {
-                            gtReverseCond(tree);
-                            cns2->AsIntCon()->gtIconVal = 0;
-                            oper                        = tree->gtOper;
-                        }
-                    }
-                    else if (andOp->gtType == TYP_LONG)
-                    {
-                        if (shiftAmount > 63)
-                        {
-                            goto SKIP;
-                        }
-
-                        UINT64 newAndOperand = ((UINT64)1) << shiftAmount;
-
-                        andOp->AsOp()->gtOp2->AsIntConCommon()->SetLngValue(newAndOperand);
-
-                        // Reverse the cond if necessary
-                        if (ival2 == 1)
-                        {
-                            gtReverseCond(tree);
-                            cns2->AsIntConCommon()->SetLngValue(0);
-                            oper = tree->gtOper;
-                        }
-                    }
-
-                    andOp->AsOp()->gtOp1 = rshiftOp->AsOp()->gtOp1;
-
-                    DEBUG_DESTROY_NODE(rshiftOp->AsOp()->gtOp2);
-                    DEBUG_DESTROY_NODE(rshiftOp);
-                }
-            } // END if (ival2 != INT_MAX)
-
-        SKIP:
-            /* Now check for compares with small constant longs that can be cast to int */
-
-            if (!cns2->OperIsConst())
-            {
-                goto COMPARE;
-            }
-
-            if (cns2->TypeGet() != TYP_LONG)
-            {
-                goto COMPARE;
-            }
-
-            /* Is the constant 31 bits or smaller? */
-
-            if ((cns2->AsIntConCommon()->LngValue() >> 31) != 0)
-            {
-                goto COMPARE;
-            }
-
-            /* Is the first comparand mask operation of type long ? */
-
-            if (op1->gtOper != GT_AND)
-            {
-                /* Another interesting case: cast from int */
-
-                if (op1->gtOper == GT_CAST && op1->CastFromType() == TYP_INT &&
-                    !gtIsActiveCSE_Candidate(op1) && // op1 cannot be a CSE candidate
-                    !op1->gtOverflow())              // cannot be an overflow checking cast
-                {
-                    /* Simply make this into an integer comparison */
-
-                    tree->AsOp()->gtOp1 = op1->AsCast()->CastOp();
-                    tree->AsOp()->gtOp2 = gtNewIconNode((int)cns2->AsIntConCommon()->LngValue(), TYP_INT);
-                }
-
-                goto COMPARE;
-            }
-
-            noway_assert(op1->TypeGet() == TYP_LONG && op1->OperGet() == GT_AND);
-
-            // The transform below cannot preserve VNs.
-            if (fgGlobalMorph)
-            {
-                // Is the result of the mask effectively an INT ?
-
-                GenTree* andMask = op1->AsOp()->gtOp2;
-
-                if (andMask->gtOper != GT_CNS_NATIVELONG)
-                {
-                    goto COMPARE;
-                }
-                if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
-                {
-                    goto COMPARE;
-                }
-
-                // Now we narrow AsOp()->gtOp1 of AND to int.
-                if (optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
-                {
-                    optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
-                }
-                else
-                {
-                    op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
-                }
-
-                // now replace the mask node (AsOp()->gtOp2 of AND node).
-
-                noway_assert(andMask == op1->AsOp()->gtOp2);
-
-                ival1 = (int)andMask->AsIntConCommon()->LngValue();
-                andMask->SetOper(GT_CNS_INT);
-                andMask->gtType                = TYP_INT;
-                andMask->AsIntCon()->gtIconVal = ival1;
-
-                // now change the type of the AND node.
-
-                op1->gtType = TYP_INT;
-
-                // finally we replace the comparand.
-
-                ival2 = (int)cns2->AsIntConCommon()->LngValue();
-                cns2->SetOper(GT_CNS_INT);
-                cns2->gtType = TYP_INT;
-
-                noway_assert(cns2 == op2);
-                cns2->AsIntCon()->gtIconVal = ival2;
-            }
-
             goto COMPARE;
 
         case GT_LT:
@@ -13976,6 +13572,401 @@ DONE_MORPHING_CHILDREN:
     tree = fgMorphSmpOpOptional(tree->AsOp());
 
     return tree;
+}
+
+GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
+{
+    if (optValnumCSE_phase)
+    {
+        // It is not safe to reorder/delete CSE's
+        return cmp;
+    }
+
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+
+    // Pattern-matching optimization:
+    //    (a % c) ==/!= 0
+    // for power-of-2 constant `c`
+    // =>
+    //    a & (c - 1) ==/!= 0
+    // For integer `a`, even if negative.
+    if (opts.OptimizationEnabled())
+    {
+        GenTree* op1 = cmp->gtGetOp1();
+        GenTree* op2 = cmp->gtGetOp2();
+        if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
+        {
+            GenTree* op1op2 = op1->AsOp()->gtOp2;
+            if (op1op2->IsCnsIntOrI())
+            {
+                ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                if (isPow2(modValue))
+                {
+                    op1->SetOper(GT_AND);                                 // Change % => &
+                    op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                }
+            }
+        }
+    }
+
+    GenTree* cns2 = op2;
+    size_t ival1;
+    size_t ival2;
+
+    // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
+
+    if (cns2->IsCnsIntOrI() && (cns2->AsIntCon()->IconValue() != 0))
+    {
+        op1 = cmp->gtGetOp1();
+
+        // Since this can occur repeatedly we use a while loop.
+
+        while (op1->OperIs(GT_ADD, GT_SUB) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
+               op1->TypeIs(TYP_INT) && !op1->gtOverflow())
+        {
+            // Got it; change "x + icon1 == icon2" to "x == icon2 - icon1".
+
+            ival1 = op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
+            ival2 = cns2->AsIntCon()->IconValue();
+
+            if (op1->OperIs(GT_ADD))
+            {
+                ival2 -= ival1;
+            }
+            else
+            {
+                ival2 += ival1;
+            }
+
+            cns2->AsIntCon()->SetIconValue(ival2);
+
+#ifdef TARGET_64BIT
+            // we need to properly re-sign-extend or truncate as needed.
+            cns2->AsIntCon()->TruncateOrSignExtend32();
+#endif // TARGET_64BIT
+
+            op1 = cmp->gtOp1 = op1->AsOp()->gtGetOp1();
+        }
+    }
+
+    // Here we look for the following tree
+    //
+    //                        EQ/NE
+    //                        /  \.
+    //                      op1   CNS 0/1
+    //
+    ival2 = INT_MAX; // The value of INT_MAX for ival2 just means that the constant value is not 0 or 1
+
+    if (cns2->IsIntegralConst(0) || cns2->IsIntegralConst(1))
+    {
+        ival2 = static_cast<size_t>(cns2->AsIntConCommon()->IntegralValue());
+    }
+
+    if (ival2 != INT_MAX)
+    {
+        // If we don't have a comma and relop, we can't do this optimization
+        if (op1->OperIs(GT_COMMA) && op1->AsOp()->gtGetOp2()->OperIsCompare())
+        {
+            // Here we look for the following transformation
+            //
+            //                  EQ/NE                    Possible REVERSE(RELOP)
+            //                  /  \                           /      \.
+            //               COMMA CNS 0/1             ->   COMMA   relopOp2
+            //              /   \                          /    \.
+            //             x  RELOP                       x   relopOp1
+            //               /    \.
+            //         relopOp1  relopOp2
+
+            GenTreeOp* comma    = op1->AsOp();
+            GenTreeOp* relop    = comma->gtGetOp2()->AsOp();
+            GenTree*   relopOp1 = relop->gtGetOp1();
+
+            bool reverse = ((ival2 == 0) == cmp->OperIs(GT_EQ));
+
+            if (reverse)
+            {
+                gtReverseCond(relop);
+            }
+
+            relop->gtOp1 = comma;
+            comma->gtOp2 = relopOp1;
+
+            // Comma now has fewer nodes underneath it, so we need to regenerate its flags
+            comma->gtFlags &= ~GTF_ALL_EFFECT;
+            comma->gtFlags |= comma->gtGetOp1()->gtFlags & GTF_ALL_EFFECT;
+            comma->gtFlags |= comma->gtGetOp2()->gtFlags & GTF_ALL_EFFECT;
+
+            noway_assert((relop->gtFlags & GTF_RELOP_JMP_USED) == 0);
+            noway_assert((relop->gtFlags & GTF_REVERSE_OPS) == 0);
+            relop->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE | GTF_ALL_EFFECT);
+
+            return relop;
+        }
+
+        if (op1->OperIs(GT_COMMA))
+        {
+            // Here we look for the following tree
+            // and when the LCL_VAR is a temp we can fold the tree:
+            //
+            //                        EQ/NE                  EQ/NE
+            //                        /  \                   /  \.
+            //                     COMMA  CNS 0/1  ->     RELOP CNS 0/1
+            //                     /   \                   / \.
+            //                   ASG  LCL_VAR
+            //                  /  \.
+            //            LCL_VAR  RELOP
+            //                      / \.
+            //
+
+            GenTree* asg = op1->AsOp()->gtGetOp1();
+            GenTree* lcl = op1->AsOp()->gtGetOp2();
+
+            // Make sure that the left side of the comma is the assignment of the LCL_VAR.
+            if (!asg->OperIs(GT_ASG))
+            {
+                goto SKIP;
+            }
+
+            // The right side of the comma must be a LCL_VAR temp.
+            if (!lcl->OperIs(GT_LCL_VAR))
+            {
+                goto SKIP;
+            }
+
+            unsigned lclNum = lcl->AsLclVarCommon()->GetLclNum();
+
+            // If the LCL_VAR is not a temp then bail, a temp has a single def.
+            // TODO-Review: "a temp has a single def" - is that guaranteed?
+            if (!lvaGetDesc(lclNum)->lvIsTemp)
+            {
+                goto SKIP;
+            }
+
+            // If the LCL_VAR is a CSE temp then bail, it could have multiple defs/uses.
+            // Fix 383856 X86/ARM ILGEN.
+            if (lclNumIsCSE(lclNum))
+            {
+                goto SKIP;
+            }
+
+            // We also must be assigning the result of a RELOP.
+            if (!asg->AsOp()->gtGetOp1()->OperIs(GT_LCL_VAR))
+            {
+                goto SKIP;
+            }
+
+            // Both of the LCL_VAR must match.
+            if (asg->AsOp()->gtGetOp1()->AsLclVarCommon()->GetLclNum() != lclNum)
+            {
+                goto SKIP;
+            }
+
+            // If right side of asg is not a RELOP then skip.
+            if (!asg->AsOp()->gtGetOp2()->OperIsCompare())
+            {
+                goto SKIP;
+            }
+
+            // Set op1 to the right side of asg, (i.e. the RELOP).
+            op1 = asg->AsOp()->gtGetOp2();
+
+            DEBUG_DESTROY_NODE(asg->AsOp()->gtGetOp1());
+            DEBUG_DESTROY_NODE(lcl);
+        }
+
+        if (op1->OperIsCompare())
+        {
+            // Here we look for the following tree
+            //
+            //                        EQ/NE           ->      RELOP/!RELOP
+            //                        /  \                       /    \.
+            //                     RELOP  CNS 0/1
+            //                     /   \.
+            //
+            // Note that we will remove/destroy the EQ/NE node and move
+            // the RELOP up into it's location.
+
+            // Here we reverse the RELOP if necessary.
+
+            bool reverse = ((ival2 == 0) == (cmp->OperIs(GT_EQ)));
+
+            if (reverse)
+            {
+                gtReverseCond(op1);
+            }
+
+            // Propagate gtType of tree into op1 in case it is TYP_BYTE for setcc optimization.
+            op1->gtType = cmp->gtType;
+
+            noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
+            op1->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+
+            DEBUG_DESTROY_NODE(cmp);
+            return op1;
+        }
+
+        //
+        // Now we check for a compare with the result of an '&' operator
+        //
+        // Here we look for the following transformation:
+        //
+        //                        EQ/NE                  EQ/NE
+        //                        /  \                   /  \.
+        //                      AND   CNS 0/1  ->      AND   CNS 0
+        //                     /   \                  /   \.
+        //                RSZ/RSH   CNS 1            x     CNS (1 << y)
+        //                  /  \.
+        //                 x   CNS_INT +y
+
+        if (op1->OperIs(GT_AND))
+        {
+            GenTree* andOp    = op1;
+            GenTree* rshiftOp = andOp->AsOp()->gtGetOp1();
+
+            if (!rshiftOp->OperIs(GT_RSZ, GT_RSH))
+            {
+                goto SKIP;
+            }
+
+            if (!rshiftOp->AsOp()->gtGetOp2()->IsCnsIntOrI())
+            {
+                goto SKIP;
+            }
+
+            ssize_t shiftAmount = rshiftOp->AsOp()->gtGetOp2()->AsIntCon()->IconValue();
+
+            if (shiftAmount < 0)
+            {
+                goto SKIP;
+            }
+
+            if (!andOp->AsOp()->gtGetOp2()->IsIntegralConst(1))
+            {
+                goto SKIP;
+            }
+
+            if (andOp->TypeIs(TYP_INT))
+            {
+                if (shiftAmount > 31)
+                {
+                    goto SKIP;
+                }
+
+                uint32_t newAndOperand = 1u << shiftAmount;
+
+                andOp->AsOp()->gtGetOp2()->AsIntCon()->SetIconValue(newAndOperand);
+
+                // Reverse the condition if necessary.
+                if (ival2 == 1)
+                {
+                    gtReverseCond(cmp);
+                    cns2->AsIntCon()->SetIconValue(0);
+                }
+            }
+            else if (andOp->TypeIs(TYP_LONG))
+            {
+                if (shiftAmount > 63)
+                {
+                    goto SKIP;
+                }
+
+                uint64_t newAndOperand = 1ull << shiftAmount;
+
+                andOp->AsOp()->gtGetOp2()->AsIntConCommon()->SetLngValue(newAndOperand);
+
+                // Reverse the cond if necessary
+                if (ival2 == 1)
+                {
+                    gtReverseCond(cmp);
+                    cns2->AsIntConCommon()->SetLngValue(0);
+                }
+            }
+
+            andOp->AsOp()->gtOp1 = rshiftOp->AsOp()->gtOp1;
+
+            DEBUG_DESTROY_NODE(rshiftOp->AsOp()->gtOp2);
+            DEBUG_DESTROY_NODE(rshiftOp);
+        }
+    } // END if (ival2 != INT_MAX)
+
+SKIP:
+    // Now check for compares with small constant longs that can be cast to int.
+
+    if (!cns2->OperIsConst())
+    {
+        return cmp;
+    }
+
+    if (!cns2->TypeIs(TYP_LONG))
+    {
+        return cmp;
+    }
+
+    // Is the constant 31 bits or smaller?
+
+    if ((cns2->AsIntConCommon()->LngValue() >> 31) != 0)
+    {
+        return cmp;
+    }
+
+    // Is the first comparand mask operation of type long?
+
+    if (!op1->OperIs(GT_AND))
+    {
+        // Another interesting case: cast from int.
+
+        if (op1->OperIs(GT_CAST) && op1->AsCast()->CastOp()->TypeIs(TYP_INT) && !op1->gtOverflow())
+        {
+            // Simply make this into an integer comparison.
+            cmp->gtOp1 = op1->AsCast()->CastOp();
+            cmp->gtOp2 = gtNewIconNode(static_cast<int32_t>(cns2->AsIntConCommon()->LngValue()), TYP_INT);
+        }
+
+        return cmp;
+    }
+
+    noway_assert(op1->TypeIs(TYP_LONG) && op1->OperIs(GT_AND));
+
+    // Is the result of the mask effectively an INT?
+
+    GenTree* andMask = op1->AsOp()->gtGetOp2();
+    if (!andMask->OperIs(GT_CNS_NATIVELONG))
+    {
+        return cmp;
+    }
+    if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
+    {
+        return cmp;
+    }
+
+    // Now we know that we can cast AsOp()->gtOp1 of AND to int.
+
+    op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+
+    // Now replace the mask node (AsOp()->gtOp2 of AND node).
+
+    noway_assert(andMask == op1->AsOp()->gtGetOp2());
+
+    ival1 = static_cast<int32_t>(andMask->AsIntConCommon()->LngValue());
+    andMask->SetOper(GT_CNS_INT);
+    andMask->gtType = TYP_INT;
+    andMask->AsIntCon()->SetIconValue(ival1);
+
+    // Now change the type of the AND node.
+
+    op1->gtType = TYP_INT;
+
+    // Finally we replace the comparand.
+
+    ival2 = static_cast<int32_t>(cns2->AsIntConCommon()->LngValue());
+    cns2->SetOper(GT_CNS_INT);
+    cns2->gtType = TYP_INT;
+
+    noway_assert(cns2 == op2);
+    cns2->AsIntCon()->SetIconValue(ival2);
+
+    return cmp;
 }
 
 //----------------------------------------------------------------------------------------------
