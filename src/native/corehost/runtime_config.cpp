@@ -114,9 +114,15 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     const auto& probe_paths = opts_obj.FindMember(_X("additionalProbingPaths"));
     if (probe_paths != opts_obj.MemberEnd())
     {
+        pal::string_t base_path = get_directory(m_path).c_str();
+
         if (probe_paths->value.IsString())
         {
-            m_probe_paths.insert(m_probe_paths.begin(), get_directory(m_path).GetString() + probe_paths->value.GetString());
+            pal::string_t full_path = base_path;
+            append_path(&full_path, probe_paths->value.GetString());
+
+            m_probe_paths.push_front(full_path.c_str());
+            m_probe_paths.push_front(probe_paths->value.GetString());
         }
         else if (probe_paths->value.IsArray())
         {
@@ -126,7 +132,11 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
 
             for (; begin != end; begin++)
             {
-                m_probe_paths.push_front(get_directory(m_path).GetString() + begin->GetString());
+                pal::string_t full_path = base_path;
+                append_path(&full_path, begin->GetString());
+
+                m_probe_paths.push_front(full_path.c_str());
+                m_probe_paths.push_front(begin->GetString());
             }
         }
         else
