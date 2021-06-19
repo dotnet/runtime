@@ -222,15 +222,6 @@ var Module = {
 		test_exit (1);
 	},
 
-	onConfigLoaded: function (config) {
-        if (!config || config.error){
-            console.log("An error occured while loading the config file");
-            return;
-        }
-
-        Module.config = config;
-    },
-
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (var variable in setenv) {
