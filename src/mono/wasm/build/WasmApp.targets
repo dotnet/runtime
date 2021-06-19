@@ -200,4 +200,13 @@
       WasmAssembliesToBundle: @(WasmAssembliesToBundle)
       WasmAssembliesFinal: @(WasmAssembliesFinal)" />
   </Target>
+
+  <!-- Setup NPM packages for NodeJS publish/builds -->
+  <Target Name="NodePrep" AfterTargets="_AfterWasmBuildApp" Condition="'$(TargetOS)' == 'Node'">
+    <Copy SourceFiles="C:\runtime_node\src\mono\sample\wasm\console\package.json"
+        DestinationFolder="$(WasmAppDir)"
+        SkipUnchangedFiles="true" />
+    <Exec Command="npm install --cwd $(WasmAppDir) --prefix $(WasmAppDir)"
+        IgnoreStandardErrorWarningFormat="true" />
+  </Target>
 </Project>

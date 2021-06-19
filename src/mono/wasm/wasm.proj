@@ -73,7 +73,8 @@
       <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
       <_EmccCommonFlags Include="-emit-llvm" />
-      <_EmccCommonFlags Include="-s MODULARIZE=1" />
+      
+      <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(TargetOS)' == 'Node'"/>
       
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
     </ItemGroup>
@@ -274,6 +275,7 @@
     <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
+
   </Target>
 
 </Project>
