@@ -1337,7 +1337,12 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSize())
+            else if (m_IsPrejitRoot && (m_CodeSize <= 150))
+            {
+                // Candidate, pending profitability evaluation
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+            else if (!m_IsPrejitRoot && (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSize()))
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -1358,21 +1363,19 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 unsigned basicBlockLimit = MAX_BASIC_BLOCKS;
 
+                // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
+                // or have Profile Data.
+                basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
+                if (m_HasProfile && (m_ProfileFrequency > 0.5))
+                {
+                    basicBlockLimit += 3;
+                }
+
                 if (m_IsPrejitRoot)
                 {
-                    basicBlockLimit = JitConfig.JitExtendedDefaultPolicyMaxBBCount();
+                    basicBlockLimit = max(10, basicBlockLimit);
                 }
-                else
-                {
-                    // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
-                    // or have Profile Data.
-                    basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
-                    if (m_HasProfile && (m_ProfileFrequency > 0.5))
-                    {
-                        basicBlockLimit += 3;
-                    }
-                    basicBlockLimit = min(JitConfig.JitExtendedDefaultPolicyMaxBBCount(), value);
-                }
+
                 if ((unsigned)value > basicBlockLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
