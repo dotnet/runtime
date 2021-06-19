@@ -311,6 +311,7 @@ var Module = {
 		Module.MONO.mono_load_runtime_and_bcl_args (MONO_CONFIG);
 	},
 };
+globalThis.Module = Module; // needed as some functions (such as call_static_method) need access to Module.
 
 const App = {
 	init: function () {
