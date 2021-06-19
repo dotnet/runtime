@@ -20551,24 +20551,19 @@ void gc_heap::allocate_for_no_gc_after_gc()
                 required -= commit;
                 while (required > 0)
                 {
-                    uint8_t* start;
-                    uint8_t* end;
-                    bool allocated_p = global_region_allocator.allocate_basic_region (&start, &end);
-                    if (!allocated_p)
+                    heap_segment* seg = get_new_region (0);
+                    if (seg == nullptr)
                     {
                         no_gc_oom_p = true;
                         break;
                     }
-                    size_t region_size = end - start;
-                    seg = make_heap_segment (start, region_size, __this, 0);
-                    size_t usable_size = end - heap_segment_allocated (seg);
+                    size_t usable_size = heap_segment_reserved (seg) - heap_segment_allocated (seg);
                     commit = min (required, usable_size);
                     if (!grow_heap_segment (seg, heap_segment_allocated (seg) + commit))
                     {
                         no_gc_oom_p = true;
                         break;
                     }
-                    return_free_region (seg);
                     required -= commit;
                 }
             }
