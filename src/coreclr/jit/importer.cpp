@@ -5299,6 +5299,7 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
         if (boxSrc != nullptr)
         {
             JITDUMP("\nImporting KEEPALIVE(BOX) as a series of KEEPALIVE(FIELD)\n");
+            INDEBUG(bool foundGcField = false);
 
             unsigned boxTempNum;
             if (boxSrc->OperIsLocal())
@@ -5334,10 +5335,13 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
                         Statement* stmt = gtNewStmt(keepalive, impCurStmtOffs);
                         JITDUMP("\n");
                         DISPSTMT(stmt);
+                        INDEBUG(foundGcField = true);
                         impAppendStmt(stmt);
                     }
                 }
             }
+
+            DBEXEC(!foundGcField, JITDUMP("Found no GC fields, KEEPALIVE is a NOP\n"));
 
             // Return a NOP - impIntrinsic expects a non-nullptr node, and we get correct handling
             // for the case when the struct has no GC pointers "for free" this way.
