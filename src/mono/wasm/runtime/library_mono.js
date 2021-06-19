@@ -2335,9 +2335,11 @@ var MonoSupportLib = {
 			try {
 				let config = null;
 				// NOTE: when we add nodejs make sure to include the nodejs fetch package
-				if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_NODE) {
+				if (ENVIRONMENT_IS_WEB) {
 					const configRaw = await fetch(configFilePath);
 					config = await configRaw.json();
+				}else if (ENVIRONMENT_IS_NODE) {
+					config = require(configFilePath);
 				} else { // shell or worker
 					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
 				}
