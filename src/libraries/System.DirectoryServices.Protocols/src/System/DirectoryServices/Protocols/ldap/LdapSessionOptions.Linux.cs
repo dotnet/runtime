@@ -52,6 +52,11 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        public void StartTransportLayerSecurity(DirectoryControlCollection controls)
+        {
+            _connection._startTls = true;
+        }
+
         private bool GetBoolValueHelper(LdapOption option)
         {
             if (_connection._disposed)

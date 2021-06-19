@@ -12,6 +12,7 @@ namespace System.DirectoryServices.Protocols
     {
         // Linux doesn't support setting FQDN so we mark the flag as if it is already set so we don't make a call to set it again.
         private bool _setFQDNDone = true;
+        internal bool _startTls;
 
         private void InternalInitConnectionHandle(string hostname)
         {
@@ -73,7 +74,12 @@ namespace System.DirectoryServices.Protocols
                 uris = $"{scheme}:{directoryIdentifier.PortNumber}";
             }
 
-            return LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            int error = LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            if (error == 0 && _startTls)
+            {
+                error = LdapPal.StartTls(_ldapHandle, IntPtr.Zero, IntPtr.Zero);
+            }
+            return error;
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
