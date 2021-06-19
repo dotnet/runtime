@@ -4278,7 +4278,7 @@ namespace System.Tests
         {
             Bar[] barArray1 = CreateBarArray();
             Array.Fill<object>(barArray1, new Bar() { Value = "x" });
-            Assert.Equal(Enumerable.Repeat("x", barArray1.Length), barArray1.Select(e => e.Value));
+            Assert.Equal(new string[] { 'x', 'x', 'x', 'x' }), barArray1.Select(e => e.Value));
 
             Bar[] barArray2 = CreateBarArray();
             Array.Fill<object>(barArray2, new Bar() { Value = "x" }, 1, 2);
@@ -4286,7 +4286,7 @@ namespace System.Tests
 
             uint[] uintArray1 = (uint[])(object)CreateInt32Array();
             Array.Fill<uint>(uintArray1, 42);
-            Assert.Equal(Enumerable.Repeat(42, uintArray1.Length), uintArray1);
+            Assert.Equal(new int[] { 42, 42, 42, 42 }, uintArray1);
 
             uint[] uintArray2 = (uint[])(object)CreateInt32Array();
             Array.Fill<uint>(uintArray2, 42, 1, 2);
