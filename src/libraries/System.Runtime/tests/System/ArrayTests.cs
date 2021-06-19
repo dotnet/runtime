@@ -4271,38 +4271,52 @@ namespace System.Tests
             };
         }
 
-        private static int[] CreateInt32Array() => new int[] { 0, 1, 2, 3 };
-
         [Fact]
-        public static void Fill_Casting()
+        public static void Fill_Downcast()
         {
-            Bar[] barArray1 = CreateBarArray();
-            Array.Fill<object>(barArray1, new Bar() { Value = "x" });
-            Assert.Equal(new string[] { 'x', 'x', 'x', 'x' }), barArray1.Select(e => e.Value));
-
-            Bar[] barArray2 = CreateBarArray();
-            Array.Fill<object>(barArray2, new Bar() { Value = "x" }, 1, 2);
-            Assert.Equal(new string[] { "0", "x", "x", "3" }, barArray2.Select(e => e.Value));
-
-            uint[] uintArray1 = (uint[])(object)CreateInt32Array();
-            Array.Fill<uint>(uintArray1, 42);
-            Assert.Equal(new int[] { 42, 42, 42, 42 }, uintArray1);
-
-            uint[] uintArray2 = (uint[])(object)CreateInt32Array();
-            Array.Fill<uint>(uintArray2, 42, 1, 2);
-            Assert.Equal(new int[] { 0, 42, 42, 3 }, uintArray2);
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" });
+            Assert.Equal(new string[] { "x", "x", "x", "x" }, barArray.Select(e => e.Value));
         }
 
         [Fact]
-        public static void Fill_Casting_Invalid()
+        public static void FillWithStartIndexAndCount_Downcast()
         {
-            Bar[] barArray1 = CreateBarArray();
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray1, new Foo()));
-            Assert.Equal(CreateBarArray(), barArray1);
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" }, 1, 2);
+            Assert.Equal(new string[] { "0", "x", "x", "3" }, barArray.Select(e => e.Value));
+        }
 
-            Bar[] barArray2 = CreateBarArray();
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray2, new Foo(), 1, 2));
-            Assert.Equal(CreateBarArray(), barArray2);
+        [Fact]
+        public static void Fill_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42);
+            Assert.Equal(new int[] { 42, 42, 42, 42 }, uintArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42, 1, 2);
+            Assert.Equal(new int[] { 0, 42, 42, 3 }, uintArray);
+        }
+
+        [Fact]
+        public static void Fill_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo()));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo(), 1, 2));
+            Assert.Equal(CreateBarArray(), barArray);
         }
 
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
