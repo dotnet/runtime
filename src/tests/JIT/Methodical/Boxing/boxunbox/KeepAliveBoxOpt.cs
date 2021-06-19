@@ -16,6 +16,8 @@ public class KeepAliveBoxFieldsTest
         Reset();
         TestExplicitByrefsOneBlock();
         Reset();
+        TestClassWrapperOneBlock();
+        Reset();
 
         return 100;
     }
@@ -135,6 +137,50 @@ public class KeepAliveBoxFieldsTest
         CheckSuccess();
     }
 
+    public static void TestClassWrapperOneBlock()
+    {
+        var c1 = new Class<ComplexStructWithExplicitLayout>();
+        c1.Field.ObjectField = new Reporter("c1.Field.ObjectField", nameof(TestClassWrapperOneBlock));
+        c1.Field.AnotherObjectField = new Reporter("c1.Field.AnotherObjectField", nameof(TestClassWrapperOneBlock));
+        c1.Field.StructWithRef.ObjectField = new Reporter("c1.Field.StructWithRef.ObjectField", nameof(TestClassWrapperOneBlock));
+        var c2 = new Class<SimpleStructWithExplicitLayout>();
+        c2.Field = new SimpleStructWithExplicitLayout();
+        c2.Field.ObjectField = new Reporter("c2.Field.ObjectField", nameof(TestClassWrapperOneBlock));
+        var c3 = new Class<SimpleStructWithAutoLayout>();
+        c3.Field.ObjectField = new Reporter("c3.Field.ObjectField", nameof(TestClassWrapperOneBlock));
+        c3.Field.AnotherObjectField = new Reporter("c3.Field.AnotherObjectField", nameof(TestClassWrapperOneBlock));
+        var c4 = new Class<SingleObjectStruct>();
+        c4.Field.ObjectField = new Reporter("c4.Field.ObjectField", nameof(TestClassWrapperOneBlock));
+        var c5 = new Class<StructWithoutObjectFields>();
+        var c6 = new Class<SingleObjectStruct?>();
+        var s6src = new SingleObjectStruct();
+        s6src.ObjectField = new Reporter("s6src.ObjectField", nameof(TestClassWrapperOneBlock));
+        c6.Field = new SingleObjectStruct?(s6src);
+
+        TestClassWrapperOneBlockInner(c1, c2, c3, c4, c5, c6);
+    }
+
+    public static void TestClassWrapperOneBlockInner(
+        Class<ComplexStructWithExplicitLayout> c1,
+        Class<SimpleStructWithExplicitLayout> c2,
+        Class<SimpleStructWithAutoLayout> c3,
+        Class<SingleObjectStruct> c4,
+        Class<StructWithoutObjectFields> c5,
+        Class<SingleObjectStruct?> c6)
+    {
+        GC.Collect(2, GCCollectionMode.Forced);
+        GC.WaitForPendingFinalizers();
+
+        GC.KeepAlive(c1.Field);
+        GC.KeepAlive(c2.Field);
+        GC.KeepAlive(c3.Field);
+        GC.KeepAlive(c4.Field);
+        GC.KeepAlive(c5.Field);
+        GC.KeepAlive(c6.Field);
+
+        CheckSuccess();
+    }
+
     public class Reporter
     {
         private readonly string _fieldName;
@@ -214,4 +260,9 @@ public struct StructWithoutObjectFields
     public short ShortField;
     public long LongField;
     public Vector128<int> VectorField;
+}
+
+public class Class<T>
+{
+    public T Field;
 }
