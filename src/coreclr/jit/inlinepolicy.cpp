@@ -96,7 +96,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 
     const bool useExtendedDefaultPolicy = JitConfig.JitExtendedDefaultPolicy() != 0;
 
-    if (!useExtendedDefaultPolicy || (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !isPrejitRoot))
+    if (!useExtendedDefaultPolicy || (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)/* && !isPrejitRoot*/))
     {
         // DefaultPolicy is better for AOT in terms of code-size.
         return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
