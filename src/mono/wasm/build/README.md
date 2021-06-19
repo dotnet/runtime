@@ -45,6 +45,7 @@ The various task inputs correspond to properties as:
 
 - `run-v8.sh` script is emitted to `$(WasmRunV8ScriptPath)` which defaults to `$(WasmAppDir)`.
     - To control it's generation use `$(WasmGenerateRunV8Script)` (false by default)
+    - Note that if building for NodeJS you can also use `$(WasmGenerateRunV8Script)` to generate a `run-node.sh` or `run-v8.cmd` file (depending on OS used to build).
 
 This should be a step towards eventually having this build as a sdk.
 

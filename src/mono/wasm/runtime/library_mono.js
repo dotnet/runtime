@@ -60,15 +60,15 @@ var MonoSupportLib = {
 		_id_table: {},
 
 		pump_message: function () {
-			if (!this.mono_background_exec)
-				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
+			if (!MONO.mono_background_exec)
+				MONO.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
 				MONO.timeout_queue.shift()();
 			}
 			while (MONO.pump_count > 0) {
 				--MONO.pump_count;
-				this.mono_background_exec ();
+				MONO.mono_background_exec ();
 			}
 		},
 
@@ -86,6 +86,7 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root.bind(MONO);
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots.bind(MONO);
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots.bind(MONO);
+			module ["mono_wasm_load_config"] = MONO.mono_wasm_load_config.bind(MONO);
 		},
 
 		_base64Converter: {
@@ -2323,6 +2324,28 @@ var MonoSupportLib = {
 
 			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
+
+		/**
+		 * Loads the mono config file (typically called mono-config.json)
+		 *
+		 * @param {string} configFilePath - relative path to the config file
+		 * @throws Will throw an error if the config file loading fails
+		 */
+		mono_wasm_load_config: async function (configFilePath) {		
+			try {
+				let config = null;
+				// NOTE: when we add nodejs make sure to include the nodejs fetch package
+				if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_NODE) {
+					const configRaw = await fetch(configFilePath);
+					config = await configRaw.json();
+				} else { // shell or worker
+					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
+				}
+				return config;
+			} catch(e) {
+				return {message: "failed to load config file", error: e};
+			}
+		}
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
@@ -2458,17 +2481,17 @@ var MonoSupportLib = {
 	},
 
 	mono_set_timeout: function (timeout, id) {
-		if (!this.mono_set_timeout_exec)
-			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
+		if (!MONO.mono_set_timeout_exec)
+			MONO.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
 			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_set_timeout_exec (id);
 			})
 		}
 	},
@@ -2510,7 +2533,7 @@ var MonoSupportLib = {
 			assembly_b64,
 			pdb_b64
 		});
-	},
+	}
 };
 
 autoAddDeps(MonoSupportLib, '$MONO')

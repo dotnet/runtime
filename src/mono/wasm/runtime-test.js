@@ -8,15 +8,12 @@ const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process != 'undefined';
 
 // if the engine doesn't provide a console
-if (typeof (console) === "undefined") {
-	var console = {
+if (typeof (console) === "undefined"){
+	console = {
 		log: globalThis.print,
 		clear: function () { }
 	};
 }
-
-globalThis.testConsole = console;
-
 function proxyMethod (prefix, func, asJson) {
 	return function() {
 		let args = [...arguments];
@@ -32,15 +29,15 @@ function proxyMethod (prefix, func, asJson) {
 	};
 };
 
-var methods = ["debug", "trace", "warn", "info", "error"];
-for (var m of methods) {
-	if (typeof(console[m]) != "function") {
+const methods = ["debug", "trace", "warn", "info", "error"];
+for (let m of methods) {
+	if (typeof(console[m]) !== "function") {
 		console[m] = proxyMethod(`console.${m}: `, console.log, false);
 	}
 }
 
 function proxyJson (func) {
-	for (var m of ["log", ...methods])
+	for (let m of ["log", ...methods])
 		console[m] = proxyMethod(`console.${m}`,func, true);
 }
 
@@ -50,28 +47,16 @@ if (is_browser) {
 	let consoleWebSocket = new WebSocket(consoleUrl);
 	consoleWebSocket.onopen = function(event) {
 		proxyJson(function (msg) { consoleWebSocket.send (msg); });
-		globalThis.testConsole.log("browser: Console websocket connected.");
+		console.log("browser: Console websocket connected.");
 	};
 	consoleWebSocket.onerror = function(event) {
-		console.log(`websocket error: ${event}`);
+		console.error(`websocket error: ${event}`);
 	};
-
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	var url = new URL (decodeURI (window.location));
-	arguments = [];
-	for (var v of url.searchParams) {
-		if (v [0] == "arg") {
-			arguments.push (v [1]);
-		}
-	}
 }
-//proxyJson(console.log);
 
-
-let print = globalThis.testConsole.log;
-let printErr = globalThis.testConsole.error;
-
-if (typeof crypto === 'undefined') {
+if (is_node) {
+	var crypto = require('crypto');
+} else if (typeof crypto === 'undefined') {
 	// **NOTE** this is a simple insecure polyfill for testing purposes only
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
@@ -82,8 +67,9 @@ if (typeof crypto === 'undefined') {
 		}
 	}
 }
-
-if (typeof performance === 'undefined') {
+if (is_node) {
+	var { performance } = require("perf_hooks");
+} else if (typeof performance === 'undefined') {
 	// performance.now() is used by emscripten and doesn't work in JSC
 	var performance = {
 		now: function () {
@@ -92,86 +78,109 @@ if (typeof performance === 'undefined') {
 	}
 }
 
+// get arguments
 let testArguments = [];
 try {
-	if (typeof arguments === "undefined") {
-		if (is_node)
-			testArguments = process.argv.slice (2);
+	if (is_node) {
+		testArguments = process.argv.slice (2);
 
-		if (typeof scriptArgs !== "undefined")
+	}else if (is_browser) {
+		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+		const url = new URL (decodeURI (window.location));
+		for (let param of url.searchParams) {
+			if (param [0] == "arg") {
+				testArguments.push (param [1]);
+			}
+		}
+
+	}else if (typeof arguments === "undefined") {
+		if (typeof scriptArgs !== "undefined") {
 			testArguments = scriptArgs;
 		
-		else if (typeof WScript  !== "undefined" && WScript.Arguments)
+		}else if (typeof WScript  !== "undefined" && WScript.Arguments){
 			testArguments = WScript.Arguments;
+		}
 	} else{
 		testArguments = arguments;
 	}
 } catch (e) {
-	console.err(e)
+	console.error(e);
 }
 
-if (is_node) {
-	var { performance, PerformanceObserver } = require("perf_hooks");
-}
-
+// abstract all IO into a compact universally available method so that it is consistent and reliable
 const IOHandler = {
-	load: null,
-	read: null,
+	load: null, // load js file into project and evaluate it
+	read: null, // return the contents of a file as a string
 
 	init: function() {
 		// load: function that loads and executes a script
-		if (!globalThis.load){
+		let loadFunc = globalThis.load; // shells (v8, JavaScriptCore, Spidermonkey)
+		if (!loadFunc){
 			if (typeof WScript  !== "undefined"){ // Chakra
-				IOHandler.load = WScript.LoadScriptFile;
+				loadFunc = WScript.LoadScriptFile;
 
 			} else if (is_node) { // NodeJS
-				const fs = require ('fs');
-				IOHandler.load = function (file) {
-					eval (fs.readFileSync(file).toString());
+				loadFunc = async function (file) {
+					let req = require(file);
+
+					// sometimes the require returns a function which returns a promise (such as in dotnet.js).
+					// othertimes it returns the variable or object that is needed. We handle both cases
+					if (typeof(req) === 'function') {
+						req = await req(Module); // pass Module so emsdk can use it
+					}
+
+					// add to the globalThis the file under the namespace of the upercase filename without js extension
+					globalThis[file.substring(2,file.length - 3).replace("-","_").toUpperCase()] = req;
 				};
 			} else if (is_browser) { // vanila JS in browser
-				IOHandler.load = function (file) {
+				loadFunc = function (file) {
 					const script = document.createElement ("script");
 					script.src = file;
 					document.head.appendChild (script);
 				}
 			}
-		} else {
-			IOHandler.load = load; // shells (v8, JavaScriptCore, Spidermonkey)
 		}
+		IOHandler.load = async (file) => await loadFunc(file);
 
 		// read: function that just reads a file into a variable
-		if (!globalThis.read){
+		let readFunc = globalThis.read; // shells (v8, JavaScriptCore, Spidermonkey)
+		if (!readFunc){
 			if (typeof WScript  !== "undefined"){
-				IOHandler.read = WScript.LoadBinaryFile; // Chakra
+				readFunc = WScript.LoadBinaryFile; // Chakra
 
 			} else if (is_node) { // NodeJS
 				const fs = require ('fs');
-				IOHandler.read = function (path) {
-					return fs.readFileSync(path);
+				readFunc = function (path) {
+					return fs.readFileSync(path).toString();
 				};
 			} else if (is_browser) {  // vanila JS in browser
-				// TODO
+				readFunc = fetch;
 			}
-		} else { 
-			IOHandler.read = read;  // shells (v8, JavaScriptCore, Spidermonkey)
 		}
+		IOHandler.read = async (file) => await readFunc(file);
 	},
 
-	writeContentToFile: function(content, path) {
+	writeContentToFile: function(content, path) { // writes a string to a file
 		const stream = FS.open(path, 'w+');
 		FS.write(stream, content, 0, content.length, 0);
 		FS.close(stream);
 	},
 
-	fetch: function(asset, params) {
-		if (is_node || is_browser) {
+	fetch: function(asset, params) { // returns an async fetch request in the form of {ok: boolean, url: string, arrayBuffer: Promise<Uint8Array>}
+		if (is_browser) {
 			return fetch (asset, params);
-		} else {
+
+		} else { // shells and node
 			return new Promise ((resolve, reject) => {
 				let bytes = null, error = null;
 				try {
-					bytes = read (asset, 'binary');
+					if (is_node){
+						const fs = require ('fs');
+						const buffer = fs.readFileSync(asset);
+						bytes = buffer.buffer;
+					} else {
+						bytes = read (asset, 'binary');
+					}
 				} catch (exc) {
 					error = exc;
 				}
@@ -193,67 +202,58 @@ const IOHandler = {
 IOHandler.init();
 // end of all the nice shell glue code.
 
-// set up a global variable to be accessed in App.init
-
 function test_exit (exit_code) {
 	if (is_browser) {
 		// Notify the selenium script
 		Module.exit_code = exit_code;
-		Module.print ("WASM EXIT " + exit_code);
-		var tests_done_elem = document.createElement ("label");
+		console.log ("WASM EXIT " + exit_code);
+		const tests_done_elem = document.createElement ("label");
 		tests_done_elem.id = "tests_done";
 		tests_done_elem.innerHTML = exit_code.toString ();
 		document.body.appendChild (tests_done_elem);
+	} else if (is_node) {
+		Module.exit_code = exit_code;
+		console.log ("WASM EXIT " + exit_code);
 	} else {
 		Module.wasm_exit (exit_code);
 	}
 }
 
 function fail_exec (reason) {
-	Module.print (reason);
+	console.error (reason);
 	test_exit (1);
 }
 
-function inspect_object (o) {
-	var r = "";
-	for(var p in o) {
-		var t = typeof o[p];
-		r += "'" + p + "' => '" + t + "', ";
-	}
-	return r;
-}
-
 // Preprocess arguments
-console.info("Arguments: " + testArguments);
+console.log("Arguments: " + testArguments);
 let profilers = [];
 let setenv = {};
 let runtime_args = [];
 let enable_gc = true;
-let enable_zoneinfo = false;
 let working_dir='/';
 while (testArguments !== undefined && testArguments.length > 0) {
 	if (testArguments [0].startsWith ("--profile=")) {
-		var arg = testArguments [0].substring ("--profile=".length);
+		const arg = testArguments [0].substring ("--profile=".length);
 
 		profilers.push (arg);
 
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--setenv=")) {
-		var arg = testArguments [0].substring ("--setenv=".length);
-		var parts = arg.split ('=');
+		const arg = testArguments [0].substring ("--setenv=".length);
+		const parts = arg.split ('=');
 		if (parts.length != 2)
 			fail_exec ("Error: malformed argument: '" + testArguments [0]);
 		setenv [parts [0]] = parts [1];
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--runtime-arg=")) {
-		var arg = testArguments [0].substring ("--runtime-arg=".length);
-		runtime_testArguments.push (arg);
+		const arg = testArguments [0].substring ("--runtime-arg=".length);
+		runtime_args = testArguments.push (arg);
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		testArguments = testArguments.slice (1);
 	} else if (testArguments [0].startsWith ("--working-dir=")) {
-		var arg = testArguments [0].substring ("--working-dir=".length);
+		const arg = testArguments [0].substring ("--working-dir=".length);
 		working_dir = arg;
 		testArguments = testArguments.slice (1);
 	} else {
@@ -264,74 +264,79 @@ while (testArguments !== undefined && testArguments.length > 0) {
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
-IOHandler.load ("mono-config.js");
-
+// must be var as dotnet.js uses it
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print,
-	printErr,
+    preInit: async function() {
+        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+    },
 
 	onAbort: function(x) {
-		print ("ABORT: " + x);
-		var err = new Error();
-		print ("Stacktrace: \n");
-		print (err.stack);
+		console.log ("ABORT: " + x);
+		const err = new Error();
+		console.log ("Stacktrace: \n");
+		console.error (err.stack);
 		test_exit (1);
 	},
 
+	onConfigLoaded: function (config) {
+        if (!config || config.error){
+            console.log("An error occured while loading the config file");
+            return;
+        }
+
+        Module.config = config;
+    },
+
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-		for (var variable in setenv) {
-			MONO.mono_wasm_setenv (variable, setenv [variable]);
+		for (let variable in setenv) {
+			Module.MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
 		if (!enable_gc) {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		config.loaded_cb = function () {
-			let wds = FS.stat (working_dir);
-			if (wds === undefined || !FS.isDir (wds.mode)) {
+		MONO_CONFIG.loaded_cb = function () {
+			let wds = Module.FS.stat (working_dir);
+			if (wds === undefined || !Module.FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
 				return;
 			}
 
-			FS.chdir (working_dir);
+			Module.FS.chdir (working_dir);
 			App.init ();
 		};
-		config.fetch_file_cb = function (asset) {
+		MONO_CONFIG.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
-			var content = new Uint8Array (read (asset, 'binary'));
-			var path = asset.substr(config.deploy_prefix.length);
+			const content = new Uint8Array (read (asset, 'binary'));
+			const path = asset.substr(config.deploy_prefix.length);
 			IOHandler.writeContentToFile(content, path);
 			*/
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
-		MONO.mono_load_runtime_and_bcl_args (config);
+		Module.MONO.mono_load_runtime_and_bcl_args (MONO_CONFIG);
 	},
 };
+globalThis.Module = Module; // needed as some functions (such as call_static_method) need access to Module.
 
-IOHandler.load ("dotnet.js");
-
-const IGNORE_PARAM_COUNT = -1;
-
-var App = {
+const App = {
 	init: function () {
-		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
-		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
+		const wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
+		const wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 
 		Module.wasm_exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
 
 		console.info("Initializing.....");
 
-		for (var i = 0; i < profilers.length; ++i) {
-			var init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
-
+		for (let i = 0; i < profilers.length; ++i) {
+			const init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string']);
 			init ("");
 		}
 
@@ -341,15 +346,15 @@ var App = {
 		}
 
 		if (testArguments[0] == "--regression") {
-			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
+			const exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string']);
 
-			var res = 0;
+			let res = 0;
 				try {
 					res = exec_regression (10, testArguments[1]);
-					Module.print ("REGRESSION RESULT: " + res);
+					console.log ("REGRESSION RESULT: " + res);
 				} catch (e) {
-					Module.print ("ABORT: " + e);
-					print (e.stack);
+					console.error ("ABORT: " + e);
+					console.error (e.stack);
 					res = 1;
 				}
 
@@ -360,7 +365,7 @@ var App = {
 		}
 
 		if (runtime_args.length > 0)
-			MONO.mono_wasm_set_runtime_options (runtime_args);
+			Module.MONO.mono_wasm_set_runtime_options (runtime_args);
 
 		if (testArguments[0] == "--run") {
 			// Run an exe
@@ -370,22 +375,22 @@ var App = {
 			}
 
 			main_assembly_name = testArguments[1];
-			var app_args = testArguments.slice (2);
+			const app_args = testArguments.slice (2);
 
-			var main_argc = testArguments.length - 2 + 1;
-			var main_argv = Module._malloc (main_argc * 4);
+			const main_argc = testArguments.length - 2 + 1;
+			const main_argv = Module._malloc (main_argc * 4);
 			aindex = 0;
-			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32")
+			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32");
 			aindex += 1;
-			for (var i = 2; i < testArguments.length; ++i) {
+			for (let i = 2; i < testArguments.length; ++i) {
 				Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [i]), "i32");
 				aindex += 1;
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
 			// Automatic signature isn't working correctly
-			let result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
-			let onError = function (error)
+			const result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+			const onError = function (error)
 			{
 				console.error (error);
 				if (error.stack)
@@ -408,12 +413,21 @@ var App = {
 		if ((arguments.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
-		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+		const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
 		try {
-			return BINDING.call_static_method(fqn, args || [], signature);
+			return Module.BINDING.call_static_method(fqn, args || [], signature);
 		} catch (exc) {
 			console.error("exception thrown in", fqn);
 			throw exc;
 		}
 	}
 };
+
+// load the config and runtime files which will start the runtime init and subsiquently the tests
+// uses promise chain as loading is async but we can't use await here
+IOHandler
+	.load ("./dotnet.js")
+	.catch(function(err) {
+		console.error(err);
+		fail_exec("failed to load the mono-config.js or dotnet.js files");
+	});

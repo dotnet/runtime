@@ -65,7 +65,7 @@
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
-      - @(WasmExtraConfig)        - json elements to add to `mono-config.js`
+      - @(WasmExtraConfig)        - json elements to add to `mono-config.json`
                                     Eg. <WasmExtraConfig Include="enable_profiler" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
@@ -154,6 +154,7 @@
     </WasmAppBuilder>
 
     <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
+    <CallTarget Targets="_GenerateRunNodeScript" Condition="'$(WasmGenerateRunNodeScript)' == 'true'" />
   </Target>
 
   <Target Name="_GenerateRunV8Script">
@@ -173,6 +174,34 @@
     </ItemGroup>
 
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
+  </Target>
+
+  <Target Name="_GenerateRunNodeScript">
+    <PropertyGroup>
+      <WasmRunNodeScriptPath Condition="'$(WasmRunNodeScriptPath)' == '' and '$(OS)' != 'Windows_NT'">$(WasmAppDir)run-node.sh</WasmRunNodeScriptPath>
+      <WasmRunNodeScriptPath Condition="'$(WasmRunNodeScriptPath)' == '' and '$(OS)' == 'Windows_NT'">$(WasmAppDir)run-node.cmd</WasmRunNodeScriptPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunNodeScriptPath)." />
+    <WriteLinesToFile
+      File="$(WasmRunNodeScriptPath)"
+      Lines="node --trace-warnings runtime.js ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Overwrite="true"
+      Condition="'$(OS)' != 'Windows_NT'">
+    </WriteLinesToFile>
+
+    <WriteLinesToFile
+      File="$(WasmRunNodeScriptPath)"
+      Lines="node --trace-warnings runtime.js %RUNTIME_ARGS% --run $(WasmMainAssemblyFileName) %*"
+      Overwrite="true"
+      Condition="'$(OS)' == 'Windows_NT'">
+    </WriteLinesToFile>
+
+    <ItemGroup>
+      <FileWrites Include="$(WasmRunNodeScriptPath)" />
+    </ItemGroup>
+
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunNodeScriptPath)" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
@@ -199,5 +228,14 @@
       Text="Bug: The wasm build started with @(WasmAssembliesToBundle->Count()) assemblies, but completed with @(WasmAssembliesFinal->Count()).
       WasmAssembliesToBundle: @(WasmAssembliesToBundle)
       WasmAssembliesFinal: @(WasmAssembliesFinal)" />
+  </Target>
+
+  <!-- Setup NPM packages for NodeJS publish/builds -->
+  <Target Name="_NodePrep" AfterTargets="_AfterWasmBuildApp" Condition="'$(TargetOS)' == 'Node'">
+    <Copy SourceFiles="C:\runtime_node\src\mono\sample\wasm\console\package.json"
+        DestinationFolder="$(WasmAppDir)"
+        SkipUnchangedFiles="true" />
+    <Exec Command="npm install --cwd $(WasmAppDir) --prefix $(WasmAppDir)"
+        IgnoreStandardErrorWarningFormat="true" />
   </Target>
 </Project>
