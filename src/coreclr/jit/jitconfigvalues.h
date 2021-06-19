@@ -384,7 +384,7 @@ CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, em
 CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
 
 // Ex lclMAX_TRACKED constant.
-CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 0x200)
+CONFIG_INTEGER(JitMaxLocalsToTrack, W("JitMaxLocalsToTrack"), 0x400)
 
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
@@ -458,7 +458,7 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 CONFIG_INTEGER(JitExtendedDefaultPolicy, W("JitExtendedDefaultPolicy"), 1)
-CONFIG_INTEGER(JitExtendedDefaultPolicyMaxBBCount, W("JitExtendedDefaultPolicyMaxBBCount"), 10)
+CONFIG_INTEGER(JitExtendedDefaultPolicyMaxBBCount, W("JitExtendedDefaultPolicyMaxBBCount"), 15)
 CONFIG_INTEGER(JitExtendedDefaultPolicyMaxILSize, W("JitExtendedDefaultPolicyMaxILSize"), 200)
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
