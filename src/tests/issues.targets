@@ -123,8 +123,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsvalidation/ThreadPool/*">
             <Issue>https://github.com/dotnet/runtime/issues/48727</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/54316</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/ComDisabled/NETClientComDisabled/*">
+            <Issue>https://github.com/dotnet/runtime/issues/54379</Issue>
         </ExcludeList>
     </ItemGroup>
 
