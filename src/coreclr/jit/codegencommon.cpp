@@ -7454,7 +7454,7 @@ void CodeGen::genFnProlog()
     // Establish the AMD64 frame pointer after the OS-reported prolog.
     if (doubleAlignOrFramePointerUsed())
     {
-        bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
+        const bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
         genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
 #endif // TARGET_AMD64
@@ -8147,7 +8147,31 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     /* Compute the size in bytes we've pushed/popped */
 
-    if (!doubleAlignOrFramePointerUsed())
+    bool removeEbpFrame = doubleAlignOrFramePointerUsed();
+
+#ifdef TARGET_AMD64
+    // We only remove the EBP frame using the frame pointer (using `lea rsp, [rbp + const]`)
+    // if we reported the frame pointer in the prolog. The Windows x64 unwinding ABI specifically
+    // disallows this `lea` form:
+    //
+    //    See https://docs.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
+    //
+    //    "When a frame pointer is not used, the epilog must use add RSP,constant to deallocate the fixed part of the
+    //    stack. It may not use lea RSP,constant[RSP] instead. This restriction exists so the unwind code has fewer
+    //    patterns to recognize when searching for epilogs."
+    //
+    // Otherwise, we must use `add RSP, constant`, as stated. So, we need to use the same condition
+    // as genFnProlog() used in determining whether to report the frame pointer in the unwind data.
+    // This is a subset of the `doubleAlignOrFramePointerUsed()` cases.
+    //
+    if (removeEbpFrame)
+    {
+        const bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
+        removeEbpFrame              = removeEbpFrame && reportUnwindData;
+    }
+#endif // TARGET_AMD64
+
+    if (!removeEbpFrame)
     {
         // We have an ESP frame */
 
@@ -8176,6 +8200,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         }
 
         genPopCalleeSavedRegisters();
+
+#ifdef TARGET_AMD64
+        // In the case where we have an RSP frame, and no frame pointer reported in the OS unwind info,
+        // but we do have a pushed frame pointer and established frame chain, we do need to pop RBP.
+        if (doubleAlignOrFramePointerUsed())
+        {
+            inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
+        }
+#endif // TARGET_AMD64
 
         // Extra OSR adjust to get to where RBP was saved by the original frame, and
         // restore RBP.

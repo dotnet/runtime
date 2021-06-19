@@ -125,9 +125,6 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            WriteStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: false);
-
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
             using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))

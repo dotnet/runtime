@@ -3,6 +3,7 @@
 
 namespace System.Drawing
 {
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Reflection;
 
@@ -84,6 +85,7 @@ namespace System.Drawing
             return stream;
         }
 
+        [RequiresUnreferencedCode("Calls Assembly.GetType which may be trimmed")]
         private static bool DoesAssemblyHaveCustomAttribute(Assembly assembly, string typeName)
         {
             return DoesAssemblyHaveCustomAttribute(assembly, assembly.GetType(typeName));

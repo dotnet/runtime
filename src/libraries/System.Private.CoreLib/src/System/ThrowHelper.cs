@@ -975,6 +975,8 @@ namespace System
                     return SR.Argument_InvalidFlag;
                 case ExceptionResource.CancellationTokenSource_Disposed:
                     return SR.CancellationTokenSource_Disposed;
+                case ExceptionResource.Argument_AlignmentMustBePow2:
+                    return SR.Argument_AlignmentMustBePow2;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1158,5 +1160,6 @@ namespace System
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
         CancellationTokenSource_Disposed,
+        Argument_AlignmentMustBePow2,
     }
 }
