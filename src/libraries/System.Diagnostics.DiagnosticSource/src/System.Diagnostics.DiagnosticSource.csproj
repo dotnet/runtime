@@ -51,6 +51,7 @@
     <Compile Include="System\Diagnostics\Metrics\ObservableCounter.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObservableGauge.cs" />
     <Compile Include="System\Diagnostics\Metrics\ObservableInstrument.cs" />
+    <Compile Include="System\Diagnostics\TextMapPropagator.cs" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
