@@ -13,6 +13,8 @@ namespace System.Data.Common
 
         protected DbProviderFactory() { }
 
+        public virtual bool CanCreateBatch => false;
+
         public virtual bool CanCreateDataSourceEnumerator => false;
 
         public virtual bool CanCreateDataAdapter
@@ -46,6 +48,10 @@ namespace System.Data.Common
                 return _canCreateCommandBuilder.Value;
             }
         }
+
+        public virtual DbBatch CreateBatch() => throw new NotSupportedException();
+
+        public virtual DbBatchCommand CreateBatchCommand() => throw new NotSupportedException();
 
         public virtual DbCommand? CreateCommand() => null;
 
