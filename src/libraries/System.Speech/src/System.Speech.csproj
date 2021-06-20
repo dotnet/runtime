@@ -23,7 +23,7 @@
     <Compile Include="Internal\AlphabetConverter.cs" />
     <Compile Include="Internal\AsyncSerializedWorker.cs" />
     <Compile Include="Internal\Helpers.cs" />
-    <Compile Include="Internal\HGlobalSafeHandle.cs" />
+    <Compile Include="Internal\NativeMemorySafeHandle.cs" />
     <Compile Include="Internal\PhonemeConverter.cs" />
     <Compile Include="Internal\RBList.cs" />
     <Compile Include="Internal\ResourceLoader.cs" />
