@@ -22,6 +22,9 @@
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
 
   <PropertyGroup>
+    <!-- needed by the sdk, for net6.0, to include the correct runtime packs -->
+    <UseMonoRuntime>true</UseMonoRuntime>
+
     <_NetCoreAppToolCurrent>net6.0</_NetCoreAppToolCurrent>
   </PropertyGroup>
 

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,7 @@ using Microsoft.Build.Utilities;
 
 public class PInvokeTableGenerator : Task
 {
+    [NotNull]
     [Required]
     public ITaskItem[]? Modules { get; set; }
     [Required]
@@ -22,18 +24,25 @@ public class PInvokeTableGenerator : Task
     [Required]
     public string? OutputPath { get; set; }
 
+    [Output]
+    public string[]? ExportedFunctions { get; set; }
+
+    private IList<string> _exportedFunctions = new List<string>();
+
     public override bool Execute()
     {
         Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
-        GenPInvokeTable(Modules!.Select(item => item.ItemSpec).ToArray(), Assemblies!.Select(item => item.ItemSpec).ToArray());
-        return true;
+        GenPInvokeTable(Modules, Assemblies!.Select(item => item.ItemSpec).ToArray());
+
+        ExportedFunctions = _exportedFunctions.ToArray();
+        return !Log.HasLoggedErrors;
     }
 
-    public void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
+    public void GenPInvokeTable(ITaskItem[] pinvokeModules, string[] assemblies)
     {
-        var modules = new Dictionary<string, string>();
+        var modules = new Dictionary<string, ITaskItem>();
         foreach (var module in pinvokeModules)
-            modules [module] = module;
+            modules [module.ItemSpec] = module;
 
         var pinvokes = new List<PInvoke>();
         var callbacks = new List<PInvokeCallback>();
@@ -81,7 +90,7 @@ public class PInvokeTableGenerator : Task
         }
     }
 
-    private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
+    private void EmitPInvokeTable(StreamWriter w, Dictionary<string, ITaskItem> modules, List<PInvoke> pinvokes)
     {
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
@@ -108,9 +117,12 @@ public class PInvokeTableGenerator : Task
                 Where(l => l.Module == module).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct()));
+                Select (l => (l.Key, "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct())));
 
-            foreach (var pinvoke in assemblies_pinvokes) {
+            bool exportFunctions = modules[module].GetMetadata("ExportFunctions") == "true";
+            foreach (var (function, pinvoke) in assemblies_pinvokes) {
+                if (exportFunctions)
+                    _exportedFunctions.Add(function);
                 w.WriteLine (pinvoke);
             }
 

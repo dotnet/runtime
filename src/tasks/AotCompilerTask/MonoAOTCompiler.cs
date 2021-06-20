@@ -418,7 +418,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             // run the AOT compiler
             Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, assemblyDir, silent: false,
-                    outputMessageImportance: MessageImportance.Low, debugMessageImportance: MessageImportance.Low);
+                    debugMessageImportance: MessageImportance.Low);
         }
         catch (Exception ex)
         {

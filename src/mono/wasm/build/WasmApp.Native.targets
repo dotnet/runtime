@@ -5,18 +5,28 @@
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <_WasmBuildNativeCoreDependsOn>
+    <_WasmBuildNativeCoreDependsOn Condition="'$(_WasmIsLibraryProject)' != 'true'">
       _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
+      _WasmCompileUserNativeSourceFiles;
       _GeneratePInvokeTable;
       _GenerateICallTable;
-      _WasmCompileNativeFiles;
+      _WasmCompileNonUserNativeFiles;
       _WasmLinkDotNet;
       _CompleteWasmBuildNative
     </_WasmBuildNativeCoreDependsOn>
 
+    <_WasmBuildNativeCoreDependsOn Condition="'$(_WasmIsLibraryProject)' == 'true'">
+      _SetupEmscripten;
+      _CheckEmccIsExpectedVersion;
+      _PrepareForWasmBuildNative;
+      _WasmCompileUserNativeSourceFiles;
+      _WasmCompileNonUserNativeFiles;
+    </_WasmBuildNativeCoreDependsOn>
+
     <WasmBuildNativeOnlyDependsOn>
+      _SetWasmBuildNativeDefaults;
       _PrepareForWasmBuildNativeOnly;
       _WasmBuildNativeCore;
     </WasmBuildNativeOnlyDependsOn>
@@ -29,11 +39,6 @@
 
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
-
-    <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$([MSBuild]::NormalizeDirectory($(NuGetPackageRoot), 'microsoft.netcore.app.runtime.mono.browser-wasm', '$(BundledNETCoreAppPackageVersion)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
 
     <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
     <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
@@ -49,15 +54,16 @@
   <Import Project="$(_EmccPropsPath)" />
 
   <!-- "public" target meant for use outside the regular wasm app generation process FIXME: rename please! -->
-  <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+  <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" AfterTargets="$(WasmBuildNativeAfterThisTarget)" />
 
   <Target Name="_PrepareForWasmBuildNativeOnly">
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
+
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
   </Target>
-
 
   <Target Name="_SetupEmscripten">
     <PropertyGroup>
@@ -129,8 +135,10 @@
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeReference->Count()) > 0" >true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(WasmNativeSource->Count()) > 0">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'"   >false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'" >true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
@@ -166,6 +174,8 @@
 
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(_EmccOptimizationFlagDefault)</EmccLinkOptimizationFlag>
+
+      <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
     </PropertyGroup>
 
     <ItemGroup>
@@ -178,24 +188,45 @@
       <_EmccCommonFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
       <_EmccCommonFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
+
+      <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
+      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
+      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
+
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
+      <_EmccCFlags Include="@(_EmccCommonFlags)" />
+      <_EmccCFlags Include="-DCORE_BINDINGS" />
+      <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
+      <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+      <_EmccCFlags Include="-s EXPORTED_FUNCTIONS='[@(_ExportedFunctions->'&quot;%(Identity)&quot;', ',')]'" Condition="@(_ExportedFunctions->Count()) > 0" />
+
+      <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
-   <PropertyGroup>
-     <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
-     <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
-   </PropertyGroup>
+    <PropertyGroup>
+      <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
+      <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
+    </PropertyGroup>
 
-   <ItemGroup>
-     <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
-     <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
+    <ItemGroup Condition="'$(_WasmIsLibraryProject)' != 'true'">
+      <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
+      <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
-     <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" />
-   </ItemGroup>
+      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
+      <_WasmNativeFileForLinking Include="@(NativeReference)" />
+    </ItemGroup>
+
+    <Error Text="Could not find NativeReference %(NativeReference.Identity)" Condition="'@(_WasmIsLibraryProject)' != 'true' and '%(NativeReference.Identity)' != '' and !Exists(%(NativeReference.Identity))" />
   </Target>
 
-  <Target Name="_GeneratePInvokeTable">
+  <Target Name="_GeneratePInvokeTable" Condition="'$(_WasmIsLibraryProject)' != 'true'">
     <ItemGroup>
+      <!--<_WasmPInvokeModules Include="%(WasmNativeSource.FileName)" ExportFunctions="true" />-->
+      <!-- FIXME: and .. add to exported cuntions .. if ExportTOJs on the item is true -->
+      <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" ExportFunctions="true" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
+
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
@@ -214,28 +245,34 @@
     <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
-      Assemblies="@(_WasmAssembliesInternal)"
+      Assemblies="@(_WasmAssembliesInternal)" 
       OutputPath="$(_WasmICallTablePath)" />
   </Target>
 
-  <Target Name="_WasmCompileNativeFiles">
+  <Target Name="_WasmCompileUserNativeSourceFiles" Condition="@(WasmNativeSource->Count()) > 0">
+    <Error Text="Could not find native source file %(WasmNativeSource.Identity)" Condition="'%(WasmNativeSource.Identity)' != '' and !Exists(%(WasmNativeSource.Identity))" />
+
     <ItemGroup>
-      <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
-      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
-      <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
-
-      <!-- Adding optimization flag at the top, so it gets precedence -->
-      <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
-      <_EmccCFlags Include="@(_EmccCommonFlags)" />
-      <_EmccCFlags Include="-DCORE_BINDINGS" />
-      <_EmccCFlags Include="-DGEN_PINVOKE=1" />
-      <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
-      <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
-      <_EmccCFlags Include="-s EXPORTED_FUNCTIONS='[@(_ExportedFunctions->'&quot;%(Identity)&quot;', ',')]'" Condition="@(_ExportedFunctions->Count()) > 0" />
-
-      <_EmccCFlags Include="$(EmccExtraCFlags)" />
+      <_WasmNativeSourceFile Include="@(WasmNativeSource)" />
+      <_WasmNativeSourceFile OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" Condition="'$(_WasmIsLibraryProject)' != 'true'" />
+      <_WasmNativeSourceFile OutputPath="$(OutputPath)%(FileName).o"                  Condition="'$(_WasmIsLibraryProject)' == 'true'" />
     </ItemGroup>
 
+    <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)" "%(_WasmNativeSourceFile.ExtraEmccArgs)" "%(_WasmNativeSourceFile.Identity)" -c -o "%(_WasmNativeSourceFile.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+
+    <ItemGroup>
+      <_WasmNativeFileForLinking Include="%(_WasmNativeSourceFile.OutputPath)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_WasmIsLibraryProject)' == 'true'">
+      <WasmNativeAsset Include="%(_WasmNativeSourceFile.OutputPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmCompileNonUserNativeFiles" Condition="'$(_WasmIsLibraryProject)' != 'true'">
     <PropertyGroup>
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
     </PropertyGroup>
@@ -244,11 +281,30 @@
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)" "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+
+    <ItemGroup>
+      <_WasmNativeFileForLinking Include="%(WasmNativeSource.OutputPath)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_WasmIsLibraryProject)' == 'true'">
+      <WasmNativeAsset Include="%(_WasmNativeSourceFile.OutputPath)" />
+    </ItemGroup>
   </Target>
 
-  <Target Name="_WasmLinkDotNet">
+  <!-- FIXME: merge WasmObjects, and _WasmNativeFileForLinking -->
+  <Target Name="_WasmLinkDotNet" Condition="'$(_WasmIsLibraryProject)' != 'true'">
     <ItemGroup>
+      <_WasmExtraJSFile Include="@(WasmLinkFile)"   Condition="'%(WasmLinkFile.Extension)' == '.js'" />
+      <_WasmNonJSLinkFile Include="@(WasmLinkFile)" Condition="'%(WasmLinkFile.Extension)' != '.js'" />
+    </ItemGroup>
+
+    <Error Text="Could not determine how to use WasmLinkFile=%(_WasmNonJSLinkFile.Identity) for the emcc command line, because it's missing `ArgumentPrefix` metadata"
+           Condition=" '%(_WasmNonJSLinkFile.Identity)' != '' and '%(_WasmNonJSLinkFile.ArgumentPrefix)' == ''" />
+
+    <ItemGroup>
+      <!-- order matters -->
       <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a" />
+      <_WasmObjects Include="@(_WasmNativeFileForLinking)" />
       <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
       <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
 
@@ -258,13 +314,13 @@
       <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
       <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
 
-      <_EmccLDFlags Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
-      <_EmccLDFlags Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
+      <_EmccLDFlags Include="@(_DotnetJSSrcFile -> '--js-library &quot;%(Identity)&quot;')" />
+      <_EmccLDFlags Include="@(_WasmExtraJSFile -> '--js-library &quot;%(Identity)&quot;')" Condition="'%(_WasmExtraJSFile.Kind)' == '' or '%(_WasmExtraJSFile.Kind)' == 'js-library'" />
 
-      <_EmccLDFlags Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
-      <_EmccLDFlags Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+      <_EmccLDFlags Include="@(_WasmExtraJSFile -> '--pre-js &quot;%(Identity)&quot;)"  Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
+      <_EmccLDFlags Include="@(_WasmExtraJSFile -> '--post-js &quot;%(Identity)&quot;)" Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
 
-      <_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
+      <!--<_EmccLDFlags Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />-->
       <_EmccLDFlags Include="&quot;%(_WasmObjects.Identity)&quot;" />
       <_EmccLDFlags Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
     </ItemGroup>
@@ -336,6 +392,11 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   -->
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+    <PropertyGroup>
+      <!-- FIXME: do it once -->
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
+    </PropertyGroup>
+
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
@@ -452,4 +513,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </ItemGroup>
   </Target>
 
+  <!-- @(NativeReference) is used by msbuild for native references too, and these targets get triggered by
+       them. But for wasm, we need different handling, so stub these out -->
+  <Target Name="ResolveNativeReferences" />
+  <Target Name="GenerateManifests" />
 </Project>
