@@ -269,7 +269,7 @@ var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
     preInit: async function() {
-        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+        Module.config = await Module.MONO.mono_wasm_load_config("./mono-config.json");
     },
 
 	onAbort: function(x) {
@@ -279,15 +279,6 @@ var Module = {
 		console.error (err.stack);
 		test_exit (1);
 	},
-
-	onConfigLoaded: function (config) {
-        if (!config || config.error){
-            console.log("An error occured while loading the config file");
-            return;
-        }
-
-        Module.config = config;
-    },
 
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
@@ -299,7 +290,7 @@ var Module = {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		MONO_CONFIG.loaded_cb = function () {
+		Module.config.loaded_cb = function () {
 			let wds = Module.FS.stat (working_dir);
 			if (wds === undefined || !Module.FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
@@ -309,7 +300,7 @@ var Module = {
 			Module.FS.chdir (working_dir);
 			App.init ();
 		};
-		MONO_CONFIG.fetch_file_cb = function (asset) {
+		Module.config.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
@@ -321,7 +312,7 @@ var Module = {
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
-		Module.MONO.mono_load_runtime_and_bcl_args (MONO_CONFIG);
+		Module.MONO.mono_load_runtime_and_bcl_args (Module.config);
 	},
 };
 globalThis.Module = Module; // needed as some functions (such as call_static_method) need access to Module.
