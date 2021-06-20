@@ -13605,6 +13605,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
                 {
                     op1->SetOper(GT_AND);                                 // Change % => &
                     op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                    fgUpdateConstTreeValueNumber(op1op2);
                 }
             }
         }
