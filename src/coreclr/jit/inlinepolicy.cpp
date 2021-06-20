@@ -94,16 +94,18 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool useExtendedDefaultPolicy = JitConfig.JitExtendedDefaultPolicy() != 0;
+    const bool useEdp       = JitConfig.JitExtendedDefaultPolicy() != 0;
+    const bool useEdpPrejit = JitConfig.JitExtendedDefaultPolicyPrejit() != 0;
+    const bool isPrejit     = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
 
-    if (!useExtendedDefaultPolicy || (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !isPrejitRoot))
+    // Use the extended variant of default policy. However, DefaultPolicy is better for AOT
+    // in terms of binary size.
+    if (useEdp && (useEdpPrejit || !isPrejit || isPrejitRoot))
     {
-        // DefaultPolicy is better for AOT in terms of code-size.
-        return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
+        return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
     }
 
-    // Use the extended variant of default policy by default
-    return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
+    return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -1337,9 +1339,10 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_IsPrejitRoot && (m_CodeSize <= 150))
+            else if (m_IsPrejitRoot && (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSizePrejit()))
             {
-                // Candidate, pending profitability evaluation
+                // Candidate, pending profitability evaluation. For PrejitRoot analysis we use a smaller
+                // threshold for now for better JIT TP.
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
             }
             else if (!m_IsPrejitRoot && (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSize()))
@@ -1355,6 +1358,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
         case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        {
             if (!m_IsForceInline && m_IsNoReturn && (value == 1))
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
@@ -1366,6 +1370,9 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
                 // or have Profile Data.
                 basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
+
+                // TODO: revise, perhaps it should be something like
+                // basicBlockLimit += (unsigned)(min(1.5, m_ProfileFrequency) * 3.0)
                 if (m_HasProfile && (m_ProfileFrequency > 0.5))
                 {
                     basicBlockLimit += 3;
@@ -1382,6 +1389,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 }
             }
             break;
+        }
         default:
             DefaultPolicy::NoteInt(obs, value);
             break;
@@ -1532,7 +1540,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // 'throw' opcode and its friends (Exception's ctor, its exception message, etc) significantly increase
         // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
         // the end of the functions and don't impact Register Allocations.
-        // NOTE: Unfortunately, we're not able to recognize ThrowHelper calls here yet.
+        // TODO: Recognize noreturn calls as m_ThrowBlock
         multiplier += 3.0;
         JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
     }
@@ -1637,7 +1645,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  4) Sometimes it's still makes sense to inline methods in cold blocks to improve type/esacape analysis
         //     for the whole caller.
         //
-        const double profileTrustCoef = 0.75;
+        const double profileTrustCoef = 0.75; // 1.0 means if m_ProfileFrequency is 0 the whole multiplier will be 0.
         const double profileScale     = 5.0;
 
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
@@ -1670,6 +1678,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_BackwardJump)
     {
+        // TODO: investigate in which cases we should [never] inline callees with loops.
         multiplier *= 0.75;
         JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump, multiplier);
     }
@@ -1683,7 +1692,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // ^ Here we have two calls inside a BBJ_THROW block
         // Unfortunately, we're not able to detect ThrowHelpers calls yet.
 
-        // Try to avoid inlining such methods for now. We need to re-consider it later.
+        // Try to avoid inlining such methods for now.
         multiplier = 0.5;
         JITDUMP("\nCallsite is in a no-return region.  Multiplier limited to %g.", multiplier);
     }

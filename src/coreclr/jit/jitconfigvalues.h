@@ -458,7 +458,10 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 CONFIG_INTEGER(JitExtendedDefaultPolicy, W("JitExtendedDefaultPolicy"), 1)
-CONFIG_INTEGER(JitExtendedDefaultPolicyMaxILSize, W("JitExtendedDefaultPolicyMaxILSize"), 500)
+CONFIG_INTEGER(JitExtendedDefaultPolicyPrejit, W("JitExtendedDefaultPolicyPrejit"), 0)
+CONFIG_INTEGER(JitExtendedDefaultPolicyMaxILSize, W("JitExtendedDefaultPolicyMaxILSize"), 0x200)
+CONFIG_INTEGER(JitExtendedDefaultPolicyMaxILSizePrejit, W("JitExtendedDefaultPolicyMaxILSizePrejit"), 0x96)
+
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)

@@ -20619,6 +20619,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Round:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
+        case NI_System_Math_FusedMultiplyAdd:
+            return compOpportunisticallyDependsOn(InstructionSet_FMA);
+
         default:
             return false;
     }
@@ -20631,6 +20634,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
+
+        case NI_System_Math_FusedMultiplyAdd:
+            return compOpportunisticallyDependsOn(InstructionSet_AdvSimd);
 
         default:
             return false;

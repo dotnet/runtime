@@ -1202,6 +1202,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // it is a wrapper method.
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
+
+                // TODO: Recognize noreturn calls and note CALLEE_THROW_BLOCK
             }
             break;
 
