@@ -910,6 +910,10 @@ namespace Internal.TypeSystem
                         methodImpl.Decl == interfaceMethod)
                     {
                         MethodDesc resolvedMethodImpl = methodImpl.Body;
+                        if (resolvedMethodImpl.OwningType != mdType)
+                        {
+                            ThrowHelper.ThrowMissingMethodException(constrainedType, resolvedMethodImpl.Name, resolvedMethodImpl.Signature);
+                        }
                         if (interfaceMethod.HasInstantiation || methodImpl.Body.HasInstantiation || constrainedType.HasInstantiation)
                         {
                             resolvedMethodImpl = resolvedMethodImpl.InstantiateSignature(constrainedType.Instantiation, interfaceMethod.Instantiation);
