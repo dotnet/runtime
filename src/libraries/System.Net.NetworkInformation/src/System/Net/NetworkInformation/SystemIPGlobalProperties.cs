@@ -117,7 +117,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the TCP table.
-                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetTcpTable(buffer, ref size, true);
@@ -144,7 +144,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(buffer);
+                        NativeMemory.Free((void*)buffer);
                     }
                 }
 
@@ -166,7 +166,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the TCP table.
-                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetExtendedTcpTable(buffer, ref size, true,
@@ -196,7 +196,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(buffer);
+                        NativeMemory.Free((void*)buffer);
                     }
                 }
 
@@ -225,7 +225,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
-                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
 
                     try
                     {
@@ -258,7 +258,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(buffer);
+                        NativeMemory.Free((void*)buffer);
                     }
                 }
 
@@ -279,7 +279,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
-                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetExtendedUdpTable(buffer, ref size, true,
@@ -314,7 +314,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(buffer);
+                        NativeMemory.Free((void*)buffer);
                     }
                 }
                 // If we don't have any ipv6 interfaces detected, just continue.

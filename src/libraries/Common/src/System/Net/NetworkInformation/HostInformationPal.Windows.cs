@@ -26,7 +26,7 @@ namespace System.Net.NetworkInformation
             return FixedInfo.domainName;
         }
 
-        private static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
+        private static unsafe Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
         {
             uint size = 0;
             Interop.IpHlpApi.FIXED_INFO fixedInfo = default;
@@ -36,7 +36,7 @@ namespace System.Net.NetworkInformation
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
-                IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
                 try
                 {
                     result = Interop.IpHlpApi.GetNetworkParams(buffer, ref size);
@@ -47,7 +47,7 @@ namespace System.Net.NetworkInformation
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(buffer);
+                    NativeMemory.Free((void*)buffer);
                 }
             }
 

@@ -77,7 +77,7 @@ namespace System.Net.NetworkInformation
             return false;
         }
 
-        internal static NetworkInterface[] GetNetworkInterfaces()
+        internal static unsafe NetworkInterface[] GetNetworkInterfaces()
         {
             AddressFamily family = AddressFamily.Unspecified;
             uint bufferSize = 0;
@@ -97,7 +97,7 @@ namespace System.Net.NetworkInformation
             {
 
                 // Allocate the buffer and get the adapter info.
-                IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+                IntPtr buffer = (IntPtr)NativeMemory.Alloc(bufferSize);
                 try
                 {
                     result = Interop.IpHlpApi.GetAdaptersAddresses(
@@ -120,7 +120,7 @@ namespace System.Net.NetworkInformation
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(buffer);
+                    NativeMemory.Free((void*)buffer);
                 }
             }
 

@@ -131,7 +131,7 @@ namespace System.Net.NetworkInformation
             }
             finally
             {
-                Marshal.FreeHGlobal(globalMemory);
+                NativeMemory.Free((void*)globalMemory);
             }
         }
 
