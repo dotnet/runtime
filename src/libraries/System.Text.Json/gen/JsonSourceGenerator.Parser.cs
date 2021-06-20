@@ -4,15 +4,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
-using System.Text.Json.Serialization;
-using System.Text.Json.SourceGeneration.Reflection;
-using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json.Reflection;
+using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -61,6 +61,10 @@ namespace System.Text.Json.SourceGeneration
             /// Type information for member types in input object graphs.
             /// </summary>
             private readonly Dictionary<Type, TypeGenerationSpec> _typeGenerationSpecCache = new();
+
+            private readonly HashSet<TypeGenerationSpec> _nullableTypeGenerationSpecCache = new();
+
+            private JsonKnownNamingPolicy _currentContextNamingPolicy;
 
             private static DiagnosticDescriptor ContextClassesMustBePartial { get; } = new DiagnosticDescriptor(
                 id: "SYSLIB1032",
@@ -164,7 +168,10 @@ namespace System.Text.Json.SourceGeneration
                         ContextClassDeclarationList = classDeclarationList
                     };
 
-                    foreach(AttributeSyntax attribute in serializableAttributeList)
+                    // Set the naming policy for the current context.
+                    _currentContextNamingPolicy = contextGenSpec.GenerationOptions.PropertyNamingPolicy;
+
+                    foreach (AttributeSyntax attribute in serializableAttributeList)
                     {
                         TypeGenerationSpec? metadata = GetRootSerializableType(compilationSemanticModel, attribute, contextGenSpec.GenerationOptions.GenerationMode);
                         if (metadata != null)
@@ -178,11 +185,14 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    contextGenSpec.NullableUnderlyingTypes.UnionWith(_nullableTypeGenerationSpecCache);
+
                     contextGenSpecList ??= new List<ContextGenerationSpec>();
                     contextGenSpecList.Add(contextGenSpec);
 
                     // Clear the cache of generated metadata between the processing of context classes.
                     _typeGenerationSpecCache.Clear();
+                    _nullableTypeGenerationSpecCache.Clear();
                 }
 
                 if (contextGenSpecList == null)
@@ -231,7 +241,7 @@ namespace System.Text.Json.SourceGeneration
                 return match != null;
             }
 
-            private static bool TryGetClassDeclarationList(INamedTypeSymbol typeSymbol, [NotNullWhenAttribute(true)] out List<string>? classDeclarationList)
+            private static bool TryGetClassDeclarationList(INamedTypeSymbol typeSymbol, [NotNullWhen(true)] out List<string>? classDeclarationList)
             {
                 INamedTypeSymbol currentSymbol = typeSymbol;
                 classDeclarationList = null;
@@ -479,14 +489,14 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Add metadata to cache now to prevent stack overflow when the same type is found somewhere else in the object graph.
-                typeMetadata = new();
+                typeMetadata = new TypeGenerationSpec();
                 _typeGenerationSpecCache[type] = typeMetadata;
 
                 ClassType classType;
                 Type? collectionKeyType = null;
                 Type? collectionValueType = null;
-                Type? nullableUnderlyingType = null;
-                List<PropertyGenerationSpec>? propertiesMetadata = null;
+                TypeGenerationSpec? nullableUnderlyingTypeGenSpec = null;
+                List<PropertyGenerationSpec>? propGenSpecList = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
                 ObjectConstructionStrategy constructionStrategy = default;
                 JsonNumberHandling? numberHandling = null;
@@ -524,10 +534,12 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.KnownType;
                 }
-                else if (type.IsNullableValueType(_nullableOfTType, out nullableUnderlyingType))
+                else if (type.IsNullableValueType(_nullableOfTType, out Type? nullableUnderlyingType))
                 {
                     Debug.Assert(nullableUnderlyingType != null);
                     classType = ClassType.Nullable;
+                    nullableUnderlyingTypeGenSpec = GetOrAddTypeGenerationSpec(nullableUnderlyingType, generationMode);
+                    _nullableTypeGenerationSpecCache.Add(nullableUnderlyingTypeGenSpec);
                 }
                 else if (type.IsEnum)
                 {
@@ -585,38 +597,40 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializedFullName) != null;
                     implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializingFullName) != null;
 
+                    propGenSpecList = new List<PropertyGenerationSpec>();
+                    Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
+
+                    const BindingFlags bindingFlags =
+                        BindingFlags.Instance |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic |
+                        BindingFlags.DeclaredOnly;
+
                     for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                     {
-                        const BindingFlags bindingFlags =
-                            BindingFlags.Instance |
-                            BindingFlags.Public |
-                            BindingFlags.NonPublic |
-                            BindingFlags.DeclaredOnly;
-
                         foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                         {
-                            PropertyGenerationSpec metadata = GetPropertyGenerationSpec(propertyInfo, generationMode);
+                            bool isVirtual = propertyInfo.IsVirtual();
 
-                            // Ignore indexers.
-                            if (propertyInfo.GetIndexParameters().Length > 0)
+                            if (propertyInfo.GetIndexParameters().Length > 0 ||
+                                PropertyIsOverridenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
                             {
                                 continue;
                             }
 
-                            if (metadata.CanUseGetter || metadata.CanUseSetter)
-                            {
-                                (propertiesMetadata ??= new()).Add(metadata);
-                            }
+                            PropertyGenerationSpec spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
+                            CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
                         }
 
                         foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                         {
-                            PropertyGenerationSpec metadata = GetPropertyGenerationSpec(fieldInfo, generationMode);
-
-                            if (metadata.CanUseGetter || metadata.CanUseSetter)
+                            if (PropertyIsOverridenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                             {
-                                (propertiesMetadata ??= new()).Add(metadata);
+                                continue;
                             }
+
+                            PropertyGenerationSpec spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                            CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
                         }
                     }
                 }
@@ -629,12 +643,12 @@ namespace System.Text.Json.SourceGeneration
                     classType,
                     isValueType: type.IsValueType,
                     numberHandling,
-                    propertiesMetadata,
+                    propGenSpecList,
                     collectionType,
                     collectionKeyTypeMetadata: collectionKeyType != null ? GetOrAddTypeGenerationSpec(collectionKeyType, generationMode) : null,
                     collectionValueTypeMetadata: collectionValueType != null ? GetOrAddTypeGenerationSpec(collectionValueType, generationMode) : null,
                     constructionStrategy,
-                    nullableUnderlyingTypeMetadata: nullableUnderlyingType != null ? GetOrAddTypeGenerationSpec(nullableUnderlyingType, generationMode) : null,
+                    nullableUnderlyingTypeMetadata: nullableUnderlyingTypeGenSpec,
                     converterInstatiationLogic,
                     implementsIJsonOnSerialized,
                     implementsIJsonOnSerializing);
@@ -642,7 +656,37 @@ namespace System.Text.Json.SourceGeneration
                 return typeMetadata;
             }
 
-            private PropertyGenerationSpec GetPropertyGenerationSpec(MemberInfo memberInfo, JsonSourceGenerationMode generationMode)
+            private void CacheMember(
+                PropertyGenerationSpec propGenSpec,
+                ref List<PropertyGenerationSpec> propGenSpecList,
+                ref Dictionary<string, PropertyGenerationSpec> ignoredMembers)
+            {
+                propGenSpecList.Add(propGenSpec);
+
+                if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                {
+                    ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>();
+                    ignoredMembers.Add(propGenSpec.ClrName, propGenSpec);
+                }
+            }
+
+            private static bool PropertyIsOverridenAndIgnored(
+                string currentMemberName,
+                Type currentMemberType,
+                bool currentMemberIsVirtual,
+                Dictionary<string, PropertyGenerationSpec>? ignoredMembers)
+            {
+                if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMemberName, out PropertyGenerationSpec? ignoredMember))
+                {
+                    return false;
+                }
+
+                return currentMemberType == ignoredMember.TypeGenerationSpec.Type &&
+                    currentMemberIsVirtual &&
+                    ignoredMember.IsVirtual;
+            }
+
+            private PropertyGenerationSpec GetPropertyGenerationSpec(MemberInfo memberInfo, bool isVirtual, JsonSourceGenerationMode generationMode)
             {
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(memberInfo);
 
@@ -709,8 +753,9 @@ namespace System.Text.Json.SourceGeneration
 
                 Type memberCLRType;
                 bool isReadOnly;
-                bool canUseGetter;
-                bool canUseSetter;
+                bool isPublic = false;
+                bool canUseGetter = false;
+                bool canUseSetter = false;
                 bool getterIsVirtual = false;
                 bool setterIsVirtual = false;
 
@@ -718,33 +763,75 @@ namespace System.Text.Json.SourceGeneration
                 {
                     case PropertyInfo propertyInfo:
                         {
-                            MethodInfo setMethod = propertyInfo.SetMethod;
                             memberCLRType = propertyInfo.PropertyType;
-                            isReadOnly = setMethod == null;
-                            canUseGetter = PropertyAccessorCanBeReferenced(propertyInfo.GetMethod, hasJsonInclude);
-                            canUseSetter = PropertyAccessorCanBeReferenced(setMethod, hasJsonInclude) && !setMethod.IsInitOnly();
-                            getterIsVirtual = propertyInfo.GetMethod?.IsVirtual == true;
-                            setterIsVirtual = propertyInfo.SetMethod?.IsVirtual == true;
+
+                            MethodInfo? getMethod = propertyInfo.GetMethod;
+                            MethodInfo? setMethod = propertyInfo.SetMethod;
+
+                            if (getMethod != null)
+                            {
+                                if (getMethod.IsPublic)
+                                {
+                                    isPublic = true;
+                                    canUseGetter = true;
+                                }
+                                else if (getMethod.IsAssembly)
+                                {
+                                    canUseGetter = hasJsonInclude;
+                                }
+
+                                getterIsVirtual = getMethod.IsVirtual;
+                            }
+
+                            if (setMethod != null)
+                            {
+                                isReadOnly = false;
+
+                                if (setMethod.IsPublic)
+                                {
+                                    isPublic = true;
+                                    canUseSetter = !setMethod.IsInitOnly();
+                                }
+                                else if (setMethod.IsAssembly)
+                                {
+                                    canUseSetter = hasJsonInclude && !setMethod.IsInitOnly();
+                                }
+
+                                setterIsVirtual = setMethod.IsVirtual;
+                            }
+                            else
+                            {
+                                isReadOnly = true;
+                            }
                         }
                         break;
                     case FieldInfo fieldInfo:
                         {
-                            Debug.Assert(fieldInfo.IsPublic);
                             memberCLRType = fieldInfo.FieldType;
+                            isPublic = fieldInfo.IsPublic;
                             isReadOnly = fieldInfo.IsInitOnly;
-                            canUseGetter = true;
-                            canUseSetter = !isReadOnly;
+
+                            if (!fieldInfo.IsPrivate && !fieldInfo.IsFamily)
+                            {
+                                canUseGetter = true;
+                                canUseSetter = !isReadOnly;
+                            }
                         }
                         break;
                     default:
                         throw new InvalidOperationException();
                 }
 
+                string clrName = memberInfo.Name;
+
                 return new PropertyGenerationSpec
                 {
-                    ClrName = memberInfo.Name,
+                    ClrName = clrName,
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
+                    IsPublic = isPublic,
+                    IsVirtual = isVirtual,
                     JsonPropertyName = jsonPropertyName,
+                    RuntimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy),
                     IsReadOnly = isReadOnly,
                     CanUseGetter = canUseGetter,
                     CanUseSetter = canUseSetter,
@@ -759,8 +846,8 @@ namespace System.Text.Json.SourceGeneration
                 };
             }
 
-            private static bool PropertyAccessorCanBeReferenced(MethodInfo? memberAccessor, bool hasJsonInclude) =>
-                (memberAccessor != null && !memberAccessor.IsPrivate) && (memberAccessor.IsPublic || hasJsonInclude);
+            private static bool PropertyAccessorCanBeReferenced(MethodInfo? accessor)
+                => accessor != null && (accessor.IsPublic || accessor.IsAssembly);
 
             private string? GetConverterInstantiationLogic(CustomAttributeData attributeData)
             {
@@ -778,6 +865,26 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return $"new {converterType.GetUniqueCompilableTypeName()}()";
+            }
+
+            private static string DetermineRuntimePropName(string clrPropName, string? jsonPropName, JsonKnownNamingPolicy namingPolicy)
+            {
+                string runtimePropName;
+
+                if (jsonPropName != null)
+                {
+                    runtimePropName = jsonPropName;
+                }
+                else if (namingPolicy == JsonKnownNamingPolicy.CamelCase)
+                {
+                    runtimePropName = JsonNamingPolicy.CamelCase.ConvertName(clrPropName);
+                }
+                else
+                {
+                    runtimePropName = clrPropName;
+                }
+
+                return runtimePropName;
             }
 
             private void PopulateNumberTypes()

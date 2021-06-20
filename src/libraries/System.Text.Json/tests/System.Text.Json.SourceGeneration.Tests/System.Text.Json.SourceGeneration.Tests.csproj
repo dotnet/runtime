@@ -2,6 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,15 +15,38 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\JsonSerializerWrapperForString.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
+    <Compile Include="..\Common\PropertyVisibilityTests.NonPublicAccessors.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
+    <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SerializerTests.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.ConcurrentCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.Constructor.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.Constructor.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.GenericCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.GenericCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.ImmutableCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ImmutableCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.NonGenericCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.NonGenericCollections.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.Polymorphic.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.Polymorphic.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClass.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestClass.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithFields.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithFields.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithNullables.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithNullables.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithObject.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithObject.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithObjectArrays.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithObjectArrays.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestClassWithSimpleObject.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestStruct.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestStructWithFields.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
+    <Compile Include="..\Common\TestClasses\TestClasses.ValueTypedMember.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
     <Compile Include="ContextClasses.cs" />
     <Compile Include="JsonSerializerContextTests.cs" />
+    <Compile Include="Serialization\JsonSerializerWrapperForString_SourceGen.cs" />
     <Compile Include="JsonTestHelper.cs" />
     <Compile Include="MetadataAndSerializationContextTests.cs" />
     <Compile Include="MetadataContextTests.cs" />
     <Compile Include="MixedModeContextTests.cs" />
     <Compile Include="SerializationContextTests.cs" />
     <Compile Include="SerializationLogicTests.cs" />
+    <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="RealWorldContextTests.cs" />
   </ItemGroup>
