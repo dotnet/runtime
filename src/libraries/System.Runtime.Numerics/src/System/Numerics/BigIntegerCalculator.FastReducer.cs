@@ -130,7 +130,7 @@ namespace System.Numerics
 
                 fixed (uint* l = left, r = right, m = modulus)
                 {
-                    SubtractSelf(l, leftLength, r, rightLength);
+                    OverFlowableSubtractSelf(l, leftLength, r, rightLength);
                     leftLength = ActualLength(left, leftLength);
 
                     while (Compare(l, leftLength, m, modulus.Length) >= 0)
@@ -143,6 +143,34 @@ namespace System.Numerics
                 Array.Clear(left, leftLength, left.Length - leftLength);
 
                 return leftLength;
+            }
+
+            private static unsafe void OverFlowableSubtractSelf(uint* left, int leftLength,
+                                                                uint* right, int rightLength)
+            {
+                Debug.Assert(leftLength >= 0);
+                Debug.Assert(rightLength >= 0);
+                Debug.Assert(leftLength >= rightLength);
+
+                // Executes the "grammar-school" algorithm for computing z = a - b.
+                // Same as above, but we're writing the result directly to a and
+                // stop execution, if we're out of b and c is already 0.
+
+                int i = 0;
+                long carry = 0L;
+
+                for (; i < rightLength; i++)
+                {
+                    long digit = (left[i] + carry) - right[i];
+                    left[i] = unchecked((uint)digit);
+                    carry = digit >> 32;
+                }
+                for (; carry != 0 && i < leftLength; i++)
+                {
+                    long digit = left[i] + carry;
+                    left[i] = (uint)digit;
+                    carry = digit >> 32;
+                }
             }
         }
     }
