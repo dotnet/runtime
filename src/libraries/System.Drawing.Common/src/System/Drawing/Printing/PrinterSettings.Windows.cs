@@ -190,7 +190,7 @@ namespace System.Drawing.Printing
                 int count;
                 Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, Level, IntPtr.Zero, 0, out bufferSize, out count);
 
-                IntPtr buffer = Marshal.AllocCoTaskMem(bufferSize);
+                IntPtr buffer = NativeMemoryHelper.Alloc(bufferSize);
                 int returnCode = Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS,
                                                         null, Level, buffer,
                                                         bufferSize, out bufferSize, out count);
@@ -198,7 +198,7 @@ namespace System.Drawing.Printing
 
                 if (returnCode == 0)
                 {
-                    Marshal.FreeCoTaskMem(buffer);
+                    NativeMemoryHelper.Free(buffer);
                     throw new Win32Exception();
                 }
 
@@ -206,11 +206,11 @@ namespace System.Drawing.Printing
                 {
                     // The printer name is at offset 0
                     //
-                    IntPtr namePointer = (IntPtr)Marshal.ReadIntPtr((IntPtr)(checked((long)buffer + i * sizeofstruct)));
+                    IntPtr namePointer = Marshal.ReadIntPtr((IntPtr)(checked((long)buffer + i * sizeofstruct)));
                     array[i] = Marshal.PtrToStringAuto(namePointer)!;
                 }
 
-                Marshal.FreeCoTaskMem(buffer);
+                NativeMemoryHelper.Free(buffer);
 
                 return new StringCollection(array);
             }
@@ -1065,17 +1065,17 @@ namespace System.Drawing.Printing
             if (count == -1)
                 return Array.Empty<PaperSize>();
             int stringSize = Marshal.SystemDefaultCharSize * 64;
-            IntPtr namesBuffer = Marshal.AllocCoTaskMem(checked(stringSize * count));
+            IntPtr namesBuffer = NativeMemoryHelper.Alloc(checked(stringSize * count));
             FastDeviceCapabilities(SafeNativeMethods.DC_PAPERNAMES, namesBuffer, -1, printerName);
 
             Debug.Assert(FastDeviceCapabilities(SafeNativeMethods.DC_PAPERS, IntPtr.Zero, -1, printerName) == count,
                          "Not the same number of paper kinds as paper names?");
-            IntPtr kindsBuffer = Marshal.AllocCoTaskMem(2 * count);
+            IntPtr kindsBuffer = NativeMemoryHelper.Alloc(2 * count);
             FastDeviceCapabilities(SafeNativeMethods.DC_PAPERS, kindsBuffer, -1, printerName);
 
             Debug.Assert(FastDeviceCapabilities(SafeNativeMethods.DC_PAPERSIZE, IntPtr.Zero, -1, printerName) == count,
                          "Not the same number of paper kinds as paper names?");
-            IntPtr dimensionsBuffer = Marshal.AllocCoTaskMem(8 * count);
+            IntPtr dimensionsBuffer = NativeMemoryHelper.Alloc(8 * count);
             FastDeviceCapabilities(SafeNativeMethods.DC_PAPERSIZE, dimensionsBuffer, -1, printerName);
 
             PaperSize[] result = new PaperSize[count];
@@ -1095,9 +1095,9 @@ namespace System.Drawing.Printing
                                           PrinterUnitConvert.Convert(height, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display));
             }
 
-            Marshal.FreeCoTaskMem(namesBuffer);
-            Marshal.FreeCoTaskMem(kindsBuffer);
-            Marshal.FreeCoTaskMem(dimensionsBuffer);
+            NativeMemoryHelper.Free(namesBuffer);
+            NativeMemoryHelper.Free(kindsBuffer);
+            NativeMemoryHelper.Free(dimensionsBuffer);
             return result;
         }
 
@@ -1112,12 +1112,12 @@ namespace System.Drawing.Printing
             // Contrary to documentation, DeviceCapabilities returns char[count, 24],
             // not char[count][24]
             int stringSize = Marshal.SystemDefaultCharSize * 24;
-            IntPtr namesBuffer = Marshal.AllocCoTaskMem(checked(stringSize * count));
+            IntPtr namesBuffer = NativeMemoryHelper.Alloc(checked(stringSize * count));
             FastDeviceCapabilities(SafeNativeMethods.DC_BINNAMES, namesBuffer, -1, printerName);
 
             Debug.Assert(FastDeviceCapabilities(SafeNativeMethods.DC_BINS, IntPtr.Zero, -1, printerName) == count,
                          "Not the same number of bin kinds as bin names?");
-            IntPtr kindsBuffer = Marshal.AllocCoTaskMem(2 * count);
+            IntPtr kindsBuffer = NativeMemoryHelper.Alloc(2 * count);
             FastDeviceCapabilities(SafeNativeMethods.DC_BINS, kindsBuffer, -1, printerName);
 
             PaperSource[] result = new PaperSource[count];
@@ -1134,8 +1134,8 @@ namespace System.Drawing.Printing
                 result[i] = new PaperSource((PaperSourceKind)kind, name);
             }
 
-            Marshal.FreeCoTaskMem(namesBuffer);
-            Marshal.FreeCoTaskMem(kindsBuffer);
+            NativeMemoryHelper.Free(namesBuffer);
+            NativeMemoryHelper.Free(kindsBuffer);
             return result;
         }
 
@@ -1173,7 +1173,7 @@ namespace System.Drawing.Printing
                 result[i + 4] = new PrinterResolution(PrinterResolutionKind.Custom, x, y);
             }
 
-            Marshal.FreeCoTaskMem(buffer);
+            NativeMemoryHelper.Free(buffer);
             return result;
         }
 
