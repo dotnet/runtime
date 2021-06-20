@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 namespace System.Diagnostics.Eventing.Reader
 {
     /// <summary>
-    /// A SafeHandle implementation over a native CoTaskMem allocated via StringToCoTaskMemAuto.
+    /// A SafeHandle implementation over native memory allocated via <see cref="NativeMemoryHelper.Alloc"/>.
     /// </summary>
-    internal sealed class CoTaskMemSafeHandle : SafeHandle
+    internal sealed class NativeMemorySafeHandle : SafeHandle
     {
-        public CoTaskMemSafeHandle()
+        public NativeMemorySafeHandle()
             : base(IntPtr.Zero, true)
         {
         }
@@ -35,20 +35,16 @@ namespace System.Diagnostics.Eventing.Reader
 
         protected override bool ReleaseHandle()
         {
-            Marshal.FreeCoTaskMem(handle);
+            NativeMemoryHelper.Free(handle);
             handle = IntPtr.Zero;
             return true;
         }
 
-        //
-        // DONT compare CoTaskMemSafeHandle with CoTaskMemSafeHandle.Zero
-        // use IsInvalid instead. Zero is provided where a NULL handle needed
-        //
-        public static CoTaskMemSafeHandle Zero
+        public static NativeMemorySafeHandle Zero
         {
             get
             {
-                return new CoTaskMemSafeHandle();
+                return new NativeMemorySafeHandle();
             }
         }
     }
