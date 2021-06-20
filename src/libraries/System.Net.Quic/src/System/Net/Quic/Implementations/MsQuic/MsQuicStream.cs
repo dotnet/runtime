@@ -567,7 +567,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
-        private void Dispose(bool disposing)
+        private unsafe void Dispose(bool disposing)
         {
             if (_disposed)
             {
@@ -576,7 +576,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _disposed = true;
             _state.Handle.Dispose();
-            Marshal.FreeHGlobal(_state.SendQuicBuffers);
+            NativeMemory.Free((void*)_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
             _state.ConnectionState?.RemoveStream(this);
@@ -927,7 +927,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MemoryHandle handle = buffer.Pin();
             if (_state.SendQuicBuffers == IntPtr.Zero)
             {
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer));
+                _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)sizeof(QuicBuffer));
                 _state.SendBufferMaxCount = 1;
             }
 
@@ -988,9 +988,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.SendBufferMaxCount < count)
             {
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                NativeMemory.Free((void*)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * count);
+                _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * count));
                 _state.SendBufferMaxCount = count;
                 _state.BufferArrays = new MemoryHandle[count];
             }
@@ -1054,9 +1054,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.SendBufferMaxCount < array.Length)
             {
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                NativeMemory.Free((void*)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * array.Length);
+                _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * array.Length));
                 _state.SendBufferMaxCount = array.Length;
                 _state.BufferArrays = new MemoryHandle[array.Length];
             }
