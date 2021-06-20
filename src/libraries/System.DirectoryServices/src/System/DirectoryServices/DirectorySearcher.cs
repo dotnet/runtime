@@ -815,7 +815,7 @@ namespace System.DirectoryServices
                     info = default;
                     info.dwSearchPref = (int)AdsSearchPreferences.SORT_ON;
                     AdsSortKey sortKey = default;
-                    sortKey.pszAttrType = Marshal.StringToCoTaskMemUni(Sort.PropertyName);
+                    sortKey.pszAttrType = NativeMemoryHelper.AllocStringUnicode(Sort.PropertyName);
                     ptrToFree = sortKey.pszAttrType; // so we can free it later.
                     sortKey.pszReserved = (IntPtr)0;
                     sortKey.fReverseOrder = (Sort.Direction == SortDirection.Descending) ? -1 : 0;
@@ -836,7 +836,7 @@ namespace System.DirectoryServices
                     vlvValue.offset = _vlv.Offset;
                     //we need to treat the empty string as null here
                     if (_vlv.Target.Length != 0)
-                        vlvValue.target = Marshal.StringToCoTaskMemUni(_vlv.Target);
+                        vlvValue.target = NativeMemoryHelper.AllocStringUnicode(_vlv.Target);
                     else
                         vlvValue.target = IntPtr.Zero;
                     ptrVLVToFree = vlvValue.target;
@@ -848,11 +848,11 @@ namespace System.DirectoryServices
                     else
                     {
                         vlvValue.contextIDlength = _vlv.DirectoryVirtualListViewContext._context.Length;
-                        vlvValue.contextID = Marshal.AllocCoTaskMem(vlvValue.contextIDlength);
+                        vlvValue.contextID = NativeMemoryHelper.Alloc(vlvValue.contextIDlength);
                         ptrVLVContexToFree = vlvValue.contextID;
                         Marshal.Copy(_vlv.DirectoryVirtualListViewContext._context, 0, vlvValue.contextID, vlvValue.contextIDlength);
                     }
-                    IntPtr vlvPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(AdsVLV)));
+                    IntPtr vlvPtr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(AdsVLV)));
                     byte[] vlvBytes = new byte[Marshal.SizeOf(vlvValue)];
                     try
                     {
@@ -861,7 +861,7 @@ namespace System.DirectoryServices
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(vlvPtr);
+                        NativeMemoryHelper.Free(vlvPtr);
                     }
                     info.vValue = new AdsValueHelper(vlvBytes, AdsType.ADSTYPE_PROV_SPECIFIC).GetStruct();
                     prefList.Add(info);
@@ -889,21 +889,21 @@ namespace System.DirectoryServices
             }
             finally
             {
-                if (ptrToFree != (IntPtr)0)
-                    Marshal.FreeCoTaskMem(ptrToFree);
+                if ((nint)ptrToFree != 0)
+                    NativeMemoryHelper.Free(ptrToFree);
 
-                if (ptrVLVToFree != (IntPtr)0)
-                    Marshal.FreeCoTaskMem(ptrVLVToFree);
+                if ((nint)ptrVLVToFree != 0)
+                    NativeMemoryHelper.Free(ptrVLVToFree);
 
-                if (ptrVLVContexToFree != (IntPtr)0)
-                    Marshal.FreeCoTaskMem(ptrVLVContexToFree);
+                if ((nint)ptrVLVContexToFree != 0)
+                    NativeMemoryHelper.Free(ptrVLVContexToFree);
             }
         }
 
         private static void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
         {
             int structSize = Marshal.SizeOf(typeof(AdsSearchPreferenceInfo));
-            IntPtr ptr = Marshal.AllocHGlobal((IntPtr)(structSize * prefs.Length));
+            IntPtr ptr = NativeMemoryHelper.Alloc(structSize * prefs.Length);
             try
             {
                 IntPtr tempPtr = ptr;
@@ -953,7 +953,7 @@ namespace System.DirectoryServices
             }
             finally
             {
-                Marshal.FreeHGlobal(ptr);
+                NativeMemoryHelper.Free(ptr);
             }
         }
     }

@@ -114,8 +114,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             NativeMethods.DsCrackNames dsCrackNames = (NativeMethods.DsCrackNames)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsCrackNames));
 
-            IntPtr name = Marshal.StringToHGlobalUni(distinguishedName);
-            IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
+            IntPtr name = NativeMemoryHelper.AllocStringUnicode(distinguishedName);
+            IntPtr ptr = NativeMemoryHelper.Alloc(IntPtr.Size);
             Marshal.WriteIntPtr(ptr, name);
             result = dsCrackNames(IntPtr.Zero, NativeMethods.DS_NAME_FLAG_SYNTACTICAL_ONLY,
                    NativeMethods.DS_FQDN_1779_NAME, NativeMethods.DS_CANONICAL_NAME, 1, ptr, out results);
@@ -153,18 +153,18 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (ptr != (IntPtr)0)
-                        Marshal.FreeHGlobal(ptr);
+                    if ((nint)ptr != 0)
+                        NativeMemoryHelper.Free(ptr);
 
-                    if (name != (IntPtr)0)
-                        Marshal.FreeHGlobal(name);
+                    if ((nint)name != 0)
+                        NativeMemoryHelper.Free(name);
 
                     // free the results
                     if (results != IntPtr.Zero)
                     {
                         // call DsFreeNameResultW
                         functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
-                        if (functionPtr == (IntPtr)0)
+                        if ((nint)functionPtr == 0)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                         }
@@ -201,8 +201,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
             NativeMethods.DsCrackNames dsCrackNames = (NativeMethods.DsCrackNames)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsCrackNames));
-            IntPtr name = Marshal.StringToHGlobalUni(dnsName + "/");
-            IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
+            IntPtr name = NativeMemoryHelper.AllocStringUnicode(dnsName + "/");
+            IntPtr ptr = NativeMemoryHelper.Alloc(IntPtr.Size);
             Marshal.WriteIntPtr(ptr, name);
             result = dsCrackNames(IntPtr.Zero, NativeMethods.DS_NAME_FLAG_SYNTACTICAL_ONLY,
                          NativeMethods.DS_CANONICAL_NAME, NativeMethods.DS_FQDN_1779_NAME, 1, ptr, out results);
@@ -222,11 +222,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (ptr != (IntPtr)0)
-                        Marshal.FreeHGlobal(ptr);
+                    if ((nint)ptr != 0)
+                        NativeMemoryHelper.Free(ptr);
 
-                    if (name != (IntPtr)0)
-                        Marshal.FreeHGlobal(name);
+                    if ((nint)name != 0)
+                        NativeMemoryHelper.Free(name);
                     // free the results
                     if (results != IntPtr.Zero)
                     {
@@ -848,7 +848,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        if (ptr != (IntPtr)0)
+                        if ((nint)ptr != 0)
                             UnsafeNativeMethods.FreeADsMem(ptr);
                     }
                 }
@@ -944,7 +944,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (hToken != (IntPtr)0)
+                if ((nint)hToken != 0)
                     UnsafeNativeMethods.CloseHandle(hToken);
             }
 
@@ -966,7 +966,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (hThread != (IntPtr)0)
+                if ((nint)hThread != 0)
                     UnsafeNativeMethods.CloseHandle(hThread);
             }
         }
@@ -1048,7 +1048,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int mask = POLICY_VIEW_LOCAL_INFORMATION;
 
             systemName = new LSA_UNICODE_STRING();
-            target = Marshal.StringToHGlobalUni(serverName);
+            target = NativeMemoryHelper.AllocStringUnicode(serverName);
             UnsafeNativeMethods.RtlInitUnicodeString(systemName, target);
 
             try
@@ -1063,8 +1063,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (target != (IntPtr)0)
-                    Marshal.FreeHGlobal(target);
+                if ((nint)target != 0)
+                    NativeMemoryHelper.Free(target);
             }
         }
 
@@ -1859,9 +1859,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                lpString1 = Marshal.StringToHGlobalUni(s1);
+                lpString1 = NativeMemoryHelper.AllocStringUnicode(s1);
                 cchCount1 = s1.Length;
-                lpString2 = Marshal.StringToHGlobalUni(s2);
+                lpString2 = NativeMemoryHelper.AllocStringUnicode(s2);
                 cchCount2 = s2.Length;
 
                 result = NativeMethods.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
@@ -1874,11 +1874,11 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (lpString1 != IntPtr.Zero)
                 {
-                    Marshal.FreeHGlobal(lpString1);
+                    NativeMemoryHelper.Free(lpString1);
                 }
                 if (lpString2 != IntPtr.Zero)
                 {
-                    Marshal.FreeHGlobal(lpString2);
+                    NativeMemoryHelper.Free(lpString2);
                 }
             }
 
@@ -2046,10 +2046,10 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (pCopyOfUserSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pCopyOfUserSid);
+                    NativeMemoryHelper.Free(pCopyOfUserSid);
 
                 if (pMachineDomainSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pMachineDomainSid);
+                    NativeMemoryHelper.Free(pMachineDomainSid);
             }
         }
 
@@ -2117,7 +2117,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Allocate the necessary buffer.
                 Debug.Assert(neededBufferSize > 0);
-                pBuffer = Marshal.AllocHGlobal(neededBufferSize);
+                pBuffer = NativeMemoryHelper.Alloc(neededBufferSize);
 
                 // Load the user info into the buffer
                 success = UnsafeNativeMethods.GetTokenInformation(
@@ -2142,7 +2142,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Now we make a copy of the SID to return
                 int userSidLength = UnsafeNativeMethods.GetLengthSid(pUserSid);
-                IntPtr pCopyOfUserSid = Marshal.AllocHGlobal(userSidLength);
+                IntPtr pCopyOfUserSid = NativeMemoryHelper.Alloc(userSidLength);
                 success = UnsafeNativeMethods.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
@@ -2159,7 +2159,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.CloseHandle(pTokenHandle);
 
                 if (pBuffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pBuffer);
+                    NativeMemoryHelper.Free(pBuffer);
             }
         }
 
@@ -2173,7 +2173,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 LSA_OBJECT_ATTRIBUTES oa = new LSA_OBJECT_ATTRIBUTES();
 
-                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_OBJECT_ATTRIBUTES)));
+                pOA = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
                 int err = UnsafeNativeMethods.LsaOpenPolicy(
                                 IntPtr.Zero,
@@ -2205,7 +2205,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Now we make a copy of the SID to return
                 int sidLength = UnsafeNativeMethods.GetLengthSid(info.domainSid);
-                IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
+                IntPtr pCopyOfSid = NativeMemoryHelper.Alloc(sidLength);
                 bool success = UnsafeNativeMethods.CopySid(sidLength, pCopyOfSid, info.domainSid);
                 if (!success)
                 {
@@ -2225,7 +2225,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.LsaFreeMemory(pBuffer);
 
                 if (pOA != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pOA);
+                    NativeMemoryHelper.Free(pOA);
             }
         }
 
@@ -2325,17 +2325,17 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (pSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pSid);
+                    NativeMemoryHelper.Free(pSid);
             }
         }
 
-        // The caller must call Marshal.FreeHGlobal on the returned
+        // The caller must call NativeMemoryHelper.Free on the returned
         // value to free it.
         internal static IntPtr ConvertByteArrayToIntPtr(byte[] bytes)
         {
             IntPtr pBytes = IntPtr.Zero;
 
-            pBytes = Marshal.AllocHGlobal(bytes.Length);
+            pBytes = NativeMemoryHelper.Alloc(bytes.Length);
 
             try
             {
@@ -2343,7 +2343,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (Exception)
             {
-                Marshal.FreeHGlobal(pBytes);
+                NativeMemoryHelper.Free(pBytes);
                 throw;
             }
 
