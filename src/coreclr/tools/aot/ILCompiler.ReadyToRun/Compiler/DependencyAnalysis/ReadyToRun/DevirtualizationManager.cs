@@ -211,5 +211,48 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return type;
             }
         }
+
+        private enum SVMResolutionEligibility : byte
+        {
+            Allow,
+            Forbid,
+            NotApplicable,
+        }
+
+        protected override bool AllowCompileTimeStaticVirtualMethodResolution(DefType currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        {
+            if (!base.AllowCompileTimeStaticVirtualMethodResolution(currentType, interfaceMethod, interfaceType))
+            {
+                return false;
+            }
+
+            return AllowCompileTimeStaticVirtualMethodResolutionRecursive(currentType, interfaceMethod, interfaceType) != SVMResolutionEligibility.Forbid;
+        }
+
+        private SVMResolutionEligibility AllowCompileTimeStaticVirtualMethodResolutionRecursive(DefType currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        {
+            if (currentType.HasBaseType)
+            {
+                SVMResolutionEligibility allowParent = AllowCompileTimeStaticVirtualMethodResolutionRecursive(currentType.BaseType, interfaceMethod, interfaceType);
+                if (allowParent == SVMResolutionEligibility.Forbid)
+                {
+                    return SVMResolutionEligibility.Forbid;
+                }
+                if (allowParent == SVMResolutionEligibility.Allow)
+                {
+                    return _compilationModuleGroup.VersionsWithType(currentType.BaseType) ? SVMResolutionEligibility.Allow : SVMResolutionEligibility.Forbid;
+                }
+            }
+
+            foreach (DefType runtimeInterface in currentType.RuntimeInterfaces)
+            {
+                if (runtimeInterface == interfaceType)
+                {
+                    return _compilationModuleGroup.VersionsWithType(interfaceType) ? SVMResolutionEligibility.Allow : SVMResolutionEligibility.Forbid;
+                }
+            }
+
+            return SVMResolutionEligibility.NotApplicable;
+        }
     }
 }
