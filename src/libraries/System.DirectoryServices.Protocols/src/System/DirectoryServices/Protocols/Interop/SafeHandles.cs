@@ -6,11 +6,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.Protocols
 {
-    internal sealed class HGlobalMemHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class NativeMemoryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static IntPtr _dummyPointer = new IntPtr(1);
 
-        internal HGlobalMemHandle(IntPtr value) : base(true)
+        internal NativeMemoryHandle(IntPtr value) : base(true)
         {
             SetHandle(value);
         }
@@ -19,7 +19,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (handle != _dummyPointer)
             {
-                Marshal.FreeHGlobal(handle);
+                NativeMemoryHelper.Free(handle);
             }
             return true;
         }

@@ -573,10 +573,10 @@ namespace System.DirectoryServices.Protocols
 
                 if (managedServerControls != null)
                 {
-                    serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
+                    serverControlArray = Utility.AllocIntPtrArray(managedServerControls.Length + 1);
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
+                        IntPtr controlPtr = NativeMemoryHelper.Alloc(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
                         tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
@@ -590,10 +590,10 @@ namespace System.DirectoryServices.Protocols
                 managedClientControls = BuildControlArray(request.Controls, false);
                 if (managedClientControls != null)
                 {
-                    clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
+                    clientControlArray = Utility.AllocIntPtrArray(managedClientControls.Length + 1);
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
+                        IntPtr controlPtr = NativeMemoryHelper.Alloc(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
                         tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
@@ -642,7 +642,7 @@ namespace System.DirectoryServices.Protocols
                             berValuePtr = new berval
                             {
                                 bv_len = byteArray.Length,
-                                bv_val = Marshal.AllocHGlobal(byteArray.Length)
+                                bv_val = NativeMemoryHelper.Alloc(byteArray.Length)
                             };
                             Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
                         }
@@ -674,12 +674,12 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     addModCount = (modifications == null ? 1 : modifications.Length + 1);
-                    modArray = Utility.AllocHGlobalIntPtrArray(addModCount);
+                    modArray = Utility.AllocIntPtrArray(addModCount);
                     int modStructSize = Marshal.SizeOf(typeof(LdapMod));
                     int i = 0;
                     for (i = 0; i < addModCount - 1; i++)
                     {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(modStructSize);
+                        IntPtr controlPtr = NativeMemoryHelper.Alloc(modStructSize);
                         Marshal.StructureToPtr(modifications[i], controlPtr, false);
                         tempPtr = (IntPtr)((long)modArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
@@ -715,7 +715,7 @@ namespace System.DirectoryServices.Protocols
                         berValuePtr = new berval()
                         {
                             bv_len = val.Length,
-                            bv_val = Marshal.AllocHGlobal(val.Length)
+                            bv_val = NativeMemoryHelper.Alloc(val.Length)
                         };
                         Marshal.Copy(val, 0, berValuePtr.bv_val, val.Length);
                     }
@@ -745,7 +745,7 @@ namespace System.DirectoryServices.Protocols
                     attributeCount = (searchRequest.Attributes == null ? 0 : searchRequest.Attributes.Count);
                     if (attributeCount != 0)
                     {
-                        searchAttributes = Utility.AllocHGlobalIntPtrArray(attributeCount + 1);
+                        searchAttributes = Utility.AllocIntPtrArray(attributeCount + 1);
                         int i = 0;
                         for (i = 0; i < attributeCount; i++)
                         {
@@ -817,10 +817,10 @@ namespace System.DirectoryServices.Protocols
                         IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, IntPtr.Size * i);
                         if (tempPtr != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(tempPtr);
+                            NativeMemoryHelper.Free(tempPtr);
                         }
                     }
-                    Marshal.FreeHGlobal(serverControlArray);
+                    NativeMemoryHelper.Free(serverControlArray);
                 }
 
                 if (managedServerControls != null)
@@ -829,14 +829,14 @@ namespace System.DirectoryServices.Protocols
                     {
                         if (managedServerControls[i].ldctl_oid != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(managedServerControls[i].ldctl_oid);
+                            NativeMemoryHelper.Free(managedServerControls[i].ldctl_oid);
                         }
 
                         if (managedServerControls[i].ldctl_value != null)
                         {
                             if (managedServerControls[i].ldctl_value.bv_val != IntPtr.Zero)
                             {
-                                Marshal.FreeHGlobal(managedServerControls[i].ldctl_value.bv_val);
+                                NativeMemoryHelper.Free(managedServerControls[i].ldctl_value.bv_val);
                             }
                         }
                     }
@@ -850,11 +850,11 @@ namespace System.DirectoryServices.Protocols
                         IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, IntPtr.Size * i);
                         if (tempPtr != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(tempPtr);
+                            NativeMemoryHelper.Free(tempPtr);
                         }
                     }
 
-                    Marshal.FreeHGlobal(clientControlArray);
+                    NativeMemoryHelper.Free(clientControlArray);
                 }
 
                 if (managedClientControls != null)
@@ -863,14 +863,14 @@ namespace System.DirectoryServices.Protocols
                     {
                         if (managedClientControls[i].ldctl_oid != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(managedClientControls[i].ldctl_oid);
+                            NativeMemoryHelper.Free(managedClientControls[i].ldctl_oid);
                         }
 
                         if (managedClientControls[i].ldctl_value != null)
                         {
                             if (managedClientControls[i].ldctl_value.bv_val != IntPtr.Zero)
                             {
-                                Marshal.FreeHGlobal(managedClientControls[i].ldctl_value.bv_val);
+                                NativeMemoryHelper.Free(managedClientControls[i].ldctl_value.bv_val);
                             }
                         }
                     }
@@ -884,23 +884,23 @@ namespace System.DirectoryServices.Protocols
                         IntPtr tempPtr = Marshal.ReadIntPtr(modArray, IntPtr.Size * i);
                         if (tempPtr != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(tempPtr);
+                            NativeMemoryHelper.Free(tempPtr);
                         }
                     }
 
-                    Marshal.FreeHGlobal(modArray);
+                    NativeMemoryHelper.Free(modArray);
                 }
 
                 // Free the pointers.
                 for (int x = 0; x < ptrToFree.Count; x++)
                 {
                     IntPtr tempPtr = (IntPtr)ptrToFree[x];
-                    Marshal.FreeHGlobal(tempPtr);
+                    NativeMemoryHelper.Free(tempPtr);
                 }
 
                 if (berValuePtr != null && berValuePtr.bv_val != IntPtr.Zero)
                 {
-                    Marshal.FreeHGlobal(berValuePtr.bv_val);
+                    NativeMemoryHelper.Free(berValuePtr.bv_val);
                 }
 
                 if (searchAttributes != IntPtr.Zero)
@@ -910,11 +910,11 @@ namespace System.DirectoryServices.Protocols
                         IntPtr tempPtr = Marshal.ReadIntPtr(searchAttributes, IntPtr.Size * i);
                         if (tempPtr != IntPtr.Zero)
                         {
-                            Marshal.FreeHGlobal(tempPtr);
+                            NativeMemoryHelper.Free(tempPtr);
                         }
                     }
 
-                    Marshal.FreeHGlobal(searchAttributes);
+                    NativeMemoryHelper.Free(searchAttributes);
                 }
             }
         }
@@ -1263,7 +1263,7 @@ namespace System.DirectoryServices.Protocols
                             managedControls[i].ldctl_value = new berval
                             {
                                 bv_len = byteControlValue.Length,
-                                bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
+                                bv_val = NativeMemoryHelper.Alloc(sizeof(byte) * byteControlValue.Length)
                             };
                             Marshal.Copy(byteControlValue, 0, managedControls[i].ldctl_value.bv_val, managedControls[i].ldctl_value.bv_len);
                         }
@@ -1351,7 +1351,7 @@ namespace System.DirectoryServices.Protocols
                             berValues[j] = new berval()
                             {
                                 bv_len = byteArray.Length,
-                                bv_val = Marshal.AllocHGlobal(byteArray.Length)
+                                bv_val = NativeMemoryHelper.Alloc(byteArray.Length)
                             };
 
                             // need to free the memory allocated on the heap when we are done
@@ -1360,7 +1360,7 @@ namespace System.DirectoryServices.Protocols
                         }
                     }
 
-                    attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
+                    attributes[i].values = Utility.AllocIntPtrArray(valuesCount + 1);
                     int structSize = Marshal.SizeOf(typeof(berval));
                     IntPtr controlPtr = IntPtr.Zero;
                     IntPtr tempPtr = IntPtr.Zero;
@@ -1368,7 +1368,7 @@ namespace System.DirectoryServices.Protocols
                     int m = 0;
                     for (m = 0; m < valuesCount; m++)
                     {
-                        controlPtr = Marshal.AllocHGlobal(structSize);
+                        controlPtr = NativeMemoryHelper.Alloc(structSize);
 
                         // Need to free the memory allocated on the heap when we are done.
                         ptrToFree.Add(controlPtr);

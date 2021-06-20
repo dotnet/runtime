@@ -37,11 +37,11 @@ namespace System.DirectoryServices.Protocols
             return (code == ResultCode.AliasDereferencingProblem || code == ResultCode.InappropriateAuthentication || code == ResultCode.SortControlMissing || code == ResultCode.OffsetRangeError || code == ResultCode.VirtualListViewError || code == ResultCode.Other);
         }
 
-        internal static IntPtr AllocHGlobalIntPtrArray(int size)
+        internal static IntPtr AllocIntPtrArray(int size)
         {
             checked
             {
-                IntPtr intPtrArray = Marshal.AllocHGlobal(IntPtr.Size * size);
+                IntPtr intPtrArray = NativeMemoryHelper.Alloc(IntPtr.Size * size);
                 for (int i = 0; i < size; i++)
                 {
                     IntPtr tempPtr = (IntPtr)((long)intPtrArray + IntPtr.Size * i);

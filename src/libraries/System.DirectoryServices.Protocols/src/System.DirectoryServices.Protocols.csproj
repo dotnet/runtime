@@ -37,6 +37,8 @@
     <Compile Include="$(CommonPath)Interop\Interop.Ldap.cs">
       <Link>Common\Interop\Interop.Ldap.cs</Link>
     </Compile>
+      <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+             Link="Common\System\NativeMemoryHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Windows.cs" />

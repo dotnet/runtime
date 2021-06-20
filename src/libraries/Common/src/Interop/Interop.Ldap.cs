@@ -172,12 +172,12 @@ namespace System.DirectoryServices.Protocols
         {
             if (attribute != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(attribute);
+                NativeMemoryHelper.Free(attribute);
             }
 
             if (values != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(values);
+                NativeMemoryHelper.Free(values);
             }
         }
     }

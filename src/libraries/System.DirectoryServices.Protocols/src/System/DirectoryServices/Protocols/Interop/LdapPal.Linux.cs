@@ -115,7 +115,7 @@ namespace System.DirectoryServices.Protocols
             }
             finally
             {
-                Marshal.FreeHGlobal(passwordPtr);
+                NativeMemoryHelper.Free(passwordPtr);
             }
         }
 
@@ -130,7 +130,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringAnsi(requestName);
 
-        internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
+        internal static IntPtr StringToPtr(string s) => NativeMemoryHelper.AllocStringAnsi(s);
 
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
@@ -174,7 +174,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (!string.IsNullOrEmpty(interactChallenge.defresult))
                 {
-                    interactChallenge.result = Marshal.StringToHGlobalAnsi(interactChallenge.defresult);
+                    interactChallenge.result = NativeMemoryHelper.AllocStringAnsi(interactChallenge.defresult);
                     interactChallenge.len = interactChallenge != null ? (uint)interactChallenge.defresult.Length : 0;
                 }
 
