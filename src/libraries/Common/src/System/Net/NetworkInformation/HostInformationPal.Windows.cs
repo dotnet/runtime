@@ -36,7 +36,7 @@ namespace System.Net.NetworkInformation
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
-                IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
+                IntPtr buffer = (nint)NativeMemory.Alloc(size);
                 try
                 {
                     result = Interop.IpHlpApi.GetNetworkParams(buffer, ref size);

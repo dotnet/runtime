@@ -117,7 +117,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the TCP table.
-                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
+                    IntPtr buffer = (nint)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetTcpTable(buffer, ref size, true);
@@ -166,7 +166,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the TCP table.
-                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
+                    IntPtr buffer = (nint)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetExtendedTcpTable(buffer, ref size, true,
@@ -225,7 +225,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
-                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
+                    IntPtr buffer = (nint)NativeMemory.Alloc(size);
 
                     try
                     {
@@ -279,7 +279,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
-                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
+                    IntPtr buffer = (nint)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetExtendedUdpTable(buffer, ref size, true,

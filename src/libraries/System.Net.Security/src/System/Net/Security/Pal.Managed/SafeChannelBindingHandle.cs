@@ -42,7 +42,7 @@ namespace System.Net.Security
         {
             byte[] cbtPrefix = GetPrefixBytes(kind);
             _cbtPrefixByteArraySize = cbtPrefix.Length;
-            handle = (IntPtr)NativeMemory.Alloc((uint)(s_secChannelBindingSize + _cbtPrefixByteArraySize + CertHashMaxSize));
+            handle = (nint)NativeMemory.Alloc((uint)(s_secChannelBindingSize + _cbtPrefixByteArraySize + CertHashMaxSize));
             IntPtr cbtPrefixPtr = handle + s_secChannelBindingSize;
             Marshal.Copy(cbtPrefix, 0, cbtPrefixPtr, _cbtPrefixByteArraySize);
             CertHashPtr = cbtPrefixPtr + _cbtPrefixByteArraySize;

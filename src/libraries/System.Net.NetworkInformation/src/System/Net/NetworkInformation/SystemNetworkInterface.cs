@@ -97,7 +97,7 @@ namespace System.Net.NetworkInformation
             {
 
                 // Allocate the buffer and get the adapter info.
-                IntPtr buffer = (IntPtr)NativeMemory.Alloc(bufferSize);
+                IntPtr buffer = (nint)NativeMemory.Alloc(bufferSize);
                 try
                 {
                     result = Interop.IpHlpApi.GetAdaptersAddresses(

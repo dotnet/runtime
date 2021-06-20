@@ -119,7 +119,7 @@ namespace System.Net
                 NativeMemory.Free((void*)(nint)_backingBuffer);
             }
 
-            _backingBuffer = size == 0 ? IntPtr.Zero : (IntPtr)NativeMemory.Alloc((uint)size);
+            _backingBuffer = size == 0 ? IntPtr.Zero : (nint)NativeMemory.Alloc((uint)size);
             _backingBufferLength = size;
 
             // Zero out the contents of the buffer.

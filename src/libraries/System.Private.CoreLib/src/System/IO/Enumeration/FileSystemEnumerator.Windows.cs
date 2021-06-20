@@ -65,7 +65,7 @@ namespace System.IO.Enumeration
                 // NtQueryDirectoryFile needs its buffer to be 64bit aligned to work
                 // successfully with FileFullDirectoryInformation on ARM32. malloc
                 // will return pointers aligned as such, new byte[] does not.
-                _buffer = (IntPtr)NativeMemory.Alloc((uint) _bufferLength);
+                _buffer = (nint)NativeMemory.Alloc((uint) _bufferLength);
             }
             catch
             {
@@ -233,7 +233,7 @@ namespace System.IO.Enumeration
 
                     if (_buffer != default)
                     {
-                        NativeMemory.Free(_buffer);
+                        NativeMemory.Free((void*)(nint)_buffer);
                     }
 
                     _buffer = default;

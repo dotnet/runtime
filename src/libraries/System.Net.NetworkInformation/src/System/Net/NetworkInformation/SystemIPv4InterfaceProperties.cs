@@ -85,7 +85,7 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
                 {
                     // Now we allocate the buffer and read the network parameters.
-                    IntPtr buffer = (IntPtr)NativeMemory.Alloc(size);
+                    IntPtr buffer = (nint)NativeMemory.Alloc(size);
                     try
                     {
                         result = Interop.IpHlpApi.GetPerAdapterInfo(index, buffer, ref size);

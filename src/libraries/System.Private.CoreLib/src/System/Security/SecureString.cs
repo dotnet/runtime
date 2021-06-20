@@ -435,7 +435,7 @@ namespace System.Security
             {
                 Debug.Assert(byteLength >= 0);
                 UnmanagedBuffer buffer = new UnmanagedBuffer();
-                buffer.SetHandle((IntPtr)NativeMemory.Alloc((uint) byteLength));
+                buffer.SetHandle((nint)NativeMemory.Alloc((uint)byteLength));
                 buffer.Initialize((ulong)byteLength);
                 buffer._byteLength = byteLength;
                 return buffer;

@@ -927,7 +927,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MemoryHandle handle = buffer.Pin();
             if (_state.SendQuicBuffers == IntPtr.Zero)
             {
-                _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)sizeof(QuicBuffer));
+                _state.SendQuicBuffers = (nint)NativeMemory.Alloc((uint)sizeof(QuicBuffer));
                 _state.SendBufferMaxCount = 1;
             }
 
@@ -990,7 +990,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * count));
+                _state.SendQuicBuffers = (nint)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * count));
                 _state.SendBufferMaxCount = count;
                 _state.BufferArrays = new MemoryHandle[count];
             }
@@ -1056,7 +1056,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * array.Length));
+                _state.SendQuicBuffers = (nint)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * array.Length));
                 _state.SendBufferMaxCount = array.Length;
                 _state.BufferArrays = new MemoryHandle[array.Length];
             }
