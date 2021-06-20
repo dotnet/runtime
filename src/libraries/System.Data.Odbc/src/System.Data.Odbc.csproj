@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-FreeBSD;netcoreapp3.1-Linux;netcoreapp3.1-OSX;netcoreapp3.1;netstandard2.0;net461-windows</TargetFrameworks>
@@ -12,11 +12,14 @@
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(NoWarn);SA1121</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- TODO: Follow-up on nullability errors on netcoreapp3.1-* -->
-    <NoWarn Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))">$(NoWarn);CS8600;CS8601;CS8602;CS8604</NoWarn>  </PropertyGroup>
+    <NoWarn Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))">$(NoWarn);CS8600;CS8601;CS8602;CS8604</NoWarn>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" >
     <Compile Include="System\Data\Odbc\ODBC32.Common.cs"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetsAnyOS)' != 'true'">
+    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+             Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs"
              Link="Common\System\Data\Common\AdapterUtil.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.Drivers.cs"

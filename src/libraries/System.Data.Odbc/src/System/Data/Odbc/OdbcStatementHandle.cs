@@ -165,7 +165,7 @@ namespace System.Data.Odbc
                             checked((ushort)index),
                             sqlctype,
                             buffer,
-                            new IntPtr(cb),
+                            (nint)cb,
                             out cbActual);
             ODBC.TraceODBC(3, "SQLGetData", retcode);
             return retcode;
@@ -288,8 +288,7 @@ namespace System.Data.Odbc
 
             // MDAC Bug 75928 - SQLStatisticsW damages the string passed in
             // To protect the tablename we need to pass in a copy of that string
-
-            IntPtr pwszTableName = Marshal.StringToCoTaskMemUni(tableName);
+            IntPtr pwszTableName = NativeMemoryHelper.AllocStringUnicode(tableName);
             try
             {
                 retcode = Interop.Odbc.SQLStatisticsW(this,
@@ -304,7 +303,7 @@ namespace System.Data.Odbc
             }
             finally
             {
-                Marshal.FreeCoTaskMem(pwszTableName);
+                NativeMemoryHelper.Free(pwszTableName);
             }
 
             ODBC.TraceODBC(3, "SQLStatisticsW", retcode);

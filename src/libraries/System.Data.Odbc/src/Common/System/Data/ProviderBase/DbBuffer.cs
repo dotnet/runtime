@@ -23,7 +23,7 @@ namespace System.Data.ProviderBase
                 try { }
                 finally
                 {
-                    base.handle = SafeNativeMethods.LocalAlloc((IntPtr)initialSize);
+                    base.handle = NativeMemoryHelper.Alloc(initialSize);
                 }
                 if (IntPtr.Zero == base.handle)
                 {
@@ -373,9 +373,9 @@ namespace System.Data.ProviderBase
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if ((nint)ptr != 0)
             {
-                SafeNativeMethods.LocalFree(ptr);
+                NativeMemoryHelper.Free(ptr);
             }
             return true;
         }
