@@ -207,8 +207,8 @@ namespace System.Drawing.Drawing2D
                 try
                 {
                     int size = checked(4 * count);
-                    factors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
+                    factors = NativeMemoryHelper.Alloc(size);
+                    positions = NativeMemoryHelper.Alloc(size);
 
                     Marshal.Copy(value.Factors, 0, factors, count);
                     Marshal.Copy(value.Positions, 0, positions, count);
@@ -219,13 +219,13 @@ namespace System.Drawing.Drawing2D
                 }
                 finally
                 {
-                    if (factors != IntPtr.Zero)
+                    if ((nint)factors != 0)
                     {
-                        Marshal.FreeHGlobal(factors);
+                        NativeMemoryHelper.Free(factors);
                     }
-                    if (positions != IntPtr.Zero)
+                    if ((nint)positions != 0)
                     {
-                        Marshal.FreeHGlobal(positions);
+                        NativeMemoryHelper.Free(positions);
                     }
                 }
             }

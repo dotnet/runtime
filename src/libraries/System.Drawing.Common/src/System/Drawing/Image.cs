@@ -456,7 +456,7 @@ namespace System.Drawing
             if (size <= 0)
                 return null;
 
-            IntPtr buffer = Marshal.AllocHGlobal(size);
+            IntPtr buffer = NativeMemoryHelper.Alloc(size);
             try
             {
                 Gdip.CheckStatus(Gdip.GdipGetEncoderParameterList(
@@ -469,7 +469,7 @@ namespace System.Drawing
             }
             finally
             {
-                Marshal.FreeHGlobal(buffer);
+                NativeMemoryHelper.Free(buffer);
             }
 
             return p;

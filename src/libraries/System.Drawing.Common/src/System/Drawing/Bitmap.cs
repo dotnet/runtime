@@ -145,7 +145,7 @@ namespace System.Drawing
 
         public static Bitmap FromResource(IntPtr hinstance, string bitmapName)
         {
-            IntPtr name = Marshal.StringToHGlobalUni(bitmapName);
+            IntPtr name = NativeMemoryHelper.AllocStringUnicode(bitmapName);
             try
             {
                 Gdip.CheckStatus(Gdip.GdipCreateBitmapFromResource(hinstance, name, out IntPtr bitmap));
@@ -153,7 +153,7 @@ namespace System.Drawing
             }
             finally
             {
-                Marshal.FreeHGlobal(name);
+                NativeMemoryHelper.Free(name);
             }
         }
 

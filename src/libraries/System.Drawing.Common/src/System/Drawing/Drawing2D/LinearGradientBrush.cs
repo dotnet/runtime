@@ -196,8 +196,8 @@ namespace System.Drawing.Drawing2D
                 try
                 {
                     int size = checked(4 * count);
-                    factors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
+                    factors = NativeMemoryHelper.Alloc(size);
+                    positions = NativeMemoryHelper.Alloc(size);
 
                     // Retrieve horizontal blend factors.
                     Gdip.CheckStatus(Gdip.GdipGetLineBlend(new HandleRef(this, NativeBrush), factors, positions, count));
@@ -212,13 +212,13 @@ namespace System.Drawing.Drawing2D
                 }
                 finally
                 {
-                    if (factors != IntPtr.Zero)
+                    if ((nint)factors != 0)
                     {
-                        Marshal.FreeHGlobal(factors);
+                        NativeMemoryHelper.Free(factors);
                     }
-                    if (positions != IntPtr.Zero)
+                    if ((nint)positions != 0)
                     {
-                        Marshal.FreeHGlobal(positions);
+                        NativeMemoryHelper.Free(positions);
                     }
                 }
             }
@@ -251,8 +251,8 @@ namespace System.Drawing.Drawing2D
                 try
                 {
                     int size = checked(4 * count);
-                    factors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
+                    factors = NativeMemoryHelper.Alloc(size);
+                    positions = NativeMemoryHelper.Alloc(size);
 
                     Marshal.Copy(value.Factors, 0, factors, count);
                     Marshal.Copy(value.Positions, 0, positions, count);
@@ -266,13 +266,13 @@ namespace System.Drawing.Drawing2D
                 }
                 finally
                 {
-                    if (factors != IntPtr.Zero)
+                    if ((nint)factors != 0)
                     {
-                        Marshal.FreeHGlobal(factors);
+                        NativeMemoryHelper.Free(factors);
                     }
-                    if (positions != IntPtr.Zero)
+                    if ((nint)positions != 0)
                     {
-                        Marshal.FreeHGlobal(positions);
+                        NativeMemoryHelper.Free(positions);
                     }
                 }
             }
@@ -329,8 +329,8 @@ namespace System.Drawing.Drawing2D
                 try
                 {
                     int size = checked(4 * count);
-                    colors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
+                    colors = NativeMemoryHelper.Alloc(size);
+                    positions = NativeMemoryHelper.Alloc(size);
 
                     // Retrieve horizontal blend factors.
                     Gdip.CheckStatus(Gdip.GdipGetLinePresetBlend(new HandleRef(this, NativeBrush), colors, positions, count));
@@ -354,13 +354,13 @@ namespace System.Drawing.Drawing2D
                 }
                 finally
                 {
-                    if (colors != IntPtr.Zero)
+                    if ((nint)colors != 0)
                     {
-                        Marshal.FreeHGlobal(colors);
+                        NativeMemoryHelper.Free(colors);
                     }
-                    if (positions != IntPtr.Zero)
+                    if ((nint)positions != 0)
                     {
-                        Marshal.FreeHGlobal(positions);
+                        NativeMemoryHelper.Free(positions);
                     }
                 }
             }
@@ -407,8 +407,8 @@ namespace System.Drawing.Drawing2D
                 try
                 {
                     int size = checked(4 * count);
-                    colors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
+                    colors = NativeMemoryHelper.Alloc(size);
+                    positions = NativeMemoryHelper.Alloc(size);
 
                     int[] argbs = new int[count];
                     for (int i = 0; i < count; i++)
@@ -424,13 +424,13 @@ namespace System.Drawing.Drawing2D
                 }
                 finally
                 {
-                    if (colors != IntPtr.Zero)
+                    if ((nint)colors != 0)
                     {
-                        Marshal.FreeHGlobal(colors);
+                        NativeMemoryHelper.Free(colors);
                     }
-                    if (positions != IntPtr.Zero)
+                    if ((nint)positions != 0)
                     {
-                        Marshal.FreeHGlobal(positions);
+                        NativeMemoryHelper.Free(positions);
                     }
                 }
             }

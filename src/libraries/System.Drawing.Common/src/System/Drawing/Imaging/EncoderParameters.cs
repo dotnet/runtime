@@ -56,7 +56,7 @@ namespace System.Drawing.Imaging
             int size = Marshal.SizeOf(typeof(EncoderParameter));
 
             int length = _param.Length;
-            IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
+            IntPtr memory = NativeMemoryHelper.Alloc(checked(length * size + IntPtr.Size));
 
             Marshal.WriteIntPtr(memory, (IntPtr)length);
 

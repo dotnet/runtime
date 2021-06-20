@@ -114,7 +114,7 @@ namespace System.Drawing.Imaging
                 throw Gdip.StatusException(status);
             }
 
-            IntPtr memory = Marshal.AllocHGlobal(size);
+            IntPtr memory = NativeMemoryHelper.Alloc(size);
 
             try
             {
@@ -129,7 +129,7 @@ namespace System.Drawing.Imaging
             }
             finally
             {
-                Marshal.FreeHGlobal(memory);
+                NativeMemoryHelper.Free(memory);
             }
 
             return imageCodecs;
@@ -148,7 +148,7 @@ namespace System.Drawing.Imaging
                 throw Gdip.StatusException(status);
             }
 
-            IntPtr memory = Marshal.AllocHGlobal(size);
+            IntPtr memory = NativeMemoryHelper.Alloc(size);
 
             try
             {
@@ -159,11 +159,11 @@ namespace System.Drawing.Imaging
                     throw Gdip.StatusException(status);
                 }
 
-                imageCodecs = ImageCodecInfo.ConvertFromMemory(memory, numEncoders);
+                imageCodecs = ConvertFromMemory(memory, numEncoders);
             }
             finally
             {
-                Marshal.FreeHGlobal(memory);
+                NativeMemoryHelper.Free(memory);
             }
 
             return imageCodecs;
