@@ -5,7 +5,7 @@
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <_WasmBuildNativeCoreDependsOn Condition="'$(_WasmIsLibraryProject)' != 'true'">
+    <_WasmBuildNativeCoreDependsOn Condition="'$(IsWasmAppProject)' == 'true'">
       _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
@@ -17,7 +17,7 @@
       _CompleteWasmBuildNative
     </_WasmBuildNativeCoreDependsOn>
 
-    <_WasmBuildNativeCoreDependsOn Condition="'$(_WasmIsLibraryProject)' == 'true'">
+    <_WasmBuildNativeCoreDependsOn Condition="'$(IsWasmAppProject)' != 'true'">
       _SetupEmscripten;
       _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
@@ -210,7 +210,7 @@
       <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_WasmIsLibraryProject)' != 'true'">
+    <ItemGroup Condition="'$(IsWasmAppProject)' == 'true'">
       <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
       <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
@@ -218,10 +218,10 @@
       <_WasmNativeFileForLinking Include="@(NativeReference)" />
     </ItemGroup>
 
-    <Error Text="Could not find NativeReference %(NativeReference.Identity)" Condition="'@(_WasmIsLibraryProject)' != 'true' and '%(NativeReference.Identity)' != '' and !Exists(%(NativeReference.Identity))" />
+    <Error Text="Could not find NativeReference %(NativeReference.Identity)" Condition="'@(IsWasmAppProject)' == 'true' and '%(NativeReference.Identity)' != '' and !Exists(%(NativeReference.Identity))" />
   </Target>
 
-  <Target Name="_GeneratePInvokeTable" Condition="'$(_WasmIsLibraryProject)' != 'true'">
+  <Target Name="_GeneratePInvokeTable" Condition="'$(IsWasmAppProject)' == 'true'">
     <ItemGroup>
       <!--<_WasmPInvokeModules Include="%(WasmNativeSource.FileName)" ExportFunctions="true" />-->
       <!-- FIXME: and .. add to exported cuntions .. if ExportTOJs on the item is true -->
@@ -254,8 +254,8 @@
 
     <ItemGroup>
       <_WasmNativeSourceFile Include="@(WasmNativeSource)" />
-      <_WasmNativeSourceFile OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" Condition="'$(_WasmIsLibraryProject)' != 'true'" />
-      <_WasmNativeSourceFile OutputPath="$(OutputPath)%(FileName).o"                  Condition="'$(_WasmIsLibraryProject)' == 'true'" />
+      <_WasmNativeSourceFile OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" Condition="'$(IsWasmAppProject)' == 'true'" />
+      <_WasmNativeSourceFile OutputPath="$(OutputPath)%(FileName).o"                  Condition="'$(IsWasmAppProject)' != 'true'" />
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
@@ -267,12 +267,12 @@
       <_WasmNativeFileForLinking Include="%(_WasmNativeSourceFile.OutputPath)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(_WasmIsLibraryProject)' == 'true'">
+    <ItemGroup Condition="'$(IsWasmAppProject)' != 'true'">
       <WasmNativeAsset Include="%(_WasmNativeSourceFile.OutputPath)" />
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmCompileNonUserNativeFiles" Condition="'$(_WasmIsLibraryProject)' != 'true'">
+  <Target Name="_WasmCompileNonUserNativeFiles" Condition="'$(IsWasmAppProject)' == 'true'">
     <PropertyGroup>
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
     </PropertyGroup>
@@ -286,13 +286,13 @@
       <_WasmNativeFileForLinking Include="%(WasmNativeSource.OutputPath)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(_WasmIsLibraryProject)' == 'true'">
+    <ItemGroup>
       <WasmNativeAsset Include="%(_WasmNativeSourceFile.OutputPath)" />
     </ItemGroup>
   </Target>
 
   <!-- FIXME: merge WasmObjects, and _WasmNativeFileForLinking -->
-  <Target Name="_WasmLinkDotNet" Condition="'$(_WasmIsLibraryProject)' != 'true'">
+  <Target Name="_WasmLinkDotNet" Condition="'$(IsWasmAppProject)' == 'true'">
     <ItemGroup>
       <_WasmExtraJSFile Include="@(WasmLinkFile)"   Condition="'%(WasmLinkFile.Extension)' == '.js'" />
       <_WasmNonJSLinkFile Include="@(WasmLinkFile)" Condition="'%(WasmLinkFile.Extension)' != '.js'" />

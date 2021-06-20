@@ -9,7 +9,7 @@
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
-    <OutputType>exe</OutputType>
+    <IsWasmAppProject>true</IsWasmAppProject>
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
