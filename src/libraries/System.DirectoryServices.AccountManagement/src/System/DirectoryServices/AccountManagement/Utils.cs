@@ -145,17 +145,17 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pSid);
+                    NativeMemoryHelper.Free(pSid);
             }
         }
 
-        // The caller must call Marshal.FreeHGlobal on the returned
+        // The caller must call NativeMemoryHelper.Free on the returned
         // value to free it.
         internal static IntPtr ConvertByteArrayToIntPtr(byte[] bytes)
         {
             IntPtr pBytes = IntPtr.Zero;
 
-            pBytes = Marshal.AllocHGlobal(bytes.Length);
+            pBytes = NativeMemoryHelper.Alloc(bytes.Length);
 
             try
             {
@@ -167,7 +167,7 @@ namespace System.DirectoryServices.AccountManagement
                                                    + e.GetType().ToString() +
                                                    " and message " + e.Message);
 
-                Marshal.FreeHGlobal(pBytes);
+                NativeMemoryHelper.Free(pBytes);
                 throw;
             }
 
@@ -198,7 +198,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pSid);
+                    NativeMemoryHelper.Free(pSid);
             }
         }
 
@@ -266,7 +266,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pSid);
+                    NativeMemoryHelper.Free(pSid);
             }
         }
 
@@ -330,10 +330,10 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pCopyOfUserSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pCopyOfUserSid);
+                    NativeMemoryHelper.Free(pCopyOfUserSid);
 
                 if (pMachineDomainSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pMachineDomainSid);
+                    NativeMemoryHelper.Free(pMachineDomainSid);
             }
         }
 
@@ -407,7 +407,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Allocate the necessary buffer.
                 Debug.Assert(neededBufferSize > 0);
-                pBuffer = Marshal.AllocHGlobal(neededBufferSize);
+                pBuffer = NativeMemoryHelper.Alloc(neededBufferSize);
 
                 // Load the user info into the buffer
                 success = UnsafeNativeMethods.GetTokenInformation(
@@ -436,7 +436,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Now we make a copy of the SID to return
                 int userSidLength = UnsafeNativeMethods.GetLengthSid(pUserSid);
-                IntPtr pCopyOfUserSid = Marshal.AllocHGlobal(userSidLength);
+                IntPtr pCopyOfUserSid = NativeMemoryHelper.Alloc(userSidLength);
                 success = UnsafeNativeMethods.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
@@ -457,7 +457,7 @@ namespace System.DirectoryServices.AccountManagement
                     UnsafeNativeMethods.CloseHandle(pTokenHandle);
 
                 if (pBuffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pBuffer);
+                    NativeMemoryHelper.Free(pBuffer);
             }
         }
 
@@ -472,7 +472,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES oa = new UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES();
 
-                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
+                pOA = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
                 int err = UnsafeNativeMethods.LsaOpenPolicy(
                                 IntPtr.Zero,
@@ -512,7 +512,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Now we make a copy of the SID to return
                 int sidLength = UnsafeNativeMethods.GetLengthSid(info.domainSid);
-                IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
+                IntPtr pCopyOfSid = NativeMemoryHelper.Alloc(sidLength);
                 bool success = UnsafeNativeMethods.CopySid(sidLength, pCopyOfSid, info.domainSid);
                 if (!success)
                 {
@@ -536,7 +536,7 @@ namespace System.DirectoryServices.AccountManagement
                     UnsafeNativeMethods.LsaFreeMemory(pBuffer);
 
                 if (pOA != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pOA);
+                    NativeMemoryHelper.Free(pOA);
             }
         }
 

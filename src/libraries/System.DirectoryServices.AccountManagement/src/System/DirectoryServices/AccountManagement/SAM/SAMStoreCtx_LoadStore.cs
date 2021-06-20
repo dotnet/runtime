@@ -367,7 +367,7 @@ namespace System.DirectoryServices.AccountManagement
                 finally
                 {
                     if (pSid != IntPtr.Zero)
-                        Marshal.FreeHGlobal(pSid);
+                        NativeMemoryHelper.Free(pSid);
                 }
 
                 // Not a fake group.  Search for the real group.
@@ -432,7 +432,7 @@ namespace System.DirectoryServices.AccountManagement
                         finally
                         {
                             if (pSid != IntPtr.Zero)
-                                Marshal.FreeHGlobal(pSid);
+                                NativeMemoryHelper.Free(pSid);
                         }
                     }
 

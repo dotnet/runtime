@@ -96,7 +96,7 @@ namespace System.DirectoryServices.AccountManagement
                 //
                 UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES oa = new UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES();
 
-                pOA = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
+                pOA = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_OBJECT_ATTRIBUTES)));
                 Marshal.StructureToPtr(oa, pOA, false);
 
                 int err = 0;
@@ -117,7 +117,7 @@ namespace System.DirectoryServices.AccountManagement
                     lsaTargetString.length = (ushort)(target.Length * 2);
                     lsaTargetString.maximumLength = lsaTargetString.length;
 
-                    IntPtr lsaTargetPr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_UNICODE_STRING)));
+                    IntPtr lsaTargetPr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(UnsafeNativeMethods.LSA_UNICODE_STRING)));
 
                     try
                     {
@@ -137,10 +137,10 @@ namespace System.DirectoryServices.AccountManagement
                                 (UnsafeNativeMethods.LSA_UNICODE_STRING)Marshal.PtrToStructure(lsaTargetPr, typeof(UnsafeNativeMethods.LSA_UNICODE_STRING));
                             if (lsaTargetUnmanagedPtr.buffer != IntPtr.Zero)
                             {
-                                Marshal.FreeHGlobal(lsaTargetUnmanagedPtr.buffer);
+                                NativeMemoryHelper.Free(lsaTargetUnmanagedPtr.buffer);
                                 lsaTargetUnmanagedPtr.buffer = IntPtr.Zero;
                             }
-                            Marshal.FreeHGlobal(lsaTargetPr);
+                            NativeMemoryHelper.Free(lsaTargetPr);
                         }
                     }
                 }
@@ -264,7 +264,7 @@ namespace System.DirectoryServices.AccountManagement
                     UnsafeNativeMethods.LsaClose(pPolicyHandle);
 
                 if (pOA != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pOA);
+                    NativeMemoryHelper.Free(pOA);
             }
         }
 
@@ -317,7 +317,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (pSid != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(pSid);
+                NativeMemoryHelper.Free(pSid);
                 pSid = IntPtr.Zero;
             }
         }
