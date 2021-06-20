@@ -295,12 +295,22 @@ namespace System.Numerics.Tests
                 byte[] tempByteArray1 = new byte[40];
                 byte[] tempByteArray2 = new byte[40];
                 byte[] tempByteArray3 = new byte[40];
+                byte[] tempByteArray4 = new byte[40];
+                byte[] tempByteArray5 = new byte[40];
+                byte[] tempByteArray6 = new byte[40];
 
                 for (int i = 0; i < 32; i++)
                 {
                     tempByteArray2[i] = 0xff;
                 }
-                tempByteArray3[36] = 1;
+                tempByteArray3[0] = 1;
+                for (int i = 0; i < 36; i++)
+                {
+                    tempByteArray4[i] = 0xff;
+                }
+                tempByteArray5[36] = 1;
+                tempByteArray6[0] = 1;
+                tempByteArray6[36] = 1;
 
                 for (int i = 32; i < 40; i++)
                 {
@@ -308,10 +318,19 @@ namespace System.Numerics.Tests
                     {
                         tempByteArray1[i] = (byte)(1 << j);
                         tempByteArray2[i] |= (byte)(1 << j);
-                        VerifyModPowString(Print(tempByteArray3) + "2 " + Print(tempByteArray2) + "tModPow");
-                        VerifyModPowString(Print(tempByteArray3) + "2 " + Print(tempByteArray1) + "tModPow");
+                        tempByteArray3[i] = (byte)(1 << j);
+                        VerifyModPowString(Print(tempByteArray4) + "2 " + Print(tempByteArray1) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray5) + "2 " + Print(tempByteArray1) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray6) + "2 " + Print(tempByteArray1) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray4) + "2 " + Print(tempByteArray2) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray5) + "2 " + Print(tempByteArray2) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray6) + "2 " + Print(tempByteArray2) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray4) + "2 " + Print(tempByteArray3) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray5) + "2 " + Print(tempByteArray3) + "tModPow");
+                        VerifyModPowString(Print(tempByteArray6) + "2 " + Print(tempByteArray3) + "tModPow");
                     }
                     tempByteArray1[i] = 0;
+                    tempByteArray3[i] = 0;
                 }
             });
         }
