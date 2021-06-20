@@ -41,7 +41,7 @@ build.cmd/sh -subset clr+libs -rc Release
 
 - Build release mono + debug libraries
 ```
-build.cmd/sh -subset clr+libs -rc Release
+build.cmd/sh -subset mono+libs -rc Release
 ```
 
 Building the `libs` subset automatically copies all product binaries into a testhost folder in the bin directory.
