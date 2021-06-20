@@ -122,7 +122,7 @@ namespace System.Diagnostics.PerformanceData
                     throw new InvalidOperationException(SR.Format(SR.Perflib_InvalidOperation_NoActiveProvider, _instance._counterSet._providerGuid));
                 }
 
-                _dataBlock = (byte*)Marshal.AllocHGlobal(_instance._counterSet._idToCounter.Count * sizeof(long));
+                _dataBlock = (byte*)NativeMemoryHelper.Alloc(_instance._counterSet._idToCounter.Count * sizeof(long));
                 if (_dataBlock == null)
                 {
                     throw new InsufficientMemoryException(SR.Format(SR.Perflib_InsufficientMemory_InstanceCounterBlock, _instance._counterSet._counterSet, _instance._instName));
@@ -142,16 +142,15 @@ namespace System.Diagnostics.PerformanceData
                                     _instance._counterSet._provider._hProvider,
                                     _instance._nativeInst,
                                     (uint)CounterDef.Key,
-                                    (void*)(_dataBlock + CounterOffset * sizeof(long)));
-                    if (Status != (uint)Interop.Errors.ERROR_SUCCESS)
+                                    _dataBlock + CounterOffset * sizeof(long));
+                    if (Status != Interop.Errors.ERROR_SUCCESS)
                     {
                         Dispose(true);
 
                         // ERROR_INVALID_PARAMETER or ERROR_NOT_FOUND
                         throw Status switch
                         {
-                            (uint)Interop.Errors.ERROR_NOT_FOUND => new InvalidOperationException(SR.Format(SR.Perflib_InvalidOperation_CounterRefValue, _instance._counterSet._counterSet, CounterDef.Key, _instance._instName)),
-
+                            Interop.Errors.ERROR_NOT_FOUND => new InvalidOperationException(SR.Format(SR.Perflib_InvalidOperation_CounterRefValue, _instance._counterSet._counterSet, CounterDef.Key, _instance._instName)),
                             _ => new Win32Exception((int)Status),
                         };
                     }
@@ -180,7 +179,7 @@ namespace System.Diagnostics.PerformanceData
                     if (_dataBlock != null)
                     {
                         // Need to free allocated heap memory that is used to store all raw counter data.
-                        Marshal.FreeHGlobal((IntPtr)_dataBlock);
+                        NativeMemoryHelper.Free((IntPtr)_dataBlock);
                         _dataBlock = null;
                     }
                 }

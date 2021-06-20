@@ -13,7 +13,7 @@ internal static partial class Interop
         internal static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
                 string StringSecurityDescriptor,
                 int StringSDRevision,
-                out SafeLocalAllocHandle pSecurityDescriptor,
+                out SafeNativeMemoryHandle pSecurityDescriptor,
                 IntPtr SecurityDescriptorSize);
     }
 }

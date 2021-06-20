@@ -1674,7 +1674,7 @@ namespace System.Diagnostics
             {
                 string mappingName = fileMappingName;
 
-                SafeLocalAllocHandle securityDescriptorPointer = null;
+                SafeNativeMemoryHandle securityDescriptorPointer = null;
                 try
                 {
                     // The sddl string consists of these parts:
