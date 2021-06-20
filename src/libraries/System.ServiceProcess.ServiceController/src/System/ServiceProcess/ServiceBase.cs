@@ -588,8 +588,9 @@ namespace System.ServiceProcess
             if (services == null || services.Length == 0)
                 throw new ArgumentException(SR.NoServices);
 
-            IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeof(SERVICE_TABLE_ENTRY)));
-            Span<SERVICE_TABLE_ENTRY> entries = new Span<SERVICE_TABLE_ENTRY>((void*)entriesPointer, services.Length + 1);
+            IntPtr entriesPointer = NativeMemoryHelper.Alloc(checked((services.Length + 1) * sizeof(SERVICE_TABLE_ENTRY)));
+
+            Span<SERVICE_TABLE_ENTRY> entries = new Span<SERVICE_TABLE_ENTRY>((void*)(nint)entriesPointer, services.Length + 1);
             entries.Clear();
             try
             {
@@ -641,11 +642,11 @@ namespace System.ServiceProcess
                 // Free the pointer to the name of the service on the unmanaged heap.
                 for (int i = 0; i < entries.Length; i++)
                 {
-                    Marshal.FreeHGlobal(entries[i].name);
+                    NativeMemoryHelper.Free(entries[i].name);
                 }
 
                 // Free the unmanaged array containing the entries.
-                Marshal.FreeHGlobal(entriesPointer);
+                NativeMemoryHelper.Free(entriesPointer);
             }
         }
 
@@ -704,10 +705,11 @@ namespace System.ServiceProcess
         private SERVICE_TABLE_ENTRY GetEntry()
         {
             _nameFrozen = true;
+
             return new SERVICE_TABLE_ENTRY()
             {
                 callback = Marshal.GetFunctionPointerForDelegate(_mainCallback!),
-                name = Marshal.StringToHGlobalUni(_serviceName)
+                name = NativeMemoryHelper.AllocStringUnicode(_serviceName)
             };
         }
 
