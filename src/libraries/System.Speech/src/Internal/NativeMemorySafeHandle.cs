@@ -39,19 +39,11 @@ namespace System.Speech.Internal
             {
                 if (_bufferSize == 0)
                 {
-#if NET6_0_OR_GREATER
-                    SetHandle((nint)NativeMemory.Alloc((uint)size));
-#else
-                    SetHandle(Marshal.AllocHGlobal(size));
-#endif
+                    SetHandle(NativeMemoryHelper.Alloc(size));
                 }
                 else
                 {
-#if NET6_0_OR_GREATER
-                    SetHandle((nint)NativeMemory.Realloc((void*)(nint)handle, (uint)size));
-#else
-                    SetHandle(Marshal.ReAllocHGlobal(handle, (IntPtr)size));
-#endif
+                    SetHandle(NativeMemoryHelper.Realloc(handle, size));
                 }
 
                 GC.AddMemoryPressure(size - _bufferSize);
@@ -84,11 +76,7 @@ namespace System.Speech.Internal
             if (handle != IntPtr.Zero)
             {
                 _bufferSize = 0;
-#if NET6_0_OR_GREATER
-                NativeMemory.Free((void*)(nint)handle);
-#else
-                Marshal.FreeHGlobal(handle);
-#endif
+                NativeMemoryHelper.Free(handle);
                 handle = IntPtr.Zero;
 
                 return true;

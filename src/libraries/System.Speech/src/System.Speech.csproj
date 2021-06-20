@@ -15,6 +15,8 @@
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+             Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
     <Compile Include="AudioFormat\AudioFormatConverter.cs" />
@@ -235,6 +237,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebClient" />

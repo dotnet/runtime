@@ -2,22 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System
 {
-    internal static class NativeMemoryHelper
+    internal static unsafe class NativeMemoryHelper
     {
-        public static unsafe IntPtr Alloc(int size)
+        public static IntPtr Alloc(int byteCount)
         {
 #if NET6_0_OR_GREATER
-            return (nint)NativeMemory.Alloc((uint)size);
+            return (nint)NativeMemory.Alloc((uint)byteCount);
 #else
-            return Marshal.AllocHGlobal(size);
+            return Marshal.AllocHGlobal(byteCount);
 #endif
         }
 
-        public static unsafe IntPtr AllocStringUnicode(string? s)
+        public static IntPtr Realloc(IntPtr pointer, int byteCount)
+        {
+#if NET6_0_OR_GREATER
+            return (nint)NativeMemory.Realloc((void*)(nint)pointer, (uint)byteCount);
+#else
+            return Marshal.ReAllocHGlobal(pointer, (nint)byteCount);
+#endif
+        }
+
+        public static IntPtr AllocStringUnicode(string? s)
         {
             if (s is null)
             {
@@ -29,7 +39,10 @@ namespace System
             // Overflow checking
             if (byteCount < s.Length)
             {
+#if NET6_0_OR_GREATER
                 [StackTraceHidden]
+#endif
+                [DoesNotReturn]
                 static void ThrowArgumentOutOfRangeException(string argument)
                 {
                     throw new ArgumentOutOfRangeException(argument);
@@ -44,13 +57,21 @@ namespace System
             char* memory = (char*)(nint)Marshal.AllocHGlobal(byteCount);
 #endif
 
+#if NET6_0_OR_GREATER
             s.CopyTo(new Span<char>(memory, s.Length));
+#else
+            // Avoid pulling in System.Memory for netstandard2.0 targets.
+            fixed (char* str = s)
+            {
+                Buffer.MemoryCopy(str, memory, byteCount, s.Length * 2);
+            }
+#endif
             memory[s.Length] = '\0';
             return (nint)memory;
         }
 
 
-        public static unsafe void Free(IntPtr pointer)
+        public static void Free(IntPtr pointer)
         {
 #if NET6_0_OR_GREATER
             NativeMemory.Free((void*)(nint)pointer);
