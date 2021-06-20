@@ -60,9 +60,10 @@ namespace System.Numerics
                 int l2 = DivMul(_q1, l1, _modulus, _modulus.Length,
                                 _q2, _modulus.Length + 1);
 
-                // Let v = (v - q2) % (2^32)^(k+1) - i*m
+                // Let v = (v - q2) % (2^32)^k
+                // while m <= v: Let v = v - m
                 return SubMod(value, length, _q2, l2,
-                              _modulus, _modulus.Length + 1);
+                              _modulus, _modulus.Length);
             }
 
             private static unsafe int DivMul(uint[] left, int leftLength,
