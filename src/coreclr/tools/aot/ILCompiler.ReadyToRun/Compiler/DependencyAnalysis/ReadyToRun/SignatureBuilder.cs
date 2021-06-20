@@ -400,7 +400,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool isInstantiatingStub)
         {
             uint flags = 0;
-            bool useConstraint = (method.ConstrainedType != null && method.ConstrainedType != method.OwningType);
             if (method.Unboxing)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub;
@@ -409,7 +408,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub;
             }
-            if (useConstraint)
+            if (method.ConstrainedType != null)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
@@ -420,7 +419,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 
-            if (useConstraint)
+            if (method.ConstrainedType != null)
             {
                 EmitTypeSignature(method.ConstrainedType, context);
             }

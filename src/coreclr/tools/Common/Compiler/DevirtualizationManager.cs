@@ -201,5 +201,48 @@ namespace ILCompiler
 
             return impl;
         }
+
+        /// <summary>
+        /// Check whether compile-time resolution of static virtual method is possible. This returns false for shared
+        /// generics where the resolution needs to be deferred to the runtime working with exact instantiation types.
+        /// </summary>
+        /// <param name="currentType">Type constraint in the static virtual method </param>
+        /// <param name="interfaceMethod">Static virtual interface method to resolve</param>
+        /// <param name="interfaceType">Exact interface type for the static virtual method</param>
+        public bool AllowCompileTimeStaticVirtualMethodResolution(TypeDesc currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        {
+            Debug.Assert(interfaceMethod.IsVirtual);
+            Debug.Assert(interfaceMethod.Signature.IsStatic);
+            Debug.Assert(interfaceType.IsInterface);
+            Debug.Assert(!currentType.IsInterface);
+
+            return AllowCompileTimeStaticVirtualMethodResolution(currentType.GetClosestDefType(), interfaceMethod, interfaceType);
+        }
+
+        protected virtual bool AllowCompileTimeStaticVirtualMethodResolution(DefType currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        {
+            if (interfaceMethod.IsSharedByGenericInstantiations || interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return false;
+            }
+
+            // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
+            // we cannot exactly compute a target method result, as even if there is an exact match in the type hierarchy
+            // it isn't guaranteed that we will always find the right result, as we may find a match on a base type when we should find the match
+            // on a more derived type.
+            TypeDesc interfaceTypeCanonical = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (interfaceType != interfaceTypeCanonical)
+            {
+                foreach (DefType runtimeInterface in currentType.RuntimeInterfaces)
+                {
+                    if (interfaceTypeCanonical == runtimeInterface)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
     }
 }
