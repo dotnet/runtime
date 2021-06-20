@@ -1026,6 +1026,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendGoAway(streamId);
 
                     // Make sure client received GOAWAY
+                    _ = connection.ExpectPingFrameAsync();
                     await connection.PingPong();
 
                     await connection.SendResponseBodyAsync(streamId, new byte[4] { 15, 14, 13, 12 }, isFinal: false);
@@ -2688,8 +2689,6 @@ namespace System.Net.Http.Functional.Tests
                     // Send data on response stream and complete it, but don't read it on the client yet
                     await connection.SendResponseDataAsync(streamId, contentBytes, endStream: true);
 
-                    // We may have received an RTT ping
-                    _ = connection.ExpectPingFrameAsync(true);
                     // Pingpong to ensure it's processed by client
                     await connection.PingPong();
 

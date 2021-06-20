@@ -585,12 +585,13 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 bool endStream = frameHeader.EndStreamFlag;
-                if (frameData.Length > 0)
+
+                http2Stream.OnResponseData(frameData, endStream);
+
+                if (!endStream && frameData.Length > 0)
                 {
                     _rttEstimator?.OnDataReceived();
                 }
-
-                http2Stream.OnResponseData(frameData, endStream);
             }
 
             if (frameData.Length > 0)
