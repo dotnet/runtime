@@ -515,17 +515,17 @@ internal static partial class Interop
                 get { return _size; }
             }
 
-            public static SafeLocalFreeChannelBinding LocalAlloc(int cb)
+            public static unsafe SafeLocalFreeChannelBinding LocalAlloc(int cb)
             {
                 SafeLocalFreeChannelBinding result = new SafeLocalFreeChannelBinding();
-                result.SetHandle(Marshal.AllocHGlobal(cb));
+                result.SetHandle(NativeMemory.Alloc((uint)cb));
                 result._size = cb;
                 return result;
             }
 
-            protected override bool ReleaseHandle()
+            protected override unsafe bool ReleaseHandle()
             {
-                Marshal.FreeHGlobal(handle);
+                NativeMemory.Free((void*)handle);
                 return true;
             }
         }

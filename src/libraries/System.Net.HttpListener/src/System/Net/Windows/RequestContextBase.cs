@@ -52,7 +52,7 @@ namespace System.Net
             IntPtr backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
             if (backingBuffer != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(backingBuffer);
+                NativeMemory.Free((void*)backingBuffer);
             }
         }
 
@@ -116,10 +116,10 @@ namespace System.Net
         {
             if (_backingBuffer != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(_backingBuffer);
+                NativeMemory.Free((void*)_backingBuffer);
             }
 
-            _backingBuffer = size == 0 ? IntPtr.Zero : Marshal.AllocHGlobal(size);
+            _backingBuffer = size == 0 ? IntPtr.Zero : (IntPtr)NativeMemory.Alloc((uint)size);
             _backingBufferLength = size;
 
             // Zero out the contents of the buffer.
