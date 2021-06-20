@@ -431,11 +431,11 @@ namespace System.Security
 
             private UnmanagedBuffer() : base(true) { }
 
-            public static UnmanagedBuffer Allocate(int byteLength)
+            public static unsafe UnmanagedBuffer Allocate(int byteLength)
             {
                 Debug.Assert(byteLength >= 0);
                 UnmanagedBuffer buffer = new UnmanagedBuffer();
-                buffer.SetHandle(Marshal.AllocHGlobal(byteLength));
+                buffer.SetHandle((IntPtr)NativeMemory.Alloc((uint) byteLength));
                 buffer.Initialize((ulong)byteLength);
                 buffer._byteLength = byteLength;
                 return buffer;
@@ -471,7 +471,7 @@ namespace System.Security
             protected override unsafe bool ReleaseHandle()
             {
                 new Span<byte>((void*)handle, _byteLength).Clear();
-                Marshal.FreeHGlobal(handle);
+                NativeMemory.Free((void*)handle);
                 return true;
             }
         }
