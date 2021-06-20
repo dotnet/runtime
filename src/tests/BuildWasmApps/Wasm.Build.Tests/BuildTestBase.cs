@@ -480,7 +480,6 @@ namespace Wasm.Build.Tests
         protected static string GetRuntimeNativeDir()
             => Path.Combine(GetRuntimePackDir(), "runtimes", "browser-wasm", "native");
 
-
         public static (int exitCode, string buildOutput) RunProcess(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",

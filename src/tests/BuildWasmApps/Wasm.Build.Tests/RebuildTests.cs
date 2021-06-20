@@ -46,9 +46,8 @@ namespace Wasm.Build.Tests
 
             // no-op Rebuild
             BuildProject(buildArgs,
-                        () => {},
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         id: id,
+                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         createProject: false,
                         useCache: false);
 
