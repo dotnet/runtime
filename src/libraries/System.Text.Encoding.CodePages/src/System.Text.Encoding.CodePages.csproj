@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
@@ -17,6 +17,8 @@
     <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+         Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NativeMemoryHandle.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.cs" />
     <Compile Include="System\Text\CodePagesEncodingProvider.cs" />

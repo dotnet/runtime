@@ -12,12 +12,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         public static unsafe NativeMemoryHandle Alloc(int length)
         {
-#if NET6_0_OR_GREATER
-            IntPtr memory = (nint)NativeMemory.Alloc((uint)length);
-#else
-            IntPtr memory = Marshal.AllocHGlobal(length);
-#endif
-
+            IntPtr memory = NativeMemoryHelper.Alloc(length);
             Debug.Assert((nint)memory != 0);
             return new NativeMemoryHandle(memory);
         }
@@ -38,11 +33,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (handle != IntPtr.Zero)
             {
-#if NET6_0_OR_GREATER
-                NativeMemory.Free((void*)(nint)handle);
-#else
-                Marshal.FreeHGlobal(handle);
-#endif
+                NativeMemoryHelper.Free(handle);
             }
 
             return true;
