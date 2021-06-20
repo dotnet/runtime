@@ -1461,7 +1461,7 @@ namespace System.Management
         /// <returns>
         ///    A <see cref='System.Management.ManagementPath'/> containing the path to the committed object.
         /// </returns>
-        public ManagementPath Put(PutOptions options)
+        public unsafe ManagementPath Put(PutOptions options)
         {
             ManagementPath newPath = null;
             Initialize(true);
@@ -1469,12 +1469,6 @@ namespace System.Management
 
             IWbemServices wbemServices = scope.GetIWbemServices();
 
-            //
-            // Must do this convoluted allocation since the IWbemServices ref IWbemCallResult
-            // has been redefined to be an IntPtr.  Due to the fact that it wasn't possible to
-            // pass NULL for the optional argument.
-            //
-            IntPtr ppwbemCallResult = IntPtr.Zero;
             IntPtr pwbemCallResult = IntPtr.Zero;
             IWbemCallResult wbemCallResult = null;
             SecurityHandler securityHandler = null;
@@ -1484,27 +1478,21 @@ namespace System.Management
             {
                 securityHandler = scope.GetSecurityHandler();
 
-                ppwbemCallResult = Marshal.AllocHGlobal(IntPtr.Size);
-                Marshal.WriteIntPtr(ppwbemCallResult, IntPtr.Zero);        // Init to NULL.
-
                 if (IsClass)
                 {
                     status = scope.GetSecuredIWbemServicesHandler(wbemServices).PutClass_(wbemObject,
                         o.Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY,
                         o.GetContext(),
-                        ppwbemCallResult);
+                        (nint)(&pwbemCallResult));
                 }
                 else
                 {
                     status = scope.GetSecuredIWbemServicesHandler(wbemServices).PutInstance_(wbemObject,
                         o.Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY,
                         o.GetContext(),
-                        ppwbemCallResult);
+                        (nint)(&pwbemCallResult));
                 }
 
-
-                // Keep this statement here; otherwise, there'll be a leak in error cases.
-                pwbemCallResult = Marshal.ReadIntPtr(ppwbemCallResult);
 
                 wbemCallResult = (IWbemCallResult)Marshal.GetObjectForIUnknown(pwbemCallResult);
 
@@ -1528,9 +1516,6 @@ namespace System.Management
             {
                 if (securityHandler != null)
                     securityHandler.Reset();
-
-                if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
-                    Marshal.FreeHGlobal(ppwbemCallResult);
 
                 if (pwbemCallResult != IntPtr.Zero)
                     Marshal.Release(pwbemCallResult);
@@ -1751,7 +1736,7 @@ namespace System.Management
         /// <returns>
         ///    The new path of the copied object.
         /// </returns>
-        public ManagementPath CopyTo(ManagementPath path, PutOptions options)
+        public unsafe ManagementPath CopyTo(ManagementPath path, PutOptions options)
         {
             Initialize(false);
 
@@ -1768,11 +1753,6 @@ namespace System.Management
             //
             // TO-DO : This code is almost identical to Put - should consolidate.
             //
-            // Must do this convoluted allocation since the IWbemServices ref IWbemCallResult
-            // has been redefined to be an IntPtr.  Due to the fact that it wasn't possible to
-            // pass NULL for the optional argument.
-            //
-            IntPtr ppwbemCallResult = IntPtr.Zero;
             IntPtr pwbemCallResult = IntPtr.Zero;
             IWbemCallResult wbemCallResult = null;
             SecurityHandler securityHandler = null;
@@ -1782,16 +1762,13 @@ namespace System.Management
             {
                 securityHandler = destinationScope.GetSecurityHandler();
 
-                ppwbemCallResult = Marshal.AllocHGlobal(IntPtr.Size);
-                Marshal.WriteIntPtr(ppwbemCallResult, IntPtr.Zero);        // Init to NULL.
-
                 if (IsClass)
                 {
                     status = scope.GetSecuredIWbemServicesHandler(wbemServices).PutClass_(
                         wbemObject,
                         o.Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY,
                         o.GetContext(),
-                        ppwbemCallResult);
+                        (nint)(&pwbemCallResult));
                 }
                 else
                 {
@@ -1799,13 +1776,9 @@ namespace System.Management
                         wbemObject,
                         o.Flags | (int)tag_WBEM_GENERIC_FLAG_TYPE.WBEM_FLAG_RETURN_IMMEDIATELY,
                         o.GetContext(),
-                        ppwbemCallResult);
+                        (nint)(&pwbemCallResult));
 
                 }
-
-
-                // Keep this statement here; otherwise, there'll be a leak in error cases.
-                pwbemCallResult = Marshal.ReadIntPtr(ppwbemCallResult);
 
                 //Use the CallResult to retrieve the resulting object path
                 wbemCallResult = (IWbemCallResult)Marshal.GetObjectForIUnknown(pwbemCallResult);
@@ -1831,9 +1804,6 @@ namespace System.Management
             {
                 if (securityHandler != null)
                     securityHandler.Reset();
-
-                if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
-                    Marshal.FreeHGlobal(ppwbemCallResult);
 
                 if (pwbemCallResult != IntPtr.Zero)
                     Marshal.Release(pwbemCallResult);
