@@ -24,7 +24,7 @@ namespace System.Net.Http
             {
                 if (Marshal.GetLastWin32Error() == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
                 {
-                    data = Marshal.AllocHGlobal((int)dataSize);
+                    data = NativeMemoryHelper.Alloc((int)dataSize);
 
                     if (Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, data, ref dataSize))
                     {
@@ -33,7 +33,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        Marshal.FreeHGlobal(data);
+                        NativeMemoryHelper.Free(data);
                     }
                 }
             }
