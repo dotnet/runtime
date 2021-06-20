@@ -38,11 +38,11 @@ namespace System.Net.Security
                 : s_tlsUniqueByteArray;
         }
 
-        internal SafeChannelBindingHandle(ChannelBindingKind kind)
+        internal unsafe SafeChannelBindingHandle(ChannelBindingKind kind)
         {
             byte[] cbtPrefix = GetPrefixBytes(kind);
             _cbtPrefixByteArraySize = cbtPrefix.Length;
-            handle = Marshal.AllocHGlobal(s_secChannelBindingSize + _cbtPrefixByteArraySize + CertHashMaxSize);
+            handle = (IntPtr)NativeMemory.Alloc((uint)(s_secChannelBindingSize + _cbtPrefixByteArraySize + CertHashMaxSize));
             IntPtr cbtPrefixPtr = handle + s_secChannelBindingSize;
             Marshal.Copy(cbtPrefix, 0, cbtPrefixPtr, _cbtPrefixByteArraySize);
             CertHashPtr = cbtPrefixPtr + _cbtPrefixByteArraySize;
@@ -64,9 +64,9 @@ namespace System.Net.Security
 
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
-            Marshal.FreeHGlobal(handle);
+            NativeMemory.Free((void*)handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
