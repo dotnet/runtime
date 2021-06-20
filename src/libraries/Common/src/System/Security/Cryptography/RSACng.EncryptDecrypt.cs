@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                         return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encrypt);
 
                     case RSAEncryptionPaddingMode.Oaep:
-                        IntPtr namePtr = Marshal.StringToHGlobalUni(padding.OaepHashAlgorithm.Name);
+                        IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(padding.OaepHashAlgorithm.Name);
                         try
                         {
                             var paddingInfo = new BCRYPT_OAEP_PADDING_INFO()
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
                         }
                         finally
                         {
-                            Marshal.FreeHGlobal(namePtr);
+                            NativeMemoryHelper.Free(namePtr);
                         }
 
                     default:
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography
                         return TryEncryptOrDecrypt(keyHandle, data, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encrypt, out bytesWritten);
 
                     case RSAEncryptionPaddingMode.Oaep:
-                        IntPtr namePtr = Marshal.StringToHGlobalUni(padding.OaepHashAlgorithm.Name);
+                        IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(padding.OaepHashAlgorithm.Name);
                         try
                         {
                             var paddingInfo = new BCRYPT_OAEP_PADDING_INFO()
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
                         }
                         finally
                         {
-                            Marshal.FreeHGlobal(namePtr);
+                            NativeMemoryHelper.Free(namePtr);
                         }
 
                     default:

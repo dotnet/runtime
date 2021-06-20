@@ -316,7 +316,7 @@ namespace Internal.Cryptography.Pal
                 string friendlyName = (value == null) ? string.Empty : value;
                 unsafe
                 {
-                    IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);
+                    IntPtr pFriendlyName = NativeMemoryHelper.AllocStringUnicode(friendlyName);
                     try
                     {
                         CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(checked(2 * (friendlyName.Length + 1)), (byte*)pFriendlyName);
@@ -325,7 +325,7 @@ namespace Internal.Cryptography.Pal
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(pFriendlyName);
+                        NativeMemoryHelper.Free(pFriendlyName);
                     }
                 }
             }

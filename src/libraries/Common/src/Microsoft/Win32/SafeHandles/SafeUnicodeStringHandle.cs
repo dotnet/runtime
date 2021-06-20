@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         public SafeUnicodeStringHandle(string s)
             : base(IntPtr.Zero, ownsHandle: true)
         {
-            handle = Marshal.StringToHGlobalUni(s);
+            handle = NativeMemoryHelper.AllocStringUnicode(s);
         }
 
         public unsafe SafeUnicodeStringHandle(ReadOnlySpan<char> s)
@@ -32,7 +32,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 int cch = checked(s.Length + 1);
                 int cb = checked(cch * sizeof(char));
-                handle = Marshal.AllocHGlobal(cb);
+                handle = NativeMemoryHelper.Alloc(cb);
 
                 Span<char> dest = new Span<char>(handle.ToPointer(), cch);
                 s.CopyTo(dest);
@@ -44,13 +44,13 @@ namespace Microsoft.Win32.SafeHandles
         {
             get
             {
-                return handle == IntPtr.Zero;
+                return (nint)handle == 0;
             }
         }
 
         protected sealed override bool ReleaseHandle()
         {
-            Marshal.FreeHGlobal(handle);
+            NativeMemoryHelper.Free(handle);
             return true;
         }
     }

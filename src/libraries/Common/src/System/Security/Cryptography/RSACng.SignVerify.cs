@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                IntPtr namePtr = Marshal.StringToHGlobalUni(hashAlgorithmName);
+                IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(hashAlgorithmName);
                 try
                 {
                     unsafe
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(namePtr);
+                    NativeMemoryHelper.Free(namePtr);
                 }
             }
         }
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
                 }
 
-                IntPtr namePtr = Marshal.StringToHGlobalUni(hashAlgorithmName);
+                IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(hashAlgorithmName);
                 try
                 {
                     switch (padding.Mode)
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(namePtr);
+                    NativeMemoryHelper.Free(namePtr);
                 }
             }
         }
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                IntPtr namePtr = Marshal.StringToHGlobalUni(hashAlgorithmName);
+                IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(hashAlgorithmName);
                 try
                 {
                     switch (padding.Mode)
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(namePtr);
+                    NativeMemoryHelper.Free(namePtr);
                 }
             }
         }

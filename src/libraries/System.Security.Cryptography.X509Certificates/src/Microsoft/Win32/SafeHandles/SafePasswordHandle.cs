@@ -13,13 +13,14 @@ namespace Microsoft.Win32.SafeHandles
     internal sealed partial class SafePasswordHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal int Length { get; private set; }
+        private bool _freeWithLocalFree;
 
         public SafePasswordHandle(string? password)
             : base(ownsHandle: true)
         {
             if (password != null)
             {
-                handle = Marshal.StringToHGlobalUni(password);
+                handle = NativeMemoryHelper.AllocStringUnicode(password);
                 Length = password.Length;
             }
         }
@@ -35,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
                 checked
                 {
                     spanLen = password.Length + 1;
-                    handle = Marshal.AllocHGlobal(spanLen * sizeof(char));
+                    handle = NativeMemoryHelper.Alloc(spanLen * sizeof(char));
                 }
 
                 unsafe
@@ -55,14 +56,23 @@ namespace Microsoft.Win32.SafeHandles
             if (password != null)
             {
                 handle = Marshal.SecureStringToGlobalAllocUnicode(password);
+                _freeWithLocalFree = true;
                 Length = password.Length;
             }
         }
 
         protected override bool ReleaseHandle()
         {
-            Marshal.ZeroFreeGlobalAllocUnicode(handle);
-            SetHandle((IntPtr)(-1));
+            if (_freeWithLocalFree)
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(handle);
+            }
+            else
+            {
+                NativeMemoryHelper.Free(handle);
+            }
+
+            SetHandle((nint)(-1));
             Length = 0;
             return true;
         }
@@ -95,7 +105,7 @@ namespace Microsoft.Win32.SafeHandles
                 () =>
                 {
                     var handle = new SafePasswordHandle((string?)null);
-                    handle.handle = (IntPtr)(-1);
+                    handle.handle = (nint)(-1);
                     return handle;
                 });
     }

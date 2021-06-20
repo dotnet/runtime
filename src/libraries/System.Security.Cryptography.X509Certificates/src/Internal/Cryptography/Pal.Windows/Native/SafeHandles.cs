@@ -222,20 +222,20 @@ namespace Internal.Cryptography.Pal.Native
     }
 
     /// <summary>
-    /// SafeHandle for LocalAlloc'd memory.
+    /// SafeHandle for native memory.
     /// </summary>
-    internal sealed class SafeLocalAllocHandle : SafePointerHandle<SafeLocalAllocHandle>
+    internal sealed unsafe class SafeNativeMemoryHandle : SafePointerHandle<SafeNativeMemoryHandle>
     {
-        public static SafeLocalAllocHandle Create(int cb)
+        public static SafeNativeMemoryHandle Create(int cb)
         {
-            var h = new SafeLocalAllocHandle();
-            h.SetHandle(Marshal.AllocHGlobal(cb));
+            var h = new SafeNativeMemoryHandle();
+            h.SetHandle((nint)NativeMemory.Alloc((uint)cb));
             return h;
         }
 
         protected sealed override bool ReleaseHandle()
         {
-            Marshal.FreeHGlobal(handle);
+            NativeMemory.Free((void*)(nint)handle);
             return true;
         }
     }

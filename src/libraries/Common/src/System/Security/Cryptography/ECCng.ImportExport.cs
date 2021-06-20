@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
             return curveType;
         }
 
-        internal static SafeNCryptKeyHandle ImportKeyBlob(
+        internal static unsafe SafeNCryptKeyHandle ImportKeyBlob(
             string blobType,
             ReadOnlySpan<byte> keyBlob,
             string curveName,
@@ -471,8 +471,8 @@ namespace System.Security.Cryptography
                 IntPtr buffPtr = IntPtr.Zero;
                 try
                 {
-                    descPtr = Marshal.AllocHGlobal(Marshal.SizeOf(desc));
-                    buffPtr = Marshal.AllocHGlobal(Marshal.SizeOf(buff));
+                    descPtr = (nint)NativeMemory.Alloc((uint)Marshal.SizeOf(desc));
+                    buffPtr = (nint)NativeMemory.Alloc((uint)Marshal.SizeOf(buff));
                     buff.cbBuffer = (curveName.Length + 1) * 2; // Add 1 for null terminator
                     buff.BufferType = Interop.BCrypt.CngBufferDescriptors.NCRYPTBUFFER_ECC_CURVE_NAME;
                     buff.pvBuffer = safeCurveName.DangerousGetHandle();
@@ -495,8 +495,8 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(descPtr);
-                    Marshal.FreeHGlobal(buffPtr);
+                    NativeMemory.Free((void*)(nint)descPtr);
+                    NativeMemory.Free((void*)(nint)buffPtr);
                 }
             }
 

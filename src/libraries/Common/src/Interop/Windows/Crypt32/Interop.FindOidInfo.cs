@@ -59,11 +59,11 @@ internal static partial class Interop
             {
                 if (keyType == CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY)
                 {
-                    rawKey = Marshal.StringToCoTaskMemAnsi(key);
+                    rawKey = NativeMemoryHelper.AllocStringAnsi(key);
                 }
                 else if (keyType == CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY)
                 {
-                    rawKey = Marshal.StringToCoTaskMemUni(key);
+                    rawKey = NativeMemoryHelper.AllocStringUnicode(key);
                 }
                 else
                 {
@@ -105,9 +105,9 @@ internal static partial class Interop
             }
             finally
             {
-                if (rawKey != IntPtr.Zero)
+                if ((nint)rawKey != 0)
                 {
-                    Marshal.FreeCoTaskMem(rawKey);
+                    NativeMemoryHelper.Free(rawKey);
                 }
             }
         }
