@@ -47,7 +47,7 @@ namespace System.Net.NetworkInformation
                 }
                 finally
                 {
-                    NativeMemory.Free((void*)buffer);
+                    NativeMemory.Free((void*)(nint)buffer);
                 }
             }
 

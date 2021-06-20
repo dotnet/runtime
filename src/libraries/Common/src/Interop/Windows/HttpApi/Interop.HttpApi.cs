@@ -525,7 +525,7 @@ internal static partial class Interop
 
             protected override unsafe bool ReleaseHandle()
             {
-                NativeMemory.Free((void*)handle);
+                NativeMemory.Free((void*)(nint)handle);
                 return true;
             }
         }

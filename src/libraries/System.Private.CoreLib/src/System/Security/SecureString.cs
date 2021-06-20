@@ -471,7 +471,7 @@ namespace System.Security
             protected override unsafe bool ReleaseHandle()
             {
                 new Span<byte>((void*)handle, _byteLength).Clear();
-                NativeMemory.Free((void*)handle);
+                NativeMemory.Free((void*)(nint)handle);
                 return true;
             }
         }

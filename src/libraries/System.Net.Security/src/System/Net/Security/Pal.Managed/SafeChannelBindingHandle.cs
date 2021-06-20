@@ -66,7 +66,7 @@ namespace System.Net.Security
 
         protected override unsafe bool ReleaseHandle()
         {
-            NativeMemory.Free((void*)handle);
+            NativeMemory.Free((void*)(nint)handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

@@ -576,7 +576,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _disposed = true;
             _state.Handle.Dispose();
-            NativeMemory.Free((void*)_state.SendQuicBuffers);
+            NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
             _state.ConnectionState?.RemoveStream(this);
@@ -988,7 +988,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.SendBufferMaxCount < count)
             {
-                NativeMemory.Free((void*)_state.SendQuicBuffers);
+                NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
                 _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * count));
                 _state.SendBufferMaxCount = count;
@@ -1054,7 +1054,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.SendBufferMaxCount < array.Length)
             {
-                NativeMemory.Free((void*)_state.SendQuicBuffers);
+                NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
                 _state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * array.Length));
                 _state.SendBufferMaxCount = array.Length;

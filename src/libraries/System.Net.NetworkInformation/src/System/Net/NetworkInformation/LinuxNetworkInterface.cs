@@ -116,7 +116,7 @@ namespace System.Net.NetworkInformation
                     if (address.IsIPv6LinkLocal)
                     {
                         address.ScopeId = ai->InterfaceIndex;
-                    }
+                    }s
 
                     if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out LinuxNetworkInterface? lni))
                     {
@@ -131,7 +131,7 @@ namespace System.Net.NetworkInformation
             }
             finally
             {
-                NativeMemory.Free((void*)globalMemory);
+                NativeMemory.Free((void*)(nint)globalMemory);
             }
         }
 

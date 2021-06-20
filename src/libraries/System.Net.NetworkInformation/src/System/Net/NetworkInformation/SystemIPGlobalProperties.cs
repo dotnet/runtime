@@ -144,7 +144,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        NativeMemory.Free((void*)buffer);
+                        NativeMemory.Free((void*)(nint)buffer);
                     }
                 }
 
@@ -196,7 +196,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        NativeMemory.Free((void*)buffer);
+                        NativeMemory.Free((void*)(nint)buffer);
                     }
                 }
 
@@ -258,7 +258,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        NativeMemory.Free((void*)buffer);
+                        NativeMemory.Free((void*)(nint)buffer);
                     }
                 }
 
@@ -314,7 +314,7 @@ namespace System.Net.NetworkInformation
                     }
                     finally
                     {
-                        NativeMemory.Free((void*)buffer);
+                        NativeMemory.Free((void*)(nint)buffer);
                     }
                 }
                 // If we don't have any ipv6 interfaces detected, just continue.

@@ -488,7 +488,7 @@ namespace System.Diagnostics.Tracing
                         buffer = null;
                         NativeMemory.Free(toFree);
                     }
-                    buffer = (byte*)NativeMemory.Alloc((uint) buffSize);
+                    buffer = (byte*)NativeMemory.Alloc((uint)buffSize);
                 }
 
                 var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
