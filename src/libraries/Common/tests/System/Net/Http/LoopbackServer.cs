@@ -21,6 +21,7 @@ namespace System.Net.Test.Common
         private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
         private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
 
+        private SocketWrapper _socketWrapper;
 #if TARGET_BROWSER
         private ClientWebSocket _listenSocket;
 #else
@@ -69,24 +70,27 @@ namespace System.Net.Test.Common
                 }
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
+                _socketWrapper = new SocketWrapper(_listenSocket);
             }
             catch
             {
                 _listenSocket?.Dispose();
+                _socketWrapper?.Dispose();
                 throw;
             }
         }
 
         public override void Dispose()
         {
-            if (_listenSocket != null)
+            _listenSocket = null;
+            if (_socketWrapper != null)
             {
-                _listenSocket.Dispose();
-                _listenSocket = null;
+                _socketWrapper.Dispose();
+                _socketWrapper = null;
             }
         }
 
-        public SocketWrapper ListenSocket => new SocketWrapper(_listenSocket);
+        public SocketWrapper ListenSocket => _socketWrapper;
         public override Uri Address => _uri;
 
         public static async Task CreateServerAsync(Func<LoopbackServer, Task> funcAsync, Options options = null)
