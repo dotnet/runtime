@@ -7,11 +7,11 @@ using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
-    public delegate bool PropagatorGetterCallback(object carrier, string fieldName, out string? value);
-
     public abstract class TextMapPropagator
     {
-        public abstract IEnumerable<string> Fields { get; }
+        public delegate bool PropagatorGetterCallback(object carrier, string fieldName, out string? value);
+
+        public abstract IReadOnlyCollection<string> Fields { get; }
 
         // Inject
 
@@ -229,7 +229,7 @@ namespace System.Diagnostics
         // Fields
         //
 
-        public override IEnumerable<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
+        public override IReadOnlyCollection<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
 
         //
         // Inject
@@ -304,7 +304,7 @@ namespace System.Diagnostics
         //
         // Fields
         //
-        public override IEnumerable<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
+        public override IReadOnlyCollection<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
 
         // Inject
 
@@ -397,7 +397,7 @@ namespace System.Diagnostics
         //
         // Fields
         //
-        public override IEnumerable<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
+        public override IReadOnlyCollection<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
 
         // Inject
 
@@ -423,7 +423,7 @@ namespace System.Diagnostics
         // Fields
         //
 
-        public override IEnumerable<string> Fields { get; } = new HashSet<string>() { TraceParent, TraceState, Baggage };
+        public override IReadOnlyCollection<string> Fields { get; } = new HashSet<string>() { TraceParent, TraceState, Baggage };
 
         //
         // Inject

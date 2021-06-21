@@ -255,11 +255,11 @@ namespace System.Diagnostics
         public void Dispose() { throw null; }
     }
 
-    public delegate bool PropagatorGetterCallback(object carrier, string fieldName, out string? value);
 
     public abstract class TextMapPropagator
     {
-        public abstract System.Collections.Generic.IEnumerable<string> Fields { get; }
+        public delegate bool PropagatorGetterCallback(object carrier, string fieldName, out string? value);
+        public abstract System.Collections.Generic.IReadOnlyCollection<string> Fields { get; }
         public abstract bool Inject(System.Diagnostics.Activity activity, object carrier, Action<object, string, string> setter);
         public abstract bool Inject(System.Diagnostics.ActivityContext context, object carrier, Action<object, string, string> setter);
         public abstract bool Inject(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> baggage, object carrier, Action<object, string, string> setter);
