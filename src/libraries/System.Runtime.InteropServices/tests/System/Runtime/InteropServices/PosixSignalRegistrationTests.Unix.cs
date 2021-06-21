@@ -180,7 +180,7 @@ namespace System.Tests
             Assert.Equal(0, rv);
         }
 
-        [DllImport("libSystem.Native", EntryPoint = "SystemNative_GetPlatformSignalNumber")]
+        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
         [SuppressGCTransition]
         private static extern int GetPlatformSignalNumber(PosixSignal signal);
     }
