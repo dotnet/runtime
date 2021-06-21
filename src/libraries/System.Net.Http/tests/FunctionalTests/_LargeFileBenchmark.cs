@@ -50,7 +50,8 @@ namespace System.Net.Http.Functional.Tests
         private static readonly IPAddress LocalAddress = null;
 
         //private const string ReportDir = @"C:\_dev\r6r\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
-        private const string ReportDir = @"C:\Users\anfirszo\dev\dotnet\6.0\runtime\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
+        //private const string ReportDir = @"C:\Users\anfirszo\dev\dotnet\6.0\runtime\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
+        private const string ReportDir = @"C:\_dev\r6d\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Debug\TestResults";
 
         [Theory]
         [InlineData(BenchmarkServer)]
@@ -277,6 +278,7 @@ namespace System.Net.Http.Functional.Tests
             string log = _listener.Log2.ToString();
 
             int idx = log.LastIndexOf(Prefix);
+            if (idx < 0) return null;
             
             ReadOnlySpan<char> text = log.AsSpan().Slice(idx + Prefix.Length);
             text = text.Slice(0, text.IndexOf(' '));
