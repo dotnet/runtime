@@ -216,7 +216,7 @@ An optional requirement placed by generic parameters on its potential generic ar
 
 1. Special constraints
   - Reference type constraint - the generic argument must be a reference type (as opposed to a value type). The `class` keyword is used in C# to express this constraint.
- 
+
     ```csharp
     public class A<T> where T : class
     ```
