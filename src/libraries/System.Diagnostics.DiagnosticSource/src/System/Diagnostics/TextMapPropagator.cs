@@ -21,7 +21,7 @@ namespace System.Diagnostics
 
         // Extract
 
-        public abstract bool Extract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value);
+        public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out ActivityContext context);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out IEnumerable<KeyValuePair<string, string?>>? baggage);
 
@@ -155,23 +155,23 @@ namespace System.Diagnostics
             return true;
         }
 
-        internal static bool LegacyExtract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value)
+        internal static bool LegacyExtract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state)
         {
-            value = null;
-
-            if (fieldName is null || getter is null)
+            if (getter is null)
             {
+                id = null;
+                state = null;
                 return false;
             }
 
-            if (fieldName == TraceParent || fieldName == RequestId || fieldName == TraceState)
+            getter(carrier, TraceParent, out id);
+            if (id is null)
             {
-                // We expect one value here so we don't bother check more values.
-                getter(carrier, fieldName, out value);
-                return true;
+                getter(carrier, RequestId, out id);
             }
 
-            return false;
+            getter(carrier, TraceState, out state);
+            return true;
         }
 
         internal static bool LegacyExtract(object carrier, PropagatorGetterCallback getter, out ActivityContext context)
@@ -289,8 +289,8 @@ namespace System.Diagnostics
         // Extract
         //
 
-        public override bool Extract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value) =>
-                                LegacyExtract(carrier, fieldName, getter, out value);
+        public override bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state) =>
+                                LegacyExtract(carrier, getter, out id, out state);
 
         public override bool Extract(object carrier, PropagatorGetterCallback getter, out ActivityContext context) =>
                                 LegacyExtract(carrier, getter, out context);
@@ -345,8 +345,8 @@ namespace System.Diagnostics
         // Extract
         //
 
-        public override bool Extract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value) =>
-                                LegacyExtract(carrier, fieldName, getter, out value);
+        public override bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state) =>
+                                LegacyExtract(carrier, getter, out id, out state);
 
         public override bool Extract(object carrier, PropagatorGetterCallback getter, out ActivityContext context) =>
                                 LegacyExtract(carrier, getter, out context);
@@ -407,8 +407,8 @@ namespace System.Diagnostics
 
         // Extract
 
-        public override bool Extract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value) =>
-                                LegacyExtract(carrier, fieldName, getter, out value);
+        public override bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state) =>
+                                LegacyExtract(carrier, getter, out id, out state);
 
         public override bool Extract(object carrier, PropagatorGetterCallback getter, out ActivityContext context) =>
                                 LegacyExtract(carrier, getter, out context);
@@ -476,19 +476,19 @@ namespace System.Diagnostics
         // Extract
         //
 
-        public override bool Extract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value)
+        public override bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state)
         {
-            value = null;
-
-            if (fieldName is null || getter is null || (fieldName != TraceParent && fieldName != TraceState))
+            if (getter is null)
             {
+                id = null;
+                state = null;
                 return false;
             }
 
-            // We expect one value here so we don't bother check more values.
-            getter(carrier, fieldName, out value);
+            getter(carrier, TraceParent, out id);
+            getter(carrier, TraceState, out state);
 
-            if (fieldName == TraceParent && !ActivityContext.TryParse(value, null, out ActivityContext context))
+            if (id is not null && !ActivityContext.TryParse(id, state, out ActivityContext context))
             {
                 return false;
             }

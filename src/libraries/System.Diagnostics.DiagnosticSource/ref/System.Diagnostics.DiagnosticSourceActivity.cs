@@ -263,7 +263,7 @@ namespace System.Diagnostics
         public abstract bool Inject(System.Diagnostics.Activity activity, object carrier, Action<object, string, string> setter);
         public abstract bool Inject(System.Diagnostics.ActivityContext context, object carrier, Action<object, string, string> setter);
         public abstract bool Inject(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> baggage, object carrier, Action<object, string, string> setter);
-        public abstract bool Extract(object carrier, string fieldName, PropagatorGetterCallback getter, out string? value);
+        public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out System.Diagnostics.ActivityContext context);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? baggage);
         public static TextMapPropagator DefaultPropagator { get; set; }
