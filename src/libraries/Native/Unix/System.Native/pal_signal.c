@@ -19,8 +19,8 @@
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 // Saved signal handlers
-static struct sigaction g_origSigHandler[NSIG];
-static bool g_handlerIsInstalled[NSIG];
+static struct sigaction* g_origSigHandler;
+static bool* g_handlerIsInstalled;
 
 // Callback invoked for SIGCHLD/SIGCONT/SIGWINCH
 static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL;
@@ -34,9 +34,14 @@ static volatile ConsoleSigTtouHandler g_consoleTtouHandler;
 // Callback invoked for PosixSignal handling.
 static PosixSignalHandler g_posixSignalHandler = NULL;
 // Tracks whether there are PosixSignal handlers registered.
-static volatile bool g_hasPosixSignalRegistrations[NSIG];
+static volatile bool* g_hasPosixSignalRegistrations;
 
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
+
+static int GetSignalMax() // Returns the highest usable signal number.
+{
+    return NSIG;
+}
 
 static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
@@ -125,12 +130,7 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
             return SIGTSTP;
     }
 
-    if (   signal > 0
-        && signal <= NSIG      // Ensure we stay within the static arrays.
-#ifdef SIGRTMAX
-        && signal <= SIGRTMAX  // Runtime check for highest value.
-#endif
-       )
+    if (signal > 0 && signal <= GetSignalMax())
     {
         return signal;
     }
@@ -445,6 +445,27 @@ static bool CreateSignalHandlerThread(int* readFdPtr)
 
 int32_t InitializeSignalHandlingCore()
 {
+    size_t signalMax = (size_t)GetSignalMax();
+    g_origSigHandler = (struct sigaction*)calloc(sizeof(struct sigaction), signalMax);
+    g_handlerIsInstalled = (bool*)calloc(sizeof(bool), signalMax);
+    g_hasPosixSignalRegistrations = (bool*)calloc(sizeof(bool), signalMax);
+    if (g_origSigHandler == NULL ||
+        g_handlerIsInstalled == NULL ||
+        g_hasPosixSignalRegistrations == NULL)
+    {
+        free(g_origSigHandler);
+        free(g_handlerIsInstalled);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        free((void*)g_hasPosixSignalRegistrations);
+#pragma clang diagnostic pop
+        g_origSigHandler = NULL;
+        g_handlerIsInstalled = NULL;
+        g_hasPosixSignalRegistrations = NULL;
+        errno = ENOMEM;
+        return 0;
+    }
+
     // Create a pipe we'll use to communicate with our worker
     // thread.  We can't do anything interesting in the signal handler,
     // so we instead send a message to another thread that'll do
@@ -483,7 +504,7 @@ int32_t InitializeSignalHandlingCore()
 void SystemNative_EnablePosixSignalHandling(int signalCode)
 {
     assert(g_posixSignalHandler != NULL);
-    assert(signalCode > 0 && signalCode <= NSIG);
+    assert(signalCode > 0 && signalCode <= GetSignalMax());
 
     pthread_mutex_lock(&lock);
     {
@@ -496,7 +517,7 @@ void SystemNative_EnablePosixSignalHandling(int signalCode)
 
 void SystemNative_DisablePosixSignalHandling(int signalCode)
 {
-    assert(signalCode > 0 && signalCode <= NSIG);
+    assert(signalCode > 0 && signalCode <= GetSignalMax());
 
     pthread_mutex_lock(&lock);
     {
