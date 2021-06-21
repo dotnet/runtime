@@ -68,23 +68,25 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool PushX509StackField(SafeSharedX509StackHandle stack, SafeX509Handle x509);
 
-        internal static string? GetX509RootStorePath(out bool defaultPath)
+        internal static unsafe string? GetX509RootStorePath(out bool defaultPath)
         {
-            IntPtr ptr = GetX509RootStorePath_private(out byte usedDefault);
+            byte usedDefault;
+            IntPtr ptr = GetX509RootStorePath_private(&usedDefault);
             defaultPath = (usedDefault != 0);
             return Marshal.PtrToStringAnsi(ptr);
         }
 
-        internal static string? GetX509RootStoreFile()
+        internal static unsafe string? GetX509RootStoreFile()
         {
-            return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private(out _));
+            byte unused;
+            return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private(&unused));
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
-        private static extern IntPtr GetX509RootStorePath_private(out byte defaultPath);
+        private static unsafe extern IntPtr GetX509RootStorePath_private(byte* defaultPath);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
-        private static extern IntPtr GetX509RootStoreFile_private(out byte defaultPath);
+        private static unsafe extern IntPtr GetX509RootStoreFile_private(byte* defaultPath);
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_X509StoreSetVerifyTime(

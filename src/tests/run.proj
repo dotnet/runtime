@@ -604,6 +604,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Include="mattr=lzcnt" />
       <MonoAotOption Include="mattr=bmi" />
       <MonoAotOption Include="mattr=bmi2" />
+      <MonoAotOption Include="mattr=pclmul" />
+      <MonoAotOption Include="mattr=aes" />
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>

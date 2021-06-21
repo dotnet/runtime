@@ -2424,13 +2424,51 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
 		*op = MINT_LDFTN_DYNAMIC;
-	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Equality")) {
+	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Equality") &&
+			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
+		// We do a reference comparison only if we know both operands are runtime type
+		// (they originate from object.GetType or ldftn + GetTypeFromHandle)
 		*op = MINT_CEQ_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
-		if (!strcmp (tm, "InternalGetHashCode"))
+		if (!strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
-		else if (!strcmp (tm, "GetType"))
-			*op = MINT_INTRINS_GET_TYPE;
+		} else if (!strcmp (tm, "GetType")) {
+			if (constrained_class && m_class_is_valuetype (constrained_class)) {
+				// If constrained_class is valuetype we already know its type.
+				// Resolve GetType to a constant so we can fold type comparisons
+				ERROR_DECL(error);
+				gpointer systype = mono_type_get_object_checked (m_class_get_byval_arg (constrained_class), error);
+				return_val_if_nok (error, FALSE);
+
+				td->sp--;
+				interp_add_ins (td, MINT_MONO_LDPTR);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->last_ins->data [0] = get_data_item_index (td, systype);
+
+				td->ip += 5;
+				return TRUE;
+			} else {
+				if (constrained_class) {
+					// deref the managed pointer to get the object
+					interp_add_ins (td, MINT_LDIND_I);
+					td->sp--;
+					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+					push_simple_type (td, STACK_TYPE_O);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				}
+				interp_add_ins (td, MINT_INTRINS_GET_TYPE);
+				td->sp--;
+				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+				mono_class_init_internal (target_method->klass);
+
+				td->ip += 5;
+				return TRUE;
+			}
+		}
 	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
 		gboolean intrinsify = FALSE;
 		MonoClass *base_klass = NULL;
@@ -6733,7 +6771,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				gpointer systype = mono_type_get_object_checked ((MonoType*)handle, error);
 				goto_if_nok (error, exit);
-				push_simple_type (td, STACK_TYPE_MP);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, systype);
 				td->ip = next_ip + 5;
