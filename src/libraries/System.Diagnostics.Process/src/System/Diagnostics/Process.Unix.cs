@@ -1059,21 +1059,10 @@ namespace System.Diagnostics
         [UnmanagedCallersOnly]
         private static void DelayedSigChildConsoleConfiguration()
         {
-            // Lock to avoid races with Process.Start
-            s_processStartLock.EnterWriteLock();
-            try
-            {
-                if (s_childrenUsingTerminalCount == 0)
-                {
-                    // No more children are using the terminal.
-                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
-                }
-            }
-            finally
-            {
-                s_processStartLock.ExitWriteLock();
-            }
+            DelayedSigChildConsoleConfigurationInner();
         }
+
+        static partial void DelayedSigChildConsoleConfigurationInner();
 
         /// <summary>
         /// This method is called when the number of child processes that are using the terminal changes.
