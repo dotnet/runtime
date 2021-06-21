@@ -117,10 +117,11 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs" />
-    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
-             Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Link="System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />

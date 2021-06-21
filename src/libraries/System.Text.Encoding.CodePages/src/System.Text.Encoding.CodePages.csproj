@@ -17,8 +17,6 @@
     <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
-         Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NativeMemoryHandle.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.cs" />
     <Compile Include="System\Text\CodePagesEncodingProvider.cs" />
@@ -54,6 +52,10 @@
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="System\Text\CodePagesEncodingProvider.netcoreapp.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Link="System\Runtime\InteropServices\NativeMemory.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\codepages.nlp">
