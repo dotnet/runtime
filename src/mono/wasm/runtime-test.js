@@ -259,6 +259,11 @@ setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 // must be var as dotnet.js uses it
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
+	config: null,
+
+    preInit: async function() {
+        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+    },
 
 	onAbort: function(x) {
 		console.log ("ABORT: " + x);
@@ -278,7 +283,7 @@ var Module = {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		config.loaded_cb = function () {
+		Module.config.loaded_cb = function () {
 			let wds = FS.stat (working_dir);
 			if (wds === undefined || !FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
@@ -288,19 +293,19 @@ var Module = {
 			FS.chdir (working_dir);
 			App.init ();
 		};
-		config.fetch_file_cb = function (asset) {
+		Module.config.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
-			const content = new Uint8Array (read (asset, 'binary'));
-			const path = asset.substr(config.deploy_prefix.length);
-			IOHandler.writeContentToFile(content, path);
+			var content = new Uint8Array (read (asset, 'binary'));
+			var path = asset.substr(Module.config.deploy_prefix.length);
+			writeContentToFile(content, path);
 			*/
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
-		MONO.mono_load_runtime_and_bcl_args (config);
+		MONO.mono_load_runtime_and_bcl_args (Module.config);
 	},
 };
 
