@@ -45,7 +45,7 @@ internal static partial class Interop
                 {
                     throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
                 }
-                value = (byte*)NativeMemory.Alloc((nuint)bytesLength);
+                value = (byte*)NativeMemory.Alloc((nuint)(nint)bytesLength);
             }
 
             ret = Sysctl(name, name_len, value, &bytesLength);
@@ -67,7 +67,7 @@ internal static partial class Interop
                 {
                     bytesLength = (nint)((int)bytesLength * 2);
                 }
-                value = (byte*)NativeMemory.Alloc(bytesLength);
+                value = (byte*)NativeMemory.Alloc((nuint)(nint)bytesLength);
                 ret = Sysctl(name, name_len, value, &bytesLength);
             }
             if (ret != 0)
