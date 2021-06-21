@@ -957,11 +957,11 @@ namespace System.IO
             return sb.ToString();
         }
 
+        /// <summary>Gets whether the system is case-sensitive.</summary>
+        internal static bool IsCaseSensitive => PathInternal.IsCaseSensitive;
+
         /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
-        internal static StringComparison StringComparison =>
-            IsCaseSensitive ?
-                StringComparison.Ordinal :
-                StringComparison.OrdinalIgnoreCase;
+        internal static StringComparison StringComparison => PathInternal.StringComparison;
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
