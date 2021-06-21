@@ -139,21 +139,12 @@ namespace System.IO.Tests
         /// </remarks>
         protected static bool GetIsCaseSensitiveByProbing(string probingDirectory)
         {
-            try
-            {
-                string pathWithUpperCase = Path.Combine(probingDirectory, "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
-                using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
-                {
-                    string lowerCased = pathWithUpperCase.ToLowerInvariant();
-                    return !File.Exists(lowerCased);
-                }
-            }
-            catch
-            {
-                // In case something goes wrong (e.g. temp pointing to a privilieged directory), we don't
-                // want to fail just because of a casing test, so we assume case-insensitive-but-preserving.
-                return false;
-            }
+	    string pathWithUpperCase = Path.Combine(probingDirectory, "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
+	    using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+	    {
+		string lowerCased = pathWithUpperCase.ToLowerInvariant();
+		return !File.Exists(lowerCased);
+	    }
         }
     }
 }
