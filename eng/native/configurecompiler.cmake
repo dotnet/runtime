@@ -417,6 +417,9 @@ if (CLR_CMAKE_HOST_UNIX)
       endif()
       add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
     endif(CLR_CMAKE_TARGET_MACCATALYST)
+    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+    # add_compile_options so that they take effect on the configuration functions
+    # in various configure.cmake files.
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS}")
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS}")
