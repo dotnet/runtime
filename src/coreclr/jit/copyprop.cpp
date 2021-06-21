@@ -97,16 +97,6 @@ int Compiler::optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDs
         score -= 4;
     }
 
-    if (lclVarDsc->lvDoNotEnregister)
-    {
-        score += 4;
-    }
-
-    if (copyVarDsc->lvDoNotEnregister)
-    {
-        score -= 4;
-    }
-
 #ifdef TARGET_X86
     // For doubles we also prefer to change parameters into non-parameter local variables
     if (lclVarDsc->lvType == TYP_DOUBLE)

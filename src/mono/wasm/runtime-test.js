@@ -267,9 +267,14 @@ setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 // must be var as dotnet.js uses it
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
+	config: null,
 
     preInit: async function() {
         Module.config = await Module.MONO.mono_wasm_load_config("./mono-config.json");
+    },
+
+    preInit: async function() {
+        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
     },
 
 	onAbort: function(x) {
@@ -305,8 +310,8 @@ var Module = {
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
-			const content = new Uint8Array (read (asset, 'binary'));
-			const path = asset.substr(config.deploy_prefix.length);
+			var content = new Uint8Array (read (asset, 'binary'));
+			var path = asset.substr(Module.config.deploy_prefix.length);
 			IOHandler.writeContentToFile(content, path);
 			*/
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });

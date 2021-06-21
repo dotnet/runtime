@@ -11,7 +11,7 @@ var Module = {
 
     // Called when the runtime is initialized and wasm is ready
     onRuntimeInitialized: function () {
-        if (!Module.config || Module.config.error){
+        if (!Module.config || Module.config.error) {
             console.log("No config found");
             return;
         }

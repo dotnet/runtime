@@ -62,9 +62,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Reference Include="netstandard" Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))" />
     <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="Microsoft.Win32.Registry" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.Primitives" />

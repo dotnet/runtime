@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -249,6 +250,28 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             Assert.NotNull(factory);
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPatternCanRunInParallel()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
+            Assert.NotNull(factory);
+
+            var tasks = new Task<IServiceProvider>[30];
+            int index = 0;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[index++] = Task.Run(() => factory(Array.Empty<string>()));
+            }
+
+            Task.WaitAll(tasks);
+
+            foreach (var t in tasks)
+            {
+                Assert.IsAssignableFrom<IServiceProvider>(t.Result);
+            }
         }
     }
 }

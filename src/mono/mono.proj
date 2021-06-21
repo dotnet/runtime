@@ -75,6 +75,8 @@
     <MonoComponentsStatic Condition="'$(TargetsBrowser)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsAndroid)' == 'true' and '$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
     <!-- by default, do dynamic components -->
     <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
@@ -418,7 +420,7 @@
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
-      <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" />
+      <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" Condition="!('$(TargetsiOSSimulator)' == 'true' or '$(TargetstvOSSimulator)' == 'true')"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
@@ -506,11 +508,11 @@
       <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" />
     </ItemGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from %(FilesToStrip.Identity)" Importance="High"/>
-    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --only-keep-debug %(FilesToStrip.Identity) %(FilesToStrip.Identity).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --strip-unneeded %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(MonoFileName)' != '$(MonoStaticLibFileName)' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --add-gnu-debuglink=%(FilesToStrip.Identity).dbg %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --only-keep-debug %(FilesToStrip.Identity) %(FilesToStrip.Identity).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --strip-unneeded %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --add-gnu-debuglink=%(FilesToStrip.Identity).dbg %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
