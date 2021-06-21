@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -9,7 +10,7 @@ namespace System.Diagnostics
     {
         private static int s_childrenUsingTerminalCount;
 
-        static partial void ConfigureTerminalForChildProcessesInner(int increment, bool configureConsole)
+        internal static void ConfigureTerminalForChildProcesses(int increment, bool configureConsole = true)
         {
             Debug.Assert(increment != 0);
 
@@ -34,7 +35,13 @@ namespace System.Diagnostics
             }
         }
 
-        static partial void DelayedSigChildConsoleConfigurationInner()
+        static unsafe partial void SetDelayedSigChildConsoleConfigurationHandler()
+        {
+            Interop.Sys.SetDelayedSigChildConsoleConfigurationHandler(&DelayedSigChildConsoleConfiguration);
+        }
+
+        [UnmanagedCallersOnly]
+        private static void DelayedSigChildConsoleConfiguration()
         {
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
@@ -51,5 +58,7 @@ namespace System.Diagnostics
                 s_processStartLock.ExitWriteLock();
             }
         }
+
+        private static bool AreChildrenUsingTerminal => s_childrenUsingTerminalCount > 0;
     }
 }

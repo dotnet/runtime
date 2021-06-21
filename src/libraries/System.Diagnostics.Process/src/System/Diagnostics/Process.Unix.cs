@@ -1023,7 +1023,7 @@ namespace System.Diagnostics
 
                     // Register our callback.
                     Interop.Sys.RegisterForSigChld(&OnSigChild);
-                    Interop.Sys.SetDelayedSigChildConsoleConfigurationHandler(&DelayedSigChildConsoleConfiguration);
+                    SetDelayedSigChildConsoleConfigurationHandler();
 
                     s_initialized = true;
                 }
@@ -1043,12 +1043,12 @@ namespace System.Diagnostics
             s_processStartLock.EnterWriteLock();
             try
             {
-                int childrenUsingTerminalPre = s_childrenUsingTerminalCount;
+                bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
                 ProcessWaitState.CheckChildren(reapAll != 0, configureConsole != 0);
-                int childrenUsingTerminalPost = s_childrenUsingTerminalCount;
+                bool childrenUsingTerminalPost = AreChildrenUsingTerminal;
 
                 // return whether console configuration was skipped.
-                return childrenUsingTerminalPre > 0 && childrenUsingTerminalPost == 0 && configureConsole == 0 ? 1 : 0;
+                return childrenUsingTerminalPre && !childrenUsingTerminalPost && configureConsole == 0 ? 1 : 0;
             }
             finally
             {
@@ -1056,23 +1056,6 @@ namespace System.Diagnostics
             }
         }
 
-        [UnmanagedCallersOnly]
-        private static void DelayedSigChildConsoleConfiguration()
-        {
-            DelayedSigChildConsoleConfigurationInner();
-        }
-
-        static partial void DelayedSigChildConsoleConfigurationInner();
-
-        /// <summary>
-        /// This method is called when the number of child processes that are using the terminal changes.
-        /// It updates the terminal configuration if necessary.
-        /// </summary>
-        internal static void ConfigureTerminalForChildProcesses(int increment, bool configureConsole = true)
-        {
-            ConfigureTerminalForChildProcessesInner(increment, configureConsole);
-        }
-
-        static partial void ConfigureTerminalForChildProcessesInner(int increment, bool configureConsole);
+        static unsafe partial void SetDelayedSigChildConsoleConfigurationHandler();
     }
 }
