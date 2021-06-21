@@ -169,7 +169,7 @@ namespace System.Runtime
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            InternalSetTarget(handle, null);
+            InternalStopTracking(handle);
         }
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace System.Runtime
         /// <remarks>This method mirrors <see cref="StopTracking"/>, but without the allocation check.</remarks>
         internal void UnsafeStopTracking()
         {
-            InternalSetTarget(_handle, null);
+            InternalStopTracking(_handle);
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -255,10 +255,10 @@ namespace System.Runtime
         private static extern object? InternalGetTargetAndDependent(IntPtr dependentHandle, out object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalSetTarget(IntPtr dependentHandle, object? target);
+        private static extern void InternalSetDependent(IntPtr dependentHandle, object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalSetDependent(IntPtr dependentHandle, object? dependent);
+        private static extern void InternalStopTracking(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void InternalFree(IntPtr dependentHandle);

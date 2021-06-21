@@ -65,9 +65,9 @@ FCFuncStart(gDependentHandleFuncs)
     FCFuncElement("InternalGetTarget",             DependentHandle::InternalGetTarget)
     FCFuncElement("InternalGetDependent",          DependentHandle::InternalGetDependent)
     FCFuncElement("InternalGetTargetAndDependent", DependentHandle::InternalGetTargetAndDependent)
-    FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
-    FCFuncElement("InternalSetTarget",             DependentHandle::InternalSetTarget)
     FCFuncElement("InternalSetDependent",          DependentHandle::InternalSetDependent)
+    FCFuncElement("InternalStopTracking",          DependentHandle::InternalStopTracking)
+    FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
 FCFuncEnd()
 
 

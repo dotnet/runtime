@@ -44,9 +44,9 @@ public:
     static FCDECL1(Object *, InternalGetTarget, OBJECTHANDLE handle);
     static FCDECL1(Object *, InternalGetDependent, OBJECTHANDLE handle);
     static FCDECL2(Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
-    static FCDECL1(VOID, InternalFree, OBJECTHANDLE handle);
-    static FCDECL2(VOID, InternalSetTarget, OBJECTHANDLE handle, Object *target);
     static FCDECL2(VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
+    static FCDECL1(VOID, InternalStopTracking, OBJECTHANDLE handle);
+    static FCDECL1(VOID, InternalFree, OBJECTHANDLE handle);
 };
 
 #endif

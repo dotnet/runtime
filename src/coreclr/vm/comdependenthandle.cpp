@@ -75,6 +75,31 @@ FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE ha
 }
 FCIMPLEND
 
+FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    mgr->SetDependentHandleSecondary(handle, _dependent);
+}
+FCIMPLEND
+
+FCIMPL1(VOID, DependentHandle::InternalStopTracking, OBJECTHANDLE handle)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    // Avoid collision with MarshalNative::GCHandleInternalSet
+    FCUnique(0x12);
+
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    mgr->StoreObjectInHandle(handle, NULL);
+}
+FCIMPLEND
+
 FCIMPL1(VOID, DependentHandle::InternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
@@ -86,30 +111,5 @@ FCIMPL1(VOID, DependentHandle::InternalFree, OBJECTHANDLE handle)
     DestroyDependentHandle(handle);
 
     HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(VOID, DependentHandle::InternalSetTarget, OBJECTHANDLE handle, Object *_target)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(handle != NULL);
-
-    // Avoid collision with MarshalNative::GCHandleInternalSet
-    FCUnique(0x12);
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    mgr->StoreObjectInHandle(handle, _target);
-}
-FCIMPLEND
-
-FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(handle != NULL);
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    mgr->SetDependentHandleSecondary(handle, _dependent);
 }
 FCIMPLEND
