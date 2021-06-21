@@ -8,6 +8,7 @@ namespace System.IO.Tests
     public class PathInternalTests : FileSystemTest
     {
         [Fact]
+        [OuterLoop]
         public void PathInternalIsCaseSensitiveMatchesProbing()
         {
             var probingDirectory = TestDirectory;
