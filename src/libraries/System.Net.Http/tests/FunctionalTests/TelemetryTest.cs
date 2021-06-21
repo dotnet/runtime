@@ -621,6 +621,7 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 http2Server.AllowMultipleConnections = true;
                                 connection = await http2Server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 1 });
+                                ((Http2LoopbackConnection)connection).SetupAutomaticPingResponse(); // Handle RTT PING
                             }
                             else
                             {
