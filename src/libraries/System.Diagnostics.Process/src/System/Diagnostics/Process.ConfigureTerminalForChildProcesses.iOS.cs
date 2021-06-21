@@ -12,9 +12,7 @@ namespace System.Diagnostics
         /// It updates the terminal configuration if necessary.
         /// </summary>
         internal static void ConfigureTerminalForChildProcesses(int increment, bool configureConsole = true)
-        {
-            
-        }
+        { }
 
         private static bool AreChildrenUsingTerminal => false;
     }
