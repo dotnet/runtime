@@ -388,6 +388,7 @@ namespace System.Data.Common
             return attributes;
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -413,25 +414,20 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The type of component is statically known. This class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
-        private PropertyDescriptorCollection GetPropertiesOfThis()
-        {
-            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
-            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
-            Type thisType = GetType();
-            return TypeDescriptor.GetProperties(this, true);
-        }
-
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
             try
             {
+                // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+                // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+                Type thisType = GetType();
+
                 // show all strongly typed properties (not already added)
                 // except ConnectionString iff BrowsableConnectionString
                 Attribute[]? attributes;
-                foreach (PropertyDescriptor reflected in GetPropertiesOfThis())
+                foreach (PropertyDescriptor reflected in TypeDescriptor.GetProperties(this, true))
                 {
                     Debug.Assert(reflected != null);
                     if (ADP.ConnectionString != reflected.Name)
