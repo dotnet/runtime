@@ -1696,9 +1696,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh07_large/**">
             <Issue>https://github.com/dotnet/runtime/issues/54395</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/LeakWheel/leakwheel/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
             <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
         </ExcludeList>
@@ -3148,9 +3145,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/**">
             <Issue>https://github.com/dotnet/runtime/issues/53353</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/LeakWheel/leakwheel/**">
-            <Issue>long running test https://github.com/dotnet/runtime/issues/53386</Issue>
         </ExcludeList>
     </ItemGroup>
 
