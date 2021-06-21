@@ -100,21 +100,21 @@ namespace System.Diagnostics.Tracing
 
             internal static void MarshalToNative(EventPipeProviderConfiguration managed, ref EventPipeProviderConfigurationNative native)
             {
-                native.m_pProviderName = (char*)Marshal.StringToCoTaskMemUni(managed.ProviderName);
+                native.m_pProviderName = (char*)(nint)NativeMemoryHelper.AllocStringUnicode(managed.ProviderName);
                 native.m_keywords = managed.Keywords;
                 native.m_loggingLevel = managed.LoggingLevel;
-                native.m_pFilterData = (char*)Marshal.StringToCoTaskMemUni(managed.FilterData);
+                native.m_pFilterData = (char*)(nint)NativeMemoryHelper.AllocStringUnicode(managed.FilterData);
             }
 
             internal void Release()
             {
                 if (m_pProviderName != null)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)m_pProviderName);
+                    NativeMemoryHelper.Free((nint)m_pProviderName);
                 }
                 if (m_pFilterData != null)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)m_pFilterData);
+                    NativeMemoryHelper.Free((nint)m_pFilterData);
                 }
             }
         }
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Tracing
             uint circularBufferSizeInMB,
             EventPipeProviderConfiguration[] providers)
         {
-            Span<EventPipeProviderConfigurationNative> providersNative = new Span<EventPipeProviderConfigurationNative>((void*)Marshal.AllocCoTaskMem(sizeof(EventPipeProviderConfigurationNative) * providers.Length), providers.Length);
+            var providersNative = new Span<EventPipeProviderConfigurationNative>(NativeMemory.Alloc((uint)(sizeof(EventPipeProviderConfigurationNative) * providers.Length)), providers.Length);
             providersNative.Clear();
 
             try
@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tracing
 
                 fixed (EventPipeProviderConfigurationNative* providersNativePointer = providersNative)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)providersNativePointer);
+                    NativeMemory.Free(providersNativePointer);
                 }
             }
         }
