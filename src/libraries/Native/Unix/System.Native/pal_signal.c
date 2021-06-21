@@ -357,7 +357,7 @@ static bool InstallSignalHandler(int sig, int flags)
     // default handler on exec, which means they will terminate on some signals
     // which were set to ignore.
     rv = sigaction(sig, NULL, orig);
-    if (rv == 0)
+    if (rv != 0)
     {
         return false;
     }
@@ -374,12 +374,12 @@ static bool InstallSignalHandler(int sig, int flags)
     newAction.sa_sigaction = &SignalHandler;
 
     rv = sigaction(sig, &newAction, orig);
-    if (rv == 0)
+    if (rv != 0)
     {
         return false;
     }
     *isInstalled = true;
-    return false;
+    return true;
 }
 
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
