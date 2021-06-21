@@ -39,33 +39,5 @@ namespace System.IO
             return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
 #endif
         }
-
-        /// <summary>
-        /// Determines whether the file system is case sensitive by creating a file in a temp folder and observing the result.
-        /// </summary>
-        /// <remarks>
-        /// Ideally we'd use something like pathconf with _PC_CASE_SENSITIVE, but that is non-portable,
-        /// not supported on Windows or Linux, etc. For now, this function creates a tmp file with capital letters
-        /// and then tests for its existence with lower-case letters.  This could return invalid results in corner
-        /// cases where, for example, different file systems are mounted with differing sensitivities.
-        /// </remarks>
-        private static bool GetIsCaseSensitiveByProbing()
-        {
-            try
-            {
-                string pathWithUpperCase = Path.Combine(Path.GetTempPath(), "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
-                using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
-                {
-                    string lowerCased = pathWithUpperCase.ToLowerInvariant();
-                    return !File.Exists(lowerCased);
-                }
-            }
-            catch
-            {
-                // In case something goes wrong (e.g. temp pointing to a privilieged directory), we don't
-                // want to fail just because of a casing test, so we assume case-insensitive-but-preserving.
-                return false;
-            }
-        }
     }
 }
