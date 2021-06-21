@@ -33,16 +33,11 @@ namespace System.IO
         /// </summary>
         private static bool GetIsCaseSensitive()
         {
-#if NET6_0_OR_GREATER
-            // Return a constant for mobile platforms without resorting to I/O
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
-                return true;
-            if (OperatingSystem.IsBrowser())
-                return false;
-            if (OperatingSystem.IsAndroid())
-                return false;
+#if MS_IO_REDIST
+            return false; // Windows is always case-insensitive
+#else
+            return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
 #endif
-            return GetIsCaseSensitiveByProbing();
         }
 
         /// <summary>
