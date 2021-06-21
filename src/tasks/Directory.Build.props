@@ -3,5 +3,6 @@
 
   <PropertyGroup>
     <TargetFrameworkForNETFramework>net472</TargetFrameworkForNETFramework>
+    <TargetFrameworkForNetCore>net6.0</TargetFrameworkForNetCore>
   </PropertyGroup>
 </Project>
