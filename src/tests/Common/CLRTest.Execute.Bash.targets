@@ -336,7 +336,7 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And ($(TargetOS) == 'Browser' or $(TargetOS) == 'Node')">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh

@@ -100,7 +100,7 @@
         <PackageTargetRuntime>solaris</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(TargetFrameworkSuffix)' == 'Node'">
       <PropertyGroup>
         <TargetsBrowser>true</TargetsBrowser>
         <PackageTargetRuntime>browser</PackageTargetRuntime>
