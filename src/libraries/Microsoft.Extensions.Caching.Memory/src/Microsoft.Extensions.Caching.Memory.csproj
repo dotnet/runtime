@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>In-memory cache implementation of Microsoft.Extensions.Caching.Memory.IMemoryCache.</PackageDescription>
   </PropertyGroup>
@@ -24,11 +24,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <Reference Include="netstandard" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="netstandard" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\ref\System.Threading.ThreadPool.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
   </ItemGroup>
 
 </Project>
