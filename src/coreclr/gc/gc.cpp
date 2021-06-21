@@ -10808,7 +10808,7 @@ void gc_heap::return_free_region (heap_segment* region)
         heap_segment_mem (region), num_basic_regions, num_free_regions));
     for (int i = 0; i < num_basic_regions; i++)
     {
-        uint8_t* basic_region_start = region_start + (i << min_segment_size_shr);
+        uint8_t* basic_region_start = region_start + ((uint64_t)i << min_segment_size_shr);
         heap_segment* basic_region = get_region_info (basic_region_start);
         heap_segment_allocated (basic_region) = 0;
 #ifdef MULTIPLE_HEAPS
