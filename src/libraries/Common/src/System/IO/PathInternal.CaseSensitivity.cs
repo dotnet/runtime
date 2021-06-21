@@ -12,32 +12,28 @@ namespace System.IO
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
-        private static readonly bool s_isCaseSensitive = GetIsCaseSensitive();
-
         /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
         internal static StringComparison StringComparison
         {
             get
             {
-                return s_isCaseSensitive ?
+                return IsCaseSensitive ?
                     StringComparison.Ordinal :
                     StringComparison.OrdinalIgnoreCase;
             }
         }
 
         /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive { get { return s_isCaseSensitive; } }
-
-        /// <summary>
-        /// Determines whether the file system is case sensitive.
-        /// </summary>
-        private static bool GetIsCaseSensitive()
+        internal static bool IsCaseSensitive
         {
+            get
+            {
 #if MS_IO_REDIST
-            return false; // Windows is always case-insensitive
+                return false; // Windows is always case-insensitive
 #else
-            return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
+                return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
 #endif
+            }
         }
     }
 }
