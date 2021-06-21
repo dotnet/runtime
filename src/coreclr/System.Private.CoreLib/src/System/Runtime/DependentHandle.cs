@@ -70,7 +70,7 @@ namespace System.Runtime
         public bool IsAllocated => (nint)_handle != 0;
 
         /// <summary>
-        /// Gets or sets the target object instance for the current handle.
+        /// Gets the target object instance for the current handle.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         /// <remarks>This property is thread-safe.</remarks>
@@ -86,17 +86,6 @@ namespace System.Runtime
                 }
 
                 return InternalGetTarget(handle);
-            }
-            set
-            {
-                IntPtr handle = _handle;
-
-                if ((nint)handle == 0)
-                {
-                    ThrowHelper.ThrowInvalidOperationException();
-                }
-
-                InternalSetTarget(handle, value);
             }
         }
 
@@ -161,6 +150,29 @@ namespace System.Runtime
         }
 
         /// <summary>
+        /// Stops tracking the target and dependent objects in the current <see cref="DependentHandle"/> instance. Once this method
+        /// is invoked, calling other APIs is still allowed, but <see cref="Target"/> and <see cref="Dependent"/> will always just
+        /// return <see langword="null"/>. Additionally, since the dependent instance will no longer be tracked, it will also
+        /// immediately become eligible for collection if there are no other roots for it, even if the original target is still alive.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        /// <remarks>
+        /// This method does not dispose the current <see cref="DependentHandle"/> instance, which means that after calling it will not
+        /// affect the value of <see cref="IsAllocated"/>, and <see cref="Dispose"/> will still need to be called to release resources.
+        /// </remarks>
+        public void StopTracking()
+        {
+            IntPtr handle = _handle;
+
+            if ((nint)handle == 0)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+
+            InternalSetTarget(handle, null);
+        }
+
+        /// <summary>
         /// Gets the target object instance for the current handle.
         /// </summary>
         /// <returns>The target object instance, if present.</returns>
@@ -186,21 +198,22 @@ namespace System.Runtime
         }
 
         /// <summary>
-        /// Sets the target object instance for the current handle.
-        /// </summary>
-        /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
-        internal void UnsafeSetTarget(object? target)
-        {
-            InternalSetTarget(_handle, target);
-        }
-
-        /// <summary>
         /// Sets the dependent object instance for the current handle.
         /// </summary>
         /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
         internal void UnsafeSetDependent(object? dependent)
         {
             InternalSetDependent(_handle, dependent);
+        }
+
+        /// <summary>
+        /// Stops tracking the target and dependent objects in the current <see cref="DependentHandle"/> instance.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        /// <remarks>This method mirrors <see cref="StopTracking"/>, but without the allocation check.</remarks>
+        internal void UnsafeStopTracking()
+        {
+            InternalSetTarget(_handle, null);
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>

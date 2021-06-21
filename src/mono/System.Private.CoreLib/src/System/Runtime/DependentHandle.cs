@@ -26,11 +26,7 @@ namespace System.Runtime
 
         public bool IsAllocated => _data is not null;
 
-        public object? Target
-        {
-            get => UnsafeGetTarget();
-            set => UnsafeSetTarget(value);
-        }
+        public object? Target => UnsafeGetTarget();
 
         public object? Dependent
         {
@@ -43,6 +39,11 @@ namespace System.Runtime
             object? target = UnsafeGetTargetAndDependent(out object? dependent);
 
             return (target, dependent);
+        }
+
+        public void StopTracking()
+        {
+            UnsafeStopTracking();
         }
 
         internal object? UnsafeGetTarget()
@@ -74,7 +75,7 @@ namespace System.Runtime
 
             Ephemeron e = data[0];
 
-            return e.Key != GC.EPHEMERON_TOMBSTONE ? e.Value : null;
+            return e.Key != GC.EPHEMERON_TOMBSTONE && e.Key is not null ? e.Value : null;
         }
 
         internal object? UnsafeGetTargetAndDependent(out object? dependent)
@@ -92,7 +93,7 @@ namespace System.Runtime
 
             Ephemeron e = data[0];
 
-            if (e.Key != GC.EPHEMERON_TOMBSTONE)
+            if (e.Key != GC.EPHEMERON_TOMBSTONE && e.Key is not null)
             {
                 dependent = e.Value;
 
@@ -102,20 +103,6 @@ namespace System.Runtime
             dependent = null;
 
             return null;
-        }
-
-        internal void UnsafeSetTarget(object? target)
-        {
-            Ephemeron[]? data = _data;
-
-            if (data is null)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-
-                return;
-            }
-
-            data[0].Key = target;
         }
 
         internal void UnsafeSetDependent(object? dependent)
@@ -130,6 +117,20 @@ namespace System.Runtime
             }
 
             data[0].Value = dependent;
+        }
+
+        internal void UnsafeStopTracking()
+        {
+            Ephemeron[]? data = _data;
+
+            if (data is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return;
+            }
+
+            data[0].Key = null;
         }
 
         public void Dispose()

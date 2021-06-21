@@ -11,7 +11,7 @@ namespace System.Runtime.Tests
     public class DependentHandleTests
     {
         [Fact]
-        public void GetSetTarget()
+        public void GetNullTarget()
         {
             object target = new();
             DependentHandle handle = new(null, null);
@@ -20,9 +20,17 @@ namespace System.Runtime.Tests
             Assert.Null(handle.Target);
             Assert.Null(handle.Dependent);
 
-            handle.Target = target;
+            handle.Dispose();
+        }
+
+        [Fact]
+        public void GetNotNullTarget()
+        {
+            object target = new();
+            DependentHandle handle = new(target, null);
 
             // A handle with a set target and no dependent is valid
+            Assert.True(handle.IsAllocated);
             Assert.Same(target, handle.Target);
             Assert.Null(handle.Dependent);
 
@@ -168,19 +176,84 @@ namespace System.Runtime.Tests
         }
 
         [Fact]
-        public void GetTarget_ThrowsInvalidOperationException()
+        public void StopTracking_RepeatedCallsAreFine()
         {
-            Assert.Throws<InvalidOperationException>(() => default(DependentHandle).Target);
+            object target = new(), dependent = new();
+            DependentHandle handle = new(target, dependent);
+
+            handle.StopTracking();
+
+            Assert.True(handle.IsAllocated);
+            Assert.Null(handle.Target);
+            Assert.Null(handle.Dependent);
+
+            handle.StopTracking();
+            handle.StopTracking();
+            handle.StopTracking();
+
+            Assert.True(handle.IsAllocated);
+            Assert.Null(handle.Target);
+            Assert.Null(handle.Dependent);
+
+            handle.Dispose();
         }
 
         [Fact]
-        public void SetTarget_ThrowsInvalidOperationException()
+        public void StopTracking_StateIsConsistent()
         {
-            Assert.Throws<InvalidOperationException>(() =>
+            object target = new(), dependent = new();
+            DependentHandle handle = new(target, dependent);
+
+            Assert.True(handle.IsAllocated);
+            Assert.Same(handle.Target, target);
+            Assert.Same(handle.Dependent, dependent);
+
+            handle.StopTracking();
+
+            Assert.True(handle.IsAllocated);
+            Assert.Null(handle.Target);
+            Assert.Null(handle.Dependent);
+
+            handle.Dispose();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public void DependentIsCollectedAfterStopTracking()
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static DependentHandle Initialize(out object target, out WeakReference weakDependent)
             {
-                DependentHandle handle = default;
-                handle.Target = new();
-            });
+                target = new();
+
+                object dependent = new();
+
+                weakDependent = new WeakReference(dependent);
+
+                return new DependentHandle(target, dependent);
+            }
+
+            DependentHandle handle = Initialize(out object target, out WeakReference dependent);
+
+            handle.StopTracking();
+
+            GC.Collect();
+
+            // After calling StopTracking, the dependent is collected even if
+            // target is still alive and the handle itself has not been disposed
+            Assert.True(handle.IsAllocated);
+            Assert.Null(handle.Target);
+            Assert.Null(handle.Dependent);
+            Assert.False(dependent.IsAlive);
+
+            GC.KeepAlive(target);
+
+            handle.Dispose();
+        }
+
+        [Fact]
+        public void GetTarget_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => default(DependentHandle).Target);
         }
 
         [Fact]
@@ -200,10 +273,16 @@ namespace System.Runtime.Tests
         }
 
         [Fact]
+        public void StopTracking_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => default(DependentHandle).StopTracking());
+        }
+
+        [Fact]
         public void Dispose_RepeatedCallsAreFine()
         {
-            object key = new(), value = new();
-            DependentHandle handle = new(key, value);
+            object target = new(), dependent = new();
+            DependentHandle handle = new(target, dependent);
 
             Assert.True(handle.IsAllocated);
 
