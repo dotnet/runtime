@@ -49,6 +49,12 @@ namespace System.Tests
         [MemberData(nameof(PosixSignalValues))]
         public void SignalHandlerCalledForKnownSignals(PosixSignal signal)
         {
+            if (TriggersConsoleCancelKeyPress(signal))
+            {
+                // skip: xunit test runner returns non zero exit code.
+                return;
+            }
+
             using SemaphoreSlim semaphore = new(0);
             using var _ = PosixSignalRegistration.Create(signal, ctx =>
             {
@@ -68,6 +74,12 @@ namespace System.Tests
         [MemberData(nameof(PosixSignalAsRawValues))]
         public void SignalHandlerCalledForRawSignals(PosixSignal signal)
         {
+            if (TriggersConsoleCancelKeyPress(signal))
+            {
+                // skip: xunit test runner returns non zero exit code.
+                return;
+            }
+
             using SemaphoreSlim semaphore = new(0);
             using var _ = PosixSignalRegistration.Create(signal, ctx =>
             {
@@ -218,5 +230,13 @@ namespace System.Tests
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
         [SuppressGCTransition]
         private static extern int GetPlatformSignalNumber(PosixSignal signal);
+
+        private static bool TriggersConsoleCancelKeyPress(PosixSignal signal)
+        {
+            return (signal == PosixSignal.SIGINT ||
+                    signal == PosixSignal.SIGQUIT ||
+                    signal == (PosixSignal)2 || // SIGINT raw
+                    signal == (PosixSignal)3);  // SIGQUIT raw
+        }
     }
 }
