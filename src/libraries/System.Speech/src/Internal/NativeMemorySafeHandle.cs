@@ -75,10 +75,15 @@ namespace System.Speech.Internal
         {
             if (handle != IntPtr.Zero)
             {
-                _bufferSize = 0;
+                // Reset the extra information given to the GC
+                if (_bufferSize > 0)
+                {
+                    GC.RemoveMemoryPressure(_bufferSize);
+                    _bufferSize = 0;
+                }
+                
                 NativeMemoryHelper.Free(handle);
                 handle = IntPtr.Zero;
-
                 return true;
             }
 
