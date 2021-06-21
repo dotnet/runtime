@@ -119,6 +119,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
+        private const int MsQuicVersion = 1;
+
         static MsQuicApi()
         {
             if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
@@ -129,7 +131,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     {
                         delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
                             (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
-                        uint status = msQuicOpenVersion(1, out NativeApi* vtable);
+                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;
