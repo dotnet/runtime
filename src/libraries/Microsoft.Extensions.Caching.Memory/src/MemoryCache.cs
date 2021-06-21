@@ -351,8 +351,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
             cache._lastExpirationScanClockOffset = position.ClockOffset;
 
-            foreach (CacheEntry entry in cache._entries.Values)
+            foreach (KeyValuePair<object, CacheEntry> item in cache._entries)
             {
+                CacheEntry entry = item.Value;
+
                 if (entry.CheckExpired(ref position))
                 {
                     cache.RemoveEntry(entry);
@@ -436,8 +438,10 @@ namespace Microsoft.Extensions.Caching.Memory
             Internal.ClockQuantization.LazyClockOffsetSerialPosition position = default;
             ClockQuantizer.EnsureInitializedExactClockOffsetSerialPosition(ref position, advance: false); // Just get an exact clock offset, don't mess with clock quantization intervals
 
-            foreach (CacheEntry entry in _entries.Values)
+            foreach (KeyValuePair<object, CacheEntry> item in _entries)
             {
+                CacheEntry entry = item.Value;
+
                 if (entry.CheckExpired(ref position))
                 {
                     entriesToRemove.Add(entry);
