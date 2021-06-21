@@ -945,7 +945,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #else  // FEATURE_COMINTEROP
     if (pMT->IsComObjectType())
     {
-        COMPlusThrow(kNotSupportedException, IDS_EE_ERROR_COM);
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
     }
 #endif // FEATURE_COMINTEROP
     else
