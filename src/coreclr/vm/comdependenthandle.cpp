@@ -92,9 +92,6 @@ FCIMPL1(VOID, DependentHandle::InternalStopTracking, OBJECTHANDLE handle)
 
     _ASSERTE(handle != NULL);
 
-    // Avoid collision with MarshalNative::GCHandleInternalSet
-    FCUnique(0x12);
-
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     mgr->StoreObjectInHandle(handle, NULL);
 }
