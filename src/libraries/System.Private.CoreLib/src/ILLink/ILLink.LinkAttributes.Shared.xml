@@ -102,9 +102,6 @@
     <type fullname="System.Runtime.InteropServices.ComEventInterfaceAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.InteropServices.ComImportAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Runtime.InteropServices.ComSourceInterfacesAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -114,13 +111,7 @@
     <type fullname="System.Runtime.InteropServices.DispIdAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.InteropServices.GuidAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Runtime.InteropServices.InterfaceTypeAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.InteropServices.PreserveSigAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.InteropServices.ProgIdAttribute">
