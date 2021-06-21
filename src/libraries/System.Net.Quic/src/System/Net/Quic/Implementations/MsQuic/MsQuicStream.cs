@@ -412,7 +412,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (abortDirection.HasFlag(QuicAbortDirection.Write))
                 {
-                    completeWrites = _state.SendState == SendState.None;
+                    completeWrites = _state.SendState is SendState.None or SendState.Pending;
                     _state.SendState = SendState.Aborted;
                     flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND;
                 }
@@ -435,7 +435,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (completeWrites)
             {
-                _state.SendResettableCompletionSource.Complete(0);
+                _state.SendResettableCompletionSource.CompleteException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
             }
 
             if (completeReads)
@@ -1044,7 +1044,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             EndOfReadStream,
 
             /// <summary>
-            /// User has aborted the stream, either via a cancellation token on ReadAsync(), or via AbortRead().
+            /// User has aborted the stream, either via a cancellation token on ReadAsync(), or via Abort(read).
             /// </summary>
             Aborted
         }

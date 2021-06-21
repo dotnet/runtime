@@ -22,7 +22,7 @@ namespace System.Net.Quic
         Both = Read | Write,
 
         /// <summary>
-        /// Aborts both the read and write direction of the stream, without waiting for the peer to shutdown their write direction.
+        /// Aborts both the read and write direction of the stream, without waiting for the peer to acknowledge the shutdown.
         /// </summary>
         Immediate = Both | 4
     }
