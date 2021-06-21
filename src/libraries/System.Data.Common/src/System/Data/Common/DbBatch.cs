@@ -14,11 +14,19 @@ namespace System.Data.Common
 
         public abstract int Timeout { get; set; }
 
-        public DbConnection? Connection { get; set; }
+        public DbConnection? Connection
+        {
+            get => DbConnection;
+            set => DbConnection = value;
+        }
 
         protected abstract DbConnection? DbConnection { get; set; }
 
-        public DbTransaction? Transaction { get; set; }
+        public DbTransaction? Transaction
+        {
+            get => DbTransaction;
+            set => DbTransaction = value;
+        }
 
         protected abstract DbTransaction? DbTransaction { get; set; }
 
