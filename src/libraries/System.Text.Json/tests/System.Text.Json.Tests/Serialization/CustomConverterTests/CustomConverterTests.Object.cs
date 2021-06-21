@@ -740,7 +740,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
 
-            string expectedJson = "\"Object\"";
+            string expectedJson = "42";
             string actualJson = JsonSerializer.Serialize(new object(), options);
             Assert.Equal(expectedJson, actualJson);
         }
@@ -749,18 +749,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
-            {
-                if (value?.GetType() == typeof(object))
-                {
-                    // check that serialization for values of
-                    // runtime type object can be customized.
-                    writer.WriteStringValue("Object");
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-            }
+                => writer.WriteNumberValue(42);
         }
     }
 
