@@ -74,7 +74,7 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        internal static string X509GetSubjectSummary(SafeSecCertificateHandle cert)
+        internal static string? X509GetSubjectSummary(SafeSecCertificateHandle cert)
         {
             SafeCFStringHandle subjectSummary;
 
@@ -90,11 +90,12 @@ internal static partial class Interop
                 }
             }
 
-            if (ret != 0)
+            if (ret == 0)
             {
-                Debug.Fail($"Unexpected return value {ret}");
+                return null;
             }
 
+            Debug.Fail($"Unexpected return value {ret}");
             throw new CryptographicException();
         }
 
