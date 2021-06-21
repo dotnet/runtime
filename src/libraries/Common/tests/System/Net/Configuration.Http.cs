@@ -53,7 +53,7 @@ namespace System.Net.Test.Common
             private const string VerifyUploadHandler = "VerifyUpload.ashx";
             private const string DeflateHandler = "Deflate.ashx";
             private const string GZipHandler = "GZip.ashx";
-            private const string RemoteLoopHandler = "remoteLoop";
+            private const string RemoteLoopHandler = "RemoteLoop";
 
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);

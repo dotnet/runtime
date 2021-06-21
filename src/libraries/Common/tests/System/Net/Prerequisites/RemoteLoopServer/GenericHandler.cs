@@ -19,7 +19,7 @@ namespace RemoteLoopServer
         public async Task Invoke(HttpContext context)
         {
             PathString path = context.Request.Path;
-            if (path.Equals(new PathString("/remoteLoop")))
+            if (path.Equals(new PathString("/RemoteLoop")))
             {
                 await RemoteLoopHandler.InvokeAsync(context);
                 return;
