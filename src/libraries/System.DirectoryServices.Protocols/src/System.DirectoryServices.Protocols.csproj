@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
@@ -37,9 +37,8 @@
     <Compile Include="$(CommonPath)Interop\Interop.Ldap.cs">
       <Link>Common\Interop\Interop.Ldap.cs</Link>
     </Compile>
-      <Compile Include="$(CommonPath)System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
-               Link="System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
-               Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+      <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+             Link="Common\System\NativeMemoryHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Windows.cs" />

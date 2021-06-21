@@ -87,9 +87,8 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountSid.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs" />
-    <Compile Include="$(CommonPath)System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
-             Link="System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
-             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+             Link="Common\System\NativeMemoryHelper.cs" />
 
   </ItemGroup>
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">

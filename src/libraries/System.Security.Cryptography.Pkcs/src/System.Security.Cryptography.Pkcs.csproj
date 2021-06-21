@@ -78,9 +78,8 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
-             Link="System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
-             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
+         Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\AsnHelpers.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Asn.cs" />
