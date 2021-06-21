@@ -82,9 +82,9 @@ internal static partial class Interop
                 cert,
                 out subjectSummary);
 
-            if (ret == 1)
+            using (subjectSummary)
             {
-                using (subjectSummary)
+                if (ret == 1)
                 {
                     return CoreFoundation.CFStringToString(subjectSummary);
                 }
