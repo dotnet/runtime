@@ -408,8 +408,8 @@ namespace Internal.Cryptography.Pal
             catch (CryptographicException e) when (subjectSummary != null)
             {
                 string message = SR.Format(
-                SR.Cryptography_X509_CertificateCorrupted,
-                subjectSummary);
+                    SR.Cryptography_X509_CertificateCorrupted,
+                    subjectSummary);
 
                 throw new CryptographicException(message, e);
             }
