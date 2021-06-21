@@ -4,8 +4,10 @@
 using Xunit;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Tests
 {
@@ -139,6 +141,39 @@ namespace System.Tests
                     Assert.False(true, "Signal handler was called.");
                 });
             }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(PosixSignal.SIGINT, true, 0)]
+        [InlineData(PosixSignal.SIGINT, false, 130)]
+        [InlineData(PosixSignal.SIGTERM, true, 0)]
+        [InlineData(PosixSignal.SIGTERM, false, 143)]
+        [InlineData(PosixSignal.SIGQUIT, true, 0)]
+        [InlineData(PosixSignal.SIGQUIT, false, 999)] // TODO: 131
+        public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
+        {
+            RemoteExecutor.Invoke((signalStr, cancelStr) =>
+            {
+                PosixSignal signalArg = Enum.Parse<PosixSignal>(signalStr);
+                bool cancelArg = bool.Parse(cancelStr);
+
+                using SemaphoreSlim semaphore = new(0);
+                using var _ = PosixSignalRegistration.Create(signalArg, ctx =>
+                {
+                    ctx.Cancel = cancelArg;
+
+                    semaphore.Release();
+                });
+
+                kill(signalArg);
+
+                bool entered = semaphore.Wait(Timeout);
+                Assert.True(entered);
+
+                // Give the default signal handler a chance to run.
+                Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(1) : Timeout);
+            }, signal.ToString(), cancel.ToString(),
+               new RemoteInvokeOptions() { ExpectedExitCode = expectedExitCode }).Dispose();
         }
 
         public static TheoryData<PosixSignal> PosixSignalValues
