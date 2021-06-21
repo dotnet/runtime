@@ -53,21 +53,6 @@
     </PropertyGroup>
   </Target>
 
-  <!-- Remove once patches are integrated into the repo -->
-  <Target Name="ApplySourceBuildPatchFiles"
-          AfterTargets="PrepareInnerSourceBuildRepoRoot"
-          BeforeTargets="RunInnerSourceBuildCommand">
-
-    <ItemGroup>
-      <SourceBuildPatchFile Include="$(RepositoryEngineeringDir)source-build-patches\*.patch" />
-    </ItemGroup>
-
-    <Exec
-      Command="git apply --ignore-whitespace --whitespace=nowarn &quot;%(SourceBuildPatchFile.FullPath)&quot;"
-      WorkingDirectory="$(InnerSourceBuildRepoRoot)"
-      Condition="'@(SourceBuildPatchFile)' != ''" />
-  </Target>
-
   <Target Name="CategorizeRuntimeSupplementalArtifacts"
           BeforeTargets="GetCategorizedIntermediateNupkgContents">
     <ItemGroup>
