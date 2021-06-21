@@ -56,31 +56,12 @@ namespace Microsoft.Win32.SafeHandles
 
         private static IntPtr NtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
-            uint ntStatus;
-            IntPtr fileHandle;
+            var vsb = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
-            const string MandatoryNtPrefix = @"\??\";
-            if (fullPath.StartsWith(MandatoryNtPrefix, StringComparison.Ordinal))
-            {
-                (ntStatus, fileHandle) = Interop.NtDll.NtCreateFile(fullPath, mode, access, share, options, preallocationSize);
-            }
-            else
-            {
-                var vsb = new ValueStringBuilder(stackalloc char[256]);
-                vsb.Append(MandatoryNtPrefix);
+            PathInternal.DosToNtPath(fullPath, ref vsb);
 
-                if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
-                {
-                    vsb.Append(fullPath.AsSpan(4));
-                }
-                else
-                {
-                    vsb.Append(fullPath);
-                }
-
-                (ntStatus, fileHandle) = Interop.NtDll.NtCreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
-                vsb.Dispose();
-            }
+            (uint ntStatus, IntPtr fileHandle) = Interop.NtDll.NtCreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
+            vsb.Dispose();
 
             switch (ntStatus)
             {
