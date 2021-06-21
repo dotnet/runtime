@@ -68,7 +68,6 @@
   <ItemGroup>
     <!-- Public libraries and shims -->
     <PlatformManifestFileEntry Include="@(NetCoreAppLibrary->'%(Identity).dll')" />
-    <PlatformManifestFileEntry Include="@(NetCoreAppLibraryNoReference->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="@(NetFxReference->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="netstandard.dll" />
     <!-- Private libraries -->

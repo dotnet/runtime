@@ -251,10 +251,6 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {

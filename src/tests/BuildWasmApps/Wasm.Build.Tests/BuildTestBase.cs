@@ -369,7 +369,7 @@ namespace Wasm.Build.Tests
                 "runtime.js",
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
-                "mono-config.js",
+                "mono-config.json",
                 "dotnet.js",
                 "run-v8.sh"
             });

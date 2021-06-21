@@ -18,6 +18,25 @@
 
 #include "peimagelayout.inl"
 
+#ifndef DACCESS_COMPILE
+VOID FieldDesc::SetStaticOBJECTREF(OBJECTREF objRef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END
+
+    GCPROTECT_BEGIN(objRef);
+    OBJECTREF *pObjRef = (OBJECTREF *)GetCurrentStaticAddress();
+    SetObjectReference(pObjRef, objRef);
+    GCPROTECT_END();
+}
+#endif
+
 // called from code:MethodTableBuilder::InitializeFieldDescs#InitCall
 VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttrs, BOOL fIsStatic, BOOL fIsRVA, BOOL fIsThreadLocal, LPCSTR pszFieldName)
 {

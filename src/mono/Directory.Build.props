@@ -77,11 +77,4 @@
     <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 
-  <!-- Feature defaults for mono.proj and System.Private.CoreLib.csproj -->
-  <PropertyGroup>
-    <!-- default metadata update support for specific platforms -->
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')">true</MonoMetadataUpdate>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">true</MonoMetadataUpdate>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">false</MonoMetadataUpdate>
-  </PropertyGroup>
 </Project>

@@ -455,4 +455,7 @@
   <data name="net_ssl_renegotiate_data" xml:space="preserve">
     <value>Received data during renegotiation.</value>
   </data>
+  <data name="net_android_ssl_api_level_unsupported" xml:space="preserve">
+    <value>Setting an SNI hostname is not supported on this API level.</value>
+  </data>
 </root>
