@@ -1463,6 +1463,10 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync(readBody: false);
+                    if (connection is Http2LoopbackConnection http2Connection)
+                    {
+                        http2Connection.SetupAutomaticPingResponse(); // Respond to RTT PING
+                    }
                     // Send multiple 100-Continue responses.
                     for (int count = 0 ; count < 4; count++)
                     {
@@ -1564,6 +1568,11 @@ namespace System.Net.Http.Functional.Tests
                     await connection.ReadRequestDataAsync(readBody: false);
 
                     await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] {new HttpHeaderData("Content-Length", $"{ResponseString.Length}")}, isFinal : false);
+
+                    if (connection is Http2LoopbackConnection http2Connection)
+                    {
+                        http2Connection.SetupAutomaticPingResponse(); // Respond to RTT PING
+                    }
 
                     byte[] body = await connection.ReadRequestBodyAsync();
                     Assert.Equal(RequestString, Encoding.ASCII.GetString(body));
