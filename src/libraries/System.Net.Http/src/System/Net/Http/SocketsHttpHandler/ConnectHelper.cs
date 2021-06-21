@@ -101,7 +101,6 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]

@@ -423,11 +423,12 @@ public:
                             //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
                             TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
                             CONSISTENCY_CHECK(!fldHnd.IsNull());
-                            pMT = fldHnd.GetMethodTable();	
+                            pMT = fldHnd.GetMethodTable();
+                            FALLTHROUGH;
                         }	
-                        case ELEMENT_TYPE_PTR:	
-                        case ELEMENT_TYPE_I:	
-                        case ELEMENT_TYPE_U:	
+                        case ELEMENT_TYPE_PTR:
+                        case ELEMENT_TYPE_I:
+                        case ELEMENT_TYPE_U:
                         case ELEMENT_TYPE_I4:	
                         case ELEMENT_TYPE_U4:
                         {	
@@ -715,6 +716,11 @@ public:
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
             const bool isValueType = (m_argType == ELEMENT_TYPE_VALUETYPE);
             const bool isFloatHfa = (isValueType && !m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA());
+            if (isFloatHfa)
+            {
+                CorInfoHFAElemType type = m_argTypeHandle.GetHFAType();
+                pLoc->setHFAFieldSize(type);
+            }
             pLoc->m_byteStackSize = StackElemSize(byteArgSize, isValueType, isFloatHfa);
         }
     }

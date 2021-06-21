@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Include="CoreclrTestWrapperLib.cs" />
+    <Compile Include="MobileAppHandler.cs" />
   </ItemGroup>
 
 </Project>

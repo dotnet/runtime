@@ -198,7 +198,7 @@ namespace System
         {
             _objref = null;
             _flags = CV_R4;
-            _data = (uint)BitConverter.SingleToInt32Bits(val);
+            _data = BitConverter.SingleToUInt32Bits(val);
         }
 
         public Variant(double val)
@@ -328,7 +328,7 @@ namespace System
                 CV_U4 => (uint)_data,
                 CV_I8 => _data,
                 CV_U8 => (ulong)_data,
-                CV_R4 => BitConverter.Int32BitsToSingle((int)_data),
+                CV_R4 => BitConverter.UInt32BitsToSingle((uint)_data),
                 CV_R8 => BitConverter.Int64BitsToDouble(_data),
                 CV_DATETIME => new DateTime(_data),
                 CV_TIMESPAN => new TimeSpan(_data),

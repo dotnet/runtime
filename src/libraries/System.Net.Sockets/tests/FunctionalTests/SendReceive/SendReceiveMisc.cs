@@ -76,7 +76,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -117,7 +117,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -190,7 +190,7 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "All data is sent, even when very large (100M).")]
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
@@ -219,7 +219,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {

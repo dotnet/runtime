@@ -1,22 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>{TFM}</TargetFramework>
-    <RuntimeIdentifiers>{RIDs}</RuntimeIdentifiers>
+    <TargetFrameworks>{TargetFrameworks}</TargetFrameworks>
     <TestPackageId>{PackageId}</TestPackageId>
-    <TestPackageVersion>{PackageVersion}</TestPackageVersion>
+
+    <!-- Restore settings -->
+    <RestorePackagesPath>{RestorePackagesPath}</RestorePackagesPath>
+    <RestoreAdditionalProjectSources>{RestoreAdditionalProjectSources}</RestoreAdditionalProjectSources>
+
+    <!-- Used in targetingpacks.targets -->
+    <NetCoreAppCurrentVersion>{NetCoreAppCurrentVersion}</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrent>{NetCoreAppCurrent}</NetCoreAppCurrent>
+    <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
+    <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
+
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
-    <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
-
-    <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\support</SupportFilesDir>
+    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
   </ItemGroup>
 
-  <Import Project="$(SupportFilesDir)\packageTest.targets" />
 </Project>

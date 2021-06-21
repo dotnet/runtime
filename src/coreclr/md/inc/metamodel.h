@@ -594,6 +594,7 @@ public:
 
 
 protected:
+    DAC_ALIGNAS(8)
     CMiniMdSchema   m_Schema;                       // data header.
     ULONG           m_TblCount;                     // Tables in this database.
     BOOL            m_fVerifiedByTrustedSource;     // whether the data was verified by a trusted source
