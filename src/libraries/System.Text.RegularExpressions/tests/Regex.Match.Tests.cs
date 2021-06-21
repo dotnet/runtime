@@ -1180,7 +1180,8 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Test()
         {
-            var regex = new Regex(".*foo");
+            Debugger.Launch();
+            var regex = new Regex(".*Foo", RegexOptions.IgnoreCase);
             var match = regex.Match("aBfoo");
             Assert.True(match.Success);
         }
