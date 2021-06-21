@@ -57,7 +57,14 @@ internal static partial class Interop
 
             if (ret == 1)
             {
-                return CoreFoundation.CFGetData(data);
+                try
+                {
+                    return CoreFoundation.CFGetData(data);
+                }
+                finally
+                {
+                    data.Dispose();
+                }
             }
 
             if (ret == 0)
