@@ -55,18 +55,21 @@ internal static partial class Interop
                 out data,
                 out osStatus);
 
-            if (ret == 1)
+            using (data)
             {
-                return CoreFoundation.CFGetData(data);
-            }
+                if (ret == 1)
+                {
+                    return CoreFoundation.CFGetData(data);
+                }
 
-            if (ret == 0)
-            {
-                throw CreateExceptionForOSStatus(osStatus);
-            }
+                if (ret == 0)
+                {
+                    throw CreateExceptionForOSStatus(osStatus);
+                }
 
-            Debug.Fail($"Unexpected return value {ret}");
-            throw new CryptographicException();
+                Debug.Fail($"Unexpected return value {ret}");
+                throw new CryptographicException();
+            }
         }
 
         internal static SafeSecKeyRefHandle X509GetPrivateKeyFromIdentity(SafeSecIdentityHandle identity)
