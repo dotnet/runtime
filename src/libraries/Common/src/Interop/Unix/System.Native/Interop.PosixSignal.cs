@@ -11,7 +11,7 @@ internal static partial class Interop
         [SuppressGCTransition]
         internal static extern unsafe void SetPosixSignalHandler(delegate* unmanaged<int, PosixSignal, int> handler);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnablePosixSignalHandling")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnablePosixSignalHandling", SetLastError = true)]
         internal static extern bool EnablePosixSignalHandling(int signal);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DisablePosixSignalHandling")]
