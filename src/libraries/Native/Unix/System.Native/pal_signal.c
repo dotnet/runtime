@@ -339,7 +339,7 @@ static void CloseSignalHandlingPipe()
     g_signalPipe[1] = -1;
 }
 
-static void InstallSignalHandler(int sig)
+static void InstallSignalHandler(int sig, int flags)
 {
     int rv;
     (void)rv; // only used for assert
@@ -366,7 +366,7 @@ static void InstallSignalHandler(int sig)
 
     struct sigaction newAction;
     memset(&newAction, 0, sizeof(struct sigaction));
-    newAction.sa_flags = SA_RESTART | SA_SIGINFO;
+    newAction.sa_flags = flags | SA_SIGINFO;
     sigemptyset(&newAction.sa_mask);
     newAction.sa_sigaction = &SignalHandler;
 
@@ -384,9 +384,9 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
     {
         g_terminalInvalidationCallback = callback;
 
-        InstallSignalHandler(SIGCONT);
-        InstallSignalHandler(SIGCHLD);
-        InstallSignalHandler(SIGWINCH);
+        InstallSignalHandler(SIGCONT, SA_RESTART);
+        InstallSignalHandler(SIGCHLD, SA_RESTART);
+        InstallSignalHandler(SIGWINCH, SA_RESTART);
     }
     pthread_mutex_unlock(&lock);
 }
@@ -400,7 +400,7 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
     {
         g_sigChldCallback = callback;
 
-        InstallSignalHandler(SIGCHLD);
+        InstallSignalHandler(SIGCHLD, SA_RESTART);
     }
     pthread_mutex_unlock(&lock);
 }
@@ -487,7 +487,7 @@ void SystemNative_EnablePosixSignalHandling(int signalCode)
 
     pthread_mutex_lock(&lock);
     {
-        InstallSignalHandler(signalCode);
+        InstallSignalHandler(signalCode, SA_RESTART);
 
         g_hasPosixSignalRegistrations[signalCode - 1] = true;
     }
@@ -521,7 +521,15 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
         assert(g_consoleTtouHandler == NULL);
         g_consoleTtouHandler = handler;
 
-        InstallSignalHandler(SIGTTOU);
+        // When the process is running in background, changing terminal settings
+        // will stop it (default SIGTTOU action).
+        // We change SIGTTOU's disposition to get EINTR instead.
+        // This thread may be used to run a signal handler, which may write to
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // on EINTR when the process is running in background and the terminal
+        // configured with TOSTOP.
+        RestoreSignalHandler(SIGTTOU);
+        InstallSignalHandler(SIGTTOU, (int)SA_RESETHAND);
     }
     pthread_mutex_unlock(&lock);
 }
@@ -532,10 +540,10 @@ void UninstallTTOUHandlerForConsole(void)
     {
         g_consoleTtouHandler = NULL;
 
-        // Don't restore SIGTTOU while there are PosixSignal registrations.
-        if (!g_hasPosixSignalRegistrations[SIGTTOU - 1])
+        RestoreSignalHandler(SIGTTOU);
+        if (g_hasPosixSignalRegistrations[SIGTTOU - 1])
         {
-            RestoreSignalHandler(SIGTTOU);
+            InstallSignalHandler(SIGTTOU, SA_RESTART);
         }
     }
     pthread_mutex_unlock(&lock);
