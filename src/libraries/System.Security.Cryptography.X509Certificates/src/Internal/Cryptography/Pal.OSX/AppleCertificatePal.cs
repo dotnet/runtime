@@ -405,8 +405,13 @@ namespace Internal.Cryptography.Pal
             {
                 _certData = new CertificateData(Interop.AppleCrypto.X509GetRawData(_certHandle));
             }
-            catch (CryptographicException e) when (subjectSummary != null)
+            catch (CryptographicException e)
             {
+                if (subjectSummary is null)
+                {
+                    throw;
+                }
+                
                 string message = SR.Format(
                     SR.Cryptography_X509_CertificateCorrupted,
                     subjectSummary);
