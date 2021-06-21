@@ -56,6 +56,15 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => CreateFileStream(path, FileMode.Open));
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(FileMode.Open)]
+        [InlineData(FileMode.Create)]
+        public void InvalidFilePathThrowsIOException(FileMode fileMode)
+        {
+            Assert.Throws<IOException>(() => CreateFileStream(@"\\.\COM56", fileMode));
+        }
+
         public static TheoryData<string> StreamSpecifiers
         {
             get
