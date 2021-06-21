@@ -1492,7 +1492,7 @@ namespace Internal.JitInterface
                 {
                     if (_compilation.AllowCompileTimeStaticVirtualMethodResolution(constrainedType, originalMethod, exactType))
                     {
-                        directMethod = constrainedType.ResolveInterfaceMethodToStaticVirtualMethodOnType(originalMethod, exactType, allowVariantMatches: true);
+                        directMethod = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(originalMethod);
                     }
                     else
                     {
