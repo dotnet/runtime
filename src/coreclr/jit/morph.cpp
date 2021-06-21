@@ -13668,47 +13668,6 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
 
     if (ival2 != INT_MAX)
     {
-        // If we don't have a comma and relop, we can't do this optimization
-        if (fgGlobalMorph && op1->OperIs(GT_COMMA) && op1->AsOp()->gtGetOp2()->OperIsCompare())
-        {
-            // Here we look for the following transformation
-            //
-            //                  EQ/NE                    Possible REVERSE(RELOP)
-            //                  /  \                           /      \.
-            //               COMMA CNS 0/1             ->   COMMA   relopOp2
-            //              /   \                          /    \.
-            //             x  RELOP                       x   relopOp1
-            //               /    \.
-            //         relopOp1  relopOp2
-
-            GenTreeOp* comma    = op1->AsOp();
-            GenTreeOp* relop    = comma->gtGetOp2()->AsOp();
-            GenTree*   relopOp1 = relop->gtGetOp1();
-
-            noway_assert(!comma->IsReverseOp());
-            noway_assert(!relop->IsReverseOp());
-
-            bool reverse = ((ival2 == 0) == cmp->OperIs(GT_EQ));
-
-            if (reverse)
-            {
-                gtReverseCond(relop);
-            }
-
-            relop->gtOp1 = comma;
-            comma->gtOp2 = relopOp1;
-
-            // Comma now has fewer nodes underneath it, so we need to regenerate its flags
-            comma->gtFlags &= ~GTF_ALL_EFFECT;
-            comma->gtFlags |= comma->gtGetOp1()->gtFlags & GTF_ALL_EFFECT;
-            comma->gtFlags |= comma->gtGetOp2()->gtFlags & GTF_ALL_EFFECT;
-
-            noway_assert((relop->gtFlags & GTF_RELOP_JMP_USED) == 0);
-            relop->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE | GTF_ALL_EFFECT);
-
-            return relop;
-        }
-
         if (op1->OperIsCompare())
         {
             // Here we look for the following tree
