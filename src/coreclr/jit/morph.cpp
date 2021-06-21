@@ -13669,7 +13669,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
     if (ival2 != INT_MAX)
     {
         // If we don't have a comma and relop, we can't do this optimization
-        if (op1->OperIs(GT_COMMA) && op1->AsOp()->gtGetOp2()->OperIsCompare())
+        if (fgGlobalMorph && op1->OperIs(GT_COMMA) && op1->AsOp()->gtGetOp2()->OperIsCompare())
         {
             // Here we look for the following transformation
             //
@@ -13684,6 +13684,9 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
             GenTreeOp* comma    = op1->AsOp();
             GenTreeOp* relop    = comma->gtGetOp2()->AsOp();
             GenTree*   relopOp1 = relop->gtGetOp1();
+
+            noway_assert(!comma->IsReverseOp());
+            noway_assert(!relop->IsReverseOp());
 
             bool reverse = ((ival2 == 0) == cmp->OperIs(GT_EQ));
 
@@ -13701,7 +13704,6 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
             comma->gtFlags |= comma->gtGetOp2()->gtFlags & GTF_ALL_EFFECT;
 
             noway_assert((relop->gtFlags & GTF_RELOP_JMP_USED) == 0);
-            noway_assert((relop->gtFlags & GTF_REVERSE_OPS) == 0);
             relop->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE | GTF_ALL_EFFECT);
 
             return relop;
