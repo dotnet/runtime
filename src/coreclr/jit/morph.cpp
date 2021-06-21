@@ -13649,6 +13649,8 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
 
             op1 = cmp->gtOp1 = op1->AsOp()->gtGetOp1();
         }
+
+        fgUpdateConstTreeValueNumber(cns2);
     }
 
     // Here we look for the following tree
