@@ -261,9 +261,9 @@ var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 	config: null,
 
-  preInit: async function() {
-    Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
-  },
+	preInit: async function() {
+		Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+	},
 
 	onAbort: function(x) {
 		console.log ("ABORT: " + x);
@@ -409,10 +409,7 @@ const App = {
 // load the config and runtime files which will start the runtime init and subsiquently the tests
 // uses promise chain as loading is async but we can't use await here
 IOHandler
-	.load ("mono-config.js")
-	.then(function () {
-		IOHandler.load ("dotnet.js");
-	})
+	.load ("dotnet.js")
 	.catch(function(err) {
 		console.error(err);
 		fail_exec("failed to load the mono-config.js or dotnet.js files");
