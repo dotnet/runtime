@@ -1674,8 +1674,9 @@ var BindingSupportLib = {
 
 		},
 		mono_wasm_convert_return_value: function (ret) {
+			var res = this.js_to_mono_obj (ret);
 			this.mono_wasm_unwind_LMF();
-			return this.js_to_mono_obj (ret);
+			return res;
 		},
 	},
 
