@@ -68,11 +68,11 @@ namespace System.Net.Test.Common
 
         public SocketWrapper(Socket socket)
         {
-            this._socket = socket; _websocket = null;
+            _socket = socket;
         }
         public SocketWrapper(WebSocket websocket)
         {
-            this._socket = null; _websocket = websocket;
+            _websocket = websocket;
         }
 
         public void Dispose()

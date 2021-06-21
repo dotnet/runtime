@@ -199,7 +199,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using HttpClientHandler handler = CreateHttpClientHandler();
-            if(PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotBrowser)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
@@ -277,7 +277,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var options = new LoopbackServer.Options { Address = address, UseSsl= useSsl };
+            var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };
             bool connectionAccepted = false;
             string host = "";
 
@@ -410,7 +410,7 @@ namespace System.Net.Http.Functional.Tests
                     var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray), Version = UseVersion };
 
                     request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("utf-8"));
                         request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
@@ -426,7 +426,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
                     request.Content.Headers.ContentLength = contentArray.Length;
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
                     }
@@ -451,7 +451,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("deflate"));
                     request.Headers.Trailer.Add("MyTrailer");
                     request.Headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         request.Headers.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue("Mozilla", "5.0")));
                         request.Headers.Upgrade.Add(new ProductHeaderValue("HTTPS", "1.3"));
@@ -494,7 +494,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(content, Encoding.ASCII.GetString(requestData.Body));
 
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         Assert.Equal("utf-8", requestData.GetSingleHeaderValue("Accept-Charset"));
                         Assert.Equal("gzip, deflate", requestData.GetSingleHeaderValue("Accept-Encoding"));
@@ -506,7 +506,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("12", requestData.GetSingleHeaderValue("Age"));
                     Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Authorization"));
                     Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Cache-Control"));
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         Assert.Equal("$Version=1; Skin=new", requestData.GetSingleHeaderValue("Cookie"));
                         Assert.Equal("Tue, 15 Nov 1994 08:12:31 GMT", requestData.GetSingleHeaderValue("Date"));
@@ -556,7 +556,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(0, requestData.GetHeaderValueCount("Connection"));
                         Assert.Equal(0, requestData.GetHeaderValueCount("Transfer-Encoding"));
                     }
-                    else if(PlatformDetection.IsNotBrowser)
+                    else if (PlatformDetection.IsNotBrowser)
                     {
                         // Verify HTTP/1.x headers
                         Assert.Equal("close", requestData.GetSingleHeaderValue("Connection"), StringComparer.OrdinalIgnoreCase); // NetFxHandler uses "Close" vs "close"
@@ -594,7 +594,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Equal("1.1", resp.Version.ToString());
                     Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         Assert.Contains("*", resp.Headers.GetValues("Access-Control-Allow-Origin"));
                     }
@@ -613,7 +613,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("gzip", resp.Content.Headers.ContentEncoding);
                     Assert.Contains("da", resp.Content.Headers.ContentLanguage);
                     Assert.Equal(new Uri("/index.htm", UriKind.Relative), resp.Content.Headers.ContentLocation);
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         Assert.Equal(Convert.FromBase64String("Q2hlY2sgSW50ZWdyaXR5IQ=="), resp.Content.Headers.ContentMD5);
                     }
@@ -636,7 +636,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(TimeSpan.FromSeconds(120), resp.Headers.RetryAfter.Delta.GetValueOrDefault());
                     Assert.Contains(new ProductInfoHeaderValue("Apache", "2.4.1"), resp.Headers.Server);
 
-                    if(PlatformDetection.IsNotBrowser)
+                    if (PlatformDetection.IsNotBrowser)
                     {
                         Assert.Contains("UserID=JohnDoe; Max-Age=3600; Version=1", resp.Headers.GetValues("Set-Cookie"));
                     }
