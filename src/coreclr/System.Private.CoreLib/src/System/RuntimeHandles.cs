@@ -466,7 +466,7 @@ namespace System
             if (isGenericCOM)
                 return type == typeof(__ComObject);
 
-            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject).UnderlyingSystemType);
+            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
 #else
             return false;
 #endif
