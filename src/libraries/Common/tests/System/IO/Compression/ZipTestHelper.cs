@@ -65,6 +65,17 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        public static int ReadAllBytes(Stream stream, byte[] buffer, int offset, int count)
+        {
+            int bytesRead;
+            int totalRead = 0;
+            while ((bytesRead = stream.Read(buffer, offset + totalRead, count - totalRead)) != 0)
+            {
+                totalRead += bytesRead;
+            }
+            return totalRead;
+        }
+
         public static bool ArraysEqual<T>(T[] a, T[] b) where T : IComparable<T>
         {
             if (a.Length != b.Length) return false;
@@ -111,8 +122,8 @@ namespace System.IO.Compression.Tests
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
                     break;
 
-                ac = ast.Read(ad, 0, 4096);
-                bc = bst.Read(bd, 0, 4096);
+                ac = ReadAllBytes(ast, ad, 0, 4096);
+                bc = ReadAllBytes(bst, bd, 0, 4096);
 
                 if (ac != bc)
                 {
@@ -170,7 +181,7 @@ namespace System.IO.Compression.Tests
                         var buffer = new byte[entry.Length];
                         using (Stream entrystream = entry.Open())
                         {
-                            entrystream.Read(buffer, 0, buffer.Length);
+                            ReadAllBytes(entrystream, buffer, 0, buffer.Length);
 #if NETCOREAPP
                             uint zipcrc = entry.Crc32;
                             Assert.Equal(CRC.CalculateCRC(buffer), zipcrc);

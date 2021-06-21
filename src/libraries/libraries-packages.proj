@@ -21,8 +21,8 @@
   <!-- Need the PackageIndexFile file property from baseline.props -->
   <Import Project="$(PkgDir)baseline\baseline.props" />
 
-  <!-- Calculate PackageDownload items for restore. -->
-  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+  <!-- Calculate PackageDownload items for restore. Skip this logic during source build to avoid pre-builts. -->
+  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != '' and '$(DotNetBuildFromSource)' != 'true'" />
 
   <!--
     Updates the package index to mark all packages we are building that can go stable as stable.

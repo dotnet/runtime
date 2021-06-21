@@ -264,7 +264,7 @@ const TblIndex g_TblIndex[TBL_COUNT] =
     {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // PropertyPtr
     {(ULONG) -1,        (ULONG) -1,     mdtProperty},       // Property
     {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // MethodSemantics
-    {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // MethodImpl
+    {(ULONG) -1,        (ULONG) -1,     mdtMethodImpl},     // MethodImpl
     {(ULONG) -1,        (ULONG) -1,     mdtModuleRef},      // ModuleRef
     {(ULONG) -1,        (ULONG) -1,     mdtTypeSpec},       // TypeSpec
     {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // ImplMap  <TODO>@FUTURE:  Check that these are the right entries here.</TODO>
@@ -280,7 +280,7 @@ const TblIndex g_TblIndex[TBL_COUNT] =
     {(ULONG) -1,        (ULONG) -1,     mdtFile},           // File <TODO>@FUTURE: Update with the right number.</TODO>
     {(ULONG) -1,        (ULONG) -1,     mdtExportedType},   // ExportedType <TODO>@FUTURE: Update with the right number.</TODO>
     {(ULONG) -1,        (ULONG) -1,     mdtManifestResource},// ManifestResource <TODO>@FUTURE: Update with the right number.</TODO>
-    {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // NestedClass
+    {(ULONG) -1,        (ULONG) -1,     mdtNestedClass},    // NestedClass
     {(ULONG) -1,        (ULONG) -1,     mdtGenericParam},   // GenericParam
     {(ULONG) -1,        (ULONG) -1,     mdtMethodSpec},     // MethodSpec
     {(ULONG) -1,        (ULONG) -1,     mdtGenericParamConstraint},// GenericParamConstraint

@@ -216,11 +216,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
                 if (fill == 0)
                 {
-                    // If the size is multiple of XMM register size there's no need to load 0 in a GPR,
-                    // codegen will use xorps to generate 0 directly in the temporary XMM register.
-                    if ((size % XMM_REGSIZE_BYTES) == 0)
+                    if (size >= XMM_REGSIZE_BYTES)
                     {
-                        src->SetContained();
+                        const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
+#ifdef TARGET_AMD64
+                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % 16 == 0);
+#else
+                        const bool willUseOnlySimdMov = (size % 8 == 0);
+#endif
+                        if (willUseOnlySimdMov)
+                        {
+                            src->SetContained();
+                        }
                     }
                 }
 #ifdef TARGET_AMD64
@@ -6347,7 +6354,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 break;
                             }
-
+                            case NI_AVXVNNI_MultiplyWideningAndAdd:
+                            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op3);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    op3->SetRegOptional();
+                                }
+                                break;
+                            }
                             case NI_BMI2_MultiplyNoFlags:
                             case NI_BMI2_X64_MultiplyNoFlags:
                             {

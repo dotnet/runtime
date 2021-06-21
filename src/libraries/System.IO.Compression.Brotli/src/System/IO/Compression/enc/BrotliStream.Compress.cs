@@ -68,8 +68,8 @@ namespace System.IO.Compression
             Span<byte> output = new Span<byte>(_buffer);
             while (lastResult == OperationStatus.DestinationTooSmall)
             {
-                int bytesConsumed = 0;
-                int bytesWritten = 0;
+                int bytesConsumed;
+                int bytesWritten;
                 lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock);
                 if (lastResult == OperationStatus.InvalidData)
                     throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
@@ -176,7 +176,7 @@ namespace System.IO.Compression
                 Span<byte> output = new Span<byte>(_buffer);
                 while (lastResult == OperationStatus.DestinationTooSmall)
                 {
-                    int bytesWritten = 0;
+                    int bytesWritten;
                     lastResult = _encoder.Flush(output, out bytesWritten);
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidDataException(SR.BrotliStream_Compress_InvalidData);
