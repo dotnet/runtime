@@ -455,6 +455,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
+                _rttEstimator?.OnDataOrHeadersReceived();
                 headersHandler = http2Stream;
             }
             else
@@ -590,7 +591,7 @@ namespace System.Net.Http
 
                 if (!endStream && frameData.Length > 0)
                 {
-                    _rttEstimator?.OnDataReceived();
+                    _rttEstimator?.OnDataOrHeadersReceived();
                 }
             }
 
@@ -2003,7 +2004,7 @@ namespace System.Net.Http
         {
             if (payload < 0) // RTT ping
             {
-                _rttEstimator?.OnPingAck(payload);
+                _rttEstimator?.OnPingAckReceived(payload);
                 return;
             }
             else // Keepalive ping

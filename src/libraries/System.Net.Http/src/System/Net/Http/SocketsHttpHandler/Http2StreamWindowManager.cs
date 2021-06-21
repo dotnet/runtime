@@ -168,7 +168,7 @@ namespace System.Net.Http
                 _status = Status.Waiting;
             }
 
-            internal void OnDataReceived()
+            internal void OnDataOrHeadersReceived()
             {
                 if (_staticRtt.HasValue) return;
 
@@ -190,7 +190,7 @@ namespace System.Net.Http
                 }
             }
 
-            internal void OnPingAck(long payload)
+            internal void OnPingAckReceived(long payload)
             {
                 Debug.Assert(payload < 0);
                 if (_staticRtt.HasValue) return;
