@@ -161,7 +161,7 @@ namespace System.IO
 #if NETFRAMEWORK
             bool isWindows = true;
 #else
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()) // OSes that don't support Process.Start()
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser()) // OSes that don't support Process.Start()
             {
                 return false;
             }
