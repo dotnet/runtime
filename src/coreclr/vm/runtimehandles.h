@@ -191,7 +191,6 @@ public:
     static
     BOOL QCALLTYPE IsVisible(QCall::TypeHandle pTypeHandle);
 
-    static FCDECL1(FC_BOOL_RET, IsComWrapperClass, ReflectClassBaseObject *pType);
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
 

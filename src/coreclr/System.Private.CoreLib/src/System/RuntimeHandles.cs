@@ -466,14 +466,11 @@ namespace System
             if (isGenericCOM)
                 return type == typeof(__ComObject);
 
-            return IsComWrapperClass(type);
+            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject).UnderlyingSystemType);
 #else
             return false;
 #endif
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComWrapperClass(RuntimeType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInterface(RuntimeType type);
