@@ -1490,7 +1490,7 @@ namespace Internal.JitInterface
                 MethodDesc directMethod;
                 if (originalMethod.Signature.IsStatic)
                 {
-                    if (_compilation.AllowCompileTimeStaticVirtualMethodResolution(constrainedType, originalMethod, exactType))
+                    if (_compilation.AllowCompileTimeStaticVirtualMethodResolution(constrainedType, originalMethod))
                     {
                         directMethod = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(originalMethod);
                     }

@@ -208,20 +208,19 @@ namespace ILCompiler
         /// </summary>
         /// <param name="currentType">Type constraint in the static virtual method </param>
         /// <param name="interfaceMethod">Static virtual interface method to resolve</param>
-        /// <param name="interfaceType">Exact interface type for the static virtual method</param>
-        public bool AllowCompileTimeStaticVirtualMethodResolution(TypeDesc currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        public bool AllowCompileTimeStaticVirtualMethodResolution(TypeDesc currentType, MethodDesc interfaceMethod)
         {
             Debug.Assert(interfaceMethod.IsVirtual);
             Debug.Assert(interfaceMethod.Signature.IsStatic);
-            Debug.Assert(interfaceType.IsInterface);
+            Debug.Assert(interfaceMethod.OwningType.IsInterface);
             Debug.Assert(!currentType.IsInterface);
 
-            return AllowCompileTimeStaticVirtualMethodResolution(currentType.GetClosestDefType(), interfaceMethod, interfaceType);
+            return AllowCompileTimeStaticVirtualMethodResolution(currentType.GetClosestDefType(), interfaceMethod);
         }
 
-        protected virtual bool AllowCompileTimeStaticVirtualMethodResolution(DefType currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        protected virtual bool AllowCompileTimeStaticVirtualMethodResolution(DefType currentType, MethodDesc interfaceMethod)
         {
-            if (interfaceMethod.IsSharedByGenericInstantiations || interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (interfaceMethod.IsSharedByGenericInstantiations || interfaceMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 return false;
             }
@@ -230,8 +229,8 @@ namespace ILCompiler
             // we cannot exactly compute a target method result, as even if there is an exact match in the type hierarchy
             // it isn't guaranteed that we will always find the right result, as we may find a match on a base type when we should find the match
             // on a more derived type.
-            TypeDesc interfaceTypeCanonical = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            if (interfaceType != interfaceTypeCanonical)
+            TypeDesc interfaceTypeCanonical = interfaceMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (interfaceMethod.OwningType != interfaceTypeCanonical)
             {
                 foreach (DefType runtimeInterface in currentType.RuntimeInterfaces)
                 {

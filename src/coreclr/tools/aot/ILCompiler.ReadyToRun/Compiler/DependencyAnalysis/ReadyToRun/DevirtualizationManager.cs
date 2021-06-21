@@ -219,21 +219,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             NotApplicable,
         }
 
-        protected override bool AllowCompileTimeStaticVirtualMethodResolution(DefType currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        protected override bool AllowCompileTimeStaticVirtualMethodResolution(DefType currentType, MethodDesc interfaceMethod)
         {
-            if (!base.AllowCompileTimeStaticVirtualMethodResolution(currentType, interfaceMethod, interfaceType))
+            if (!base.AllowCompileTimeStaticVirtualMethodResolution(currentType, interfaceMethod))
             {
                 return false;
             }
 
-            return AllowCompileTimeStaticVirtualMethodResolutionRecursive(currentType, interfaceMethod, interfaceType) != SVMResolutionEligibility.Forbid;
+            return AllowCompileTimeStaticVirtualMethodResolutionRecursive(currentType, interfaceMethod) != SVMResolutionEligibility.Forbid;
         }
 
-        private SVMResolutionEligibility AllowCompileTimeStaticVirtualMethodResolutionRecursive(DefType currentType, MethodDesc interfaceMethod, TypeDesc interfaceType)
+        private SVMResolutionEligibility AllowCompileTimeStaticVirtualMethodResolutionRecursive(DefType currentType, MethodDesc interfaceMethod)
         {
             if (currentType.HasBaseType)
             {
-                SVMResolutionEligibility allowParent = AllowCompileTimeStaticVirtualMethodResolutionRecursive(currentType.BaseType, interfaceMethod, interfaceType);
+                SVMResolutionEligibility allowParent = AllowCompileTimeStaticVirtualMethodResolutionRecursive(currentType.BaseType, interfaceMethod);
                 if (allowParent == SVMResolutionEligibility.Forbid)
                 {
                     return SVMResolutionEligibility.Forbid;
@@ -246,9 +246,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (DefType runtimeInterface in currentType.RuntimeInterfaces)
             {
-                if (runtimeInterface == interfaceType)
+                if (runtimeInterface == interfaceMethod.OwningType)
                 {
-                    return _compilationModuleGroup.VersionsWithType(interfaceType) ? SVMResolutionEligibility.Allow : SVMResolutionEligibility.Forbid;
+                    return _compilationModuleGroup.VersionsWithType(interfaceMethod.OwningType) ? SVMResolutionEligibility.Allow : SVMResolutionEligibility.Forbid;
                 }
             }
 
