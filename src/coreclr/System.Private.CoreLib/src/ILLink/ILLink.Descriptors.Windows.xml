@@ -4,5 +4,7 @@
     <type fullname="System.Runtime.InteropServices.IDispatch" />
     <type fullname="System.Runtime.InteropServices.IMarshal" />
     <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
+    <!-- ComActivator is needed for native host operations -->
+    <type fullname="Internal.Runtime.InteropServices.ComActivator" />
   </assembly>
 </linker>
