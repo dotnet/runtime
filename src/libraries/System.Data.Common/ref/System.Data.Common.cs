@@ -2421,7 +2421,7 @@ namespace System.Data.Common
         public virtual bool IsTransient { get { throw null; } }
         public virtual string? SqlState { get { throw null; } }
         public System.Data.Common.DbBatchCommand? BatchCommand { get { throw null; } }
-        public virtual System.Data.Common.DbBatchCommand? DbBatchCommand { get { throw null; } }
+        protected virtual System.Data.Common.DbBatchCommand? DbBatchCommand { get { throw null; } }
     }
     public static partial class DbMetaDataCollectionNames
     {

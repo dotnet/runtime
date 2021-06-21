@@ -44,6 +44,6 @@ namespace System.Data.Common
 
         public DbBatchCommand? BatchCommand => DbBatchCommand;
 
-        public virtual DbBatchCommand? DbBatchCommand { get; }
+        protected virtual DbBatchCommand? DbBatchCommand => null;
     }
 }
