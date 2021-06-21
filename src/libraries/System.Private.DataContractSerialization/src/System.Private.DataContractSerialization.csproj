@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0</TargetFrameworks>
@@ -15,8 +15,9 @@
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
-             Link="Common\System\NativeMemoryHelper.cs" />
+    <Compile Include="$(CommonPath)System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
+             Link="System\\Runtime\\InteropServices\\NativeMemory.netstandard.cs"
+             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
     <Compile Include="AudioFormat\AudioFormatConverter.cs" />
