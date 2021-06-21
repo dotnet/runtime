@@ -32,6 +32,8 @@ Initial implementation allowed the compiler to find most of these. The strategy 
 
 ### Type Layout
 
+The DAC is essentially a memory parsing tool with supporting functionality. The layout of types in the DAC must match the layout of types in the runtime.
+
 The `C++` standard is not explicit about all layout rules of data structures. Due to its historical evolution from `C`, most structures are arranged in an intuitive easily understood fashion. Newer and more exotic structures are less consistent.
 
 Experimentation has shown that layout varies in inheritance cases. The DAC does not support general multiple inheritance, so that simplifies things. It does support multiple inheritance with the empty base classes.
@@ -65,6 +67,31 @@ I usually ran the tool in a debugger so that I could look at other available met
 
 There are some cases where types are defined by the Target. These types maybe missing or different on the Host. In these cases we define the cross compilation types in `src/coreclr/inc/crosscomp.h`.
 
-See `T_CRITICAL_SECTION` for an example. In this case both host and target supported critical sections, but we needed to correctly map the target data structures. So we needed a type defined which was the TARGET's `CRITICAL_SECTION`.
+See `T_CRITICAL_SECTION` for a key example. In this case both host and target supported critical sections, but we needed to correctly map the target data structures. So we needed a type defined which was the TARGET's `CRITICAL_SECTION`.
 
-So the Target's definition was made available for the cross compile. Additionally the macro was created to make sure references which required the Target's definition could be separated from (hypothetical?) ones which might need the host's definition.
+So the Target's definition was made available for the cross compile. Additionally the macro was created to make sure references which required the Target's definition could be separated from ones which might need the host's definition.
+
+There is also some defensive programming to make sure these structures accurate. See `T_CRITICAL_SECTION_VALIDATION_MESSAGE` for one example.
+
+### Out of Process Unwinding
+
+To fully support native stack processing, we needed a Target unwinder. For this `libunwind` was also cross-compiled.
+
+See [CMake cross libunwind](https://github.com/dotnet/runtime/blob/0049c629381c5a18e4dadd1038c2bd6b3ae6e3e6/src/coreclr/CMakeLists.txt#L113)
+
+### DBI
+
+I use the term `DAC` in this document to refer to both the `DAC` and the `DBI` debug interface. Both were actually cross compiled. Be aware.
+
+### Build entry point
+
+The main build systme change is adding the ability to set the Target OS on a Windows build.
+
+- See [build-runtime.cmd changes](https://github.com/dotnet/runtime/blob/0049c629381c5a18e4dadd1038c2bd6b3ae6e3e6/src/coreclr/build-runtime.cmd#L133-L134)
+- See [Subsets.props](https://github.com/dotnet/runtime/blob/0049c629381c5a18e4dadd1038c2bd6b3ae6e3e6/eng/Subsets.props#L191-L197)
+
+There are also changes to the official build to set these flags package the results and upload to the symbol server.
+
+### Client changes
+
+Various changes were required in the DAC clients to consume the new crossdac. These are really out of the scope of this document.
