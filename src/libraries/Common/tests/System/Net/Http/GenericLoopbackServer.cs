@@ -99,6 +99,7 @@ namespace System.Net.Test.Common
                 try
                 {
                     var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
+                    // Block and wait for the task to complete synchronously
                     Task.WaitAll(task);
                 }
                 catch (Exception)
