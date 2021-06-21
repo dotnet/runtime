@@ -4,7 +4,7 @@
     <RootNamespace>Microsoft.Extensions.FileProviders.Physical</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">true</IgnoreForCI>
   </PropertyGroup>
 
   <ItemGroup>

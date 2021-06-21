@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Test on same targets as System.Net.Socket.Tests -->
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />

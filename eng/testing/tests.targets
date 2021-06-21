@@ -4,13 +4,13 @@
     <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
 
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or (('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <RunScriptHostDir Condition="'$(TargetOS)' == 'windows'">%RUNTIME_PATH%\</RunScriptHostDir>
@@ -35,19 +35,19 @@
     <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
     because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
     an empty zip because we haven't published the selfcontained app.  -->
-    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'" />
+    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node')"
           AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />
@@ -64,7 +64,7 @@
     <PropertyGroup>
       <!-- RSP file support. -->
       <RunScriptCommand Condition="'$(TargetOS)' != 'windows' and ('$(TargetOS)' != 'Browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
-      <RunScriptCommand Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(TargetOS)' == 'windows' or (('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
@@ -108,7 +108,7 @@
                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(NetCoreAppCurrentTestHostPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS.ToLowerInvariant()) $(TestProjectName) $(AdditionalXHarnessArguments)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->

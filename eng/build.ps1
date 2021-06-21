@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Android","Browser")][string]$os,
+  [ValidateSet("windows","Linux","OSX","Android","Browser", "Node")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -37,7 +37,7 @@ function Get-Help() {
   Write-Host "  -help (-h)                     Print help and exit."
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android or Browser."
+  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android, Browser or Node."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -249,12 +249,12 @@ foreach ($argument in $PSBoundParameters.Keys)
 
 $failedBuilds = @()
 
-if ($os -eq "Browser") {
+if ($os -eq "Browser" -or $os -eq "Node") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"
 
   if ($msbuild -eq $True) {
-    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
+    Write-Error "Using the -msbuild option isn't supported when building for Browser or Node on Windows, we need need ninja for Emscripten."
     exit 1
   }
 }
@@ -263,7 +263,7 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "Browser") {
+    if ($os -eq "Browser" -or $os -eq "Node") {
       $env:__DistroRid="browser-$singleArch"
     } else {
       $env:__DistroRid="win-$singleArch"

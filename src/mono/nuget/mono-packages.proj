@@ -3,7 +3,7 @@
     <ProjectReference Include="Microsoft.NET.Runtime.Android.Sample.Mono\Microsoft.NET.Runtime.Android.Sample.Mono.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
     <ProjectReference Include="Microsoft.NET.Runtime.wasm.Sample.Mono\Microsoft.NET.Runtime.wasm.Sample.Mono.pkgproj" />
     <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />

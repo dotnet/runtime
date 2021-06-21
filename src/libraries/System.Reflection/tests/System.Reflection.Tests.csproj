@@ -8,7 +8,7 @@
     <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
 
     <!-- these tests depend on the pdb files -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
@@ -70,7 +70,7 @@
     <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj" />
     <ProjectReference Include="TestAssembly\TestAssembly.csproj" />
   </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>

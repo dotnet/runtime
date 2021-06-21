@@ -50,7 +50,7 @@
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
-    <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
+    <NeedsToBuildWasmAppsOnHelix Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -59,7 +59,7 @@
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
@@ -73,20 +73,20 @@
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
+  <ItemGroup Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(BrowserHost)' != 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+  <ItemGroup Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
     <!--
       We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
       We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
@@ -267,7 +267,7 @@
       </XHarnessApkToTest>
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
       <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
       <!-- 84.0.4147.105 is 768962 for example -->
       <ChromiumRevision>768968</ChromiumRevision>
@@ -286,7 +286,7 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
 
-    <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
+    <Message Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
       <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
@@ -308,20 +308,20 @@
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
-      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
-      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
@@ -330,18 +330,18 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
+    <PropertyGroup Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(BrowserHost)' != 'windows'">
       <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
       <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
       <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+    <PropertyGroup Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(BrowserHost)' == 'windows'">
       <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
       <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
       <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
+    <ItemGroup Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
       <!-- Create a work item for run-only WASM console app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
@@ -351,7 +351,7 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'">
+    <ItemGroup Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(Scenario)' == 'WasmTestOnBrowser'">
       <!-- Create a work item for run-only WASM browser app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Browser.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
@@ -370,7 +370,7 @@
   <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
        attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
        payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
+  <Target Name="StageEmSdkForHelix" Condition="('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(NeedsToBuildWasmAppsOnHelix)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
     <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
            Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
 

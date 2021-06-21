@@ -29,7 +29,7 @@ usage()
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
-  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
+  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, Node, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
@@ -277,13 +277,15 @@ while [[ $# > 0 ]]; do
           os="Android" ;;
         browser)
           os="Browser" ;;
+        node)
+          os="Node" ;;
         illumos)
           os="illumos" ;;
         solaris)
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, Node, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -461,8 +463,8 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
-    # override default arch for Browser, we only support wasm
+if [[ "$os" = "Browser" ] || [ "$os" = "Node" ]] && [ "$arch" != "wasm" ]; then
+    # override default arch for Browser and Node, we only support wasm
     arch=wasm
 fi
 

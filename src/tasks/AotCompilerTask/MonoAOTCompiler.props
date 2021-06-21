@@ -24,7 +24,7 @@
     <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
     <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=21000" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
     <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
     <MonoAOTCompilerDefaultAotArguments Include="static" />
     <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />

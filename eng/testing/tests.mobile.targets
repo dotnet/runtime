@@ -39,7 +39,7 @@
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'" />
 
   <UsingTask TaskName="RuntimeConfigParserTask"
              AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
@@ -270,7 +270,7 @@
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />
-      <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
+      <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'" />
 
       <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
       <_resolvedFilesToPublishToFileName Include="@(ResolvedFileToPublish -> '%(FileName)%(Extension)')" />

@@ -55,7 +55,7 @@
 
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node' Or '$(TargetOS)' == 'Android'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths

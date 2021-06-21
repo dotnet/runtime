@@ -17,7 +17,7 @@
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">windows</TargetOS>
-    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
+    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">true</TargetsMobile>
   </PropertyGroup>
 
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
@@ -27,7 +27,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'armel'">armel</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm64'">arm64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Browser'">wasm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
@@ -123,7 +123,7 @@
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'illumos'">illumos</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'Solaris'">solaris</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'Browser' or '$(_runtimeOS)' == 'Node'">browser</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'iOSSimulator'">iossimulator</_portableOS>
@@ -145,9 +145,9 @@
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(TargetArchitecture.StartsWith('arm')) and !$(_hostArch.StartsWith('arm'))">linux-x64</_toolRuntimeRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and $([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and $([MSBuild]::IsOSPlatform('OSX'))">osx-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'node'">linux-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'node') and $([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'node') and $([MSBuild]::IsOSPlatform('OSX'))">osx-x64</_toolRuntimeRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android'">linux-x64</_toolRuntimeRID>
@@ -178,7 +178,7 @@
     <_outputRID Condition="'$(TargetOS)' == 'tvOS'">tvos-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'tvOSSimulator'">tvossimulator-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Browser'">browser-$(TargetArchitecture)</_outputRID>
+    <_outputRID Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">browser-$(TargetArchitecture)</_outputRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_outputRID)</OutputRid>
@@ -197,8 +197,7 @@
     <TargetsiOSSimulator Condition="'$(TargetOS)' == 'iOSSimulator'">true</TargetsiOSSimulator>
     <TargetstvOSSimulator Condition="'$(TargetOS)' == 'tvOSSimulator'">true</TargetstvOSSimulator>
     <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
-    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
-    <TargetsBrowser Condition="'$(TargetOS)' == 'Node'">true</TargetsBrowser>
+    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">true</TargetsBrowser>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
