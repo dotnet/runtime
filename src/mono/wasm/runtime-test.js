@@ -261,9 +261,9 @@ var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 	config: null,
 
-    preInit: async function() {
-        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
-    },
+  preInit: async function() {
+    Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+  },
 
 	onAbort: function(x) {
 		console.log ("ABORT: " + x);

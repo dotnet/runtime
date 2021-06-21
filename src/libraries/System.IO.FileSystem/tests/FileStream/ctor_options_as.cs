@@ -69,7 +69,7 @@ namespace System.IO.Tests
     public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
         [Fact]
-        public void NegativePreallocationSizeThrows()
+        public virtual void NegativePreallocationSizeThrows()
         {
             string filePath = GetPathToNonExistingFile();
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(

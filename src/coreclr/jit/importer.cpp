@@ -16286,11 +16286,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                            "type operand incompatible with type of address");
                 }
 
-                size = info.compCompHnd->getClassSize(resolvedToken.hClass); // Size
-                op2  = gtNewIconNode(0);                                     // Value
-                op1  = impPopStack().val;                                    // Dest
-                op1  = gtNewBlockVal(op1, size);
-                op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
+                op2 = gtNewIconNode(0);  // Value
+                op1 = impPopStack().val; // Dest
+
+                if (eeIsValueClass(resolvedToken.hClass))
+                {
+                    op1 = gtNewStructVal(resolvedToken.hClass, op1);
+                    if (op1->OperIs(GT_OBJ))
+                    {
+                        gtSetObjGcInfo(op1->AsObj());
+                    }
+                }
+                else
+                {
+                    size = info.compCompHnd->getClassSize(resolvedToken.hClass);
+                    assert(size == TARGET_POINTER_SIZE);
+                    op1 = gtNewBlockVal(op1, size);
+                }
+
+                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
                 goto SPILL_APPEND;
 
             case CEE_INITBLK:

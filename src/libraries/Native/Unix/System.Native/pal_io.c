@@ -22,6 +22,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
@@ -1453,4 +1454,108 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
     errno = ENOTSUP;
     return -1;
 #endif // __sun
+}
+
+int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+
+    ssize_t count;
+    while ((count = pread(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
+{
+    assert(buffer != NULL);
+    assert(bufferSize >= 0);
+
+    ssize_t count;
+    while ((count = pwrite(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+    assert(count >= -1 && count <= bufferSize);
+    return (int32_t)count;
+}
+
+int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    int64_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        IOVector vector = vectors[i];
+        while ((current = pread(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // Incomplete pread operation may happen for two reasons:
+        // a) We have reached EOF.
+        // b) The operation was interrupted by a signal handler.
+        // To mimic preadv, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.Count)
+        {
+            return count;
+        }
+    }
+#endif
+
+    assert(count >= -1);
+    return count;
+}
+
+int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+#if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+#else
+    int64_t current;
+    for (int i = 0; i < vectorCount; i++)
+    {
+        IOVector vector = vectors[i];
+        while ((current = pwrite(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+
+        if (current < 0)
+        {
+            // if previous calls were succesfull, we return what we got so far
+            // otherwise, we return the error code
+            return count > 0 ? count : current;
+        }
+
+        count += current;
+
+        // Incomplete pwrite operation may happen for few reasons:
+        // a) There was not enough space available or the file is too large for given file system.
+        // b) The operation was interrupted by a signal handler.
+        // To mimic pwritev, we stop on the first incomplete operation.
+        if (current != (int64_t)vector.Count)
+        {
+            return count;
+        }
+    }
+#endif
+
+    assert(count >= -1);
+    return count;
 }

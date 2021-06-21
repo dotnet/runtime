@@ -37,11 +37,6 @@
         <target state="new">Logging methods cannot have a body</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodInNestedTypeMessage">
-        <source>Logging class cannot be in nested types</source>
-        <target state="new">Logging class cannot be in nested types</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodIsGenericMessage">
         <source>Logging methods cannot be generic</source>
         <target state="new">Logging methods cannot be generic</target>
@@ -153,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
-        <source>Template {0} is not provided as argument to the logging method</source>
-        <target state="new">Template {0} is not provided as argument to the logging method</target>
+        <source>Template '{0}' is not provided as argument to the logging method</source>
+        <target state="new">Template '{0}' is not provided as argument to the logging method</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
