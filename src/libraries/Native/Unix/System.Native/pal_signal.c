@@ -176,7 +176,10 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
         sig != SIGINT)
     {
         struct sigaction* origHandler = OrigActionFor(sig);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
         if (origHandler->sa_flags & SA_SIGINFO)
+#pragma clang diagnostic pop
         {
             assert(origHandler->sa_sigaction);
             origHandler->sa_sigaction(sig, siginfo, context);
@@ -369,7 +372,10 @@ static bool InstallSignalHandler(int sig, int flags)
 
     struct sigaction newAction;
     memset(&newAction, 0, sizeof(struct sigaction));
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
     newAction.sa_flags = flags | SA_SIGINFO;
+#pragma clang diagnostic pop
     sigemptyset(&newAction.sa_mask);
     newAction.sa_sigaction = &SignalHandler;
 
