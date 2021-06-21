@@ -11,6 +11,8 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
     internal class TypeGenerationSpec
     {
+        private JsonSourceGenerationMode _generationMode;
+
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
@@ -23,12 +25,19 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
 
-        public bool GenerateMetadata { get; set; } = true;
+        private bool? _generateMetadata;
+        public bool GenerateMetadata
+        {
+            get => _generateMetadata ??= (JsonSourceGenerationMode.Metadata & _generationMode) != 0;
+            // Optionally set during type metadata computation.
+            set => _generateMetadata = value;
+        }
 
         private bool? _generateSerializationLogic;
         public bool GenerateSerializationLogic
         {
-            get => _generateSerializationLogic ??= FastPathIsSupported();
+            get => _generateSerializationLogic ??= ((JsonSourceGenerationMode.Serialization & _generationMode) != 0) && FastPathIsSupported();
+            // Optionally set during type metadata computation.
             set => _generateSerializationLogic = value;
         }
 
@@ -57,6 +66,7 @@ namespace System.Text.Json.SourceGeneration
         public string? ConverterInstantiationLogic { get; private set; }
 
         public void Initialize(
+            JsonSourceGenerationMode generationMode,
             string typeRef,
             string typeInfoPropertyName,
             Type type,
@@ -71,6 +81,7 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? converterInstantiationLogic)
         {
+            _generationMode = generationMode;
             TypeRef = $"global::{typeRef}";
             TypeInfoPropertyName = typeInfoPropertyName;
             Type = type;

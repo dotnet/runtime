@@ -15,13 +15,9 @@ namespace System.Text.Json.Serialization
     enum JsonSourceGenerationMode
     {
         /// <summary>
-        /// Instructs the JSON source generator to generate serialization logic and type metadata to fallback to
-        /// when the run-time options are not compatible with the indicated <see cref="JsonSerializerOptionsAttribute"/>.
+        /// Unspecified source generation mode.
         /// </summary>
-        /// <remarks>
-        /// This mode supports all <see cref="JsonSerializer"/> features.
-        /// </remarks>
-        MetadataAndSerialization = 0,
+        Unspecified = 0,
 
         /// <summary>
         /// Instructs the JSON source generator to generate type-metadata initialization logic.
