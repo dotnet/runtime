@@ -13694,6 +13694,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
 
             noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
             op1->gtFlags |= cmp->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+            op1->SetVNsFromNode(cmp);
 
             DEBUG_DESTROY_NODE(cmp);
             return op1;
