@@ -339,7 +339,7 @@ static void CloseSignalHandlingPipe()
     g_signalPipe[1] = -1;
 }
 
-static void InstallSignalHandler(int sig, int flags)
+static bool InstallSignalHandler(int sig, int flags)
 {
     int rv;
     (void)rv; // only used for assert
@@ -349,7 +349,7 @@ static void InstallSignalHandler(int sig, int flags)
     if (*isInstalled)
     {
         // Already installed.
-        return;
+        return true;
     }
 
     // We respect ignored signals.
@@ -357,11 +357,14 @@ static void InstallSignalHandler(int sig, int flags)
     // default handler on exec, which means they will terminate on some signals
     // which were set to ignore.
     rv = sigaction(sig, NULL, orig);
-    assert(rv == 0);
+    if (rv == 0)
+    {
+        return false;
+    }
     if ((void*)orig->sa_sigaction == (void*)SIG_IGN)
     {
         *isInstalled = true;
-        return;
+        return true;
     }
 
     struct sigaction newAction;
@@ -371,8 +374,12 @@ static void InstallSignalHandler(int sig, int flags)
     newAction.sa_sigaction = &SignalHandler;
 
     rv = sigaction(sig, &newAction, orig);
-    assert(rv == 0);
+    if (rv == 0)
+    {
+        return false;
+    }
     *isInstalled = true;
+    return false;
 }
 
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
@@ -501,18 +508,22 @@ int32_t InitializeSignalHandlingCore()
     return 1;
 }
 
-void SystemNative_EnablePosixSignalHandling(int signalCode)
+int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
 {
     assert(g_posixSignalHandler != NULL);
     assert(signalCode > 0 && signalCode <= GetSignalMax());
 
+    bool installed;
+
     pthread_mutex_lock(&lock);
     {
-        InstallSignalHandler(signalCode, SA_RESTART);
+        installed = InstallSignalHandler(signalCode, SA_RESTART);
 
-        g_hasPosixSignalRegistrations[signalCode - 1] = true;
+        g_hasPosixSignalRegistrations[signalCode - 1] = installed;
     }
     pthread_mutex_unlock(&lock);
+
+    return installed ? 1 : 0;
 }
 
 void SystemNative_DisablePosixSignalHandling(int signalCode)

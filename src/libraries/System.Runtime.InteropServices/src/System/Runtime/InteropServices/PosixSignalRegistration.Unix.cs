@@ -61,7 +61,12 @@ namespace System.Runtime.InteropServices
                 }
                 if (signalRegistrations.Count == 0)
                 {
-                    Interop.Sys.EnablePosixSignalHandling(_signo);
+                    if (!Interop.Sys.EnablePosixSignalHandling(_signo))
+                    {
+                        // We can't use Win32Exception because that causes a cycle with
+                        // Microsoft.Win32.Primitives.
+                        Interop.CheckIo(-1);
+                    }
                 }
                 signalRegistrations.Add(new WeakReference<PosixSignalRegistration>(this));
             }

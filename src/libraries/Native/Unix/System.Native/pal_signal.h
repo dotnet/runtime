@@ -50,7 +50,7 @@ typedef int32_t (*PosixSignalHandler)(int32_t signalCode, PosixSignal signal);
 
 PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler);
 PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
-PALEXPORT void SystemNative_EnablePosixSignalHandling(int signalCode);
+PALEXPORT int32_t SystemNative_EnablePosixSignalHandling(int signalCode);
 PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
 PALEXPORT void SystemNative_HandleNonCanceledPosixSignal(int signalCode);
 
