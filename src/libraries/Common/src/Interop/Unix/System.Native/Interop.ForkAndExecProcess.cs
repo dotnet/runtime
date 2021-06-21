@@ -53,7 +53,7 @@ internal static partial class Interop
 
             // Allocate the unmanaged array to hold each string pointer.
             // It needs to have an extra element to null terminate the array.
-            arrPtr = (byte**)(nint)NativeMemoryHelper.Alloc(sizeof(IntPtr) * arrLength);
+            arrPtr = (byte**)NativeMemory.Alloc((uint)(sizeof(IntPtr) * arrLength));
             Debug.Assert(arrPtr != null);
 
             // Zero the memory so that if any of the individual string allocations fails,
@@ -70,7 +70,7 @@ internal static partial class Interop
             {
                 byte[] byteArr = Encoding.UTF8.GetBytes(arr[i]);
 
-                arrPtr[i] = (byte*)(nint)NativeMemoryHelper.Alloc(byteArr.Length + 1); //+1 for null termination
+                arrPtr[i] = (byte*)NativeMemory.Alloc((uint)(byteArr.Length + 1u)); //+1 for null termination
                 Debug.Assert(arrPtr[i] != null);
 
                 Marshal.Copy(byteArr, 0, (nint)arrPtr[i], byteArr.Length); // copy over the data from the managed byte array
@@ -87,13 +87,13 @@ internal static partial class Interop
                 {
                     if (arr[i] != null)
                     {
-                        NativeMemoryHelper.Free((nint)arr[i]);
+                        NativeMemory.Free(arr[i]);
                         arr[i] = null;
                     }
                 }
 
                 // And then the array itself
-                NativeMemoryHelper.Free((nint)arr);
+                NativeMemory.Free(arr);
             }
         }
     }

@@ -45,7 +45,7 @@ internal static partial class Interop
                 {
                     throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
                 }
-                value = (byte*)(nint)NativeMemoryHelper.Alloc((int)bytesLength);
+                value = (byte*)NativeMemory.Alloc((nuint)bytesLength);
             }
 
             ret = Sysctl(name, name_len, value, &bytesLength);
@@ -54,7 +54,7 @@ internal static partial class Interop
                 // Do not use ReAllocHGlobal() here: we don't care about
                 // previous contents, and proper checking of value returned
                 // will make code more complex.
-                NativeMemoryHelper.Free((nint)value);
+                NativeMemory.Free(value);
                 if ((int)bytesLength == int.MaxValue)
                 {
                     throw new OutOfMemoryException();
@@ -67,14 +67,14 @@ internal static partial class Interop
                 {
                     bytesLength = (nint)((int)bytesLength * 2);
                 }
-                value = (byte*)(nint)NativeMemoryHelper.Alloc(bytesLength);
+                value = (byte*)NativeMemory.Alloc(bytesLength);
                 ret = Sysctl(name, name_len, value, &bytesLength);
             }
             if (ret != 0)
             {
                 if (autoSize)
                 {
-                    NativeMemoryHelper.Alloc((nint)value);
+                    NativeMemory.Alloc((nuint)value);
                 }
                 throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
             }
