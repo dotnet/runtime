@@ -9,6 +9,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal unsafe sealed class MsQuicApi
     {
+        private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
+
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         // This is workaround for a bug in ILTrimmer.
@@ -121,7 +123,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         static MsQuicApi()
         {
-            if (OperatingSystem.IsWindows() && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20145, 1000))
+            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
             {
                 IsQuicSupported = false;
                 return;
@@ -153,6 +155,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
             }
         }
+
+        private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
+            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
 
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal RegistrationCloseDelegate RegistrationCloseDelegate { get; }
