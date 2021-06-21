@@ -13713,7 +13713,7 @@ GenTree* Compiler::fgOptimizeEqualityComparison(GenTreeOp* cmp)
         //                  /  \.
         //                 x   CNS_INT +y
 
-        if (op1->OperIs(GT_AND))
+        if (fgGlobalMorph && op1->OperIs(GT_AND))
         {
             GenTree* andOp    = op1;
             GenTree* rshiftOp = andOp->AsOp()->gtGetOp1();
