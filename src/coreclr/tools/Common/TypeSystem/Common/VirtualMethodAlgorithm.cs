@@ -24,8 +24,6 @@ namespace Internal.TypeSystem
 
         public abstract MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
 
-        public abstract MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc exactInterfaceType, TypeDesc currentType, bool allowVariantMatches);
-
         public abstract DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl);
 
         /// <summary>
