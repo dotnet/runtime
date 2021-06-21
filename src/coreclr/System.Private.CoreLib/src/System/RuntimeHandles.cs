@@ -460,8 +460,20 @@ namespace System
             return GetInterfaceMethodImplementation(new QCallTypeHandle(ref nativeHandle), new QCallTypeHandle(ref nativeInterfaceHandle), interfaceMethodHandle);
         }
 
+        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
+        {
+#if FEATURE_COMINTEROP
+            if (isGenericCOM)
+                return type == typeof(__ComObject);
+
+            return IsComWrapperClass(type);
+#else
+            return false;
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComObject(RuntimeType type, bool isGenericCOM);
+        internal static extern bool IsComWrapperClass(RuntimeType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInterface(RuntimeType type);

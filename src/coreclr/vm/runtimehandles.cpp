@@ -1033,7 +1033,7 @@ RuntimeTypeHandle::IsVisible(
     return fIsExternallyVisible;
 } // RuntimeTypeHandle::IsVisible
 
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL isGenericCOM) {
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsComWrapperClass, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -1050,10 +1050,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTy
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
     {
-        if (isGenericCOM)
-            ret = IsComObjectClass(typeHandle);
-        else
-            ret = IsComWrapperClass(typeHandle);
+        ret = ::IsComWrapperClass(typeHandle);
     }
     HELPER_METHOD_FRAME_END();
 
