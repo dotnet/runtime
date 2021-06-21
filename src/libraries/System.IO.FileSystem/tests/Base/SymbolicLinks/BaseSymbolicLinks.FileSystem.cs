@@ -361,14 +361,5 @@ namespace System.IO.Tests
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertPathEquals(filePath, finalTarget.FullName);
         }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ExecWait_OutputCaptured()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                
-            }).Dispose();
-        }
     }
 }
