@@ -50,7 +50,7 @@ exception - the build does not automatically copy it to the testhost folder. If 
 
 ### Running tests for all libraries
 
-- Build and run all tests in release configuration. 
+- Build and run all tests in release configuration.
 ```
 build.cmd/sh -subset libs.tests -test -c Release
 ```
