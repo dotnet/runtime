@@ -251,6 +251,14 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 extern
 BOOL
 PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+
+#ifdef TARGET_OSX
+BOOL PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+{
+    return false;
+}
+#endif // TARGET_OSX
+
 #endif
 
 HRESULT

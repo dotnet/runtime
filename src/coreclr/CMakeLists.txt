@@ -109,9 +109,9 @@ if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(pal)
     add_subdirectory(hosts)
 else(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_TARGET_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_OSX)
         add_subdirectory(pal/src/libunwind)
-    endif(CLR_CMAKE_TARGET_UNIX)
+    endif(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_OSX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
