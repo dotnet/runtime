@@ -78,6 +78,8 @@ static gboolean stub_set_set_notification_for_wait_completion_flag (DbgEngineSta
 static MonoMethod *stub_get_notify_debugger_of_wait_completion_method (void); //debugger-engine removeAfterMergeWasmPR
 static MonoClass *stub_get_class_to_get_builder_field (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
 static MonoMethod *stub_get_object_id_for_debugger_method (MonoClass *async_builder_class); //debugger-engine removeAfterMergeWasmPR
+static void stub_mono_de_clear_all_breakpoints (void); //debugger-engine removeAfterMergeWasmPR
+static gpointer stub_get_async_method_builder (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
 
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
@@ -116,7 +118,9 @@ static MonoComponentDebugger fn_table = {
 	&stub_set_set_notification_for_wait_completion_flag,
 	&stub_get_notify_debugger_of_wait_completion_method,
 	&stub_get_class_to_get_builder_field,
-	&stub_get_object_id_for_debugger_method
+	&stub_get_object_id_for_debugger_method,
+	&stub_mono_de_clear_all_breakpoints,
+	&stub_get_async_method_builder
 };
 
 static bool
@@ -323,6 +327,15 @@ stub_get_class_to_get_builder_field (DbgEngineStackFrame *frame)
 
 static MonoMethod *
 stub_get_object_id_for_debugger_method (MonoClass *async_builder_class)
+{
+	g_assert_not_reached();
+}
+
+static void stub_mono_de_clear_all_breakpoints (void)
+{
+}
+
+static gpointer stub_get_async_method_builder (DbgEngineStackFrame *frame)
 {
 	g_assert_not_reached();
 }

@@ -196,6 +196,8 @@ typedef struct MonoComponentDebugger {
 	MonoMethod* (*get_notify_debugger_of_wait_completion_method) (void); //debugger-engine removeAfterMergeWasmPR
 	MonoClass* (*get_class_to_get_builder_field) (DbgEngineStackFrame* frame); //debugger-engine removeAfterMergeWasmPR
 	MonoMethod* (*get_object_id_for_debugger_method) (MonoClass* async_builder_class); //debugger-engine removeAfterMergeWasmPR
+	void (*mono_de_clear_all_breakpoints) (void); //debugger-engine removeAfterMergeWasmPR
+	gpointer (*get_async_method_builder) (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
 } MonoComponentDebugger;
 
 

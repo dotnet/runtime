@@ -307,7 +307,7 @@ get_this_async_id (DbgEngineStackFrame *frame)
 	 * FRAME points to a method in a state machine class/struct.
 	 * Call the ObjectIdForDebugger method of the associated method builder type.
 	 */
-	builder = get_async_method_builder (frame);
+	builder = mono_component_debugger ()->get_async_method_builder (frame);
 	if (!builder)
 		return 0;
 
@@ -588,7 +588,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_clear_all_breakpoints (void)
 {
 	PRINT_DEBUG_MSG (1, "CLEAR BREAKPOINTS\n");
-	mono_de_clear_all_breakpoints ();
+	mono_component_debugger ()->mono_de_clear_all_breakpoints ();
 }
 
 EMSCRIPTEN_KEEPALIVE int
