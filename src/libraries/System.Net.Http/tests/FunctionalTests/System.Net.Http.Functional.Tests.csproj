@@ -13,12 +13,17 @@
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
+  <!-- Browser and Node specific files -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node'">
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
+             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 
   <ItemGroup>

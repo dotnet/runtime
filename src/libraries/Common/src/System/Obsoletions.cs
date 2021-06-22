@@ -86,5 +86,8 @@ namespace System
 
         internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
         internal const string SuppressIldasmAttributeDiagId = "SYSLIB0025";
+
+        internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.";
+        internal const string X509CertificateImmutableDiagId = "SYSLIB0026";
     }
 }

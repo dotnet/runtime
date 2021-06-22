@@ -83,6 +83,7 @@
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
+    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
