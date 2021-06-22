@@ -69,15 +69,9 @@ namespace System.Net.Http
 
             if (activity is null)
             {
-                bool currentActivitySet = Activity.Current is not null;
                 bool diagnosticListenerEnabled = s_diagnosticListener.IsEnabled();
 
-                if (!currentActivitySet && !diagnosticListenerEnabled)
-                {
-                    return false;
-                }
-
-                if (currentActivitySet || (diagnosticListenerEnabled && s_diagnosticListener.IsEnabled(ActivityName, request)))
+                if (Activity.Current is not null || (diagnosticListenerEnabled && s_diagnosticListener.IsEnabled(ActivityName, request)))
                 {
                     // If a diagnostics listener is enabled for the Activity, always create one
                     activity = new Activity(ActivityName);
