@@ -13604,12 +13604,8 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "inited",	MONO_CPU_INITED},
 #endif
 	};
-	if (!cpu_features) {
+	if (!cpu_features)
 		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));
-		#if defined(TARGET_ARM64)
-		cpu_features |= MONO_CPU_ARM64_RDM | MONO_CPU_ARM64_DP;
-		#endif
-	}
 
 	return cpu_features;
 }
