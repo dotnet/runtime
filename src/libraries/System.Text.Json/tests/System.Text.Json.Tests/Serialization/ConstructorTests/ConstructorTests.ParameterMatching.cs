@@ -11,24 +11,29 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class ConstructorTests_String : ConstructorTests
     {
-        public ConstructorTests_String() : base(DeserializationWrapper.StringDeserializer) { }
+        public ConstructorTests_String() : base(SerializationWrapper.StringSerializer) { }
     }
 
-    public class ConstructorTests_Stream : ConstructorTests
+    public class ConstructorTests_AsyncStream : ConstructorTests
     {
-        public ConstructorTests_Stream() : base(DeserializationWrapper.StreamDeserializer) { }
+        public ConstructorTests_AsyncStream() : base(SerializationWrapper.AsyncStreamSerializer) { }
+    }
+
+    public class ConstructorTests_SyncStream : ConstructorTests
+    {
+        public ConstructorTests_SyncStream() : base(SerializationWrapper.SyncStreamSerializer) { }
     }
 
     public class ConstructorTests_Span : ConstructorTests
     {
-        public ConstructorTests_Span() : base(DeserializationWrapper.SpanDeserializer) { }
+        public ConstructorTests_Span() : base(SerializationWrapper.SpanSerializer) { }
     }
 
     public abstract partial class ConstructorTests
     {
-        private DeserializationWrapper Serializer { get; }
+        private SerializationWrapper Serializer { get; }
 
-        public ConstructorTests(DeserializationWrapper serializer)
+        public ConstructorTests(SerializationWrapper serializer)
         {
             Serializer = serializer;
         }

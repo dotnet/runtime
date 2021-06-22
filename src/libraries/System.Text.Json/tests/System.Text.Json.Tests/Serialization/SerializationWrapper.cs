@@ -4,6 +4,7 @@
 using System.IO;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -16,9 +17,10 @@ namespace System.Text.Json.Serialization.Tests
 
         public static SerializationWrapper SpanSerializer => new SpanSerializerWrapper();
         public static SerializationWrapper StringSerializer => new StringSerializerWrapper();
-        public static SerializationWrapper StreamSerializer => new StreamSerializerWrapper();
-        public static SerializationWrapper StreamSerializerWithSmallBuffer => new StreamSerializerWrapperWithSmallBuffer();
-        public static SerializationWrapper WriterSerializer => new WriterSerializerWrapper();
+        public static SerializationWrapper AsyncStreamSerializer => new AsyncStreamSerializerWrapper();
+        public static SerializationWrapper AsyncStreamSerializerWithSmallBuffer => new AsyncStreamSerializerWrapperWithSmallBuffer();
+        public static SerializationWrapper SyncStreamSerializer => new SyncStreamSerializerWrapper();
+        public static SerializationWrapper ReaderWriterSerializer => new ReaderWriterSerializerWrapper();
 
         protected internal abstract Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null);
 
@@ -28,6 +30,13 @@ namespace System.Text.Json.Serialization.Tests
 
         protected internal abstract Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo);
 
+        protected internal abstract Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null);
+
+        protected internal abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null);
+
+        protected internal abstract Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo);
+
+        protected internal abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
 
         private class SpanSerializerWrapper : SerializationWrapper
         {
@@ -54,6 +63,26 @@ namespace System.Text.Json.Serialization.Tests
                 byte[] result = JsonSerializer.SerializeToUtf8Bytes(value, jsonTypeInfo);
                 return Task.FromResult(Encoding.UTF8.GetString(result));
             }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize<T>(json.AsSpan(), options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json.AsSpan(), type, options));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json.AsSpan(), jsonTypeInfo));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json.AsSpan(), type, context));
+            }
         }
 
         private class StringSerializerWrapper : SerializationWrapper
@@ -77,9 +106,29 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return Task.FromResult(JsonSerializer.Serialize(value, jsonTypeInfo));
             }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize<T>(json, options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json, type, options));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json, jsonTypeInfo));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json, type, context));
+            }
         }
 
-        private class StreamSerializerWrapper : SerializationWrapper
+        private class AsyncStreamSerializerWrapper : SerializationWrapper
         {
             protected internal override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -108,9 +157,41 @@ namespace System.Text.Json.Serialization.Tests
                 await JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
+
+            protected internal override async Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return await JsonSerializer.DeserializeAsync<T>(stream, options ?? _optionsWithSmallBuffer);
+                }
+            }
+
+            protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return await JsonSerializer.DeserializeAsync(stream, type, options ?? _optionsWithSmallBuffer);
+                }
+            }
+
+            protected internal override async Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return await JsonSerializer.DeserializeAsync(stream, jsonTypeInfo);
+                }
+            }
+
+            protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return await JsonSerializer.DeserializeAsync(stream, type, context);
+                }
+            }
         }
 
-        private class StreamSerializerWrapperWithSmallBuffer : StreamSerializerWrapper
+        private class AsyncStreamSerializerWrapperWithSmallBuffer : AsyncStreamSerializerWrapper
         {
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -128,7 +209,70 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class WriterSerializerWrapper : SerializationWrapper
+        private class SyncStreamSerializerWrapper : SerializationWrapper
+        {
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
+            {
+                using var stream = new MemoryStream();
+                JsonSerializer.Serialize(stream, value, inputType, options);
+                return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
+            {
+                using var stream = new MemoryStream();
+                JsonSerializer.Serialize<T>(stream, value, options);
+                return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
+            }
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
+            {
+                using var stream = new MemoryStream();
+                JsonSerializer.Serialize(stream, value, inputType, context);
+                return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                using var stream = new MemoryStream();
+                JsonSerializer.Serialize(stream, value, jsonTypeInfo);
+                return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(stream, options ?? _optionsWithSmallBuffer));
+                }
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return Task.FromResult(JsonSerializer.Deserialize(stream, type, options ?? _optionsWithSmallBuffer));
+                }
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(stream, jsonTypeInfo));
+                }
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                {
+                    return Task.FromResult(JsonSerializer.Deserialize(stream, type, context));
+                }
+            }
+        }
+
+        private class ReaderWriterSerializerWrapper : SerializationWrapper
         {
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -160,6 +304,30 @@ namespace System.Text.Json.Serialization.Tests
                 using var writer = new Utf8JsonWriter(stream);
                 JsonSerializer.Serialize(writer, value, jsonTypeInfo);
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize<T>(ref reader, options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize(ref reader, type, options));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize(ref reader, jsonTypeInfo));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize(ref reader, type, context));
             }
         }
     }

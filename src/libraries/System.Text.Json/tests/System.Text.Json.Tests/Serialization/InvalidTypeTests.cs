@@ -17,19 +17,24 @@ namespace System.Text.Json.Serialization.Tests
         public InvalidTypeTests_String() : base(SerializationWrapper.StringSerializer) { }
     }
 
-    public class InvalidTypeTests_Stream : InvalidTypeTests
+    public class InvalidTypeTests_AsyncStream : InvalidTypeTests
     {
-        public InvalidTypeTests_Stream() : base(SerializationWrapper.StreamSerializer) { }
+        public InvalidTypeTests_AsyncStream() : base(SerializationWrapper.AsyncStreamSerializer) { }
     }
 
-    public class InvalidTypeTests_StreamWithSmallBuffer : InvalidTypeTests
+    public class InvalidTypeTests_AsyncStreamWithSmallBuffer : InvalidTypeTests
     {
-        public InvalidTypeTests_StreamWithSmallBuffer() : base(SerializationWrapper.StreamSerializerWithSmallBuffer) { }
+        public InvalidTypeTests_AsyncStreamWithSmallBuffer() : base(SerializationWrapper.AsyncStreamSerializerWithSmallBuffer) { }
+    }
+
+    public class InvalidTypeTests_SyncStream : InvalidTypeTests
+    {
+        public InvalidTypeTests_SyncStream() : base(SerializationWrapper.SyncStreamSerializer) { }
     }
 
     public class InvalidTypeTests_Writer : InvalidTypeTests
     {
-        public InvalidTypeTests_Writer() : base(SerializationWrapper.WriterSerializer) { }
+        public InvalidTypeTests_Writer() : base(SerializationWrapper.ReaderWriterSerializer) { }
     }
 
     public abstract class InvalidTypeTests

@@ -19,19 +19,24 @@ namespace System.Text.Json.Serialization.Tests
         public PolymorphicTests_String() : base(SerializationWrapper.StringSerializer) { }
     }
 
-    public class PolymorphicTests_Stream : PolymorphicTests
+    public class PolymorphicTests_AsyncStream : PolymorphicTests
     {
-        public PolymorphicTests_Stream() : base(SerializationWrapper.StreamSerializer) { }
+        public PolymorphicTests_AsyncStream() : base(SerializationWrapper.AsyncStreamSerializer) { }
     }
 
-    public class PolymorphicTests_StreamWithSmallBuffer : PolymorphicTests
+    public class PolymorphicTests_AsyncStreamWithSmallBuffer : PolymorphicTests
     {
-        public PolymorphicTests_StreamWithSmallBuffer() : base(SerializationWrapper.StreamSerializerWithSmallBuffer) { }
+        public PolymorphicTests_AsyncStreamWithSmallBuffer() : base(SerializationWrapper.AsyncStreamSerializerWithSmallBuffer) { }
+    }
+
+    public class PolymorphicTests_SyncStream : PolymorphicTests
+    {
+        public PolymorphicTests_SyncStream() : base(SerializationWrapper.SyncStreamSerializer) { }
     }
 
     public class PolymorphicTests_Writer : PolymorphicTests
     {
-        public PolymorphicTests_Writer() : base(SerializationWrapper.WriterSerializer) { }
+        public PolymorphicTests_Writer() : base(SerializationWrapper.ReaderWriterSerializer) { }
     }
 
     public abstract class PolymorphicTests

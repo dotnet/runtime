@@ -1629,21 +1629,26 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class NumberHandlingTests_StreamOverload : NumberHandlingTests_OverloadSpecific
+    public class NumberHandlingTests_AsyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_StreamOverload() : base(DeserializationWrapper.StreamDeserializer) { }
+        public NumberHandlingTests_AsyncStreamOverload() : base(SerializationWrapper.AsyncStreamSerializer) { }
+    }
+
+    public class NumberHandlingTests_SyncStreamOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_SyncStreamOverload() : base(SerializationWrapper.SyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncOverload() : base(DeserializationWrapper.StringDeserializer) { }
+        public NumberHandlingTests_SyncOverload() : base(SerializationWrapper.StringSerializer) { }
     }
 
     public abstract class NumberHandlingTests_OverloadSpecific
     {
-        private DeserializationWrapper Deserializer { get; }
+        private SerializationWrapper Deserializer { get; }
 
-        public NumberHandlingTests_OverloadSpecific(DeserializationWrapper deserializer)
+        public NumberHandlingTests_OverloadSpecific(SerializationWrapper deserializer)
         {
             Deserializer = deserializer;
         }

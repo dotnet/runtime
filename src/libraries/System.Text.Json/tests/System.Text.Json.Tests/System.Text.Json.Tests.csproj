@@ -109,7 +109,6 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
-    <Compile Include="Serialization\DeserializationWrapper.cs" />
     <Compile Include="Serialization\DynamicTests.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
@@ -153,6 +152,7 @@
     <Compile Include="Serialization\ReferenceHandlerTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="Serialization\SerializationWrapper.cs" />
+    <Compile Include="Serialization\SerializationWrapperForStream.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\Stream.Collections.cs" />
     <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />

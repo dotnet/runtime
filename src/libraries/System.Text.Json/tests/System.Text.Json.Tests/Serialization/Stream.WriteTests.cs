@@ -9,13 +9,32 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class StreamTests
+    public class StreamTests_Async : StreamTests
     {
+        public StreamTests_Async() : base(SerializationWrapperForStream.AsyncStreamSerializer) { }
+    }
+
+    public class StreamTests_Sync : StreamTests
+    {
+        public StreamTests_Sync() : base(SerializationWrapperForStream.SyncStreamSerializer) { }
+    }
+
+    public abstract partial class StreamTests
+    {
+        private SerializationWrapperForStream Serializer { get; }
+
+        public StreamTests(SerializationWrapperForStream serializer)
+        {
+            Serializer = serializer;
+        }
+
         [Fact]
         public static async Task WriteNullArgumentFail()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1));
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1, typeof(int)));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null, 1, typeof(int)));
         }
 
         [Fact]
@@ -23,6 +42,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             MemoryStream stream = new MemoryStream();
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync(stream, "", (Type)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(stream, "", (Type)null));
         }
 
         [Fact]
@@ -30,13 +50,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             MemoryStream stream = new MemoryStream();
             await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializer.SerializeAsync(stream, 1, typeof(string)));
+            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(stream, 1, typeof(string)));
         }
 
         [Fact]
-        public static async Task NullObjectValue()
+        public async Task NullObjectValue()
         {
             MemoryStream stream = new MemoryStream();
-            await JsonSerializer.SerializeAsync(stream, (object)null);
+
+            await Serializer.SerializeWrapper(stream, (object)null);
 
             stream.Seek(0, SeekOrigin.Begin);
 
@@ -50,7 +72,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
-        public static async Task RoundTripAsync()
+        public async Task RoundTripAsync()
         {
             byte[] buffer;
 
@@ -69,7 +91,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static async Task RoundTripLargeJsonViaJsonElementAsync()
+
+        public async Task RoundTripLargeJsonViaJsonElementAsync()
         {
             // Generating tailored json
             int i = 0;
@@ -88,18 +111,20 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonElement root = JsonSerializer.Deserialize<JsonElement>(json.ToString());
             var ms = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms, root, root.GetType());
+
+            await Serializer.SerializeWrapper(ms, root, root.GetType());
         }
 
         [Fact]
-        public static async Task RoundTripLargeJsonViaPocoAsync()
+        public async Task RoundTripLargeJsonViaPocoAsync()
         {
             byte[] array = JsonSerializer.Deserialize<byte[]>(JsonSerializer.Serialize(new byte[11056]));
             var ms = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms, array, array.GetType());
+
+            await Serializer.SerializeWrapper(ms, array, array.GetType());
         }
 
-        private static async Task WriteAsync(TestStream stream)
+        private async Task WriteAsync(TestStream stream)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -112,7 +137,7 @@ namespace System.Text.Json.Serialization.Tests
                 obj.Initialize();
                 obj.Verify();
 
-                await JsonSerializer.SerializeAsync(stream, obj, options: options);
+                await Serializer.SerializeWrapper(stream, obj, options: options);
             }
 
             // Must be changed if the test classes change:
@@ -125,7 +150,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, stream.TestFlushCount);
         }
 
-        private static async Task ReadAsync(TestStream stream)
+        private async Task ReadAsync(TestStream stream)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -133,7 +158,7 @@ namespace System.Text.Json.Serialization.Tests
                 DefaultBufferSize = 1
             };
 
-            LargeDataTestClass obj = await JsonSerializer.DeserializeAsync<LargeDataTestClass>(stream, options);
+            LargeDataTestClass obj = await Serializer.DeserializeWrapper<LargeDataTestClass>(stream, options);
             // Must be changed if the test classes change; may be > since last read may not have filled buffer.
             Assert.InRange(stream.TestRequestedReadBytesCount, 551368, int.MaxValue);
 
@@ -147,16 +172,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static async Task WritePrimitivesAsync()
+        public async Task WritePrimitivesAsync()
         {
-            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1"));
+            MemoryStream stream = new MemoryStream();
             JsonSerializerOptions options = new JsonSerializerOptions
             {
                 DefaultBufferSize = 1
             };
 
-            int i = await JsonSerializer.DeserializeAsync<int>(stream, options);
-            Assert.Equal(1, i);
+            await Serializer.SerializeWrapper(stream, 1, options);
+            string jsonSerialized = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Equal("1", jsonSerialized);
         }
 
         private class Session
@@ -199,7 +225,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(16000)]
         [InlineData(32000)]
         [InlineData(64000)]
-        public static async Task LargeJsonFile(int bufferSize)
+        public async Task LargeJsonFile(int bufferSize)
         {
             const int SessionResponseCount = 100;
 
@@ -259,12 +285,12 @@ namespace System.Text.Json.Serialization.Tests
             // Async case.
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, list, options);
+                await Serializer.SerializeWrapper(memoryStream, list, options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
                 memoryStream.Position = 0;
-                List<SessionResponse> deserializedList = await JsonSerializer.DeserializeAsync<List<SessionResponse>>(memoryStream, options);
+                List<SessionResponse> deserializedList = await Serializer.DeserializeWrapper<List<SessionResponse>>(memoryStream, options);
                 Assert.Equal(SessionResponseCount, deserializedList.Count);
             }
         }
@@ -278,7 +304,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(10, false, false)]
         [InlineData(100, false, false)]
         [InlineData(1000, false, false)]
-        public static async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
+        public async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
         {
             List<Order> list = PopulateLargeObject(payloadSize);
 
@@ -302,12 +328,12 @@ namespace System.Text.Json.Serialization.Tests
             // Async case.
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, list, options);
+                await Serializer.SerializeWrapper(memoryStream, list, options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
                 memoryStream.Position = 0;
-                List<Order> deserializedList = await JsonSerializer.DeserializeAsync<List<Order>>(memoryStream, options);
+                List<Order> deserializedList = await Serializer.DeserializeWrapper<List<Order>>(memoryStream, options);
                 Assert.Equal(payloadSize, deserializedList.Count);
             }
         }
@@ -322,7 +348,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(4, false, false)]
         [InlineData(8, false, false)]
         [InlineData(16, false, false)] // This results a reader\writer depth of 324 which currently works on all test platforms.
-        public static async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
+        public async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
         {
             const int ListLength = 10;
 
@@ -354,19 +380,19 @@ namespace System.Text.Json.Serialization.Tests
             // Async case.
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, orders[0], options);
+                await Serializer.SerializeWrapper(memoryStream, orders[0], options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
                 memoryStream.Position = 0;
-                List<Order> deserializedList = await JsonSerializer.DeserializeAsync<List<Order>>(memoryStream, options);
+                List<Order> deserializedList = await Serializer.DeserializeWrapper<List<Order>>(memoryStream, options);
             }
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(4)]
-        public static async Task NestedJsonFileCircularDependencyTest(int depthFactor)
+        public async Task NestedJsonFileCircularDependencyTest(int depthFactor)
         {
             const int ListLength = 2;
 
@@ -394,7 +420,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (var memoryStream = new MemoryStream())
             {
-                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.SerializeAsync(memoryStream, orders[0], options));
+                await Assert.ThrowsAsync<JsonException>(async () => await Serializer.SerializeWrapper(memoryStream, orders[0], options));
             }
         }
 
@@ -405,7 +431,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(8192)]
         [InlineData(16384)]
         [InlineData(65536)]
-        public static async Task FlushThresholdTest(int bufferSize)
+        public async Task FlushThresholdTest(int bufferSize)
         {
             // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [" characters, then create a 
             // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer 
@@ -425,7 +451,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, list, options);
+                await Serializer.SerializeWrapper(memoryStream, list, options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
