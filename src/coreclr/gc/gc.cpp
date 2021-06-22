@@ -42262,6 +42262,15 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, gen_num, acontext->alloc_bytes_uoh);
         ASSERT(((size_t)newAlloc & 7) == 0);
 
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = gc_heap::heap_of ((uint8_t*)newAlloc);
+        }
+#endif //MULTIPLE_HEAPS
+
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
 #endif // FEATURE_STRUCTALIGN
@@ -42281,17 +42290,20 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }
 
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = acontext->get_alloc_heap()->pGenGCHeap;
+            assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
+        }
+#endif //MULTIPLE_HEAPS
+
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
 #endif // FEATURE_STRUCTALIGN
     }
-
-#ifdef MULTIPLE_HEAPS
-    // the heap may have changed due to heap balancing - it's important
-    // to register the object for finalization on the heap it was allocated on
-    hp = acontext->get_alloc_heap()->pGenGCHeap;
-    assert (hp != nullptr);
-#endif //MULTIPLE_HEAPS
 
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
