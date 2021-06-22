@@ -35,17 +35,51 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task TestBaseline_TestWithTwoParams_Success()
+        public async Task TestBaseline_TestWithSkipEnabledCheck_Success()
         {
             string testSourceCode = @"
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
-    internal static partial class TestWithTwoParams
+    internal static partial class TestWithSkipEnabledCheck
     {
-        [LoggerMessage(EventId = 0, Level = LogLevel.Error, Message = ""M0 {a1} {a2}"")]
-        public static partial void M0(ILogger logger, int a1, System.Collections.Generic.IEnumerable<int> a2);
+        [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = ""Message: When using SkipEnabledCheck, the generated code skips logger.IsEnabled(logLevel) check before calling log. To be used when consumer has already guarded logger method in an IsEnabled check."", SkipEnabledCheck = true)]
+        public static partial void M0(ILogger logger);
     }
 }";
+            await VerifyAgainstBaselineUsingFile("TestWithSkipEnabledCheck.generated.txt", testSourceCode);
+        }
+
+        [Fact]
+        public async Task TestBaseline_TestWithDefaultValues_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal static partial class TestWithDefaultValues
+    {
+        [LoggerMessage]
+        public static partial void M0(ILogger logger, LogLevel level);
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithDefaultValues.generated.txt", testSourceCode);
+        }
+
+        [Theory]
+        [InlineData("EventId = 0, Level = LogLevel.Error, Message = \"M0 {a1} {a2}\"")]
+        [InlineData("eventId: 0, level: LogLevel.Error, message: \"M0 {a1} {a2}\"")]
+        [InlineData("0, LogLevel.Error, \"M0 {a1} {a2}\"")]
+        [InlineData("0, LogLevel.Error, \"M0 {a1} {a2}\", SkipEnabledCheck = false")]
+        public async Task TestBaseline_TestWithTwoParams_Success(string argumentList)
+        {
+            string testSourceCode = $@"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{{
+    internal static partial class TestWithTwoParams
+    {{
+        [LoggerMessage({argumentList})]
+        public static partial void M0(ILogger logger, int a1, System.Collections.Generic.IEnumerable<int> a2);
+    }}
+}}";
             await VerifyAgainstBaselineUsingFile("TestWithTwoParams.generated.txt", testSourceCode);
         }
 
