@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace System.Net.Test.Common
 {
 
-    internal sealed class Http3LoopbackStream : IDisposable
+    internal sealed class Http3LoopbackStream : IDisposable, IAsyncDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -43,6 +43,10 @@ namespace System.Net.Test.Common
         {
             _stream.Dispose();
         }
+
+        public ValueTask DisposeAsync() =>
+            _stream.DisposeAsync();
+
         public async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
@@ -114,12 +118,6 @@ namespace System.Net.Test.Common
 
             await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
             await _stream.WriteAsync(framePayload).ConfigureAwait(false);
-        }
-
-        public async Task ShutdownSendAsync()
-        {
-            await _stream.CompleteWritesAsync().ConfigureAwait(false);
-            await _stream.ShutdownWriteCompleted().ConfigureAwait(false);
         }
 
         static int EncodeHttpInteger(long longToEncode, Span<byte> buffer)
@@ -226,9 +224,8 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                await ShutdownSendAsync().ConfigureAwait(false);
-                await _stream.ShutdownCompleted().ConfigureAwait(false);
-                Dispose();
+                _stream.CompleteWrites();
+                await DisposeAsync();
             }
         }
 
