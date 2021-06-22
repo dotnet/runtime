@@ -11,7 +11,7 @@ namespace System.IO.Tests
         [OuterLoop]
         public void PathInternalIsCaseSensitiveMatchesProbing()
         {
-            var probingDirectory = TestDirectory;
+            string probingDirectory = TestDirectory;
             Assert.Equal(GetIsCaseSensitiveByProbing(probingDirectory), PathInternal.IsCaseSensitive);
         }
     }
