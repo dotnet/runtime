@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Immutable;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -83,7 +84,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         bool multipleLoggerFields = false;
 
                         ids.Clear();
-                        foreach (var member in classDec.Members)
+                        foreach (MemberDeclarationSyntax member in classDec.Members)
                         {
                             var method = member as MethodDeclarationSyntax;
                             if (method == null)
@@ -93,6 +94,9 @@ namespace Microsoft.Extensions.Logging.Generators
                             }
 
                             sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
+                            IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol;
+                            Debug.Assert(logMethodSymbol != null, "log method is present.");
+                            (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
 
                             foreach (AttributeListSyntax mal in method.AttributeLists)
                             {
@@ -105,7 +109,78 @@ namespace Microsoft.Extensions.Logging.Generators
                                         continue;
                                     }
 
-                                    (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = ExtractAttributeValues(ma.ArgumentList!, sm);
+                                    bool hasMisconfiguredInput = false;
+                                    ImmutableArray<AttributeData>? boundAttrbutes = logMethodSymbol?.GetAttributes();
+
+                                    if (boundAttrbutes == null)
+                                    {
+                                        continue;
+                                    }
+
+                                    foreach (AttributeData attributeData in boundAttrbutes)
+                                    {
+                                        // argument syntax takes parameters. e.g. EventId = 0
+                                        // supports: e.g. [LoggerMessage(EventId = 0, Level = LogLevel.Warning, Message = "custom message")]
+                                        if (attributeData.NamedArguments.Any())
+                                        {
+                                            foreach (KeyValuePair<string, TypedConstant> namedArgument in attributeData.NamedArguments)
+                                            {
+                                                TypedConstant typedConstant = namedArgument.Value;
+                                                if (typedConstant.Kind == TypedConstantKind.Error)
+                                                {
+                                                    hasMisconfiguredInput = true;
+                                                }
+                                                else
+                                                {
+                                                    TypedConstant value = namedArgument.Value;
+                                                    switch (namedArgument.Key)
+                                                    {
+                                                        case "EventId":
+                                                            eventId = (int)GetItem(value);
+                                                            break;
+                                                        case "Level":
+                                                            level = value.IsNull ? null : (int?)GetItem(value);
+                                                            break;
+                                                        case "SkipEnabledCheck":
+                                                            skipEnabledCheck = (bool)GetItem(value);
+                                                            break;
+                                                        case "EventName":
+                                                            eventName = (string?)GetItem(value);
+                                                            break;
+                                                        case "Message":
+                                                            message = value.IsNull ? "" : (string)GetItem(value);
+                                                            break;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
+                                        // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
+                                        if (attributeData.ConstructorArguments.Any())
+                                        {
+                                            foreach (TypedConstant typedConstant in attributeData.ConstructorArguments)
+                                            {
+                                                if (typedConstant.Kind == TypedConstantKind.Error)
+                                                {
+                                                    hasMisconfiguredInput = true;
+                                                }
+                                            }
+
+                                            ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
+                                            Debug.Assert(items.Length == 3);
+
+                                            eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
+                                            level = items[1].IsNull ? null : (int?)GetItem(items[1]);
+                                            message = items[2].IsNull ? "" : (string)GetItem(items[2]);
+                                        }
+                                    }
+
+                                    if (hasMisconfiguredInput)
+                                    {
+                                        // skip further generator execution and let compiler generate the errors
+                                        break;
+                                    }
 
                                     IMethodSymbol? methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
                                     if (methodSymbol != null)
@@ -436,102 +511,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 return (loggerField, false);
             }
 
-            private (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
-            {
-                if (args == null)
-                {
-                    // e.g. is null as [LoggerMessage]
-                    return (-1, null, string.Empty, null, false);
-                }
-                // supporting one constructor arg shape:
-                //   (eventId, level, message)
-                int numPositional = 0;
-                int eventId = -1; // default eventId value when not provided is -1
-                int? level = null;
-                string? eventName = null;
-                string message = string.Empty;
-                bool skipEnabledCheck = false;
-                foreach (AttributeArgumentSyntax a in args.Arguments)
-                {
-                    // argument syntax takes parameters. e.g. EventId = 0
-                    if (a.NameEquals != null)
-                    {
-                        switch (a.NameEquals.Name.ToString())
-                        {
-                            case "EventId":
-                                eventId = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value ?? -1;
-                                break;
-                            case "EventName":
-                                eventName = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                                break;
-                            case "Level":
-                                level = (int?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
-                                break;
-                            case "Message":
-                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                                break;
-                            case "SkipEnabledCheck":
-                                bool? flag = (bool?)sm.GetConstantValue(a.Expression, _cancellationToken).Value;
-                                skipEnabledCheck = flag.GetValueOrDefault();
-                                break;
-                        }
-                    }
-                    else if (a.NameColon != null)
-                    {
-                        // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
-                        switch (a.NameColon.Name.ToString())
-                        {
-                            case "eventId":
-                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
-                                break;
-
-                            case "level":
-                                level = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
-                                break;
-
-                            case "message":
-                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                                break;
-                        }
-                    }
-                    else
-                    {
-#pragma warning disable S109 // Magic numbers should not be used
-                        // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
-                        switch (numPositional)
-                        {
-                            // event id
-                            case 0:
-                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
-                                break;
-
-                            // log level or message
-                            case 1:
-                                var o = sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
-                                if (o is int l)
-                                {
-                                    level = l;
-                                }
-                                else
-                                {
-                                    message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                                }
-
-                                break;
-
-                            // message
-                            case 2:
-                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
-                                break;
-                        }
-#pragma warning restore S109 // Magic numbers should not be used
-
-                        numPositional++;
-                    }
-                }
-                return (eventId, level, message, eventName, skipEnabledCheck);
-            }
-
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
                 _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
@@ -648,6 +627,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 return string.Empty;
             }
+
+            private static object GetItem(TypedConstant arg) => arg.Kind == TypedConstantKind.Array ? arg.Values : arg.Value;
         }
 
         /// <summary>
