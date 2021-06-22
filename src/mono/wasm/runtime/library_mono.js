@@ -86,6 +86,7 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root.bind(MONO);
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots.bind(MONO);
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots.bind(MONO);
+			module ["mono_wasm_load_config"] = MONO.mono_wasm_load_config.bind(MONO);
 		},
 
 		_base64Converter: {
@@ -487,15 +488,54 @@ var MonoSupportLib = {
 		mono_text_decoder: undefined,
 		string_decoder: {
 			copy: function (mono_string) {
-				if (mono_string == 0)
+				if (mono_string === 0)
 					return null;
 
-				if (!this.mono_wasm_string_convert)
-					this.mono_wasm_string_convert = Module.cwrap ("mono_wasm_string_convert", null, ['number']);
+				if (!this.mono_wasm_string_root)
+					this.mono_wasm_string_root = MONO.mono_wasm_new_root ();
+				this.mono_wasm_string_root.value = mono_string;
 
-				this.mono_wasm_string_convert (mono_string);
-				var result = this.result;
-				this.result = undefined;
+				if (!this.mono_wasm_string_get_data)
+					this.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
+				
+				if (!this.mono_wasm_string_decoder_buffer)
+					this.mono_wasm_string_decoder_buffer = Module._malloc(12);
+				
+				let ppChars = this.mono_wasm_string_decoder_buffer + 0,
+					pLengthBytes = this.mono_wasm_string_decoder_buffer + 4,
+					pIsInterned = this.mono_wasm_string_decoder_buffer + 8;
+				
+				this.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
+
+				// TODO: Is this necessary?
+				if (!this.mono_wasm_empty_string)
+					this.mono_wasm_empty_string = "";
+
+				let result = this.mono_wasm_empty_string;
+				let lengthBytes = Module.HEAP32[pLengthBytes / 4],
+					pChars = Module.HEAP32[ppChars / 4],
+					isInterned = Module.HEAP32[pIsInterned / 4];
+
+				if (pLengthBytes && pChars) {
+					if (
+						isInterned && 
+						MONO.interned_string_table && 
+						MONO.interned_string_table.has(mono_string)
+					) {
+						result = MONO.interned_string_table.get(mono_string);
+						// console.log("intern table cache hit", mono_string, result.length);
+					} else {
+						result = this.decode(pChars, pChars + lengthBytes, false);
+						if (isInterned) {
+							if (!MONO.interned_string_table)
+								MONO.interned_string_table = new Map();
+							// console.log("interned", mono_string, result.length);
+							MONO.interned_string_table.set(mono_string, result);
+						}
+					}						
+				}
+
+				this.mono_wasm_string_root.value = 0;
 				return result;
 			},
 			decode: function (start, end, save) {
@@ -2323,6 +2363,30 @@ var MonoSupportLib = {
 
 			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
+
+		/**
+		 * Loads the mono config file (typically called mono-config.json)
+		 *
+		 * @param {string} configFilePath - relative path to the config file
+		 * @throws Will throw an error if the config file loading fails
+		 */
+		mono_wasm_load_config: async function (configFilePath) {		
+			try {
+				let config = null;
+				// NOTE: when we add nodejs make sure to include the nodejs fetch package
+				if (ENVIRONMENT_IS_WEB) {
+					const configRaw = await fetch(configFilePath);
+					config = await configRaw.json();
+				}else if (ENVIRONMENT_IS_NODE) {
+					config = require(configFilePath);
+				} else { // shell or worker
+					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
+				}
+				return config;
+			} catch(e) {
+				return {message: "failed to load config file", error: e};
+			}
+		}
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
@@ -2510,7 +2574,7 @@ var MonoSupportLib = {
 			assembly_b64,
 			pdb_b64
 		});
-	},
+	}
 };
 
 autoAddDeps(MonoSupportLib, '$MONO')

@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
@@ -641,6 +642,30 @@ namespace System.Threading.Tasks.Tests
                     Assert.Contains("42", description);
                     Assert.Contains("stored data", description);
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AsyncTaskMethodBuilder_Completed_RemovedFromTracking()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                // NOTE: This depends on private implementation details generally only used by the debugger.
+                // If those ever change, this test will need to be updated as well.
+                typeof(Task).GetField("s_asyncDebuggingEnabled", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, true);
+
+                for (int i = 0; i < 1000; i++)
+                {
+                    static async Task YieldAsync(TaskCompletionSource tcs) => await tcs.Task;
+
+                    TaskCompletionSource tcs = new();
+                    Task t = YieldAsync(tcs);
+                    tcs.SetResult();
+                    t.Wait();
+                }
+
+                int activeCount = ((dynamic)typeof(Task).GetField("s_currentActiveTasks", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                Assert.InRange(activeCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
             }).Dispose();
         }
 

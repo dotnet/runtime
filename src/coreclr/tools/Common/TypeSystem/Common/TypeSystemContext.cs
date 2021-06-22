@@ -677,6 +677,11 @@ namespace Internal.TypeSystem
             return type.GetMethods();
         }
 
+        protected internal virtual IEnumerable<MethodDesc> GetAllVirtualMethods(TypeDesc type)
+        {
+            return type.GetVirtualMethods();
+        }
+
         /// <summary>
         /// Abstraction to allow the type system context to affect the field layout
         /// algorithm used by types to lay themselves out.

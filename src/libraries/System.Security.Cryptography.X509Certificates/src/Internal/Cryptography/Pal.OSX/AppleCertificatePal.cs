@@ -399,7 +399,26 @@ namespace Internal.Cryptography.Pal
                 return;
 
             Debug.Assert(!_certHandle.IsInvalid);
-            _certData = new CertificateData(Interop.AppleCrypto.X509GetRawData(_certHandle));
+            string? subjectSummary = Interop.AppleCrypto.X509GetSubjectSummary(_certHandle);
+
+            try
+            {
+                _certData = new CertificateData(Interop.AppleCrypto.X509GetRawData(_certHandle));
+            }
+            catch (CryptographicException e)
+            {
+                if (subjectSummary is null)
+                {
+                    throw;
+                }
+
+                string message = SR.Format(
+                    SR.Cryptography_X509_CertificateCorrupted,
+                    subjectSummary);
+
+                throw new CryptographicException(message, e);
+            }
+
             _readCertData = true;
         }
     }

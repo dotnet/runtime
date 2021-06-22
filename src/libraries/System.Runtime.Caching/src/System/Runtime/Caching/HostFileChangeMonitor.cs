@@ -97,6 +97,13 @@ namespace System.Runtime.Caching
                 }
                 if (fcn == null)
                 {
+#if NET5_0_OR_GREATER
+                    if (OperatingSystem.IsBrowser())
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+#endif
+
                     fcn = new FileChangeNotificationSystem();
                 }
                 Interlocked.CompareExchange(ref s_fcn, fcn, null);

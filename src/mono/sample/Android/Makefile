@@ -3,8 +3,8 @@ MONO_ARCH?=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
+INTERP=false
 DEPLOY_AND_RUN?=true
-RUNTIME_COMPONENTS=diagnostics_tracing
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -27,6 +27,7 @@ run:
 	/p:Configuration=$(MONO_CONFIG) \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:ForceAOT=$(AOT) \
+	/p:MonoForceInterpreter=$(INTERP) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:RunActivity=false \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \

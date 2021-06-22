@@ -9,7 +9,7 @@ namespace System.Net
 {
     internal static class SecurityStatusAdapterPal
     {
-        private const int StatusDictionarySize = 42;
+        private const int StatusDictionarySize = 43;
 
 #if DEBUG
         static SecurityStatusAdapterPal()
@@ -61,7 +61,8 @@ namespace System.Net
             { Interop.SECURITY_STATUS.UnsupportedPreauth, SecurityStatusPalErrorCode.UnsupportedPreauth },
             { Interop.SECURITY_STATUS.Unsupported, SecurityStatusPalErrorCode.Unsupported },
             { Interop.SECURITY_STATUS.UntrustedRoot, SecurityStatusPalErrorCode.UntrustedRoot },
-            { Interop.SECURITY_STATUS.WrongPrincipal, SecurityStatusPalErrorCode.WrongPrincipal }
+            { Interop.SECURITY_STATUS.WrongPrincipal, SecurityStatusPalErrorCode.WrongPrincipal },
+            { Interop.SECURITY_STATUS.NoRenegotiation, SecurityStatusPalErrorCode.NoRenegotiation }
         };
 
         internal static SecurityStatusPal GetSecurityStatusPalFromNativeInt(int win32SecurityStatus)

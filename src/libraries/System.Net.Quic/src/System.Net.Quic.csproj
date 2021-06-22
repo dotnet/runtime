@@ -15,7 +15,16 @@
     <Compile Include="System\Net\Quic\Implementations\Mock\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\*.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicAlpnHelper.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicEnums.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicNativeMethods.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusHelper.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicConfigurationHandle.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicConnectionHandle.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicListenerHandle.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicRegistrationHandle.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicStreamHandle.cs" />
   </ItemGroup>
   <!-- System.Net common -->
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
@@ -28,18 +37,23 @@
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.Windows.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.Linux.cs" />
   </ItemGroup>
   <!-- FreeBSD specific files -->
   <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
+    <!-- Assume similarity with OSX for now -->
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- Project references -->
   <ItemGroup>

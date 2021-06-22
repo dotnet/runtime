@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,7 +6,6 @@
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS;FEATURE_SYSTEM_EVENTS</DefineConstants>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-Unix;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -14,6 +13,10 @@
     <IncludeInternalObsoleteAttribute Condition="'$(TargetFramework)' != 'net461'">true</IncludeInternalObsoleteAttribute>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetFramework)' != 'net461'">SR.SystemDrawingCommon_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />

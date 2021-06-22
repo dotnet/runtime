@@ -162,5 +162,13 @@ namespace Internal.TypeSystem
 
             }
         }
+
+        public class MarshalDirectiveException : TypeSystemException
+        {
+            internal MarshalDirectiveException(ExceptionStringID id)
+                : base(id)
+            {
+            }
+        }
     }
 }

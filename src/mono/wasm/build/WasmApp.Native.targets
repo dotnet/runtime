@@ -107,6 +107,15 @@
 
     <ItemGroup>
       <EmscriptenEnvVars Include="PATH=$(_EmscriptenPrependPATHProperty)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+
+      <!--
+        Python defaults to the system charset, and thus expects the files it's reading to
+        match that. But that might not always be true. Eg. system charset=gbk, failing to read
+        utf-8 files
+
+        See https://github.com/dotnet/runtime/issues/53367 for the motivating issue
+      -->
+      <EmscriptenEnvVars Include="PYTHONUTF8=1" />
     </ItemGroup>
   </Target>
 
@@ -141,6 +150,7 @@
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <PropertyGroup>
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
@@ -198,10 +208,10 @@
   </Target>
 
   <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
-    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
-    <Exec Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
+    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       Assemblies="@(_WasmAssembliesInternal)"
@@ -329,8 +339,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
-    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
-           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -343,6 +353,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+
       <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
@@ -383,7 +394,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </ItemGroup>
 
     <MonoAOTCompiler
-      CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
+      CompilerBinaryPath="$(_MonoAotCrossCompilerPath)"
       OutputDir="$(_WasmIntermediateOutputPath)"
       Mode="$(AOTMode)"
       OutputType="AsmOnly"
@@ -412,9 +423,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
       <_WasmNativeFileForLinking Include="@(_BitcodeFile)" />
     </ItemGroup>
-
-    <Error Condition="@(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
-           Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->

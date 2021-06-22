@@ -71,10 +71,10 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	EP_GCX_PREEMP_EXIT
 
+	session->streaming_thread = NULL;
+
 	if (!success)
 		ep_disable ((EventPipeSessionID)session);
-
-	session->streaming_thread = NULL;
 
 	return (ep_rt_thread_start_func_return_t)0;
 }
@@ -132,7 +132,8 @@ ep_session_alloc (
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
-	EventPipeSessionSynchronousCallback sync_callback)
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
@@ -159,6 +160,7 @@ ep_session_alloc (
 	instance->format = format;
 	instance->rundown_requested = rundown_requested;
 	instance->synchronous_callback = sync_callback;
+	instance->callback_additional_data = callback_additional_data;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.
@@ -306,7 +308,9 @@ ep_on_error:
 }
 
 void
-ep_session_execute_rundown (EventPipeSession *session)
+ep_session_execute_rundown (
+	EventPipeSession *session,
+	ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	EP_ASSERT (session != NULL);
 
@@ -315,7 +319,7 @@ ep_session_execute_rundown (EventPipeSession *session)
 
 	ep_return_void_if_nok (session->file != NULL);
 
-	ep_rt_execute_rundown ();
+	ep_rt_execute_rundown (execution_checkpoints);
 }
 
 void
@@ -471,7 +475,8 @@ ep_session_write_event (
 				related_activity_id,
 				event_thread,
 				stack == NULL ? 0 : ep_stack_contents_get_size (stack),
-				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack));
+				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack),
+				session->callback_additional_data);
 			result = true;
 		} else {
 			EP_ASSERT (session->buffer_manager != NULL);

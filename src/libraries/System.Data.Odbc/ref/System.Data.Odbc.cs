@@ -48,7 +48,7 @@ namespace System.Data.Odbc
         public override object? ExecuteScalar() { throw null; }
         public override void Prepare() { }
         public void ResetCommandTimeout() { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OdbcCommandBuilder : System.Data.Common.DbCommandBuilder
     {
@@ -154,7 +154,7 @@ namespace System.Data.Odbc
         protected override System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OdbcDataReader : System.Data.Common.DbDataReader
     {
@@ -287,7 +287,7 @@ namespace System.Data.Odbc
         public override object? Value { get { throw null; } set { } }
         public override void ResetDbType() { }
         public void ResetOdbcType() { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]

@@ -135,6 +135,11 @@ namespace ILCompiler.DependencyAnalysis
                 );
             });
 
+            _virtualFunctionOverrideCache = new NodeCache<VirtualResolutionFixupSignature, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(_codegenNodeFactory, key);
+            });
+
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperImport(
@@ -439,6 +444,15 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode CheckTypeLayout(TypeDesc type)
         {
             return _checkTypeLayoutCache.GetOrAdd(type);
+        }
+
+        private NodeCache<VirtualResolutionFixupSignature, ISymbolNode> _virtualFunctionOverrideCache;
+
+        public ISymbolNode CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
+        {
+            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(
+                _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_VirtualFunctionOverride : ReadyToRunFixupKind.Check_VirtualFunctionOverride,
+                declMethod, implType, implMethod));
         }
 
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>

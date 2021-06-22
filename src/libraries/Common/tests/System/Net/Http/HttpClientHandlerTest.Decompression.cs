@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("deflate", true)]
         [InlineData("br", false)]
         [InlineData("br", true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string encodingName, bool all)
         {
             Func<Stream, Stream> compress;
@@ -136,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodNotSpecified_OriginalContentReturned_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
@@ -170,6 +170,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_GZip(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
@@ -205,6 +206,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]
         [InlineData("https://httpbin.org/deflate", "\"deflated\": true")]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_Deflate(string uri, string expectedContent)
         {
             if (IsWinHttpHandler)
@@ -221,8 +223,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             // Sync API supported only up to HTTP/1.1
@@ -260,7 +263,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DecompressionMethods.Deflate, "deflate", "gzip")]
         [InlineData(DecompressionMethods.Deflate, "deflate", "br")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "gzip, deflate")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithNoDuplicates(
             DecompressionMethods methods,
             string encodings,
@@ -313,7 +316,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0", "")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0", "deflate")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithQualityWeightingsNoDuplicates(
             DecompressionMethods methods,
             string manualAcceptEncodingHeaderValues,
