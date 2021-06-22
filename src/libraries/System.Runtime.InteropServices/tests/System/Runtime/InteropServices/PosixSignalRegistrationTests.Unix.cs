@@ -32,7 +32,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData((PosixSignal)9)]  // SIGKILL
-        [InlineData((PosixSignal)19)] // SIGSTOP
         public void UninstallableSignalsThrow(PosixSignal signal)
         {
             Assert.Throws<IOException>(() => PosixSignalRegistration.Create(signal, ctx => { }));
