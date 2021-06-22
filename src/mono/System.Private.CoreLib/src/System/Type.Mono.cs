@@ -40,7 +40,7 @@ namespace System
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwOnError, ignoreCase, false, ref stackMark);
+            return RuntimeType.GetType(typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -48,7 +48,7 @@ namespace System
         public static Type? GetType(string typeName, bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwOnError, false, false, ref stackMark);
+            return RuntimeType.GetType(typeName, throwOnError, false, ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -56,7 +56,7 @@ namespace System
         public static Type? GetType(string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, false, false, false, ref stackMark);
+            return RuntimeType.GetType(typeName, false, false, ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -135,7 +135,22 @@ namespace System
         private static extern Type internal_from_handle(IntPtr handle);
 
         [Intrinsic]
-        public static bool operator ==(Type? left, Type? right) => left == right;
+        public static bool operator ==(Type? left, Type? right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if (left is null || right is null)
+                return false;
+
+            // CLR-compat: runtime types are never equal to non-runtime types
+            // If `left` is a non-runtime type with a weird Equals implementation
+            // this is where operator `==` would differ from `Equals` call.
+            if (left.IsRuntimeImplemented() || right.IsRuntimeImplemented())
+                return false;
+
+            return left.Equals(right);
+        }
 
         public static bool operator !=(Type? left, Type? right)
         {

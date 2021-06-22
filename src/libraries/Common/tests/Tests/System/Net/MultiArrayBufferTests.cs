@@ -215,7 +215,6 @@ namespace Tests.System.Net
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50955", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void CopyFromRepeatedlyAndCopyToRepeatedly_Success()
         {
             ReadOnlySpan<byte> source = new byte[] { 1, 2, 3, 4, 5, 6, 7 }.AsSpan();
@@ -245,7 +244,6 @@ namespace Tests.System.Net
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50955", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void CopyFromRepeatedlyAndCopyToRepeatedly_LargeCopies_Success()
         {
             ReadOnlySpan<byte> source = Enumerable.Range(0, 64 * 1024 - 1).Select(x => (byte)x).ToArray().AsSpan();

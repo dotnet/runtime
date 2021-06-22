@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Hosting.Tests
     public partial class HostTests
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS, MacCatalyst, or tvOS.")]
         public async Task StopAsyncWithCancellation()
         {
             var builder = new HostBuilder();

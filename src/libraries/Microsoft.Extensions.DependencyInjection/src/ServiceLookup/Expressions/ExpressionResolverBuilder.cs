@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal static readonly MethodInfo InvokeFactoryMethodInfo = GetMethodInfo<Action<Func<IServiceProvider, object>, IServiceProvider>>((a, b) => a.Invoke(b));
         internal static readonly MethodInfo CaptureDisposableMethodInfo = GetMethodInfo<Func<ServiceProviderEngineScope, object, object>>((a, b) => a.CaptureDisposable(b));
         internal static readonly MethodInfo TryGetValueMethodInfo = GetMethodInfo<Func<IDictionary<ServiceCacheKey, object>, ServiceCacheKey, object, bool>>((a, b, c) => a.TryGetValue(b, out c));
+        internal static readonly MethodInfo ResolveCallSiteAndScopeMethodInfo = GetMethodInfo<Func<CallSiteRuntimeResolver, ServiceCallSite, ServiceProviderEngineScope, object>>((a, b, c) => a.Resolve(b, c));
         internal static readonly MethodInfo AddMethodInfo = GetMethodInfo<Action<IDictionary<ServiceCacheKey, object>, ServiceCacheKey, object>>((a, b, c) => a.Add(b, c));
         internal static readonly MethodInfo MonitorEnterMethodInfo = GetMethodInfo<Action<object, bool>>((lockObj, lockTaken) => Monitor.Enter(lockObj, ref lockTaken));
         internal static readonly MethodInfo MonitorExitMethodInfo = GetMethodInfo<Action<object>>(lockObj => Monitor.Exit(lockObj));
@@ -44,9 +45,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     Expression.Call(ScopeParameter, CaptureDisposableMethodInfo, CaptureDisposableParameter),
                     CaptureDisposableParameter);
 
-        private readonly CallSiteRuntimeResolver _runtimeResolver;
-
-        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private static readonly ConstantExpression CallSiteRuntimeResolverInstanceExpression = Expression.Constant(
+            CallSiteRuntimeResolver.Instance,
+            typeof(CallSiteRuntimeResolver));
 
         private readonly ServiceProviderEngineScope _rootScope;
 
@@ -54,29 +55,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private readonly Func<ServiceCacheKey, ServiceCallSite, Func<ServiceProviderEngineScope, object>> _buildTypeDelegate;
 
-        public ExpressionResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope)
+        public ExpressionResolverBuilder(ServiceProvider serviceProvider)
         {
-            if (runtimeResolver == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeResolver));
-            }
-
+            _rootScope = serviceProvider.Root;
             _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, Func<ServiceProviderEngineScope, object>>();
-            _runtimeResolver = runtimeResolver;
-            _serviceScopeFactory = serviceScopeFactory;
-            _rootScope = rootScope;
             _buildTypeDelegate = (key, cs) => BuildNoCache(cs);
         }
 
         public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            // Optimize singleton case
-            if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
-            {
-                object value = _runtimeResolver.Resolve(callSite, _rootScope);
-                return scope => value;
-            }
-
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
@@ -117,7 +104,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitRootCache(ServiceCallSite singletonCallSite, object context)
         {
-            return Expression.Constant(_runtimeResolver.Resolve(singletonCallSite, _rootScope));
+            return Expression.Constant(CallSiteRuntimeResolver.Instance.Resolve(singletonCallSite, _rootScope));
         }
 
         protected override Expression VisitConstant(ConstantCallSite constantCallSite, object context)
@@ -132,7 +119,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, object context)
         {
-            return Expression.Constant(_serviceScopeFactory);
+            return Expression.Constant(serviceScopeFactoryCallSite.Value);
         }
 
         protected override Expression VisitFactory(FactoryCallSite factoryCallSite, object context)
@@ -221,6 +208,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // Move off the main stack
         private Expression BuildScopedExpression(ServiceCallSite callSite)
         {
+            ConstantExpression callSiteExpression = Expression.Constant(
+                callSite,
+                typeof(ServiceCallSite));
+
+            // We want to directly use the callsite value if it's set and the scope is the root scope.
+            // We've already called into the RuntimeResolver and pre-computed any singletons or root scope
+            // Avoid the compilation for singletons (or promoted singletons)
+            MethodCallExpression resolveRootScopeExpression = Expression.Call(
+                CallSiteRuntimeResolverInstanceExpression,
+                ResolveCallSiteAndScopeMethodInfo,
+                callSiteExpression,
+                ScopeParameter);
+
             ConstantExpression keyExpression = Expression.Constant(
                 callSite.Cache.Key,
                 typeof(ServiceCacheKey));
@@ -272,10 +272,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             BlockExpression tryBody = Expression.Block(monitorEnter, blockExpression);
             ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
 
-            return Expression.Block(
-                typeof(object),
-                new[] { lockWasTaken },
-                Expression.TryFinally(tryBody, finallyBody));
+            return Expression.Condition(
+                    Expression.Property(
+                        ScopeParameter,
+                        typeof(ServiceProviderEngineScope)
+                            .GetProperty(nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public)),
+                    resolveRootScopeExpression,
+                    Expression.Block(
+                        typeof(object),
+                        new[] { lockWasTaken },
+                        Expression.TryFinally(tryBody, finallyBody))
+                );
         }
 
         private static MethodInfo GetMethodInfo<T>(Expression<T> expr)

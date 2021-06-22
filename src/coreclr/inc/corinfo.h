@@ -605,7 +605,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-    CORINFO_HELP_CLASSPROFILE,              // Update class profile for a call site
+    CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
+    CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
 
     CORINFO_HELP_COUNT,
 };
@@ -881,23 +882,16 @@ enum CorInfoException
 
 enum CorInfoIntrinsics
 {
-    CORINFO_INTRINSIC_GetChar,              // fetch character out of string
-    CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
     CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
     CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-    CORINFO_INTRINSIC_StringGetChar,        // fetch character out of string
-    CORINFO_INTRINSIC_StringLength,         // get the length
     CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-    CORINFO_INTRINSIC_GetTypeFromHandle,
     CORINFO_INTRINSIC_RTH_GetValueInternal,
-    CORINFO_INTRINSIC_TypeEQ,
-    CORINFO_INTRINSIC_TypeNEQ,
     CORINFO_INTRINSIC_Object_GetType,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-    CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
     CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
+
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
     CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -910,8 +904,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
-    CORINFO_INTRINSIC_Span_GetItem,
-    CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
     CORINFO_INTRINSIC_GetRawHandle,
 
     CORINFO_INTRINSIC_Count,
@@ -1610,6 +1602,28 @@ struct CORINFO_CALL_INFO
     bool                    wrapperDelegateInvoke;
 };
 
+enum CORINFO_DEVIRTUALIZATION_DETAIL
+{
+    CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
+    CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
+    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+    CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
+    CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
+    CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
+    CORINFO_DEVIRTUALIZATION_FAILED_DIM,                           // interface method was default interface method
+    CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS,                      // object not subclass of base class
+    CORINFO_DEVIRTUALIZATION_FAILED_SLOT,                          // virtual method installed via explicit override
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,                        // devirtualization crossed version bubble
+    CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL,                        // object has multiple implementations of interface class
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL,             // decl method is defined on class and decl method not in version bubble, and decl method not in closest to version bubble
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL,         // decl method is defined on interface and not in version bubble, and implementation type not entirely defined in bubble
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL,                   // object class not defined within version bubble
+    CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
+    CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
+    CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+    CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
+};
+
 struct CORINFO_DEVIRTUALIZATION_INFO
 {
     //
@@ -1618,6 +1632,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_METHOD_HANDLE       virtualMethod;
     CORINFO_CLASS_HANDLE        objClass;
     CORINFO_CONTEXT_HANDLE      context;
+    CORINFO_RESOLVED_TOKEN     *pResolvedTokenVirtualMethod;
 
     //
     // [Out] results of resolveVirtualMethod.
@@ -1625,10 +1640,16 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
     // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    // - details on the computation done by the jit host
+    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targetting an R2R image
+    //   use it as the parameter to getCallInfo
     //
-    CORINFO_METHOD_HANDLE       devirtualizedMethod;
-    bool                        requiresInstMethodTableArg;
-    CORINFO_CONTEXT_HANDLE      exactContext;
+    CORINFO_METHOD_HANDLE           devirtualizedMethod;
+    bool                            requiresInstMethodTableArg;
+    CORINFO_CONTEXT_HANDLE          exactContext;
+    CORINFO_DEVIRTUALIZATION_DETAIL detail;
+    CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
+    CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
 };
 
 //----------------------------------------------------------------------------
@@ -1817,7 +1838,7 @@ struct CORINFO_Object
 struct CORINFO_String : public CORINFO_Object
 {
     unsigned                stringLen;
-    WCHAR                   chars[1];       // actually of variable size
+    char16_t                chars[1];       // actually of variable size
 };
 
 struct CORINFO_Array : public CORINFO_Object
@@ -2635,7 +2656,7 @@ public:
                 unsigned int           *cILOffsets,         // [OUT] size of pILOffsets
                 uint32_t              **pILOffsets,         // [OUT] IL offsets of interest
                                                             //       jit MUST free with freeArray!
-                ICorDebugInfo::BoundaryTypes *implictBoundaries // [OUT] tell jit, all boundries of this type
+                ICorDebugInfo::BoundaryTypes *implicitBoundaries // [OUT] tell jit, all boundaries of this type
                 ) = 0;
 
     // Report back the mapping from IL to native code,

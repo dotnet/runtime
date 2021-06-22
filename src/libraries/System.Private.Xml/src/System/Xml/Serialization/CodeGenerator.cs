@@ -53,9 +53,11 @@ namespace System.Xml.Serialization
             return type.Name == "Nullable`1";
         }
 
+        [Conditional("DEBUG")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Debug only code, we don't ship debug binaries.")]
         internal static void AssertHasInterface(Type type, Type iType)
         {
-#if DEBUG
             Debug.Assert(iType.IsInterface);
             foreach (Type iFace in type.GetInterfaces())
             {
@@ -63,7 +65,6 @@ namespace System.Xml.Serialization
                     return;
             }
             Debug.Fail("Interface not found");
-#endif
         }
 
         internal void BeginMethod(Type returnType, string methodName, Type[] argTypes, string[] argNames, MethodAttributes methodAttributes)

@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -30,6 +32,37 @@ namespace Microsoft.Extensions.Hosting.Tests
                 config["key1"] = "value";
                 Assert.Equal("value", config["key1"]);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void BuildFiresEvents()
+        {
+            using var _ = RemoteExecutor.Invoke(() =>
+            {
+                IHostBuilder hostBuilderFromEvent = null;
+                IHost hostFromEvent = null;
+
+                var listener = new HostingListener((pair) =>
+                {
+                    if (pair.Key == "HostBuilding")
+                    {
+                        hostBuilderFromEvent = (IHostBuilder)pair.Value;
+                    }
+
+                    if (pair.Key == "HostBuilt")
+                    {
+                        hostFromEvent = (IHost)pair.Value;
+                    }
+                });
+
+                using var sub = DiagnosticListener.AllListeners.Subscribe(listener);
+
+                var hostBuilder = new HostBuilder();
+                var host = hostBuilder.Build();
+
+                Assert.Same(hostBuilder, hostBuilderFromEvent);
+                Assert.Same(host, hostFromEvent);
+            });
         }
 
         [Fact]
@@ -277,6 +310,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RelativeContentRootIsResolved()
         {
             using (var host = new HostBuilder()
@@ -340,6 +374,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithOptionsOverload(
             BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
@@ -363,6 +398,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithContenxtAndOptionsOverload(
             BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
@@ -620,6 +656,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostBuilderConfigureDefaultsInterleavesMissingConfigValues()
         {
             IHostBuilder hostBuilder = new HostBuilder();
@@ -651,6 +688,32 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(
                 testBehavior,
                 options.Value.BackgroundServiceExceptionBehavior);
+        }
+
+        private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+        {
+            private IDisposable? _disposable;
+            private readonly Action<KeyValuePair<string, object?>> _callback;
+
+            public HostingListener(Action<KeyValuePair<string, object?>> callback)
+            {
+                _callback = callback;
+            }
+
+            public void OnCompleted() { _disposable?.Dispose(); }
+            public void OnError(Exception error) { }
+            public void OnNext(DiagnosticListener value)
+            {
+                if (value.Name == "Microsoft.Extensions.Hosting")
+                {
+                    _disposable = value.Subscribe(this);
+                }
+            }
+
+            public void OnNext(KeyValuePair<string, object?> value)
+            {
+                _callback(value);
+            }
         }
 
         private class FakeFileProvider : IFileProvider, IDisposable

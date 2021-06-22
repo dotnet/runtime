@@ -1166,7 +1166,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	// FIXME: Map 1 member structs to primitive types on platforms where its supported
 
 	klass = mono_class_from_mono_type_internal (t);
-	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT)
+	/* Under mono, auto and sequential layout are the same for valuetypes, see mono_class_layout_fields () */
+	if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) &&
+		((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT))
 		return NULL;
 	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
@@ -1188,8 +1190,28 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (findex >= 16)
 			break;
 	}
+
+#ifdef TARGET_WASM
+	guint32 align;
+	int size = mono_class_value_size (klass, &align);
+
+	/* Other platforms might pass small valuestypes or valuetypes with non-int fields differently */
+	if (align == 4 && size <= 4 * 5) {
+		findex = size / align;
+		for (int i = 0; i < findex; ++i)
+			args [i] = m_class_get_byval_arg (mono_get_int32_class ());
+	} else if (align == 8 && size <= 8 * 5) {
+		findex = size / align;
+		for (int i = 0; i < findex; ++i)
+			args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+	} else {
+		if (findex > 5)
+			return NULL;
+	}
+#else
 	if (findex > 5)
 		return NULL;
+#endif
 
 	switch (findex) {
 	case 0:
@@ -1214,7 +1236,6 @@ get_wrapper_shared_vtype (MonoType *t)
 		g_assert_not_reached ();
 		break;
 	}
-
 	g_assert (tuple_class);
 
 	memset (&ctx, 0, sizeof (ctx));
@@ -2773,6 +2794,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
  * @method: a method
  * @in_mrgctx: whether to put the data into the MRGCTX
  * @data: the info data
+ * @did_register: whether data was registered
  * @info_type: the type of info to register about data
  * @generic_context: a generic context
  *
@@ -2781,7 +2803,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
  * encoded slot number.
  */
 static guint32
-lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoMethod *method, gboolean in_mrgctx, gpointer data,
+lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoMethod *method, gboolean in_mrgctx, gpointer data, gboolean *did_register,
 						 MonoRgctxInfoType info_type, MonoGenericContext *generic_context)
 {
 	int type_argc = 0;
@@ -2830,7 +2852,10 @@ lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoM
 
 	/* We haven't found the info */
 	if (index == -1)
+	{
 		index = register_info (klass, type_argc, data, info_type);
+		*did_register = TRUE;
+	}
 
 	/* interlocked by loader lock */
 	if (index > UnlockedRead (&rgctx_max_slot_number))
@@ -4211,6 +4236,8 @@ int
 mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 {
 	gpointer entry_data = NULL;
+	gboolean did_register = FALSE;
+	guint32 result = -1;
 
 	switch (entry->data->type) {
 	case MONO_PATCH_INFO_CLASS:
@@ -4281,9 +4308,27 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	if (entry->in_mrgctx)
-		return lookup_or_register_info (jit_mm->mem_manager, entry->d.method->klass, entry->d.method, entry->in_mrgctx, entry_data, entry->info_type, mono_method_get_context (entry->d.method));
+		result = lookup_or_register_info (jit_mm->mem_manager, entry->d.method->klass, entry->d.method, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_method_get_context (entry->d.method));
 	else
-		return lookup_or_register_info (jit_mm->mem_manager, entry->d.klass, NULL, entry->in_mrgctx, entry_data, entry->info_type, mono_class_get_context (entry->d.klass));
+		result = lookup_or_register_info (jit_mm->mem_manager, entry->d.klass, NULL, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_class_get_context (entry->d.klass));
+
+	if (!did_register)
+		switch (entry->data->type) {
+		case MONO_PATCH_INFO_GSHAREDVT_CALL:
+		case MONO_PATCH_INFO_VIRT_METHOD:
+		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			g_free (entry_data);
+			break;
+		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+			g_free (((MonoGSharedVtMethodInfo *) entry_data)->entries);
+			g_free (entry_data);
+			break;
+		}
+		default :
+			break;
+		}
+
+	return result;
 }
 
 static gboolean gsharedvt_supported;

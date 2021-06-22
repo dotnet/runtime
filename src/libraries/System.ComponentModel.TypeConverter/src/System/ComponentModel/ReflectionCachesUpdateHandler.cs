@@ -12,7 +12,7 @@ namespace System.ComponentModel
 {
     internal static class ReflectionCachesUpdateHandler
     {
-        public static void BeforeUpdate(Type[]? types)
+        public static void ClearCache(Type[]? types)
         {
             // ReflectTypeDescriptionProvider maintains global caches on top of reflection.
             // Clear those.

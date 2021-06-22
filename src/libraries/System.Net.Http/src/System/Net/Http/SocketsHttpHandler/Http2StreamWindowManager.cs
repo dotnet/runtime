@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -28,7 +30,7 @@ namespace System.Net.Http
                 _stream = stream;
                 _streamWindowSize = connection.InitialStreamWindowSize;
                 _streamWindowUpdateRatio = _connection._pool.Settings._streamWindowUpdateRatio;
-                _stream.Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
+                _stream.TraceFlowControl($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
             }
 
             internal int StreamWindowSize => _streamWindowSize;
@@ -63,15 +65,18 @@ namespace System.Net.Http
 
         private class DynamicHttp2StreamWindowManager : Http2StreamWindowManager
         {
-            private DateTime _lastWindowUpdate = DateTime.Now;
+            private static readonly double StopWatchToTimesSpan = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
 
-            private long _magic = 1;
+            private long _lastWindowUpdate;
+
+            private int _streamWindowThresholdMultiplier = 1;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
             {
-                _magic = connection._pool.Settings._streamWindowMagicMultiplier;
-                _stream.Trace($"magic:{_magic}");
+                _streamWindowThresholdMultiplier = connection._pool.Settings._streamWindowThresholdMultiplier;
+                _stream.TraceFlowControl($" _streamWindowThresholdMultiplier:{_streamWindowThresholdMultiplier} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
+                _lastWindowUpdate = Stopwatch.GetTimestamp();
             }
 
             public override void AdjustWindow(int bytesConsumed)
@@ -82,70 +87,134 @@ namespace System.Net.Http
                     return;
                 }
 
-                TimeSpan rtt = _connection._rttEstimator!.Rtt;
-                TimeSpan dt = DateTime.Now - _lastWindowUpdate;
-
                 int windowSizeIncrement = _delivered;
+                long currentTime = Stopwatch.GetTimestamp();
 
-                if (_magic * _delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks)
+                if (_connection._rttEstimator!.MinRtt > TimeSpan.Zero)
                 {
-                    windowSizeIncrement += _streamWindowSize;
-                    _streamWindowSize *= 2;
+                    TimeSpan rtt = _connection._rttEstimator.MinRtt;
+                    TimeSpan dt = StopwatchTicksToTimeSpan(currentTime - _lastWindowUpdate);
 
-                    _stream.Trace($"Updated StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
-                }
-                else
-                {
-                    string msg =
-                        $"No adjustment! | RTT={rtt.TotalMilliseconds} ms || dt={dt.TotalMilliseconds} ms || " +
-                        //$"_delivered * rtt.Ticks = {_delivered * rtt.Ticks} || StreamWindowThreshold * dt.Ticks = {StreamWindowThreshold * dt.Ticks} ||" +
-                        $"Magic*_delivered/dt = {_magic* _delivered / dt.TotalSeconds} bytes/sec || StreamWindowThreshold/RTT = {StreamWindowThreshold / rtt.TotalSeconds} bytes/sec";
-                    _stream.Trace(msg);
+                    if (_delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks * _streamWindowThresholdMultiplier)
+                    {
+                        windowSizeIncrement += _streamWindowSize;
+                        _streamWindowSize *= 2;
+
+                        _stream.TraceFlowControl($"Updated Stream Window. StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
+                    }
                 }
 
                 Task sendWindowUpdateTask = _connection.SendWindowUpdateAsync(_stream.StreamId, windowSizeIncrement);
                 _connection.LogExceptions(sendWindowUpdateTask);
 
                 _delivered = 0;
-                _lastWindowUpdate = DateTime.Now;
+                _lastWindowUpdate = currentTime;
+            }
+
+            private static TimeSpan StopwatchTicksToTimeSpan(long stopwatchTicks)
+            {
+                long ticks = (long)(StopWatchToTimesSpan * stopwatchTicks);
+                return new TimeSpan(ticks);
             }
         }
 
         private class RttEstimator
         {
-            private readonly TimeSpan _initialRtt;
+            private enum Status
+            {
+                Init,
+                Waiting,
+                PingSent,
+                Terminating
+            }
+
+            private const double PingIntervalInSeconds = 1;
+            private static readonly long PingIntervalInTicks =(long)(PingIntervalInSeconds * Stopwatch.Frequency);
+
             private Http2Connection _connection;
-            private readonly Socket? _socket;
-            public TimeSpan Rtt { get; private set; }
-            public RttEstimator(Http2Connection connection, TimeSpan? fakeRtt, Socket? socket)
+
+            private Status _status;
+            private long _pingSentTimestamp;
+            private long _pingCounter = -1;
+            private int _initialBurst = 4;
+
+            public TimeSpan MinRtt { get; private set; }
+
+            private readonly TimeSpan? _staticRtt;
+
+            public RttEstimator(Http2Connection connection, TimeSpan? staticRtt)
             {
                 _connection = connection;
-                if (fakeRtt.HasValue)
+                _staticRtt = staticRtt;
+                if (_staticRtt.HasValue)
                 {
-                    Rtt = fakeRtt.Value;
-                    _initialRtt = Rtt;
-                }
-                _socket = socket;
-                UpdateEstimation();
-            }
-
-#if WINDOWS
-            internal void UpdateEstimation()
-            {
-                if (_socket == null) return;
-
-                if (Interop.Winsock.GetTcpInfoV0(_socket.SafeHandle, out Interop.Winsock._TCP_INFO_v0 tcpInfo) == SocketError.Success)
-                {
-                    Rtt = TimeSpan.FromTicks(10 * tcpInfo.RttUs);
-                    _connection.Trace($"Rtt estimation updated: Rtt={Rtt} || (initial fake:{_initialRtt} difference:{Rtt - _initialRtt}");
+                    MinRtt = _staticRtt.Value;
+                    _connection.TraceFlowControl($"Using static RTT: {MinRtt.TotalMilliseconds} ms");
                 }
             }
 
-#else
-            internal void UpdateEstimation()
+            internal void OnInitialSettingsSent()
             {
+                if (_staticRtt.HasValue) return;
+                _connection.TraceFlowControl("Initial SETTINGS sent");
+                _pingSentTimestamp = Stopwatch.GetTimestamp();
             }
-#endif
+
+            internal void OnInitialSettingsAckReceived()
+            {
+                if (_staticRtt.HasValue) return;
+                _connection.TraceFlowControl("Initial SETTINGS ACK received");
+                RefreshRtt();
+                _status = Status.Waiting;
+            }
+
+            internal void OnDataOrHeadersReceived()
+            {
+                if (_staticRtt.HasValue) return;
+
+                if (_status == Status.Waiting)
+                {
+                    long now = Stopwatch.GetTimestamp();
+                    bool initial = Interlocked.Decrement(ref _initialBurst) >= 0;
+                    if (initial || now - _pingSentTimestamp > PingIntervalInTicks)
+                    {
+                        if (_initialBurst > 0) Interlocked.Decrement(ref _initialBurst);
+
+                        // Send a PING
+                        long payload = Interlocked.Decrement(ref _pingCounter);
+                        _connection.TraceFlowControl("Sending PING in response to DATA.");
+                        _connection.LogExceptions(_connection.SendPingAsync(payload, isAck: false));
+                        _pingSentTimestamp = now;
+                        _status = Status.PingSent;
+                    }
+                }
+            }
+
+            internal void OnPingAckReceived(long payload)
+            {
+                Debug.Assert(payload < 0);
+                if (_staticRtt.HasValue) return;
+                if (_status != Status.PingSent) return;
+
+                if (Interlocked.Read(ref _pingCounter) != payload)
+                    ThrowProtocolError();
+                RefreshRtt();
+                _status = Status.Waiting;
+            }
+
+            internal void OnGoAwayReceived()
+            {
+                _status = Status.Terminating;
+            }
+
+            private void RefreshRtt()
+            {
+                long elapsedTicks = Stopwatch.GetTimestamp() - _pingSentTimestamp;
+                TimeSpan prevRtt = MinRtt == TimeSpan.Zero ? TimeSpan.MaxValue : MinRtt;
+                TimeSpan currentRtt = TimeSpan.FromSeconds(elapsedTicks / (double)Stopwatch.Frequency);
+                MinRtt = new TimeSpan(Math.Min(prevRtt.Ticks, currentRtt.Ticks));
+                _connection.TraceFlowControl($"Updated MinRtt: {MinRtt.TotalMilliseconds} ms || prevRtt:{prevRtt.TotalMilliseconds} ms, currentRtt:{currentRtt.TotalMilliseconds} ms)");
+            }
         }
     }
 }

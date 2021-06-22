@@ -895,6 +895,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1229,7 +1235,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29424")]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
@@ -1457,6 +1463,10 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync(readBody: false);
+                    if (connection is Http2LoopbackConnection http2Connection)
+                    {
+                        http2Connection.SetupAutomaticPingResponse(); // Respond to RTT PING
+                    }
                     // Send multiple 100-Continue responses.
                     for (int count = 0 ; count < 4; count++)
                     {
@@ -1558,6 +1568,11 @@ namespace System.Net.Http.Functional.Tests
                     await connection.ReadRequestDataAsync(readBody: false);
 
                     await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] {new HttpHeaderData("Content-Length", $"{ResponseString.Length}")}, isFinal : false);
+
+                    if (connection is Http2LoopbackConnection http2Connection)
+                    {
+                        http2Connection.SetupAutomaticPingResponse(); // Respond to RTT PING
+                    }
 
                     byte[] body = await connection.ReadRequestBodyAsync();
                     Assert.Equal(RequestString, Encoding.ASCII.GetString(body));
@@ -1809,7 +1824,7 @@ namespace System.Net.Http.Functional.Tests
         }
 #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsNotBrowserDomSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDomSupported))]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
             string invalidUri = $"http://nosuchhost.invalid";

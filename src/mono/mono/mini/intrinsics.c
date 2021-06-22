@@ -23,6 +23,7 @@
 #include <mono/utils/mono-memory-model.h>
 
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, "System.Runtime.CompilerServices", "RuntimeHelpers")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (memory_marshal, "System.Runtime.InteropServices", "MemoryMarshal")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 /* optimize the simple GetGenericValueImpl/SetGenericValueImpl generic calls */
@@ -139,15 +140,18 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 			else if (!strcmp (cmethod->name, "Round") && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0) {
-				// special case: emit vroundps for MathF.Round directly instead of what llvm.round.f32 emits
+				// special case: emit vroundss for MathF.Round directly instead of what llvm.round.f32 emits
 				// to align with CoreCLR behavior
 				int xreg = alloc_xreg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_FCONV_TO_R4_X, xreg, args [0]->dreg);
-				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDS, xreg, xreg);
+				int xround = alloc_xreg (cfg);
+				EMIT_NEW_BIALU (cfg, ins, OP_SSE41_ROUNDS, xround, xreg, xreg);
 				ins->inst_c0 = 0x4; // vroundss xmm0, xmm0, xmm0, 0x4 (mode for rounding)
 				ins->inst_c1 = MONO_TYPE_R4;
 				int dreg = alloc_freg (cfg);
-				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xreg);
+				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xround);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_R4;
 				return ins;
 			}
 #endif
@@ -661,10 +665,12 @@ byref_arg_is_reference (MonoType *t)
 }
 
 MonoInst*
-mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized)
 {
 	MonoInst *ins = NULL;
 	MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
+
+	*ins_type_initialized = FALSE;
 
 	const char* cmethod_klass_name_space;
 	if (m_class_get_nested_in (cmethod->klass))
@@ -742,7 +748,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, type));
 			mini_type_from_op (cfg, ins, NULL, NULL);
-
+			mini_type_to_eval_stack_type (cfg, fsig->ret, ins);
+			ins->klass = mono_defaults.runtimetype_class;
+			*ins_type_initialized = TRUE;
 			return ins;
 		} else if (!cfg->backend->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
 			int dreg = alloc_ireg (cfg);
@@ -764,11 +772,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_array_generic_access (cfg, fsig, args, FALSE);
 		else if (fsig->param_count + fsig->hasthis == 3 && !cfg->gsharedvt && strcmp (cmethod->name, "SetGenericValueImpl") == 0)
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
-		else if (!strcmp (cmethod->name, "GetRawSzArrayData") || !strcmp (cmethod->name, "GetRawArrayData")) {
-			int dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
-			return ins;
-		}
 		else if (!strcmp (cmethod->name, "GetElementSize")) {
 			int vt_reg = alloc_preg (cfg);
 			int class_reg = alloc_preg (cfg);
@@ -943,6 +946,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		} else
 			return NULL;
+	} else if (cmethod->klass == mono_class_try_get_memory_marshal_class ()) {
+		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
+			// Logic below works for both SZARRAY and MDARRAY
+			int dreg = alloc_preg (cfg);
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
+			return ins;
+		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 		gboolean is_enter = FALSE;
 		gboolean is_v4 = FALSE;
@@ -1794,7 +1805,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
-	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality")) {
+	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
+			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		MONO_INST_NEW (cfg, ins, OP_PCEQ);
 		ins->dreg = alloc_preg (cfg);
@@ -1945,8 +1957,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib &&
 		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
 		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
-		if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") || !strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
+		if (!strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
 			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			ins->type = STACK_I4;
+			return ins;
+		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported")) {
+			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? (cfg->interp ? 1 : 0) : 1);
 			ins->type = STACK_I4;
 			return ins;
 		}

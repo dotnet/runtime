@@ -1337,6 +1337,7 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId che
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_INT_REQ_FLAG);
+	mono_mb_emit_no_nullcheck (mb);
 	mono_mb_emit_byte (mb, CEE_LDIND_U4);
 	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
@@ -1351,6 +1352,7 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId che
 	mono_mb_emit_byte (mb, CEE_DUP);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoException, caught_in_unmanaged));
 	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+	mono_mb_emit_no_nullcheck (mb);
 	mono_mb_emit_byte (mb, CEE_STIND_I4);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -1448,6 +1450,7 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		g_assert_not_reached ();
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_CLASS: 
 	case MONO_TYPE_OBJECT: 
@@ -1507,29 +1510,10 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 				  int loc_res,
 				  gboolean virtual_, gboolean need_direct_wrapper)
 {
-	static MonoString *string_dummy = NULL;
 	int i;
 	int *tmp_nullable_locals;
 	gboolean void_ret = FALSE;
 	gboolean string_ctor = method && method->string_ctor;
-
-	/* to make it work with our special string constructors */
-	if (!string_dummy) {
-		ERROR_DECL (error);
-
-		// FIXME Allow for static construction of MonoString.
-
-		SETUP_ICALL_FUNCTION;
-		SETUP_ICALL_FRAME;
-
-		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, NULL, "Marshal Dummy String");
-
-		MonoStringHandle string_dummy_handle = mono_string_new_utf8_len ("dummy", 5, error);
-		string_dummy = MONO_HANDLE_RAW (string_dummy_handle);
-		mono_error_assert_ok (error);
-
-		CLEAR_ICALL_FRAME;
-	}
 
 	if (virtual_) {
 		g_assert (sig->hasthis);
@@ -1538,12 +1522,9 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 	if (sig->hasthis) {
 		if (string_ctor) {
-			if (mono_gc_is_moving ()) {
-				mono_mb_emit_ptr (mb, &string_dummy);
-				mono_mb_emit_byte (mb, CEE_LDIND_REF);
-			} else {
-				mono_mb_emit_ptr (mb, string_dummy);
-			}
+			/* This will call the code emitted by mono_marshal_get_native_wrapper () which ignores it */
+			mono_mb_emit_icon (mb, 0);
+			mono_mb_emit_byte (mb, CEE_CONV_I);
 		} else {
 			mono_mb_emit_ldarg (mb, 0);
 		}
@@ -1593,19 +1574,24 @@ handle_enum:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
+			mono_mb_emit_no_nullcheck (mb);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			mono_mb_emit_no_nullcheck (mb);
 			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 			break;
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_CLASS:  
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
+			mono_mb_emit_no_nullcheck (mb);
 			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				mono_mb_emit_no_nullcheck (mb);
 				mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 				break;
 			}
@@ -1618,6 +1604,7 @@ handle_enum:
 				type = mono_class_enum_basetype_internal (t->data.klass)->type;
 				goto handle_enum;
 			}
+			mono_mb_emit_no_nullcheck (mb);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			if (mono_class_is_nullable (mono_class_from_mono_type_internal (sig->params [i]))) {
 				/* Need to convert a boxed vtype to an mp to a Nullable struct */

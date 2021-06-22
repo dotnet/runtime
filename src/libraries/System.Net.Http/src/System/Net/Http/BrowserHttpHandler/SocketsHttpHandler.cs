@@ -16,6 +16,7 @@ namespace System.Net.Http
     [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
+        [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => false;
 
         public bool UseCookies
@@ -25,6 +26,12 @@ namespace System.Net.Http
         }
 
         public TimeSpan? FakeRtt
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public bool EnableDynamicHttp2StreamWindowSizing
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
@@ -42,7 +49,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public int StreamWindowMagicMultiplier
+        public int StreamWindowThresholdMultiplier
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

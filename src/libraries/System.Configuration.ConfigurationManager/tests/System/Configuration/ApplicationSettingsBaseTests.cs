@@ -213,7 +213,9 @@ namespace System.ConfigurationTests
         [ReadOnly(false)]
         [SettingsGroupName("TestGroup")]
         [SettingsProvider(typeof(TestProvider))]
+#pragma warning disable CS0618 // Type or member is obsolete
         [SettingsSerializeAs(SettingsSerializeAs.Binary)]
+#pragma warning restore CS0618 // Type or member is obsolete
         private class SettingsWithAttributes : ApplicationSettingsBase
         {
             [ApplicationScopedSetting]
@@ -243,7 +245,9 @@ namespace System.ConfigurationTests
             Assert.Equal(1, settings.Properties.Count);
             SettingsProperty property = settings.Properties["StringProperty"];
             Assert.Equal(typeof(TestProvider), property.Provider.GetType());
+#pragma warning disable CS0618 // Type or member is obsolete
             Assert.Equal(SettingsSerializeAs.Binary, property.SerializeAs);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         [Fact]

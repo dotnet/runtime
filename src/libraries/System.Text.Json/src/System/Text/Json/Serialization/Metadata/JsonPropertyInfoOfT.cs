@@ -234,8 +234,17 @@ namespace System.Text.Json.Serialization.Metadata
         {
             T value = Get!(obj);
 
-            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                !Converter.IsValueType && value != null &&
+            if (
+#if NET6_0_OR_GREATER
+                !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+#else
+                !Converter.IsValueType &&
+#endif
+                Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                value is not null &&
+                // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
+                // However JsonConverter<object> that uses ConverterStrategy == Value is an exception.
+                (Converter.CanBePolymorphic || ConverterStrategy != ConverterStrategy.Value) &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.

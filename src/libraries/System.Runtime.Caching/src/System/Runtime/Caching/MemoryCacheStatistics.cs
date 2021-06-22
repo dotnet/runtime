@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Caching.Configuration;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
@@ -36,6 +37,12 @@ namespace System.Runtime.Caching
         private CacheMemoryMonitor _cacheMemoryMonitor;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("browser")]
+        private static bool _configSupported => !OperatingSystem.IsBrowser();
+#else
+        private static bool _configSupported => true;
+#endif
 
         // private
 
@@ -117,7 +124,7 @@ namespace System.Runtime.Caching
         private void InitializeConfiguration(NameValueCollection config)
         {
             MemoryCacheElement element = null;
-            if (!_memoryCache.ConfigLess)
+            if (!_memoryCache.ConfigLess && _configSupported)
             {
                 MemoryCacheSection section = ConfigurationManager.GetSection("system.runtime.caching/memoryCache") as MemoryCacheSection;
                 if (section != null)
@@ -126,7 +133,7 @@ namespace System.Runtime.Caching
                 }
             }
 
-            if (element != null)
+            if (element != null && _configSupported)
             {
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;
@@ -277,14 +284,23 @@ namespace System.Runtime.Caching
 
                 int percent = Math.Max(minPercent, GetPercentToTrim());
                 long beginTotalCount = _memoryCache.GetCount();
-                Stopwatch sw = Stopwatch.StartNew();
-                long trimmedOrExpired = _memoryCache.Trim(percent);
-                sw.Stop();
-                // 1) don't update stats if the trim happend because MAX_COUNT was exceeded
-                // 2) don't update stats unless we removed at least one entry
-                if (percent > 0 && trimmedOrExpired > 0)
+                long trimmedOrExpired = 0;
+                Stopwatch sw = new Stopwatch();
+
+                // There is a small window here where the cache could be empty, but percentToTrim is > 0.
+                // In this case, it makes no sense to trim, and in fact causes a divide-by-zero exception.
+                // See - https://github.com/dotnet/runtime/issues/1423
+                if (percent > 0 && beginTotalCount > 0)
                 {
-                    SetTrimStats(sw.Elapsed.Ticks, beginTotalCount, trimmedOrExpired);
+                    sw.Start();
+                    trimmedOrExpired = _memoryCache.Trim(percent);
+                    sw.Stop();
+                    // 1) don't update stats if the trim happend because MAX_COUNT was exceeded
+                    // 2) don't update stats unless we removed at least one entry
+                    if (percent > 0 && trimmedOrExpired > 0)
+                    {
+                        SetTrimStats(sw.Elapsed.Ticks, beginTotalCount, trimmedOrExpired);
+                    }
                 }
 
                 Dbg.Trace("MemoryCacheStats", "**END** CacheManagerThread: "

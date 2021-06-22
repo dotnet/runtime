@@ -24,6 +24,7 @@
 #include "corhost.h"
 #include "reflectioninvocation.h"
 #include "sigbuilder.h"
+#include "callconvbuilder.hpp"
 #include "callsiteinspect.h"
 
 #define DISPATCH_INVOKE_SLOT 6
@@ -165,7 +166,7 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
-                    MetaSig::GetDefaultUnmanagedCallingConvention(),
+                    CallConv::GetDefaultUnmanagedCallingConvention(),
                     dwStubFlags);
 }
 
@@ -1013,17 +1014,20 @@ LPVOID ComPlusCall::GetRetThunk(UINT numStackBytes)
     {
         // cache miss -> create a new thunk
         AllocMemTracker dummyAmTracker;
-        pRetThunk = (LPVOID)dummyAmTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T((numStackBytes == 0) ? 1 : 3)));
+        size_t thunkSize = (numStackBytes == 0) ? 1 : 3;
+        pRetThunk = (LPVOID)dummyAmTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(thunkSize)));
 
-        BYTE *pThunk = (BYTE *)pRetThunk;
+        ExecutableWriterHolder<BYTE> thunkWriterHolder((BYTE *)pRetThunk, thunkSize);
+        BYTE *pThunkRW = thunkWriterHolder.GetRW();
+
         if (numStackBytes == 0)
         {
-            pThunk[0] = 0xc3;
+            pThunkRW[0] = 0xc3;
         }
         else
         {
-            pThunk[0] = 0xc2;
-            *(USHORT *)&pThunk[1] = (USHORT)numStackBytes;
+            pThunkRW[0] = 0xc2;
+            *(USHORT *)&pThunkRW[1] = (USHORT)numStackBytes;
         }
 
         // add it to the cache

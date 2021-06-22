@@ -42,7 +42,8 @@ namespace System.Net.Http
         /// <summary>
         /// Gets a value that indicates whether the handler is supported on the current platform.
         /// </summary>
-        public static bool IsSupported => true;
+        [UnsupportedOSPlatformGuard("browser")]
+        public static bool IsSupported => !OperatingSystem.IsBrowser();
 
         public bool UseCookies
         {
@@ -52,6 +53,12 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 _settings._useCookies = value;
             }
+        }
+
+        public bool EnableDynamicHttp2StreamWindowSizing
+        {
+            get => _settings._enableDynamicHttp2StreamWindowSizing;
+            set => _settings._enableDynamicHttp2StreamWindowSizing = value;
         }
 
         public TimeSpan? FakeRtt
@@ -72,10 +79,10 @@ namespace System.Net.Http
             set => _settings._streamWindowUpdateRatio = value;
         }
 
-        public int StreamWindowMagicMultiplier
+        public int StreamWindowThresholdMultiplier
         {
-            get => _settings._streamWindowMagicMultiplier;
-            set => _settings._streamWindowMagicMultiplier = value;
+            get => _settings._streamWindowThresholdMultiplier;
+            set => _settings._streamWindowThresholdMultiplier = value;
         }
 
         [AllowNull]
@@ -523,6 +530,11 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             if (request.Version.Major >= 2)
             {
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
@@ -551,6 +563,11 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             CheckDisposed();
 
             if (cancellationToken.IsCancellationRequested)

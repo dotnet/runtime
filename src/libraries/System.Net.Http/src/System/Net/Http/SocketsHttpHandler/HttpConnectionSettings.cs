@@ -68,10 +68,11 @@ namespace System.Net.Http
         internal IDictionary<string, object?>? _properties;
 
         internal TimeSpan? _fakeRtt;
+        internal bool _enableDynamicHttp2StreamWindowSizing = true;
 
         internal int _initialStreamWindowSize = 65535;
         internal int _streamWindowUpdateRatio = 8;
-        internal int _streamWindowMagicMultiplier = 1;
+        internal int _streamWindowThresholdMultiplier = 1;
 
         public HttpConnectionSettings()
         {
@@ -129,12 +130,12 @@ namespace System.Net.Http
                 _fakeRtt = _fakeRtt,
                 _initialStreamWindowSize = _initialStreamWindowSize,
                 _streamWindowUpdateRatio = _streamWindowUpdateRatio,
-                _streamWindowMagicMultiplier = _streamWindowMagicMultiplier
+                _streamWindowThresholdMultiplier = _streamWindowThresholdMultiplier,
+                _enableDynamicHttp2StreamWindowSizing = _enableDynamicHttp2StreamWindowSizing
             };
 
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (HttpConnectionPool.IsHttp3Supported())
             {
                 settings._quicImplementationProvider = _quicImplementationProvider;
             }
@@ -198,7 +199,6 @@ namespace System.Net.Http
 
         private byte[]? _http3SettingsFrame;
 
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]

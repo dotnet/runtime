@@ -481,10 +481,9 @@ void ReleaseLRef(JNIEnv *env, jobject lref)
         (*env)->DeleteLocalRef(env, lref);
 }
 
-static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
+ARGS_NON_NULL_ALL static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
 {
     *out = NULL;
-    LOG_DEBUG("Finding %s class", name);
     jclass klass = (*env)->FindClass (env, name);
     if (klass == NULL)
         return false;
@@ -498,14 +497,14 @@ jclass GetClassGRef(JNIEnv *env, const char* name)
     jclass klass = NULL;
     if (!TryGetClassGRef(env, name, &klass))
     {
-        LOG_ERROR("class %s was not found", name);
+        LOG_FATAL("class %s was not found", name);
+        abort ();
     }
 
-    assert(klass);
     return klass;
 }
 
-static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
+ARGS_NON_NULL_ALL static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
 {
     jclass klass = NULL;
     if (!TryGetClassGRef(env, name, &klass))
@@ -562,24 +561,19 @@ void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
     {
         free(*dst);
     }
-    *dst = (uint8_t*)malloc(len * sizeof(uint8_t));
+    *dst = (uint8_t*)xmalloc(len * sizeof(uint8_t));
     memcpy(*dst, src, len);
 }
 
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
-    LOG_DEBUG("Finding %s method", name);
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
-    if (!mid) {
-        LOG_ERROR("method %s %s was not found", name, sig);
-        assert(mid);
-    }
+    abort_unless(mid != NULL, "method %s %s was not found", name, sig);
     return mid;
 }
 
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
-    LOG_DEBUG("Finding %s method", name);
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
     if (!mid) {
         LOG_INFO("optional method %s %s was not found", name, sig);
@@ -591,12 +585,8 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
 
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
-    LOG_DEBUG("Finding %s field", name);
     jfieldID fid = isStatic ? (*env)->GetStaticFieldID(env, klass, name, sig) : (*env)->GetFieldID(env, klass, name, sig);
-    if (!fid) {
-        LOG_ERROR("field %s %s was not found", name, sig);
-        assert(fid);
-    }
+    abort_unless(fid != NULL, "field %s %s was not found", name, sig);
     return fid;
 }
 
@@ -618,7 +608,7 @@ make_key()
 
 JNIEnv* GetJNIEnv()
 {
-    JNIEnv *env;
+    JNIEnv *env = NULL;
     (*gJvm)->GetEnv(gJvm, (void**)&env, JNI_VERSION_1_6);
     if (env)
         return env;
@@ -628,8 +618,7 @@ JNIEnv* GetJNIEnv()
     LOG_DEBUG("Registering JNI thread detach. env ptr %p. Key: %ld", (void*)env, (long)threadLocalEnvKey);
     pthread_setspecific(threadLocalEnvKey, env);
 
-    assert(ret == JNI_OK && "Unable to attach thread to JVM");
-    (void)ret;
+    abort_unless(ret == JNI_OK, "Unable to attach thread to JVM");
     return env;
 }
 
@@ -716,7 +705,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLParametersClass =                      GetClassGRef(env, "javax/net/ssl/SSLParameters");
     g_SSLParametersGetProtocols =               GetMethod(env, false,  g_SSLParametersClass, "getProtocols", "()[Ljava/lang/String;");
     g_SSLParametersSetApplicationProtocols =    GetOptionalMethod(env, false,  g_SSLParametersClass, "setApplicationProtocols", "([Ljava/lang/String;)V");
-    g_SSLParametersSetServerNames =             GetMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
 
     g_sslCtxClass =                     GetClassGRef(env, "javax/net/ssl/SSLContext");
     g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
@@ -968,13 +956,18 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyManagerFactoryInit =           GetMethod(env, false, g_KeyManagerFactory, "init", "(Ljava/security/KeyStore;[C)V");
     g_KeyManagerFactoryGetKeyManagers = GetMethod(env, false, g_KeyManagerFactory, "getKeyManagers", "()[Ljavax/net/ssl/KeyManager;");
 
-    g_SNIHostName =     GetClassGRef(env, "javax/net/ssl/SNIHostName");
-    g_SNIHostNameCtor = GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
+    // Supported on API Level 24 and above
+    g_SNIHostName = GetOptionalClassGRef(env, "javax/net/ssl/SNIHostName");
+    if (g_SNIHostName != NULL)
+    {
+        g_SNIHostNameCtor =                 GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
+        g_SSLParametersSetServerNames =     GetOptionalMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
+    }
 
     g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
-    g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
+    g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");

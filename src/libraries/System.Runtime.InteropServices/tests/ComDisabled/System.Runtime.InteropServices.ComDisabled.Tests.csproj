@@ -10,6 +10,6 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\MarshalComDisabledTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.Marshal.IsComSupported" Value="false" />
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
   </ItemGroup>
 </Project>

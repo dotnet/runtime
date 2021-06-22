@@ -1140,13 +1140,13 @@ void interceptor_ICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,        // [IN] m
                                      unsigned int*         cILOffsets, // [OUT] size of pILOffsets
                                      uint32_t**            pILOffsets, // [OUT] IL offsets of interest
                                                                        //       jit MUST free with freeArray!
-                                     ICorDebugInfo::BoundaryTypes* implictBoundaries // [OUT] tell jit, all boundries of
+                                     ICorDebugInfo::BoundaryTypes* implicitBoundaries // [OUT] tell jit, all boundaries of
                                                                                      // this type
                                      )
 {
     mc->cr->AddCall("getBoundaries");
-    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
-    mc->recGetBoundaries(ftn, cILOffsets, pILOffsets, implictBoundaries);
+    original_ICorJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
+    mc->recGetBoundaries(ftn, cILOffsets, pILOffsets, implicitBoundaries);
 }
 
 // Report back the mapping from IL to native code,
@@ -1929,21 +1929,12 @@ bool interceptor_ICJI::runWithErrorTrap(void (*function)(void*), void* param)
 }
 
 // get a block of memory for the code, readonly data, and read-write data
-void interceptor_ICJI::allocMem(uint32_t           hotCodeSize,   /* IN */
-                                uint32_t           coldCodeSize,  /* IN */
-                                uint32_t           roDataSize,    /* IN */
-                                uint32_t           xcptnsCount,   /* IN */
-                                CorJitAllocMemFlag flag,          /* IN */
-                                void**             hotCodeBlock,  /* OUT */
-                                void**             coldCodeBlock, /* OUT */
-                                void**             roDataBlock    /* OUT */
-                                )
+void interceptor_ICJI::allocMem(AllocMemArgs *pArgs)
 {
     mc->cr->AddCall("allocMem");
-    original_ICorJitInfo->allocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
-                                   coldCodeBlock, roDataBlock);
-    mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock,
-                        roDataBlock);
+    original_ICorJitInfo->allocMem(pArgs);
+    mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock, &pArgs->coldCodeBlock,
+                        &pArgs->roDataBlock);
 }
 
 // Reserve memory for the method/funclet's unwind information.
@@ -2076,11 +2067,12 @@ HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE 
 HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                                        PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                                        uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
-                                                       uint8_t **                 pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                                       uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                                       PgoSource*                 pPgoSource)
 {
     mc->cr->AddCall("getPgoInstrumentationResults");
-    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
-    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, temp);
+    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
+    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, temp);
     return temp;
 }
 
@@ -2101,6 +2093,7 @@ void interceptor_ICJI::recordCallSite(uint32_t              instrOffset, /* IN *
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
+                                        void*    locationRW, /* IN  */
                                         void*    target,     /* IN  */
                                         uint16_t fRelocType, /* IN  */
                                         uint16_t slotNum,    /* IN  */
@@ -2108,7 +2101,7 @@ void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
                                         )
 {
     mc->cr->AddCall("recordRelocation");
-    original_ICorJitInfo->recordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
     mc->cr->recRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
 }
 
@@ -2122,7 +2115,7 @@ uint16_t interceptor_ICJI::getRelocTypeHint(void* target)
 
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
-// is cross-compiling (such as the case for crossgen), it will return a
+// is cross-compiling (such as the case for crossgen2), it will return a
 // different value than if it was compiling for the host architecture.
 //
 uint32_t interceptor_ICJI::getExpectedTargetArchitecture()

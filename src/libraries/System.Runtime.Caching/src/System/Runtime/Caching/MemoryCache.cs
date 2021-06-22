@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
@@ -33,11 +34,17 @@ namespace System.Runtime.Caching
         private int _disposed;
         private MemoryCacheStatistics _stats;
         private readonly string _name;
-        private PerfCounters _perfCounters;
+        private Counters _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("browser")]
+        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+#else
+        private static bool _countersSupported => true;
+#endif
 
         private bool IsDisposed { get { return (_disposed == 1); } }
         internal bool ConfigLess { get { return _configLess; } }
@@ -196,7 +203,10 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    _perfCounters = new PerfCounters(_name);
+                    if (_countersSupported)
+                    {
+                        _perfCounters = new Counters(_name);
+                    }
                 }
                 catch
                 {
@@ -481,7 +491,10 @@ namespace System.Runtime.Caching
                 }
                 if (_perfCounters != null)
                 {
-                    _perfCounters.Dispose();
+                    if (_countersSupported)
+                    {
+                        _perfCounters.Dispose();
+                    }
                 }
                 GC.SuppressFinalize(this);
             }

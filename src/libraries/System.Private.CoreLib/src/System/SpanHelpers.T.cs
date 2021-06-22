@@ -593,21 +593,67 @@ namespace System
             if (valueLength == 0)
                 return -1;  // A zero-length set of values is always treated as "not found".
 
-            int index = -1;
-            for (int i = 0; i < valueLength; i++)
-            {
-                int tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if ((uint)tempIndex < (uint)index)
-                {
-                    index = tempIndex;
-                    // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
-                    searchSpaceLength = tempIndex;
+            // For the following paragraph, let:
+            //   n := length of haystack
+            //   i := index of first occurrence of any needle within haystack
+            //   l := length of needle array
+            //
+            // We use a naive non-vectorized search because we want to bound the complexity of IndexOfAny
+            // to O(i * l) rather than O(n * l), or just O(n * l) if no needle is found. The reason for
+            // this is that it's common for callers to invoke IndexOfAny immediately before slicing,
+            // and when this is called in a loop, we want the entire loop to be bounded by O(n * l)
+            // rather than O(n^2 * l).
 
-                    if (index == 0)
-                        break;
+            if (typeof(T).IsValueType)
+            {
+                // Calling ValueType.Equals (devirtualized), which takes 'this' byref. We'll make
+                // a byval copy of the candidate from the search space in the outer loop, then in
+                // the inner loop we'll pass a ref (as 'this') to each element in the needle.
+
+                for (int i = 0; i < searchSpaceLength; i++)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    for (int j = 0; j < valueLength; j++)
+                    {
+                        if (Unsafe.Add(ref value, j).Equals(candidate))
+                        {
+                            return i;
+                        }
+                    }
                 }
             }
-            return index;
+            else
+            {
+                // Calling IEquatable<T>.Equals (virtual dispatch). We'll perform the null check
+                // in the outer loop instead of in the inner loop to save some branching.
+
+                for (int i = 0; i < searchSpaceLength; i++)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    if (candidate is not null)
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (candidate.Equals(Unsafe.Add(ref value, j)))
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (Unsafe.Add(ref value, j) is null)
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return -1; // not found
         }
 
         public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
@@ -939,14 +985,52 @@ namespace System
             if (valueLength == 0)
                 return -1;  // A zero-length set of values is always treated as "not found".
 
-            int index = -1;
-            for (int i = 0; i < valueLength; i++)
+            // See comments in IndexOfAny(ref T, int, ref T, int) above regarding algorithmic complexity concerns.
+            // This logic is similar, but it runs backward.
+
+            if (typeof(T).IsValueType)
             {
-                int tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if (tempIndex > index)
-                    index = tempIndex;
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    for (int j = 0; j < valueLength; j++)
+                    {
+                        if (Unsafe.Add(ref value, j).Equals(candidate))
+                        {
+                            return i;
+                        }
+                    }
+                }
             }
-            return index;
+            else
+            {
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    if (candidate is not null)
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (candidate.Equals(Unsafe.Add(ref value, j)))
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (Unsafe.Add(ref value, j) is null)
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return -1; // not found
         }
 
         public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>

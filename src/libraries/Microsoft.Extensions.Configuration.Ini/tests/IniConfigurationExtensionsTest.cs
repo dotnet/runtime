@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
         [Theory]
         [InlineData(null)]
         [InlineData("")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
         public void AddIniFile_ThrowsIfFilePathIsNullOrEmpty(string path)
         {
             // Arrange
@@ -25,6 +26,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
         public void AddIniFile_ThrowsIfFileDoesNotExistAtPath()
         {
             // Arrange

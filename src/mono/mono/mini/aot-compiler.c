@@ -42,6 +42,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
@@ -1114,15 +1115,17 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
 
-#if TARGET_X86 || TARGET_AMD64
-	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
-#endif
-
 #if defined(TARGET_X86)
+#ifdef TARGET_ANDROID
+	g_string_append_printf (acfg->llc_args, " -mtriple=i686-none-linux-android21");
+#else
+	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
 	g_string_append_printf (acfg->llc_args, " -march=x86 %s", has_custom_args ? "" : "-mcpu=generic");
+#endif
 #endif
 
 #if defined(TARGET_AMD64)
+	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
 	g_string_append_printf (acfg->llc_args, " -march=x86-64 %s", has_custom_args ? "" : "-mcpu=generic");
 	/* NOP */
 	acfg->align_pad_value = 0x90;
@@ -4731,6 +4734,20 @@ add_wrappers (MonoAotCompile *acfg)
 		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall data */
 		for (int i = 0; i < MONO_JIT_ICALL_count; ++i)
 			add_jit_icall_wrapper (acfg, mono_find_jit_icall_info ((MonoJitICallId)i));
+
+		if (acfg->aot_opts.llvm_only) {
+			/* String ctors are called directly on llvmonly */
+			for (int i = 0; i < rows; ++i) {
+				ERROR_DECL (error);
+
+				token = MONO_TOKEN_METHOD_DEF | (i + 1);
+				method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
+				if (method && method->string_ctor) {
+					MonoMethod *w = get_runtime_invoke (acfg, method, FALSE);
+					add_method (acfg, w);
+				}
+			}
+		}
 	}
 
 	/* 
@@ -6641,7 +6658,9 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	acfg->cfgs [method_index]->got_offset = acfg->got_offset;
 
-	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
+	MonoDebugMethodJitInfo *jit_debug_info = mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ());
+	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, jit_debug_info);
+	mono_debug_free_method_jit_info (jit_debug_info);
 
 	emit_line (acfg);
 
@@ -6964,6 +6983,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_PATCHES;
 	if (needs_ctx && ctx)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
+	if (cfg->interp_entry_only)
+		flags |= MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY;
 	/* Saved into another table so it can be accessed without having access to this data */
 	cfg->aot_method_flags = flags;
 
@@ -10113,7 +10134,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	g_string_append_printf (acfg->llc_args, " -no-x86-call-frame-opt");
 #endif
 
-#if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC)
+#if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC) || defined(TARGET_ANDROID)
 	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
 #else
 	if (llvm_acfg->aot_opts.static_link)
@@ -11734,7 +11755,9 @@ emit_dwarf_info (MonoAotCompile *acfg)
 
 		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
-		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->asm_debug_symbol, (guint8 *)cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
+		MonoDebugMethodJitInfo *jit_debug_info = mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ());
+		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->asm_debug_symbol, (guint8 *)cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, jit_debug_info);
+		mono_debug_free_method_jit_info (jit_debug_info);
 	}
 #endif
 }
@@ -13944,19 +13967,22 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 			g_ptr_array_add (acfg->method_order,GUINT_TO_POINTER (method_index));
 	}
 
-	acfg->num_trampolines [MONO_AOT_TRAMP_SPECIFIC] = mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.ntrampolines : 0;
+	if (mono_aot_mode_is_interp (&acfg->aot_opts) || mono_aot_mode_is_full (&acfg->aot_opts)) {
+		/* In interp mode, we don't need some trampolines, but this avoids having to add more conditionals at runtime */
+		acfg->num_trampolines [MONO_AOT_TRAMP_SPECIFIC] = acfg->aot_opts.ntrampolines;
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
-	acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.nrgctx_trampolines : 0;
+		acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = acfg->aot_opts.nrgctx_trampolines;
 #endif
-	acfg->num_trampolines [MONO_AOT_TRAMP_IMT] = mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.nimt_trampolines : 0;
+		acfg->num_trampolines [MONO_AOT_TRAMP_IMT] = acfg->aot_opts.nimt_trampolines;
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
-	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
-		acfg->num_trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.ngsharedvt_arg_trampolines : 0;
+		if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
+			acfg->num_trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = acfg->aot_opts.ngsharedvt_arg_trampolines;
 #endif
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
-	acfg->num_trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = mono_aot_mode_is_interp (&acfg->aot_opts) ? acfg->aot_opts.nftnptr_arg_trampolines : 0;
+		acfg->num_trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = acfg->aot_opts.nftnptr_arg_trampolines;
 #endif
-	acfg->num_trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = mono_aot_mode_is_interp (&acfg->aot_opts) && mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.nunbox_arbitrary_trampolines : 0;
+		acfg->num_trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = mono_aot_mode_is_interp (&acfg->aot_opts) && mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.nunbox_arbitrary_trampolines : 0;
+	}
 
 	acfg->temp_prefix = mono_img_writer_get_temp_label_prefix (NULL);
 
@@ -14068,7 +14094,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #endif
 
 		/* required for mixed mode */
-		if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+		if (strcmp (acfg->image->assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME) == 0) {
 			add_gc_wrappers (acfg);
 
 			for (int i = 0; i < MONO_JIT_ICALL_count; ++i)

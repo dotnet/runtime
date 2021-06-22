@@ -35,7 +35,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
@@ -47,16 +47,6 @@
     <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) &amp;&amp; $(RunScriptCommand)</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
-    <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys>false</UseSystemResourceKeys>
-    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-
-    <!-- we want to default to what Blazor has, except if we are building in Debug config -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
-  </PropertyGroup>
-
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
@@ -65,11 +55,8 @@
 
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-      <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
 
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmBuildApp</BundleTestWasmAppDependsOn>
-      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'helix'">StageEmSdkForHelix</BundleTestWasmAppDependsOn>
-
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
 
@@ -109,33 +96,26 @@
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
         Name="%(_WasmPropertyNames.Identity)"
-        ConditionToUse="%(_WasmPropertyNames.ConditionToUse)" />
+        ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
 
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
       <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+
+      <!-- Example of passing items to the project
+
+          <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
+
+      -->
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->
     <GenerateAOTProps
         Properties="@(_WasmPropertiesToPass)"
-        OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
+        Items="@(_WasmItemsToPass)"
+        OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
-  </Target>
-
-  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
-   attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
-   payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(EmSdkDirForHelixPayload)' == '' or !Exists($(EmSdkDirForHelixPayload))">
-    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDirForHelixPayload) or in EMSDK_PATH=$(EMSDK_PATH)" />
-
-    <ItemGroup>
-      <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
-    <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">

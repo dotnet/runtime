@@ -25,6 +25,8 @@ namespace System.Net.Test.Common
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
         private TaskCompletionSource<PingFrame> _expectPingFrame;
+        private bool _autoProcessPingFrames;
+        private bool _respondToPing;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
 
@@ -100,6 +102,9 @@ namespace System.Net.Test.Common
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
                 await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
                 _connectionSocket.Shutdown(SocketShutdown.Send);
+                // If WinHTTP doesn't support streaming a request without a length then it will fallback
+                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests. 
+                throw new Exception("HTTP/1.1 request sent to HTTP/2 connection.");
             }
         }
 
@@ -197,9 +202,18 @@ namespace System.Net.Test.Common
 
             if (_expectPingFrame != null && header.Type == FrameType.Ping)
             {
-                _expectPingFrame.SetResult(PingFrame.ReadFrom(header, data));
-                _expectPingFrame = null;
-                return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+                PingFrame pingFrame = PingFrame.ReadFrom(header, data);
+
+                // _expectPingFrame is not intended to work with PING ACK:
+                if (!pingFrame.AckFlag)
+                {
+                    await ProcessExpectedPingFrame(pingFrame);
+                    return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    return pingFrame;
+                }
             }
 
             // Construct the correct frame type and return it.
@@ -221,8 +235,27 @@ namespace System.Net.Test.Common
                     return GoAwayFrame.ReadFrom(header, data);
                 case FrameType.Continuation:
                     return ContinuationFrame.ReadFrom(header, data);
+                case FrameType.WindowUpdate:
+                    return WindowUpdateFrame.ReadFrom(header, data);
                 default:
                     return header;
+            }
+        }
+
+        private async Task ProcessExpectedPingFrame(PingFrame pingFrame)
+        {
+            _expectPingFrame.SetResult(pingFrame);
+            if (_respondToPing && !pingFrame.AckFlag)
+            {
+                await SendPingAckAsync(pingFrame.Data);
+            }
+
+            _expectPingFrame = null;
+            _respondToPing = false;
+
+            if (_autoProcessPingFrames)
+            {
+                _ = ExpectPingFrameAsync(true);
             }
         }
 
@@ -260,13 +293,30 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = true;
         }
 
-        // Set up loopback server to expect PING frames among other frames.
+        // Set up loopback server to expect a (non-ACK) PING frame among other frames.
         // Once PING frame is read in ReadFrameAsync, the returned task is completed.
         // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
-        public Task<PingFrame> ExpectPingFrameAsync()
+        public Task<PingFrame> ExpectPingFrameAsync(bool respond = false)
         {
             _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
+            _respondToPing = respond;
+
             return _expectPingFrame.Task;
+        }
+
+        // Recurring variant of ExpectPingFrame().
+        // Starting from the time of the call, respond to all (non-ACK) PING frames which are received among other frames.
+        public void SetupAutomaticPingResponse()
+        {
+            _autoProcessPingFrames = true;
+            _ = ExpectPingFrameAsync(true);
+        }
+
+        // Tear down automatic PING responses, but still expect (at most one) PING in flight
+        public void TearDownAutomaticPingResponse()
+        {
+            _respondToPing = false;
+            _autoProcessPingFrames = false;
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -287,6 +337,14 @@ namespace System.Net.Test.Common
             {
                 throw new Exception($"Expected RST_STREAM on stream {streamId}, actual streamId={frame.StreamId}");
             }
+        }
+
+        // Receive a single PING frame and respond with an ACK
+        public async Task RespondToPingFrameAsync()
+        {
+            PingFrame pingFrame = (PingFrame)await ReadFrameAsync(_timeout);
+            Assert.False(pingFrame.AckFlag, "Unexpected PING ACK");
+            await SendPingAckAsync(pingFrame.Data);
         }
 
         // Wait for the client to close the connection, e.g. after the HttpClient is disposed.
@@ -347,13 +405,13 @@ namespace System.Net.Test.Common
             }
         }
 
-        public async Task<int> ReadRequestHeaderAsync()
+        public async Task<int> ReadRequestHeaderAsync(bool expectEndOfStream = true)
         {
-            HeadersFrame frame = await ReadRequestHeaderFrameAsync();
+            HeadersFrame frame = await ReadRequestHeaderFrameAsync(expectEndOfStream);
             return frame.StreamId;
         }
 
-        public async Task<HeadersFrame> ReadRequestHeaderFrameAsync()
+        public async Task<HeadersFrame> ReadRequestHeaderFrameAsync(bool expectEndOfStream = true)
         {
             // Receive HEADERS frame for request.
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -363,8 +421,25 @@ namespace System.Net.Test.Common
             }
 
             Assert.Equal(FrameType.Headers, frame.Type);
-            Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, frame.Flags);
+            Assert.Equal(FrameFlags.EndHeaders, frame.Flags & FrameFlags.EndHeaders);
+            if (expectEndOfStream)
+            {
+                Assert.Equal(FrameFlags.EndStream, frame.Flags & FrameFlags.EndStream);
+            }
             return (HeadersFrame)frame;
+        }
+
+        public async Task<Frame> ReadDataFrameAsync()
+        {
+            // Receive DATA frame for request.
+            Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
+            if (frame == null)
+            {
+                throw new IOException("Failed to read Data frame.");
+            }
+
+            Assert.Equal(FrameType.Data, frame.Type);
+            return frame;
         }
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
@@ -700,9 +775,11 @@ namespace System.Net.Test.Common
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
+
             if (pingAck == null || pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
             {
-                throw new Exception("Expected PING ACK");
+                string faultDetails = pingAck == null ? "" : $" frame.Type:{pingAck.Type} frame.AckFlag: {pingAck.AckFlag}";
+                throw new Exception("Expected PING ACK" + faultDetails);
             }
 
             Assert.Equal(pingData, pingAck.Data);
@@ -712,6 +789,7 @@ namespace System.Net.Test.Common
         {
             _expectPingFrame?.TrySetCanceled();
             _expectPingFrame = null;
+            _respondToPing = false;
 
             Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
             Assert.NotNull(frame);
@@ -729,11 +807,16 @@ namespace System.Net.Test.Common
             await WriteFrameAsync(pingAck).ConfigureAwait(false);
         }
 
-        public async Task SendDefaultResponseHeadersAsync(int streamId)
+        public async Task SendDefaultResponseHeadersAsync(int streamId, bool endStream = false)
         {
             byte[] headers = new byte[] { 0x88 };   // Encoding for ":status: 200"
+            FrameFlags flags = FrameFlags.EndHeaders;
+            if (endStream)
+            {
+                flags = flags | FrameFlags.EndStream;
+            }
 
-            HeadersFrame headersFrame = new HeadersFrame(headers, FrameFlags.EndHeaders, 0, 0, 0, streamId);
+            HeadersFrame headersFrame = new HeadersFrame(headers, flags, 0, 0, 0, streamId);
             await WriteFrameAsync(headersFrame).ConfigureAwait(false);
         }
 

@@ -1191,6 +1191,11 @@ class ArrayStubCache : public StubCacheBase
     virtual UINT Length(const BYTE *pRawStub);
 
 public:
+public:
+    ArrayStubCache(LoaderHeap* heap) : StubCacheBase(heap)
+    {
+    }
+
     static ArrayStubCache * GetArrayStubCache()
     {
         STANDARD_VM_CONTRACT;
@@ -1199,7 +1204,7 @@ public:
 
         if (s_pArrayStubCache == NULL)
         {
-            ArrayStubCache * pArrayStubCache = new ArrayStubCache();
+            ArrayStubCache * pArrayStubCache = new ArrayStubCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
             if (FastInterlockCompareExchangePointer(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
                 delete pArrayStubCache;
         }

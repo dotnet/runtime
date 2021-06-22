@@ -148,12 +148,13 @@
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
-    <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
-    <TestEnvironment Include="jitpgo_inline" TieredPGO="1" TieredCompilation="1" JitInlinePolicyProfile="1" TC_QuickJitForLoops="1" />
-    <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
+    <TestEnvironment Include="nopgo" JitDisablePGO="1" TieredCompilation="1" />
+    <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
+    <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
+    <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
@@ -208,6 +209,9 @@
 
       <!-- Mono interpreter -->
       <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+
+      <!-- Hack: Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->

@@ -3,7 +3,7 @@
 
 #include "pal_signverify.h"
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if defined(TARGET_OSX)
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErrorOut);
 
@@ -171,7 +171,7 @@ int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
 
     if (signatureAlgorithm == PAL_SignatureAlgorithm_DSA)
     {
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if defined(TARGET_OSX)
         SecTransformRef signer = SecSignTransformCreate(privateKey, pErrorOut);
 
         if (signer != NULL)
@@ -247,7 +247,7 @@ int32_t AppleCryptoNative_SecKeyVerifySignature(SecKeyRef publicKey,
 
     if (signatureAlgorithm == PAL_SignatureAlgorithm_DSA)
     {
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if defined(TARGET_OSX)
         SecTransformRef verifier = SecVerifyTransformCreate(publicKey, signature, pErrorOut);
 
         if (verifier != NULL)

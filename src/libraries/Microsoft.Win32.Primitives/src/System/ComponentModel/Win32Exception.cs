@@ -21,7 +21,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error
         /// that occurred.
         /// </summary>
-        public Win32Exception() : this(Marshal.GetLastWin32Error())
+        public Win32Exception() : this(Marshal.GetLastPInvokeError())
         {
         }
 
@@ -43,7 +43,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the Exception class with a specified error message.
         /// </summary>
-        public Win32Exception(string? message) : this(Marshal.GetLastWin32Error(), message)
+        public Win32Exception(string? message) : this(Marshal.GetLastPInvokeError(), message)
         {
         }
 
@@ -53,7 +53,7 @@ namespace System.ComponentModel
         /// </summary>
         public Win32Exception(string? message, Exception? innerException) : base(message, innerException)
         {
-            NativeErrorCode = Marshal.GetLastWin32Error();
+            NativeErrorCode = Marshal.GetLastPInvokeError();
         }
 
         protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context)

@@ -99,6 +99,14 @@ jobs:
         - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
 
+    # Mac Catalyst arm64
+    - ${{ if eq(parameters.platform, 'MacCatalyst_arm64') }}:
+      - OSX.1100.ARM64.Open
+
+    # Mac Catalyst x64
+    - ${{ if eq(parameters.platform, 'MacCatalyst_x64') }}:
+      - OSX.1015.Amd64.Open
+
     # Android
     - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64') }}:
       - Ubuntu.1804.Amd64.Android.Open
@@ -120,7 +128,7 @@ jobs:
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.Open
@@ -144,14 +152,10 @@ jobs:
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
 
-      # AllConfigurations
-      - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
-        - Windows.10.Amd64.Server19H1.Open
-
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
@@ -182,5 +186,9 @@ jobs:
     # WebAssembly
     - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
       - Ubuntu.1804.Amd64.Open
+
+    # WebAssembly windows
+    - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
+      - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-webassembly-amd64-20210519130955-ba00c14
 
     ${{ insert }}: ${{ parameters.jobParameters }}

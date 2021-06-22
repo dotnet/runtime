@@ -284,10 +284,10 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase, bool reflectionOnly);
+        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase);
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly, ref StackCrawlMark stackMark,
+        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
                                                   bool loadTypeFromPartialName)
         {
             if (typeName == null)
@@ -299,29 +299,7 @@ namespace System
                 else
                     return null;
 
-            if (reflectionOnly)
-            {
-                int idx = typeName.IndexOf(',');
-                if (idx < 0 || idx == 0 || idx == typeName.Length - 1)
-                    throw new ArgumentException("Assembly qualifed type name is required", nameof(typeName));
-                string an = typeName.Substring(idx + 1);
-                Assembly a;
-                try
-                {
-#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
-                    a = Assembly.ReflectionOnlyLoad(an);
-#pragma warning restore SYSLIB0018
-                }
-                catch
-                {
-                    if (throwOnError)
-                        throw;
-                    return null;
-                }
-                return (RuntimeType?)a.GetType(typeName.Substring(0, idx), throwOnError, ignoreCase);
-            }
-
-            RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase, false);
+            RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase);
             if (throwOnError && t == null)
                 throw new TypeLoadException("Error loading '" + typeName + "'");
             return t;

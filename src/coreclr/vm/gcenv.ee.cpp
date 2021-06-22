@@ -49,6 +49,26 @@ VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr
     SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(scanProc, lp1, lp2);
 }
 
+void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef VERIFY_HEAP
+    if (is_bgc)
+    {
+        // Validate byrefs pinned by IL stubs since the last GC.
+        StubHelpers::ProcessByrefValidationList();
+    }
+#endif // VERIFY_HEAP
+
+    Interop::OnBeforeGCScanRoots(is_concurrent);
+}
+
 //EE can perform post stack scanning action, while the
 // user threads are still suspended
 VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
@@ -66,6 +86,8 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     // the RCW cache from resurrecting them.
     ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
+
+    Interop::OnAfterGCScanRoots(sc->concurrent);
 }
 
 /*
@@ -287,9 +309,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     ETW::TypeSystemLog::Cleanup();
 #endif
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCStarted(condemned);
-#endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
     {
@@ -306,9 +326,7 @@ void GCToEEInterface::GcDone(int condemned)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCFinished(condemned);
-#endif // FEATURE_COMINTEROP
 }
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
@@ -332,23 +350,16 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
         return isRooted;
 #endif
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
+        return isReferenced;
+#endif
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCMARSHAL)
+#error COM and Objective-C are not supported at the same time.
+#endif
 
     return false;
-}
-
-void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef VERIFY_HEAP
-    // Validate byrefs pinned by IL stubs since the last GC.
-    StubHelpers::ProcessByrefValidationList();
-#endif // VERIFY_HEAP
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
@@ -441,7 +452,6 @@ bool GCToEEInterface::IsPreemptiveGCDisabled()
     WRAPPER_NO_CONTRACT;
 
     Thread* pThread = ::GetThreadNULLOk();
-    
     return (pThread && pThread->PreemptiveGCDisabled());
 }
 
@@ -549,7 +559,7 @@ BOOL ProfilerShouldTrackConditionalWeakTableElements()
 void ProfilerEndConditionalWeakTableElementReferences(void* heapId)
 {
 #if defined (GC_PROFILING)
-    g_profControlBlock.pProfInterface->EndConditionalWeakTableElementReferences(heapId);
+    (&g_profControlBlock)->EndConditionalWeakTableElementReferences(heapId);
 #else
     UNREFERENCED_PARAMETER(heapId);
 #endif // defined (GC_PROFILING)
@@ -560,7 +570,7 @@ void ProfilerEndConditionalWeakTableElementReferences(void* heapId)
 void ProfilerEndRootReferences2(void* heapId)
 {
 #if defined (GC_PROFILING)
-    g_profControlBlock.pProfInterface->EndRootReferences2(heapId);
+    (&g_profControlBlock)->EndRootReferences2(heapId);
 #else
     UNREFERENCED_PARAMETER(heapId);
 #endif // defined (GC_PROFILING)
@@ -593,24 +603,24 @@ void ScanHandleForProfilerAndETW(Object** pRef, Object* pSec, uint32_t flags, Sc
     {
         if (!isDependent)
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-            g_profControlBlock.pProfInterface->RootReference2(
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
+            (&g_profControlBlock)->RootReference2(
                 (uint8_t *)*pRef,
                 kEtwGCRootKindHandle,
                 (EtwGCRootFlags)flags,
                 pRef,
                 &pSC->pHeapId);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
         else
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackConditionalWeakTableElements());
-            g_profControlBlock.pProfInterface->ConditionalWeakTableElementReference(
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackConditionalWeakTableElements());
+            (&g_profControlBlock)->ConditionalWeakTableElementReference(
                 (uint8_t*)*pRef,
                 (uint8_t*)pSec,
                 pRef,
                 &pSC->pHeapId);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 #endif // GC_PROFILING
@@ -729,10 +739,10 @@ void GCProfileWalkHeap(bool etwOnly)
 
 #if defined (GC_PROFILING)
     {
-        BEGIN_PIN_PROFILER(!etwOnly && CORProfilerTrackGC());
+        BEGIN_PROFILER_CALLBACK(!etwOnly && CORProfilerTrackGC());
         GCProfileWalkHeapWorker(TRUE /* fProfilerPinned */, fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
         fWalkedHeapForProfiler = TRUE;
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // defined (GC_PROFILING)
 
@@ -749,7 +759,7 @@ void GCProfileWalkHeap(bool etwOnly)
 
 void WalkFReachableObjects(bool isCritical, void* objectID)
 {
-	g_profControlBlock.pProfInterface->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+	(&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
 }
 
 static fq_walk_fn g_FQWalkFn = &WalkFReachableObjects;
@@ -760,7 +770,7 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
     DiagUpdateGenerationBounds();
     GarbageCollectionStartedCallback(gen, isInduced);
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         size_t context = 0;
 
         // When we're walking objects allocated by class, then we don't want to walk the large
@@ -768,8 +778,8 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
 
         // Notify that we've reached the end of the Gen 0 scan
-        g_profControlBlock.pProfInterface->EndAllocByClass(&context);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->EndAllocByClass(&context);
+        END_PROFILER_CALLBACK();
     }
 
 #endif // GC_PROFILING
@@ -805,12 +815,9 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
 void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
 {
 #ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
-    {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
-        GCHeapUtilities::GetGCHeap()->DiagWalkFinalizeQueue(gcContext, g_FQWalkFn);
-        END_PIN_PROFILER();
-    }
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
+    GCHeapUtilities::GetGCHeap()->DiagWalkFinalizeQueue(gcContext, g_FQWalkFn);
+    END_PROFILER_CALLBACK();
 #endif //GC_PROFILING
 }
 
@@ -1090,6 +1097,13 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
         FinalizeWeakReference(obj);
         return true;
     }
+#ifdef FEATURE_OBJCMARSHAL
+    else if (pMT->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue((OBJECTREF)obj);
+        return false;
+    }
+#endif // FEATURE_OBJCMARSHAL
 
     return false;
 }
@@ -1361,7 +1375,7 @@ namespace
 
         EX_TRY
         {
-            args.Thread = SetupUnstartedThread(FALSE);
+            args.Thread = SetupUnstartedThread(SUTF_ThreadStoreLockAlreadyTaken);
         }
         EX_CATCH
         {
@@ -1382,7 +1396,7 @@ namespace
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial(true);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
-            args->HasStarted = !!args->Thread->HasStarted(false);
+            args->HasStarted = !!args->Thread->HasStarted();
 
             Thread* thread = args->Thread;
             auto threadStart = args->ThreadStart;
@@ -1407,7 +1421,7 @@ namespace
             return false;
         }
 
-        args.Thread->SetBackground(TRUE, FALSE);
+        args.Thread->SetBackground(TRUE);
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
@@ -1623,7 +1637,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             DACNotify::DoGCNotification(gea);
         }
     }
-    
+
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
@@ -1703,4 +1717,9 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
 void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg &msg)
 {
     StressLog::LogMsg(level, facility, msg);
+}
+
+uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return ::GetCurrentProcessCpuCount();
 }

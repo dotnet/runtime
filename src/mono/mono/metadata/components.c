@@ -14,6 +14,9 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
+#include "mono/utils/mono-time.h"
+
+static gint64 event_pipe_100ns_ticks;
 
 typedef MonoComponent * (*MonoComponentInitFn) (void);
 
@@ -25,11 +28,7 @@ typedef struct _MonoComponentEntry {
 	MonoDl *lib;
 } MonoComponentEntry;
 
-#ifdef STATIC_COMPONENTS
 #define COMPONENT_INIT_FUNC(name) (MonoComponentInitFn) mono_component_ ## name ## _init
-#else
-#define COMPONENT_INIT_FUNC(name) (MonoComponentInitFn) mono_component_ ## name ## _stub_init
-#endif
 
 #define HOT_RELOAD_LIBRARY_NAME "hot_reload"
 #define HOT_RELOAD_COMPONENT_NAME HOT_RELOAD_LIBRARY_NAME
@@ -140,16 +139,19 @@ static MonoDl*
 try_load (const char* dir, const MonoComponentEntry *component, const char* component_base_lib)
 {
 	MonoDl *lib = NULL;
-	void *iter = NULL;
 	char *path = NULL;
-	while ((path = mono_dl_build_path (dir, component_base_lib, &iter)) && !lib) {
+	void *iter = NULL;
+
+	while ((path = mono_dl_build_path (dir, component_base_lib, &iter))) {
 		char *error_msg = NULL;
-		lib = mono_dl_open (path, MONO_DL_EAGER, &error_msg);
+		lib = mono_dl_open (path, MONO_DL_EAGER | MONO_DL_LOCAL, &error_msg);
+		if (lib)
+			break;
 		if (!lib) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s not found: %s", component->name, error_msg);
-			g_free (error_msg);
-			continue;
 		}
+		g_free (error_msg);
+		g_free (path);
 	}
 	if (lib)
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s found at %s", component->name, path);
@@ -160,6 +162,12 @@ try_load (const char* dir, const MonoComponentEntry *component, const char* comp
 static MonoComponentInitFn
 load_component (const MonoComponentEntry *component, MonoDl **lib_out)
 {
+	// If init method has been static linked not using stub library, use that instead of dynamic component.
+	if (component->init() && component->init()->available ()) {
+		*lib_out = NULL;
+		return component->init;
+	}
+
 	char *component_base_lib = component_library_base_name (component);
 	MonoComponentInitFn result = NULL;
 
@@ -192,3 +200,15 @@ get_component (const MonoComponentEntry *component, MonoDl **lib_out)
 	return initfn();
 }
 #endif
+
+void
+mono_component_event_pipe_100ns_ticks_start (void)
+{
+	event_pipe_100ns_ticks = mono_100ns_ticks ();
+}
+
+gint64
+mono_component_event_pipe_100ns_ticks_stop (void)
+{
+	return mono_100ns_ticks () - event_pipe_100ns_ticks;
+}

@@ -533,8 +533,9 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoStackFrame);
 
 typedef enum {
-	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
-	MONO_THREAD_FLAG_NAME_SET = 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_DONT_MANAGE			= 1, // Don't wait for or abort this thread
+	MONO_THREAD_FLAG_NAME_SET				= 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_CLEANUP_FROM_NATIVE	= 4, // Thread initialized in native so clean up in native
 } MonoThreadFlags;
 
 struct _MonoThreadInfo;
@@ -637,12 +638,11 @@ typedef struct {
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
-#ifdef ENABLE_METADATA_UPDATE
-	void     (*metadata_update_init) (MonoError *error);
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
-#endif
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
 	void (*get_exception_stats)(guint32 *exception_count);
+	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
+	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -687,6 +687,7 @@ mono_runtime_free_method    (MonoMethod *method);
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs);
 
+MONO_COMPONENT_API
 MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void);
 
@@ -1750,7 +1751,7 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error);
 MonoObjectHandle
 mono_object_clone_handle (MonoObjectHandle obj, MonoError *error);
 
-MonoObject *
+MONO_COMPONENT_API MonoObject *
 mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
@@ -2082,5 +2083,10 @@ mono_runtime_get_managed_cmd_line (void);
 
 char *
 mono_runtime_get_cmd_line (int argc, char **argv);
+
+#ifdef HOST_WASM
+int
+mono_string_instance_is_interned (MonoString *str);
+#endif
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

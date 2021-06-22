@@ -252,7 +252,7 @@ namespace pal
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
-    string_t to_lower(const string_t& in);
+    string_t to_lower(const char_t* in);
 
 
     inline void file_flush(FILE *f) { std::fflush(f); }
@@ -301,9 +301,7 @@ namespace pal
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
-    bool get_temp_directory(string_t& tmp_dir);
-
-    // Returns a platform-specific, user-private directory within get_temp_directory()
+    // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.
     bool get_default_bundle_extraction_base_dir(string_t& extraction_dir);
 

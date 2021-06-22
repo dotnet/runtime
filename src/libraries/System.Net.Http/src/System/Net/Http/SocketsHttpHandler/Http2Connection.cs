@@ -123,7 +123,7 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, System.Net.Sockets.Socket? socket)
+        public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
             _stream = stream;
@@ -137,9 +137,8 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
             InitialStreamWindowSize = pool.Settings._initialStreamWindowSize;
-            _rttEstimator = _pool.Settings._fakeRtt != null || socket != null ?
-                new RttEstimator(this, _pool.Settings._fakeRtt, socket) :
-                null;
+            _rttEstimator = pool.Settings._enableDynamicHttp2StreamWindowSizing ?
+                new RttEstimator(this, pool.Settings._fakeRtt) : null;
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -209,6 +208,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
 
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                _rttEstimator?.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
                 _expectingSettingsAck = true;
@@ -455,6 +455,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
+                _rttEstimator?.OnDataOrHeadersReceived();
                 headersHandler = http2Stream;
             }
             else
@@ -489,6 +490,7 @@ namespace System.Net.Http
             _hpackDecoder.CompleteDecode();
 
             http2Stream?.OnHeadersComplete(endStream);
+            //_rttEstimator.Update();
         }
 
         /// <summary>Nop implementation of <see cref="IHttpHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
@@ -586,11 +588,15 @@ namespace System.Net.Http
                 bool endStream = frameHeader.EndStreamFlag;
 
                 http2Stream.OnResponseData(frameData, endStream);
+
+                if (!endStream && frameData.Length > 0)
+                {
+                    _rttEstimator?.OnDataOrHeadersReceived();
+                }
             }
 
             if (frameData.Length > 0)
             {
-                _rttEstimator?.UpdateEstimation();
                 ExtendWindow(frameData.Length);
             }
 
@@ -621,6 +627,7 @@ namespace System.Net.Http
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
                 _expectingSettingsAck = false;
+                _rttEstimator?.OnInitialSettingsAckReceived();
             }
             else
             {
@@ -1153,7 +1160,7 @@ namespace System.Net.Http
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref tmpHeaderValuesArray);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = tmpHeaderValuesArray.AsSpan(0, headerValuesCount);
 
@@ -1469,7 +1476,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, bool finalFlush, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> remaining = buffer;
 
@@ -1481,9 +1488,22 @@ namespace System.Net.Http
 
                 ReadOnlyMemory<byte> current;
                 (current, remaining) = SplitBuffer(remaining, frameSize);
+
+                bool flush = false;
+                if (finalFlush && remaining.Length == 0)
+                {
+                    flush = true;
+                }
+
+                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                if (!_connectionWindow.IsCreditAvailable)
+                {
+                    flush = true;
+                }
+
                 try
                 {
-                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current), static (s, writeBuffer) =>
+                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current, flush), static (s, writeBuffer) =>
                     {
                         // Invoked while holding the lock:
                         if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(writeBuffer.Length)}={writeBuffer.Length}");
@@ -1491,7 +1511,7 @@ namespace System.Net.Http
                         FrameHeader.WriteTo(writeBuffer.Span, s.current.Length, FrameType.Data, FrameFlags.None, s.streamId);
                         s.current.CopyTo(writeBuffer.Slice(FrameHeader.Size));
 
-                        return false; // no need to flush, as the request content may do so explicitly, or worst case we'll do so as part of the end data frame
+                        return s.flush;
                     }, cancellationToken).ConfigureAwait(false);
                 }
                 catch
@@ -1669,6 +1689,9 @@ namespace System.Net.Http
             // We should not try to grab pool lock while holding connection lock as on disposing pool,
             // we could hold pool lock while trying to grab connection lock in Dispose().
             _pool.InvalidateHttp2Connection(this);
+
+            // There is no point sending more PING frames for RTT estimation:
+            _rttEstimator?.OnGoAwayReceived();
 
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
 
@@ -1979,11 +2002,19 @@ namespace System.Net.Http
 
         private void ProcessPingAck(long payload)
         {
-            if (_keepAliveState != KeepAliveState.PingSent)
-                ThrowProtocolError();
-            if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
-                ThrowProtocolError();
-            _keepAliveState = KeepAliveState.None;
+            if (payload < 0) // RTT ping
+            {
+                _rttEstimator?.OnPingAckReceived(payload);
+                return;
+            }
+            else // Keepalive ping
+            {
+                if (_keepAliveState != KeepAliveState.PingSent)
+                    ThrowProtocolError();
+                if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
+                    ThrowProtocolError();
+                _keepAliveState = KeepAliveState.None;
+            }
         }
 
         private void VerifyKeepAlive()
@@ -2034,6 +2065,9 @@ namespace System.Net.Http
                 streamId,                     // stream ID
                 memberName,                   // method name
                 message);                     // message
+
+        public void TraceFlowControl(string message, [CallerMemberName] string? memberName = null) =>
+                Trace("[FlowControl] " + message, memberName);
 
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception innerException) =>

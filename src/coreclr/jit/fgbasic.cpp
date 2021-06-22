@@ -145,11 +145,13 @@ void Compiler::fgInit()
 #ifdef DEBUG
     if (!compIsForInlining())
     {
-        if ((JitConfig.JitNoStructPromotion() & 1) == 1)
+        const int noStructPromotionValue = JitConfig.JitNoStructPromotion();
+        assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
+        if (noStructPromotionValue == 1)
         {
             fgNoStructPromotion = true;
         }
-        if ((JitConfig.JitNoStructPromotion() & 2) == 2)
+        if (noStructPromotionValue == 2)
         {
             fgNoStructParamPromotion = true;
         }
@@ -380,26 +382,27 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     noway_assert(newSwitchBlock != nullptr);
     noway_assert(oldSwitchBlock->bbJumpKind == BBJ_SWITCH);
 
-    unsigned     jumpCnt = oldSwitchBlock->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTab = oldSwitchBlock->bbJumpSwt->bbsDstTab;
-
-    unsigned i;
-
     // Walk the switch's jump table, updating the predecessor for each branch.
-    for (i = 0; i < jumpCnt; i++)
+    for (BasicBlock* const bJump : oldSwitchBlock->SwitchTargets())
     {
-        BasicBlock* bJump = jumpTab[i];
         noway_assert(bJump != nullptr);
 
         // Note that if there are duplicate branch targets in the switch jump table,
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-
-        //
-        // Remove the old edge [oldSwitchBlock => bJump]
-        //
-        fgRemoveRefPred(bJump, oldSwitchBlock);
+        if (bJump->countOfInEdges() > 0)
+        {
+            //
+            // Remove the old edge [oldSwitchBlock => bJump]
+            //
+            fgRemoveRefPred(bJump, oldSwitchBlock);
+        }
+        else
+        {
+            // bJump->countOfInEdges() must not be zero after preds are calculated.
+            assert(!fgComputePredsDone);
+        }
 
         //
         // Create the new edge [newSwitchBlock => bJump]
@@ -614,7 +617,7 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
 
     bool modified = false;
 
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         if (oldPred == pred->getBlock())
         {
@@ -650,7 +653,6 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
 void Compiler::fgInitBBLookup()
 {
     BasicBlock** dscBBptr;
-    BasicBlock*  tmpBBdesc;
 
     /* Allocate the basic block table */
 
@@ -658,9 +660,9 @@ void Compiler::fgInitBBLookup()
 
     /* Walk all the basic blocks, filling in the table */
 
-    for (tmpBBdesc = fgFirstBB; tmpBBdesc; tmpBBdesc = tmpBBdesc->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        *dscBBptr++ = tmpBBdesc;
+        *dscBBptr++ = block;
     }
 
     noway_assert(dscBBptr == fgBBs + fgBBcount);
@@ -762,7 +764,7 @@ public:
     }
     void PushArgument(unsigned arg)
     {
-        Push(SLOT_ARGUMENT + arg);
+        Push(static_cast<FgSlot>(SLOT_ARGUMENT + arg));
     }
     unsigned GetSlot0() const
     {
@@ -805,7 +807,7 @@ public:
     }
 
 private:
-    enum
+    enum FgSlot
     {
         SLOT_INVALID  = UINT_MAX,
         SLOT_UNKNOWN  = 0,
@@ -814,7 +816,7 @@ private:
         SLOT_ARGUMENT = 3
     };
 
-    void Push(int type)
+    void Push(FgSlot type)
     {
         switch (depth)
         {
@@ -831,8 +833,8 @@ private:
         }
     }
 
-    unsigned slot0;
-    unsigned slot1;
+    FgSlot   slot0;
+    FgSlot   slot1;
     unsigned depth;
 };
 
@@ -867,6 +869,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         if (isInlining && impInlineInfo->iciBlock->hasTryIndex())
         {
             compInlineResult->Note(InlineObservation::CALLSITE_IN_TRY_REGION);
+        }
+
+        // Determine if the call site is in a no-return block
+        if (isInlining && (impInlineInfo->iciBlock->bbJumpKind == BBJ_THROW))
+        {
+            compInlineResult->Note(InlineObservation::CALLSITE_IN_NORETURN_REGION);
         }
 
         // Determine if the call site is in a loop.
@@ -937,6 +945,32 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_PREFIXREF:
             {
                 BADCODE3("Illegal opcode", ": %02X", (int)opcode);
+            }
+
+            case CEE_THROW:
+            {
+                if (makeInlineObservations)
+                {
+                    compInlineResult->Note(InlineObservation::CALLEE_THROW_BLOCK);
+                }
+                break;
+            }
+
+            case CEE_BOX:
+            {
+                if (makeInlineObservations)
+                {
+                    int toSkip = impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, true);
+                    if (toSkip > 0)
+                    {
+                        // toSkip > 0 means we most likely will hit a pattern (e.g. box+isinst+brtrue) that
+                        // will be folded into a const
+
+                        // TODO: uncomment later
+                        // codeAddr += toSkip;
+                    }
+                }
+                break;
             }
 
             case CEE_CALL:
@@ -1143,9 +1177,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 
-                    if (actualOpcode != CEE_CALLVIRT)
+                    if (actualOpcode != CEE_CALLVIRT && actualOpcode != CEE_CALL && actualOpcode != CEE_LDFTN)
                     {
-                        BADCODE("constrained. has to be followed by callvirt");
+                        BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                     }
                 }
                 goto OBSERVE_OPCODE;
@@ -1772,7 +1806,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
 {
     noway_assert(targetBlock->bbNum <= sourceBlock->bbNum);
 
-    for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
+    for (BasicBlock* const block : Blocks(targetBlock, sourceBlock))
     {
         if (((block->bbFlags & BBF_BACKWARD_JUMP) == 0) && (block->bbJumpKind != BBJ_RETURN))
         {
@@ -1801,7 +1835,7 @@ void Compiler::fgLinkBasicBlocks()
 
     /* Walk all the basic blocks, filling in the target addresses */
 
-    for (BasicBlock* curBBdesc = fgFirstBB; curBBdesc; curBBdesc = curBBdesc->bbNext)
+    for (BasicBlock* const curBBdesc : Blocks())
     {
         switch (curBBdesc->bbJumpKind)
         {
@@ -1912,11 +1946,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     do
     {
-        unsigned   jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
-        unsigned   bbFlags = 0;
-        BBswtDesc* swtDsc  = nullptr;
-        unsigned   nxtBBoffs;
-        OPCODE     opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        unsigned        jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
+        BasicBlockFlags bbFlags = BBF_EMPTY;
+        BBswtDesc*      swtDsc  = nullptr;
+        unsigned        nxtBBoffs;
+        OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
         BBjumpKinds jmpKind = BBJ_NONE;
 
@@ -2929,8 +2963,7 @@ void Compiler::fgFindBasicBlocks()
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
-    EHblkDsc* HBtabEnd;
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (ehMaxHndNestingCount <= HBtab->ebdHandlerNestingLevel)
             ehMaxHndNestingCount = HBtab->ebdHandlerNestingLevel + 1;
@@ -2981,7 +3014,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
     EHblkDsc* HBtab;
 
-    for (BasicBlock* blk = fgFirstBB; blk; blk = blk->bbNext)
+    for (BasicBlock* const blk : Blocks())
     {
         if (blk->bbFlags & BBF_INTERNAL)
         {
@@ -3058,23 +3091,15 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_LEAVE: // block always jumps to the target, maybe out of guarded
                             // region. Used temporarily until importing
-                fgControlFlowPermitted(blk, blk->bbJumpDest, TRUE);
+                fgControlFlowPermitted(blk, blk->bbJumpDest, true);
 
                 break;
 
             case BBJ_SWITCH: // block ends with a switch statement
-
-                BBswtDesc* swtDesc;
-                swtDesc = blk->bbJumpSwt;
-
-                assert(swtDesc);
-
-                unsigned i;
-                for (i = 0; i < swtDesc->bbsCount; i++)
+                for (BasicBlock* const bTarget : blk->SwitchTargets())
                 {
-                    fgControlFlowPermitted(blk, swtDesc->bbsDstTab[i]);
+                    fgControlFlowPermitted(blk, bTarget);
                 }
-
                 break;
 
             case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
@@ -3091,7 +3116,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
  * Consider removing this check here if we  can do it cheaply during importing
  */
 
-void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, BOOL isLeave)
+void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, bool isLeave)
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
 
@@ -3464,7 +3489,7 @@ IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
     // could have a similar function for LIR that searches for GT_IL_OFFSET nodes.
     assert(!block->IsLIR());
 
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
         {
@@ -3495,10 +3520,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Without these arcs, a block 'b' may not be a member of succs(preds(b))
     if (curr->bbJumpKind != BBJ_SWITCH)
     {
-        unsigned numSuccs = curr->NumSucc(this);
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (BasicBlock* const succ : curr->Succs(this))
         {
-            BasicBlock* succ = curr->GetSucc(i, this);
             if (succ != newBlock)
             {
                 JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succ->bbNum, curr->bbNum,
@@ -4122,7 +4145,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(succBlock, block);
 
-        for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+        for (flowList* const pred : block->PredEdges())
         {
             BasicBlock* predBlock = pred->getBlock();
 
@@ -4472,7 +4495,7 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered && fgComputePredsDone)
     {
-        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             block->ensurePredListOrder(this);
         }
@@ -4973,7 +4996,7 @@ bool Compiler::fgMightHaveLoop()
     BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
     BitVec       blocksSeen(BitVecOps::MakeEmpty(&blockVecTraits));
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 

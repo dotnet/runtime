@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -457,7 +457,8 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             _responseUri = request.RequestUri;
-            ArrayList commandList = new ArrayList();
+
+            var commandList = new List<PipelineEntry>();
 
             if (request.EnableSsl && !UsingSecureStream)
             {
@@ -627,7 +628,7 @@ namespace System.Net
 
             commandList.Add(new PipelineEntry(FormatFtpCommand("QUIT", null)));
 
-            return (PipelineEntry[])commandList.ToArray(typeof(PipelineEntry));
+            return commandList.ToArray();
         }
 
         private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream? stream, out bool isSocketReady)

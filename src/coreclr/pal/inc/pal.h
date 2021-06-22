@@ -94,6 +94,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define _M_ARM 7
 #elif defined(__aarch64__) && !defined(_M_ARM64)
 #define _M_ARM64 1
+#elif defined(__s390x__) && !defined(_M_S390X)
+#define _M_S390X 1
 #endif
 
 #if defined(_M_IX86) && !defined(HOST_X86)
@@ -104,6 +106,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define HOST_ARM
 #elif defined(_M_ARM64) && !defined(HOST_ARM64)
 #define HOST_ARM64
+#elif defined(_M_S390X) && !defined(HOST_S390X)
+#define HOST_S390X
 #endif
 
 #endif // !_MSC_VER
@@ -2189,6 +2193,112 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+#elif defined(HOST_S390X)
+
+// There is no context for s390x defined in winnt.h,
+// so we re-use the amd64 values.
+#define CONTEXT_S390X   0x100000
+
+#define CONTEXT_CONTROL (CONTEXT_S390X | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_S390X | 0x2L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_S390X | 0x4L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000
+#define CONTEXT_SERVICE_ACTIVE 0x10000000
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000
+
+typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
+
+    //
+    // Control flags.
+    //
+
+    DWORD ContextFlags;
+
+    //
+    // Integer registers.
+    //
+
+    union {
+        DWORD64 Gpr[16];
+        struct {
+            DWORD64 R0;
+            DWORD64 R1;
+            DWORD64 R2;
+            DWORD64 R3;
+            DWORD64 R4;
+            DWORD64 R5;
+            DWORD64 R6;
+            DWORD64 R7;
+            DWORD64 R8;
+            DWORD64 R9;
+            DWORD64 R10;
+            DWORD64 R11;
+            DWORD64 R12;
+            DWORD64 R13;
+            DWORD64 R14;
+            DWORD64 R15;
+        };
+    };
+
+    //
+    // Floating-point registers.
+    //
+
+    union {
+        DWORD64 Fpr[16];
+        struct {
+            DWORD64 F0;
+            DWORD64 F1;
+            DWORD64 F2;
+            DWORD64 F3;
+            DWORD64 F4;
+            DWORD64 F5;
+            DWORD64 F6;
+            DWORD64 F7;
+            DWORD64 F8;
+            DWORD64 F9;
+            DWORD64 F10;
+            DWORD64 F11;
+            DWORD64 F12;
+            DWORD64 F13;
+            DWORD64 F14;
+            DWORD64 F15;
+        };
+    };
+
+    //
+    // Control registers.
+    //
+
+    DWORD64 PSWMask;
+    DWORD64 PSWAddr;
+
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    PDWORD64 R6;
+    PDWORD64 R7;
+    PDWORD64 R8;
+    PDWORD64 R9;
+    PDWORD64 R10;
+    PDWORD64 R11;
+    PDWORD64 R12;
+    PDWORD64 R13;
+    PDWORD64 R14;
+    PDWORD64 R15;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
 #else
 #error Unknown architecture for defining CONTEXT.
 #endif
@@ -2323,6 +2433,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #elif defined(__linux__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__linux__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__linux__) && defined(HOST_S390X)
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__NetBSD__) && defined(__amd64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
@@ -2648,32 +2760,16 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-#ifdef __cplusplus
-extern "C++" {
-struct PAL_JITWriteEnableHolder
-{
-public:
-  PAL_JITWriteEnableHolder(bool jitWriteEnable)
-  {
-      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
-  };
-  ~PAL_JITWriteEnableHolder()
-  {
-      JITWriteEnable(m_jitWriteEnableRestore);
-  }
 
-private:
-  bool JITWriteEnable(bool enable);
-  bool m_jitWriteEnableRestore;
-};
+PALIMPORT
+VOID
+PALAPI
+PAL_JitWriteProtect(bool writeEnable);
 
-inline
-PAL_JITWriteEnableHolder
-PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
-}
-#endif // __cplusplus
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 
 PALIMPORT
 BOOL
@@ -4337,6 +4433,8 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
+        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -4357,12 +4455,17 @@ public:
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
 
+    void(*ManagedToNativeExceptionCallback)(void* context);
+    void* ManagedToNativeExceptionCallbackContext;
+
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        ManagedToNativeExceptionCallback = NULL;
+        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -4399,6 +4502,8 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        ManagedToNativeExceptionCallback = NULL;
+        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     CONTEXT* GetContextRecord()
@@ -4419,6 +4524,19 @@ public:
     void SecondPassDone()
     {
         TargetFrameSp = NoTargetFrameSp;
+    }
+
+    bool HasPropagateExceptionCallback()
+    {
+        return ManagedToNativeExceptionCallback != NULL;
+    }
+
+    void SetPropagateExceptionCallback(
+        void(*callback)(void*),
+        void* context)
+    {
+        ManagedToNativeExceptionCallback = callback;
+        ManagedToNativeExceptionCallbackContext = context;
     }
 };
 

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -738,6 +739,81 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void CallSitesAreUniquePerServiceTypeAndSlot()
+        {
+            // Connected graph
+            // Class1 -> Class2 -> Class3
+            // Class4 -> Class3
+            // Class5 -> Class2 -> Class3
+            var types = new Type[] { typeof(Class1), typeof(Class2), typeof(Class3), typeof(Class4), typeof(Class5) };
+
+            for (int i = 0; i < 100; i++)
+            {
+                var factory = GetCallSiteFactory(types.Select(t => ServiceDescriptor.Transient(t, t)).ToArray());
+
+                var tasks = new Task<ServiceCallSite>[types.Length];
+                for (int j = 0; j < types.Length; j++)
+                {
+                    var type = types[j];
+                    tasks[j] = Task.Run(() => factory(type));
+                }
+
+                Task.WaitAll(tasks);
+
+                var callsites = tasks.Select(t => t.Result).Cast<ConstructorCallSite>().ToArray();
+
+                Assert.Equal(5, callsites.Length);
+                // Class1 -> Class2
+                Assert.Same(callsites[0].ParameterCallSites[0], callsites[1]);
+                // Class2 -> Class3
+                Assert.Same(callsites[1].ParameterCallSites[0], callsites[2]);
+                // Class4 -> Class3
+                Assert.Same(callsites[3].ParameterCallSites[0], callsites[2]);
+                // Class5 -> Class2
+                Assert.Same(callsites[4].ParameterCallSites[0], callsites[1]);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void CallSitesAreUniquePerServiceTypeAndSlotWithOpenGenericInGraph()
+        {
+            // Connected graph
+            // ClassA -> ClassB -> ClassC<object>
+            // ClassD -> ClassC<string>
+            // ClassE -> ClassB -> ClassC<object>
+            var types = new Type[] { typeof(ClassA), typeof(ClassB), typeof(ClassC<>), typeof(ClassD), typeof(ClassE) };
+
+            for (int i = 0; i < 100; i++)
+            {
+                var factory = GetCallSiteFactory(types.Select(t => ServiceDescriptor.Transient(t, t)).ToArray());
+
+                var tasks = new Task<ServiceCallSite>[types.Length];
+                for (int j = 0; j < types.Length; j++)
+                {
+                    var type = types[j];
+                    tasks[j] = Task.Run(() => factory(type));
+                }
+
+                Task.WaitAll(tasks);
+
+                var callsites = tasks.Select(t => t.Result).Cast<ConstructorCallSite>().ToArray();
+
+                var cOfObject = factory(typeof(ClassC<object>));
+                var cOfString = factory(typeof(ClassC<string>));
+
+                Assert.Equal(5, callsites.Length);
+                // ClassA -> ClassB
+                Assert.Same(callsites[0].ParameterCallSites[0], callsites[1]);
+                // ClassB -> ClassC<object>
+                Assert.Same(callsites[1].ParameterCallSites[0], cOfObject);
+                // ClassD -> ClassC<string>
+                Assert.Same(callsites[3].ParameterCallSites[0], cOfString);
+                // ClassE -> ClassB
+                Assert.Same(callsites[4].ParameterCallSites[0], callsites[1]);
+            }
+        }
+
         private static Func<Type, ServiceCallSite> GetCallSiteFactory(params ServiceDescriptor[] descriptors)
         {
             var collection = new ServiceCollection();
@@ -762,5 +838,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 c => Enumerable.SequenceEqual(
                     c.GetParameters().Select(p => p.ParameterType),
                     parameterTypes));
+
+
+        private class Class1 { public Class1(Class2 c2) { } }
+        private class Class2 { public Class2(Class3 c3) { } }
+        private class Class3 { }
+        private class Class4 { public Class4(Class3 c3) { } }
+        private class Class5 { public Class5(Class2 c2) { } }
+
+        // Open generic
+        private class ClassA { public ClassA(ClassB cb) { } }
+        private class ClassB { public ClassB(ClassC<object> cc) { } }
+        private class ClassC<T> { }
+        private class ClassD { public ClassD(ClassC<string> cd) { } }
+        private class ClassE { public ClassE(ClassB cb) { } }
     }
 }

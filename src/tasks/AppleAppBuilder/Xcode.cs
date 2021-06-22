@@ -12,10 +12,12 @@ internal class Xcode
     private string RuntimeIdentifier { get; set; }
     private string SysRoot { get; set; }
     private string Target { get; set; }
+    private string XcodeArch { get; set; }
 
     public Xcode(string target, string arch)
     {
         Target = target;
+        XcodeArch = (arch == "x64") ? "x86_64" : arch;
         switch (Target)
         {
             case TargetNames.iOS:
@@ -39,11 +41,13 @@ internal class Xcode
     }
 
     public bool EnableRuntimeLogging { get; set; }
+    public string? DiagnosticPorts { get; set; } = ""!;
 
     public string GenerateXCode(
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
         string monoInclude,
@@ -53,7 +57,7 @@ internal class Xcode
         bool forceInterpreter,
         bool invariantGlobalization,
         bool stripDebugSymbols,
-        string? staticLinkedComponentNames=null,
+        string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
@@ -63,7 +67,7 @@ internal class Xcode
             excludes.Add(".pdb");
         }
 
-        string[] resources = Directory.GetFiles(workspace)
+        string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
             .Concat(Directory.GetFiles(binDir, "*.aotdata"))
             .ToArray();
@@ -87,7 +91,7 @@ internal class Xcode
         var entitlements = new List<KeyValuePair<string, string>>();
 
         bool hardenedRuntime = false;
-        if (Target == TargetNames.MacCatalyst && !(forceInterpreter || forceAOT)) {
+        if (Target == TargetNames.MacCatalyst && !forceAOT) {
             hardenedRuntime = true;
 
             /* for mmmap MAP_JIT */
@@ -98,7 +102,7 @@ internal class Xcode
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
-            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + r)))
+            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + Path.GetRelativePath(binDir, r))))
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
@@ -108,12 +112,12 @@ internal class Xcode
         string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
         string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
         bool staticLinkAllComponents = false;
-        string[] componentNames = Array.Empty<string>();
+        string[] staticLinkedComponents = Array.Empty<string>();
 
-        if (!string.IsNullOrEmpty(staticLinkedComponentNames) && staticLinkedComponentNames.Equals("*", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(runtimeComponents) && runtimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
             staticLinkAllComponents = true;
-        else if (!string.IsNullOrEmpty(staticLinkedComponentNames))
-            componentNames = staticLinkedComponentNames.Split(";");
+        else if (!string.IsNullOrEmpty(runtimeComponents))
+            staticLinkedComponents = runtimeComponents.Split(";");
 
         // by default, component stubs will be linked and depending on how mono runtime has been build,
         // stubs can disable or dynamic load components.
@@ -127,9 +131,9 @@ internal class Xcode
             }
             else
             {
-                foreach (string componentName in componentNames)
+                foreach (string staticLinkedComponent in staticLinkedComponents)
                 {
-                    if (componentLibToLink.Contains(componentName, StringComparison.OrdinalIgnoreCase))
+                    if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
                     {
                         // static link component.
                         componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
@@ -168,12 +172,19 @@ internal class Xcode
         }
 
         string aotSources = "";
+        string aotList = "";
         foreach (string asm in asmFiles)
         {
             // these libraries are linked via modules.m
             var name = Path.GetFileNameWithoutExtension(asm);
             aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
             toLink += $"    {name}{Environment.NewLine}";
+            aotList += $" {name}";
+        }
+
+        foreach (string asmLinkFile in asmLinkFiles)
+        {
+            toLink += $"    {asmLinkFile}{Environment.NewLine}";
         }
 
         string frameworks = "";
@@ -185,6 +196,7 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
+        cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
 
         var defines = new StringBuilder();
@@ -192,7 +204,8 @@ internal class Xcode
         {
             defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
-        else if (forceAOT)
+
+        if (forceAOT)
         {
             defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }
@@ -205,6 +218,11 @@ internal class Xcode
         if (EnableRuntimeLogging)
         {
             defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        {
+            defines.AppendLine("\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
@@ -248,7 +266,7 @@ internal class Xcode
                 targetName = Target.ToString();
                 break;
         }
-        var deployTarget = (Target == TargetNames.MacCatalyst) ? " -DCMAKE_OSX_ARCHITECTURES=\"x86_64 arm64\"" : " -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1";
+        var deployTarget = (Target == TargetNames.MacCatalyst) ? " -DCMAKE_OSX_ARCHITECTURES=" + XcodeArch : " -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1";
         var cmakeArgs = new StringBuilder();
         cmakeArgs
             .Append("-S.")
@@ -298,6 +316,10 @@ internal class Xcode
                 .Append(" CODE_SIGNING_REQUIRED=NO")
                 .Append(" CODE_SIGNING_ALLOWED=NO");
         }
+        else if (string.Equals(devTeamProvisioning, "adhoc",  StringComparison.OrdinalIgnoreCase))
+        {
+            args.Append(" CODE_SIGN_IDENTITY=\"-\"");
+        }
         else
         {
             args.Append(" -allowProvisioningUpdates")
@@ -332,8 +354,10 @@ internal class Xcode
                 default:
                     sdk = "maccatalyst";
                     args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
-                        .Append(" -destination \"platform=macOS,arch=arm64,variant=Mac Catalyst\"")
+                        .Append(" -destination \"generic/platform=macOS,name=Any Mac,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
+                        .Append(" -archivePath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
+                        .Append(" -derivedDataPath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
                         .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2");
                     break;
             }
@@ -355,8 +379,10 @@ internal class Xcode
                 default:
                     sdk = "maccatalyst";
                     args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
-                        .Append(" -destination \"platform=macOS,arch=x86_64,variant=Mac Catalyst\"")
+                        .Append(" -destination \"generic/platform=macOS,name=Any Mac,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
+                        .Append(" -archivePath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
+                        .Append(" -derivedDataPath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
                         .Append(" IPHONEOS_DEPLOYMENT_TARGET=13.5");
                     break;
             }

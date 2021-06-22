@@ -28,6 +28,34 @@ and to test and view status
 
     docker exec -it slapd01 slapcat
 
+SLAPD OPENLDAP SERVER WITH TLS
+==============================
+
+The osixia/openldap container image automatically creates a TLS lisener with a self-signed certificate. This can be used to test TLS.
+
+Start the container, with TLS on port 1636, without client certificate verification:
+
+    docker run --publish 1389:389 --publish 1636:636 --name ldap --hostname ldap.local --detach --rm --env LDAP_TLS_VERIFY_CLIENT=never --env LDAP_ADMIN_PASSWORD=password osixia/openldap --loglevel debug
+
+Extract the CA certificate and write to a temporary file:
+
+    docker exec ldap cat /container/service/slapd/assets/certs/ca.crt > /tmp/ca.crt
+
+Set the LDAP client CA certificate path in `/etc/ldap/ldap.conf` so OpenLDAP trusts the self-signed certificate:
+
+    # /etc/ldap/ldap.conf
+    #...
+    TLS_CACERT /tmp/ca.crt
+
+Finally, map the `ldap.local` hostname manually set above to the loopback address:
+
+    # /etc/hosts
+    127.0.0.1 ldap.local
+
+To test and view the status:
+
+    ldapsearch -H ldaps://ldap.local:1636 -b dc=example,dc=org -x -D cn=admin,dc=example,dc=org -w password
+
 ACTIVE DIRECTORY
 ================
 
@@ -82,6 +110,15 @@ Note:
         <User>danmose-domain\Administrator</User>
         <Password>%TESTPASSWORD%</Password>
         <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+    </Connection>
+    <Connection Name="SLAPD OPENLDAP SERVER TLS">
+        <ServerName>ldap.local</ServerName>
+        <SearchDN>DC=example,DC=org</SearchDN>
+        <Port>1636</Port>
+        <User>cn=admin,dc=example,dc=org</User>
+        <Password>password</Password>
+        <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+        <UseTls>true</UseTls>
     </Connection>
 
 </Configuration>

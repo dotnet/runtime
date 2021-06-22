@@ -14,15 +14,11 @@
 #include "object.h"
 #include "dllimportcallback.h"
 #include "mlinfo.h"
-#include "comdelegate.h"
 #include "ceeload.h"
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "stubgen.h"
 #include "appdomain.inl"
-#include "callingconvention.h"
-#include "customattribute.h"
-#include "typeparse.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -68,7 +64,7 @@ public:
         return pThunk;
     }
 
-    void AddToList(UMEntryThunk *pThunk)
+    void AddToList(UMEntryThunk *pThunkRX, UMEntryThunk *pThunkRW)
     {
         CONTRACTL
         {
@@ -78,22 +74,19 @@ public:
 
         CrstHolder ch(&m_crst);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         if (m_pHead == NULL)
         {
-            m_pHead = pThunk;
-            m_pTail = pThunk;
+            m_pHead = pThunkRX;
+            m_pTail = pThunkRX;
         }
         else
         {
-            m_pTail->m_pNextFreeThunk = pThunk;
-            m_pTail = pThunk;
+            ExecutableWriterHolder<UMEntryThunk> tailThunkWriterHolder(m_pTail, sizeof(UMEntryThunk));
+            tailThunkWriterHolder.GetRW()->m_pNextFreeThunk = pThunkRX;
+            m_pTail = pThunkRX;
         }
 
-        pThunk->m_pNextFreeThunk = NULL;
+        pThunkRW->m_pNextFreeThunk = NULL;
 
         ++m_count;
     }
@@ -162,9 +155,6 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     else
     {
         // cache miss -> create a new thunk
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
         pThunk = UMEntryThunk::CreateUMEntryThunk();
         Holder<UMEntryThunk *, DoNothing, UMEntryThunk::FreeUMEntryThunk> umHolder;
         umHolder.Assign(pThunk);
@@ -174,7 +164,9 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         miHolder.Assign(pMarshInfo);
 
         pMarshInfo->LoadTimeInit(pMD);
-        pThunk->LoadTimeInit(NULL, NULL, pMarshInfo, pMD);
+
+        ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(pThunk, sizeof(UMEntryThunk));
+        thunkWriterHolder.GetRW()->LoadTimeInit(pThunk, NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache
         CacheElement element;
@@ -285,11 +277,8 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
     {
         GCX_PREEMP();
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        pUMEntryThunk->RunTimeInit();
+        ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+        uMEntryThunkWriterHolder.GetRW()->RunTimeInit(pUMEntryThunk);
     }
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -327,19 +316,16 @@ void UMEntryThunk::Terminate()
     }
     CONTRACTL_END;
 
+    ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(this, sizeof(UMEntryThunk));
     m_code.Poison();
 
     if (GetObjectHandle())
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         DestroyLongWeakHandle(GetObjectHandle());
-        m_pObjectHandle = 0;
+        thunkWriterHolder.GetRW()->m_pObjectHandle = 0;
     }
 
-    s_thunkFreeList.AddToList(this);
+    s_thunkFreeList.AddToList(this, thunkWriterHolder.GetRW());
 }
 
 VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
@@ -554,99 +540,6 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
     END_ENTRYPOINT_VOIDRET;
 
     }
-#endif
+#endif // _DEBUG
 
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
-
-    // Validate usage
-    COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
-
-    BYTE* pData = NULL;
-    LONG cData = 0;
-
-    bool nativeCallableInternalData = false;
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
-    if (hr == S_FALSE)
-    {
-        hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
-        nativeCallableInternalData = SUCCEEDED(hr);
-    }
-
-    IfFailThrow(hr);
-
-    _ASSERTE(cData > 0);
-
-    CustomAttributeParser ca(pData, cData);
-
-    // UnmanagedCallersOnly and NativeCallableInternal each
-    // have optional named arguments.
-    CaNamedArg namedArgs[2];
-
-    // For the UnmanagedCallersOnly scenario.
-    CaType caCallConvs;
-
-    // Define attribute specific optional named properties
-    if (nativeCallableInternalData)
-    {
-        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
-    }
-    else
-    {
-        caCallConvs.Init(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
-        namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
-    }
-
-    // Define common optional named properties
-    CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
-    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
-
-    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
-        pData,
-        cData,
-        &caValueArrayFactory,
-        NULL,
-        0,
-        namedArgs,
-        lengthof(namedArgs),
-        domainAssembly));
-
-    // If the value isn't defined, then return without setting anything.
-    if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
-        return false;
-
-    CorInfoCallConvExtension callConvLocal;
-    if (nativeCallableInternalData)
-    {
-        callConvLocal = (CorInfoCallConvExtension)(namedArgs[0].val.u4 << 8);
-    }
-    else
-    {
-        CallConvBuilder callConvBuilder;
-
-        CaValue* arrayOfTypes = &namedArgs[0].val;
-        for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
-        {
-            CaValue& typeNameValue = arrayOfTypes->arr[i];
-
-            if (!callConvBuilder.AddFullyQualifiedTypeName(typeNameValue.str.cbStr, typeNameValue.str.pStr))
-            {
-                // We found a second base calling convention.
-                return false;
-            }
-        }
-
-        callConvLocal = callConvBuilder.GetCurrentCallConv();
-        if (callConvLocal == CallConvBuilder::UnsetValue)
-        {
-            callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
-        }
-    }
-    *pCallConv = callConvLocal;
-    return true;
-}
 #endif // CROSSGEN_COMPILE

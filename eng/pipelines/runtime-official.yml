@@ -42,6 +42,15 @@ stages:
   jobs:
 
   #
+  # Localization build
+  #
+  - template: /eng/common/templates/job/onelocbuild.yml
+    parameters:
+      CreatePr: false
+      LclSource: lclFilesfromPackage
+      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+
+  #
   # Source Index Build
   #
   - template: ./source-index.yml
@@ -145,6 +154,7 @@ stages:
       - Browser_wasm
       - tvOS_arm64
       - iOS_arm64
+      - MacCatalyst_x64
 
   #
   # Build Mono release AOT cross-compilers
@@ -204,7 +214,7 @@ stages:
       - OSX_x64
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
-                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS+MacCatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
         nameSuffix: CrossAOT_Mono
         runtimeVariant: crossaot
         dependsOn:
@@ -212,11 +222,13 @@ stages:
         - mono_browser_offsets
         - mono_tvos_offsets
         - mono_ios_offsets
+        - mono_maccatalyst_offsets
         monoCrossAOTTargetOS:
         - Android
         - Browser
         - tvOS
         - iOS
+        - MacCatalyst
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:

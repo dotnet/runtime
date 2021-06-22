@@ -263,6 +263,10 @@ public:
     virtual void DumpSchema(FILE* file) const
     {
     }
+    // Detailed data value dump as XML
+    virtual void DumpXml(FILE* file, unsigned indent = 0) const
+    {
+    }
     // True if this is the inline targeted by data collection
     bool IsDataCollectionTarget()
     {
@@ -529,7 +533,9 @@ struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
+    CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     unsigned              likelihood;
+    bool                  requiresInstMethodTableArg;
 };
 
 // InlineCandidateInfo provides basic information about a particular
@@ -910,7 +916,7 @@ public:
     }
 
     // Set up or access random state (for use by RandomPolicy)
-    CLRRandom* GetRandom();
+    CLRRandom* GetRandom(int optionalSeed = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

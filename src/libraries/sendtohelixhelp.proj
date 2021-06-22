@@ -25,10 +25,11 @@
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">01:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android')">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android')">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and '$(Outerloop)' == 'true'">00:20:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == ''">00:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == ''">00:30:00</_workItemTimeout>
 
@@ -41,11 +42,11 @@
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
 
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
-         test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue)
+         test run name will be displayed as $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-$(HelixTargetQueue)
 
          In the multi-scenario case, we append the scenario name to this test name prefix to distinguish the different scenario results.
     -->
-    <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
+    <TestRunNamePrefix>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
@@ -53,52 +54,50 @@
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
-    <IncludeDotNetCli>true</IncludeDotNetCli>
-    <DotNetCliPackageType>sdk</DotNetCliPackageType>
-
-    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <HelixPreCommand Include="set DOTNET_MULTILEVEL_LOOKUP=0" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(TestPackages)' == 'true'">
-    <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
-    <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
-    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
-    <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-    <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <HelixPreCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <HelixPreCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!--
+      We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
+      We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
+      For the HTTPS endpoint we need development SSL certificate.
+    -->
+    <InstallDevCerts Condition="'$(Scenario)' != 'BuildWasmApps'">true</InstallDevCerts>
+
+    <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
@@ -106,11 +105,9 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <IncludeDotNetCli>true</IncludeDotNetCli>
-    <DotNetCliPackageType>sdk</DotNetCliPackageType>
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
@@ -147,22 +144,46 @@
     <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' != 'windows'">dotnet dev-certs https &amp;&amp; </HelixCommand>
+
+    <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell -->
+    <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' == 'windows'">powershell -command &quot;New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment&quot; &amp;&amp; </HelixCommand>
+
     <!--
       For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
       We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
       so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)call RunTests.cmd</HelixCommand>
+    <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand)./RunTests.sh</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
   </ItemGroup>
+
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <XHarnessAppBundleToTest>
+      <Targets>maccatalyst</Targets>
+      <TestTimeout>$(_workItemTimeout)</TestTimeout>
+      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+    </XHarnessAppBundleToTest>
+  </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <XHarnessAppBundleToTest>
@@ -200,7 +221,7 @@
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
 
-  <Target Name="BuildHelixWorkItems">
+  <Target Name="BuildHelixWorkItems" DependsOnTargets="StageEmSdkForHelix">
 
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
@@ -211,25 +232,26 @@
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <AppleTestTarget Condition="'$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvOSSimulator'">tvos-simulator</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvOS'">tvos-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst</AppleTestTarget>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <!-- Create work items for test apps -->
       <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
-        <Targets>$(AppleTestTarget)</Targets>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
       </XHarnessAppBundleToTest>
       <!-- Create work items for run-only apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
-        <Targets>$(AppleTestTarget)</Targets>
+        <TestTarget>$(AppleTestTarget)</TestTarget>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
@@ -254,7 +276,16 @@
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
+      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(NetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+      <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+    </ItemGroup>
 
     <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
@@ -275,9 +306,14 @@
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
@@ -286,6 +322,7 @@
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
@@ -294,13 +331,24 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
+      <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
+      <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
+      <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+      <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
+      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
+      <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
       <!-- Create a work item for run-only WASM console app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- --run %(FileName).dll</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -310,14 +358,33 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- %(FileName).dll --testing</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome  --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
-    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
+    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
 
+  </Target>
+
+  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
+       attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
+       payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
+  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
+    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
+           Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
+
+    <PropertyGroup>
+      <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
+    <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
 
   <Target Name="PrintHelixQueues">
@@ -325,7 +392,6 @@
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
-    <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
-    <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
+    <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 </Project>

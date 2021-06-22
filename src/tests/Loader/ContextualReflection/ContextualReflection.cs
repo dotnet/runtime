@@ -729,14 +729,14 @@ namespace ContextualReflectionTest
         void TestDefineDynamicAssembly(bool collectibleContext, AssemblyBuilderAccess assemblyBuilderAccess)
         {
             AssemblyLoadContext assemblyLoadContext = collectibleContext ? new AssemblyLoadContext("DynamicAssembly Collectable context", true) : AssemblyLoadContext.Default;
-            AssemblyName dynamicAssemblyName = new AssemblyName("DynamicAssembly");
+            AssemblyBuilder assemblyBuilder;
 
             using (assemblyLoadContext.EnterContextualReflection())
             {
-                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(dynamicAssemblyName, assemblyBuilderAccess);
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}"), assemblyBuilderAccess);
             }
 
-            Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), dynamicAssemblyName)));
+            Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyBuilder.GetName())));
         }
 
         void TestMockAssemblyThrows()
@@ -752,9 +752,8 @@ namespace ContextualReflectionTest
             VerifyUsingStatementContextualReflectionUsage();
             VerifyBadContextualReflectionUsage();
 
-            // TestDynamicAssembly() disabled due to https://github.com/dotnet/runtime/issues/48579
-            //TestDynamicAssembly(true);
-            //TestDynamicAssembly(false);
+            TestDynamicAssembly(true);
+            TestDynamicAssembly(false);
 
             RunTests(isolated : false);
             alcProgramInstance.RunTestsIsolated();

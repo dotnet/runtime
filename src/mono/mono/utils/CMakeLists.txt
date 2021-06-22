@@ -33,8 +33,6 @@ set(utils_common_sources
     mono-logger.c
     mono-logger-internals.h
     mono-codeman.c
-    write-protect.c
-    write-protect.h
     mono-counters.c
     mono-compiler.h
     mono-dl.c
@@ -233,6 +231,8 @@ elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
 elseif(TARGET_ARM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
+elseif(TARGET_S390X)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 else()

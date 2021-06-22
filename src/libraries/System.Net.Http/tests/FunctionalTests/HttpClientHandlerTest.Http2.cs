@@ -334,6 +334,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient())
             {
                 (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+                connection.SetupAutomaticPingResponse();
 
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
                 (int streamId1, HttpRequestData requestData1) = await connection.ReadAndParseRequestHeaderAsync(readBody: true);
@@ -371,6 +372,7 @@ namespace System.Net.Http.Functional.Tests
                 const string Content = "Hello world";
 
                 (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+                connection.SetupAutomaticPingResponse();
 
                 Task<HttpResponseMessage> sendTask = client.PostAsync(server.Address, new StringContent(Content));
                 (int streamId1, HttpRequestData requestData1) = await connection.ReadAndParseRequestHeaderAsync(readBody: true);
@@ -742,6 +744,7 @@ namespace System.Net.Http.Functional.Tests
                 Task sendTask = client.GetAsync(server.Address);
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
+                connection.SetupAutomaticPingResponse();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
@@ -765,6 +768,7 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await connection.RespondToPingFrameAsync(); // Respond to 1 RTT PING
                 await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: false));
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
 
@@ -787,6 +791,7 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await connection.RespondToPingFrameAsync(); // Receive 1 RTT PING
                 await connection.WriteFrameAsync(MakeSimpleDataFrame(streamId));
 
                 // As this is a connection level error, the client should see the request fail.
@@ -808,6 +813,7 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await connection.RespondToPingFrameAsync(); // Respond to 1 RTT PING
                 await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: false));
                 await connection.WriteFrameAsync(MakeSimpleDataFrame(streamId));
 
@@ -868,6 +874,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection2 = await server.EstablishConnectionAsync();
                 int streamId2 = await connection2.ReadRequestHeaderAsync();
                 await connection2.SendDefaultResponseAsync(streamId2);
+                await connection2.RespondToPingFrameAsync(); // Receive 1 RTT PING in response to HEADERS
                 HttpResponseMessage response2 = await sendTask2;
                 Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
 
@@ -942,6 +949,7 @@ namespace System.Net.Http.Functional.Tests
                 // Complete second request
                 int streamId3 = await connection2.ReadRequestHeaderAsync();
                 await connection2.SendDefaultResponseAsync(streamId3);
+                await connection2.RespondToPingFrameAsync(); // Receive 1 RTT PING in response to HEADERS
                 HttpResponseMessage response2 = await sendTask2;
                 Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
                 await connection2.WaitForConnectionShutdownAsync();
@@ -978,6 +986,7 @@ namespace System.Net.Http.Functional.Tests
                 // Complete second request
                 int streamId3 = await connection2.ReadRequestHeaderAsync();
                 await connection2.SendDefaultResponseAsync(streamId3);
+                await connection2.RespondToPingFrameAsync(); // Expect 1 RTT PING in response to HEADERS
                 HttpResponseMessage response2 = await sendTask2;
                 Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
                 await connection2.WaitForConnectionShutdownAsync();
@@ -1026,6 +1035,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendGoAway(streamId);
 
                     // Make sure client received GOAWAY
+                    _ = connection.ExpectPingFrameAsync();
                     await connection.PingPong();
 
                     await connection.SendResponseBodyAsync(streamId, new byte[4] { 15, 14, 13, 12 }, isFinal: false);
@@ -1074,6 +1084,9 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame dataFrame = new DataFrame(new byte[10], FrameFlags.EndStream, 0, streamId);
                 await connection.WriteFrameAsync(dataFrame);
 
+                // We may receive an RTT PING in response to the DATA:
+                _ = connection.ExpectPingFrameAsync(respond: true);
+
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1103,6 +1116,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Send empty response.
                 await connection.SendDefaultResponseAsync(streamId);
+                connection.SetupAutomaticPingResponse(); // Respond to RTT PINGs
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1131,6 +1145,9 @@ namespace System.Net.Http.Functional.Tests
 
                 // Send empty response.
                 await connection.SendDefaultResponseAsync(streamId);
+
+                // We expect an RTT PING in response to HEADERS:
+                await connection.RespondToPingFrameAsync();
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1200,6 +1217,9 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
 
+                // Auto-respond to all incoming RTT PINGs:
+                connection.SetupAutomaticPingResponse();
+
                 // Send a reset stream frame so that stream 1 moves to a terminal state.
                 RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.None, (int)error, streamId);
                 await connection.WriteFrameAsync(resetStream);
@@ -1254,6 +1274,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 (int streamId, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
+                // We expect one RTT PING as a response to HEADERS
+                await connection.RespondToPingFrameAsync();
+
                 // Send GOAWAY.
                 GoAwayFrame goAwayFrame = new GoAwayFrame(streamId, 0, new byte[0], 0);
                 await connection.WriteFrameAsync(goAwayFrame);
@@ -1273,6 +1296,9 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient())
             {
                 (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+
+                // Handle RTT PINGs:
+                connection.SetupAutomaticPingResponse();
 
                 // Issue three requests
                 Task<HttpResponseMessage> sendTask1 = client.GetAsync(server.Address);
@@ -1308,6 +1334,8 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseDataAsync(streamId2, new byte[10], endStream: true);
                 await connection.SendResponseDataAsync(streamId3, new byte[5], endStream: true);
 
+                // Send no more PING ACK:
+                connection.TearDownAutomaticPingResponse();
                 // We will not send any more frames, so send EOF now, and ensure the client handles this properly.
                 connection.ShutdownSend();
 
@@ -1341,6 +1369,7 @@ namespace System.Net.Http.Functional.Tests
                 server.AllowMultipleConnections = true;
 
                 (_, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+                connection.SetupAutomaticPingResponse(); // Respond to RTT PINGs
 
                 // Issue three requests, we want to make sure the specific task is related with specific stream
                 Task<HttpResponseMessage> sendTask1 = client.GetAsync("request1");
@@ -1381,6 +1410,7 @@ namespace System.Net.Http.Functional.Tests
                 string headerData = Encoding.UTF8.GetString(retriedFrame.Data.Span);
 
                 await newConnection.SendDefaultResponseHeadersAsync(retriedStreamId);
+                newConnection.SetupAutomaticPingResponse();
                 await newConnection.SendResponseDataAsync(retriedStreamId, new byte[3], endStream: true);
 
                 Assert.Contains("request1", headerData);
@@ -1394,6 +1424,23 @@ namespace System.Net.Http.Functional.Tests
 
                 await connection.WaitForConnectionShutdownAsync();
             }
+        }
+
+        private static async Task ReadExactDataSizeFromStream(Http2LoopbackConnection connection, int size, int streamId)
+        {
+            int bytesReceived = 0;
+            while (bytesReceived < size)
+            {
+                Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(streamId, frame.StreamId);
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(FrameFlags.None, frame.Flags);
+                Assert.True(frame.Length > 0);
+
+                bytesReceived += frame.Length;
+            }
+
+            Assert.Equal(size, bytesReceived);
         }
 
         private static async Task<int> ReadToEndOfStream(Http2LoopbackConnection connection, int streamId)
@@ -1420,11 +1467,133 @@ namespace System.Net.Http.Functional.Tests
             return bytesReceived;
         }
 
+        const int DefaultInitialWindowSize = 65535;
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_FlowControl_HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
+        {
+            int maxCredit = await TestClientWindowScalingAsync(
+                TimeSpan.FromMilliseconds(30),
+                TimeSpan.Zero,
+                2 * 1024 * 1024);
+
+            // Expect the client receive window to grow over 1MB:
+            Assert.True(maxCredit > 1024 * 1024);
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_FlowControl_LowBandwidthDelayProduct_ClientStreamReceiveWindowStopsScaling()
+        {
+            int maxCredit = await TestClientWindowScalingAsync(
+                TimeSpan.Zero,
+                TimeSpan.FromMilliseconds(15),
+                2 * 1024 * 1024);
+
+            // Expect the client receive window to stay below 1MB:
+            Assert.True(maxCredit < 1024 * 1024);
+        }
+
+        private async Task<int> TestClientWindowScalingAsync(TimeSpan networkDelay, TimeSpan slowBandwidthSimDelay, int bytesToDownload)
+        {
+            TimeSpan timeout = TimeSpan.FromSeconds(30);
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            using HttpClient client = CreateHttpClient();
+
+            Task<HttpResponseMessage> clientTask = client.GetAsync(server.Address);
+            Http2LoopbackConnection connection = await server.AcceptConnectionAsync().ConfigureAwait(false);
+            SettingsFrame clientSettingsFrame = await connection.ReadSettingsAsync().ConfigureAwait(false);
+
+            // send server SETTINGS:
+            await connection.WriteFrameAsync(new SettingsFrame()).ConfigureAwait(false);
+
+            // Initial client SETTINGS also works as a PING. Do not send ACK immediately to avoid low RTT estimation
+            await Task.Delay(networkDelay);
+            await connection.WriteFrameAsync(new SettingsFrame(FrameFlags.Ack, new SettingsEntry[0]));
+
+            // Expect SETTINGS ACK from client:
+            await connection.ExpectSettingsAckAsync();
+
+            SettingsEntry initialWindowSettingsEntry = clientSettingsFrame.Entries.SingleOrDefault(e => e.SettingId == SettingId.InitialWindowSize);
+
+            int maxCredit = (int)clientSettingsFrame.Entries.SingleOrDefault(e => e.SettingId == SettingId.InitialWindowSize)?.Value;
+            int credit = maxCredit;
+
+            int streamId = await connection.ReadRequestHeaderAsync();
+            // Write the response.
+            await connection.SendDefaultResponseHeadersAsync(streamId);
+
+            using SemaphoreSlim creditReceivedSemaphore = new SemaphoreSlim(0);
+            using SemaphoreSlim writeSemaphore = new SemaphoreSlim(1);
+            int remainingBytes = bytesToDownload;
+            _ = Task.Run(ProcessIncomingFramesAsync);
+            byte[] buffer = new byte[16384];
+
+            while (remainingBytes > 0)
+            {
+                Wait(slowBandwidthSimDelay);
+                while (credit == 0) await creditReceivedSemaphore.WaitAsync(timeout);
+                int bytesToSend = Math.Min(Math.Min(buffer.Length, credit), remainingBytes);
+
+                Memory<byte> responseData = buffer.AsMemory(0, bytesToSend);
+
+                int nextRemainingBytes = remainingBytes - bytesToSend;
+                bool endStream = nextRemainingBytes == 0;
+
+                await writeSemaphore.WaitAsync();
+                await connection.SendResponseDataAsync(streamId, responseData, endStream);
+                writeSemaphore.Release();
+
+                credit -= bytesToSend;
+
+                remainingBytes = nextRemainingBytes;
+            }
+
+            using HttpResponseMessage response = await clientTask;
+            int dataReceived = (await response.Content.ReadAsByteArrayAsync()).Length;
+            Assert.Equal(bytesToDownload, dataReceived);
+
+            return maxCredit;
+
+            async Task ProcessIncomingFramesAsync()
+            {
+                while (remainingBytes > 0)
+                {
+                    Frame frame = await connection.ReadFrameAsync(timeout);
+
+                    if (frame is PingFrame pingFrame)
+                    {
+                        // Simulate network delay for RTT PING
+                        Wait(networkDelay);
+
+                        await writeSemaphore.WaitAsync();
+                        await connection.SendPingAckAsync(pingFrame.Data);
+                        writeSemaphore.Release();
+                    }
+                    else if (frame is WindowUpdateFrame windowUpdateFrame)
+                    {
+                        // Ignore connection window:
+                        if (windowUpdateFrame.StreamId != streamId) continue;
+
+                        credit += windowUpdateFrame.UpdateSize;
+                        maxCredit = Math.Max(credit, maxCredit); // Detect if client grows the window
+                        _output.WriteLine("MaxCredit: " + maxCredit);
+                        creditReceivedSemaphore.Release();
+                    }
+                    else if (frame is not null)
+                    {
+                        throw new Exception("Unexpected frame: " + frame);
+                    }
+                }
+            }
+
+            static void Wait(TimeSpan dt) { if (dt != TimeSpan.Zero) Thread.Sleep(dt); }
+        }
+
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
         {
-            const int InitialWindowSize = 65535;
             const int ContentSize = 100_000;
 
             var content = new ByteAtATimeContent(ContentSize);
@@ -1442,19 +1611,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
 
                 // Receive up to initial window size
-                int bytesReceived = 0;
-                while (bytesReceived < InitialWindowSize)
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                    Assert.Equal(streamId, frame.StreamId);
-                    Assert.Equal(FrameType.Data, frame.Type);
-                    Assert.Equal(FrameFlags.None, frame.Flags);
-                    Assert.True(frame.Length > 0);
-
-                    bytesReceived += frame.Length;
-                }
-
-                Assert.Equal(InitialWindowSize, bytesReceived);
+                int bytesReceived = DefaultInitialWindowSize;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
 
                 // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
                 Task<Frame> readFrameTask = connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
@@ -1528,7 +1686,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_InitialWindowSize_ClientDoesNotExceedWindows()
         {
-            const int DefaultInitialWindowSize = 65535;
             const int ContentSize = DefaultInitialWindowSize + 1000;
 
             var content = new ByteAtATimeContent(ContentSize);
@@ -1548,20 +1705,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameType.Headers, frame.Type);
                 Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
 
-                // Receive up to initial window size
-                int bytesReceived = 0;
-                while (bytesReceived < DefaultInitialWindowSize)
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                    Assert.Equal(streamId, frame.StreamId);
-                    Assert.Equal(FrameType.Data, frame.Type);
-                    Assert.Equal(FrameFlags.None, frame.Flags);
-                    Assert.True(frame.Length > 0);
-
-                    bytesReceived += frame.Length;
-                }
-
-                Assert.Equal(DefaultInitialWindowSize, bytesReceived);
+                int bytesReceived = DefaultInitialWindowSize;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
 
                 // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
                 Task<Frame> readFrameTask = connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
@@ -1640,6 +1785,115 @@ namespace System.Net.Http.Functional.Tests
                 bytesReceived += await ReadToEndOfStream(connection, streamId);
 
                 Assert.Equal(ContentSize, bytesReceived);
+
+                await connection.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        // Flush behavior is heuristic-based and may change in the future.
+        // Try various content sizes here to ensure we are not simply getting lucky with the flush heuristic.
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(DefaultInitialWindowSize + 1)]
+        [InlineData(DefaultInitialWindowSize + 4 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 8 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 16 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 32 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 64 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 96 * 1024)]
+        public async Task Http2_SendOverStreamWindowSizeWithoutExplicitFlush_ClientSendsUpToFullWindowSize(int contentSize)
+        {
+            var content = new ByteArrayContent(new byte[contentSize]);
+
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
+
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                // Bump connection window so it won't block the client.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(contentSize - DefaultInitialWindowSize, 0));
+
+                Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Bump stream window so the client should send the entire body minus one byte.
+                if ((contentSize - 1) > DefaultInitialWindowSize)
+                {
+                    await connection.WriteFrameAsync(new WindowUpdateFrame((contentSize - 1) - DefaultInitialWindowSize, streamId));
+                }
+
+                int bytesReceived = contentSize - 1;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
+
+                // Bump stream window so the client should send the final byte.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(1, streamId));
+
+                // Read to end of stream
+                bytesReceived += await ReadToEndOfStream(connection, streamId);
+
+                Assert.Equal(contentSize, bytesReceived);
+
+                await connection.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        // Flush behavior is heuristic-based and may change in the future.
+        // Try various content sizes here to ensure we are not simply getting lucky with the flush heuristic.
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(DefaultInitialWindowSize + 1)]
+        [InlineData(DefaultInitialWindowSize + 4 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 8 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 16 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 32 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 64 * 1024)]
+        [InlineData(DefaultInitialWindowSize + 96 * 1024)]
+        public async Task Http2_SendOverConnectionWindowSizeWithoutExplicitFlush_ClientSendsUpToFullWindowSize(int contentSize)
+        {
+            var content = new ByteArrayContent(new byte[contentSize]);
+
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
+
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                // Bump connection window so the client should send the entire body minus one byte.
+                if ((contentSize - 1) > DefaultInitialWindowSize)
+                {
+                    await connection.WriteFrameAsync(new WindowUpdateFrame((contentSize - 1) - DefaultInitialWindowSize, 0));
+                }
+
+                Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Bump stream window so it won't block the client.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(contentSize - DefaultInitialWindowSize, streamId));
+
+                // Receive up to window size (i.e. contentSize - 1)
+                int bytesReceived = contentSize - 1;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
+
+                Assert.Equal((contentSize - 1), bytesReceived);
+
+                // Bump connection window so the client should send the final byte.
+                await connection.WriteFrameAsync(new WindowUpdateFrame(1, 0));
+
+                // Read to end of stream
+                bytesReceived += await ReadToEndOfStream(connection, streamId);
+
+                Assert.Equal(contentSize, bytesReceived);
 
                 await connection.SendDefaultResponseAsync(streamId);
 
@@ -1792,6 +2046,7 @@ namespace System.Net.Http.Functional.Tests
                 // Process first request and send response.
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseAsync(streamId);
+                connection.SetupAutomaticPingResponse(); // Handle RTT PING
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1860,6 +2115,7 @@ namespace System.Net.Http.Functional.Tests
                 // Process first request and send response.
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseAsync(streamId);
+                await connection.RespondToPingFrameAsync(); // Handle 1 RTT PING received in response to HEADERS
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1901,8 +2157,7 @@ namespace System.Net.Http.Functional.Tests
             // The goal of this test is to get the client into the state where it has sent the headers,
             // but is waiting on window credit before it will send the body. We then issue a cancellation
             // to ensure the request is cancelled as expected.
-            const int InitialWindowSize = 65535;
-            const int ContentSize = InitialWindowSize + 1;
+            const int ContentSize = DefaultInitialWindowSize + 1;
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -1923,17 +2178,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
 
                 // Receive up to initial window size
-                int bytesReceived = 0;
-                while (bytesReceived < InitialWindowSize)
-                {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                    Assert.Equal(streamId, frame.StreamId);
-                    Assert.Equal(FrameType.Data, frame.Type);
-                    Assert.Equal(FrameFlags.None, frame.Flags);
-                    Assert.True(frame.Length > 0);
-
-                    bytesReceived += frame.Length;
-                }
+                int bytesReceived = DefaultInitialWindowSize;
+                await ReadExactDataSizeFromStream(connection, bytesReceived, streamId);
 
                 // The client is waiting for more credit in order to send the last byte of the
                 // request body. Test cancellation at this point.
@@ -1957,8 +2203,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // The goal of this test is to get the client into the state where it is sending content,
             // but the send pends because the TCP window is full.
-            const int InitialWindowSize = 65535;
-            const int ContentSize = InitialWindowSize * 2; // Double the default TCP window size.
+            const int ContentSize = DefaultInitialWindowSize * 2; // Double the default TCP window size.
 
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
@@ -1978,7 +2223,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Increase the size of the HTTP/2 Window, so that it is large enough to fill the
                 // TCP window when we do not perform any reads on the server side.
-                await connection.WriteFrameAsync(new WindowUpdateFrame(InitialWindowSize, streamId));
+                await connection.WriteFrameAsync(new WindowUpdateFrame(DefaultInitialWindowSize, streamId));
 
                 // Give the client time to read the window update frame, and for the write to pend.
                 await Task.Delay(1000);
@@ -2045,6 +2290,7 @@ namespace System.Net.Http.Functional.Tests
                 frame = null;
                 (streamId, requestData) = await connection.ReadAndParseRequestHeaderAsync();
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
+                connection.SetupAutomaticPingResponse(); // Handle RTT PING
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes($"Http2_PendingSend_SendsReset(waitForData: {waitForData})"), isFinal: false);
                 // Wait for any lingering frames or extra reset frames.
                 try
@@ -2212,6 +2458,8 @@ namespace System.Net.Http.Functional.Tests
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
                 Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
 
+                connection.SetupAutomaticPingResponse();
+
                 if (send100Continue)
                 {
                     await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.Continue);
@@ -2258,6 +2506,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Reject content with 403.
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.Forbidden);
+                connection.SetupAutomaticPingResponse(); // Respond to RTT PINGs
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(responseContent));
 
                 // Client should send empty request body
@@ -2339,7 +2588,10 @@ namespace System.Net.Http.Functional.Tests
         {
             await requestStream.WriteAsync(data);
             await requestStream.FlushAsync();
-            DataFrame dataFrame = (DataFrame)await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+            Frame frame = await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
+            DataFrame dataFrame = (DataFrame)frame;
+            
             Assert.True(data.Span.SequenceEqual(dataFrame.Data.Span));
         }
 
@@ -2386,6 +2638,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse();
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2446,6 +2699,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse(); // Handle RTT PING
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2511,6 +2765,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
+                    connection.SetupAutomaticPingResponse(); // Handle RTT PING frames
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
                     await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
@@ -2563,6 +2818,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse(); // Handle RTT PING
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2683,6 +2939,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse();
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2697,6 +2954,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
+
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
                     Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
@@ -2744,6 +3002,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse(); // Handler RTT PING
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2811,6 +3070,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse(); // Handle RTT PING
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2884,6 +3144,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                    connection.SetupAutomaticPingResponse(); // Handle RTT PING
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
@@ -2951,6 +3212,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send data to the server, even before we've received response headers.
                     await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId);
+                    connection.SetupAutomaticPingResponse();
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
@@ -3078,6 +3340,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false, responseCode);
+                    connection.SetupAutomaticPingResponse(); // Handle RTT PING
 
                     HttpResponseMessage response = await responseTask;
                     Assert.Equal(responseCode, response.StatusCode);
@@ -3218,6 +3481,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                 await connection.SendResponseHeadersAsync(streamId);
+                await connection.RespondToPingFrameAsync(); // Handle 1 RTT PING in response to HEADERS
                 await sendAsyncCompleted.Task;
                 await connection.WaitForConnectionShutdownAsync();
             });
@@ -3408,6 +3672,8 @@ namespace System.Net.Http.Functional.Tests
 
                         // Write the response.
                         await connection.SendDefaultResponseHeadersAsync(streamId);
+                        // Auto-respond to all incoming RTT PINGs
+                        connection.SetupAutomaticPingResponse();
 
                         byte[] buffer = new byte[4096];
                         int totalSent = 0;
@@ -3444,6 +3710,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44352", TestPlatforms.OSX)]
         public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
         {
             TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -3677,6 +3944,7 @@ namespace System.Net.Http.Functional.Tests
                     pos += HPackEncoder.EncodeHeader("header-that-gos", "bar", HPackFlags.NewIndexed, frameData.AsSpan(pos));
                     pos += HPackEncoder.EncodeHeader("header-that-stays", "foo", HPackFlags.NewIndexed, frameData.AsSpan(pos));
                     await con.WriteFrameAsync(new HeadersFrame(frameData.AsMemory(0, pos), FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId));
+                    con.SetupAutomaticPingResponse();
 
                     // Second stream, resize the table so that the header-that-gos is removed from table, and add a new header.
                     // 1) resize: header-that-stays: 62
@@ -3728,6 +3996,8 @@ namespace System.Net.Http.Functional.Tests
                     (Http2LoopbackConnection con, SettingsFrame settings) = await server.EstablishConnectionGetSettingsAsync();
 
                     Debug.Assert(settings.GetHeaderTableSize() >= 4096, "Data for this theory requires a header table size of at least 4096.");
+
+                    con.SetupAutomaticPingResponse();
 
                     // First stream, create dynamic indexes.
                     int streamId = await con.ReadRequestHeaderAsync();

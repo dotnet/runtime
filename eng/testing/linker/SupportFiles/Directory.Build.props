@@ -1,11 +1,10 @@
 <Project>
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
-    <UseDefaultBlazorWASMFeatureSwitches>false</UseDefaultBlazorWASMFeatureSwitches>
-    <UseDefaultAndroidFeatureSwitches>false</UseDefaultAndroidFeatureSwitches>
-    <UseDefaultiOSFeatureSwitches>false</UseDefaultiOSFeatureSwitches>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
     <TrimMode>link</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
@@ -15,9 +14,15 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <!-- Suppress analyzer and linker warnings as these are tests -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.NETCore.App" />
+    <FrameworkReference Update="Microsoft.NETCore.App"
+                        RuntimePackLabels="Mono"
+                        Condition="'$(UseMonoRuntime)' == 'true'" />
   </ItemGroup>
 </Project>

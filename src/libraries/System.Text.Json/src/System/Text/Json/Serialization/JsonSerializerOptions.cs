@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -559,7 +559,12 @@ namespace System.Text.Json
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if NETFRAMEWORK || NETCOREAPP
+#if NETCOREAPP
+                    // if dynamic code isn't supported, fallback to reflection
+                    _memberAccessorStrategy = RuntimeFeature.IsDynamicCodeSupported ?
+                        new ReflectionEmitMemberAccessor() :
+                        new ReflectionMemberAccessor();
+#elif NETFRAMEWORK
                     _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
                     _memberAccessorStrategy = new ReflectionMemberAccessor();

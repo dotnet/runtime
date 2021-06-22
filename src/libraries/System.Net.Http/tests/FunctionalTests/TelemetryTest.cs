@@ -585,6 +585,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var firstRequestReceived = new SemaphoreSlim(0, 1);
                     var secondRequestSent = new SemaphoreSlim(0, 1);
+                    var firstRequestFinished = new SemaphoreSlim(0, 1);
 
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
@@ -605,7 +606,13 @@ namespace System.Net.Http.Functional.Tests
                             Task secondRequest = client.GetStringAsync(uri);
                             secondRequestSent.Release();
 
-                            await new[] { firstRequest, secondRequest }.WhenAllOrAnyFailed();
+                            // We are asserting that ActivityIds between Start/Stop pairs match below
+                            // We wait for the first request to finish to ensure that RequestStop events
+                            // are logged in the same order as RequestStarts
+                            await firstRequest;
+                            firstRequestFinished.Release();
+
+                            await secondRequest;
                         },
                         async server =>
                         {
@@ -614,6 +621,7 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 http2Server.AllowMultipleConnections = true;
                                 connection = await http2Server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 1 });
+                                ((Http2LoopbackConnection)connection).SetupAutomaticPingResponse(); // Handle RTT PING
                             }
                             else
                             {
@@ -634,6 +642,7 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.SendResponseAsync();
 
                                 // Second request
+                                Assert.True(await firstRequestFinished.WaitAsync(TimeSpan.FromSeconds(10)));
                                 await connection.ReadRequestDataAsync(readBody: false);
                                 await connection.SendResponseAsync();
                             };

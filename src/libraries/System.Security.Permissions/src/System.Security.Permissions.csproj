@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />
     <Compile Include="System\Configuration\ConfigurationPermissionAttribute.cs" />
@@ -131,6 +130,8 @@
     <Compile Include="System\Security\Policy\ApplicationVersionMatch.cs" />
     <Compile Include="System\Security\Policy\CodeConnectAccess.cs" />
     <Compile Include="System\Security\Policy\CodeGroup.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System\Security\Policy\Evidence.cs" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
+    <Compile Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System\Security\Policy\EvidenceBase.cs" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Compile Include="System\Security\Policy\FileCodeGroup.cs" />
     <Compile Include="System\Security\Policy\FirstMatchCodeGroup.cs" />
     <Compile Include="System\Security\Policy\GacInstalled.cs" />
@@ -177,7 +178,7 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'net5.0' or '$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -188,7 +189,7 @@
     <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Security\Permissions\PermissionState.cs"
              Link="System\Security\Permissions\PermissionState.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data.OracleClient" />
     <Reference Include="System.Net" />
@@ -199,11 +200,12 @@
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'net5.0' or '$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" />
+    <Reference Include="netstandard" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
@@ -211,11 +213,12 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Security.AccessControl" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
