@@ -75,6 +75,17 @@ FCIMPL2(Object*, DependentHandle::InternalGetTargetAndDependent, OBJECTHANDLE ha
 }
 FCIMPLEND
 
+FCIMPL1(VOID, DependentHandle::InternalSetTargetToNull, OBJECTHANDLE handle)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    mgr->StoreObjectInHandle(handle, NULL);
+}
+FCIMPLEND
+
 FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object *_dependent)
 {
     FCALL_CONTRACT;
@@ -83,17 +94,6 @@ FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     mgr->SetDependentHandleSecondary(handle, _dependent);
-}
-FCIMPLEND
-
-FCIMPL1(VOID, DependentHandle::InternalStopTracking, OBJECTHANDLE handle)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(handle != NULL);
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    mgr->StoreObjectInHandle(handle, NULL);
 }
 FCIMPLEND
 

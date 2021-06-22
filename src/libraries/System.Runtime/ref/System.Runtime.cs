@@ -9600,10 +9600,9 @@ namespace System.Runtime
         public DependentHandle(object? target, object? dependent) { throw null; }
         public object? Dependent { get { throw null; } set { } }
         public bool IsAllocated { get { throw null; } }
-        public object? Target { get { throw null; } }
+        public object? Target { get { throw null; } set { } }
+        public (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
         public void Dispose() { }
-        public (object? Target, object? Dependent) GetTargetAndDependent() { throw null; }
-        public void StopTracking() { throw null; }
     }
     public enum GCLargeObjectHeapCompactionMode
     {

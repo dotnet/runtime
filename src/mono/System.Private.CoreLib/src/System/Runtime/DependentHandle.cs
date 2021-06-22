@@ -26,7 +26,23 @@ namespace System.Runtime
 
         public bool IsAllocated => _data is not null;
 
-        public object? Target => UnsafeGetTarget();
+        public object? Target
+        {
+            get => UnsafeGetTarget();
+            set
+            {
+                Ephemeron[]? data = _data;
+
+                if (data is null || value is not null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+
+                    return;
+                }
+
+                data[0].Key = null;
+            }
+        }
 
         public object? Dependent
         {
@@ -34,16 +50,14 @@ namespace System.Runtime
             set => UnsafeSetDependent(value);
         }
 
-        public (object? Target, object? Dependent) GetTargetAndDependent()
+        public (object? Target, object? Dependent) TargetAndDependent
         {
-            object? target = UnsafeGetTargetAndDependent(out object? dependent);
+            get
+            {
+                object? target = UnsafeGetTargetAndDependent(out object? dependent);
 
-            return (target, dependent);
-        }
-
-        public void StopTracking()
-        {
-            UnsafeStopTracking();
+                return (target, dependent);
+            }
         }
 
         internal object? UnsafeGetTarget()
@@ -105,6 +119,20 @@ namespace System.Runtime
             return null;
         }
 
+        internal void UnsafeSetTargetToNull()
+        {
+            Ephemeron[]? data = _data;
+
+            if (data is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+
+                return;
+            }
+
+            data[0].Key = null;
+        }
+
         internal void UnsafeSetDependent(object? dependent)
         {
             Ephemeron[]? data = _data;
@@ -117,20 +145,6 @@ namespace System.Runtime
             }
 
             data[0].Value = dependent;
-        }
-
-        internal void UnsafeStopTracking()
-        {
-            Ephemeron[]? data = _data;
-
-            if (data is null)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-
-                return;
-            }
-
-            data[0].Key = null;
         }
 
         public void Dispose()

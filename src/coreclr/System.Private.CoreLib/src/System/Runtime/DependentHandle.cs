@@ -70,9 +70,12 @@ namespace System.Runtime
         public bool IsAllocated => (nint)_handle != 0;
 
         /// <summary>
-        /// Gets the target object instance for the current handle.
+        /// Gets or sets the target object instance for the current handle. The target can only be set to a <see langword="null"/> value
+        /// once the <see cref="DependentHandle"/> instance has been created. Doing so will cause <see cref="Dependent"/> to start
+        /// returning <see langword="null"/> as well, and to become eligible for collection even if the previous target is still alive.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if <see cref="IsAllocated"/> is <see langword="false"/> or if the input value is not <see langword="null"/>.</exception>
         /// <remarks>This property is thread-safe.</remarks>
         public object? Target
         {
@@ -86,6 +89,17 @@ namespace System.Runtime
                 }
 
                 return InternalGetTarget(handle);
+            }
+            set
+            {
+                IntPtr handle = _handle;
+
+                if ((nint)handle == 0 || value is not null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+                }
+
+                InternalSetTargetToNull(handle);
             }
         }
 
@@ -127,7 +141,7 @@ namespace System.Runtime
         }
 
         /// <summary>
-        /// Atomically retrieves the values of both <see cref="Target"/> and <see cref="Dependent"/>, if available.
+        /// Gets the values of both <see cref="Target"/> and <see cref="Dependent"/> (if available) as an atomic operation.
         /// That is, even if <see cref="Target"/> is concurrently set to <see langword="null"/>, calling this method
         /// will either return <see langword="null"/> for both target and dependent, or return both previous values.
         /// If <see cref="Target"/> and <see cref="Dependent"/> were used sequentially in this scenario instead, it's
@@ -135,41 +149,21 @@ namespace System.Runtime
         /// </summary>
         /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
-        public (object? Target, object? Dependent) GetTargetAndDependent()
+        public (object? Target, object? Dependent) TargetAndDependent
         {
-            IntPtr handle = _handle;
-
-            if ((nint)handle == 0)
+            get
             {
-                ThrowHelper.ThrowInvalidOperationException();
+                IntPtr handle = _handle;
+
+                if ((nint)handle == 0)
+                {
+                    ThrowHelper.ThrowInvalidOperationException();
+                }
+
+                object? target = InternalGetTargetAndDependent(handle, out object? dependent);
+
+                return (target, dependent);
             }
-
-            object? target = InternalGetTargetAndDependent(handle, out object? dependent);
-
-            return (target, dependent);
-        }
-
-        /// <summary>
-        /// Stops tracking the target and dependent objects in the current <see cref="DependentHandle"/> instance. Once this method
-        /// is invoked, calling other APIs is still allowed, but <see cref="Target"/> and <see cref="Dependent"/> will always just
-        /// return <see langword="null"/>. Additionally, since the dependent instance will no longer be tracked, it will also
-        /// immediately become eligible for collection if there are no other roots for it, even if the original target is still alive.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
-        /// <remarks>
-        /// This method does not dispose the current <see cref="DependentHandle"/> instance, which means that after calling it will not
-        /// affect the value of <see cref="IsAllocated"/>, and <see cref="Dispose"/> will still need to be called to release resources.
-        /// </remarks>
-        public void StopTracking()
-        {
-            IntPtr handle = _handle;
-
-            if ((nint)handle == 0)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-            }
-
-            InternalStopTracking(handle);
         }
 
         /// <summary>
@@ -188,7 +182,7 @@ namespace System.Runtime
         /// <param name="dependent">The dependent instance, if available.</param>
         /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
         /// <remarks>
-        /// This method mirrors <see cref="GetTargetAndDependent"/>, but without the allocation check.
+        /// This method mirrors the <see cref="TargetAndDependent"/> property, but without the allocation check.
         /// The signature is also kept the same as the one for the internal call, to improve the codegen.
         /// Note that <paramref name="dependent"/> is required to be on the stack (or it might not be tracked).
         /// </remarks>
@@ -198,22 +192,21 @@ namespace System.Runtime
         }
 
         /// <summary>
+        /// Sets the dependent object instance for the current handle to <see langword="null"/>.
+        /// </summary>
+        /// <remarks>This method mirrors the <see cref="Target"/> setter, but without allocation and input checks.</remarks>
+        internal void UnsafeSetTargetToNull()
+        {
+            InternalSetTargetToNull(_handle);
+        }
+
+        /// <summary>
         /// Sets the dependent object instance for the current handle.
         /// </summary>
         /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
         internal void UnsafeSetDependent(object? dependent)
         {
             InternalSetDependent(_handle, dependent);
-        }
-
-        /// <summary>
-        /// Stops tracking the target and dependent objects in the current <see cref="DependentHandle"/> instance.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
-        /// <remarks>This method mirrors <see cref="StopTracking"/>, but without the allocation check.</remarks>
-        internal void UnsafeStopTracking()
-        {
-            InternalStopTracking(_handle);
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -258,7 +251,7 @@ namespace System.Runtime
         private static extern void InternalSetDependent(IntPtr dependentHandle, object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalStopTracking(IntPtr dependentHandle);
+        private static extern void InternalSetTargetToNull(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void InternalFree(IntPtr dependentHandle);

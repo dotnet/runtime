@@ -595,7 +595,7 @@ namespace System.Runtime.CompilerServices
                 Volatile.Write(ref entry.HashCode, -1);
 
                 // Also, clear the key to allow GC to collect objects pointed to by the entry
-                entry.depHnd.UnsafeStopTracking();
+                entry.depHnd.UnsafeSetTargetToNull();
             }
 
             internal void UpdateValue(int entryIndex, TValue newValue)
