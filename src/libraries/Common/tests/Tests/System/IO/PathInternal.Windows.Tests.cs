@@ -3,9 +3,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using Xunit;
 
 namespace Tests.System.IO
@@ -259,46 +256,6 @@ namespace Tests.System.IO
         {
             Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\?\" + path));
             Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\.\" + path));
-        }
-
-        public static TheoryData<string, string> DosToNtPathTest_Data => new TheoryData<string, string>
-        {
-            { @"C:\tests\file.cs", @"\??\C:\tests\file.cs" }, // typical path
-            { @"\\?\C:\tests\file.cs", @"\??\C:\tests\file.cs" }, // NtPath with \\?\ prefix
-            { @"\\.\device\file.cs", @"\??\device\file.cs" }, // device path with \\.\ prefix
-            { @"\\server\file.cs", @"\??\UNC\server\file.cs" }, // UNC path with \\ prefix
-            { @"\\?\UNC\server\file", @"\??\UNC\server\file" }, // extended UNC prefix
-            { @"\??\C:\tests\file.cs", @"\??\C:\tests\file.cs" }, // NtPath with \??\ prefix (no changes required)
-            { @"C:\", @"\??\C:\" }, // a short path
-            { @"\\s", @"\??\UNC\s" }, // short UNC path
-            { @"\\s\", @"\??\UNC\s\" }, // short UNC path with trailing
-            { $@"C:\{string.Join("\\", Enumerable.Repeat("a", PathInternal.MaxShortPath + 1))}",  $@"\??\C:\{string.Join("\\", Enumerable.Repeat("a", PathInternal.MaxShortPath + 1))}"}, // long path
-        };
-
-        [Theory, MemberData(nameof(DosToNtPathTest_Data))]
-        public void DosToNtPathTest(string path, string expected)
-        {
-            // first of all, we use an internal Windows API to ensure that expected value is valid
-            if (path.Length < PathInternal.MaxShortPath) // RtlDosPathNameToRelativeNtPathName_U_WithStatus does not support long paths
-            {
-                RtlDosPathNameToRelativeNtPathName_U_WithStatus(path, out Interop.UNICODE_STRING ntFileName, out IntPtr _, IntPtr.Zero);
-                try
-                {
-                    Assert.Equal(expected, Marshal.PtrToStringUni(ntFileName.Buffer));
-                }
-                finally
-                {
-                    Marshal.ZeroFreeGlobalAllocUnicode(ntFileName.Buffer);
-                }
-            }
-
-            // after that, we test our implementation
-            var vsb = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
-            PathInternal.DosToNtPath(path, ref vsb);
-            Assert.Equal(expected, vsb.ToString());
-
-            [DllImport(Interop.Libraries.NtDll, CharSet = CharSet.Unicode)]
-            static extern int RtlDosPathNameToRelativeNtPathName_U_WithStatus(string DosFileName, out Interop.UNICODE_STRING NtFileName, out IntPtr FilePart, IntPtr RelativeName);
         }
     }
 }

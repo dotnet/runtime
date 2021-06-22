@@ -47,7 +47,6 @@ namespace System.IO
         internal const string DirectorySeparatorCharAsString = "\\";
 
         internal const string ExtendedPathPrefix = @"\\?\";
-        internal const string NtPrefix = @"\??\";
         internal const string UncPathPrefix = @"\\";
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
@@ -409,35 +408,6 @@ namespace System.IO
                     return false;
             }
             return true;
-        }
-
-        // this method works only for `fullPath` returned by Path.GetFullPath
-        // currently we don't have interest in supporting relative paths
-        internal static void DosToNtPath(ReadOnlySpan<char> fullPath, ref ValueStringBuilder vsb)
-        {
-            vsb.Append(NtPrefix);
-
-            if (fullPath.Length >= 3 && fullPath[0] == '\\' && fullPath[1] == '\\')
-            {
-                // \\.\ (Device) or \\?\ (NtPath)
-                if (fullPath.Length >= 4 && fullPath[3] == '\\' && (fullPath[2] == '.' || fullPath[2] == '?'))
-                {
-                    vsb.Append(fullPath.Slice(NtPrefix.Length));
-                }
-                else // \\ (UNC)
-                {
-                    vsb.Append(@"UNC\");
-                    vsb.Append(fullPath.Slice(2));
-                }
-            }
-            else if (fullPath.Length >= 4 && fullPath[0] == '\\' && fullPath[1] == '?' && fullPath[2] == '?' && fullPath[3] == '\\') // \??\
-            {
-                vsb.Append(fullPath.Slice(NtPrefix.Length));
-            }
-            else
-            {
-                vsb.Append(fullPath);
-            }
         }
     }
 }
