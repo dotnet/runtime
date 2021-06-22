@@ -34,6 +34,8 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";
 
+        public const string System_Runtime_InteropServices_UnmanagedType = "System.Runtime.InteropServices.UnmanagedType";
+
         public const string System_Runtime_InteropServices_Marshal = "System.Runtime.InteropServices.Marshal";
 
         private const string System_Runtime_InteropServices_MarshalEx = "System.Runtime.InteropServices.MarshalEx";

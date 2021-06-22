@@ -421,8 +421,16 @@ namespace Microsoft.Interop
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(
                     SingletonList(AttributeList(
-                                SingletonSeparatedList(
-                                    CreateDllImportAttributeForTarget(GetTargetDllImportDataFromStubData())))));
+                        SingletonSeparatedList(CreateDllImportAttributeForTarget(GetTargetDllImportDataFromStubData())))));
+
+            if (retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator retGenerator)
+            {
+                AttributeListSyntax? returnAttribute = retGenerator.GenerateAttributesForReturnType(retMarshaller.TypeInfo);
+                if (returnAttribute is not null)
+                {
+                    dllImport = dllImport.AddAttributeLists(returnAttribute.WithTarget(AttributeTargetSpecifier(Identifier("return"))));
+                }
+            }
             
             if (forwardedAttributes is not null)
             {

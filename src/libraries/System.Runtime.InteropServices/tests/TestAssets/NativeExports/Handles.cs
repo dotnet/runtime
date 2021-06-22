@@ -29,13 +29,13 @@ namespace NativeExports
         [UnmanagedCallersOnly(EntryPoint = "release_handle")]
         public static byte ReleaseHandle(nint handle)
         {
-            return (byte)(ActiveHandles.Remove(handle) ? 1 : 0);
+            return (byte)(ReleaseHandleCore(handle) ? 1 : 0);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "is_handle_alive")]
         public static byte IsHandleAlive(nint handle)
         {
-            return (byte)(ActiveHandles.Contains(handle) ? 1 : 0);
+            return (byte)(IsHandleAliveCore(handle) ? 1 : 0);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "modify_handle")]
@@ -47,16 +47,37 @@ namespace NativeExports
             }
         }
 
+        private static object m_lock = new object();
+
         private static nint AllocateHandleCore()
         {
-            if (LastHandle == int.MaxValue)
+            lock (m_lock)
             {
-                return InvalidHandle;
-            }
+                if (LastHandle == int.MaxValue)
+                {
+                    return InvalidHandle;
+                }
 
-            nint newHandle = ++LastHandle;
-            ActiveHandles.Add(newHandle);
-            return newHandle;
+                nint newHandle = ++LastHandle;
+                ActiveHandles.Add(newHandle);
+                return newHandle;
+            }
+        }
+
+        private static bool IsHandleAliveCore(nint handle)
+        {
+            lock (m_lock)
+            {
+                return ActiveHandles.Contains(handle);
+            }
+        }
+
+        private static bool ReleaseHandleCore(nint handle)
+        {
+            lock (m_lock)
+            {
+                return ActiveHandles.Remove(handle);
+            }
         }
     }
 }
