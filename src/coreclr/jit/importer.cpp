@@ -13064,6 +13064,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
+                // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
+                // it so that downstream optimizations don't have to.
+                if ((opcode == CEE_CGT_UN) && op2->IsIntegralConst(0))
+                {
+                    oper = GT_NE;
+                    uns  = false;
+                }
+
 #ifdef TARGET_64BIT
                 // TODO-Casts: create a helper that upcasts int32 -> native int when necessary.
                 // See also identical code in impGetByRefResultType and STSFLD import.
@@ -13085,7 +13093,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
                 // TODO: setting both flags when only one is appropriate.
-                if (opcode == CEE_CGT_UN || opcode == CEE_CLT_UN)
+                if (uns)
                 {
                     op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
                 }
