@@ -11,7 +11,7 @@ This file contains the logic for providing Execution Script generation.
 WARNING:   When setting properties based on their current state (for example:
            <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
            target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
-           
+
            Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
 
 ***********************************************************************************************
@@ -21,14 +21,14 @@ WARNING:   When setting properties based on their current state (for example:
   <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
   <Target Name="FetchExternalPropertiesForXplat">
     <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
-    <MSBuild Projects="$(CLRTestProjectToRun)" 
+    <MSBuild Projects="$(CLRTestProjectToRun)"
              Targets="GetExecuteShFullPath"
              Properties="GenerateRunScript=True"
              Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
       <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
     </MSBuild>
   </Target>
-  
+
   <!--
     Target: GetExecuteShFullPath
     Return Executed Sh Relative Full Path
@@ -53,11 +53,11 @@ WARNING:   When setting properties based on their current state (for example:
   <!--
   *******************************************************************************************
   TARGET: GenerateExecutionScriptInternal
-  
+
   For tests that "run" we will generate an execution script that wraps any arguments or other
   goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
   of test execution.
-  
+
   Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
   Note also that this means it will run after the first of such targets.
   -->
@@ -124,11 +124,11 @@ fi
 if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
 echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
-    
+
       <BashCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' ">
 <![CDATA[if [ -z ${CLRTestExecutionArguments+x} ]%3B then CLRTestExecutionArguments=($(CLRTestExecutionArguments))%3B fi]]>
       </BashCLRTestArgPrep>
-    
+
       <!-- By default, be prepared to do a full check -->
       <BashCLRTestExitCodeCheck><![CDATA[
 echo Expected: $CLRTestExpectedExitCode
@@ -150,7 +150,7 @@ else
 fi
       ]]></BashCLRTestExitCodeCheck>
     </PropertyGroup>
-  
+
     <ItemGroup Condition="$(_CLRTestNeedsToRun)">
       <Clean Include="$(OutputPath)\$(MSBuildProjectName).sh"/>
 
@@ -188,29 +188,29 @@ ReflectionRoots=
 
 shopt -s nullglob
 
-if [ ! -z "$DoLink" ]; 
+if [ ! -z "$DoLink" ];
 then
-  if [ ! -x "$ILLINK" ]; 
+  if [ ! -x "$ILLINK" ];
   then
     echo "Illink executable [$ILLINK] Invalid"
     exit 1
   fi
-  
+
   # Clean up old Linked binaries, if any
   rm -rf $LinkBin
-    
+
   # Remove Native images, since the goal is to run from Linked binaries
   rm -f *.ni.*
 
   # Use hints for reflection roots, if provided in $(ReflectionRootsXml)
-  if [ -f $(ReflectionRootsXml) ]; 
+  if [ -f $(ReflectionRootsXml) ];
   then
     ReflectionRoots="-x $(ReflectionRootsXml)"
   fi
 
   # Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
-  for bin in *.exe *.dll; 
-  do 
+  for bin in *.exe *.dll;
+  do
     Assemblies="$Assemblies -a ${bin%.*}"
   done
 
@@ -224,14 +224,14 @@ then
   if [  $ERRORLEVEL -ne 0 ]
   then
     echo ILLINK FAILED $ERRORLEVEL
-    if [ -z "$KeepLinkedBinaries" ]; 
+    if [ -z "$KeepLinkedBinaries" ];
     then
       rm -rf $LinkBin
     fi
     exit 1
   fi
-  
-  # Copy CORECLR native binaries to $LinkBin, 
+
+  # Copy CORECLR native binaries to $LinkBin,
   # so that we can run the test based on that directory
   cp $CORE_ROOT/*.so $LinkBin/
   cp $CORE_ROOT/corerun $LinkBin/
@@ -252,9 +252,9 @@ fi
 # Clean up the LinkBin directories after test execution.
 # Otherwise, RunTests may run out of disk space.
 
-if [ ! -z "$DoLink" ]; 
+if [ ! -z "$DoLink" ];
 then
-  if [ -z "$KeepLinkedBinaries" ]; 
+  if [ -z "$KeepLinkedBinaries" ];
   then
     rm -rf $LinkBin
   fi
@@ -325,6 +325,9 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
   TakeLock
 fi
 
+echo 'cat /proc/cpuinfo'
+cat /proc/cpuinfo
+
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
@@ -383,17 +386,17 @@ CLRTestExpectedExitCode=0
 @(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
-     
+
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
     <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
     <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
-    
+
     <ItemGroup>
       <_RequiredProperties Include="_CLRTestRunFile">
         <Value>$(_CLRTestRunFile)</Value>
       </_RequiredProperties>
     </ItemGroup>
-    
+
     <!-- Raise an error if any value in _RequiredProperties is missing  -->
     <Error Condition=" '%(_RequiredProperties.Value)'=='' "
       Text="Missing required test property [%(_RequiredProperties.Identity)]. Something isn't plumbed through correctly.  Contact $(_CLRTestBuildSystemOwner)." />
@@ -407,7 +410,7 @@ CLRTestExpectedExitCode=0
 usage()
 {
     echo "Usage: $0  $(_CLRTestParamList)"
-    echo 
+    echo
     echo "Arguments:"
 @(BashCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
     echo      "%(Description)"', '
@@ -498,14 +501,14 @@ $(BashCLRTestExitCodeCheck)
     </PropertyGroup>
 
     <!-- Write the file.
-         Note: under the hood, this will rely on Environment.NewLine for line 
+         Note: under the hood, this will rely on Environment.NewLine for line
          endings. This means that if the scripts are being generated on Windows,
-         the line endings will need to be changed from CR-LF to Unix (LF) line 
+         the line endings will need to be changed from CR-LF to Unix (LF) line
          endings before running the scripts on Unix platforms. -->
     <WriteLinesToFile
       File="$(OutputPath)\$(MSBuildProjectName).sh"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
   </Target>
-  
+
 </Project>
