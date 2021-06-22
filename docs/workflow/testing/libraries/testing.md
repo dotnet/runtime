@@ -44,13 +44,9 @@ build.cmd/sh -subset clr+libs -rc Release
 build.cmd/sh -subset mono+libs -rc Release
 ```
 
-Building the `libs` subset automatically copies all product binaries into a testhost folder in the bin directory.
-This is where the tests will load the binaries from during the run. If you later [rebuild any of product binaries](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md#iterating-on-systemprivatecorelib-changes)
-using the individual library build projects you must also build the `libs.pretest` subset to copy the new binaries to testhost.
-```
-build.cmd/sh -subset libs.pretest
-```
-TODO: Is this a special case only for S.P.C or it is required for all libraries?
+Building the `libs` subset or any of individual library projects automatically copies product binaries into the testhost folder
+in the bin directory. This is where the tests will load the binaries from during the run. However System.Private.CorLib is an
+exception. If you [rebuild System.Private.CoreLib](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md#iterating-on-systemprivatecorelib-changes) you must also build the `libs.pretest` subset to ensure it is copied to the testhost folder before running tests.
 
 ### Running tests for all libraries
 
