@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-echo "diagnostic loc: start running performance-setup.sh"
 
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
