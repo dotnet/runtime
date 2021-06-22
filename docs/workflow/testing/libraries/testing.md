@@ -14,7 +14,7 @@ build.cmd/sh -subset clr+libs+libs.tests -test -rc Release
 build.cmd/sh -subset mono+libs+libs.tests -test -rc Release
 ```
 
-- Run all tests - Build Mono and libs for x86 architecture in debug:
+- Run all tests - Build Mono and libs for x86 architecture in debug (choosing debug for runtime will run very slowly):
 ```
 build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 ```
