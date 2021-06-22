@@ -347,7 +347,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    #- Android_arm64  # disabled due to https://github.com/dotnet/runtime/issues/47850
+    - Android_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -369,11 +369,13 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      # don't run tests on PRs until we can get significantly more devices
+      ${{ if eq(variables['isFullMatrix'], true) }}:
+        # extra steps, run tests
+        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+        extraStepsParameters:
+          creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 # Run disabled installer tests on Linux x64
 - template: /eng/pipelines/common/platform-matrix.yml
