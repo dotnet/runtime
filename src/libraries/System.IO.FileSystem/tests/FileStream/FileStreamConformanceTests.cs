@@ -3,8 +3,12 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO.Pipes;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -275,7 +279,7 @@ namespace System.IO.Tests
         protected override bool SupportsConcurrentBidirectionalUse => false;
     }
 
-    [PlatformSpecific(TestPlatforms.Windows)] // device paths (\\.\) are a Windows concept
+    [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
     public class UnseekableDeviceFileStreamConnectedConformanceTests : ConnectedStreamConformanceTests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
@@ -300,5 +304,38 @@ namespace System.IO.Tests
         protected override bool FullyCancelableOperations => false;
         protected override bool BlocksOnZeroByteReads => OperatingSystem.IsWindows();
         protected override bool SupportsConcurrentBidirectionalUse => false;
+    }
+
+    [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+    public class SeekableDeviceFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
+    {
+        protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            string filePath = Path.GetFullPath(base.GetTestFilePath(index, memberName, lineNumber));
+            string drive = Path.GetPathRoot(filePath);
+            StringBuilder volumeNameBuffer = new StringBuilder(filePath.Length + 1024);
+
+            // the following method maps drive letter like "C:\" to a DeviceID (a DOS device path)
+            // example: "\\?\Volume{724edb31-eaa5-4728-a4e3-f2474fd34ae2}\"
+            if (!GetVolumeNameForVolumeMountPoint(drive, volumeNameBuffer, volumeNameBuffer.Capacity))
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError(), "GetVolumeNameForVolumeMountPoint failed");
+            }
+
+            // instead of:
+            // 'C:\Users\x\AppData\Local\Temp\y\z
+            // we want sth like:
+            // '\\.\Volume{724edb31-eaa5-4728-a4e3-f2474fd34ae2}\Users\x\AppData\Local\Temp\y\z
+            string devicePath = filePath.Replace(drive, volumeNameBuffer.ToString());
+            Assert.StartsWith(@"\\?\", devicePath);
+#if DEBUG
+            devicePath = devicePath.Replace(@"\\?\", @"\\.\"); // we want to test both \\.\ and \\?\
+#endif
+
+            return devicePath;
+        }
+
+        [DllImport(Interop.Libraries.Kernel32, EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
+        private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
     }
 }
