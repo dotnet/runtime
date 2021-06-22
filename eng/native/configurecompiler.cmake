@@ -105,6 +105,15 @@ if (MSVC)
   add_linker_flag(/NODEFAULTLIB:libucrt.lib RELEASE)
   add_linker_flag(/DEFAULTLIB:ucrt.lib RELEASE)
 
+  # Configure ASAN for MSVC
+
+  # /RTC1 is added by default by CMake, so remove it.
+  string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  string(REPLACE "/RTC1" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+
+  add_compile_options($<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:-fsanitize=address>)
+  add_linker_flag(/INFERASANLIBS DEBUG CHECKED)
+
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
@@ -112,26 +121,21 @@ elseif (CLR_CMAKE_HOST_UNIX)
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 
+  # Configure ASAN for Clang/GCC
+  add_compile_options($<$<AND:$<$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>>:-fsanitize=address>)
+  add_linker_flag(-fsanitize=address DEBUG CHECKED)
+
   set(CLR_SANITIZE_CXX_OPTIONS "")
   set(CLR_SANITIZE_LINK_OPTIONS "")
 
   # set the CLANG sanitizer flags for debug build
   if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
     # obtain settings from running enablesanitizers.sh
-    string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
     string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
-    if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
+    if (${__UBSAN_POS} GREATER -1)
       list(APPEND CLR_SANITIZE_CXX_OPTIONS -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/sanitizerblacklist.txt)
       set (CLR_CXX_SANITIZERS "")
       set (CLR_LINK_SANITIZERS "")
-      if (${__ASAN_POS} GREATER -1)
-        list(APPEND CLR_CXX_SANITIZERS address)
-        list(APPEND CLR_LINK_SANITIZERS address)
-        set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}address,")
-        set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
-        add_definitions(-DHAS_ASAN)
-        message("Address Sanitizer (asan) enabled")
-      endif ()
       if (${__UBSAN_POS} GREATER -1)
         # all sanitizier flags are enabled except alignment (due to heavy use of __unaligned modifier)
         list(APPEND CLR_CXX_SANITIZERS

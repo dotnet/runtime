@@ -603,6 +603,10 @@ function(link_natvis_sources_for_target targetName linkKind)
     endforeach()
 endfunction()
 
+function(add_sanitizer_options targetName)
+    target_sources(${targetName} "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/common/asanoptions.c>")
+endfunction()
+
 function(add_executable_clr targetName)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
