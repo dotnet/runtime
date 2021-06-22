@@ -2190,8 +2190,8 @@ size_t      gc_heap::g_bpromoted;
 
 size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
 #ifdef USE_REGIONS
-uint8_t*    gc_heap::bookkeeping_data = nullptr;
-uint8_t*    gc_heap::bookkeeping_data_committed = nullptr;
+uint8_t*    gc_heap::bookkeeping_covered_start = nullptr;
+uint8_t*    gc_heap::bookkeeping_covered_committed = nullptr;
 size_t      gc_heap::bookkeeping_sizes[total_bookkeeping_elements];
 #endif //USE_REGIONS
 
@@ -8537,7 +8537,6 @@ void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     sizes[seg_mapping_table_element] = size_seg_mapping_table_of (start, end);
-    sizes[mark_array_element] = 0;
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
     {
@@ -8585,7 +8584,7 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
 #ifdef USE_REGIONS
 bool gc_heap::on_used_changed (uint8_t* new_used)
 {
-    if ((new_used > bookkeeping_data_committed))
+    if (new_used > bookkeeping_covered_committed)
     {
         bool speculative_commit_tried = false;
 #ifdef STRESS_REGIONS
@@ -8597,37 +8596,37 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
 #endif
         while (true)
         {
-            uint8_t* new_bookkeeping_data_committed = nullptr;
+            uint8_t* new_bookkeeping_covered_committed = nullptr;
             if (speculative_commit_tried)
             {
-                new_bookkeeping_data_committed = new_used;
+                new_bookkeeping_covered_committed = new_used;
             }
             else
             {
-                uint64_t committed_size = (uint64_t)(bookkeeping_data_committed - g_gc_lowest_address);
+                uint64_t committed_size = (uint64_t)(bookkeeping_covered_committed - g_gc_lowest_address);
                 uint64_t total_size = (uint64_t)(g_gc_highest_address - g_gc_lowest_address);
                 assert (committed_size < total_size);
                 assert (committed_size < UINT64_MAX / 2);
                 uint64_t new_committed_size = min(committed_size * 2, total_size);
-                assert (UINT64_MAX - new_committed_size >  (uint64_t)g_gc_lowest_address);
+                assert ((UINT64_MAX - new_committed_size) > (uint64_t)g_gc_lowest_address);
                 uint8_t* double_commit = g_gc_lowest_address + new_committed_size;
-                new_bookkeeping_data_committed = max(double_commit, new_used);
+                new_bookkeeping_covered_committed = max(double_commit, new_used);
                 dprintf (REGIONS_LOG, ("committed_size                           = %Id", committed_size));
                 dprintf (REGIONS_LOG, ("total_size                               = %Id", total_size));
                 dprintf (REGIONS_LOG, ("new_committed_size                       = %Id", new_committed_size));
                 dprintf (REGIONS_LOG, ("double_commit                            = %p", double_commit));
             }
-            dprintf (REGIONS_LOG, ("bookkeeping_data_committed     = %p", bookkeeping_data_committed));
-            dprintf (REGIONS_LOG, ("new_bookkeeping_data_committed = %p", new_bookkeeping_data_committed));
+            dprintf (REGIONS_LOG, ("bookkeeping_covered_committed     = %p", bookkeeping_covered_committed));
+            dprintf (REGIONS_LOG, ("new_bookkeeping_covered_committed = %p", new_bookkeeping_covered_committed));
 
-            if (inplace_commit_card_table (bookkeeping_data_committed, new_bookkeeping_data_committed))
+            if (inplace_commit_card_table (bookkeeping_covered_committed, new_bookkeeping_covered_committed))
             {
-                bookkeeping_data_committed = new_bookkeeping_data_committed;
+                bookkeeping_covered_committed = new_bookkeeping_covered_committed;
                 break;
             }
             else
             {
-                if (new_bookkeeping_data_committed == new_used)
+                if (new_bookkeeping_covered_committed == new_used)
                 {
                     dprintf (REGIONS_LOG, ("The minimal commit for the GC bookkeepping data structure failed, giving up"));
                     return false;
@@ -8694,14 +8693,14 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             uint8_t* commit_end = nullptr;
             if (initial_commit)
             {
-                required_begin = bookkeeping_data + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
-                required_end = bookkeeping_data + card_table_element_layout[i] + new_sizes[i];
+                required_begin = bookkeeping_covered_start + ((i == card_table_element) ? 0 : card_table_element_layout[i]);
+                required_end = bookkeeping_covered_start + card_table_element_layout[i] + new_sizes[i];
                 commit_begin = align_lower_page(required_begin);
             }
             else
             {
                 assert (additional_commit);
-                required_begin = bookkeeping_data + card_table_element_layout[i] + bookkeeping_sizes[i];
+                required_begin = bookkeeping_covered_start + card_table_element_layout[i] + bookkeeping_sizes[i];
                 required_end = required_begin + new_sizes[i] - bookkeeping_sizes[i];
                 commit_begin = align_on_page(required_begin);
             }
@@ -8710,7 +8709,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
 
             if (i != seg_mapping_table_element)
             {
-                commit_end = min (commit_end, align_lower_page(bookkeeping_data + card_table_element_layout[i + 1]));
+                commit_end = min (commit_end, align_lower_page(bookkeeping_covered_start + card_table_element_layout[i + 1]));
                 commit_begin = min (commit_begin, commit_end);
             }
             assert (commit_begin <= commit_end);
@@ -8787,7 +8786,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
     uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 #ifdef USE_REGIONS
-    bookkeeping_data = mem;
+    bookkeeping_covered_start = mem;
 #endif //USE_REGIONS
 
     if (!mem)
@@ -8803,7 +8802,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
         GCToOSInterface::VirtualRelease (mem, alloc_size);
         return 0;
     }
-    bookkeeping_data_committed = global_region_allocator.get_left_used_unsafe();
+    bookkeeping_covered_committed = global_region_allocator.get_left_used_unsafe();
 #else
     // mark array will be committed separately (per segment).
     size_t commit_size = card_table_element_layout[mark_array_element];
@@ -12826,7 +12825,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                            &g_gc_lowest_address, &g_gc_highest_address))
             return E_OUTOFMEMORY;
 
-        bookkeeping_data = global_region_allocator.get_start();
+        bookkeeping_covered_start = global_region_allocator.get_start();
 
         if (!allocate_initial_regions(number_of_heaps))
             return E_OUTOFMEMORY;

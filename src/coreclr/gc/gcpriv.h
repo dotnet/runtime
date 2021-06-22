@@ -5000,10 +5000,10 @@ protected:
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
-    uint8_t* bookkeeping_data;
+    uint8_t* bookkeeping_covered_start;
 
     PER_HEAP_ISOLATED
-    uint8_t* bookkeeping_data_committed;
+    uint8_t* bookkeeping_covered_committed;
 
     PER_HEAP_ISOLATED
     size_t bookkeeping_sizes[total_bookkeeping_elements];
