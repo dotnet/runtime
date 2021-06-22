@@ -73,19 +73,53 @@ namespace System.Runtime.InteropServices
             _registered = true;
         }
 
-        private void Handle(PosixSignalContext context)
+        private bool CallHandler(PosixSignalContext context)
         {
             lock (_gate)
             {
                 if (_registered)
                 {
                     _handler(context);
+                    return true;
                 }
+                return false;
             }
         }
 
         [UnmanagedCallersOnly]
         private static int OnPosixSignal(int signo, PosixSignal signal)
+        {
+            PosixSignalRegistration?[]? registrations = GetRegistrations(signo);
+            if (registrations != null)
+            {
+                // This is called on the native signal handling thread. We need to move to another thread so
+                // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
+                // on work triggered from the signal handling thread.
+
+                // For terminate/interrupt signals we use a dedicated Thread
+                // in case the ThreadPool is saturated.
+                bool useDedicatedThread = signal == PosixSignal.SIGINT ||
+                                            signal == PosixSignal.SIGQUIT ||
+                                            signal == PosixSignal.SIGTERM;
+                if (useDedicatedThread)
+                {
+                    Thread handlerThread = new Thread(HandleSignal)
+                    {
+                        IsBackground = true,
+                        Name = ".NET Signal Handler"
+                    };
+                    handlerThread.UnsafeStart((signo, registrations));
+                }
+                else
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, registrations));
+                }
+                return 1;
+            }
+            return 0;
+        }
+
+        private static PosixSignalRegistration?[]? GetRegistrations(int signo)
         {
             lock (s_registrations)
             {
@@ -111,34 +145,16 @@ namespace System.Runtime.InteropServices
                         }
                         if (hasRegistrations)
                         {
-                            // This is called on the native signal handling thread. We need to move to another thread so
-                            // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
-                            // on work triggered from the signal handling thread.
-
-                            // For terminate/interrupt signals we use a dedicated Thread
-                            // in case the ThreadPool is saturated.
-                            bool useDedicatedThread = signal == PosixSignal.SIGINT ||
-                                                      signal == PosixSignal.SIGQUIT ||
-                                                      signal == PosixSignal.SIGTERM;
-                            if (useDedicatedThread)
-                            {
-                                Thread handlerThread = new Thread(HandleSignal)
-                                {
-                                    IsBackground = true,
-                                    Name = ".NET Signal Handler"
-                                };
-                                handlerThread.UnsafeStart((signo, registrations));
-                            }
-                            else
-                            {
-                                ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, registrations));
-                            }
-                            return 1;
+                            return registrations;
+                        }
+                        else
+                        {
+                            Interop.Sys.DisablePosixSignalHandling(signo);
                         }
                     }
                 }
+                return null;
             }
-            return 0;
         }
 
         private static void HandleSignal(object? state)
@@ -146,24 +162,35 @@ namespace System.Runtime.InteropServices
             HandleSignal(((int, PosixSignalRegistration?[]))state!);
         }
 
-        private static void HandleSignal((int signo, PosixSignalRegistration?[] registrations) state)
+        private static void HandleSignal((int signo, PosixSignalRegistration?[]? registrations) state)
         {
-            PosixSignalContext ctx = new();
-            foreach (PosixSignalRegistration? registration in state.registrations)
+            do
             {
-                if (registration != null)
+                bool handlersCalled = false;
+                if (state.registrations != null)
                 {
-                    // Different values for PosixSignal map to the same signo.
-                    // Match the PosixSignal value used when registering.
-                    ctx.Signal = registration._signal;
-                    registration.Handle(ctx);
+                    PosixSignalContext ctx = new();
+                    foreach (PosixSignalRegistration? registration in state.registrations)
+                    {
+                        if (registration != null)
+                        {
+                            // Different values for PosixSignal map to the same signo.
+                            // Match the PosixSignal value used when registering.
+                            ctx.Signal = registration._signal;
+                            if (registration.CallHandler(ctx))
+                            {
+                                handlersCalled = true;
+                            }
+                        }
+                    }
                 }
-            }
-
-            if (!ctx.Cancel)
-            {
-                Interop.Sys.HandleNonCanceledPosixSignal(state.signo);
-            }
+                if (Interop.Sys.HandleNonCanceledPosixSignal(state.signo, handlersCalled ? 0 : 1))
+                {
+                    break;
+                }
+                // HandleNonCanceledPosixSignal returns false when handlers got registered.
+                state.registrations = GetRegistrations(state.signo);
+            } while (true);
         }
 
         ~PosixSignalRegistration()

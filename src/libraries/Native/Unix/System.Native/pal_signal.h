@@ -74,7 +74,7 @@ PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
 /**
  * Performs the default runtime action for a non-canceled PosixSignal.
  */
-PALEXPORT void SystemNative_HandleNonCanceledPosixSignal(int signalCode);
+PALEXPORT int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t handlersDisposed);
 
 typedef void (*ConsoleSigTtouHandler)(void);
 

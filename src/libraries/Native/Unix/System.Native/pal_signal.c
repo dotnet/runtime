@@ -203,7 +203,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     }
 }
 
-void SystemNative_HandleNonCanceledPosixSignal(int signalCode)
+int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t handlersDisposed)
 {
     // Performs action the runtime performs on signal that is cancelable
     // using the PosixSignal API.
@@ -236,6 +236,27 @@ void SystemNative_HandleNonCanceledPosixSignal(int signalCode)
         ReinitializeTerminal();
 #endif
     }
+    else if (handlersDisposed)
+    {
+        // All PosixSignalRegistrations got Disposed by the time
+        // we wanted to call their handlers.
+        bool resendSignal;
+        pthread_mutex_lock(&lock);
+        {
+            if (g_hasPosixSignalRegistrations[signalCode - 1])
+            {
+                // New handlers got registered.
+                return 0;
+            }
+            // Disposition changed back to the default.
+            resendSignal = !g_handlerIsInstalled[signalCode - 1];
+        }
+        if (resendSignal)
+        {
+            kill(getpid(), signalCode);
+        }
+    }
+    return 1;
 }
 
 // Entrypoint for the thread that handles signals where our handling
@@ -327,7 +348,7 @@ static void* SignalHandlerLoop(void* arg)
 
         if (!usePosixSignalHandler)
         {
-            SystemNative_HandleNonCanceledPosixSignal(signalCode);
+            SystemNative_HandleNonCanceledPosixSignal(signalCode, 0);
         }
     }
 }
