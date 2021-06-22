@@ -235,6 +235,8 @@ namespace System.Net.Test.Common
                     return GoAwayFrame.ReadFrom(header, data);
                 case FrameType.Continuation:
                     return ContinuationFrame.ReadFrom(header, data);
+                case FrameType.WindowUpdate:
+                    return WindowUpdateFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
