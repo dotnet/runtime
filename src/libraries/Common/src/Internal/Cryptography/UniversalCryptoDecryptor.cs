@@ -170,7 +170,7 @@ namespace Internal.Cryptography
                 _heldoverCipher = null;
                 if (heldoverCipher != null)
                 {
-                    Array.Clear(heldoverCipher, 0, heldoverCipher.Length);
+                    Array.Clear(heldoverCipher);
                 }
             }
 
@@ -181,7 +181,7 @@ namespace Internal.Cryptography
         {
             if (_heldoverCipher != null)
             {
-                Array.Clear(_heldoverCipher, 0, _heldoverCipher.Length);
+                Array.Clear(_heldoverCipher);
                 _heldoverCipher = null;
             }
         }

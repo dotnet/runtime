@@ -206,9 +206,8 @@ void Arm64SingleStepper::Apply(T_CONTEXT *pCtx)
     //     control in the breakpoint fixup logic we can then reset the PC to its proper location.
 
     unsigned int idxNextInstruction = 0;
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+    ExecutableWriterHolder<DWORD> codeWriterHolder(m_rgCode, sizeof(m_rgCode));
 
     if (TryEmulate(pCtx, opcode, false))
     {
@@ -220,11 +219,11 @@ void Arm64SingleStepper::Apply(T_CONTEXT *pCtx)
     {
         LOG((LF_CORDB, LL_INFO100000, "Arm64SingleStepper: Case 2: CopyInstruction.\n"));
         // Case 2: In all other cases copy the instruction to the buffer and we'll run it directly.
-        m_rgCode[idxNextInstruction++] = opcode;
+        codeWriterHolder.GetRW()[idxNextInstruction++] = opcode;
     }
 
     // Always terminate the redirection buffer with a breakpoint.
-    m_rgCode[idxNextInstruction++] = kBreakpointOp;
+    codeWriterHolder.GetRW()[idxNextInstruction++] = kBreakpointOp;
     _ASSERTE(idxNextInstruction <= kMaxCodeBuffer);
 
     // Set the thread up so it will redirect to our buffer when execution resumes.

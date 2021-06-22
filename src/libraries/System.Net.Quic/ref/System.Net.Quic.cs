@@ -35,10 +35,12 @@ namespace System.Net.Quic
         public System.Threading.Tasks.ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask ConnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Dispose() { }
-        public long GetRemoteAvailableBidirectionalStreamCount() { throw null; }
-        public long GetRemoteAvailableUnidirectionalStreamCount() { throw null; }
+        public int GetRemoteAvailableBidirectionalStreamCount() { throw null; }
+        public int GetRemoteAvailableUnidirectionalStreamCount() { throw null; }
         public System.Net.Quic.QuicStream OpenBidirectionalStream() { throw null; }
         public System.Net.Quic.QuicStream OpenUnidirectionalStream() { throw null; }
+        public System.Threading.Tasks.ValueTask WaitForAvailableBidirectionalStreamsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.ValueTask WaitForAvailableUnidirectionalStreamsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class QuicConnectionAbortedException : System.Net.Quic.QuicException
     {
@@ -81,8 +83,8 @@ namespace System.Net.Quic
     {
         public QuicOptions() { }
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
-        public long MaxBidirectionalStreams { get { throw null; } set { } }
-        public long MaxUnidirectionalStreams { get { throw null; } set { } }
+        public int MaxBidirectionalStreams { get { throw null; } set { } }
+        public int MaxUnidirectionalStreams { get { throw null; } set { } }
     }
     public sealed partial class QuicStream : System.IO.Stream
     {

@@ -263,6 +263,10 @@ public:
     virtual void DumpSchema(FILE* file) const
     {
     }
+    // Detailed data value dump as XML
+    virtual void DumpXml(FILE* file, unsigned indent = 0) const
+    {
+    }
     // True if this is the inline targeted by data collection
     bool IsDataCollectionTarget()
     {
@@ -912,7 +916,7 @@ public:
     }
 
     // Set up or access random state (for use by RandomPolicy)
-    CLRRandom* GetRandom();
+    CLRRandom* GetRandom(int optionalSeed = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

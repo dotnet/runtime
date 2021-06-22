@@ -664,6 +664,11 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
             }
 
+            if (token.IsCancellationRequested)
+            {
+                return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(token));
+            }
+
             CompletionData completionData = default;
             ValueTask<ReadResult> result;
             lock (SyncObj)
@@ -713,6 +718,11 @@ namespace System.IO.Pipelines
             if (_readerCompletion.IsCompleted)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(token));
             }
 
             ValueTask<ReadResult> result;
@@ -998,6 +1008,8 @@ namespace System.IO.Pipelines
 
             return result;
         }
+
+        internal long GetUnflushedBytes() => _unflushedBytes;
 
         private void GetFlushResult(ref FlushResult result)
         {

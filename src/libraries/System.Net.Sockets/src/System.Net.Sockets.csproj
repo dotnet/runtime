@@ -236,6 +236,8 @@
              Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Listen.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Listen.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IOVector.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IOVector.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MessageHeader.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MessageHeader.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MulticastOption.cs"
@@ -275,6 +277,7 @@
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />

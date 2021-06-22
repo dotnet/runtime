@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tests;
 using Microsoft.DotNet.RemoteExecutor;
@@ -882,6 +883,69 @@ namespace System.Threading.ThreadPools.Tests
                     done.Set();
                 }, null, 0, true);
                 done.CheckedWait();
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void CooperativeBlockingCanCreateThreadsFaster()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
+            // would cause the thread pool to create threads
+            RemoteExecutor.Invoke(() =>
+            {
+                // All but the last of these work items will block and the last queued work item would release the blocking.
+                // Without cooperative blocking, this would lead to starvation after <proc count> work items run. Since
+                // starvation adds threads at a rate of at most 2 per second, the extra 120 work items would take roughly 60
+                // seconds to get unblocked and since the test waits for 30 seconds it would time out. Cooperative blocking is
+                // configured below to increase the rate of thread injection for testing purposes while getting a decent amount
+                // of coverage for its behavior. With cooperative blocking as configured below, the test should finish within a
+                // few seconds.
+                int processorCount = Environment.ProcessorCount;
+                int workItemCount = processorCount + 120;
+                SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
+                SetBlockingConfigValue("MaxDelayMs", 1);
+
+                var allWorkItemsUnblocked = new AutoResetEvent(false);
+
+                // Run a second iteration for some extra coverage. Iterations after the first one would be much faster because
+                // the necessary number of threads would already have been created by then, and would not add much to the test
+                // time.
+                for (int iterationIndex = 0; iterationIndex < 2; ++iterationIndex)
+                {
+                    var tcs = new TaskCompletionSource<int>();
+                    int unblockedThreadCount = 0;
+
+                    Action<int> blockingWorkItem = _ =>
+                    {
+                        tcs.Task.Wait();
+                        if (Interlocked.Increment(ref unblockedThreadCount) == workItemCount - 1)
+                        {
+                            allWorkItemsUnblocked.Set();
+                        }
+                    };
+
+                    for (int i = 0; i < workItemCount - 1; ++i)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItem(blockingWorkItem, 0, preferLocal: false);
+                    }
+
+                    Action<int> unblockingWorkItem = _ => tcs.SetResult(0);
+                    ThreadPool.UnsafeQueueUserWorkItem(unblockingWorkItem, 0, preferLocal: false);
+                    Assert.True(allWorkItemsUnblocked.WaitOne(30_000));
+                }
+
+                void SetBlockingConfigValue(string name, int value) =>
+                    AppContextSetData("System.Threading.ThreadPool.Blocking." + name, value);
+
+                void AppContextSetData(string name, object value)
+                {
+                    typeof(AppContext).InvokeMember(
+                        "SetData",
+                        BindingFlags.ExactBinding | BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
+                        null,
+                        null,
+                        new object[] { name, value });
+                }
             }).Dispose();
         }
 

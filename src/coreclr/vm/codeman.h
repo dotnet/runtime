@@ -461,9 +461,9 @@ protected:
 // The number of code heaps at which we increase the size of new code heaps.
 #define CODE_HEAP_SIZE_INCREASE_THRESHOLD 5
 
-typedef DPTR(struct _HeapList) PTR_HeapList;
+typedef DPTR(struct HeapList) PTR_HeapList;
 
-typedef struct _HeapList
+struct HeapList
 {
     PTR_HeapList        hpNext;
 
@@ -497,7 +497,7 @@ typedef struct _HeapList
     void SetNext(PTR_HeapList next)
     { hpNext = next; }
 
-} HeapList;
+};
 
 //-----------------------------------------------------------------------------
 // Implementation of the standard CodeHeap.
@@ -974,12 +974,15 @@ public:
 
     BOOL                LoadJIT();
 
-    CodeHeader*         allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag
-#ifdef FEATURE_EH_FUNCLETS
-                                  , UINT nUnwindInfos
-                                  , TADDR * pModuleBase
+    void                allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
+                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
+#ifdef USE_INDIRECT_CODEHEADER
+                                , BYTE** ppRealHeader
 #endif
-                                  );
+#ifdef FEATURE_EH_FUNCLETS
+                                , UINT nUnwindInfos
+#endif
+                                );
     BYTE *              allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
     EE_ILEXCEPTION*     allocEHInfo(CodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
     JumpStubBlockHeader* allocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
@@ -1024,6 +1027,7 @@ public:
 #ifndef DACCESS_COMPILE
 	// Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet);
+    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet);
 #endif  // !DACCESS_COMPILE
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
