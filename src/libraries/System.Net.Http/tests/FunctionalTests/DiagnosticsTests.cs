@@ -880,27 +880,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, true, true, true)]    // Activity was set and ActivitySource created an Activity
-        [InlineData(true, false, true, true)]   // Activity was set and ActivitySource created an Activity
-        [InlineData(true, null, true, true)]    // Activity was set and ActivitySource created an Activity
-        [InlineData(true, true, false, true)]   // Activity was set, ActivitySource chose not to create an Activity, but a DiagnosticListener requested one
-        [InlineData(true, false, false, false)] // Activity was set but ActivitySource chose not to create an Activity
-        [InlineData(true, null, false, false)]  // Activity was set but ActivitySource chose not to create an Activity
-        [InlineData(true, true, null, true)]    // Activity was set and there is no ActivitySource
-        [InlineData(true, false, null, true)]   // Activity was set and there is no ActivitySource
-        [InlineData(true, null, null, true)]    // Activity was set and there is no ActivitySource
-        [InlineData(false, true, true, true)]   // DiagnosticListener requested an Activity and ActivitySource created an Activity
-        [InlineData(false, true, false, true)]  // DiagnosticListener requested an Activity, ActivitySource chose not to create an Activity, so one was manually created
-        [InlineData(false, true, null, true)]   // DiagnosticListener requested an Activity, there was no ActivitySource, so an Activity was manually created
-        [InlineData(false, false, true, false, false)]  // No Activity is set and DiagnosticListener does not want one (ActivitySource does not come into play)
-        [InlineData(false, false, false, false, false)] // No Activity is set and DiagnosticListener does not want one (ActivitySource does not come into play)
-        [InlineData(false, false, null, false, false)]  // No Activity is set and DiagnosticListener does not want one (ActivitySource does not come into play)
-        [InlineData(false, null, true, false, false)]   // No Activity is set and there is no DiagnosticListener (ActivitySource does not come into play)
-        [InlineData(false, null, false, false, false)]  // No Activity is set and there is no DiagnosticListener (ActivitySource does not come into play)
-        [InlineData(false, null, null, false, false)]   // No Activity is set and there is no DiagnosticListener (ActivitySource does not come into play)
-        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity, bool shouldHaveActivity, bool activitySourceShouldMakeASamplingDecision = true)
+        [InlineData(true, true, true)]      // Activity was set and ActivitySource created an Activity
+        [InlineData(true, false, true)]     // Activity was set and ActivitySource created an Activity
+        [InlineData(true, null, true)]      // Activity was set and ActivitySource created an Activity
+        [InlineData(true, true, false)]     // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(true, false, false)]    // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(true, null, false)]     // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(true, true, null)]      // Activity was set, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(true, false, null)]     // Activity was set, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(true, null, null)]      // Activity was set, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(false, true, true)]     // DiagnosticListener requested an Activity and ActivitySource created an Activity
+        [InlineData(false, true, false)]    // DiagnosticListener requested an Activity, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(false, true, null)]     // DiagnosticListener requested an Activity, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(false, false, true)]    // No Activity is set, DiagnosticListener does not want one, but ActivitySource created an Activity
+        [InlineData(false, false, false)]   // No Activity is set, DiagnosticListener does not want one and ActivitySource chose not to create an Activity
+        [InlineData(false, false, null)]    // No Activity is set, DiagnosticListener does not want one and ActivitySource has no listeners
+        [InlineData(false, null, true)]     // No Activity is set, there is no DiagnosticListener, but ActivitySource created an Activity
+        [InlineData(false, null, false)]    // No Activity is set, there is no DiagnosticListener and ActivitySource chose not to create an Activity
+        [InlineData(false, null, null)]     // No Activity is set, there is no DiagnosticListener and ActivitySource has no listeners
+        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
         {
-            string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity},{shouldHaveActivity},{activitySourceShouldMakeASamplingDecision}";
+            string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
 
             RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
             {
@@ -908,25 +908,19 @@ namespace System.Net.Http.Functional.Tests
                 bool currentActivitySet = parameters[0].Value;
                 bool? diagnosticListenerActivityEnabled = parameters[1];
                 bool? activitySourceCreatesActivity = parameters[2];
-                bool shouldHaveActivity = parameters[3].Value;
-                bool activitySourceShouldMakeASamplingDecision = parameters[4].Value && activitySourceCreatesActivity.HasValue;
 
                 bool madeASamplingDecision = false;
                 if (activitySourceCreatesActivity.HasValue)
                 {
-                    var listener = new ActivityListener
+                    ActivitySource.AddActivityListener(new ActivityListener
                     {
                         ShouldListenTo = _ => true,
-                        Sample = Sample
-                    };
-
-                    ActivitySamplingResult Sample(ref ActivityCreationOptions<ActivityContext> options)
-                    {
-                        madeASamplingDecision = true;
-                        return activitySourceCreatesActivity.Value ? ActivitySamplingResult.AllData : ActivitySamplingResult.None;
-                    }
-
-                    ActivitySource.AddActivityListener(listener);
+                        Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                        {
+                            madeASamplingDecision = true;
+                            return activitySourceCreatesActivity.Value ? ActivitySamplingResult.AllData : ActivitySamplingResult.None;
+                        }
+                    });
                 }
 
                 bool listenerCallbackWasCalled = false;
@@ -968,7 +962,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
 
-                            if (shouldHaveActivity)
+                            if (currentActivitySet || diagnosticListenerActivityEnabled == true || activitySourceCreatesActivity == true)
                             {
                                 Assert.NotNull(activity);
                                 AssertHeadersAreInjected(requestData, activity);
@@ -985,7 +979,7 @@ namespace System.Net.Http.Functional.Tests
                         });
                 }
 
-                Assert.Equal(activitySourceShouldMakeASamplingDecision, madeASamplingDecision);
+                Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
                 Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
             }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
         }
