@@ -272,11 +272,7 @@ var Module = {
     preInit: async function() {
         Module.config = await Module.MONO.mono_wasm_load_config("./mono-config.json");
     },
-
-    preInit: async function() {
-        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
-    },
-
+	
 	onAbort: function(x) {
 		console.log ("ABORT: " + x);
 		const err = new Error();
