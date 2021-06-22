@@ -25,15 +25,8 @@ Push-Location "$SourcesDirectory" # push location for Resolve-Path -Relative to 
 
 # Template files
 $jsonFiles = @()
-$jsonTemplateFiles = Get-ChildItem -Recurse -Path "$SourcesDirectory" | Where-Object { $_.FullName -Match "\.template\.config\\localize\\.+\.en\.json" } # .NET templating pattern
-$jsonTemplateFiles | ForEach-Object {
-    $null = $_.Name -Match "(.+)\.[\w-]+\.json" # matches '[filename].[langcode].json
-    
-    $destinationFile = "$($_.Directory.FullName)\$($Matches.1).json"
-    $jsonFiles += Copy-Item "$($_.FullName)" -Destination $destinationFile -PassThru
-}
-
-$jsonWinformsTemplateFiles = Get-ChildItem -Recurse -Path "$SourcesDirectory" | Where-Object { $_.FullName -Match "en\\strings\.json" } # current winforms pattern
+$jsonFiles += Get-ChildItem -Recurse -Path "$SourcesDirectory" | Where-Object { $_.FullName -Match "\.template\.config\\localize\\en\..+\.json" } # .NET templating pattern
+$jsonFiles += Get-ChildItem -Recurse -Path "$SourcesDirectory" | Where-Object { $_.FullName -Match "en\\strings\.json" } # current winforms pattern
 
 $xlfFiles = @()
 
@@ -51,7 +44,7 @@ $langXlfFiles | ForEach-Object {
     $xlfFiles += Copy-Item "$($_.FullName)" -Destination $destinationFile -PassThru
 }
 
-$locFiles = $jsonFiles + $jsonWinformsTemplateFiles + $xlfFiles
+$locFiles = $jsonFiles + $xlfFiles
 
 $locJson = @{
     Projects = @(
