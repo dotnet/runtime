@@ -338,4 +338,67 @@ namespace System.IO.Tests
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
         private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
     }
+
+    [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
+    [Collection("NoParallelTests")] // don't run in parallel, as file sharing logic is not thread-safe
+    [OuterLoop("Requires admin privileges to create a file share")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsAdmin_IsNotNano))]
+    public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
+    {
+        protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            string testDirectoryPath = Path.GetFullPath(TestDirectory);
+            string shareName = new DirectoryInfo(testDirectoryPath).Name;
+            string fileName = GetTestFileName(index, memberName, lineNumber);
+
+            SHARE_INFO_502 shareInfo = default;
+            shareInfo.shi502_netname = shareName;
+            shareInfo.shi502_path = testDirectoryPath;
+            shareInfo.shi502_remark = "folder created to test UNC file paths";
+            shareInfo.shi502_max_uses = -1;
+
+            int infoSize = Marshal.SizeOf(shareInfo);
+            IntPtr infoBuffer = Marshal.AllocCoTaskMem(infoSize);
+
+            try
+            {
+                Marshal.StructureToPtr(shareInfo, infoBuffer, false);
+
+                int shareResult = NetShareAdd(string.Empty, 502, infoBuffer, IntPtr.Zero);
+
+                if (shareResult != 0 && shareResult != 2118) // is a failure that is not a NERR_DuplicateShare
+                {
+                    throw new Exception($"Failed to create a file share, NetShareAdd returned {shareResult}");
+                }
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(infoBuffer);
+            }
+
+            // now once the folder has been shared we can use "localhost" to access it:
+            return @$"\\localhost\{shareName}\{fileName}";
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SHARE_INFO_502
+        {
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string shi502_netname;
+            public uint shi502_type;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string shi502_remark;
+            public int shi502_permissions;
+            public int shi502_max_uses;
+            public int shi502_current_uses;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string shi502_path;
+            public IntPtr shi502_passwd;
+            public int shi502_reserved;
+            public IntPtr shi502_security_descriptor;
+        }
+
+        [DllImport(Interop.Libraries.Netapi32)]
+        public static extern int NetShareAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, int level, IntPtr buf, IntPtr parm_err);
+    }
 }
