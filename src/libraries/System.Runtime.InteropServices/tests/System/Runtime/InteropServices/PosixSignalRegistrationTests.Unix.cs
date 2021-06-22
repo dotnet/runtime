@@ -118,7 +118,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void SignalHandlerCalledNotCalledWhenDisposed()
+        public void SignalHandlerNotCalledWhenDisposed()
         {
             PosixSignal signal = PosixSignal.SIGCONT;
 
@@ -133,7 +133,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void SignalHandlerCalledNotCalledWhenFinalized()
+        public void SignalHandlerNotCalledWhenFinalized()
         {
             PosixSignal signal = PosixSignal.SIGCONT;
 

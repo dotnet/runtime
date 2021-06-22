@@ -345,7 +345,6 @@ static void CloseSignalHandlingPipe()
 static bool InstallSignalHandler(int sig, int flags)
 {
     int rv;
-    (void)rv; // only used for assert
     struct sigaction* orig = OrigActionFor(sig);
     bool* isInstalled = &g_handlerIsInstalled[sig - 1];
 
@@ -392,14 +391,19 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
 {
     assert(callback != NULL);
     assert(g_terminalInvalidationCallback == NULL);
+    bool installed;
+    (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
     {
         g_terminalInvalidationCallback = callback;
 
-        InstallSignalHandler(SIGCONT, SA_RESTART);
-        InstallSignalHandler(SIGCHLD, SA_RESTART);
-        InstallSignalHandler(SIGWINCH, SA_RESTART);
+        installed = InstallSignalHandler(SIGCONT, SA_RESTART);
+        assert(installed);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        assert(installed);
+        installed = InstallSignalHandler(SIGWINCH, SA_RESTART);
+        assert(installed);
     }
     pthread_mutex_unlock(&lock);
 }
@@ -408,12 +412,15 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
     assert(g_sigChldCallback == NULL);
+    bool installed;
+    (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
     {
         g_sigChldCallback = callback;
 
-        InstallSignalHandler(SIGCHLD, SA_RESTART);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        assert(installed);
     }
     pthread_mutex_unlock(&lock);
 }
@@ -520,7 +527,6 @@ int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
     assert(signalCode > 0 && signalCode <= GetSignalMax());
 
     bool installed;
-
     pthread_mutex_lock(&lock);
     {
         installed = InstallSignalHandler(signalCode, SA_RESTART);
@@ -554,6 +560,8 @@ void SystemNative_DisablePosixSignalHandling(int signalCode)
 
 void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
 {
+    bool installed;
+
     pthread_mutex_lock(&lock);
     {
         assert(g_consoleTtouHandler == NULL);
@@ -567,13 +575,16 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
         RestoreSignalHandler(SIGTTOU);
-        InstallSignalHandler(SIGTTOU, (int)SA_RESETHAND);
+        installed = InstallSignalHandler(SIGTTOU, (int)SA_RESETHAND);
+        assert(installed);
     }
     pthread_mutex_unlock(&lock);
 }
 
 void UninstallTTOUHandlerForConsole(void)
 {
+    bool installed;
+    (void)installed; // only used for assert
     pthread_mutex_lock(&lock);
     {
         g_consoleTtouHandler = NULL;
@@ -581,7 +592,8 @@ void UninstallTTOUHandlerForConsole(void)
         RestoreSignalHandler(SIGTTOU);
         if (g_hasPosixSignalRegistrations[SIGTTOU - 1])
         {
-            InstallSignalHandler(SIGTTOU, SA_RESTART);
+            installed = InstallSignalHandler(SIGTTOU, SA_RESTART);
+            assert(installed);
         }
     }
     pthread_mutex_unlock(&lock);

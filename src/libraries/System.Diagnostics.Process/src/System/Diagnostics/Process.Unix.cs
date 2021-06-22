@@ -1055,7 +1055,5 @@ namespace System.Diagnostics
                 s_processStartLock.ExitWriteLock();
             }
         }
-
-        static unsafe partial void SetDelayedSigChildConsoleConfigurationHandler();
     }
 }

@@ -35,7 +35,7 @@ namespace System.Diagnostics
             }
         }
 
-        static unsafe partial void SetDelayedSigChildConsoleConfigurationHandler()
+        private static unsafe void SetDelayedSigChildConsoleConfigurationHandler()
         {
             Interop.Sys.SetDelayedSigChildConsoleConfigurationHandler(&DelayedSigChildConsoleConfiguration);
         }

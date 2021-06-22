@@ -7,11 +7,13 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
-        /// <summary>
-        /// This method is called when the number of child processes that are using the terminal changes.
-        /// It updates the terminal configuration if necessary.
-        /// </summary>
+        /// These methods are used on other Unix systems to track how many children use the terminal,
+        /// and update the terminal configuration when necessary.
+
         internal static void ConfigureTerminalForChildProcesses(int increment, bool configureConsole = true)
+        { }
+
+        private static unsafe void SetDelayedSigChildConsoleConfigurationHandler()
         { }
 
         private static bool AreChildrenUsingTerminal => false;

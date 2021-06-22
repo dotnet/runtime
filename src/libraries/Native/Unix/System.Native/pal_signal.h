@@ -48,15 +48,44 @@ typedef enum
 
 typedef int32_t (*PosixSignalHandler)(int32_t signalCode, PosixSignal signal);
 
+/**
+ * Hooks up the specified callback for handling PosixSignalRegistrations.
+ *
+ * Should only be called when a callback is not currently registered.
+ */
 PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler);
+
+/**
+ * Converts a PosixSignal value to the platform signal number.
+ * When the signal is out of range, the function returns zero.
+ */
 PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
+
+/**
+ * Enables calling the PosixSignalHandler for the specified signal.
+ */
 PALEXPORT int32_t SystemNative_EnablePosixSignalHandling(int signalCode);
+
+/**
+ * Disables calling the PosixSignalHandler for the specified signal.
+ */
 PALEXPORT void SystemNative_DisablePosixSignalHandling(int signalCode);
+
+/**
+ * Performs the default runtime action for a non-canceled PosixSignal.
+ */
 PALEXPORT void SystemNative_HandleNonCanceledPosixSignal(int signalCode);
 
 typedef void (*ConsoleSigTtouHandler)(void);
 
+/**
+ * Hooks up callback to be called from the signal handler directly on SIGTTOU.
+ */
 void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler);
+
+/**
+ * Uninstalls the SIGTTOU handler.
+ */
 void UninstallTTOUHandlerForConsole(void);
 
 #ifndef HAS_CONSOLE_SIGNALS
