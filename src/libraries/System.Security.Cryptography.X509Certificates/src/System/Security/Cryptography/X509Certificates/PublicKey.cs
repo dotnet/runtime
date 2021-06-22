@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public AsnEncodedData EncodedParameters { get; private set; }
 
-        [Obsolete(Obsoletions.KeyPropertiesMessage, DiagnosticId = Obsoletions.KeyPropertiesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.PublicKeyPropertyMessage, DiagnosticId = Obsoletions.PublicKeyPropertyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm Key
         {
             get
