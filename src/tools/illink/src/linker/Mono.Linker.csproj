@@ -26,7 +26,10 @@
 
   <!-- Shared files with analyzer -->
   <ItemGroup>
-    <EmbeddedResource Include="../ILLink.Shared/SharedStrings.resx" GenerateSource="true" />
+    <EmbeddedResource Include="../ILLink.Shared/SharedStrings.resx">
+      <GenerateSource>true</GenerateSource>
+      <Namespace>ILLink.Shared</Namespace>
+    </EmbeddedResource>
     <Compile Include="../ILLink.Shared/**/*.cs" />
   </ItemGroup>
 

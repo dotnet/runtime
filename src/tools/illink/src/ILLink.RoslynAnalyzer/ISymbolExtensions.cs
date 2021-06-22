@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -19,6 +20,17 @@ namespace ILLink.RoslynAnalyzer
 					return true;
 
 			return false;
+		}
+
+		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
+		{
+			overridenMember = symbol switch {
+				IMethodSymbol method => method.OverriddenMethod,
+				IPropertySymbol property => property.OverriddenProperty,
+				IEventSymbol @event => @event.OverriddenEvent,
+				_ => null,
+			};
+			return overridenMember != null;
 		}
 
 		public static string GetDisplayName (this ISymbol symbol)

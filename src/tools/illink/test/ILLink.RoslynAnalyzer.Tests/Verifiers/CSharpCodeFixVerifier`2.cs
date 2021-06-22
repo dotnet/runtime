@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -51,8 +52,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 			=> CSharpAnalyzerVerifier<TAnalyzer>.Diagnostic (descriptor);
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-		public static Task VerifyAnalyzerAsync (string source, (string, string)[]? analyzerOptions = null, params DiagnosticResult[] expected)
-			=> CSharpAnalyzerVerifier<TAnalyzer>.VerifyAnalyzerAsync (source, analyzerOptions, expected);
+		public static Task VerifyAnalyzerAsync (string source, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
+			=> CSharpAnalyzerVerifier<TAnalyzer>.VerifyAnalyzerAsync (source, analyzerOptions, additionalReferences, expected);
 
 		/// <summary>
 		/// Verifies the analyzer provides diagnostics which, in combination with the code fix, produce the expected
