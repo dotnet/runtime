@@ -380,6 +380,21 @@ namespace System.IO.Tests
             return @$"\\localhost\{shareName}\{fileName}";
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            string testDirectoryPath = Path.GetFullPath(TestDirectory);
+            string shareName = new DirectoryInfo(testDirectoryPath).Name;
+
+            try
+            {
+                NetShareDel(string.Empty, shareName, 0);
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct SHARE_INFO_502
         {
@@ -400,5 +415,8 @@ namespace System.IO.Tests
 
         [DllImport(Interop.Libraries.Netapi32)]
         public static extern int NetShareAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, int level, IntPtr buf, IntPtr parm_err);
+
+        [DllImport(Interop.Libraries.Netapi32)]
+        public static extern int NetShareDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string netname, int reserved);
     }
 }
