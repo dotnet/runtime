@@ -201,6 +201,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "abc", "abc", RegexOptions.None, 0, 3, true, "abc" };
             yield return new object[] { "abc", "aBc", RegexOptions.None, 0, 3, false, string.Empty };
             yield return new object[] { "abc", "aBc", RegexOptions.IgnoreCase, 0, 3, true, "aBc" };
+            yield return new object[] { @"abc.*def", "abcghiDEF", RegexOptions.IgnoreCase, 0, 9, true, "abcghiDEF" };
 
             // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
             yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
