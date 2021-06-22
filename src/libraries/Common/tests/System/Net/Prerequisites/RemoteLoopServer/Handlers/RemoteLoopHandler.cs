@@ -85,34 +85,48 @@ namespace RemoteLoopServer
 
                     if (testedNext.IsCompleted)
                     {
-                        if (testedNext.Result > 0)
-                        {
-                            var slice = new ArraySegment<byte>(testedBuffer, 0, testedNext.Result);
-                            await control.SendAsync(slice, WebSocketMessageType.Binary, true, cts.Token).ConfigureAwait(false);
-                        }
-                        if (testedNext.IsCanceled || testedNext.IsFaulted || !tested.Connected)
+                        if (testedNext.IsCanceled || testedNext.IsFaulted)
                         {
                             close = true;
                         }
                         else
                         {
-                            testedNext = tested.ReceiveAsync(new Memory<byte>(testedBuffer), SocketFlags.None, cts.Token).AsTask();
+                            if (!tested.Connected)
+                            {
+                                close = true;
+                            }
+                            if (testedNext.Result > 0)
+                            {
+                                var slice = new ArraySegment<byte>(testedBuffer, 0, testedNext.Result);
+                                await control.SendAsync(slice, WebSocketMessageType.Binary, true, cts.Token).ConfigureAwait(false);
+                            }
+                            if (!close)
+                            {
+                                testedNext = tested.ReceiveAsync(new Memory<byte>(testedBuffer), SocketFlags.None, cts.Token).AsTask();
+                            }
                         }
                     }
                     if (controlNext.IsCompleted)
                     {
-                        if (controlNext.Result.Count > 0)
-                        {
-                            var slice = new ArraySegment<byte>(controlBuffer, 0, controlNext.Result.Count);
-                            await tested.SendAsync(slice, SocketFlags.None, cts.Token).ConfigureAwait(false);
-                        }
-                        if (controlNext.IsCanceled || controlNext.IsFaulted || controlNext.Result.MessageType == WebSocketMessageType.Close)
+                        if (controlNext.IsCanceled || controlNext.IsFaulted)
                         {
                             close = true;
                         }
                         else
                         {
-                            controlNext = control.ReceiveAsync(new ArraySegment<byte>(controlBuffer), cts.Token);
+                            if (controlNext.Result.MessageType == WebSocketMessageType.Close)
+                            {
+                                close = true;
+                            }
+                            if (controlNext.Result.Count > 0)
+                            {
+                                var slice = new ArraySegment<byte>(controlBuffer, 0, controlNext.Result.Count);
+                                await tested.SendAsync(slice, SocketFlags.None, cts.Token).ConfigureAwait(false);
+                            }
+                            if (!close)
+                            {
+                                controlNext = control.ReceiveAsync(new ArraySegment<byte>(controlBuffer), cts.Token);
+                            }
                         }
                     }
                 }
@@ -128,7 +142,7 @@ namespace RemoteLoopServer
                     }
                     catch (WebSocketException ex)
                     {
-                        logger.LogError("ProcessWebSocketRequest loop failed", ex);
+                        logger.LogWarning("ProcessWebSocketRequest closing failed", ex);
                     }
                 }
                 cts.Cancel();
