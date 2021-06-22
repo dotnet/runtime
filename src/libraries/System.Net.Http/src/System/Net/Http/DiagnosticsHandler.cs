@@ -62,38 +62,36 @@ namespace System.Net.Http
 
             activity = null;
 
-            bool currentActivitySet = Activity.Current is not null;
-            bool diagnosticListenerEnabled = s_diagnosticListener.IsEnabled();
-
-            if (!currentActivitySet && !diagnosticListenerEnabled)
-            {
-                return false;
-            }
-
-            bool diagnosticListenerActivityEnabled = diagnosticListenerEnabled && s_diagnosticListener.IsEnabled(ActivityName, request);
-
-            if (diagnosticListenerActivityEnabled || currentActivitySet)
+            if (s_activitySource.HasListeners())
             {
                 activity = s_activitySource.CreateActivity(ActivityName, ActivityKind.Client);
-
-                if (activity is null && (diagnosticListenerActivityEnabled || !s_activitySource.HasListeners()))
-                {
-                    // ActivitySource decided not to create an Activity
-                    // If that is because there were no listeners, manually create an Activity to maintain the behaviour before ActivitySource was introduced
-                    // If a diagnostics listener is enabled for the Activity, always create one
-                    activity = new Activity(ActivityName);
-                }
             }
 
             if (activity is null)
             {
-                // There is no Activity, but we may still want to use the instrumented SendAsyncCore if diagnostic listeners are interested in other events
-                return diagnosticListenerEnabled;
+                bool currentActivitySet = Activity.Current is not null;
+                bool diagnosticListenerEnabled = s_diagnosticListener.IsEnabled();
+
+                if (!currentActivitySet && !diagnosticListenerEnabled)
+                {
+                    return false;
+                }
+
+                if (currentActivitySet || (diagnosticListenerEnabled && s_diagnosticListener.IsEnabled(ActivityName, request)))
+                {
+                    // If a diagnostics listener is enabled for the Activity, always create one
+                    activity = new Activity(ActivityName);
+                }
+                else
+                {
+                    // There is no Activity, but we may still want to use the instrumented SendAsyncCore if diagnostic listeners are interested in other events
+                    return diagnosticListenerEnabled;
+                }
             }
 
             activity.Start();
 
-            if (diagnosticListenerActivityEnabled && s_diagnosticListener.IsEnabled(ActivityStartName))
+            if (s_diagnosticListener.IsEnabled(ActivityStartName))
             {
                 Write(ActivityStartName, new ActivityStartData(request));
             }
