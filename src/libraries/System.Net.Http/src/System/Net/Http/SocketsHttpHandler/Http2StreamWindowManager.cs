@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private int InitialStreamWindowSize { get; } = 65535;
+        private int InitialClientStreamWindowSize { get; } = 65535;
 
         private class Http2StreamWindowManager
         {
@@ -28,7 +28,7 @@ namespace System.Net.Http
                 _connection = connection;
 
                 _stream = stream;
-                _streamWindowSize = connection.InitialStreamWindowSize;
+                _streamWindowSize = connection.InitialClientStreamWindowSize;
                 _streamWindowUpdateRatio = _connection._pool.Settings._streamWindowUpdateRatio;
                 _stream.TraceFlowControl($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
             }

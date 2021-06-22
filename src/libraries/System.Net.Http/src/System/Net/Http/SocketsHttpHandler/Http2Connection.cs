@@ -42,7 +42,7 @@ namespace System.Net.Http
 
         private int _nextStream;
         private bool _expectingSettingsAck;
-        private int _initialWindowSize;
+        private int _initialServerStreamWindowSize;
         private int _maxConcurrentStreams;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
@@ -80,12 +80,9 @@ namespace System.Net.Http
 #else
         private const int InitialConnectionBufferSize = 4096;
 #endif
-        // According to https://httpwg.org/specs/rfc7540.html#rfc.section.6.9.2:
-        // "The connection flow-control window can only be changed using WINDOW_UPDATE frames."
-        // We need to initialize _connectionWindow with the value 65535, since
-        // higher values may violate the protocol, and lead to overflows,
-        // when the server (or an intermediate proxy) sens a very high connection WINDOW_UPDATE increment.
-        private const int DefaultInitialConnectionWindowSize = 65535;
+        // The default initial window size streams and connections according to the RFC:
+        // https://datatracker.ietf.org/doc/html/rfc7540#section-5.2.1
+        private const int DefaultInitialWindowSize = 65535;
 
         // We don't really care about limiting control flow at the connection level.
         // We limit it per stream, and the user controls how many streams are created.
@@ -134,16 +131,16 @@ namespace System.Net.Http
 
             _httpStreams = new Dictionary<int, Http2Stream>();
 
-            _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
+            _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
-            InitialStreamWindowSize = pool.Settings._initialStreamWindowSize;
+            InitialClientStreamWindowSize = pool.Settings._initialStreamWindowSize;
             _rttEstimator = pool.Settings._enableDynamicHttp2StreamWindowSizing ?
                 new RttEstimator(this, pool.Settings._fakeRtt) : null;
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
-            _initialWindowSize = DefaultInitialConnectionWindowSize;
+            _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
             _maxConcurrentStreams = InitialMaxConcurrentStreams;
             _pendingWindowUpdate = 0;
@@ -196,11 +193,13 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
                 _outgoingBuffer.Commit(2);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)InitialStreamWindowSize);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)InitialClientStreamWindowSize);
                 _outgoingBuffer.Commit(4);
 
-                // Send initial connection-level WINDOW_UPDATE
-                uint windowUpdateAmount = (uint)(ConnectionWindowSize - InitialStreamWindowSize);
+                // The connection-level window size can not be initialized by SETTINGS frames:
+                // https://datatracker.ietf.org/doc/html/rfc7540#section-6.9.2
+                // Send an initial connection-level WINDOW_UPDATE to setup the desired ConnectionWindowSize:
+                uint windowUpdateAmount = (ConnectionWindowSize - DefaultInitialWindowSize);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Initial connection-level WINDOW_UPDATE, windowUpdateAmount={windowUpdateAmount}");
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
@@ -715,8 +714,8 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                int delta = newSize - _initialWindowSize;
-                _initialWindowSize = newSize;
+                int delta = newSize - _initialServerStreamWindowSize;
+                _initialServerStreamWindowSize = newSize;
 
                 // Adjust existing streams
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
@@ -1419,7 +1418,7 @@ namespace System.Net.Http
                         // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                         // across setting the initial window size (available credit) and storing the stream into
                         // collection such that window size updates are able to atomically affect all known streams.
-                        s.http2Stream.Initialize(s.thisRef._nextStream, s.thisRef._initialWindowSize);
+                        s.http2Stream.Initialize(s.thisRef._nextStream, s.thisRef._initialServerStreamWindowSize);
 
                         // Client-initiated streams are always odd-numbered, so increase by 2.
                         s.thisRef._nextStream += 2;
