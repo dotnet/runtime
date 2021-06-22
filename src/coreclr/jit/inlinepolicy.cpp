@@ -94,8 +94,8 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool useEdp       = JitConfig.JitExtendedDefaultPolicy() != 0;
-    const bool useEdpPrejit = JitConfig.JitExtendedDefaultPolicyPrejit() != 0;
+    const bool useEdp       = JitConfig.JitExtDefaultPolicy() != 0;
+    const bool useEdpPrejit = JitConfig.JitExtDefaultPolicyPrejit() != 0;
     const bool isPrejit     = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
 
     // Use the extended variant of default policy. However, DefaultPolicy is better for AOT
@@ -1339,13 +1339,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_IsPrejitRoot && (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSizePrejit()))
-            {
-                // Candidate, pending profitability evaluation. For PrejitRoot analysis we use a smaller
-                // threshold for now for better JIT TP.
-                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-            }
-            else if (!m_IsPrejitRoot && (m_CodeSize <= (unsigned)JitConfig.JitExtendedDefaultPolicyMaxILSize()))
+            else if (m_CodeSize <= (unsigned)JitConfig.JitExtDefaultPolicyMaxIL())
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -1363,27 +1357,20 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            else if (!m_IsForceInline && (value > MAX_BASIC_BLOCKS))
+            else if (!m_IsForceInline)
             {
-                unsigned basicBlockLimit = MAX_BASIC_BLOCKS;
-
-                // Allow to handle more than MAX_BASIC_BLOCKS blocks if we noted foldable branches, throw blocks
-                // or have Profile Data.
-                basicBlockLimit += m_FoldableBranch + m_ThrowBlock;
-
-                // TODO: revise, perhaps it should be something like
-                // basicBlockLimit += (unsigned)(min(1.5, m_ProfileFrequency) * 3.0)
-                if (m_HasProfile && (m_ProfileFrequency > 0.5))
-                {
-                    basicBlockLimit += 3;
-                }
-
+                unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
                 {
-                    basicBlockLimit = max(10, basicBlockLimit);
+                    bbLimit += 5;
                 }
+                if (m_ProfileFrequency > 0.5)
+                {
+                    bbLimit += 2;
+                }
+                bbLimit += m_FoldableBranch;
 
-                if ((unsigned)value > basicBlockLimit)
+                if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
                 }
@@ -1418,22 +1405,17 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
 
 double ExtendedDefaultPolicy::DetermineMultiplier()
 {
-    double multiplier = 0;
+    double multiplier = 1.0;
 
     if (m_IsInstanceCtor)
     {
-        multiplier += 1.5;
+        multiplier += 1.0;
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
     }
 
-    if (m_IsFromPromotableValueClass)
+    if (m_IsFromValueClass)
     {
         multiplier += 3.0;
-        JITDUMP("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
-    }
-    else if (m_IsFromValueClass)
-    {
-        multiplier += 2.0;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
     }
 
@@ -1458,14 +1440,14 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 3.0;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 3.0;
+        multiplier += 2.0;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1541,7 +1523,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
         // the end of the functions and don't impact Register Allocations.
         // TODO: Recognize noreturn calls as m_ThrowBlock
-        multiplier += 3.0;
+        multiplier += 1.5;
         JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
     }
 
@@ -1589,14 +1571,14 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   typeof(T1) == typeof(T2)
         //   Math.Abs(constArg)
         //   BitOperation.PopCount(10)
-        multiplier += 3.0 + m_FoldableIntrinsic;
+        multiplier += 4.0 + m_FoldableIntrinsic;
         JITDUMP("\nInline has %d foldable intrinsics.  Multiplier increased to %g.", m_FoldableIntrinsic, multiplier);
     }
 
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 2.0;
+        multiplier += 1.0 + m_FoldableExpr;
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
                 multiplier);
     }
@@ -1645,41 +1627,22 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  4) Sometimes it's still makes sense to inline methods in cold blocks to improve type/esacape analysis
         //     for the whole caller.
         //
-        const double profileTrustCoef = 0.75; // 1.0 means if m_ProfileFrequency is 0 the whole multiplier will be 0.
-        const double profileScale     = 5.0;
+        const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
+        const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
-    else
+    else if (m_CallsiteFrequency == InlineCallsiteFrequency::LOOP)
     {
-        switch (m_CallsiteFrequency)
-        {
-            case InlineCallsiteFrequency::BORING:
-                multiplier += 1.3;
-                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::WARM:
-                multiplier += 2.0;
-                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::LOOP:
-                multiplier += 3.0;
-                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::HOT:
-                multiplier += 3.0;
-                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-                break;
-            default:
-                break;
-        }
+        multiplier += 2.0;
+        JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_BackwardJump)
     {
         // TODO: investigate in which cases we should [never] inline callees with loops.
-        multiplier *= 0.75;
+        multiplier *= m_FoldableBranch < 1 ? 0.1 : 0.7;
         JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump, multiplier);
     }
 
@@ -1693,7 +1656,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // Unfortunately, we're not able to detect ThrowHelpers calls yet.
 
         // Try to avoid inlining such methods for now.
-        multiplier = 0.5;
+        multiplier = 1.0;
         JITDUMP("\nCallsite is in a no-return region.  Multiplier limited to %g.", multiplier);
     }
 
