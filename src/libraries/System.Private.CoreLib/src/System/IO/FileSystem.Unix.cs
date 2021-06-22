@@ -560,7 +560,7 @@ namespace System.IO
                 if ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFLNK &&
                     isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
                 {
-                    throw new IOException(SR.IO_InconsistentLinkType);
+                    throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
                 }
             }
 

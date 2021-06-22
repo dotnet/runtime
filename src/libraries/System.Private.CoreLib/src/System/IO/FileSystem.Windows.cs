@@ -417,7 +417,7 @@ namespace System.IO
             if (data.dwFileAttributes != -1 &&
                 isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
             {
-                throw new IOException(SR.IO_InconsistentLinkType);
+                throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
             }
 
             if (!Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory))
