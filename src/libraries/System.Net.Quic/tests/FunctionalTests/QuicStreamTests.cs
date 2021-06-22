@@ -522,17 +522,14 @@ namespace System.Net.Quic.Tests
                 {
                     // Make sure the first task throws an OCE.
 
-                    using CancellationTokenSource cts = new CancellationTokenSource();
-                    CancellationToken cancellationToken = cts.Token;
+                    using var cts = new CancellationTokenSource(500);
 
-                    ValueTask closeTask = clientStream.CloseAsync(cancellationToken);
+                    OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                    {
+                        await clientStream.CloseAsync(cts.Token);
+                    });
 
-                    await Task.Delay(500);
-                    Assert.False(closeTask.IsCompleted);
-
-                    cts.Cancel();
-                    OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await closeTask);
-                    Assert.Equal(cancellationToken, oce.CancellationToken);
+                    Assert.Equal(cts.Token, oce.CancellationToken);
 
                     // Release before closing the stream, to allow the server to close its write stream.
 
@@ -546,67 +543,25 @@ namespace System.Net.Quic.Tests
                 });
         }
 
-        [Fact]
-        public async Task CloseAsync_Cancelled_Then_Abort_Success()
-        {
-            const int AbortCode = 1234;
-
-            using var sem = new SemaphoreSlim(0);
-
-            await RunBidirectionalClientServer(
-                async clientStream =>
-                {
-                    // We use the fact that a graceful CloseAsync() won't complete until the
-                    // other side also does a graceful CloseAsync() to force an OperationCanceledException.
-
-                    using CancellationTokenSource cts = new CancellationTokenSource();
-                    CancellationToken cancellationToken = cts.Token;
-
-                    Task<OperationCanceledException> oceTask = Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await clientStream.CloseAsync(cancellationToken));
-
-                    await Task.Delay(500);
-                    Assert.False(oceTask.IsCompleted);
-
-                    cts.Cancel();
-                    OperationCanceledException oce = await oceTask;
-                    Assert.Equal(cancellationToken, oce.CancellationToken);
-
-                    // Abort the stream, causing CloseAsync to complete not synchronously but "immediately".
-
-                    clientStream.Abort(AbortCode, QuicAbortDirection.Immediate);
-                    await clientStream.CloseAsync();
-
-                    sem.Release();
-                },
-                async serverStream =>
-                {
-                    // Wait for the client to gracefully close.
-
-                    await sem.WaitAsync();
-
-                    int readLen = await serverStream.ReadAsync(new byte[1]);
-                    Assert.Equal(0, readLen);
-
-                    // Wait for the client to send STOP_SENDING.
-
-                    await Task.Delay(500);
-
-                    QuicStreamAbortedException ex = await Assert.ThrowsAnyAsync<QuicStreamAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
-                    Assert.Equal(AbortCode, ex.ErrorCode);
-                });
-        }
-
-        // The server portion of this method tests the full version of the "catch and close pattern", which is
-        // required to prevent a DoS attack. The pattern is:
-        // 1. Wrap all your ops in a try/catch, and have the catch call Abort() then Close() with a "shutdown timeout" cancellation token.
-        //    - This Close() will wait for the peer to ACK the shutdown.
-        // 2. Wrap that try/catch in another try/catch(OperationCanceledException) which calls Abort(Immediate).
-        //    - This causes the next Close()/Dispose() to not wait for ACK.
+        // This tests the pattern needed to safely control shutdown of a QuicStream.
+        // 1. Normal stream usage happens inside try.
+        // 2. Call Abort(Both) in the catch.
+        // 3. Call Close() with a cancellation token in the finally.
+        // 4. If that Close() fails, call Abort(Immediate).
         //
-        // TODO: we should revisit this because it's a very easy to screw up pattern.
-        [Fact]
-        public async Task QuicStream_CatchPattern_Success()
+        // This is important to avoid a DoS if the peer doesn't shutdown their sends but otherwise leaves the connection open.
+        // TODO: we should rework the API to make this a lot more foolproof.
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task QuicStream_ClosePattern_Success(bool abortive)
         {
+            while (!Debugger.IsAttached)
+            {
+                Console.WriteLine($"Attach to process {Process.GetCurrentProcess().Id}.");
+                await Task.Delay(100);
+            }
+
             const int ExpectedErrorCode = 0xfffffff;
 
             using SemaphoreSlim sem = new SemaphoreSlim(0);
@@ -614,8 +569,11 @@ namespace System.Net.Quic.Tests
             await RunBidirectionalClientServer(
                 async clientStream =>
                 {
+                    // Don't shutdown client side until server side has 100% completed.
                     await sem.WaitAsync();
-                    await Task.Delay(500); // wait for the shutdown to reach this side.
+
+                    // Wait for server's aborts to reach us.
+                    await Task.Delay(500);
 
                     QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(async () =>
                     {
@@ -633,46 +591,35 @@ namespace System.Net.Quic.Tests
                 },
                 async serverStream =>
                 {
-                    using var cts = new CancellationTokenSource();
-
                     try
                     {
-                        // We just need to throw an exception here
-                        // Cancel reads, causing an OperationCanceledException
+                        // All the usual stream usage happens inside a try block.
+                        // Just a dummy throw here to demonstrate the pattern...
 
-                        ValueTask<int> readTask = serverStream.ReadAsync(new byte[1], cts.Token);
-
-                        Assert.False(readTask.IsCompleted);
-
-                        cts.Cancel();
-                        await readTask;
-
-                        Assert.False(true, "This point should never be reached.");
+                        if (abortive)
+                        {
+                            throw new Exception();
+                        }
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        Assert.True(ex is OperationCanceledException oce && oce.CancellationToken == cts.Token);
-
-                        // Abort here. The CloseAsync that follows will still wait for an ACK of the shutdown,
-                        // so a cancellation token with a shutdown timeout is passed in.
-
+                        // Abort here. The CloseAsync that follows will still wait for an ACK of the shutdown.
                         serverStream.Abort(ExpectedErrorCode, QuicAbortDirection.Both);
+                    }
+                    finally
+                    {
+                        // Call CloseAsync() with a cancellation token to allow it to time out when peer doesn't shutdown.
 
                         using var shutdownCts = new CancellationTokenSource(500);
                         try
                         {
                             await serverStream.CloseAsync(shutdownCts.Token);
                         }
-                        catch(Exception ex2)
+                        catch
                         {
-                            // TODO: this catch block will basically never be executed right now -- we need a way to
-                            // block the MsQuic from ACKing the abort.
-
-                            Assert.True(ex2 is OperationCanceledException oce2 && oce2.CancellationToken == shutdownCts.Token);
-
-                            // Abort again. The exit code is not important, because we gave it above already.
+                            // Abort (possibly again, which will ignore error code and not queue any new I/O).
                             // This time, Immediate is used which will cause CloseAsync() to not wait for a shutdown ACK.
-                            serverStream.Abort(0, QuicAbortDirection.Immediate);
+                            serverStream.Abort(ExpectedErrorCode, QuicAbortDirection.Immediate);
                         }
                     }
 
@@ -682,7 +629,7 @@ namespace System.Net.Quic.Tests
 
                     // Only allow the other side to close its stream after the dispose completes.
                     sem.Release();
-                });
+                }, millisecondsTimeout: 1_000_000_000);
         }
     }
 
