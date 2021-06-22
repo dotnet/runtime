@@ -274,4 +274,31 @@ namespace System.IO.Tests
         protected override bool BlocksOnZeroByteReads => OperatingSystem.IsWindows();
         protected override bool SupportsConcurrentBidirectionalUse => false;
     }
+
+    [PlatformSpecific(TestPlatforms.Windows)] // device paths (\\.\) are a Windows concept
+    public class UnseekableDeviceFileStreamConnectedConformanceTests : ConnectedStreamConformanceTests
+    {
+        protected override async Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            var server = new NamedPipeServerStream(pipeName, PipeDirection.In);
+            var clienStream = new FileStream(File.OpenHandle(pipePath, FileMode.Open, FileAccess.Write, FileShare.None), FileAccess.Write);
+
+            await server.WaitForConnectionAsync();
+
+            var serverStrean = new FileStream(new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), true), FileAccess.Read);
+
+            server.SafePipeHandle.SetHandleAsInvalid();
+
+            return (serverStrean, clienStream);
+        }
+
+        protected override Type UnsupportedConcurrentExceptionType => null;
+        protected override bool UsableAfterCanceledReads => false;
+        protected override bool FullyCancelableOperations => false;
+        protected override bool BlocksOnZeroByteReads => OperatingSystem.IsWindows();
+        protected override bool SupportsConcurrentBidirectionalUse => false;
+    }
 }
