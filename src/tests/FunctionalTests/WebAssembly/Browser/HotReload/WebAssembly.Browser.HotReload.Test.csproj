@@ -2,6 +2,7 @@
   <PropertyGroup>
     <MonoForceInterpreter>true</MonoForceInterpreter>
     <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
     <TestRuntime>true</TestRuntime>
     <Scenario>WasmTestOnBrowser</Scenario>
     <ExpectedExitCode>42</ExpectedExitCode>
