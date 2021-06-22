@@ -5,12 +5,33 @@ using System;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Ports
 {
     public partial class SerialPort : Component
     {
         public static string[] GetPortNames()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+              return GetPortNames_Linux();
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return GetPortNames_OSX();
+            }
+#if NETCOREAPP
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+            {
+                return GetPortNames_FreeBSD();
+            }
+#endif
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_SerialPort_GetPortNames);
+        }
+
+        private static string[] GetPortNames_Linux()
         {
             const string sysTtyDir = "/sys/class/tty";
             const string sysUsbDir = "/sys/bus/usb-serial/devices/";
@@ -70,5 +91,55 @@ namespace System.IO.Ports
                 return ports.ToArray();
             }
         }
+
+        private static string[] GetPortNames_OSX()
+        {
+            List<string> ports = new List<string>();
+
+            foreach (string name in Directory.GetFiles("/dev", "tty.*"))
+            {
+                // GetFiles can return unexpected results because of 8.3 matching.
+                // Like /dev/tty
+                if (name.StartsWith("/dev/tty.", StringComparison.Ordinal))
+                {
+                    ports.Add(name);
+                }
+            }
+
+            foreach (string name in Directory.GetFiles("/dev", "cu.*"))
+            {
+                if (name.StartsWith("/dev/cu.", StringComparison.Ordinal))
+                {
+                    ports.Add(name);
+                }
+            }
+
+            return ports.ToArray();
+        }
+
+#if NETCOREAPP
+        private static string[] GetPortNames_FreeBSD()
+        {
+            List<string> ports = new List<string>();
+
+            foreach (string name in Directory.GetFiles("/dev", "ttyd*"))
+            {
+                if (!name.EndsWith(".init", StringComparison.Ordinal) && !name.EndsWith(".lock", StringComparison.Ordinal))
+                {
+                    ports.Add(name);
+                }
+            }
+
+            foreach (string name in Directory.GetFiles("/dev", "cuau*"))
+            {
+                if (!name.EndsWith(".init", StringComparison.Ordinal) && !name.EndsWith(".lock", StringComparison.Ordinal))
+                {
+                    ports.Add(name);
+                }
+            }
+
+            return ports.ToArray();
+        }
+#endif
     }
 }

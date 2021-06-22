@@ -431,13 +431,25 @@ namespace System.IO.Ports
                 return Task<int>.FromResult(0); // return immediately if no bytes requested; no need for overhead.
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            SerialStreamIORequest result = new(cancellationToken, buffer);
             _readQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
 
             return result.Task;
         }
+
+#if NETCOREAPP
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            SerialStreamIORequest result = new(cancellationToken, buffer);
+            _readQueue.Enqueue(result);
+
+            EnsureIOLoopRunning();
+
+            return new ValueTask<int>(result.Task);
+        }
+#endif
 
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
@@ -447,13 +459,25 @@ namespace System.IO.Ports
                 return Task.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            SerialStreamIORequest result = new(cancellationToken, buffer);
             _writeQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
 
             return result.Task;
         }
+
+#if NETCOREAPP
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            SerialStreamIORequest result = new(cancellationToken, buffer);
+            _writeQueue.Enqueue(result);
+
+            EnsureIOLoopRunning();
+
+            return new ValueTask(result.Task);
+        }
+#endif
 
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
@@ -715,7 +739,7 @@ namespace System.IO.Ports
 
         private unsafe int ProcessRead(SerialStreamIORequest r)
         {
-            Span<byte> buff = r.Buffer.Span;
+            ReadOnlySpan<byte> buff = r.Buffer.Span;
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
@@ -964,11 +988,11 @@ namespace System.IO.Ports
 
         private sealed class SerialStreamIORequest : TaskCompletionSource<int>
         {
-            public Memory<byte> Buffer { get; private set; }
+            public ReadOnlyMemory<byte> Buffer { get; private set; }
             public bool IsCompleted => Task.IsCompleted;
             private CancellationToken _cancellationToken;
 
-            public SerialStreamIORequest(CancellationToken ct, Memory<byte> buffer)
+            public SerialStreamIORequest(CancellationToken ct, ReadOnlyMemory<byte> buffer)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _cancellationToken = ct;
