@@ -63,7 +63,7 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunScriptCommand Condition="'$(TargetOS)' != 'windows' and ('$(TargetOS)' != 'Browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
+      <RunScriptCommand Condition="'$(TargetOS)' != 'windows' and (('$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'Node') or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
       <RunScriptCommand Condition="'$(TargetOS)' == 'windows' or (('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Node') and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
 
       <!-- Escape potential user input. -->

@@ -16,7 +16,7 @@
 
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
-    <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
+    <Error Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'Node'" Text="Expected TargetOS==Browser or TargetOS==Node, got '$(TargetOS)'"/>
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 

@@ -6,9 +6,9 @@
     <ProjectReference Remove="$(MSBuildThisFileDirectory)AppleAppBuilder\AppleAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'MacCatalyst' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)WasmAppBuilder\WasmAppBuilder.csproj"
-                      Condition="'$(TargetOS)' != 'Browser'" />
+                      Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'Node'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)WasmBuildTasks\WasmBuildTasks.csproj"
-                      Condition="'$(TargetOS)' != 'Browser'" />
+                      Condition="'$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'Node'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)AotCompilerTask\MonoAOTCompiler.csproj"
                       Condition="'$(TargetsMobile)' != 'true'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)RuntimeConfigParser\RuntimeConfigParser.csproj"
