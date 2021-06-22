@@ -84,24 +84,10 @@ namespace System.Net.WebSockets
         }
 
         public override bool CanRead => _readable;
-
-
         public override bool CanSeek => false;
-
-
         public override bool CanWrite => _writeable;
-
-
         public override bool CanTimeout => true;
-
-
-        public override long Length
-        {
-            get
-            {
-                throw new NotSupportedException("This stream does not support seek operations.");
-            }
-        }
+        public override long Length => throw new NotSupportedException("This stream does not support seek operations.");
 
         public override long Position
         {
@@ -109,13 +95,11 @@ namespace System.Net.WebSockets
             {
                 throw new NotSupportedException("This stream does not support seek operations.");
             }
-
             set
             {
                 throw new NotSupportedException("This stream does not support seek operations.");
             }
         }
-
 
         public override long Seek(long offset, SeekOrigin origin)
         {

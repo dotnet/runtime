@@ -756,7 +756,7 @@ namespace System.Net.Test.Common
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
 
 #if TARGET_BROWSER
-                lines = await HandlePreFlight(lines);
+                lines = await HandleCORSPreFlight(lines);
 #endif
 
                 await SendResponseAsync(statusCode, additionalHeaders, content).ConfigureAwait(false);
@@ -961,8 +961,8 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(body).ConfigureAwait(false);
             }
 
-#if TARGET_BROWSER
-            public async Task<HttpRequestData> HandlePreFlight(HttpRequestData requestData) {
+            public async Task<HttpRequestData> HandleCORSPreFlight(HttpRequestData requestData)
+            {
                 if (PlatformDetection.IsBrowser && requestData.Method == "OPTIONS" && requestData.Headers.Any(h => h.Name.StartsWith("Access-Control-Request-Method")))
                 {
                     // handle CORS pre-flight
@@ -980,7 +980,8 @@ namespace System.Net.Test.Common
                 return requestData;
             }
 
-            public async Task<List<string>> HandlePreFlight(List<string> lines) {
+            public async Task<List<string>> HandleCORSPreFlight(List<string> lines)
+            {
                 if (PlatformDetection.IsBrowser && lines[0].Contains("OPTIONS") && lines.Any(h => h.StartsWith("Access-Control-Request-Method")))
                 {
                     // handle CORS pre-flight
@@ -998,14 +999,12 @@ namespace System.Net.Test.Common
                 return lines;
             }
 
-#endif
-
             public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
             {
                 HttpRequestData requestData = await ReadRequestDataAsync().ConfigureAwait(false);
 
 #if TARGET_BROWSER
-                requestData = await HandlePreFlight(requestData);
+                requestData = await HandleCORSPreFlight(requestData);
 #endif
 
                 // For historical reasons, we added Date and "Connection: close" (to improve test reliability)

@@ -242,7 +242,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         var requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
 #if TARGET_BROWSER
-                        requestData = await connection.HandlePreFlight(requestData);
+                        requestData = await connection.HandleCORSPreFlight(requestData);
 #endif
 
                         Assert.DoesNotContain(requestData.Headers, line => line.Name.StartsWith("Content-length"));

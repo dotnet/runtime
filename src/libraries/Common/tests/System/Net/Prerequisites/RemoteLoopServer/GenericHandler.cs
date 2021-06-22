@@ -5,15 +5,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Logging;
 
 namespace RemoteLoopServer
 {
     public class GenericHandler
     {
-        RequestDelegate next;
-        public GenericHandler(RequestDelegate next)
+        RequestDelegate _next;
+        ILogger _logger;
+        public GenericHandler(RequestDelegate next, ILogger logger)
         {
-            this.next = next;
+            this._next = next;
+            this._logger = logger;
         }
 
         public async Task Invoke(HttpContext context)
@@ -21,11 +24,11 @@ namespace RemoteLoopServer
             PathString path = context.Request.Path;
             if (path.Equals(new PathString("/RemoteLoop")))
             {
-                await RemoteLoopHandler.InvokeAsync(context);
+                await RemoteLoopHandler.InvokeAsync(context, _logger);
                 return;
             }
 
-            await next(context);
+            await _next(context);
         }
     }
 

@@ -10,14 +10,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace RemoteLoopServer
 {
     public partial class RemoteLoopHandler
     {
-        private const int MaxBufferSize = 128 * 1024;
-
-        public static async Task InvokeAsync(HttpContext context)
+        public static async Task InvokeAsync(HttpContext context, ILogger logger)
         {
             try
             {
@@ -32,17 +31,17 @@ namespace RemoteLoopServer
 
                 using (WebSocket socket = await context.WebSockets.AcceptWebSocketAsync())
                 {
-                    await ProcessWebSocketRequest(context, socket);
+                    await ProcessWebSocketRequest(context, socket, logger);
                 }
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // We might want to log these exceptions. But for now we ignore them.
+                logger.LogError("RemoteLoopHandler failed", ex);
             }
         }
 
-        private static async Task ProcessWebSocketRequest(HttpContext context, WebSocket control)
+        private static async Task ProcessWebSocketRequest(HttpContext context, WebSocket control, ILogger logger)
         {
             byte[] controlBuffer = new byte[128 * 1024];
             byte[] testedBuffer = new byte[128 * 1024];
@@ -62,7 +61,7 @@ namespace RemoteLoopServer
                 listenSocket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 listenSocket.Bind(new IPEndPoint(address, 0));
                 listenSocket.Listen(listenBacklog);
-                EndPoint endPoint = listenSocket.RemoteEndPoint ?? listenSocket.LocalEndPoint;
+                EndPoint endPoint = listenSocket.LocalEndPoint;
 
                 // respond with what we have done
                 await control.SendAsync(Encoding.ASCII.GetBytes(endPoint.ToString()), WebSocketMessageType.Binary, true, cts.Token).ConfigureAwait(false);
@@ -70,11 +69,11 @@ namespace RemoteLoopServer
                 // wait for the tested client to connect
                 tested = await listenSocket.AcceptAsync().ConfigureAwait(false);
 
-                Task<int> testedNext = tested.ReceiveAsync(new Memory<byte>(testedBuffer), SocketFlags.None, cts.Token).AsTask();
-                Task<WebSocketReceiveResult> controlNext = control.ReceiveAsync(controlBuffer, cts.Token);
-
                 // now we are connected, pump messages
                 bool close = false;
+
+                Task<int> testedNext = tested.ReceiveAsync(new Memory<byte>(testedBuffer), SocketFlags.None, cts.Token).AsTask();
+                Task<WebSocketReceiveResult> controlNext = control.ReceiveAsync(controlBuffer, cts.Token);
                 while (!close)
                 {
                     // wait for either message
@@ -123,33 +122,22 @@ namespace RemoteLoopServer
                     {
                         await control.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", cts.Token).ConfigureAwait(false);
                     }
-                    catch (WebSocketException)
+                    catch (WebSocketException ex)
                     {
-                        // We might want to log these exceptions. But for now we ignore them.
+                        logger.LogError("ProcessWebSocketRequest loop failed", ex);
                     }
                 }
                 cts.Cancel();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // We might want to log these exceptions. But for now we ignore them.
+                logger.LogError("ProcessWebSocketRequest failed", ex);
             }
             finally
             {
                 tested?.Dispose();
                 control?.Dispose();
             }
-        }
-
-        private static (int, IPAddress) ReadListener(byte[] controlBuffer, int length)
-        {
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(controlBuffer, 0, length);
-            var req = MemoryMarshal.Cast<byte, long>(span);
-            var listenBacklog = (int)req[0];
-            var addrLength = (int)req[0];
-            var addrBytes = span.Slice(2 * sizeof(long), addrLength);
-            IPAddress address = new IPAddress(addrBytes);
-            return (listenBacklog, address);
         }
     }
 }

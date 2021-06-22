@@ -907,7 +907,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         HttpRequestData requestData = await connection.ReadRequestDataAsync();
 #if TARGET_BROWSER
-                        await connection.HandlePreFlight(requestData);
+                        await connection.HandleCORSPreFlight(requestData);
 #endif
                         await connection.WriteStringAsync(
                             "HTTP/1.1 200 OK\r\n" +
