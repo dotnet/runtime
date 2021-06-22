@@ -499,7 +499,7 @@ var BindingSupportLib = {
 				case 29: // interned string
 					return this.conv_string (mono_obj);
 				case 4: // struct
-					return this.extract_js_obj_with_possible_converter (mono_obj, klass);
+					return this.extract_js_obj_with_converter (mono_obj, klass);
 				case 5: // delegate
 					return this._unbox_delegate_rooted (mono_obj);
 				case 6: // Task
