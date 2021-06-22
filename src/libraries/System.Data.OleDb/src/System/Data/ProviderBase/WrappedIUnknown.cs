@@ -22,10 +22,12 @@ namespace System.Data.ProviderBase
         {
             if (null != unknown)
             {
+#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
+#endif
                 {
                     base.handle = Marshal.GetIUnknownForObject(unknown);
                 }
@@ -46,7 +48,9 @@ namespace System.Data.ProviderBase
             // runtime in the debugger.
             object? value = null;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 DangerousAddRef(ref mustRelease);

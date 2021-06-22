@@ -24,10 +24,12 @@ namespace System.Data.OleDb
         {
             if (null != unknown)
             {
+#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
+#endif
                 {
                     // store the QI result for IID_IDataInitialize
                     base.handle = Marshal.GetComInterfaceForObject(unknown, typeof(UnsafeNativeMethods.IDataInitialize));
@@ -46,7 +48,9 @@ namespace System.Data.OleDb
             OleDbHResult hr;
             UnsafeNativeMethods.IDataInitializeGetDataSource GetDataSource = DangerousIDataInitializeGetDataSource!;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -101,7 +105,9 @@ namespace System.Data.OleDb
             OleDbHResult hr;
             bool mustRelease = false;
             IntPtr idbCreateSession = IntPtr.Zero;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -254,7 +260,9 @@ namespace System.Data.OleDb
             if (!constr.HaveQueriedForCreateCommand || (null != constr.DangerousIDBCreateCommandCreateCommand))
             {
                 IntPtr idbCreateCommand = IntPtr.Zero;
+#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
+#endif
                 try
                 {
                     // native COM rules are the QI result is the 'this' pointer
@@ -327,7 +335,9 @@ namespace System.Data.OleDb
             if (null != CreateCommand)
             {
                 bool mustRelease = false;
+#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
+#endif
                 try
                 {
                     DangerousAddRef(ref mustRelease);

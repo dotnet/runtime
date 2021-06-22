@@ -112,7 +112,11 @@ namespace System.Data.OleDb
 
                         if (!ADP.IsEmpty(udlConnectionString))
                         {
+#if NETCOREAPP
+                            _expandedConnectionString = string.Concat(_expandedConnectionString!.AsSpan(0, position), udlConnectionString + ';', _expandedConnectionString.AsSpan(position));
+#else
                             _expandedConnectionString = _expandedConnectionString!.Substring(0, position) + udlConnectionString + ';' + _expandedConnectionString.Substring(position);
+#endif
                         }
                     }
                 }

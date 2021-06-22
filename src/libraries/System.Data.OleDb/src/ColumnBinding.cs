@@ -631,7 +631,9 @@ namespace System.Data.OleDb
             string value = "";
             RowBinding bindings = RowBinding;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 bindings.DangerousAddRef(ref mustRelease);
@@ -666,7 +668,9 @@ namespace System.Data.OleDb
             byte[]? value = null;
             RowBinding bindings = RowBinding;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 bindings.DangerousAddRef(ref mustRelease);
@@ -714,7 +718,9 @@ namespace System.Data.OleDb
             string value = "";
             RowBinding bindings = RowBinding;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 bindings.DangerousAddRef(ref mustRelease);
@@ -1015,7 +1021,9 @@ namespace System.Data.OleDb
             object value;
             RowBinding bindings = RowBinding;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 bindings.DangerousAddRef(ref mustRelease);
@@ -1062,7 +1070,9 @@ namespace System.Data.OleDb
             object value;
             RowBinding bindings = RowBinding;
             bool mustRelease = false;
+#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
+#endif
             try
             {
                 bindings.DangerousAddRef(ref mustRelease);

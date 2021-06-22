@@ -1016,7 +1016,11 @@ namespace System.Data.Common
 
             foreach (char currentChar in unescapedString)
             {
+#if NETCOREAPP
+                if (specialCharacters.Contains(currentChar))
+#else
                 if (specialCharacters.IndexOf(currentChar) >= 0)
+#endif
                 {
                     escapedString.Append('\\');
                 }
