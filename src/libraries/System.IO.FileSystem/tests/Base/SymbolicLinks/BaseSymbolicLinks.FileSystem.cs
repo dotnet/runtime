@@ -82,14 +82,14 @@ namespace System.IO.Tests
         {
             string tempFileName = GetRandomFileName();
 
-            // Create file in our current working directory.
-            using var tempFile = new TempFile(tempFileName);
+            // Create file or directory inside the current working directory.
+            CreateFileOrDirectory(tempFileName);
 
             // Create link in our temporary folder with the target using the same name as the file in the current working directory.
-            // No issues may occour.
+            // No issues may occur.
             FileSystemInfo linkInfo = CreateSymbolicLink(GetRandomLinkPath(), tempFileName);
-
             FileSystemInfo targetInfo = linkInfo.ResolveLinkTarget();
+
             Assert.False(targetInfo.Exists);
             Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
         }
