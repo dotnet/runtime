@@ -110,6 +110,8 @@ if (MSVC)
   # /RTC1 is added by default by CMake, so remove it.
   string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   string(REPLACE "/RTC1" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+  string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+  string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
   add_compile_options($<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:-fsanitize=address>)
   add_linker_flag(/INFERASANLIBS DEBUG CHECKED)
