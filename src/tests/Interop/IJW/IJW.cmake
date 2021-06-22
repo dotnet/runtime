@@ -8,10 +8,7 @@ if (CLR_CMAKE_HOST_WIN32)
   # IJW requires the CRT as a dll, not linked in
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:Debug>DLL)
 
-  # CMake enables /RTC1 and /EHsc by default, but they're not compatible with /clr, so remove them
-  if(CMAKE_CXX_FLAGS_DEBUG MATCHES "/RTC1")
-    string(REPLACE "/RTC1" " " CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-  endif()
+  # CMake enables /EHsc by default, but it's not compatible with /clr, so remove it
 
   if(CMAKE_CXX_FLAGS MATCHES "/EHsc")
     string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
