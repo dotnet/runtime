@@ -641,6 +641,10 @@ process_sync_log_stats()
 #ifndef DACCESS_COMPILE
 uint32_t g_num_active_processors = 0;
 
+// Note that when a join is no longer used we still keep the values here because
+// tooling already recognized them as having the meaning they were assigned originally.
+// It doesn't break tooling if we stop using them but does if we assign a new meaning 
+// to them. 
 enum gc_join_stage
 {
     gc_join_init_cpu_mapping = 0,
@@ -681,6 +685,7 @@ enum gc_join_stage
     gc_join_after_commit_soh_no_gc = 35,
     gc_join_expand_loh_no_gc = 36,
     gc_join_final_no_gc = 37,
+    // No longer in use but do not remove, see comments for this enum.
     gc_join_disable_software_write_watch = 38,
     gc_join_max = 39
 };
@@ -31805,23 +31810,6 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent revisit dirtied pages on LOH");
         concurrent_print_time_delta ("NRre LOH");
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef MULTIPLE_HEAPS
-        bgc_t_join.join(this, gc_join_disable_software_write_watch);
-        if (bgc_t_join.joined())
-#endif // MULTIPLE_HEAPS
-        {
-            // The runtime is suspended, and we will be doing a final query of dirty pages, so pause tracking written pages to
-            // avoid further perf penalty after the runtime is restarted
-            SoftwareWriteWatch::DisableForGCHeap();
-
-#ifdef MULTIPLE_HEAPS
-            dprintf(3, ("Restarting BGC threads after disabling software write watch"));
-            bgc_t_join.restart();
-#endif // MULTIPLE_HEAPS
-        }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
         dprintf (2, ("before NR 1st Hov count: %d", bgc_overflow_count));
         bgc_overflow_count = 0;
 
@@ -31846,6 +31834,12 @@ void gc_heap::background_mark_phase ()
         if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            // The runtime is suspended, take this opportunity to pause tracking written pages to
+            // avoid further perf penalty after the runtime is restarted
+            SoftwareWriteWatch::DisableForGCHeap();
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
             GCToEEInterface::AfterGcScanRoots (max_generation, max_generation, &sc);
 
 #ifdef MULTIPLE_HEAPS
