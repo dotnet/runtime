@@ -4,7 +4,7 @@
     <_MonoRuntimeComponentSharedLibExt>${TemplateMonoRuntimeComponentSharedLibExt}<_MonoRuntimeComponentSharedLibExt>
     <_MonoRuntimeComponentStaticLibExt>${TemplateMonoRuntimeComponentStaticLibExt}<_MonoRuntimeComponentStaticLibExt>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '${TemplateRuntimeIdentifier}'">
     <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" />
   </ItemGroup>
 </Project>
