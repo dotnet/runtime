@@ -455,7 +455,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (fromReturnType != type)
                 throw new WasmInteropException($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
 
-            if (type.IsValueType && !(toParameterType is null)) {
+            if (type.IsValueType) {
                 var typeMatches = toParameterType.GetElementType() == type;
                 if (!typeMatches || !(toParameterType.IsPointer || toParameterType.IsByRef))
                     throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be 'in {type.Name}' or '{type.Name}*' but was {toParameterType}");
@@ -770,7 +770,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
+        public static IntPtr SafeHandleGetHandle(SafeHandle? safeHandle, bool addRef)
         {
             if (safeHandle is null)
                 throw new ArgumentNullException(nameof(safeHandle));
