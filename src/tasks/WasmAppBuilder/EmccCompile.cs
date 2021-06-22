@@ -68,8 +68,10 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 Directory.CreateDirectory(_tempPath);
 
                 int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
+#if false // Enable this when we bump msbuild to 16.1.0
                 if (BuildEngine is IBuildEngine9 be9)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
+#endif
 
                 if (DisableParallelCompile || allowedParallelism == 1)
                 {
