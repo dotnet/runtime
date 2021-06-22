@@ -51,8 +51,12 @@ namespace RemoteLoopServer
             try
             {
                 WebSocketReceiveResult first = await control.ReceiveAsync(controlBuffer, cts.Token).ConfigureAwait(false);
+                if (first.Count <= 0 || first.MessageType != WebSocketMessageType.Binary || control.State != WebSocketState.Open)
+                {
+                    throw new Exception("Unexpected close");
+                }
 
-                // parse request
+                // parse setup request
                 var message = Encoding.ASCII.GetString(controlBuffer, 0, first.Count);
                 var split = message.Split(',');
                 var listenBacklog = int.Parse(split[0]);
