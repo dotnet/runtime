@@ -215,7 +215,7 @@
       <Sha>6adb8ac00a59fe409f232b8b32758aa7d10b4d1d</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.21314.1">
-      <Uri>https://github.com/dotnet/runtime-assets
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>8d7b898b96cbdb868cac343e938173105287ed9e</Sha>
     </Dependency>
   </ToolsetDependencies>
