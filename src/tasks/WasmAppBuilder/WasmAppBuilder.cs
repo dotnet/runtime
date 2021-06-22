@@ -51,7 +51,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
 
     // <summary>
-    // Extra json elements to add to mono-config.js
+    // Extra json elements to add to mono-config.json
     //
     // Metadata:
     // - Value: can be a number, bool, quoted string, or json string
@@ -189,6 +189,13 @@ public class WasmAppBuilder : Task
             {
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
                 string fullPath = assembly.GetMetadata("Identity");
+                if (string.IsNullOrEmpty(culture))
+                {
+                    Log.LogWarning($"Missing CultureName metadata for satellite assembly {fullPath}");
+                    continue;
+                }
+                // FIXME: validate the culture?
+
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
                 Directory.CreateDirectory(directory);
@@ -246,11 +253,11 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        string monoConfigPath = Path.Combine(AppDir, "mono-config.js");
+        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
         using (var sw = File.CreateText(monoConfigPath))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
-            sw.Write($"config = {json};");
+            sw.Write(json);
         }
         _fileWrites.Add(monoConfigPath);
 

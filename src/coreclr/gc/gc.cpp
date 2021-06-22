@@ -20587,6 +20587,7 @@ void gc_heap::garbage_collect (int n)
             update_collection_counts_for_no_gc();
 
 #ifdef MULTIPLE_HEAPS
+            gc_start_event.Reset();
             gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
@@ -44530,6 +44531,19 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
                 end = heap_segment_allocated (seg);
                 continue;
             }
+#ifdef USE_REGIONS
+            else if (gen_number > 0)
+            {
+                // advance to next lower generation
+                gen_number--;
+                gen = gc_heap::generation_of (gen_number);
+                seg = generation_start_segment (gen);
+
+                x = heap_segment_mem (seg);
+                end = heap_segment_allocated (seg);
+                continue;
+            }
+#endif // USE_REGIONS
             else
             {
                 if (walk_large_object_heap_p)

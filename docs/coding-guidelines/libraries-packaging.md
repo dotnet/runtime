@@ -10,7 +10,7 @@ The library should have both a `ref` and `src` project. Its reference assembly w
 
 Including a library in the shared framework only includes the best applicable TargetFramework build of that library: `$(NetCoreAppCurrent)` if it exists, but possibly `netstandard2.1` or another if that is best. If a library has builds for other frameworks those will only be shipped if the library also produces a [Nuget package](#nuget-package).
 
-In some occasions we may want to include a library in the shared framework, but not expose it publicly. To do so, include the library in the `NetCoreAppLibraryNoReference` property in [NetCoreAppLibrary.props](../../src/libraries/NetCoreAppLibrary.props). The library should also be named in a way to discourage use at runtime, for example using the `System.Private` prefix. We should avoid hiding arbitrary public libraries as it complicates deployment and servicing, though some platform specific libraries are in this state due to historical reasons.
+In some occasions we may want to include a library in the shared framework, but not expose it publicly. The library should be named in a way to discourage use at runtime, for example using the `System.Private` prefix. We should avoid hiding arbitrary public libraries as it complicates deployment and servicing.
 
 Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework. This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 

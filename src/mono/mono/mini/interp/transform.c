@@ -545,27 +545,26 @@ push_types (TransformData *td, StackInfo *types, int count)
 }
 
 static void
-mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb)
+mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *replace_bb)
 {
 	// Update IL offset to bb mapping so that offset_to_bb doesn't point to dead
 	// bblocks. This mapping can still be needed when computing clause ranges. Since
 	// multiple IL offsets can end up pointing to same bblock after optimizations,
 	// make sure we update mapping for all of them
-	if (bb->ip >= td->header->code && bb->ip < td->il_code + td->header->code_size) {
-		// To avoid scanning the entire offset_to_bb array, we scan only in the vicinity
-		// of the IL offset of bb. We can stop search when we encounter a different bblock.
-		for (int il_offset = bb->ip - td->il_code; il_offset >= 0; il_offset--) {
-			if (td->offset_to_bb [il_offset] == bb)
-				td->offset_to_bb [il_offset] = bb->next_bb;
-			else if (td->offset_to_bb [il_offset])
-				break;
-		}
-		for (int il_offset = bb->ip - td->il_code + 1; il_offset < td->header->code_size; il_offset++) {
-			if (td->offset_to_bb [il_offset] == bb)
-				td->offset_to_bb [il_offset] = bb->next_bb;
-			else if (td->offset_to_bb [il_offset])
-				break;
-		}
+	//
+	// To avoid scanning the entire offset_to_bb array, we scan only in the vicinity
+	// of the IL offset of bb. We can stop search when we encounter a different bblock.
+	for (int il_offset = bb->il_offset; il_offset >= 0; il_offset--) {
+		if (td->offset_to_bb [il_offset] == bb)
+			td->offset_to_bb [il_offset] = replace_bb;
+		else if (td->offset_to_bb [il_offset])
+			break;
+	}
+	for (int il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
+		if (td->offset_to_bb [il_offset] == bb)
+			td->offset_to_bb [il_offset] = replace_bb;
+		else if (td->offset_to_bb [il_offset])
+			break;
 	}
 
 	bb->dead = TRUE;
@@ -616,7 +615,7 @@ interp_merge_bblocks (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 		}
 	}
 
-	mark_bb_as_dead (td, bbadd);
+	mark_bb_as_dead (td, bbadd, bb);
 }
 
 // array must contain ref
@@ -660,7 +659,7 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	while (bb->out_count)
 		interp_unlink_bblocks (bb, bb->out_bb [0]);
 	prev_bb->next_bb = bb->next_bb;
-	mark_bb_as_dead (td, bb);
+	mark_bb_as_dead (td, bb, bb->next_bb);
 
 	return needs_cprop;
 }
@@ -2425,13 +2424,51 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
 		*op = MINT_LDFTN_DYNAMIC;
-	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Equality")) {
+	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Equality") &&
+			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
+		// We do a reference comparison only if we know both operands are runtime type
+		// (they originate from object.GetType or ldftn + GetTypeFromHandle)
 		*op = MINT_CEQ_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
-		if (!strcmp (tm, "InternalGetHashCode"))
+		if (!strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
-		else if (!strcmp (tm, "GetType"))
-			*op = MINT_INTRINS_GET_TYPE;
+		} else if (!strcmp (tm, "GetType")) {
+			if (constrained_class && m_class_is_valuetype (constrained_class)) {
+				// If constrained_class is valuetype we already know its type.
+				// Resolve GetType to a constant so we can fold type comparisons
+				ERROR_DECL(error);
+				gpointer systype = mono_type_get_object_checked (m_class_get_byval_arg (constrained_class), error);
+				return_val_if_nok (error, FALSE);
+
+				td->sp--;
+				interp_add_ins (td, MINT_MONO_LDPTR);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->last_ins->data [0] = get_data_item_index (td, systype);
+
+				td->ip += 5;
+				return TRUE;
+			} else {
+				if (constrained_class) {
+					// deref the managed pointer to get the object
+					interp_add_ins (td, MINT_LDIND_I);
+					td->sp--;
+					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+					push_simple_type (td, STACK_TYPE_O);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				}
+				interp_add_ins (td, MINT_INTRINS_GET_TYPE);
+				td->sp--;
+				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+				mono_class_init_internal (target_method->klass);
+
+				td->ip += 5;
+				return TRUE;
+			}
+		}
 	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
 		gboolean intrinsify = FALSE;
 		MonoClass *base_klass = NULL;
@@ -2884,6 +2921,14 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 		interp_link_bblocks (td, prev_cbb, td->entry_bb);
 		prev_cbb->next_bb = td->entry_bb;
+
+		// Make sure all bblocks that were added will now be offset from the original method that
+		// is being transformed.
+		InterpBasicBlock *tmp_bb = td->entry_bb;
+		while (tmp_bb != NULL) {
+			tmp_bb->il_offset = prev_ip - prev_il_code;
+			tmp_bb = tmp_bb->next_bb;
+		}
 	}
 
 	td->ip = prev_ip;
@@ -3504,7 +3549,7 @@ get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 
 	if (!bb) {
 		bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
-		bb->ip = ip;
+		bb->il_offset = offset;
 		bb->native_offset = -1;
 		bb->stack_height = -1;
 		bb->index = td->bb_count++;
@@ -4100,14 +4145,21 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 
 		// Do a load/store to this address
 		if (is_load) {
-			int opcode = (mt == MINT_TYPE_VT) ? MINT_LDOBJ_VT : interp_get_ldind_for_mt (mt);
-			interp_add_ins (td, opcode);
-			interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
-			td->sp--;
-			push_simple_type (td, stack_type [mt]);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			if (mt == MINT_TYPE_VT)
-				td->last_ins->data [0] = get_data_item_index (td, field_class);
+			if (mt == MINT_TYPE_VT) {
+				int field_size = mono_class_value_size (field_class, NULL);
+				interp_add_ins (td, MINT_LDOBJ_VT);
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+				push_type_vt (td, field_class, field_size);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->last_ins->data [0] = field_size;
+			} else {
+				interp_add_ins (td, interp_get_ldind_for_mt (mt));
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+				push_type (td, stack_type [mt], field_class);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			}
 		} else {
 			int opcode = (mt == MINT_TYPE_VT) ? MINT_STOBJ_VT : interp_get_stind_for_mt (mt);
 			interp_add_ins (td, opcode);
@@ -6719,7 +6771,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				gpointer systype = mono_type_get_object_checked ((MonoType*)handle, error);
 				goto_if_nok (error, exit);
-				push_simple_type (td, STACK_TYPE_MP);
+				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, systype);
 				td->ip = next_ip + 5;
@@ -6845,7 +6897,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->ip += 5;
 					const gconstpointer func = mono_find_jit_icall_info ((MonoJitICallId)token)->func;
 
-					interp_add_ins (td, MINT_LDFTN);
+					interp_add_ins (td, MINT_LDFTN_ADDR);
 					push_simple_type (td, STACK_TYPE_I);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 					td->last_ins->data [0] = get_data_item_index (td, (gpointer)func);
@@ -9589,9 +9641,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	error_init (error);
 
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_thread_expose_published ();
-#endif
 
 	if (mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
 		mono_error_set_invalid_operation (error, "%s", "Could not execute the method because the containing type is not fully instantiated.");

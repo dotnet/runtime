@@ -153,10 +153,6 @@ public:
         }
         CONTRACTL_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
@@ -189,10 +185,6 @@ public:
         m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), pUMEntryThunkRX);
 
 #ifdef _DEBUG
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         m_state = kRunTimeInited;
 #endif // _DEBUG
     }
