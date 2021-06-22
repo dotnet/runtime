@@ -798,28 +798,29 @@ namespace System.Runtime.InteropServices
     }
     public enum PosixSignal
     {
-        SIGHUP = -1,
-        SIGINT = -2,
-        SIGQUIT = -3,
-        SIGTERM = -4,
-        SIGCHLD = -5,
-        SIGCONT = -6,
-        SIGWINCH = -7,
-        SIGTTIN = -8,
+        SIGTSTP = -10,
         SIGTTOU = -9,
-        SIGTSTP = -10
+        SIGTTIN = -8,
+        SIGWINCH = -7,
+        SIGCONT = -6,
+        SIGCHLD = -5,
+        SIGTERM = -4,
+        SIGQUIT = -3,
+        SIGINT = -2,
+        SIGHUP = -1,
     }
-    public sealed class PosixSignalContext
+    public sealed partial class PosixSignalContext
     {
-        public PosixSignal Signal { get { throw null; } }
-        public bool Cancel  { get { throw null; } set { throw null; } }
-        public PosixSignalContext(PosixSignal signal) { }
+        public PosixSignalContext(System.Runtime.InteropServices.PosixSignal signal) { }
+        public bool Cancel { get { throw null; } set { } }
+        public System.Runtime.InteropServices.PosixSignal Signal { get { throw null; } }
     }
-    public sealed class PosixSignalRegistration : IDisposable
+    public sealed partial class PosixSignalRegistration : System.IDisposable
     {
-        private PosixSignalRegistration() { throw null; }
-        public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler) { throw null; }
-        public void Dispose() { throw null; }
+        internal PosixSignalRegistration() { }
+        public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }
+        public void Dispose() { }
+        ~PosixSignalRegistration() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PreserveSigAttribute : System.Attribute
