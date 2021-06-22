@@ -120,20 +120,5 @@ namespace System.Text.Json
 
             return PolymorphicJsonPropertyInfo.ConverterBase;
         }
-
-        public void Reset()
-        {
-            CollectionEnumerator = null;
-            EnumeratorIndex = 0;
-            AsyncEnumerator = null;
-            AsyncEnumeratorIsPendingCompletion = false;
-            IgnoreDictionaryKeyPolicy = false;
-            JsonTypeInfo = null!;
-            OriginalDepth = 0;
-            ProcessedStartToken = false;
-            ProcessedEndToken = false;
-
-            EndProperty();
-        }
     }
 }

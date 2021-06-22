@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
-    <NoWarn>$(NoWarn);CS8769</NoWarn>
+    <NoWarn>$(NoWarn);CS8769;SYSLIB0026</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage>SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
@@ -22,6 +22,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
