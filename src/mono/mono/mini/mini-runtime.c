@@ -4249,6 +4249,8 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 
+	mono_components_init ();	
+	
 	if (sdb_options)
 		mono_component_debugger ()->parse_options (sdb_options);
 

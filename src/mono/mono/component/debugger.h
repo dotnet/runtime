@@ -159,8 +159,9 @@ typedef int DbgEngineErrorCode;
 
 typedef struct MonoComponentDebugger {
 	MonoComponent component;
-	void (*parse_options) (char *options);
 	void (*init) (void);
+	void (*user_break) (void);
+	void (*parse_options) (char *options);
 	void (*breakpoint_hit) (void *sigctx);
 	void (*single_step_event) (void *sigctx);
 	void (*single_step_from_context) (MonoContext *ctx);
@@ -171,7 +172,6 @@ typedef struct MonoComponentDebugger {
 							  MonoContext *catch_ctx, MonoStackFrameInfo *catch_frame);
 	void (*begin_exception_filter) (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx);
 	void (*end_exception_filter) (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx);
-	void (*user_break) (void);
 	void (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
 	void (*send_crash) (char *json_dump, MonoStackHash *hashes, int pause);

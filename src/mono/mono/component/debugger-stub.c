@@ -57,34 +57,81 @@ stub_debugger_breakpoint_from_context (MonoContext *ctx);
 static void
 stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause);
 
-static void stub_register_transport (DebuggerTransport *trans); //debugger-agent
-static gboolean stub_mono_debugger_agent_transport_handshake (void);
-static void stub_mono_debugger_agent_parse_options (char *options);
-static void stub_mono_de_init (DebuggerEngineCallbacks *cbs); //debugger-engine
-static void stub_mono_debugger_free_objref (gpointer value); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_set_log_level (int level, FILE *file); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_clear_breakpoint (MonoBreakpoint *bp); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_process_single_step (void *tls, gboolean from_signal); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_process_breakpoint (void *tls, gboolean from_signal); //debugger-engine removeAfterMergeWasmPR
-static MonoBreakpoint *stub_mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError *error); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_cancel_all_ss (void); //debugger-engine removeAfterMergeWasmPR
-static DbgEngineErrorCode stub_mono_de_ss_create (MonoInternalThread *thread, MdbgProtStepSize size, MdbgProtStepDepth depth, MdbgProtStepFilter filter, EventRequest *req); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_domain_add (MonoDomain *domain); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GPtrArray *bp_reqs); //debugger-engine removeAfterMergeWasmPR
-static MonoBreakpoint *stub_mono_de_get_breakpoint_by_id (int id); //debugger-engine removeAfterMergeWasmPR
-static DbgEngineErrorCode stub_mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf); //debugger-engine removeAfterMergeWasmPR
-static gboolean stub_set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
-static MonoMethod *stub_get_notify_debugger_of_wait_completion_method (void); //debugger-engine removeAfterMergeWasmPR
-static MonoClass *stub_get_class_to_get_builder_field (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
-static MonoMethod *stub_get_object_id_for_debugger_method (MonoClass *async_builder_class); //debugger-engine removeAfterMergeWasmPR
-static void stub_mono_de_clear_all_breakpoints (void); //debugger-engine removeAfterMergeWasmPR
-static gpointer stub_get_async_method_builder (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
+static void 
+stub_register_transport (DebuggerTransport *trans); //debugger-agent
+
+static gboolean 
+stub_mono_debugger_agent_transport_handshake (void);
+
+static void 
+stub_mono_debugger_agent_parse_options (char *options);
+
+static void 
+stub_mono_de_init (DebuggerEngineCallbacks *cbs); //debugger-engine
+
+static void 
+stub_mono_debugger_free_objref (gpointer value); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_set_log_level (int level, FILE *file); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_clear_breakpoint (MonoBreakpoint *bp); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_process_single_step (void *tls, gboolean from_signal); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_process_breakpoint (void *tls, gboolean from_signal); //debugger-engine removeAfterMergeWasmPR
+
+static MonoBreakpoint *
+stub_mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError *error); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_cancel_all_ss (void); //debugger-engine removeAfterMergeWasmPR
+
+static DbgEngineErrorCode 
+stub_mono_de_ss_create (MonoInternalThread *thread, MdbgProtStepSize size, MdbgProtStepDepth depth, MdbgProtStepFilter filter, EventRequest *req); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_domain_add (MonoDomain *domain); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GPtrArray *bp_reqs); //debugger-engine removeAfterMergeWasmPR
+
+static MonoBreakpoint *
+stub_mono_de_get_breakpoint_by_id (int id); //debugger-engine removeAfterMergeWasmPR
+
+static DbgEngineErrorCode 
+stub_mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf); //debugger-engine removeAfterMergeWasmPR
+
+static gboolean 
+stub_set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
+
+static MonoMethod *
+stub_get_notify_debugger_of_wait_completion_method (void); //debugger-engine removeAfterMergeWasmPR
+
+static MonoClass *
+stub_get_class_to_get_builder_field (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
+
+static MonoMethod *
+stub_get_object_id_for_debugger_method (MonoClass *async_builder_class); //debugger-engine removeAfterMergeWasmPR
+
+static void 
+stub_mono_de_clear_all_breakpoints (void); //debugger-engine removeAfterMergeWasmPR
+
+static gpointer 
+stub_get_async_method_builder (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
+
 
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
-	&stub_debugger_parse_options,
 	&stub_debugger_init,
+	&stub_debugger_user_break,	
+	&stub_debugger_parse_options,
 	&stub_debugger_breakpoint_hit,
 	&stub_debugger_single_step_event,
 	&stub_debugger_single_step_from_context,
@@ -94,7 +141,6 @@ static MonoComponentDebugger fn_table = {
 	&stub_debugger_handle_exception,
 	&stub_debugger_begin_exception_filter,
 	&stub_debugger_end_exception_filter,
-	&stub_debugger_user_break,
 	&stub_debugger_debug_log,
 	&stub_debugger_debug_log_is_enabled,
 	&stub_debugger_send_crash,

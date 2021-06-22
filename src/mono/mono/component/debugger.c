@@ -13,8 +13,16 @@
 static bool
 debugger_avaliable (void);
 
+static void
+debugger_init (void);
+
+static void
+debugger_user_break (void);
+
 static MonoComponentDebugger fn_table = {
-	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable }
+	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
+	&debugger_init,
+	&debugger_user_break,
 };
 
 static bool
@@ -27,7 +35,21 @@ debugger_avaliable (void)
 MonoComponentDebugger *
 mono_component_debugger_init (void)
 {
+#ifndef DISABLE_SDB	
 	debugger_agent_add_function_pointers (&fn_table);
+#endif	
 	debugger_engine_add_function_pointers (&fn_table);
 	return &fn_table;
+}
+
+static void
+debugger_init (void)
+{
+
+}
+
+static void
+debugger_user_break (void)
+{
+
 }
