@@ -85,8 +85,6 @@ namespace System.Net.Http
 
             private int _headerBudgetRemaining;
 
-            private object _eofSyncObj = new object();
-
             private const int StreamWindowSize = DefaultInitialWindowSize;
 
             // See comment on ConnectionWindowThreshold.
@@ -277,24 +275,16 @@ namespace System.Net.Http
                             sendReset = _responseCompletionState == StreamCompletionState.Failed;
                             Complete();
                         }
-                    }
 
-                    if (sendReset)
-                    {
-                        SendReset();
-                    }
-                    else
-                    {
-                        // Use dedicated lock to prevent sending a frame with EndStream flag after an RST_STREAM frame.
-                        lock (_eofSyncObj)
+                        if (sendReset)
                         {
-                            // It ensures that RST_STREAM frame has not been sent yet, so it's safe to send a frame with EndStream flag.
-                            if (_requestCompletionState != StreamCompletionState.Failed && _responseCompletionState != StreamCompletionState.Failed)
-                            {
-                                // Send EndStream asynchronously and without cancellation.
-                                // If this fails, it means that the connection is aborting and we will be reset.
-                                _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
-                            }
+                            SendReset();
+                        }
+                        else
+                        {
+                            // Send EndStream asynchronously and without cancellation.
+                            // If this fails, it means that the connection is aborting and we will be reset.
+                            _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
                         }
                     }
                 }
@@ -349,7 +339,7 @@ namespace System.Net.Http
                     // Use dedicated lock to prevent sending a frame with EndStream flag after an RST_STREAM frame.
                     // If execution reached this line, it's guaranteed that
                     // _requestCompletionState == StreamCompletionState.Failed or _responseCompletionState == StreamCompletionState.Failed
-                    lock (_eofSyncObj)
+                    lock (SyncObject)
                     {
                         _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                     }
