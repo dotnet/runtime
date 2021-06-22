@@ -63,8 +63,11 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Unsupported.cs" />
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
