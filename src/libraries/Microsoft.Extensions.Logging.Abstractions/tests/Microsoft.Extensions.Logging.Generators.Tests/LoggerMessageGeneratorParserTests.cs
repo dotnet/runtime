@@ -84,15 +84,18 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
-        [Fact]
-        public async Task WithNullEventId_GeneratorWontFail()
+        [Theory]
+        [InlineData("EventId = null, Level = LogLevel.Debug, Message = \"This is a message with {foo}\"")]
+        [InlineData("eventId: null, level: LogLevel.Debug, message: \"This is a message with {foo}\"")]
+        [InlineData("null, LogLevel.Debug, \"This is a message with {foo}\"")]
+        public async Task WithNullEventId_GeneratorWontFail(string argumentList)
         {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
                 partial class C
-                {
-                    [LoggerMessage(EventId = null, Level = LogLevel.Debug, Message = ""This is a message with {foo}"")]
+                {{
+                    [LoggerMessage({argumentList})]
                     static partial void M1(ILogger logger, string foo);
-                }
+                }}
             ");
 
             Assert.Empty(diagnostics);

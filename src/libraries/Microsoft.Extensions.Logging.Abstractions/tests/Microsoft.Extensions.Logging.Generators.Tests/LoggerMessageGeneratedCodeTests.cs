@@ -325,6 +325,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("M9", logger.LastFormattedString);
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M10vs11(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("event ID 10 vs. 11", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Warning, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal(11, logger.LastEventId.Id);
         }
 
         [Fact]

@@ -119,6 +119,26 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     foreach (AttributeData attributeData in boundAttrbutes)
                                     {
+                                        // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
+                                        // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
+                                        if (attributeData.ConstructorArguments.Any())
+                                        {
+                                            foreach (TypedConstant typedConstant in attributeData.ConstructorArguments)
+                                            {
+                                                if (typedConstant.Kind == TypedConstantKind.Error)
+                                                {
+                                                    hasMisconfiguredInput = true;
+                                                }
+                                            }
+
+                                            ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
+                                            Debug.Assert(items.Length == 3);
+
+                                            eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
+                                            level = items[1].IsNull ? null : (int?)GetItem(items[1]);
+                                            message = items[2].IsNull ? "" : (string)GetItem(items[2]);
+                                        }
+
                                         // argument syntax takes parameters. e.g. EventId = 0
                                         // supports: e.g. [LoggerMessage(EventId = 0, Level = LogLevel.Warning, Message = "custom message")]
                                         if (attributeData.NamedArguments.Any())
@@ -153,26 +173,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     }
                                                 }
                                             }
-                                        }
-
-                                        // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
-                                        // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
-                                        if (attributeData.ConstructorArguments.Any())
-                                        {
-                                            foreach (TypedConstant typedConstant in attributeData.ConstructorArguments)
-                                            {
-                                                if (typedConstant.Kind == TypedConstantKind.Error)
-                                                {
-                                                    hasMisconfiguredInput = true;
-                                                }
-                                            }
-
-                                            ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
-                                            Debug.Assert(items.Length == 3);
-
-                                            eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
-                                            level = items[1].IsNull ? null : (int?)GetItem(items[1]);
-                                            message = items[2].IsNull ? "" : (string)GetItem(items[2]);
                                         }
                                     }
 
