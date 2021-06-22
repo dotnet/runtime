@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <MonoForceInterpreter>false</MonoForceInterpreter>
     <RunAOTCompilation>true</RunAOTCompilation>
+    <MonoEnableLLVM>true</MonoEnableLLVM>
     <TestRuntime>true</TestRuntime>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <MainLibraryFileName>Android.Device_Emulator.Aot.Test.dll</MainLibraryFileName>

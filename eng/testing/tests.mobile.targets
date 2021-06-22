@@ -80,6 +80,9 @@
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <MonoEnableLLVM Condition="'$(MonoEnableLLVM)' == ''">true</MonoEnableLLVM>
+    </PropertyGroup>
     <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
