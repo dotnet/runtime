@@ -108,12 +108,13 @@ if (MSVC)
   # Configure ASAN for MSVC
 
   # /RTC1 is added by default by CMake, so remove it.
-  string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/RTC1" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-  string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-  string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+  string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+  string(REPLACE "/RTC1" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+  string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
+  string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
 
-  add_compile_options($<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:-fsanitize=address>)
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>>:-fsanitize=address>)
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>>:-fno-sanitize-address-vcasan-lib>)
   add_linker_flag(/INFERASANLIBS DEBUG CHECKED)
 
 elseif (CLR_CMAKE_HOST_UNIX)
@@ -124,7 +125,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 
   # Configure ASAN for Clang/GCC
-  add_compile_options($<$<AND:$<$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>>:-fsanitize=address>)
+  add_compile_options($<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:-fsanitize=address>)
   add_linker_flag(-fsanitize=address DEBUG CHECKED)
 
   set(CLR_SANITIZE_CXX_OPTIONS "")
