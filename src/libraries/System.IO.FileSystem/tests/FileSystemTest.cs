@@ -137,14 +137,14 @@ namespace System.IO.Tests
         /// and then tests for its existence with lower-case letters.  This could return invalid results in corner
         /// cases where, for example, different file systems are mounted with differing sensitivities.
         /// </remarks>
-    protected static bool GetIsCaseSensitiveByProbing(string probingDirectory)
-    {
-        string pathWithUpperCase = Path.Combine(probingDirectory, "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
-        using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+        protected static bool GetIsCaseSensitiveByProbing(string probingDirectory)
         {
-            string lowerCased = pathWithUpperCase.ToLowerInvariant();
-            return !File.Exists(lowerCased);
+            string pathWithUpperCase = Path.Combine(probingDirectory, "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
+            using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+            {
+                string lowerCased = pathWithUpperCase.ToLowerInvariant();
+                return !File.Exists(lowerCased);
+            }
         }
-    }
     }
 }
