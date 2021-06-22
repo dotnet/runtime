@@ -20,5 +20,16 @@ namespace ILLink.Shared
 				arg2 = " " + url;
 			return arg2;
 		}
+
+		public static string FormatRequiresAttributeMismatch (bool memberHasAttribute, bool isInterface, string var0, string var1, string var2)
+		{
+			string format = (memberHasAttribute, isInterface) switch {
+				(false, true) => SharedStrings.InterfaceRequiresMismatchMessage,
+				(true, true) => SharedStrings.ImplementationRequiresMismatchMessage,
+				(false, false) => SharedStrings.BaseRequiresMismatchMessage,
+				(true, false) => SharedStrings.DerivedRequiresMismatchMessage
+			};
+			return string.Format (format, var0, var1, var2);
+		}
 	}
 }

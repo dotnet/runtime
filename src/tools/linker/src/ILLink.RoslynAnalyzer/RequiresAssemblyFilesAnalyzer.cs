@@ -17,6 +17,7 @@ namespace ILLink.RoslynAnalyzer
 		public const string IL3000 = nameof (IL3000);
 		public const string IL3001 = nameof (IL3001);
 		public const string IL3002 = nameof (IL3002);
+		public const string IL3003 = nameof (IL3003);
 
 		private const string RequiresAssemblyFilesAttribute = nameof (RequiresAssemblyFilesAttribute);
 		public const string RequiresAssemblyFilesAttributeFullyQualifiedName = "System.Diagnostics.CodeAnalysis." + RequiresAssemblyFilesAttribute;
@@ -54,7 +55,17 @@ namespace ILLink.RoslynAnalyzer
 			isEnabledByDefault: true,
 			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3002");
 
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule);
+		static readonly DiagnosticDescriptor s_requiresAttributeMismatch = new DiagnosticDescriptor (
+			IL3003,
+			new LocalizableResourceString (nameof (SharedStrings.RequiresAttributeMismatchTitle),
+			SharedStrings.ResourceManager, typeof (SharedStrings)),
+			new LocalizableResourceString (nameof (SharedStrings.RequiresAttributeMismatchMessage),
+			SharedStrings.ResourceManager, typeof (SharedStrings)),
+			DiagnosticCategory.Trimming,
+			DiagnosticSeverity.Warning,
+			isEnabledByDefault: true);
+
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule, s_requiresAttributeMismatch);
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
@@ -63,6 +74,8 @@ namespace ILLink.RoslynAnalyzer
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Property | DiagnosticTargets.Event;
 
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresAssemblyFilesRule;
+
+		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresAttributeMismatch;
 
 		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation)
 		{

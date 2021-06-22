@@ -14,6 +14,7 @@ namespace ILLink.RoslynAnalyzer
 	public sealed class RequiresUnreferencedCodeAnalyzer : RequiresAnalyzerBase
 	{
 		public const string IL2026 = nameof (IL2026);
+		public const string IL2046 = nameof (IL2046);
 		const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
 		public const string FullyQualifiedRequiresUnreferencedCodeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnreferencedCodeAttribute;
 
@@ -27,7 +28,17 @@ namespace ILLink.RoslynAnalyzer
 			DiagnosticSeverity.Warning,
 			isEnabledByDefault: true);
 
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_requiresUnreferencedCodeRule);
+		static readonly DiagnosticDescriptor s_requiresAttributeMismatch = new DiagnosticDescriptor (
+			IL2046,
+			new LocalizableResourceString (nameof (SharedStrings.RequiresAttributeMismatchTitle),
+			SharedStrings.ResourceManager, typeof (SharedStrings)),
+			new LocalizableResourceString (nameof (SharedStrings.RequiresAttributeMismatchMessage),
+			SharedStrings.ResourceManager, typeof (SharedStrings)),
+			DiagnosticCategory.Trimming,
+			DiagnosticSeverity.Warning,
+			isEnabledByDefault: true);
+
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_requiresUnreferencedCodeRule, s_requiresAttributeMismatch);
 
 		private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -36,6 +47,8 @@ namespace ILLink.RoslynAnalyzer
 		private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor;
 
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresUnreferencedCodeRule;
+
+		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresAttributeMismatch;
 
 		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation)
 		{

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -40,12 +41,11 @@ namespace Mono.Linker.Steps
 		void ValidateMethodRequiresUnreferencedCodeAreSame (MethodDefinition method, MethodDefinition baseMethod)
 		{
 			var annotations = Context.Annotations;
-			if (annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) !=
-				annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (baseMethod))
-				Context.LogWarning (
-					$"Presence of 'RequiresUnreferencedCodeAttribute' on method '{method.GetDisplayName ()}' doesn't match overridden method '{baseMethod.GetDisplayName ()}'. " +
-					$"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.",
-					2046, method, subcategory: MessageSubCategory.TrimAnalysis);
+			bool methodHasAttribute = annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method);
+			if (methodHasAttribute != annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (baseMethod)) {
+				string message = MessageFormat.FormatRequiresAttributeMismatch (methodHasAttribute, baseMethod.DeclaringType.IsInterface, nameof (RequiresUnreferencedCodeAttribute), method.GetDisplayName (), baseMethod.GetDisplayName ());
+				Context.LogWarning (string.Format (SharedStrings.RequiresAttributeMismatchMessage, message), 2046, method, subcategory: MessageSubCategory.TrimAnalysis);
+			}
 		}
 	}
 }

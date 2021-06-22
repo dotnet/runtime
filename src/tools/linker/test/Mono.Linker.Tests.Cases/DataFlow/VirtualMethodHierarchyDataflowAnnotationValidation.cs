@@ -267,15 +267,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 			// === RequiresUnreferencedCode ===
-			[LogContains (
-				"Presence of 'RequiresUnreferencedCodeAttribute' on method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()' " +
-				"doesn't match overridden method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.RequiresUnreferencedCodeBaseWithDerivedWithout()'. " +
-				"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.")]
+			[ExpectedWarning ("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()", "BaseClass.RequiresUnreferencedCodeBaseWithDerivedWithout()")]
 			public override void RequiresUnreferencedCodeBaseWithDerivedWithout () { }
-			[LogContains (
-				"Presence of 'RequiresUnreferencedCodeAttribute' on method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()' " +
-				"doesn't match overridden method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()'. " +
-				"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.")]
+			[ExpectedWarning ("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()", "BaseClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()")]
 			[RequiresUnreferencedCode ("")]
 			public override void RequiresUnreferencedCodeBaseWithoutDerivedWith_ () { }
 			[LogDoesNotContain ("DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWith_")]
@@ -546,7 +540,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[LogDoesNotContain ("ImplementationClass.RequiresUnreferencedCodeInterfaceBaseWithImplementationWith_")]
 			[RequiresUnreferencedCode ("")]
 			public void RequiresUnreferencedCodeInterfaceBaseWithImplementationWith_ () { }
-			[LogContains ("ImplementationClass.RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_")]
+			[ExpectedWarning ("IL2046", "ImplementationClass.RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_")]
 			[RequiresUnreferencedCode ("")]
 			public void RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_ () { }
 		}
@@ -569,7 +563,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public virtual Type ReturnValueBaseWithInterfaceWithout () => null;
 
-			[LogContains ("BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
+			[ExpectedWarning ("IL2046", "BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
 			public virtual void RequiresUnreferencedCodeBaseWithoutInterfaceWith () { }
 		}
 

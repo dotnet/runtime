@@ -782,10 +782,13 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   }
   ```
 
-#### `IL2046` Trim analysis: Presence of 'RequiresUnreferencedCodeAttribute' on method 'method' doesn't match overridden method 'base method'. All overridden methods must have 'RequiresUnreferencedCodeAttribute'.
+#### `IL2046`: Trim analysis: Member 'member' with 'RequiresUnreferencedCodeAttribute' has a member 'member' without 'RequiresUnreferencedCodeAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
 
-- All overrides of a virtual method including the base method must either have or not have the `RequiresUnreferencedCodeAttribute`.
+- For all interfaces and overrides the implementation 'RequiresUnreferencedCodeAttribute' must match the definition 'RequiresUnreferecedCodeAttribute', either all the members contain the attribute o none of them.
 
+  Here is a list of posible scenarios where the warning can be generated:
+
+  A base member has the attribute but the derived member does not have the attribute
   ```C#
   public class Base
   {
@@ -795,8 +798,51 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
 
   public class Derived : Base
   {
-    // IL2046: Presence of 'RequiresUnreferencedCodeAttribute' on method 'Derived.TestMethod()' doesn't match overridden method 'Base.TestMethod'. All overridden methods must have 'RequiresUnreferencedCodeAttribute'.
+    // IL2046: Base member 'Base.TestMethod' with 'RequiresUnreferencedCodeAttribute' has a derived member 'Derived.TestMethod()' without 'RequiresUnreferencedCodeAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
     public override void TestMethod() {}
+  }
+  ```
+  A derived member has the attribute but the overriden base member does not have the attribute
+  ```C#
+  public class Base
+  {
+    public virtual void TestMethod() {}
+  }
+
+  public class Derived : Base
+  {
+    // IL2046: Member 'Derived.TestMethod()' with 'RequiresUnreferencedCodeAttribute' overrides base member 'Base.TestMethod()' without 'RequiresUnreferencedCodeAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    [RequireUnreferencedCode("Message")]
+    public override void TestMethod() {}
+  }
+  ```
+  An interface member has the attribute but it's implementation does not have the attribute
+  ```C#
+  interface IRUC
+  {
+    [RequiresUnreferencedCode("Message")]
+    void TestMethod();
+  }
+
+  class Implementation : IRUC
+  {
+    // IL2046: Interface member 'IRUC.TestMethod()' with 'RequiresUnreferencedCodeAttribute' has an implementation member 'Implementation.TestMethod()' without 'RequiresUnreferencedCodeAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    public void TestMethod () { }
+  }
+  ```
+  An implementation member has the attribute but the interface that implementes does not have the attribute
+
+  ```C#
+  interface IRUC
+  {
+    void TestMethod();
+  }
+
+  class Implementation : IRUC
+  {
+    [RequiresUnreferencedCode("Message")]
+    // IL2046: Member 'Implementation.TestMethod()' with 'RequiresUnreferencedCodeAttribute' implements interface member 'IRUC.TestMethod()' without 'RequiresUnreferencedCodeAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    public void TestMethod () { }
   }
   ```
 
@@ -1680,5 +1726,69 @@ class Test
       // IL3002: Using member 'MethodWithAssemblyFilesUsage' which has 'RequiresAssemblyFilesAttribute'
       // can break functionality when embedded in a single-file app. Use 'MethodFriendlyToSingleFile' instead. http://help/assemblyfiles
       MethodWithAssemblyFilesUsage();
+  }
+  ```
+
+#### `IL3003`: Member 'member' with 'RequiresAssemblyFilesAttribute' has a member 'member' without 'RequiresAssemblyFilesAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+
+- For all interfaces and overrides the implementation 'RequiresAssemblyFilesAttribute' must match the definition 'RequiresAssemblyFilesAttribute', either all the members contain the attribute o none of them.
+
+  Here is a list of posible scenarios where the warning can be generated:
+
+  A base member has the attribute but the derived member does not have the attribute
+  ```C#
+  public class Base
+  {
+    [RequiresAssemblyFiles]
+    public virtual void TestMethod() {}
+  }
+
+  public class Derived : Base
+  {
+    // IL3003: Base member 'Base.TestMethod' with 'RequiresAssemblyFilesAttribute' has a derived member 'Derived.TestMethod()' without 'RequiresAssemblyFilesAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    public override void TestMethod() {}
+  }
+  ```
+  A derived member has the attribute but the overriden base member does not have the attribute
+  ```C#
+  public class Base
+  {
+    public virtual void TestMethod() {}
+  }
+
+  public class Derived : Base
+  {
+    // IL3003: Member 'Derived.TestMethod()' with 'RequiresAssemblyFilesAttribute' overrides base member 'Base.TestMethod()' without 'RequiresAssemblyFilesAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    [RequiresAssemblyFiles]
+    public override void TestMethod() {}
+  }
+  ```
+  An interface member has the attribute but it's implementation does not have the attribute
+  ```C#
+  interface IRAF
+  {
+    [RequiresAssemblyFiles]
+    void TestMethod();
+  }
+
+  class Implementation : IRAF
+  {
+    // IL3003: Interface member 'IRAF.TestMethod()' with 'RequiresAssemblyFilesAttribute' has an implementation member 'Implementation.TestMethod()' without 'RequiresAssemblyFilesAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    public void TestMethod () { }
+  }
+  ```
+  An implementation member has the attribute but the interface that implementes does not have the attribute
+
+  ```C#
+  interface IRAF
+  {
+    void TestMethod();
+  }
+
+  class Implementation : IRAF
+  {
+    [RequiresAssemblyFiles]
+    // IL3003: Member 'Implementation.TestMethod()' with 'RequiresAssemblyFilesAttribute' implements interface member 'IRAF.TestMethod()' without 'RequiresAssemblyFilesAttribute'. For all interfaces and overrides the implementation attribute must match the definition attribute.
+    public void TestMethod () { }
   }
   ```

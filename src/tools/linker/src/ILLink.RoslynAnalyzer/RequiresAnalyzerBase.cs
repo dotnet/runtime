@@ -22,6 +22,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected abstract DiagnosticDescriptor RequiresDiagnosticRule { get; }
 
+		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
+
 		public override void Initialize (AnalysisContext context)
 		{
 			context.EnableConcurrentExecution ();
@@ -31,6 +33,30 @@ namespace ILLink.RoslynAnalyzer
 				if (!IsAnalyzerEnabled (context.Options, compilation))
 					return;
 				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
+
+				context.RegisterSymbolAction (symbolAnalysisContext => {
+					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
+					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
+				}, SymbolKind.Method);
+
+				context.RegisterSymbolAction (symbolAnalysisContext => {
+					var typeSymbol = (INamedTypeSymbol) symbolAnalysisContext.Symbol;
+					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
+				}, SymbolKind.NamedType);
+
+				if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
+					context.RegisterSymbolAction (symbolAnalysisContext => {
+						var propertySymbol = (IPropertySymbol) symbolAnalysisContext.Symbol;
+						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
+					}, SymbolKind.Property);
+				}
+
+				if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
+					context.RegisterSymbolAction (symbolAnalysisContext => {
+						var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
+						CheckMatchingAttributesInOverrides (symbolAnalysisContext, eventSymbol);
+					}, SymbolKind.Event);
+				}
 
 				context.RegisterOperationAction (operationContext => {
 					var methodInvocation = (IInvocationOperation) operationContext.Operation;
@@ -127,6 +153,32 @@ namespace ILLink.RoslynAnalyzer
 						ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
 					}
 				}
+
+				void CheckMatchingAttributesInOverrides (
+					SymbolAnalysisContext symbolAnalysisContext,
+					ISymbol member)
+				{
+					if ((member.IsVirtual || member.IsOverride) && member.TryGetOverriddenMember (out var overriddenMember) && HasMismatchingAttributes (member, overriddenMember))
+						ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, member, overriddenMember);
+				}
+
+				void CheckMatchingAttributesInInterfaces (
+					SymbolAnalysisContext symbolAnalysisContext,
+					INamedTypeSymbol type)
+				{
+					ImmutableArray<INamedTypeSymbol> interfaces = type.Interfaces;
+					foreach (INamespaceOrTypeSymbol iface in interfaces) {
+						var members = iface.GetMembers ();
+						foreach (var member in members) {
+							var implementation = type.FindImplementationForInterfaceMember (member);
+							// In case the implementation is null because the user code is missing an implementation, we dont provide diagnostics.
+							// The compiler will provide an error
+							if (implementation != null && HasMismatchingAttributes (member, implementation))
+								ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, implementation, member, isInterface: true);
+						}
+					}
+
+				}
 			});
 		}
 
@@ -186,6 +238,17 @@ namespace ILLink.RoslynAnalyzer
 				message,
 				url));
 		}
+
+		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false)
+		{
+			string message = MessageFormat.FormatRequiresAttributeMismatch (member.HasAttribute (RequiresAttributeName), isInterface, RequiresAttributeName, member.GetDisplayName (), baseMember.GetDisplayName ());
+			symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (
+				RequiresAttributeMismatch,
+				member.Locations[0],
+				message));
+		}
+
+		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2) => member1.HasAttribute (RequiresAttributeName) ^ member2.HasAttribute (RequiresAttributeName);
 
 		protected abstract string GetMessageFromAttribute (AttributeData? requiresAttribute);
 
