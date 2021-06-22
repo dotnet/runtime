@@ -11,6 +11,7 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/debugger-engine.h>
+#include <mono/metadata/components.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -140,13 +141,13 @@ inplace_tolower (char *c)
 static void
 jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
-	mono_de_add_pending_breakpoints (method, jinfo);
+	mono_component_debugger ()->mono_de_add_pending_breakpoints (method, jinfo);
 }
 
 static void
 appdomain_load (MonoProfiler *prof, MonoDomain *domain)
 {
-	mono_de_domain_add (domain);
+	mono_component_debugger ()->mono_de_domain_add (domain);
 }
 
 /* Frame state handling */
@@ -309,11 +310,11 @@ get_this_async_id (DbgEngineStackFrame *frame)
 	if (!builder)
 		return 0;
 
-	builder_field = mono_class_get_field_from_name_full (get_class_to_get_builder_field(frame), "<>t__builder", NULL);
+	builder_field = mono_class_get_field_from_name_full (mono_component_debugger ()->get_class_to_get_builder_field(frame), "<>t__builder", NULL);
 	if (!builder_field)
 		return 0;
 
-	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
+	method = mono_component_debugger ()->get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
 	if (!method) {
 		return 0;
 	}
@@ -346,7 +347,7 @@ process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, in
 	BpEvents *evts = (BpEvents*)_evts;
 	if (evts) {
 		if (evts->is_ss)
-			mono_de_cancel_all_ss ();
+			mono_component_debugger ()->mono_de_cancel_all_ss ();
 		mono_wasm_fire_bp ();
 		g_free (evts);
 	}
@@ -400,7 +401,7 @@ ss_args_destroy (SingleStepArgs *ss_args)
 
 static int
 handle_multiple_ss_requests (void) {
-	mono_de_cancel_all_ss ();
+	mono_component_debugger ()->mono_de_cancel_all_ss ();
 	return 1;
 }
 
@@ -420,8 +421,8 @@ mono_wasm_debugger_init (void)
 		.ensure_jit = ensure_jit,
 		.ensure_runtime_is_suspended = ensure_runtime_is_suspended,
 		.get_this_async_id = get_this_async_id,
-		.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag,
-		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
+		.set_set_notification_for_wait_completion_flag = mono_component_debugger ()->set_set_notification_for_wait_completion_flag,
+		.get_notify_debugger_of_wait_completion_method = mono_component_debugger ()->get_notify_debugger_of_wait_completion_method,
 		.create_breakpoint_events = create_breakpoint_events,
 		.process_breakpoint_events = process_breakpoint_events,
 		.ss_create_init_args = ss_create_init_args,
@@ -430,8 +431,8 @@ mono_wasm_debugger_init (void)
 	};
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-	mono_de_init (&cbs);
-	mono_de_set_log_level (log_level, stdout);
+	mono_component_debugger ()->mono_de_init (&cbs);
+	mono_component_debugger ()->mono_de_set_log_level (log_level, stdout);
 
 	mini_debug_options.gen_sdb_seq_points = TRUE;
 	mini_debug_options.mdb_optimizations = TRUE;
@@ -445,7 +446,7 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
-	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
+	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_component_debugger ()->mono_debugger_free_objref);
 
 	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
 	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
@@ -501,7 +502,7 @@ mono_wasm_setup_single_step (int kind)
 		g_error ("[dbg] unknown step kind %d", kind);
 	}
 
-	DbgEngineErrorCode err = mono_de_ss_create (THREAD_TO_INTERNAL (mono_thread_current ()), size, depth, filter, req);
+	DbgEngineErrorCode err = mono_component_debugger ()->mono_de_ss_create (THREAD_TO_INTERNAL (mono_thread_current ()), size, depth, filter, req);
 	if (err != DE_ERR_NONE) {
 		PRINT_DEBUG_MSG (1, "[dbg] Failed to setup single step request");
 	}
@@ -517,7 +518,7 @@ mono_wasm_setup_single_step (int kind)
 		}
 	}
 	if (!isBPOnNativeCode) {
-		mono_de_cancel_all_ss ();
+		mono_component_debugger ()->mono_de_cancel_all_ss ();
 	}
 	return isBPOnNativeCode;
 }
@@ -637,7 +638,7 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 	req->nmodifiers = 0; //funny thing,
 
 	// BreakPointRequest *req = breakpoint_request_new (assembly, method, il_offset);
-	MonoBreakpoint *bp = mono_de_set_breakpoint (method, il_offset, req, error);
+	MonoBreakpoint *bp = mono_component_debugger ()->mono_de_set_breakpoint (method, il_offset, req, error);
 
 	if (!bp) {
 		PRINT_DEBUG_MSG (1, "Could not set breakpoint to %s\n", mono_error_get_message (error));
@@ -652,24 +653,24 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_remove_breakpoint (int bp_id)
 {
-	MonoBreakpoint *bp = mono_de_get_breakpoint_by_id (bp_id);
+	MonoBreakpoint *bp = mono_component_debugger ()->mono_de_get_breakpoint_by_id (bp_id);
 	if (!bp)
 		return 0;
 
-	mono_de_clear_breakpoint (bp);
+	mono_component_debugger ()->mono_de_clear_breakpoint (bp);
 	return 1;
 }
 
 void
 mono_wasm_single_step_hit (void)
 {
-	mono_de_process_single_step (NULL, FALSE);
+	mono_component_debugger ()->mono_de_process_single_step (NULL, FALSE);
 }
 
 void
 mono_wasm_breakpoint_hit (void)
 {
-	mono_de_process_breakpoint (NULL, FALSE);
+	mono_component_debugger ()->mono_de_process_breakpoint (NULL, FALSE);
 	// mono_wasm_fire_bp ();
 }
 
@@ -710,7 +711,7 @@ mono_wasm_current_bp_id (void)
 
 
 	GPtrArray *bp_reqs = g_ptr_array_new ();
-	mono_de_collect_breakpoints_by_sp (&sp, ji, NULL, bp_reqs);
+	mono_component_debugger ()->mono_de_collect_breakpoints_by_sp (&sp, ji, NULL, bp_reqs);
 
 	if (bp_reqs->len == 0) {
 		PRINT_DEBUG_MSG (1, "BP NOT FOUND for method %s JI %p il_offset %d\n", method->name, ji, sp.il_offset);
@@ -1712,7 +1713,7 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	if (!decode_value(t, val_buf, data->new_value))
 		goto exit_with_error;
 
-	DbgEngineErrorCode errorCode = mono_de_set_interp_var (t, addr, val_buf);
+	DbgEngineErrorCode errorCode = mono_component_debugger ()->mono_de_set_interp_var (t, addr, val_buf);
 	if (errorCode != ERR_NONE) {
 		goto exit_with_error;
 	}
@@ -1865,7 +1866,7 @@ handle_parent:
 		if (!decode_value(f->type, val_buf, value)) {
 			return FALSE;
 		}		
-		DbgEngineErrorCode errorCode = mono_de_set_interp_var (f->type, (guint8*)obj + f->offset, val_buf);
+		DbgEngineErrorCode errorCode = mono_component_debugger ()->mono_de_set_interp_var (f->type, (guint8*)obj + f->offset, val_buf);
 		if (errorCode != ERR_NONE) {
 			return FALSE;
 		}

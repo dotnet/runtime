@@ -66,7 +66,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#include "debugger-agent.h"
 #if TARGET_OSX
 #   include <sys/resource.h>
 #endif

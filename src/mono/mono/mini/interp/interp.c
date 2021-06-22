@@ -29,6 +29,7 @@
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/metadata/components.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -72,7 +73,6 @@
 #include <mono/mini/llvm-runtime.h>
 #include <mono/mini/llvmonly-runtime.h>
 #include <mono/mini/jit-icalls.h>
-#include <mono/mini/debugger-agent.h>
 #include <mono/mini/ee.h>
 #include <mono/mini/trace.h>
 
@@ -1620,9 +1620,6 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 	} if (del->method_ptr && !del->method) {
 		/* Delegate created from methodInfo.MethodHandle.GetFunctionPointer() */
 		del->interp_method = (InterpMethod *)del->method_ptr;
-		if (mono_llvm_only)
-			// FIXME:
-			g_assert_not_reached ();
 	} else if (del->method) {
 		/* Delegate created dynamically */
 		del->interp_method = mono_interp_get_imethod (del->method, error);
@@ -1662,57 +1659,13 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 	}
 }
 
-/* Convert a function pointer for a managed method to an InterpMethod* */
-static InterpMethod*
-ftnptr_to_imethod (gpointer addr)
-{
-	InterpMethod *imethod;
-
-	if (mono_llvm_only) {
-		ERROR_DECL (error);
-		/* Function pointers are represented by a MonoFtnDesc structure */
-		MonoFtnDesc *ftndesc = (MonoFtnDesc*)addr;
-		g_assert (ftndesc);
-		g_assert (ftndesc->method);
-
-		imethod = ftndesc->interp_method;
-		if (!imethod) {
-			imethod = mono_interp_get_imethod (ftndesc->method, error);
-			mono_error_assert_ok (error);
-			mono_memory_barrier ();
-			ftndesc->interp_method = imethod;
-		}
-	} else {
-		/* Function pointers are represented by their InterpMethod */
-		imethod = (InterpMethod*)addr;
-	}
-	return imethod;
-}
-
-static gpointer
-imethod_to_ftnptr (InterpMethod *imethod)
-{
-	if (mono_llvm_only) {
-		ERROR_DECL (error);
-		/* Function pointers are represented by a MonoFtnDesc structure */
-		MonoFtnDesc *ftndesc = imethod->ftndesc;
-		if (!ftndesc) {
-			ftndesc = mini_llvmonly_load_method_ftndesc (imethod->method, FALSE, FALSE, error);
-			mono_error_assert_ok (error);
-			mono_memory_barrier ();
-			imethod->ftndesc = ftndesc;
-		}
-		return ftndesc;
-	} else {
-		return imethod;
-	}
-}
-
 static void
 interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
 {
-	/* addr is the result of an LDFTN opcode */
-	InterpMethod *imethod = ftnptr_to_imethod (addr);
+	/*
+	 * addr is the result of an LDFTN opcode, i.e. an InterpMethod
+	 */
+	InterpMethod *imethod = (InterpMethod*)addr;
 
 	if (!(imethod->method->flags & METHOD_ATTRIBUTE_STATIC)) {
 		MonoMethod *invoke = mono_get_delegate_invoke_internal (mono_handle_class (this_obj));
@@ -3286,7 +3239,7 @@ main_loop:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
-			do_debugger_tramp (mini_get_dbg_callbacks ()->user_break, frame);
+			do_debugger_tramp (mono_component_debugger ()->user_break, frame);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAKPOINT)
 			++ip;
@@ -3467,9 +3420,7 @@ main_loop:
 
 			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
 
-			/* In mixed mode, stay in the interpreter for simplicity even if there is an AOT version of the callee */
-			cmethod = ftnptr_to_imethod (LOCAL_VAR (ip [2], gpointer));
-
+			cmethod = LOCAL_VAR (ip [2], InterpMethod*);
 			if (cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 				cmethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
 				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
@@ -6504,15 +6455,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 #undef RELOP_FP
 #undef RELOP_CAST
 
-		MINT_IN_CASE(MINT_LDFTN_ADDR) {
-			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_LDFTN) {
-			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [2]];
-
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
+			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6520,20 +6464,16 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
-
-			m = get_virtual_method (m, o->vtable);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
+				
+			LOCAL_VAR (ip [1], gpointer) = get_virtual_method (m, o->vtable);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDFTN_DYNAMIC) {
 			error_init_reuse (error);
-
-			MonoMethod *cmethod = LOCAL_VAR (ip [2], MonoMethod*);
-
-			InterpMethod *m = mono_interp_get_imethod (cmethod, error);
+			InterpMethod *m = mono_interp_get_imethod (LOCAL_VAR (ip [2], MonoMethod*), error);
 			mono_error_assert_ok (error);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
+			LOCAL_VAR (ip [1], gpointer) = m;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6715,7 +6655,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				mono_error_assert_ok (error);
 			}
 			g_assert (del->interp_method);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method);
+			LOCAL_VAR (ip [1], gpointer) = del->interp_method;
 			ip += 3;
 			MINT_IN_BREAK;
 		}

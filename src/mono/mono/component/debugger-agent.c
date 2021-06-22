@@ -78,16 +78,18 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
-#include "debugger-state-machine.h"
+
+#include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
-#include "mini.h"
-#include "seq-points.h"
-#include "aot-runtime.h"
-#include "mini-runtime.h"
-#include "interp/interp.h"
+#include <mono/mini/mini.h>
+#include <mono/mini/seq-points.h>
+#include <mono/mini/aot-runtime.h>
+#include <mono/mini/mini-runtime.h>
+#include <mono/mini/interp/interp.h>
 #include "debugger-engine.h"
-#include "mono/metadata/debug-mono-ppdb.h"
-#include "mono/metadata/custom-attrs-internals.h"
+#include <mono/metadata/debug-mono-ppdb.h>
+#include <mono/metadata/custom-attrs-internals.h>
+#include <mono/metadata/components.h>
 
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
@@ -262,14 +264,6 @@ struct _DebuggerTlsData {
 	gboolean gc_finalizing;
 };
 
-typedef struct {
-	const char *name;
-	void (*connect) (const char *address);
-	void (*close1) (void);
-	void (*close2) (void);
-	gboolean (*send) (void *buf, int len);
-	int (*recv) (void *buf, int len);
-} DebuggerTransport;
 
 /* Buffered reply packets */
 static ReplyPacket reply_packets [128];
@@ -560,7 +554,7 @@ parse_flag (const char *option, char *flag)
 	}
 }
 
-static void
+void
 debugger_agent_parse_options (char *options)
 {
 	char **args, **ptr;
@@ -723,7 +717,7 @@ debugger_agent_init (void)
 	cbs.ss_args_destroy = ss_args_destroy;
 	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
-	mono_de_init (&cbs);
+	mono_component_debugger ()->mono_de_init (&cbs);
 
 	transport_init ();
 
@@ -748,7 +742,7 @@ debugger_agent_init (void)
 	mono_profiler_set_jit_failed_callback (prof, jit_failed);
 	mono_profiler_set_gc_finalizing_callback (prof, gc_finalizing);
 	mono_profiler_set_gc_finalized_callback (prof, gc_finalized);
-	
+
 	mono_native_tls_alloc (&debugger_tls_id, NULL);
 
 	/* Needed by the hash_table_new_type () call below */
@@ -808,6 +802,7 @@ debugger_agent_init (void)
 
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
+	mono_component_debugger ()->init ();
 }
 
 /*
@@ -1287,15 +1282,6 @@ static DebuggerTransport *transport;
 static DebuggerTransport transports [MAX_TRANSPORTS];
 static int ntransports;
 
-MONO_API void
-mono_debugger_agent_register_transport (DebuggerTransport *trans);
-
-void
-mono_debugger_agent_register_transport (DebuggerTransport *trans)
-{
-	register_transport (trans);
-}
-
 static void
 register_transport (DebuggerTransport *trans)
 {
@@ -1373,7 +1359,7 @@ transport_recv (void *buf, int len)
 	return result;
 }
 
-gboolean
+static gboolean
 mono_debugger_agent_transport_handshake (void)
 {
 	gboolean result;
@@ -10091,36 +10077,36 @@ debugger_thread (void *arg)
 	return 0;
 }
 
-void
-mono_debugger_agent_init (void)
-{
-	MonoDebuggerCallbacks cbs;
-
-	memset (&cbs, 0, sizeof (cbs));
-	cbs.version = MONO_DBG_CALLBACKS_VERSION;
-	cbs.parse_options = debugger_agent_parse_options;
-	cbs.init = debugger_agent_init;
-	cbs.breakpoint_hit = debugger_agent_breakpoint_hit;
-	cbs.single_step_event = debugger_agent_single_step_event;
-	cbs.single_step_from_context = debugger_agent_single_step_from_context;
-	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
-	cbs.free_mem_manager = debugger_agent_free_mem_manager;
-	cbs.unhandled_exception = debugger_agent_unhandled_exception;
-	cbs.handle_exception = debugger_agent_handle_exception;
-	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;
-	cbs.end_exception_filter = debugger_agent_end_exception_filter;
-	cbs.user_break = debugger_agent_user_break;
-	cbs.debug_log = debugger_agent_debug_log;
-	cbs.debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
-	cbs.send_crash = mono_debugger_agent_send_crash;
-
-	mini_install_dbg_callbacks (&cbs);
-}
-
-void
+static void
 mono_debugger_agent_parse_options (char *options)
 {
 	sdb_options = options;
 }
+
+void
+debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
+{
+	fn_table->parse_options = debugger_agent_parse_options;
+	fn_table->init = debugger_agent_init;
+	fn_table->breakpoint_hit = debugger_agent_breakpoint_hit;
+	fn_table->single_step_event = debugger_agent_single_step_event;
+	fn_table->single_step_from_context = debugger_agent_single_step_from_context;
+	fn_table->breakpoint_from_context = debugger_agent_breakpoint_from_context;
+	fn_table->free_mem_manager = debugger_agent_free_mem_manager;
+	fn_table->unhandled_exception = debugger_agent_unhandled_exception;
+	fn_table->handle_exception = debugger_agent_handle_exception;
+	fn_table->begin_exception_filter = debugger_agent_begin_exception_filter;
+	fn_table->end_exception_filter = debugger_agent_end_exception_filter;
+	fn_table->user_break = debugger_agent_user_break;
+	fn_table->debug_log = debugger_agent_debug_log;
+	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
+	fn_table->send_crash = mono_debugger_agent_send_crash;
+	
+	fn_table->register_transport = register_transport;
+	fn_table->mono_debugger_agent_parse_options = mono_debugger_agent_parse_options;
+	fn_table->mono_debugger_agent_transport_handshake = mono_debugger_agent_transport_handshake;
+}
+
+
 
 #endif /* DISABLE_SDB */

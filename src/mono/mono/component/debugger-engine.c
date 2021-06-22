@@ -10,13 +10,13 @@
  */
 
 #include <config.h>
-#include "mini-runtime.h"
+#include <mono/mini/mini-runtime.h>
 
 #if !defined (DISABLE_SDB) || defined(TARGET_WASM)
 
 #include <glib.h>
-#include "seq-points.h"
-#include "aot-runtime.h"
+#include <mono/mini/seq-points.h>
+#include <mono/mini/aot-runtime.h>
 #include "debugger-engine.h"
 #include "debugger-state-machine.h"
 #include <mono/metadata/debug-internals.h>
@@ -24,6 +24,9 @@
 static void mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args);
 static gboolean mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method);
 
+static void mono_de_init(DebuggerEngineCallbacks* cbs);
+static gpointer get_this_addr(DbgEngineStackFrame* the_frame);
+static MonoMethod* get_set_notification_method(MonoClass* async_builder_class);
 
 static DebuggerEngineCallbacks rt_callbacks;
 
@@ -782,7 +785,7 @@ mono_de_cancel_ss (SingleStepReq *req)
 }
 
 void
-mono_de_cancel_all_ss ()
+mono_de_cancel_all_ss (void)
 {
 	int i;
 	for (i = 0; i < the_ss_reqs->len; ++i) {
@@ -1576,7 +1579,7 @@ mono_de_set_log_level (int level, FILE *file)
  *
  * Inits the shared debugger engine. Not reentrant.
  */
-void
+static void
 mono_de_init (DebuggerEngineCallbacks *cbs)
 {
 	rt_callbacks = *cbs;
@@ -1678,7 +1681,7 @@ get_object_id_for_debugger_method (MonoClass* async_builder_class)
 	return method;
 }
 
-gpointer
+static gpointer
 get_this_addr (DbgEngineStackFrame *the_frame)
 {
 	StackFrame *frame = (StackFrame *)the_frame;
@@ -1723,7 +1726,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 	return builder;
 }
 
-MonoMethod*
+static MonoMethod*
 get_set_notification_method (MonoClass* async_builder_class)
 {
 	ERROR_DECL (error);
@@ -1773,6 +1776,30 @@ mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
 
 	memcpy (addr, val_buf, size);
 	return ERR_NONE;
+}
+
+
+void
+debugger_engine_add_function_pointers(MonoComponentDebugger* fn_table)
+{
+	fn_table->mono_debugger_free_objref = mono_debugger_free_objref;
+	fn_table->mono_de_init = mono_de_init;
+	fn_table->mono_de_set_log_level = mono_de_set_log_level;
+	fn_table->mono_de_add_pending_breakpoints = mono_de_add_pending_breakpoints;
+	fn_table->mono_de_clear_breakpoint = mono_de_clear_breakpoint;
+	fn_table->mono_de_process_single_step = mono_de_process_single_step;
+	fn_table->mono_de_process_breakpoint = mono_de_process_breakpoint;
+	fn_table->mono_de_set_breakpoint = mono_de_set_breakpoint;
+	fn_table->mono_de_cancel_all_ss = mono_de_cancel_all_ss;
+	fn_table->mono_de_ss_create = mono_de_ss_create;
+	fn_table->mono_de_domain_add = mono_de_domain_add;
+	fn_table->mono_de_collect_breakpoints_by_sp = mono_de_collect_breakpoints_by_sp;
+	fn_table->mono_de_get_breakpoint_by_id = mono_de_get_breakpoint_by_id;
+	fn_table->mono_de_set_interp_var = mono_de_set_interp_var;
+	fn_table->set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag;
+	fn_table->get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
+	fn_table->get_class_to_get_builder_field = get_class_to_get_builder_field;
+	fn_table->get_object_id_for_debugger_method = get_object_id_for_debugger_method;
 }
 
 #endif

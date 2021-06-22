@@ -168,15 +168,11 @@ set(mini_common_sources
     monovm.c)
 
 set(debugger_sources
-  debugger-engine.h
-  debugger-engine.c
-  debugger-agent.h
-  debugger-agent.c
+  debugger-agent-external.h
+  debugger-agent-external.c
   debugger-protocol.h
   debugger-protocol.c
-  debugger-agent-stubs.c
-  debugger-state-machine.h
-  debugger-state-machine.c)
+  )
 
 set(amd64_sources
     mini-amd64.c

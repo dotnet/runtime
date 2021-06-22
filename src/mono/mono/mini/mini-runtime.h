@@ -510,11 +510,6 @@ MonoEECallbacks*       mono_interp_callbacks_pointer;
 
 #define mini_get_interp_callbacks() (mono_interp_callbacks_pointer)
 
-typedef struct _MonoDebuggerCallbacks MonoDebuggerCallbacks;
-
-void                   mini_install_dbg_callbacks (MonoDebuggerCallbacks *cbs);
-MonoDebuggerCallbacks  *mini_get_dbg_callbacks (void);
-
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version);
 void        mini_cleanup                   (MonoDomain *domain);
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
