@@ -409,7 +409,7 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.IsPartiallyQualified(pathToTarget) ?
+            string pathToTargetFullPath = PathInternal.IsPartiallyQualified(pathToTarget.AsSpan()) ?
                 Path.Join(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
 
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
