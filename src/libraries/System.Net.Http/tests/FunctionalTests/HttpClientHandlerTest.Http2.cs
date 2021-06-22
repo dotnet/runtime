@@ -1514,9 +1514,8 @@ namespace System.Net.Http.Functional.Tests
             // Expect SETTINGS ACK from client:
             await connection.ExpectSettingsAckAsync();
 
-            SettingsEntry initialWindowSettingsEntry = clientSettingsFrame.Entries.SingleOrDefault(e => e.SettingId == SettingId.InitialWindowSize);
-
-            int maxCredit = (int)clientSettingsFrame.Entries.SingleOrDefault(e => e.SettingId == SettingId.InitialWindowSize)?.Value;
+            int maxCredit = (int)clientSettingsFrame.Entries.SingleOrDefault(e => e.SettingId == SettingId.InitialWindowSize).Value;
+            if (maxCredit == default) maxCredit = DefaultInitialWindowSize;
             int credit = maxCredit;
 
             int streamId = await connection.ReadRequestHeaderAsync();
