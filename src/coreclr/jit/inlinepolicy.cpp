@@ -1415,7 +1415,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_IsFromValueClass)
     {
-        multiplier += 3.0;
+        multiplier += 2.7;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
     }
 
@@ -1440,14 +1440,14 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 2.0;
+        multiplier += 1.8;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 2.0;
+        multiplier += 1.8;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1523,7 +1523,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
         // the end of the functions and don't impact Register Allocations.
         // TODO: Recognize noreturn calls as m_ThrowBlock
-        multiplier += 1.5;
+        multiplier += 1.3;
         JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
     }
 
@@ -1692,52 +1692,29 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
 {
     DefaultPolicy::OnDumpXml(file, indent);
-    XATTR_R8(m_Multiplier);
-    XATTR_R8(m_ProfileFrequency);
-    XATTR_I4(m_CodeSize);
-    XATTR_I4(m_CallsiteFrequency);
-    XATTR_I4(m_CallsiteDepth);
-    XATTR_I4(m_InstructionCount);
-    XATTR_I4(m_LoadStoreCount);
-    XATTR_I4(m_ArgFeedsTest);
-    XATTR_I4(m_ArgFeedsConstantTest);
-    XATTR_I4(m_ArgFeedsRangeCheck);
-    XATTR_I4(m_ConstantArgFeedsConstantTest);
-    XATTR_I4(m_BinaryExprWithCns);
-    XATTR_I4(m_ArgCasted);
-    XATTR_I4(m_ArgIsStructByValue);
-    XATTR_I4(m_FldAccessOverArgStruct);
-    XATTR_I4(m_FoldableBox);
-    XATTR_I4(m_Intrinsic);
-    XATTR_I4(m_BackwardJump);
-    XATTR_I4(m_ThrowBlock);
-    XATTR_I4(m_ArgIsExactCls);
-    XATTR_I4(m_ArgIsExactClsSigIsNot);
-    XATTR_I4(m_ArgIsConst);
-    XATTR_I4(m_ArgIsBoxedAtCallsite);
-    XATTR_I4(m_FoldableIntrinsic);
-    XATTR_I4(m_FoldableExpr);
-    XATTR_I4(m_FoldableExprUn);
-    XATTR_I4(m_FoldableBranch);
-    XATTR_I4(m_DivByCns);
-    XATTR_I4(m_CalleeNativeSizeEstimate);
-    XATTR_I4(m_CallsiteNativeSizeEstimate);
-    XATTR_B(m_IsForceInline);
-    XATTR_B(m_IsForceInlineKnown);
-    XATTR_B(m_IsInstanceCtor);
-    XATTR_B(m_IsFromPromotableValueClass);
-    XATTR_B(m_HasSimd);
-    XATTR_B(m_LooksLikeWrapperMethod);
-    XATTR_B(m_MethodIsMostlyLoadStore);
-    XATTR_B(m_CallsiteIsInTryRegion);
-    XATTR_B(m_CallsiteIsInLoop);
-    XATTR_B(m_IsNoReturn);
-    XATTR_B(m_IsNoReturnKnown);
-    XATTR_B(m_ReturnsStructByValue);
-    XATTR_B(m_IsFromValueClass);
-    XATTR_B(m_NonGenericCallsGeneric);
-    XATTR_B(m_IsCallsiteInNoReturnRegion);
-    XATTR_B(m_HasProfile);
+    XATTR_R8(m_ProfileFrequency)
+    XATTR_I4(m_BinaryExprWithCns)
+    XATTR_I4(m_ArgCasted)
+    XATTR_I4(m_ArgIsStructByValue)
+    XATTR_I4(m_FldAccessOverArgStruct)
+    XATTR_I4(m_FoldableBox)
+    XATTR_I4(m_Intrinsic)
+    XATTR_I4(m_BackwardJump)
+    XATTR_I4(m_ThrowBlock)
+    XATTR_I4(m_ArgIsExactCls)
+    XATTR_I4(m_ArgIsExactClsSigIsNot)
+    XATTR_I4(m_ArgIsConst)
+    XATTR_I4(m_ArgIsBoxedAtCallsite)
+    XATTR_I4(m_FoldableIntrinsic)
+    XATTR_I4(m_FoldableExpr)
+    XATTR_I4(m_FoldableExprUn)
+    XATTR_I4(m_FoldableBranch)
+    XATTR_I4(m_DivByCns)
+    XATTR_B(m_ReturnsStructByValue)
+    XATTR_B(m_IsFromValueClass)
+    XATTR_B(m_NonGenericCallsGeneric)
+    XATTR_B(m_IsCallsiteInNoReturnRegion)
+    XATTR_B(m_HasProfile)
 }
 #endif
 
