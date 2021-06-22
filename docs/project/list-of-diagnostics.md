@@ -80,6 +80,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead. |
 |  __`SYSLIB0024`__ | Creating and unloading AppDomains is not supported and throws an exception. |
 |  __`SYSLIB0025`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |
+|  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
 
 ## Analyzer Warnings
 

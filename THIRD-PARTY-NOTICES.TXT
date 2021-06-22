@@ -680,7 +680,7 @@ worldwide. This software is distributed without any warranty.
 
 See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-License for fastmod (https://github.com/lemire/fastmod)
+License for fastmod (https://github.com/lemire/fastmod) and ibm-fpgen (https://github.com/nigeltao/parse-number-fxx-test-data)
 --------------------------------------
 
    Copyright 2018 Daniel Lemire

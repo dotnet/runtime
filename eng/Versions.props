@@ -110,6 +110,7 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>6.0.0-preview.6.21314.1</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
+    <SystemRuntimeNumericsTestDataVersion>6.0.0-beta.21314.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.21307.1</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDrawingCommonTestDataVersion>6.0.0-beta.21307.1</SystemDrawingCommonTestDataVersion>
     <SystemIOCompressionTestDataVersion>6.0.0-beta.21307.1</SystemIOCompressionTestDataVersion>
