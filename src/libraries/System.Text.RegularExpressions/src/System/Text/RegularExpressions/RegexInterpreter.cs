@@ -1278,7 +1278,7 @@ namespace System.Text.RegularExpressions
                         {
                             int i = TrackPeek();
                             int pos = TrackPeek(1);
-                            if (_maxBacktrackPosition != -1 && pos > _maxBacktrackPosition && runtextpos < pos && _operator == (RegexCode.Notoneloop | RegexCode.Back) && !_rightToLeft)
+                            if (!_caseInsensitive && _maxBacktrackPosition != -1 && pos > _maxBacktrackPosition && runtextpos < pos && _operator == (RegexCode.Notoneloop | RegexCode.Back) && !_rightToLeft)
                             {
                                 // The Multi node has bumped us along already
                                 int difference = pos - _maxBacktrackPosition;
