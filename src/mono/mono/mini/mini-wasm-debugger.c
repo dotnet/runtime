@@ -10,8 +10,9 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
-#include <mono/mini/debugger-engine.h>
 #include <mono/metadata/components.h>
+#include <mono/component/debugger.h>
+#include <mono/component/debugger-engine.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -448,8 +449,8 @@ mono_wasm_debugger_init (void)
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_component_debugger ()->mono_debugger_free_objref);
 
-	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
-	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
+	mono_component_debugger ()->handle_exception = handle_exception;
+	mono_component_debugger ()->user_break = mono_wasm_user_break;
 }
 
 MONO_API void
