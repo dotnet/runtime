@@ -8,7 +8,7 @@ const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process != 'undefined';
 
 // if the engine doesn't provide a console
-if (typeof (console) === "undefined"){
+if (typeof (console) === "undefined") {
 	console = {
 		log: globalThis.print,
 		clear: function () { }
@@ -84,7 +84,7 @@ try {
 	if (is_node) {
 		testArguments = process.argv.slice (2);
 
-	}else if (is_browser) {
+	} else if (is_browser) {
 		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
 		const url = new URL (decodeURI (window.location));
 		for (let param of url.searchParams) {
@@ -93,14 +93,14 @@ try {
 			}
 		}
 
-	}else if (typeof arguments === "undefined") {
+	} else if (typeof arguments === "undefined") {
 		if (typeof scriptArgs !== "undefined") {
 			testArguments = scriptArgs;
 		
-		}else if (typeof WScript  !== "undefined" && WScript.Arguments){
+		} else if (typeof WScript  !== "undefined" && WScript.Arguments) {
 			testArguments = WScript.Arguments;
 		}
-	} else{
+	} else {
 		testArguments = arguments;
 	}
 } catch (e) {
@@ -115,8 +115,8 @@ const IOHandler = {
 	init: function() {
 		// load: function that loads and executes a script
 		let loadFunc = globalThis.load; // shells (v8, JavaScriptCore, Spidermonkey)
-		if (!loadFunc){
-			if (typeof WScript  !== "undefined"){ // Chakra
+		if (!loadFunc) {
+			if (typeof WScript  !== "undefined") { // Chakra
 				loadFunc = WScript.LoadScriptFile;
 
 			} else if (is_node) { // NodeJS
@@ -136,8 +136,8 @@ const IOHandler = {
 
 		// read: function that just reads a file into a variable
 		let readFunc = globalThis.read; // shells (v8, JavaScriptCore, Spidermonkey)
-		if (!readFunc){
-			if (typeof WScript  !== "undefined"){
+		if (!readFunc) {
+			if (typeof WScript  !== "undefined") {
 				readFunc = WScript.LoadBinaryFile; // Chakra
 
 			} else if (is_node) { // NodeJS
@@ -166,7 +166,7 @@ const IOHandler = {
 			return new Promise ((resolve, reject) => {
 				let bytes = null, error = null;
 				try {
-					if (is_node){
+					if (is_node) {
 						const fs = require ('fs');
 						const buffer = fs.readFileSync(asset);
 						bytes = buffer.buffer;
@@ -176,7 +176,9 @@ const IOHandler = {
 				} catch (exc) {
 					error = exc;
 				}
-				const response = { ok: (bytes && !error), url: asset,
+				const response = { 
+					ok: (bytes && !error), 
+					url: asset,
 					arrayBuffer: function () {
 						return new Promise ((resolve2, reject2) => {
 							if (error)
@@ -187,7 +189,7 @@ const IOHandler = {
 				)}
 				}
 				resolve (response);
-			})
+			});
 		}
 	}
 };
