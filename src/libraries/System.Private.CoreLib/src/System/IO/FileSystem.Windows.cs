@@ -409,16 +409,18 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
+            string pathToTargetFullPath = PathInternal.IsPartiallyQualified(pathToTarget) ?
+                Path.Join(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
+
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            FillAttributeInfo(pathToTarget, ref data, returnErrorOnNotFound: false);
+            FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: false);
             if (data.dwFileAttributes != -1 &&
                 isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
             {
                 throw new IOException(SR.IO_InconsistentLinkType);
             }
 
-            bool result = Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
-            if (!result)
+            if (!Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error(path);
             }
@@ -466,7 +468,7 @@ namespace System.IO
                 }
             }
 
-            byte[]? buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE); ;
+            byte[]? buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
             try
             {
                 bool success = Interop.Kernel32.DeviceIoControl(
@@ -491,7 +493,7 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForWin32Error(error, linkPath);
                 }
 
-                ReadOnlySpan<byte> bufferSpan = new(buffer);
+                Span<byte> bufferSpan = new(buffer);
                 success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.REPARSE_DATA_BUFFER rdb);
                 Debug.Assert(success);
 
@@ -504,11 +506,20 @@ namespace System.IO
                 int substituteNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.SubstituteNameOffset;
                 int substituteNameLength = rdb.ReparseBufferSymbolicLink.SubstituteNameLength;
 
-                ReadOnlySpan<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(substituteNameOffset, substituteNameLength));
+                Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(substituteNameOffset, substituteNameLength));
 
-                // Target path is relative, we need to append the link directory.
-                if (normalize && (rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
+                if ((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0)
                 {
+                    // Target path is absolute.
+                    // DeviceIoControl returns a DOS Device path (\??\) which many APIs don't tolerate.
+                    // We should instead return a Win32 path (\\?\).
+                    Debug.Assert(Path.IsPathFullyQualified(targetPath));
+                    Debug.Assert(targetPath[1] == '?');
+                    targetPath[1] = '\\';
+                }
+                else if (normalize)
+                {
+                    // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
                     return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
                 }
 
@@ -536,7 +547,7 @@ namespace System.IO
                 return null;
             }
 
-            // We try to open the final file, not the Reparse Point.
+            // We try to open the final file since they asked for the final target.
             using SafeFileHandle handle = OpenSafeFileHandle(linkPath,
                     Interop.Kernel32.FileOperations.OPEN_EXISTING |
                     Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);

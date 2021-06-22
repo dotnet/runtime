@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.RemoteExecutor;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Tests
@@ -9,31 +9,29 @@ namespace System.IO.Tests
     // Contains test methods that can be used for FileInfo, DirectoryInfo, File or Directory.
     public abstract class BaseSymbolicLinks_FileSystem : BaseSymbolicLinks
     {
+        private const string ExtendedPrefix = @"\\?\";
         /// <summary>Creates a new file or directory depending on the implementing class.
         /// If createOpposite is true, creates a directory if the implementing class is for File or FileInfo, or
         /// creates a file if the implementing class is for Directory or DirectoryInfo.</summary>
         protected abstract void CreateFileOrDirectory(string path, bool createOpposite = false);
-        protected abstract void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo fsi);
-        protected abstract void AssertLinkExists(FileSystemInfo link);
-        protected abstract void AssertExistsWhenNoTarget(FileSystemInfo link);
+        protected abstract void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo linkInfo);
+        protected abstract void AssertLinkExists(FileSystemInfo linkInfo);
         /// <summary>Calls the actual public API for creating a symbolic link.</summary>
         protected abstract FileSystemInfo CreateSymbolicLink(string path, string pathToTarget);
         /// <summary>Calls the actual public API for resolving the symbolic link target.</summary>
-        protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, string? expectedLinkTarget, bool returnFinalTarget = false);
+        protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false);
 
         /// <summary>
-        /// Appends \??\ to the absolute path
+        /// Verifies that FileSystemInfo.LinkTarget matches the specified expected path.
+        /// If the current platform is Windows and <paramref name="actual"/> is absolute, this method asserts that <paramref name="actual"/> starts with \\?\.
         /// </summary>
-        protected void AssertPathEquals(string expected, string actual)
+        protected static void AssertLinkTargetEquals(string expected, string actual)
         {
-#if WINDOWS // Windows implementation has a couple nuances compared to Unix.
-            // If the link target path is absolute, the following occurs:
-            // ResolveLinkTarget(), which uses DeviceIoControl, will return the path with the DOS Device prefix (\??\).
-            // ResolveLinkTarget(returnFinalTarget: true), which uses GetFinalPathNameByHandleW, will return with the extended prefix (\\?\).
-            // For testing, we will ignore this prefix.
-            if (PathInternal.IsExtended(actual))
+#if WINDOWS
+            if (Path.IsPathFullyQualified(actual))
             {
-                actual = actual.Substring(4);
+                actual.StartsWith(ExtendedPrefix);
+                expected = Path.Join(ExtendedPrefix, expected);
             }
 
             // Windows syscalls remove the redundant segments in the link target path.
@@ -42,8 +40,26 @@ namespace System.IO.Tests
             if (rootLength > 0)
             {
                 expected = PathInternal.RemoveRelativeSegments(expected, rootLength);
-            }      
+            }
 #endif
+            Assert.Equal(expected, actual);
+        }
+
+
+        /// <summary>
+        /// Asserts that the FullPath of the FileSystemInfo returned by ResolveLinkTarget() matches with the expected path of the file created.
+        /// Trims the Windows device prefix, in case there's any, before comparing.
+        /// </summary>
+        private static void AssertFullNameEquals(string expected, string actual)
+        {
+#if WINDOWS
+            if (PathInternal.IsExtended(actual))
+            {
+                Assert.StartsWith(ExtendedPrefix, actual);
+                actual = actual.Substring(4);
+            }
+#endif
+
             Assert.Equal(expected, actual);
         }
 
@@ -59,6 +75,23 @@ namespace System.IO.Tests
         public void CreateSymbolicLink_InvalidPathToTarget(string pathToTarget)
         {
             Assert.Throws<ArgumentException>(() => CreateSymbolicLink(GetRandomFilePath(), pathToTarget));
+        }
+
+        [Fact]
+        public void CreateSymbolicLink_PathToTargetRelativeToLinkPath()
+        {
+            string tempFileName = GetRandomFileName();
+
+            // Create file in our current working directory.
+            using var tempFile = new TempFile(tempFileName);
+
+            // Create link in our temporary folder with the target using the same name as the file in the current working directory.
+            // No issues may occour.
+            FileSystemInfo linkInfo = CreateSymbolicLink(GetRandomLinkPath(), tempFileName);
+
+            FileSystemInfo targetInfo = linkInfo.ResolveLinkTarget();
+            Assert.False(targetInfo.Exists);
+            Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
         }
 
         [Fact]
@@ -147,6 +180,43 @@ namespace System.IO.Tests
                 targetPath: null); // do not create target
         }
 
+        protected void ResolveLinkTarget_Throws_NotExists_Internal<T>() where T : Exception
+        {
+            string path = GetRandomFilePath();
+            Assert.Throws<T>(() => ResolveLinkTarget(path));
+            Assert.Throws<T>(() => ResolveLinkTarget(path, returnFinalTarget: true));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ResolveLinkTarget_ReturnsNull_NotALink(bool returnFinalTarget)
+        {
+            string path = GetTestFilePath();
+            CreateFileOrDirectory(path);
+            Assert.Null(ResolveLinkTarget(path, returnFinalTarget));
+        }
+
+        [Theory]
+        [MemberData(nameof(ResolveLinkTarget_PathToTarget_Data))]
+        public void ResolveLinkTarget_Succeeds(string pathToTarget, bool returnFinalTarget)
+        {
+            string linkPath = GetRandomLinkPath();
+            FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, pathToTarget);
+            AssertLinkExists(linkInfo);
+            AssertIsCorrectTypeAndDirectoryAttribute(linkInfo);
+            AssertLinkTargetEquals(pathToTarget, linkInfo.LinkTarget);
+
+            FileSystemInfo targetInfo = ResolveLinkTarget(linkPath, returnFinalTarget);
+            Assert.NotNull(targetInfo);
+            Assert.False(targetInfo.Exists);
+
+            string expectedTargetFullName = Path.IsPathFullyQualified(pathToTarget) ?
+                pathToTarget : Path.GetFullPath(Path.Join(Path.GetDirectoryName(linkPath), pathToTarget));
+
+            AssertFullNameEquals(expectedTargetFullName, targetInfo.FullName);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -155,7 +225,7 @@ namespace System.IO.Tests
             string path = GetRandomFilePath();
             CreateFileOrDirectory(path); // entry exists as a normal file, not as a link
 
-            FileSystemInfo target = ResolveLinkTarget(path, expectedLinkTarget: null, returnFinalTarget);
+            FileSystemInfo target = ResolveLinkTarget(path, returnFinalTarget);
             Assert.Null(target);
         }
 
@@ -168,9 +238,9 @@ namespace System.IO.Tests
 
             ResolveLinkTarget_ReturnFinalTarget(
                 link1Path: link1Path,
-                expectedLink1Target: link2Path,
+                link1Target: link2Path,
                 link2Path: link2Path,
-                expectedLink2Target: filePath,
+                link2Target: filePath,
                 filePath: filePath);
         }
 
@@ -189,9 +259,9 @@ namespace System.IO.Tests
 
             ResolveLinkTarget_ReturnFinalTarget(
                 link1Path: link1Path,
-                expectedLink1Target: Path.Join(dirPath, "..", dirName, link2FileName),
+                link1Target: Path.Join(dirPath, "..", dirName, link2FileName),
                 link2Path: link2Path,
-                expectedLink2Target: Path.Join(dirPath, "..", dirName, fileName),
+                link2Target: Path.Join(dirPath, "..", dirName, fileName),
                 filePath: filePath);
         }
 
@@ -199,7 +269,7 @@ namespace System.IO.Tests
         public void ResolveLinkTarget_ReturnFinalTarget_Relative()
         {
             string link1Path = GetRandomLinkPath();
-            string link2Path =  GetRandomLinkPath();
+            string link2Path = GetRandomLinkPath();
             string filePath = GetRandomFilePath();
 
             string link2FileName = Path.GetFileName(link2Path);
@@ -207,9 +277,9 @@ namespace System.IO.Tests
 
             ResolveLinkTarget_ReturnFinalTarget(
                 link1Path: link1Path,
-                expectedLink1Target: link2FileName,
+                link1Target: link2FileName,
                 link2Path: link2Path,
-                expectedLink2Target: fileName,
+                link2Target: fileName,
                 filePath: filePath);
         }
 
@@ -217,7 +287,7 @@ namespace System.IO.Tests
         public void ResolveLinkTarget_ReturnFinalTarget_Relative_WithRedundantSegments()
         {
             string link1Path = GetRandomLinkPath();
-            string link2Path =  GetRandomLinkPath();
+            string link2Path = GetRandomLinkPath();
             string filePath = GetRandomFilePath();
 
             string dirPath = Path.GetDirectoryName(filePath);
@@ -228,9 +298,9 @@ namespace System.IO.Tests
 
             ResolveLinkTarget_ReturnFinalTarget(
                 link1Path: link1Path,
-                expectedLink1Target: Path.Join("..", dirName, link2FileName),
+                link1Target: Path.Join("..", dirName, link2FileName),
                 link2Path: link2Path,
-                expectedLink2Target: Path.Join("..", dirName, fileName),
+                link2Target: Path.Join("..", dirName, fileName),
                 filePath: filePath);
         }
 
@@ -248,12 +318,12 @@ namespace System.IO.Tests
             FileSystemInfo link2Info = CreateSymbolicLink(link2Path, link1Path);
 
             // Can get targets without following symlinks
-            FileSystemInfo link1Target = ResolveLinkTarget(link1Path, expectedLinkTarget: link2Path);
-            FileSystemInfo link2Target = ResolveLinkTarget(link2Path, expectedLinkTarget: link1Path);
+            FileSystemInfo link1Target = ResolveLinkTarget(link1Path);
+            FileSystemInfo link2Target = ResolveLinkTarget(link2Path);
 
             // Cannot get target when following symlinks
-            Assert.Throws<IOException>(() => ResolveLinkTarget(link1Path, expectedLinkTarget: link2Path, returnFinalTarget: true));
-            Assert.Throws<IOException>(() => ResolveLinkTarget(link2Path, expectedLinkTarget: link1Path, returnFinalTarget: true));
+            Assert.Throws<IOException>(() => ResolveLinkTarget(link1Path, returnFinalTarget: true));
+            Assert.Throws<IOException>(() => ResolveLinkTarget(link2Path, returnFinalTarget: true));
         }
 
         [Fact]
@@ -267,10 +337,10 @@ namespace System.IO.Tests
             FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, linkPath);
 
             // Can get target without following symlinks
-            FileSystemInfo linkTarget = ResolveLinkTarget(linkPath, expectedLinkTarget: linkPath);
+            FileSystemInfo linkTarget = ResolveLinkTarget(linkPath);
 
             // Cannot get target when following symlinks
-            Assert.Throws<IOException>(() => ResolveLinkTarget(linkPath, expectedLinkTarget: linkPath, returnFinalTarget: true));
+            Assert.Throws<IOException>(() => ResolveLinkTarget(linkPath, returnFinalTarget: true));
         }
 
         [Fact]
@@ -282,15 +352,6 @@ namespace System.IO.Tests
             string targetPath = GetRandomFilePath();
             CreateFileOrDirectory(targetPath, createOpposite: true); // The underlying file system entry needs to be different
             Assert.Throws<IOException>(() => CreateSymbolicLink(GetRandomFilePath(), targetPath));
-        }
-
-        protected void ResolveLinkTarget_LinkDoesNotExist_Internal<T>() where T : Exception
-        {
-            // ? -> ?
-
-            string path = GetRandomFilePath();
-            Assert.Throws<T>(() => ResolveLinkTarget(path, expectedLinkTarget: null));
-            Assert.Throws<T>(() => ResolveLinkTarget(path, expectedLinkTarget: null, returnFinalTarget: true));
         }
 
         private void VerifySymbolicLinkAndResolvedTarget(string linkPath, string expectedLinkTarget, string targetPath = null)
@@ -306,60 +367,88 @@ namespace System.IO.Tests
             if (targetPath == null)
             {
                 // Behavior different between files and directories when target does not exist
-                AssertExistsWhenNoTarget(link);
+                AssertLinkExists(link);
             }
             else
             {
                 Assert.True(link.Exists); // The target file or directory was created above, so we report Exists of the target for both
             }
 
-            FileSystemInfo target = ResolveLinkTarget(linkPath, expectedLinkTarget);
+            FileSystemInfo target = ResolveLinkTarget(linkPath);
             AssertIsCorrectTypeAndDirectoryAttribute(target);
             Assert.True(Path.IsPathFullyQualified(target.FullName));
         }
 
-        private void ResolveLinkTarget_ReturnFinalTarget(string link1Path, string expectedLink1Target, string link2Path, string expectedLink2Target, string filePath)
+        /// <summary>
+        /// Creates and Resolves a chain of links.
+        /// link1 -> link2 -> file
+        /// </summary>
+        private void ResolveLinkTarget_ReturnFinalTarget(string link1Path, string link1Target, string link2Path, string link2Target, string filePath)
         {
-            // link1Path -> expectedLink1Target (created in link2Path) -> expectedLink2Target (created in filePath)
+            Assert.True(Path.IsPathFullyQualified(link1Path));
+            Assert.True(Path.IsPathFullyQualified(link2Path));
+            Assert.True(Path.IsPathFullyQualified(filePath));
 
             CreateFileOrDirectory(filePath);
 
-            // link2 to target
-            FileSystemInfo link2 = CreateSymbolicLink(link2Path, expectedLink2Target);
-            Assert.True(link2.Exists);
-            Assert.True(link2.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertIsCorrectTypeAndDirectoryAttribute(link2);
-            AssertPathEquals(expectedLink2Target, link2.LinkTarget);
+            // link2 to file
+            FileSystemInfo link2Info = CreateSymbolicLink(link2Path, link2Target);
+            Assert.True(link2Info.Exists);
+            Assert.True(link2Info.Attributes.HasFlag(FileAttributes.ReparsePoint));
+            AssertIsCorrectTypeAndDirectoryAttribute(link2Info);
+            AssertLinkTargetEquals(link2Target, link2Info.LinkTarget);
 
             // link1 to link2
-            FileSystemInfo link1 = CreateSymbolicLink(link1Path, expectedLink1Target);
-            Assert.True(link1.Exists);
-            Assert.True(link1.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertIsCorrectTypeAndDirectoryAttribute(link1);
-            AssertPathEquals(expectedLink1Target, link1.LinkTarget );
+            FileSystemInfo link1Info = CreateSymbolicLink(link1Path, link1Target);
+            Assert.True(link1Info.Exists);
+            Assert.True(link1Info.Attributes.HasFlag(FileAttributes.ReparsePoint));
+            AssertIsCorrectTypeAndDirectoryAttribute(link1Info);
+            AssertLinkTargetEquals(link1Target, link1Info.LinkTarget);
 
             // link1: do not follow symlinks
-            FileSystemInfo link1Target = ResolveLinkTarget(link1Path, expectedLink1Target);
-            Assert.True(link1Target.Exists);
-            AssertIsCorrectTypeAndDirectoryAttribute(link1Target);
-            Assert.True(link1Target.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertPathEquals(link2Path, link1Target.FullName);
-            AssertPathEquals(expectedLink2Target, link1Target.LinkTarget);
+            FileSystemInfo link1TargetInfo = ResolveLinkTarget(link1Path);
+            Assert.True(link1TargetInfo.Exists);
+            AssertIsCorrectTypeAndDirectoryAttribute(link1TargetInfo);
+            Assert.True(link1TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
+            AssertFullNameEquals(link2Path, link1TargetInfo.FullName);
+            AssertLinkTargetEquals(link2Target, link1TargetInfo.LinkTarget);
 
             // link2: do not follow symlinks
-            FileSystemInfo link2Target = ResolveLinkTarget(link2Path, expectedLink2Target);
-            Assert.True(link2Target.Exists);
-            AssertIsCorrectTypeAndDirectoryAttribute(link2Target);
-            Assert.False(link2Target.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertPathEquals(filePath, link2Target.FullName);
-            Assert.Null(link2Target.LinkTarget);
+            FileSystemInfo link2TargetInfo = ResolveLinkTarget(link2Path);
+            Assert.True(link2TargetInfo.Exists);
+            AssertIsCorrectTypeAndDirectoryAttribute(link2TargetInfo);
+            Assert.False(link2TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
+            AssertFullNameEquals(filePath, link2TargetInfo.FullName);
+            Assert.Null(link2TargetInfo.LinkTarget);
 
             // link1: follow symlinks
-            FileSystemInfo finalTarget = ResolveLinkTarget(link1Path, expectedLinkTarget: expectedLink1Target, returnFinalTarget: true);
+            FileSystemInfo finalTarget = ResolveLinkTarget(link1Path, returnFinalTarget: true);
             Assert.True(finalTarget.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(finalTarget);
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertPathEquals(filePath, finalTarget.FullName);
+            AssertFullNameEquals(filePath, finalTarget.FullName);
         }
+
+        public static IEnumerable<object[]> ResolveLinkTarget_PathToTarget_Data
+        {
+            get
+            {
+                foreach(string path in PathToTargetData)
+                {
+                    yield return new object[] { path, false };
+                    yield return new object[] { path, true };
+                }
+            }
+        }
+
+        internal static string[] PathToTargetData => new[]
+        {
+            // Non-rooted relative
+            "foo", ".\\foo", "..\\foo",
+            // Rooted relative
+            "\\foo",
+            // Rooted absolute
+            Path.Combine(Path.GetTempPath(), "foo")
+        };
     }
 }

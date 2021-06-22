@@ -10,11 +10,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         /// <summary>
-        /// The link target is a file.
-        /// </summary>
-        internal const int SYMBOLIC_LINK_FLAG_FILE = 0x0;
-
-        /// <summary>
         /// The link target is a directory.
         /// </summary>
         internal const int SYMBOLIC_LINK_FLAG_DIRECTORY = 0x1;
@@ -41,8 +36,11 @@ internal static partial class Interop
             symlinkFileName = PathInternal.EnsureExtendedPrefixIfNeeded(symlinkFileName);
             targetFileName = PathInternal.EnsureExtendedPrefixIfNeeded(targetFileName);
 
-            int flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE |
-                (isDirectory ? SYMBOLIC_LINK_FLAG_DIRECTORY : SYMBOLIC_LINK_FLAG_FILE);
+            int flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+            if (isDirectory)
+            {
+                flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+            }
 
             return CreateSymbolicLinkPrivate(symlinkFileName, targetFileName, flags);
         }

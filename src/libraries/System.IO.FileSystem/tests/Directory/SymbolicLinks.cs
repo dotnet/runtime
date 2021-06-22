@@ -23,22 +23,19 @@ namespace System.IO.Tests
         protected override FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) =>
             Directory.CreateSymbolicLink(path, pathToTarget);
 
-        protected override FileSystemInfo ResolveLinkTarget(string linkPath, string? expectedLinkTarget, bool returnFinalTarget = false) =>
+        protected override FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) =>
             Directory.ResolveLinkTarget(linkPath, returnFinalTarget);
 
-        protected override void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo fsi)
+        protected override void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo linkInfo)
         {
-            if (fsi.Exists)
+            if (linkInfo.Exists)
             {
-                Assert.True(fsi.Attributes.HasFlag(FileAttributes.Directory));
+                Assert.True(linkInfo.Attributes.HasFlag(FileAttributes.Directory));
             }
-            Assert.True(fsi is DirectoryInfo);
+            Assert.True(linkInfo is DirectoryInfo);
         }
 
-        protected override void AssertLinkExists(FileSystemInfo link) =>
-            Assert.False(link.Exists); // For directory symlinks, we return the exists info from the target
-
-        protected override void AssertExistsWhenNoTarget(FileSystemInfo link)
+        protected override void AssertLinkExists(FileSystemInfo link)
         {
             if (PlatformDetection.IsWindows)
             {
@@ -83,7 +80,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ResolveLinkTarget_LinkDoesNotExist() =>
-            ResolveLinkTarget_LinkDoesNotExist_Internal<DirectoryNotFoundException>();
+        public void ResolveLinkTarget_Throws_NotExists() =>
+            ResolveLinkTarget_Throws_NotExists_Internal<DirectoryNotFoundException>();
     }
 }

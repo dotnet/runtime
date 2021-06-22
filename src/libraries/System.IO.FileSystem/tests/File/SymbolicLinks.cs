@@ -23,26 +23,23 @@ namespace System.IO.Tests
         protected override FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) =>
             File.CreateSymbolicLink(path, pathToTarget);
 
-        protected override FileSystemInfo ResolveLinkTarget(string linkPath, string? expectedLinkTarget, bool returnFinalTarget = false) =>
+        protected override FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) =>
             File.ResolveLinkTarget(linkPath, returnFinalTarget);
 
-        protected override void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo fsi)
+        protected override void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo linkInfo)
         {
-            if (fsi.Exists)
+            if (linkInfo.Exists)
             {
-                Assert.False(fsi.Attributes.HasFlag(FileAttributes.Directory));
+                Assert.False(linkInfo.Attributes.HasFlag(FileAttributes.Directory));
             }
-            Assert.True(fsi is FileInfo);
+            Assert.True(linkInfo is FileInfo);
         }
 
         protected override void AssertLinkExists(FileSystemInfo link) =>
-            Assert.True(link.Exists); // For file symlinks, we return the exists info from the actual link, not the target
-
-        protected override void AssertExistsWhenNoTarget(FileSystemInfo link) =>
             Assert.True(link.Exists);
 
         [Fact]
-        public void ResolveLinkTarget_LinkDoesNotExist() =>
-            ResolveLinkTarget_LinkDoesNotExist_Internal<FileNotFoundException>();
+        public void ResolveLinkTarget_Throws_NotExists() =>
+            ResolveLinkTarget_Throws_NotExists_Internal<FileNotFoundException>();
     }
 }

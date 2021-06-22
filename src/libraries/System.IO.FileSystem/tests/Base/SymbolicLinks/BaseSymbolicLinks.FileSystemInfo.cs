@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using Xunit;
 
@@ -19,30 +20,46 @@ namespace System.IO.Tests
             return link;
         }
 
-        protected override FileSystemInfo ResolveLinkTarget(string linkPath, string? expectedLinkTarget, bool returnFinalTarget = false)
+        protected override FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+            => GetFileSystemInfo(linkPath).ResolveLinkTarget(returnFinalTarget);
+
+        [Fact]
+        public void LinkTarget_ReturnsNull_NotExists()
         {
-            FileSystemInfo link = GetFileSystemInfo(linkPath);
+            FileSystemInfo info = GetFileSystemInfo(GetRandomLinkPath());
+            Assert.Null(info.LinkTarget);
+        }
 
-            if (expectedLinkTarget == null)
+        [Fact]
+        public void LinkTarget_ReturnsNull_NotALink()
+        {
+            string path = GetTestFilePath();
+            CreateFileOrDirectory(path);
+            FileSystemInfo info = GetFileSystemInfo(path);
+
+            Assert.True(info.Exists);
+            Assert.Null(info.LinkTarget);
+        }
+
+        [Theory]
+        [MemberData(nameof(LinkTarget_PathToTarget_Data))]
+        public void LinkTarget_Succeeds(string pathToTarget)
+        {
+            FileSystemInfo linkInfo = CreateSymbolicLink(GetRandomLinkPath(), pathToTarget);
+
+            AssertLinkExists(linkInfo);
+            AssertLinkTargetEquals(pathToTarget, linkInfo.LinkTarget);
+        }
+
+        public static IEnumerable<object[]> LinkTarget_PathToTarget_Data
+        {
+            get
             {
-                // LinkTarget is null when linkPath does not exist or is not a link
-                Assert.Null(link.LinkTarget);
+                foreach (string path in PathToTargetData)
+                {
+                    yield return new object[] { path };
+                }
             }
-            else
-            {
-                AssertPathEquals(expectedLinkTarget, link.LinkTarget);
-            }
-
-            FileSystemInfo? target = link.ResolveLinkTarget(returnFinalTarget);
-
-            // When the resolved target is the immediate next, and it does not exist,
-            // verify that the link's LinkTarget returns null
-            if (!returnFinalTarget && target == null)
-            {
-                Assert.Null(link.LinkTarget);
-            }
-
-            return target;
         }
     }
 }
