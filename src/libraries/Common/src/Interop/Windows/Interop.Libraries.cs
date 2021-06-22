@@ -44,5 +44,6 @@ internal static partial class Interop
         internal const string GlobalizationNative = "System.Globalization.Native";
         internal const string MsQuic = "msquic.dll";
         internal const string HostPolicy = "hostpolicy.dll";
+        internal const string Ucrtbase = "ucrtbase.dll";
     }
 }

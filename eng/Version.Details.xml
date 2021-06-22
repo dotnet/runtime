@@ -9,6 +9,7 @@
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.21311.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4a2b475948d498b89fedef7cf890883f49bc1ea3</Sha>
+      <SourceBuild RepoName="arcade" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="6.0.0-beta.21311.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -213,6 +214,10 @@
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21311.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
       <Sha>25b814e010cd4796cedfbcce72a274c26928f496</Sha>
+    </Dependency>
+    <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.21314.1">
+      <Uri>https://github.com/dotnet/runtime-assets
+      <Sha>8d7b898b96cbdb868cac343e938173105287ed9e</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
