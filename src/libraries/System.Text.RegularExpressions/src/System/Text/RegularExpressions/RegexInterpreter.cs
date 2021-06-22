@@ -225,7 +225,7 @@ namespace System.Text.RegularExpressions
                 if (runtextend - runtextpos < c)
                 {
                     // If MatchString was called after a greedy op such as a .*, we would have zipped runtextpos to the end without really examining any characters. Reset to maxBacktrackPos here as an optimization
-                    if (_maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
+                    if (!_caseInsensitive && _maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
                     {
                         // If lastIndexOf is -1, we backtrack to the max extent possible.
                         runtextpos = _maxBacktrackPosition;
