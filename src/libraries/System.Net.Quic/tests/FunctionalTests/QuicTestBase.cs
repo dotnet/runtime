@@ -138,22 +138,19 @@ namespace System.Net.Quic.Tests
         {
             using QuicListener listener = CreateQuicListener();
 
-            var serverFinished = new ManualResetEventSlim();
-            var clientFinished = new ManualResetEventSlim();
+            using var serverFinished = new SemaphoreSlim(0);
+            using var clientFinished = new SemaphoreSlim(0);
 
             for (int i = 0; i < iterations; ++i)
             {
-                serverFinished.Reset();
-                clientFinished.Reset();
-
                 await new[]
                 {
                     Task.Run(async () =>
                     {
                         using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                         await serverFunction(serverConnection);
-                        serverFinished.Set();
-                        clientFinished.Wait();
+                        serverFinished.Release();
+                        await clientFinished.WaitAsync();
                         await serverConnection.CloseAsync(0);
                     }),
                     Task.Run(async () =>
@@ -161,8 +158,8 @@ namespace System.Net.Quic.Tests
                         using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                         await clientConnection.ConnectAsync();
                         await clientFunction(clientConnection);
-                        clientFinished.Set();
-                        serverFinished.Wait();
+                        clientFinished.Release();
+                        await serverFinished.WaitAsync();
                         await clientConnection.CloseAsync(0);
                     })
                 }.WhenAllOrAnyFailed(millisecondsTimeout);

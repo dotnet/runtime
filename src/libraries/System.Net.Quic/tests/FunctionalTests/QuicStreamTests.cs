@@ -488,24 +488,18 @@ namespace System.Net.Quic.Tests
         {
             long expectedErrorCode = 1234;
 
-            await RunClientServer(
-                clientFunction: async connection =>
+            await RunUnidirectionalClientServer(
+                clientStream =>
                 {
-                    await using QuicStream stream = connection.OpenUnidirectionalStream();
-                    stream.AbortWrite(expectedErrorCode);
-
-                    await stream.ShutdownCompleted();
+                    clientStream.Abort(expectedErrorCode, QuicAbortDirection.Write);
+                    return Task.CompletedTask;
                 },
-                serverFunction: async connection =>
+                async serverStream =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
-
                     byte[] buffer = new byte[1];
 
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(serverStream, buffer));
                     Assert.Equal(expectedErrorCode, ex.ErrorCode);
-
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -515,39 +509,31 @@ namespace System.Net.Quic.Tests
         {
             long expectedErrorCode = 1234;
 
-            await RunClientServer(
-                clientFunction: async connection =>
+            await RunUnidirectionalClientServer(
+                async clientStream =>
                 {
-                    await using QuicStream stream = connection.OpenUnidirectionalStream();
-
                     CancellationTokenSource cts = new CancellationTokenSource();
                     cts.Cancel();
 
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1], cts.Token).AsTask());
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => clientStream.WriteAsync(new byte[1], cts.Token).AsTask());
 
                     // next write would also throw
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => clientStream.WriteAsync(new byte[1]).AsTask());
 
                     // manual write abort is still required
-                    stream.AbortWrite(expectedErrorCode);
-
-                    await stream.ShutdownCompleted();
+                    clientStream.Abort(expectedErrorCode, QuicAbortDirection.Write);
                 },
-                serverFunction: async connection =>
+                async serverStream =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
-
                     byte[] buffer = new byte[1024 * 1024];
 
                     // TODO: it should always throw QuicStreamAbortedException, but sometimes it does not https://github.com/dotnet/runtime/issues/53530
                     //QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
                     try
                     {
-                        await ReadAll(stream, buffer);
+                        await ReadAll(serverStream, buffer);
                     }
                     catch (QuicStreamAbortedException) { }
-
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -557,11 +543,9 @@ namespace System.Net.Quic.Tests
         {
             long expectedErrorCode = 1234;
 
-            await RunClientServer(
-                clientFunction: async connection =>
+            await RunUnidirectionalClientServer(
+                async clientStream =>
                 {
-                    await using QuicStream stream = connection.OpenUnidirectionalStream();
-
                     CancellationTokenSource cts = new CancellationTokenSource(500);
 
                     async Task WriteUntilCanceled()
@@ -569,7 +553,7 @@ namespace System.Net.Quic.Tests
                         var buffer = new byte[64 * 1024];
                         while (true)
                         {
-                            await stream.WriteAsync(buffer, cancellationToken: cts.Token);
+                            await clientStream.WriteAsync(buffer, cancellationToken: cts.Token);
                         }
                     }
 
@@ -577,23 +561,19 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled().WaitAsync(TimeSpan.FromSeconds(3)));
 
                     // next write would also throw
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => clientStream.WriteAsync(new byte[1]).AsTask());
 
                     // manual write abort is still required
-                    stream.AbortWrite(expectedErrorCode);
-
-                    await stream.ShutdownCompleted();
+                    clientStream.Abort(expectedErrorCode, QuicAbortDirection.Write);
                 },
-                serverFunction: async connection =>
+                async serverStream =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
-
                     async Task ReadUntilAborted()  
                     {
                         var buffer = new byte[1024];
                         while (true)
                         {
-                            int res = await stream.ReadAsync(buffer);
+                            int res = await serverStream.ReadAsync(buffer);
                             if (res == 0)
                             {
                                 break;
@@ -608,8 +588,6 @@ namespace System.Net.Quic.Tests
                         await ReadUntilAborted().WaitAsync(TimeSpan.FromSeconds(3));
                     }
                     catch (QuicStreamAbortedException) { }
-
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -658,40 +636,12 @@ namespace System.Net.Quic.Tests
         [InlineData(true)]
         public async Task QuicStream_ClosePattern_Success(bool abortive)
         {
-            while (!Debugger.IsAttached)
-            {
-                Console.WriteLine($"Attach to process {Process.GetCurrentProcess().Id}.");
-                await Task.Delay(100);
-            }
-
             const int ExpectedErrorCode = 0xfffffff;
 
             using SemaphoreSlim sem = new SemaphoreSlim(0);
 
             await RunBidirectionalClientServer(
                 async clientStream =>
-                {
-                    // Don't shutdown client side until server side has 100% completed.
-                    await sem.WaitAsync();
-
-                    // Wait for server's aborts to reach us.
-                    await Task.Delay(500);
-
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(async () =>
-                    {
-                        await clientStream.WriteAsync(new byte[1]);
-                    });
-
-                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-
-                    ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(async () =>
-                    {
-                        await clientStream.ReadAsync(new byte[1]);
-                    });
-
-                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-                },
-                async serverStream =>
                 {
                     try
                     {
@@ -706,7 +656,7 @@ namespace System.Net.Quic.Tests
                     catch
                     {
                         // Abort here. The CloseAsync that follows will still wait for an ACK of the shutdown.
-                        serverStream.Abort(ExpectedErrorCode, QuicAbortDirection.Both);
+                        clientStream.Abort(ExpectedErrorCode, QuicAbortDirection.Both);
                     }
                     finally
                     {
@@ -715,23 +665,45 @@ namespace System.Net.Quic.Tests
                         using var shutdownCts = new CancellationTokenSource(500);
                         try
                         {
-                            await serverStream.CloseAsync(shutdownCts.Token);
+                            await clientStream.CloseAsync(shutdownCts.Token);
                         }
                         catch
                         {
                             // Abort (possibly again, which will ignore error code and not queue any new I/O).
                             // This time, Immediate is used which will cause CloseAsync() to not wait for a shutdown ACK.
-                            serverStream.Abort(ExpectedErrorCode, QuicAbortDirection.Immediate);
+                            clientStream.Abort(ExpectedErrorCode, QuicAbortDirection.Immediate);
                         }
                     }
 
                     // Either the CloseAsync above worked, in which case this is a no-op,
                     // or the stream has been re-aborted with Immediate, in which case this will complete "immediately" but not synchronously.
-                    await serverStream.CloseAsync();
+                    await clientStream.CloseAsync();
 
                     // Only allow the other side to close its stream after the dispose completes.
                     sem.Release();
-                }, millisecondsTimeout: 1_000_000_000);
+                },
+                async serverStream =>
+                {
+                    // Don't shutdown client side until server side has 100% completed.
+                    await sem.WaitAsync();
+
+                    // Wait for server's abort to reach us.
+                    await Task.Delay(500);
+
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(async () =>
+                    {
+                        await serverStream.WriteAsync(new byte[1]);
+                    });
+
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+
+                    ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(async () =>
+                    {
+                        await serverStream.ReadAsync(new byte[1]);
+                    });
+
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                });
         }
     }
 
