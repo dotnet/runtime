@@ -26,7 +26,7 @@ namespace System.Net.Http
         private static readonly DiagnosticListener s_diagnosticListener = new("HttpHandlerDiagnosticListener");
         private static readonly ActivitySource s_activitySource = new(Namespace);
 
-        public static readonly bool IsGloballyEnabled = GetEnableActivityPropagationValue();
+        public static bool IsGloballyEnabled { get; } = GetEnableActivityPropagationValue();
 
         private static bool GetEnableActivityPropagationValue()
         {
