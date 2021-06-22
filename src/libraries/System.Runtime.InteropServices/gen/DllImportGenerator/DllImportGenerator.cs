@@ -32,6 +32,10 @@ namespace Microsoft.Interop
 
             INamedTypeSymbol? lcidConversionAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
 
+            INamedTypeSymbol? suppressGCTransitionAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
+
+            INamedTypeSymbol? unmanagedCallConvAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
+
             // Fire the start/stop pair for source generation
             using var _ = Diagnostics.Events.SourceGenerationStartStop(synRec.Methods.Count);
 
@@ -76,16 +80,30 @@ namespace Microsoft.Interop
                 // Get any attributes of interest on the method
                 AttributeData? generatedDllImportAttr = null;
                 AttributeData? lcidConversionAttr = null;
+                AttributeData? suppressGCTransitionAttribute = null;
+                AttributeData? unmanagedCallConvAttribute = null;
+
                 foreach (var attr in methodSymbolInfo.GetAttributes())
                 {
-                    if (attr.AttributeClass is not null
-                        && attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                    if (attr.AttributeClass is null)
+                    {
+                        continue;
+                    }
+                    else if (attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
                     {
                         generatedDllImportAttr = attr;
                     }
-                    else if (lcidConversionAttrType != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
+                    else if (lcidConversionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
                     {
                         lcidConversionAttr = attr;
+                    }
+                    else if (suppressGCTransitionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, suppressGCTransitionAttrType))
+                    {
+                        suppressGCTransitionAttribute = attr;
+                    }
+                    else if (unmanagedCallConvAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, unmanagedCallConvAttrType))
+                    {
+                        unmanagedCallConvAttribute = attr;
                     }
                 }
 
@@ -112,8 +130,10 @@ namespace Microsoft.Interop
                     generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
                 }
 
+                List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+
                 // Create the stub.
-                var dllImportStub = DllImportStub.Create(methodSymbolInfo, stubDllImportData!, env, generatorDiagnostics, context.CancellationToken);
+                var dllImportStub = DllImportStub.Create(methodSymbolInfo, stubDllImportData!, env, generatorDiagnostics, additionalAttributes, context.CancellationToken);
 
                 PrintGeneratedSource(generatedDllImports, methodSyntax, dllImportStub);
             }
@@ -125,6 +145,44 @@ namespace Microsoft.Interop
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver());
+        }
+
+        private List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
+        {
+            const string CallConvsField = "CallConvs";
+            // Manually rehydrate the forwarded attributes with fully qualified types so we don't have to worry about any using directives.
+            List<AttributeSyntax> attributes = new();
+
+            if (suppressGCTransitionAttribute is not null)
+            {
+                attributes.Add(Attribute(ParseName(TypeNames.SuppressGCTransitionAttribute)));
+            }
+            if (unmanagedCallConvAttribute is not null)
+            {
+                AttributeSyntax unmanagedCallConvSyntax = Attribute(ParseName(TypeNames.UnmanagedCallConvAttribute));
+                foreach (var arg in unmanagedCallConvAttribute.NamedArguments)
+                {
+                    if (arg.Key == CallConvsField)
+                    {
+                        InitializerExpressionSyntax callConvs = InitializerExpression(SyntaxKind.ArrayInitializerExpression);
+                        foreach (var callConv in arg.Value.Values)
+                        {
+                            callConvs = callConvs.AddExpressions(
+                                TypeOfExpression(((ITypeSymbol)callConv.Value!).AsTypeSyntax()));
+                        }
+
+                        ArrayTypeSyntax arrayOfSystemType = ArrayType(ParseTypeName(TypeNames.System_Type), SingletonList(ArrayRankSpecifier()));
+
+                        unmanagedCallConvSyntax = unmanagedCallConvSyntax.AddArgumentListArguments(
+                            AttributeArgument(
+                                ArrayCreationExpression(arrayOfSystemType)
+                                .WithInitializer(callConvs))
+                            .WithNameEquals(NameEquals(IdentifierName(CallConvsField))));
+                    }
+                }
+                attributes.Add(unmanagedCallConvSyntax);
+            }
+            return attributes;
         }
 
         private SyntaxTokenList StripTriviaFromModifiers(SyntaxTokenList tokenList)

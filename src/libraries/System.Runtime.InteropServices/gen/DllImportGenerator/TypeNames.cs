@@ -21,6 +21,10 @@ namespace Microsoft.Interop
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
+        public const string SuppressGCTransitionAttribute = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
+
+        public const string UnmanagedCallConvAttribute = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
+
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
 
@@ -61,5 +65,7 @@ namespace Microsoft.Interop
         {
             return options.UseInternalUnsafeType() ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
         }
+
+        public const string System_Type = "System.Type";
     }
 }
