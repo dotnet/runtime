@@ -4,6 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- Disable test for GCStress. Tracking: https://github.com/dotnet/runtime/issues/54203 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Generated shell script and corresponding assembly have different names -->
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
