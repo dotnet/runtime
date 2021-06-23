@@ -192,8 +192,6 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
 void UninitializeTerminal()
 {
-    assert(g_hasTty);
-
     // This method is called on SIGQUIT/SIGINT from the signal dispatching thread
     // and on atexit.
 
