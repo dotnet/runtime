@@ -12,3 +12,5 @@ variables:
     value: Release
   ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
     value: Debug
+- name: INPUT_UPLOADRICHNAVARTIFACTS
+  value: true

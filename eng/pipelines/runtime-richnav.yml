@@ -19,7 +19,10 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
-pr: none
+pr:
+  branches:
+    include:
+    - main
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -56,3 +59,11 @@ jobs:
       richCodeNavigationEnvironment: "production"
       richCodeNavigationLanguage: "csharp,cpp"
       buildArgs: -s mono -c debug
+
+- task: CopyFiles@2
+  displayName: 'Save Command Batches'
+  inputs:
+    Contents: $(Build.SourcesDirectory)/artifacts/bin/**/*.RichCodeNav.log
+    SourceFolder: $(Build.SourcesDirectory)/artifacts/bin
+    TargetFolder: $(Build.ArtifactStagingDirectory)
+  continueOnError: true
