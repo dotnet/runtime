@@ -1417,8 +1417,41 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_IsFromValueClass)
     {
-        multiplier += 2.7;
+        multiplier += 3.0;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
+    }
+    else if (m_ReturnsStructByValue)
+    {
+        // For structs-passed-by-value we might avoid expensive copy operations if we inline.
+        multiplier += 1.2;
+        JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
+    }
+    else if (m_ArgIsStructByValue > 0)
+    {
+        // Same here
+        multiplier += 1.2;
+        JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
+            multiplier);
+    }
+    else if (m_FldAccessOverArgStruct > 0)
+    {
+        multiplier += 1.0;
+        // Such ldfld/stfld are cheap for promotable structs
+        JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
+            m_FldAccessOverArgStruct, multiplier);
+    }
+    else if (m_BinaryExprWithCns > 0)
+    {
+        // In some cases we're not able to detect potentially foldable expressions, e.g.:
+        //
+        //   ldc.i4.0
+        //   call int SomeFoldableNonIntrinsicCall
+        //   ceq
+        //
+        // so at least we can note potential constant tests
+        multiplier += 1.0;
+        JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
+            m_BinaryExprWithCns, multiplier);
     }
 
     if (m_LooksLikeWrapperMethod)
@@ -1439,21 +1472,6 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ReturnsStructByValue)
-    {
-        // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.8;
-        JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_ArgIsStructByValue > 0)
-    {
-        // Same here
-        multiplier += 1.8;
-        JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
-                multiplier);
-    }
-
     if (m_NonGenericCallsGeneric)
     {
         multiplier += 3.0;
@@ -1470,32 +1488,23 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 4.0 + m_FoldableBranch;
+        multiplier += 2.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
-    }
-
-    if (m_ArgCasted > 0)
-    {
-        // TODO: handle only cases where arg is known to be "exact".
-        multiplier += 1.5;
-        JITDUMP("\nArgument feeds ISINST/CASTCLASS %d times.  Multiplier increased to %g.", m_ArgCasted, multiplier);
-    }
-
-    if (m_FldAccessOverArgStruct > 0)
-    {
-        multiplier += 1.0;
-        // Such ldfld/stfld are cheap for promotable structs
-        JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
-                m_FldAccessOverArgStruct, multiplier);
     }
 
     if (m_FoldableBox > 0)
     {
         // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
         // Especially useful with m_IsGenericFromNonGeneric
-        multiplier += 3.0;
+        multiplier += 2.0;
         JITDUMP("\nInline has %d foldable BOX ops.  Multiplier increased to %g.", m_FoldableBox, multiplier);
+    }
+
+    if (m_HasSimd)
+    {
+        multiplier += 2.0;
+        JITDUMP("\nInline has SIMD ops.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_Intrinsic > 0)
@@ -1503,30 +1512,6 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // In most cases such intrinsics are lowered as single CPU instructions
         multiplier += 1.0 + m_Intrinsic;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
-    }
-
-    if (m_BinaryExprWithCns > 0)
-    {
-        // In some cases we're not able to detect potentially foldable expressions, e.g.:
-        //
-        //   ldc.i4.0
-        //   call int SomeFoldableNonIntrinsicCall
-        //   ceq
-        //
-        // so at least we can note potential constant tests
-        multiplier += 2.0;
-        JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
-                m_BinaryExprWithCns, multiplier);
-    }
-
-    if (m_ThrowBlock > 0)
-    {
-        // 'throw' opcode and its friends (Exception's ctor, its exception message, etc) significantly increase
-        // NativeSizeEstimate. However, such basic-blocks won't hurt us since they are always moved to
-        // the end of the functions and don't impact Register Allocations.
-        // TODO: Recognize noreturn calls as m_ThrowBlock
-        multiplier += 1.3;
-        JITDUMP("\nInline has %d throw blocks.  Multiplier increased to %g.", m_ThrowBlock, multiplier);
     }
 
     if (m_ArgIsBoxedAtCallsite > 0)
@@ -1538,7 +1523,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
         //
-        multiplier += 1.5;
+        multiplier += 0.5;
         JITDUMP("\nCallsite is going to box %d arguments.  Multiplier increased to %g.", m_ArgIsBoxedAtCallsite,
                 multiplier);
     }
@@ -1573,7 +1558,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   typeof(T1) == typeof(T2)
         //   Math.Abs(constArg)
         //   BitOperation.PopCount(10)
-        multiplier += 4.0 + m_FoldableIntrinsic;
+        multiplier += 1.0 + m_FoldableIntrinsic;
         JITDUMP("\nInline has %d foldable intrinsics.  Multiplier increased to %g.", m_FoldableIntrinsic, multiplier);
     }
 
@@ -1588,7 +1573,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += 1.5;
+        multiplier += m_FoldableExprUn;
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
                 multiplier);
     }
@@ -1605,7 +1590,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     // assume that call sites may pass constants.
     if (m_IsPrejitRoot)
     {
-        multiplier += 1.0 + m_BinaryExprWithCns * 2.0;
+        multiplier += 2.0 + m_BinaryExprWithCns;
     }
 
     if (m_CallsiteFrequency == InlineCallsiteFrequency::RARE)
@@ -1644,7 +1629,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_BackwardJump)
     {
         // TODO: investigate in which cases we should [never] inline callees with loops.
-        multiplier *= m_FoldableBranch < 1 ? 0.1 : 0.7;
+        multiplier *= 0.75;
         JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump, multiplier);
     }
 

@@ -459,11 +459,11 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
 CONFIG_INTEGER(JitExtDefaultPolicyPrejit, W("JitExtDefaultPolicyPrejit"), 0)
-CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0xAA) // 170
-CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 5)
-CONFIG_INTEGER(JitExtDefaultPolicyProfBB, W("JitExtDefaultPolicyProfBB"), 2)
-CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x37) // 55
-CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 0xA)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x80)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
+CONFIG_INTEGER(JitExtDefaultPolicyProfBB, W("JitExtDefaultPolicyProfBB"), 7)
+CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x1E)
+CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 8)
 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
