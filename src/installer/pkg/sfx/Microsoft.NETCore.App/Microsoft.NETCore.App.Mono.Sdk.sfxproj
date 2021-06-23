@@ -20,7 +20,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- FIXME: also need an Sdk/Sdk.props file, and the component-manifest.targets file -->
     <NativeRuntimeAsset Include="$(MonoComponentManifestDir)component-manifest.props" TargetPath="Sdk/component-manifest.props" />
     <NativeRuntimeAsset Include="Microsoft.NETCoreApp.Mono.Sdk.Sdk.props" TargetPath="Sdk/Sdk.props" />
     <NativeRuntimeAsset Include="$(MonoComponentManifestDir)component-manifest.targets" TargetPath="Sdk/component-manifest.targets" />
