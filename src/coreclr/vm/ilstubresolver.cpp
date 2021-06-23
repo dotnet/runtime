@@ -344,7 +344,7 @@ ILStubResolver::AllocGeneratedIL(
     if (!UseLoaderHeap())
     {
         NewArrayHolder<BYTE>             pNewILCodeBuffer = new BYTE[cbCode];
-        NewArrayHolder<CompileTimeState> pNewCompileTimeState = (CompileTimeState*)new BYTE[sizeof(CompileTimeState)];
+        NewHolder<CompileTimeState>      pNewCompileTimeState = new CompileTimeState{};
         memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
         NewArrayHolder<BYTE>             pNewLocalSig = NULL;
 
