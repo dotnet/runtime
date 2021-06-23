@@ -15,7 +15,7 @@ internal static partial class Interop
         internal const int SYMBOLIC_LINK_FLAG_DIRECTORY = 0x1;
 
         /// <summary>
-        /// Allows creation of symbolic links when the process is not elevated. Starting with Windows 10 Insiders build 14972.
+        /// Allows creation of symbolic links from a process that is not elevated. Requires Windows 10 Insiders build 14972 or later.
         /// Developer Mode must first be enabled on the machine before this option will function.
         /// </summary>
         internal const int SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = 0x2;
