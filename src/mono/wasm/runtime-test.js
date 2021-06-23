@@ -109,9 +109,22 @@ try {
 
 // abstract all IO into a compact universally available method so that it is consistent and reliable
 const IOHandler = {
-	load: null, // load js file into project and evaluate it
-	read: null, // return the contents of a file as a string
+	/** Load js file into project and evaluate it
+	 * @type {(file: string) => Promise<void>} 
+	 * @param {string} file path to the file to load
+	*/
+	load: null,
+	
+	/** Read and return the contents of a file as a string
+	 * @type {(file: string) => Promise<string>} 
+	 * @param {string} file the path to the file to read
+	 * @return {string} the contents of the file
+	*/
+	read: null,
 
+	/** Sets up the load and read functions for later
+	 * @type {() => void}
+	 */
 	init: function() {
 		// load: function that loads and executes a script
 		let loadFunc = globalThis.load; // shells (v8, JavaScriptCore, Spidermonkey)
@@ -152,15 +165,26 @@ const IOHandler = {
 		IOHandler.read = async (file) => await readFunc(file);
 	},
 
+	/** Write the content to a file at a certain path
+	 * @type {(content: string, path: string) => void}
+	 * @param {string} content the contents to write to the file
+	 * @param {string} path the path to which to write the contents
+	*/
 	writeContentToFile: function(content, path) { // writes a string to a file
 		const stream = FS.open(path, 'w+');
 		FS.write(stream, content, 0, content.length, 0);
 		FS.close(stream);
 	},
 
-	fetch: function(asset, params) { // returns an async fetch request in the form of {ok: boolean, url: string, arrayBuffer: Promise<Uint8Array>}
+	/** Returns an async fetch request
+	 * @type {(path: string, params: object) => Promise<{ok: boolean, url: string, arrayBuffer: Promise<Uint8Array>}>}
+	 * @param {string} path the path to the file to fetch
+	 * @param {object} params additional parameters to fetch with. Only used on browser
+	 * @returns {Promise<{ok: boolean, url: string, arrayBuffer: Promise<Uint8Array>}>} The result of the request
+	 */
+	fetch: function(path, params) {
 		if (is_browser) {
-			return fetch (asset, params);
+			return fetch (path, params);
 
 		} else { // shells and node
 			return new Promise ((resolve, reject) => {
@@ -168,17 +192,17 @@ const IOHandler = {
 				try {
 					if (is_node) {
 						const fs = require ('fs');
-						const buffer = fs.readFileSync(asset);
+						const buffer = fs.readFileSync(path);
 						bytes = buffer.buffer;
 					} else {
-						bytes = read (asset, 'binary');
+						bytes = read (path, 'binary');
 					}
 				} catch (exc) {
 					error = exc;
 				}
 				const response = { 
 					ok: (bytes && !error), 
-					url: asset,
+					url: path,
 					arrayBuffer: function () {
 						return new Promise ((resolve2, reject2) => {
 							if (error)
@@ -263,10 +287,17 @@ var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 	config: null,
 
+	/** Called before the runtime is loaded and before it is run
+	 * @type {() => Promise<void>}
+	 */
 	preInit: async function() {
 		Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
 	},
 
+	/** Called after an exception occurs during execution
+	 * @type {(x: string|number=) => void}
+	 * @param {string|number} x error message
+	 */
 	onAbort: function(x) {
 		console.log ("ABORT: " + x);
 		const err = new Error();
@@ -275,6 +306,9 @@ var Module = {
 		test_exit (1);
 	},
 
+	/** Called after the runtime is loaded but before it is run mostly prepares runtime and config for the tests
+	 * @type {() => void}
+	 */
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (let variable in setenv) {
@@ -312,6 +346,9 @@ var Module = {
 };
 
 const App = {
+	/** Runs the tests (runtime is now loaded and running)
+	 * @type {() => void}
+	 */
 	init: function () {
 		const wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		const wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
@@ -393,6 +430,10 @@ const App = {
 			fail_exec ("Unhandled argument: " + testArguments [0]);
 		}
 	},
+
+	/** Runs a particular test
+	 * @type {(method_name: string, args: any[], signature: any?) => return number}
+	 */
 	call_test_method: function (method_name, args, signature) {
 		// note: arguments here is the array of arguments passsed to this function
 		if ((arguments.length > 2) && (typeof (signature) !== "string"))
