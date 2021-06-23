@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Drawing.Internal;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -27,29 +28,31 @@ namespace System.Drawing
                 // But, in the interest of simplicity, we just call to
                 // OLE to do it for us.
                 PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
-                Guid g = DrawingComWrappers.IPicture.Guid;
+                Guid iid = DrawingComWrappers.IPicture.IID;
                 IntPtr lpPicture;
-                DrawingComWrappers.CheckStatus(OleCreatePictureIndirect(&pictdesc, &g, false, &lpPicture));
+                DrawingComWrappers.CheckStatus(OleCreatePictureIndirect(&pictdesc, &iid, fOwn: 0, &lpPicture));
 
                 IntPtr streamPtr = IntPtr.Zero;
                 try
                 {
-                    DrawingComWrappers.IPicture picture = (DrawingComWrappers.IPicture)DrawingComWrappers.Instance.GetOrCreateObjectForComInstance(lpPicture, CreateObjectFlags.None);
+                    using DrawingComWrappers.IPicture picture = (DrawingComWrappers.IPicture)DrawingComWrappers.Instance.GetOrCreateObjectForComInstance(lpPicture, CreateObjectFlags.None);
 
                     var gpStream = new GPStream(outputStream, makeSeekable: false);
                     streamPtr = DrawingComWrappers.Instance.GetOrCreateComInterfaceForObject(gpStream, CreateComInterfaceFlags.None);
 
-                    DrawingComWrappers.CheckStatus(picture.SaveAsFile(streamPtr, -1, out _));
+                    DrawingComWrappers.CheckStatus(picture.SaveAsFile(streamPtr, -1, null));
                 }
                 finally
                 {
                     if (streamPtr != IntPtr.Zero)
                     {
-                        Marshal.Release(streamPtr);
+                        int count = Marshal.Release(streamPtr);
+                        Debug.Assert(count == 0);
                     }
 
                     if (lpPicture != IntPtr.Zero)
                     {
+                        // don't assert the count went to 0 here because some other thread could be using the same lpPicture
                         Marshal.Release(lpPicture);
                     }
                 }
@@ -57,7 +60,7 @@ namespace System.Drawing
         }
 
         [DllImport(Interop.Libraries.Oleaut32)]
-        private static unsafe extern int OleCreatePictureIndirect(PICTDESC* pictdesc, Guid* refiid, bool fOwn, IntPtr* lplpvObj);
+        private static unsafe extern int OleCreatePictureIndirect(PICTDESC* pictdesc, Guid* refiid, int fOwn, IntPtr* lplpvObj);
 
         [StructLayout(LayoutKind.Sequential)]
         private readonly struct PICTDESC

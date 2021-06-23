@@ -69,7 +69,7 @@ internal static partial class Interop
         // are converted to use ComWrappers.
         internal interface IStreamComWrapper
         {
-            static readonly Guid Guid = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+            static readonly Guid IID = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
             // pcbRead is optional so it must be a pointer
             unsafe void Read(byte* pv, uint cb, uint* pcbRead);
