@@ -12,6 +12,9 @@ namespace System.Reflection.Metadata
         [DllImport(RuntimeHelpers.QCall)]
         private static extern unsafe void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern unsafe bool IsApplyUpdateSupported();
+
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
         /// </summary>
@@ -53,11 +56,11 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Returns the metadata update capabilities.
         /// </summary>
-        public static string GetCapabilities() => "Baseline AddMethodToExistingType AddStaticFieldToExistingType AddInstanceFieldToExistingType NewTypeDefinition";
+        public static string GetCapabilities() => "Baseline AddMethodToExistingType AddStaticFieldToExistingType AddInstanceFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
 
         /// <summary>
         /// Returns true if the apply assembly update is enabled and available.
         /// </summary>
-        public static bool IsSupported => Debugger.IsAttached || Environment.GetEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES") != "" || Environment.GetEnvironmentVariable("COMPlus_ForceEnc") == "1";
+        public static bool IsSupported { get; } = IsApplyUpdateSupported();
     }
 }
