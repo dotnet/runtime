@@ -24,8 +24,8 @@
   </Target>
 
   <Target Name="PreserveEnCAssembliesFromLinking"
-	  Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
-	  BeforeTargets="ConfigureTrimming">
+          Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+          BeforeTargets="ConfigureTrimming">
     <ItemGroup>
       <!-- Don't modify EnC test assemblies -->
       <TrimmerRootAssembly
@@ -35,17 +35,17 @@
   </Target>
 
   <Target Name="IncludeDeltasInWasmBundle"
-	  BeforeTargets="PrepareForWasmBuildApp"
-	  Condition="'$(TargetOS)' == 'Browser'">
+          BeforeTargets="PrepareForWasmBuildApp"
+          Condition="'$(TargetOS)' == 'Browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->
       <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
-				      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
+                                      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
       <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
-				      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
+                                      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
       <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
-				      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
+                                      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
     </ItemGroup>
   </Target>
   
