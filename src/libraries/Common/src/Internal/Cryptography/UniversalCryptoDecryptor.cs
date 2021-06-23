@@ -220,7 +220,7 @@ namespace Internal.Cryptography
                         bytesWritten = 0;
                         return true;
                     }
-                    
+
                     if (unpaddedLength > output.Length)
                     {
                         bytesWritten = 0;
