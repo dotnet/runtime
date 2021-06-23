@@ -172,6 +172,25 @@ foreach(component IN LISTS components)
   list(APPEND mono-components-stub-objects $<TARGET_OBJECTS:${component}-stub-objects>)
 endforeach()
 
+if(NOT MONO_CROSS_COMPILE)
+  # Write a component-manifest.props file in the artifacts/obj/mono/<host>/ directory
+  set(TemplateMonoRuntimeComponentSharedLibExt "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+  set(TemplateMonoRuntimeComponentStaticLibExt "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  file(READ "${MONO_COMPONENT_PATH}/component-manifest.props.in" MONO_COMPONENT_MANIFEST_STR)
+  if(DISABLE_COMPONENTS)
+    set(TemplateMonoRuntimeComponentLinking "static")
+    set(TemplateMonoRuntimeAvailableComponents "")
+  else()
+    list(JOIN components ";" TemplateMonoRuntimeAvailableComponents)
+    if(STATIC_COMPONENTS)
+      set(TemplateMonoRuntimeComponentLinking "static")
+    else()
+      set(TemplateMonoRuntimeComponentLinking "dynamic")
+    endif()
+  endif()
+  # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
+  file(CONFIGURE OUTPUT ../../component-manifest.props CONTENT ${MONO_COMPONENT_MANIFEST_STR})
+endif()
 
 # component tests
 set(MONO_EVENTPIPE_TEST_SOURCE_PATH "${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/test")
