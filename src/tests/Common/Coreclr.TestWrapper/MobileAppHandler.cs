@@ -29,7 +29,7 @@ namespace CoreclrTestLib
             string xharnessCmd;
             string cmdStr;
             string appExtension;
-            int timeout = 240000; // Set timeout to 4 mins, because the installation on Android arm64/32 devices could take up to 4 mins on CI
+            int timeout = 600000; // Set timeout to 4 mins, because the installation on Android arm64/32 devices could take up to 10 mins on CI
 
             if(String.IsNullOrEmpty(dotnetCmd_raw))
             {
@@ -120,8 +120,18 @@ namespace CoreclrTestLib
         private static string ConvertCmd2Arg(string cmd)
         {
             cmd.Replace("\"", "\"\"");
-            var result = $"-c \"{cmd}\"";
-            return result;
+
+            string cmdPrefix;
+            if(OperatingSystem.IsWindows())
+            {
+                cmdPrefix = "/c";
+            }
+            else
+            {
+                cmdPrefix = "-c";
+            }
+            
+            return $"{cmdPrefix} \"{cmd}\"";
         }
     }
 }

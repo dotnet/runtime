@@ -630,6 +630,39 @@ def create_unique_directory_name(root_directory, base_name):
     return full_path
 
 
+def create_unique_file_name(directory, base_name, extension):
+    """ Create a unique file name in the specified directory by joining `base_name` and `extension`.
+        If this name already exists, append ".1", ".2", ".3", etc., to the `base_name`
+        name component until the full file name is not found.
+
+    Args:
+        directory (str)  : directory in which a new file will be created
+        base_name (str)  : the base name of the new filename to be added
+        extension (str)  : the filename extension of the new filename to be added
+
+    Returns:
+        (str) The full absolute path of the new filename.
+    """
+
+    directory = os.path.abspath(directory)
+    if not os.path.isdir(directory):
+        try:
+            os.makedirs(directory)
+        except Exception as exception:
+            logging.critical(exception)
+            raise exception
+
+    full_path = os.path.join(directory, base_name + "." + extension)
+
+    count = 1
+    while os.path.isfile(full_path):
+        new_full_path = os.path.join(directory, base_name + "." + str(count) + "." + extension)
+        count += 1
+        full_path = new_full_path
+
+    return full_path
+
+
 def get_files_from_path(path, match_func=lambda path: True):
     """ Return all files in a directory tree matching a criteria.
 
@@ -1517,14 +1550,6 @@ class SuperPMIReplay:
 
         result = True  # Assume success
 
-        # Possible return codes from SuperPMI
-        #
-        # 0  : success
-        # -1 : general fatal error (e.g., failed to initialize, failed to read files)
-        # -2 : JIT failed to initialize
-        # 1  : there were compilation failures
-        # 2  : there were assembly diffs
-
         with TempDir() as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
@@ -1596,8 +1621,12 @@ class SuperPMIReplay:
                 if return_code == 0:
                     logging.info("Clean SuperPMI replay")
                 else:
-                    files_with_replay_failures.append(mch_file)
                     result = False
+                    # Don't report as replay failure missing data (return code 3).
+                    # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                    # reported as a replay failure.
+                    if return_code != 3:
+                        files_with_replay_failures.append(mch_file)
 
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
@@ -1669,14 +1698,6 @@ class SuperPMIReplayAsmDiffs:
 
         result = True  # Assume success
 
-        # Possible return codes from SuperPMI
-        #
-        # 0  : success
-        # -1 : general fatal error (e.g., failed to initialize, failed to read files)
-        # -2 : JIT failed to initialize
-        # 1  : there were compilation failures
-        # 2  : there were assembly diffs
-
         # Set up some settings we'll use below.
 
         asm_complus_vars = {
@@ -1744,6 +1765,9 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
+        # List of all Markdown summary files
+        all_md_summary_files = []
+
         with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
@@ -1804,8 +1828,12 @@ class SuperPMIReplayAsmDiffs:
                         if return_code == 0:
                             logging.info("Clean SuperPMI replay")
                         else:
-                            files_with_replay_failures.append(mch_file)
                             result = False
+                            # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                            # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                            # reported as a replay failure.
+                            if return_code != 2 and return_code != 3:
+                                files_with_replay_failures.append(mch_file)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
@@ -1938,7 +1966,10 @@ class SuperPMIReplayAsmDiffs:
                             jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
-                                command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                                md_summary_file = os.path.join(asm_root_dir, "summary.md")
+                                summary_file_info = ( mch_file, md_summary_file )
+                                all_md_summary_files.append(summary_file_info)
+                                command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
 
@@ -1971,7 +2002,31 @@ class SuperPMIReplayAsmDiffs:
 
             ################################################################################################ end of for mch_file in self.mch_files
 
+        # Report the overall results summary of the asmdiffs run
+
         logging.info("Asm diffs summary:")
+
+        # Construct an overall Markdown summary file.
+
+        if len(all_md_summary_files) > 0:
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
+
+            with open(overall_md_summary_file, "w") as write_fh:
+                for summary_file_info in all_md_summary_files:
+                    summary_mch  = summary_file_info[0]
+                    summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
+                    summary_file = summary_file_info[1]
+                    with open(summary_file, "r") as read_fh:
+                        write_fh.write("## " + summary_mch_filename + ":\n\n")
+                        shutil.copyfileobj(read_fh, write_fh)
+
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        # Report the set of MCH files with asm diffs and replay failures.
 
         if len(files_with_replay_failures) != 0:
             logging.info("  Replay failures in %s MCH files:", len(files_with_replay_failures))
@@ -3173,7 +3228,7 @@ def setup_args(args):
     log_file = None
     if coreclr_args.log_file is None:
         if hasattr(coreclr_args, "spmi_location"):
-            log_file = os.path.join(coreclr_args.spmi_location, "superpmi.log")
+            log_file = create_unique_file_name(coreclr_args.spmi_location, "superpmi", "log")
             if not os.path.isdir(coreclr_args.spmi_location):
                 os.makedirs(coreclr_args.spmi_location)
     else:

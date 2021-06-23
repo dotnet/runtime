@@ -9,6 +9,8 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
 using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Threading;
 
 namespace System.Net.Test.Common
 {
@@ -20,7 +22,7 @@ namespace System.Net.Test.Common
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
 
-        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null);
+        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null);
 
         public abstract Version Version { get; }
 
@@ -56,6 +58,54 @@ namespace System.Net.Test.Common
         public Task<HttpRequestData> AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string content = "", IList<HttpHeaderData> additionalHeaders = null)
         {
             return HandleRequestAsync(statusCode, headers: additionalHeaders, content: content);
+        }
+    }
+
+    public sealed class SocketWrapper : IDisposable
+    {
+        private Socket _socket;
+        private WebSocket _websocket;
+
+        public SocketWrapper(Socket socket)
+        {
+            _socket = socket;
+        }
+        public SocketWrapper(WebSocket websocket)
+        {
+            _websocket = websocket;
+        }
+
+        public void Dispose()
+        {
+            _socket?.Dispose();
+            _websocket?.Dispose();
+        }
+        public void Close()
+        {
+            _socket?.Close();
+            CloseWebSocket();
+        }
+
+        public void Shutdown(SocketShutdown how)
+        {
+            _socket?.Shutdown(how);
+            CloseWebSocket();
+        }
+
+        private void CloseWebSocket()
+        {
+            if (_websocket != null && (_websocket.State == WebSocketState.Open || _websocket.State == WebSocketState.Connecting || _websocket.State == WebSocketState.None))
+            {
+                try
+                {
+                    var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
+                    // Block and wait for the task to complete synchronously
+                    Task.WaitAll(task);
+                }
+                catch (Exception)
+                {
+                }
+            }            
         }
     }
 

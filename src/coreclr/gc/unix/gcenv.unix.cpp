@@ -884,7 +884,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(TARGET_LINUX) && !defined(HOST_ARM)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
     if (cacheSize == 0)
     {
         //

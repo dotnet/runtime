@@ -1718,8 +1718,8 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 }
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-EXTERN_C void __stdcall jitStartup(ICorJitHost* host);
-EXTERN_C ICorJitCompiler* __stdcall getJit();
+EXTERN_C void jitStartup(ICorJitHost* host);
+EXTERN_C ICorJitCompiler* getJit();
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 BOOL EEJitManager::LoadJIT()

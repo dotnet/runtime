@@ -271,6 +271,11 @@ void CrawlFrame::GetExactGenericInstantiations(Instantiation *pClassInst, Instan
     UNREACHABLE();
 }
 
+void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
+{
+    UNREACHABLE();
+}
+
 BOOL Object::SupportsInterface(OBJECTREF pObj, MethodTable* pInterfaceMT)
 {
     UNREACHABLE();

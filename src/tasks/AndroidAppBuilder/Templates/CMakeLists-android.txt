@@ -9,12 +9,19 @@ if(NOT USE_LLVM)
     add_compile_options(-no-integrated-as)
 endif()
 
+# Prevent the warning: shared library text segment is not shareable which is treated as an error
+if (NOT ANDROID_ABI STREQUAL "arm64-v8a")
+    add_link_options(-Wl,--no-warn-shared-textrel)
+endif()
+
 add_library(
     monodroid
     SHARED
     monodroid.c
     %AotModulesSource%
-    %AotSources%)
+)
+
+%AotSources%
 
 %Defines%
 

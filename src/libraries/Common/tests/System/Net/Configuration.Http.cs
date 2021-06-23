@@ -45,12 +45,15 @@ namespace System.Net.Test.Common
             public static string EchoClientCertificateRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
             public static string Http2ForceUnencryptedLoopback => GetValue("DOTNET_TEST_HTTP2_FORCEUNENCRYPTEDLOOPBACK");
 
+            public static string RemoteLoopHost => GetValue("DOTNET_TEST_REMOTE_LOOP_HOST");
+
             private const string EchoHandler = "Echo.ashx";
             private const string EmptyContentHandler = "EmptyContent.ashx";
             private const string RedirectHandler = "Redirect.ashx";
             private const string VerifyUploadHandler = "VerifyUpload.ashx";
             private const string DeflateHandler = "Deflate.ashx";
             private const string GZipHandler = "GZip.ashx";
+            private const string RemoteLoopHandler = "RemoteLoop";
 
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
@@ -67,6 +70,7 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteGZipServer = new Uri("http://" + Host + "/" + GZipHandler);
             public static readonly Uri Http2RemoteDeflateServer = new Uri("https://" + Http2Host + "/" + DeflateHandler);
             public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
+            public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
             public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };

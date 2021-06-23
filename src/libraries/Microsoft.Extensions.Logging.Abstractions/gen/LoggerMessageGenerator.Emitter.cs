@@ -381,34 +381,45 @@ namespace {lc.Namespace}
                 GenParameters(lm);
 
                 _builder.Append($@")
-        {nestedIndentation}{{
+        {nestedIndentation}{{");
+
+                string enabledCheckIndentation = lm.SkipEnabledCheck ? "" : "    ";
+                if (!lm.SkipEnabledCheck)
+                {
+                    _builder.Append($@"
             {nestedIndentation}if ({logger}.IsEnabled({level}))
             {nestedIndentation}{{");
+                }
 
                 if (UseLoggerMessageDefine(lm))
                 {
                     _builder.Append($@"
-                {nestedIndentation}__{lm.Name}Callback({logger}, ");
+            {nestedIndentation}{enabledCheckIndentation}__{lm.Name}Callback({logger}, ");
 
                     GenCallbackArguments(lm);
 
-                    _builder.Append(@$"{exceptionArg});");
+                    _builder.Append($"{exceptionArg});");
                 }
                 else
                 {
                     _builder.Append($@"
-                {nestedIndentation}{logger}.Log(
-                    {level},
-                    new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
-                    ");
-                    GenHolder(lm);
-                    _builder.Append($@",
-                    {exceptionArg},
-                    __{lm.Name}Struct.Format);");
+            {nestedIndentation}{enabledCheckIndentation}{logger}.Log(
+                {nestedIndentation}{enabledCheckIndentation}{level},
+                {nestedIndentation}{enabledCheckIndentation}new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
+                {nestedIndentation}{enabledCheckIndentation}");
+                GenHolder(lm);
+                _builder.Append($@",
+                {nestedIndentation}{enabledCheckIndentation}{exceptionArg},
+                {nestedIndentation}{enabledCheckIndentation}__{lm.Name}Struct.Format);");
+                }
+
+                if (!lm.SkipEnabledCheck)
+                {
+                    _builder.Append($@"
+            {nestedIndentation}}}");
                 }
 
                 _builder.Append($@"
-            {nestedIndentation}}}
         {nestedIndentation}}}");
 
                 static string GetException(LoggerMethod lm)

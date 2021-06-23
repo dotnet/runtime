@@ -97,7 +97,7 @@ namespace System.Net.Test.Common
             await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
 
-        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             // TODO: make a new overload that takes a MultiplexedConnection.
             // This method is always unacceptable to call for HTTP/3.

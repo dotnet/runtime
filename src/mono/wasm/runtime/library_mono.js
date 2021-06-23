@@ -86,6 +86,7 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root.bind(MONO);
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots.bind(MONO);
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots.bind(MONO);
+			module ["mono_wasm_load_config"] = MONO.mono_wasm_load_config.bind(MONO);
 		},
 
 		_base64Converter: {
@@ -2362,6 +2363,34 @@ var MonoSupportLib = {
 
 			console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
 		},
+
+		/**
+		 * Loads the mono config file (typically called mono-config.json) asynchroniously
+		 * Note: the run dependencies are so emsdk actually awaits it in order.
+		 *
+		 * @param {string} configFilePath - relative path to the config file
+		 * @throws Will throw an error if the config file loading fails
+		 */
+		mono_wasm_load_config: async function (configFilePath) {
+			Module.addRunDependency(configFilePath);	
+			try {
+				let config = null;
+				// NOTE: when we add nodejs make sure to include the nodejs fetch package
+				if (ENVIRONMENT_IS_WEB) {
+					const configRaw = await fetch(configFilePath);
+					config = await configRaw.json();
+				}else if (ENVIRONMENT_IS_NODE) {
+					config = require(configFilePath);
+				} else { // shell or worker
+					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
+				}
+				return config;
+			} catch(e) {
+				return {message: "failed to load config file", error: e};
+			} finally {
+				Module.removeRunDependency(configFilePath);
+			}
+		}
 	},
 
 	mono_wasm_add_typed_value: function (type, str_value, value) {
@@ -2549,7 +2578,7 @@ var MonoSupportLib = {
 			assembly_b64,
 			pdb_b64
 		});
-	},
+	}
 };
 
 autoAddDeps(MonoSupportLib, '$MONO')

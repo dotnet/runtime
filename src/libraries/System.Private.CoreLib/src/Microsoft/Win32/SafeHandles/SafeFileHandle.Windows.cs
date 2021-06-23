@@ -4,7 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+using System.IO.Strategies;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
@@ -24,13 +25,6 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        private SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle, FileOptions fileOptions) : base(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
-
-            _fileOptions = fileOptions;
-        }
-
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
@@ -43,10 +37,14 @@ namespace Microsoft.Win32.SafeHandles
         {
             using (DisableMediaInsertionPrompt.Create())
             {
-                SafeFileHandle fileHandle = new SafeFileHandle(
-                    NtCreateFile(fullPath, mode, access, share, options, preallocationSize),
-                    ownsHandle: true,
-                    options);
+                // we don't use NtCreateFile as there is no public and reliable way
+                // of converting DOS to NT file paths (RtlDosPathNameToRelativeNtPathName_U_WithStatus is not documented)
+                SafeFileHandle fileHandle = CreateFile(fullPath, mode, access, share, options);
+
+                if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
+                {
+                    Preallocate(fullPath, preallocationSize, fileHandle);
+                }
 
                 fileHandle.InitThreadPoolBindingIfNeeded();
 
@@ -54,48 +52,91 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static IntPtr NtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        private static unsafe SafeFileHandle CreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
-            uint ntStatus;
-            IntPtr fileHandle;
-
-            const string MandatoryNtPrefix = @"\??\";
-            if (fullPath.StartsWith(MandatoryNtPrefix, StringComparison.Ordinal))
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
+            if ((share & FileShare.Inheritable) != 0)
             {
-                (ntStatus, fileHandle) = Interop.NtDll.NtCreateFile(fullPath, mode, access, share, options, preallocationSize);
-            }
-            else
-            {
-                var vsb = new ValueStringBuilder(stackalloc char[256]);
-                vsb.Append(MandatoryNtPrefix);
-
-                if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
+                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
                 {
-                    vsb.Append(fullPath.AsSpan(4));
-                }
-                else
-                {
-                    vsb.Append(fullPath);
-                }
-
-                (ntStatus, fileHandle) = Interop.NtDll.NtCreateFile(vsb.AsSpan(), mode, access, share, options, preallocationSize);
-                vsb.Dispose();
+                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
+                    bInheritHandle = Interop.BOOL.TRUE
+                };
             }
 
-            switch (ntStatus)
+            int fAccess =
+                ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
+                ((access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
+
+            // Our Inheritable bit was stolen from Windows, but should be set in
+            // the security attributes class.  Don't leave this bit set.
+            share &= ~FileShare.Inheritable;
+
+            // Must use a valid Win32 constant here...
+            if (mode == FileMode.Append)
             {
-                case Interop.StatusOptions.STATUS_SUCCESS:
-                    return fileHandle;
-                case Interop.StatusOptions.STATUS_DISK_FULL:
-                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
-                // NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
-                // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
-                case Interop.StatusOptions.STATUS_INVALID_PARAMETER when preallocationSize > 0:
-                case Interop.StatusOptions.STATUS_FILE_TOO_LARGE:
-                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
-                default:
-                    int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
-                    throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
+                mode = FileMode.OpenOrCreate;
+            }
+
+            int flagsAndAttributes = (int)options;
+
+            // For mitigating local elevation of privilege attack through named pipes
+            // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
+            // named pipe server can't impersonate a high privileged client security context
+            // (note that this is the effective default on CreateFile2)
+            flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
+
+            SafeFileHandle fileHandle = Interop.Kernel32.CreateFile(fullPath, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+            if (fileHandle.IsInvalid)
+            {
+                // Return a meaningful exception with the full path.
+
+                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
+                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
+                // probably be consistent w/ every other directory.
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath!.Length == PathInternal.GetRootLength(fullPath))
+                {
+                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+            }
+
+            fileHandle._fileOptions = options;
+            return fileHandle;
+        }
+
+        private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle)
+        {
+            var allocationInfo = new Interop.Kernel32.FILE_ALLOCATION_INFO
+            {
+                AllocationSize = preallocationSize
+            };
+
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                fileHandle,
+                Interop.Kernel32.FileAllocationInfo,
+                &allocationInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_ALLOCATION_INFO)))
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                // we try to mimic the atomic NtCreateFile here:
+                // if preallocation fails, close the handle and delete the file
+                fileHandle.Dispose();
+                Interop.Kernel32.DeleteFile(fullPath);
+
+                switch (errorCode)
+                {
+                    case Interop.Errors.ERROR_DISK_FULL:
+                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
+                    case Interop.Errors.ERROR_FILE_TOO_LARGE:
+                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
+                    default:
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+                }
             }
         }
 

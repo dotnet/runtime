@@ -20,22 +20,18 @@ namespace NetClient
 
             try
             {
-                ActivateServer();
+                var server = (Server.Contract.Servers.NumericTesting)new Server.Contract.Servers.NumericTestingClass();
             }
-            catch (PlatformNotSupportedException ex)
+            catch (NotSupportedException) when (OperatingSystem.IsWindows())
+            {
+                return 100;
+            }
+            catch (PlatformNotSupportedException) when (!OperatingSystem.IsWindows())
             {
                 return 100;
             }
 
             return 101;
-        }
-
-        // Mark as NoInlining to make sure the failure is observed while running Main,
-        // not while JITing Main and trying to resolve the target of the constructor call.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ActivateServer()
-        {
-            var server = (Server.Contract.Servers.NumericTesting)new Server.Contract.Servers.NumericTestingClass();
         }
     }
 }

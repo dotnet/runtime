@@ -193,7 +193,7 @@
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
-      <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
@@ -208,7 +208,7 @@
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
-      <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- Hack: Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />

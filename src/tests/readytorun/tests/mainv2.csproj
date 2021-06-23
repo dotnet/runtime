@@ -3,6 +3,8 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CrossGenTest>false</CrossGenTest>
+    <!-- Disabled under GCStress. Tracking issue: https://github.com/dotnet/runtime/issues/54203 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />

@@ -3,18 +3,6 @@
   <assembly fullname="System.Drawing.Common, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.BitmapSelector.SameAssemblyOptIn(System.Reflection.Assembly)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.BitmapSelector.SatelliteAssemblyOptIn(System.Reflection.Assembly)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Drawing.Icon.OleCreatePictureIndirect(System.Drawing.Icon.PICTDESC,System.Guid@,System.Boolean)</property>

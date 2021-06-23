@@ -77,6 +77,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
+        // For unit testing
+        internal int? GetSlot(ServiceDescriptor serviceDescriptor)
+        {
+            if (_descriptorLookup.TryGetValue(serviceDescriptor.ServiceType, out ServiceDescriptorCacheItem item))
+            {
+                return item.GetSlot(serviceDescriptor);
+            }
+
+            return null;
+        }
+
         internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain) =>
             _callSiteCache.TryGetValue(new ServiceCacheKey(serviceType, DefaultSlot), out ServiceCallSite site) ? site :
             CreateCallSite(serviceType, callSiteChain);
@@ -537,7 +548,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int index = _items.IndexOf(descriptor);
                     if (index != -1)
                     {
-                        return Count - index + 1;
+                        return _items.Count - (index + 1);
                     }
                 }
 

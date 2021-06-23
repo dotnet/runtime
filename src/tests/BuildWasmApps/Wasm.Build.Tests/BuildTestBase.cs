@@ -8,9 +8,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 #nullable enable
 
@@ -29,7 +31,6 @@ namespace Wasm.Build.Tests
         protected static readonly string s_emsdkPath;
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
-
         protected string? _projectDir;
         protected readonly ITestOutputHelper _testOutput;
         protected string _logPath;
@@ -139,10 +140,17 @@ namespace Wasm.Build.Tests
                     .WithRunHosts(host)
                     .UnwrapItemsAsArrays();
 
-        protected void RunAndTestWasmApp(BuildArgs buildArgs, RunHost host, string id, Action<string> test, string? buildDir=null, int expectedExitCode=0, string? args=null)
+        protected string RunAndTestWasmApp(BuildArgs buildArgs,
+                                           RunHost host,
+                                           string id,
+                                           Action<string>? test=null,
+                                           string? buildDir = null,
+                                           int expectedExitCode = 0,
+                                           string? args = null,
+                                           Dictionary<string, string>? envVars = null)
         {
             buildDir ??= _projectDir;
-            Dictionary<string, string>? envVars = new();
+            envVars ??= new();
             envVars["XHARNESS_DISABLE_COLORED_OUTPUT"] = "true";
             if (buildArgs.AOT)
             {
@@ -180,6 +188,11 @@ namespace Wasm.Build.Tests
                 Assert.DoesNotContain("AOT: image 'System.Private.CoreLib' found.", output);
                 Assert.DoesNotContain($"AOT: image '{buildArgs.ProjectName}' found.", output);
             }
+
+            if (test != null)
+                test(output);
+
+            return output;
         }
 
         protected static string RunWithXHarness(string testCommand, string testLogPath, string projectName, string bundleDir,
@@ -209,6 +222,8 @@ namespace Wasm.Build.Tests
             args.Append($" --run {projectName}.dll");
             args.Append($" {appArgs ?? string.Empty}");
 
+            _testOutput.WriteLine(string.Empty);
+            _testOutput.WriteLine($"---------- Running with {testCommand} ---------");
             var (exitCode, output) = RunProcess("dotnet", _testOutput,
                                         args: args.ToString(),
                                         workingDir: bundleDir,
@@ -251,14 +266,21 @@ namespace Wasm.Build.Tests
                 <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
+              <ItemGroup>
+                ##EXTRA_ITEMS##
+              </ItemGroup>
+              ##INSERT_AT_END##
             </Project>";
 
-        protected static BuildArgs GetBuildArgsWith(BuildArgs buildArgs, string? extraProperties=null, string projectTemplate=SimpleProjectTemplate)
+        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
-                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>\n";
+                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>\n<EmccVerbose>false</EmccVerbose>\n";
 
-            string projectContents = projectTemplate.Replace("##EXTRA_PROPERTIES##", extraProperties ?? string.Empty);
+            string projectContents = projectTemplate
+                                        .Replace("##EXTRA_PROPERTIES##", extraProperties)
+                                        .Replace("##EXTRA_ITEMS##", extraItems)
+                                        .Replace("##INSERT_AT_END##", insertAtEnd);
             return buildArgs with { ProjectFileContents = projectContents };
         }
 
@@ -273,10 +295,10 @@ namespace Wasm.Build.Tests
         {
             if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
-                Console.WriteLine ($"Using existing build found at {product.BuildPath}, with build log at {product.LogFile}");
+                Console.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
 
-                Assert.True(product.Result, $"Found existing build at {product.BuildPath}, but it had failed. Check build log at {product.LogFile}");
-                _projectDir = product.BuildPath;
+                Assert.True(product.Result, $"Found existing build at {product.ProjectDir}, but it had failed. Check build log at {product.LogFile}");
+                _projectDir = product.ProjectDir;
 
                 // use this test's id for the run logs
                 _logPath = Path.Combine(s_logRoot, id);
@@ -297,7 +319,6 @@ namespace Wasm.Build.Tests
                 throw new Exception("_projectDir should be set, to use createProject=false");
             }
 
-
             StringBuilder sb = new();
             sb.Append("publish");
             sb.Append(s_defaultBuildArgs);
@@ -305,6 +326,7 @@ namespace Wasm.Build.Tests
             sb.Append($" /p:Configuration={buildArgs.Config}");
 
             string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}.binlog");
+            _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /v:minimal /nologo");
             if (buildArgs.ExtraBuildArgs != null)
@@ -347,7 +369,7 @@ namespace Wasm.Build.Tests
                 "runtime.js",
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
-                "mono-config.js",
+                "mono-config.json",
                 "dotnet.js",
                 "run-v8.sh"
             });
@@ -378,8 +400,14 @@ namespace Wasm.Build.Tests
         {
             string nativeDir = GetRuntimeNativeDir();
 
-            AssertFile(Path.Combine(nativeDir, "dotnet.wasm"), Path.Combine(bundleDir, "dotnet.wasm"), "Expected dotnet.wasm to be same as the runtime pack", same: fromRuntimePack);
-            AssertFile(Path.Combine(nativeDir, "dotnet.js"), Path.Combine(bundleDir, "dotnet.js"), "Expected dotnet.js to be same as the runtime pack", same: fromRuntimePack);
+            AssertNativeFile("dotnet.wasm");
+            AssertNativeFile("dotnet.js");
+
+            void AssertNativeFile(string file)
+                => AssertFile(Path.Combine(nativeDir, file),
+                              Path.Combine(bundleDir, file),
+                              $"Expected {file} to be {(fromRuntimePack ? "the same as" : "different from")} the runtime pack",
+                              same: fromRuntimePack);
         }
 
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
@@ -464,6 +492,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"Running {path} {args}");
             Console.WriteLine($"Running: {path}: {args}");
             Console.WriteLine($"WorkingDirectory: {workingDir}");
+            _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
             var processStartInfo = new ProcessStartInfo
             {
@@ -584,7 +613,7 @@ namespace Wasm.Build.Tests
 
   <Target Name=""PrepareForWasmBuild"">
     <ItemGroup>
-      <WasmAssembliesToBundle Include=""$(TargetDir)publish\*.dll"" />
+      <WasmAssembliesToBundle Include=""$(TargetDir)publish\**\*.dll"" />
     </ItemGroup>
   </Target>
 
@@ -594,5 +623,5 @@ namespace Wasm.Build.Tests
     }
 
     public record BuildArgs(string ProjectName, string Config, bool AOT, string ProjectFileContents, string? ExtraBuildArgs);
-    public record BuildProduct(string BuildPath, string LogFile, bool Result);
+    public record BuildProduct(string ProjectDir, string LogFile, bool Result);
  }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using Xunit;
@@ -110,6 +111,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             yield return new object[] { new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { DefaultIgnoreCondition = JsonIgnoreCondition.Never } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { IgnoreReadOnlyFields = true } };
+        }
+
+        [Fact]
+        public static void WriterIsFlushedAtRootCall()
+        {
+            using MemoryStream ms = new();
+            using Utf8JsonWriter writer = new(ms);
+
+            JsonSerializer.Serialize(writer, new HighLowTemps(), SerializationContext.Default.HighLowTemps);
+            Assert.Equal(18, writer.BytesCommitted);
+            Assert.Equal(0, writer.BytesPending);
         }
     }
 }

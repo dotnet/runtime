@@ -34,7 +34,7 @@ Visual Studio 2019 installation process:
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
-The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
+Visual Studio 2019 16.6 or later is required for building the repository. Visual Studio 2019 16.10 is required to work with the libraries projects inside the Visual Studio IDE.
 
 ## CMake
 

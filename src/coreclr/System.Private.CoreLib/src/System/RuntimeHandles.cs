@@ -460,8 +460,17 @@ namespace System
             return GetInterfaceMethodImplementation(new QCallTypeHandle(ref nativeHandle), new QCallTypeHandle(ref nativeInterfaceHandle), interfaceMethodHandle);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComObject(RuntimeType type, bool isGenericCOM);
+        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
+        {
+#if FEATURE_COMINTEROP
+            if (isGenericCOM)
+                return type == typeof(__ComObject);
+
+            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
+#else
+            return false;
+#endif
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInterface(RuntimeType type);
