@@ -26,7 +26,7 @@ parameters:
   
   
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -40,6 +40,7 @@ steps:
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         creator: $(Build.DefinitionName)

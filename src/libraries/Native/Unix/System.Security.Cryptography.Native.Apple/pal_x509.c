@@ -230,3 +230,15 @@ int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDa
     *pOSStatus = *ppDataOut == NULL ? errSecParam : noErr;
     return (*pOSStatus == noErr);
 }
+
+int32_t AppleCryptoNative_X509GetSubjectSummary(SecCertificateRef cert, CFStringRef* ppSummaryOut)
+{
+    if (ppSummaryOut != NULL)
+        *ppSummaryOut = NULL;
+
+    if (cert == NULL || ppSummaryOut == NULL)
+        return kErrorBadInput;
+
+    *ppSummaryOut = SecCertificateCopySubjectSummary(cert);
+    return (*ppSummaryOut != NULL);
+}

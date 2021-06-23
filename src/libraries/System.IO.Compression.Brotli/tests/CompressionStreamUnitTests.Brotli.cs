@@ -14,7 +14,8 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new BrotliStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new BrotliStream(stream, level, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((BrotliStream)stream).BaseStream;
-        protected override bool ReadsMayBlockUntilBufferFullOrEOF => true;
+
+        protected override bool FlushGuaranteesAllDataWritten => false;
 
         // The tests are relying on an implementation detail of BrotliStream, using knowledge of its internal buffer size
         // in various test calculations.  Currently the implementation is using the ArrayPool, which will round up to a

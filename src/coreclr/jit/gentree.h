@@ -5686,6 +5686,13 @@ public:
     bool gtBlkOpGcUnsafe;
 #endif
 
+#ifdef TARGET_XARCH
+    bool IsOnHeapAndContainsReferences()
+    {
+        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIsLocalAddr();
+    }
+#endif
+
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
         , m_layout(layout)

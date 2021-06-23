@@ -5509,8 +5509,16 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             fgSetRngChkTarget(indexAddr);
         }
 
-        // Change `tree` into an indirection and return.
-        tree->ChangeOper(GT_IND);
+        if (!tree->TypeIs(TYP_STRUCT))
+        {
+            tree->ChangeOper(GT_IND);
+        }
+        else
+        {
+            DEBUG_DESTROY_NODE(tree);
+            tree = gtNewObjNode(elemStructType, indexAddr);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        }
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
         bool canCSE               = indir->CanCSE();
@@ -5520,9 +5528,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             indir->SetDoNotCSE();
         }
 
-#ifdef DEBUG
-        indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
+        INDEBUG(indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         return indir;
     }
@@ -8639,7 +8645,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         GenTree* objp       = call->gtCallThisArg->GetNode();
         call->gtCallThisArg = nullptr;
 
-        if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->IsLocal())
+        if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->OperIs(GT_LCL_VAR))
         {
             // tmp = "this"
             unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));

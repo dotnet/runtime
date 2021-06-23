@@ -31,6 +31,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        // This should correspond to platforms on which System.Net.Quic is supported. See also HttpConnectionPool.IsHttp3Supported().
+        public static bool IsMockQuicSupported
+            => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null, bool allowAllHttp2Certificates = true)
         {
             useVersion ??= HttpVersion.Version11;

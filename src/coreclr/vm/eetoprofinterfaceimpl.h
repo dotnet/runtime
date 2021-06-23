@@ -33,10 +33,9 @@ class ProfToEEInterfaceImpl;
 interface IAssemblyBindingClosure;
 struct AssemblyReferenceClosureWalkContextForProfAPI;
 
-const GUID k_guidZero = {0};
-
 class EEToProfInterfaceImpl
 {
+    friend class ProfControlBlock;
 public:
 
     //
@@ -54,6 +53,8 @@ public:
         BOOL fLoadedViaAttach,
         DWORD dwConcurrentGCWaitTimeoutInMs);
 
+    void SetProfilerInfo(ProfilerInfo *pProfilerInfo);
+    
     BOOL IsCallback3Supported();
     BOOL IsCallback4Supported();
     BOOL IsCallback5Supported();
@@ -117,15 +118,6 @@ public:
     BOOL RequiresGenericsContextForEnterLeave();
 
     UINT_PTR EEFunctionIDMapper(FunctionID funcId, BOOL * pbHookFunction);
-
-    // This fills in the non call-specific portions of the cookie GUID.
-    // This should only be called once at startup if necessary.
-    HRESULT InitGUID();
-
-    // This will assign a mostly-unique GUID.  If enough calls to GetGUID
-    // are made from the same thread, then the GUIDs will cycle.
-    // (Current, it will cycle every 256 calls)
-    void GetGUID(GUID * pGUID);
 
     //
     // Initialize callback
@@ -377,31 +369,6 @@ public:
         /* [in] */ void * pVTable);
 
     //
-    // Remoting Events
-    //
-
-    HRESULT RemotingClientInvocationStarted();
-
-    HRESULT RemotingClientSendingMessage(GUID * pCookie,
-                                         BOOL fIsAsync);
-
-    HRESULT RemotingClientReceivingReply(GUID * pCookie,
-                                         BOOL fIsAsync);
-
-    HRESULT RemotingClientInvocationFinished();
-
-    HRESULT RemotingServerReceivingMessage(GUID * pCookie,
-                                           BOOL fIsAsync);
-
-    HRESULT RemotingServerInvocationStarted();
-
-    HRESULT RemotingServerInvocationReturned();
-
-    HRESULT RemotingServerSendingReply(GUID * pCookie,
-                                       BOOL fIsAsync);
-
-
-    //
     // GC Events
     //
 
@@ -507,6 +474,8 @@ public:
 
     HRESULT EventPipeProviderCreated(EventPipeProvider *provider);
 
+    HRESULT LoadAsNotficationOnly(BOOL *pbNotificationOnly);
+
 private:
 
     //
@@ -578,6 +547,7 @@ private:
     ICorProfilerCallback8  * m_pCallback8;
     ICorProfilerCallback9  * m_pCallback9;
     ICorProfilerCallback10 * m_pCallback10;
+    ICorProfilerCallback11 * m_pCallback11;
 
     HMODULE                 m_hmodProfilerDLL;
 
@@ -588,13 +558,6 @@ private:
     FunctionIDMapper * m_pProfilersFuncIDMapper;
     FunctionIDMapper2 * m_pProfilersFuncIDMapper2;
     void * m_pProfilersFuncIDMapper2ClientData;
-
-    // This is used as a cookie template for remoting calls
-    GUID m_GUID;
-
-    // This is an incrementing counter for constructing unique GUIDS from
-    // m_GUID
-    LONG m_lGUIDCount;
 
     // This will contain a list of free ref data structs, so they
     // don't have to be re-allocated on every GC
@@ -628,6 +591,7 @@ private:
 
     // Remember whether the profiler has enabled Rejit, and prevent detach if it has.
     BOOL                    m_fModifiedRejitState;
+    ProfilerInfo           *m_pProfilerInfo;
 
     GCReferencesData * AllocateMovedReferencesData();
 
