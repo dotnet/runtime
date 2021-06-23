@@ -5,13 +5,13 @@
     <!-- Output: _MonoRuntimeComponentName item list: the components provided by the runtime, with ComponentLib and ComponentStubLib metadata that gives the filenames of the components relative to the runtime pack native subdirectory -->
     <ItemGroup Condition="'$(_MonoRuntimeComponentLinking)' == 'dynamic'">
       <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)">
-	<ComponentLib>libmono-component-%(Identity)$(_MonoRuntimeComponentSharedLibExt)</ComponentLib>
+        <ComponentLib>libmono-component-%(Identity)$(_MonoRuntimeComponentSharedLibExt)</ComponentLib>
       </_MonoRuntimeComponentName>
     </ItemGroup>
     <ItemGroup Condition="'$(_MonoRuntimeComponentLinking)' == 'static'">
       <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)">
-	<ComponentLib>libmono-component-%(Identity)-static$(_MonoRuntimeComponentStaticLibExt)</ComponentLib>
-	<ComponentStubLib>libmono-component-%(Identity)-stub-static$(_MonoRuntimeComponentStaticLibExt)</ComponentStubLib>
+        <ComponentLib>libmono-component-%(Identity)-static$(_MonoRuntimeComponentStaticLibExt)</ComponentLib>
+        <ComponentStubLib>libmono-component-%(Identity)-stub-static$(_MonoRuntimeComponentStaticLibExt)</ComponentStubLib>
       </_MonoRuntimeComponentName>
     </ItemGroup>
   </Target>
@@ -30,9 +30,9 @@
       <!-- n.b. copies the metadata from _MonoRuntimeComponentName to _MonoRuntimeSelectedComponents -->
       <_MonoRuntimeSelectedComponents Include="@(_MonoRuntimeComponentName)" Condition="'@(_MonoRuntimeComponentName)' == '@(_MonoComponent)' and '%(Identity)' != ''" />
       <_MonoRuntimeComponentLink Include="%(_MonoRuntimeSelectedComponents.ComponentLib)">
-	<Linking>$(_MonoRuntimeComponentLinking)</Linking>
-	<IsStub>false</IsStub>
-	<ComponentName>%(_MonoRuntimeSelectedComponents.Identity)</ComponentName>
+        <Linking>$(_MonoRuntimeComponentLinking)</Linking>
+        <IsStub>false</IsStub>
+        <ComponentName>%(_MonoRuntimeSelectedComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentLink>
       <!-- non-empty if any unknown components are specified -->
       <_MonoRuntimeSelectedMissingComponents Include="@(_MonoComponent)" Exclude="@(_MonoRuntimeComponentName)" />
@@ -42,14 +42,14 @@
       <!-- Take difference _MonoRuntimeComponentName - _MonoComponent.  The remaining components are stubbed out -->
       <_MonoRuntimeSelectedStubComponents Include="@(_MonoRuntimeComponentName)" Exclude="@(_MonoComponent)" />
       <_MonoRuntimeComponentLink Include="%(_MonoRuntimeSelectedStubComponents.ComponentStubLib)">
-	<Linking>$(_MonoRuntimeComponentLinking)</Linking>
-	<IsStub>true</IsStub>
-	<ComponentName>%(_MonoRuntimeSelectedStubComponents.Identity)</ComponentName>
+        <Linking>$(_MonoRuntimeComponentLinking)</Linking>
+        <IsStub>true</IsStub>
+        <ComponentName>%(_MonoRuntimeSelectedStubComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentLink>
     </ItemGroup>
 
     <Error Condition="@(_MonoRuntimeSelectedMissingComponents->Count()) != 0"
-	     Text="_MonoComponent item list includes components '@(_MonoRuntimeSelectedMissingComponents)' which are not defined in the runtime pack. Runtime pack includes '@(_MonoRuntimeComponentName)'" />
+             Text="_MonoComponent item list includes components '@(_MonoRuntimeSelectedMissingComponents)' which are not defined in the runtime pack. Runtime pack includes '@(_MonoRuntimeComponentName)'" />
 
   </Target>
 </Project>
