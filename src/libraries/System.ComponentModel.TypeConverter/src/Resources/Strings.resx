@@ -136,6 +136,9 @@
   <data name="TimerAutoReset" xml:space="preserve">
     <value>Indicates whether the timer will be restarted when it is enabled.</value>
   </data>
+  <data name="TimerTickImmediately" xml:space="preserve">
+    <value>Indicates whether the timer will raise the tick event immediately upon start.</value>
+  </data>
   <data name="TimerEnabled" xml:space="preserve">
     <value>Indicates whether the timer is enabled to fire events at a defined interval.</value>
   </data>
