@@ -211,7 +211,10 @@ var Module = {
 	printErr,
 
     preInit: async function() {
+		// this forces emsdk to await and laod the file now
+		Module.addRunDependency('mono-config.json');
         Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+		Module.removeDependency('mono-config.json');
     },
 
 	onAbort: function(x) {

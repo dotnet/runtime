@@ -6,7 +6,9 @@ var Module = {
     config: null,
 
     preInit: async function() {
+        Module.addRunDependency('mono-config.json');
         Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+		Module.removeDependency('mono-config.json');
     },
 
     onRuntimeInitialized: function () {
