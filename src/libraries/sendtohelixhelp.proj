@@ -166,10 +166,10 @@
       We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
       so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)powershell -c 'Get-PSDrive' &amp;&amp; call RunTests.cmd</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)call RunTests.cmd</HelixCommand>
     <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
 
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand)df -h &amp;&amp; ulimit -a &amp;&amp; free -h &amp;&amp; ./RunTests.sh</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand)./RunTests.sh</HelixCommand>
     <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
