@@ -64,8 +64,8 @@
   </ItemGroup>
   <!-- Internal types (platform: AnyOS) -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs
-             Link="System\Runtime\\InteropServices\NativeMemory.netstandard.cs"
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Link="System\Runtime\InteropServices\NativeMemory.netstandard.cs"
              Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
