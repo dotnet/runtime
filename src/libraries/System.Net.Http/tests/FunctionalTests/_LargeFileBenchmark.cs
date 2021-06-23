@@ -143,7 +143,7 @@ namespace System.Net.Http.Functional.Tests
 
             var handler = new SocketsHttpHandler();
 
-            double multiplier = (double)ratio / correction;
+            double multiplier = (double)correction / ratio;
             ChangeSettingValue(handler, "_http2StreamWindowScaleThresholdMultiplier", multiplier);
 
             string details = $"Dynamic_R({ratio})_C({correction})";
