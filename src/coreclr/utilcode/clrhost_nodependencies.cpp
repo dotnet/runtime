@@ -12,17 +12,6 @@
 #include "clrnt.h"
 #include "contract.h"
 
-#if defined(_MSC_VER)
-#  if defined(__SANITIZE_ADDRESS__)
-#    define HAS_ADDRESS_SANITIZER
-#  endif
-#endif
-#if defined __llvm__
-#  if defined(__has_feature) && __has_feature(address_sanitizer)
-#    define HAS_ADDRESS_SANITIZER
-#  endif
-#endif
-
 #ifdef _DEBUG_IMPL
 
 //
