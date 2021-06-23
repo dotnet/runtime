@@ -52,23 +52,18 @@ namespace System.Net.Http
         private readonly Channel<WriteQueueEntry> _writeChannel;
         private bool _lastPendingWriterShouldFlush;
 
-        // This will be set when we receive a GOAWAY.
-        // Requests currently in flight will continue to be processed, but no new requests can be initiated.
-        private bool _goingAway;
-
-        // If this is set, the connection is aborting due to an IO failure (IOException) or a protocol violation (Http2ProtocolException).
-        // Requests in flight have been (or are being) failed.
-        private Exception? _abortException;
-
-        // If this is set, the connections is shutting down and cannot accept new requests.
-        // When this is true, one or more of the following is also true:
-        // (1) _goingAway
-        // (2) _abortException is not null
-        // (3) _nextStream == MaxStreamId
+        // This flag indicates that the connection is shutting down and cannot accept new requests, because of one of the following conditions:
+        // (1) We received a GOAWAY frame from the server
+        // (2) We have exhaustead StreamIds (i.e. _nextStream == MaxStreamId)
+        // (3) A connection-level error occurred, in which case _abortException below is set.
         private bool _shutdown;
         private TaskCompletionSource? _shutdownWaiter;
 
-        // This means that the pool has disposed us and will not submit further requests.
+        // If this is set, the connection is aborting due to an IO failure (IOException) or a protocol violation (Http2ProtocolException).
+        // _shutdown above is true, and requests in flight have been (or are being) failed.
+        private Exception? _abortException;
+
+        // This means that the user (i.e. the connection pool) has disposed us and will not submit further requests.
         // Requests currently in flight will continue to be processed.
         // When all requests have completed, the connection will be torn down.
         private bool _disposed;
@@ -259,7 +254,7 @@ namespace System.Net.Http
 
         private void Shutdown()
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_shutdown)}={_shutdown}, {nameof(_goingAway)}={_goingAway}, {nameof(_abortException)}={_abortException}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_shutdown)}={_shutdown}, {nameof(_abortException)}={_abortException}");
 
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
@@ -1036,10 +1031,6 @@ namespace System.Net.Http
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
             lock (SyncObject)
             {
-                // Note, we can received multiple GOAWAYs from the server, so this may already be true.
-                // We still want to process the frame and abort streams because the lastStreamId may be less than previous one.
-                _goingAway = true;
-
                 Shutdown();
 
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
