@@ -1,16 +1,116 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
+        public static class CustomClassMarshaler {
+            public static CustomClass FromJavaScript (double d) {
+                return new CustomClass { D = d };
+            }
+
+            public static double ToJavaScript (CustomClass ct) {
+                return ct?.D ?? -1;
+            }
+        }
+
+        public class CustomClass {
+            public double D;
+        }
+
+        public static class CustomStructMarshaler {
+            public static CustomStruct FromJavaScript (double d) {
+                return new CustomStruct { D = d };
+            }
+
+            public static double ToJavaScript (in CustomStruct ct) {
+                return ct.D;
+            }
+        }
+
+        public struct CustomStruct {
+            public double D;
+        }
+
+        public static class CustomDateMarshaler {
+            public static string JavaScriptToInterchangeTransform => "return value.toISOString()";
+            public static string InterchangeToJavaScriptTransform => "return new Date(value)";
+
+            public static CustomDate FromJavaScript (string s) {
+                var newDate = DateTime.Parse(s).ToUniversalTime();
+                return new CustomDate { 
+                    Date = newDate
+                };
+            }
+
+            public static string ToJavaScript (in CustomDate cd) {
+                var result = cd.Date.ToString("o");
+                return result;
+            }
+        }
+
+        public struct CustomDate {
+            public DateTime Date;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CustomVector3 {
+            public float X, Y, Z;
+
+            public override string ToString () {
+                return $"[{X}, {Y}, {Z}]";
+            }
+        }
+
+        public static class CustomVector3Marshaler {
+            public static string JavaScriptToInterchangeTransform => "let ptr = temp_malloc(4 * 3), view = new Float32Array(Module.HEAPU8.buffer, ptr, 3); " +
+                "for (var i = 0; i < 3; i++) view[i] = value[i];" +
+                "return ptr;";
+            public static string InterchangeToJavaScriptTransform => 
+                "return [ Module.HEAPF32[((value / 4) | 0) + 0], Module.HEAPF32[((value / 4) | 0) + 1], Module.HEAPF32[((value / 4) | 0) + 2] ]";
+
+            public static unsafe CustomVector3 FromJavaScript (float * p) {
+                return new CustomVector3 {
+                    X = p[0],
+                    Y = p[1],
+                    Z = p[2]
+                };
+            }
+
+            public static unsafe CustomVector3 * ToJavaScript (CustomVector3 * pv3) => pv3;
+        }
+
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+
+        internal static CustomClass _ccValue;
+        private static void InvokeCustomClass(CustomClass cc)
+        {
+            _ccValue = cc;
+        }
+        private static CustomClass ReturnCustomClass(CustomClass cc)
+        {
+            return cc;
+        }
+
+        internal static CustomStruct _csValue;
+        private unsafe static void InvokeCustomStruct(CustomStruct cs)
+        {
+            _csValue = cs;
+        }
+        private static CustomStruct ReturnCustomStruct(CustomStruct cs)
+        {
+            return cs;
+        }
+
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {
@@ -101,6 +201,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _object2 = obj;
             return obj;
+        }
+
+        internal static DateTime _dateTimeValue;
+        private static void InvokeDateTime(object boxed)
+        {
+            _dateTimeValue = (DateTime)boxed;
+        }
+        private static void InvokeDateTimeOffset(DateTimeOffset dto)
+        {
+            // FIXME
+            _dateTimeValue = dto.DateTime;
+        }
+        private static void InvokeDateTimeByValue(DateTime dt)
+        {
+            _dateTimeValue = dt;
+        }
+        private static void InvokeCustomDate(CustomDate cd)
+        {
+            _dateTimeValue = cd.Date;
+        }
+        private static CustomDate ReturnCustomDate(CustomDate cd)
+        {
+            return cd;
+        }
+
+        internal static CustomVector3 _vec3Value;
+        private static void InvokeCustomVector3(CustomVector3 cv3)
+        {
+            _vec3Value = cv3;
+        }
+        private static CustomVector3 ReturnCustomVector3(CustomVector3 cv3)
+        {
+            return cv3;
+        }
+
+        internal static System.Uri _uriValue;
+        private static void InvokeUri(System.Uri uri)
+        {
+            _uriValue = uri;
         }
 
         internal static object _marshalledObject;
@@ -641,6 +780,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             };
         }
 
+#pragma warning disable CS1998
+        public static async Task<int> RegularTaskReturningConstant (int i) {
+            return i;
+        }
+
+        public static async ValueTask<int> ValueTaskReturningConstant (int i) {
+            return i;
+        }
+#pragma warning restore CS1998
+    
     }
 
     public enum TestEnum : uint {

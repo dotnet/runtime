@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -257,15 +258,353 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(0)]
             internal RuntimeMethodHandle handle;
+
+            [FieldOffset(0)]
+            internal RuntimeTypeHandle typeHandle;
         }
 
-        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
+        // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
+        public enum MarshalType : int {
+            NULL = 0,
+            INT = 1,
+            FP64 = 2,
+            STRING = 3,
+            VT = 4,
+            DELEGATE = 5,
+            TASK = 6,
+            OBJECT = 7,
+            BOOL = 8,
+            ENUM = 9,
+            URI = 22,
+            SAFEHANDLE = 23,
+            ARRAY_BYTE = 10,
+            ARRAY_UBYTE = 11,
+            ARRAY_UBYTE_C = 12,
+            ARRAY_SHORT = 13,
+            ARRAY_USHORT = 14,
+            ARRAY_INT = 15,
+            ARRAY_UINT = 16,
+            ARRAY_FLOAT = 17,
+            ARRAY_DOUBLE = 18,
+            FP32 = 24,
+            UINT32 = 25,
+            INT64 = 26,
+            UINT64 = 27,
+            CHAR = 28,
+            STRING_INTERNED = 29,
+            VOID = 30,
+            ENUM64 = 31,
+            POINTER = 32
+        }
+
+        // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
+        public enum MarshalError : int {
+            BUFFER_TOO_SMALL = 512,
+            NULL_CLASS_POINTER = 513,
+            NULL_TYPE_POINTER = 514,
+            UNSUPPORTED_TYPE = 515,
+            FIRST = BUFFER_TOO_SMALL
+        }
+
+        private static string MakeMarshalTypeRecord (Type type, MarshalType mtype) {
+            var result = $"{{ \"marshalType\": {(int)mtype}, " +
+                $"\"typePtr\": {type.TypeHandle.Value}, " +
+                $"\"signatureChar\": \"{GetCallSignatureCharacterForMarshalType(mtype, 'a')}\" }}";
+            return result;
+        }
+
+        private static MethodBase? MethodFromPointers (IntPtr typePtr, IntPtr methodPtr) {
+            if (methodPtr == IntPtr.Zero)
+                return null;
+
+            var tmp = new IntPtrAndHandle { ptr = methodPtr };
+            var methodHandle = tmp.handle;
+
+            if (typePtr != IntPtr.Zero) {
+                tmp.ptr = typePtr;
+                return MethodBase.GetMethodFromHandle(methodHandle, tmp.typeHandle);
+            } else {
+                return MethodBase.GetMethodFromHandle(methodHandle);
+            }
+        }
+
+        public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
+            var mb = MethodFromPointers(typePtr, methodPtr);
+            if (mb is null)
+                return null;
+
+            var returnType = (mb as MethodInfo)?.ReturnType ?? typeof(void);
+            var returnMtype = GetMarshalTypeFromType(returnType);
+            var sb = new StringBuilder();
+            sb.Append("{ ");
+            sb.Append("\"result\": ");
+            sb.Append(MakeMarshalTypeRecord(returnType, returnMtype));
+            sb.Append(", \"typePtr\": ");
+            sb.Append(typePtr.ToInt32());
+            sb.Append(", \"methodPtr\": ");
+            sb.Append(methodPtr.ToInt32());
+            sb.Append(", \"parameters\": [");
+
+            int i = 0;
+            foreach (var p in mb.GetParameters()) {
+                if (i > 0)
+                    sb.Append(", ");
+                sb.Append(MakeMarshalTypeRecord(p.ParameterType, GetMarshalTypeFromType(p.ParameterType)));
+                i++;
+            }
+
+            sb.Append("] }");
+
+            return sb.ToString();
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        private static unsafe string GetAndEscapeStringProperty (Type type, string name) {
+            var info = type.GetProperty(
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
+
+            var value = info?.GetValue(null) as string;
+            if (value is null)
+                return "null";
+
+            var sb = new StringBuilder();
+            sb.Append('\"');
+            foreach (var ch in value) {
+                switch (ch) {
+                    case '\'':
+                        sb.Append('\'');
+                        continue;
+                    case '"':
+                        sb.Append('\"');
+                        continue;
+                    case '\\':
+                        sb.Append("\\\\");
+                        continue;
+                    case '\n':
+                        sb.Append("\\n");
+                        continue;
+                }
+
+                if (ch < ' ') {
+                    sb.Append("\\x");
+                    if (ch <= 0xF)
+                        sb.Append('0');
+                    sb.Append(((int)ch).ToString("X"));
+                } else {
+                    sb.Append(ch);
+                }
+            }
+            sb.Append('\"');
+
+            return sb.ToString();
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type returnType, out Type parameterType) {
+            var info = type.GetMethod(
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
+            if (info is null)
+                throw new WasmInteropException($"{type.Name} must have a static {name} method");
+
+            var p = info.GetParameters();
+            if ((p.Length != 1) || (p[0].ParameterType is null))
+                throw new WasmInteropException($"Method {type.Name}.{name} must accept exactly one parameter");
+
+            if (info.ReturnType is null)
+                throw new WasmInteropException($"Method {type.Name}.{name} must have a return value");
+
+            parameterType = p[0].ParameterType;
+            returnType = info.ReturnType;
+
+            var tmp = default(IntPtrAndHandle);
+            tmp.handle = info.MethodHandle;
+            return tmp.ptr;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, string? marshalerFullName) {
+            if ((typePtr == IntPtr.Zero) || string.IsNullOrEmpty(marshalerFullName))
+                return "null";
+
+            IntPtrAndHandle tmp = default(IntPtrAndHandle);
+            tmp.ptr = typePtr;
+            var typeHandle = tmp.typeHandle;
+
+            var type = Type.GetTypeFromHandle(typeHandle);
+            var marshalerType = Type.GetType(marshalerFullName) ?? type.Assembly.GetType(marshalerFullName);
+            if (marshalerType is null)
+                return "null";
+
+            var jsToInterchange = GetAndEscapeStringProperty(marshalerType, "JavaScriptToInterchangeTransform");
+            var interchangeToJs = GetAndEscapeStringProperty(marshalerType, "InterchangeToJavaScriptTransform");
+
+            var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type fromReturnType, out Type fromParameterType);
+            var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type toReturnType, out Type toParameterType);
+
+            if (fromReturnType != type)
+                throw new WasmInteropException($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
+
+            if (type.IsValueType) {
+                var typeMatches = toParameterType.GetElementType() == type;
+                if (!typeMatches || !(toParameterType.IsPointer || toParameterType.IsByRef))
+                    throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be 'in {type.Name}' or '{type.Name}*' but was {toParameterType}");
+            } else {
+                if (toParameterType != type)
+                    throw new WasmInteropException($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
+            }
+
+            return ("{\n" + $"\"typePtr\": {typePtr}, \n" +
+                $"\"jsToInterchange\": {jsToInterchange}, \"interchangeToJs\": {interchangeToJs}, \n" +
+                $"\"inputPtr\": {inputPtr}, \"outputPtr\": {outputPtr} \n" +
+                "}");
+        }
+
+        private static MarshalType GetMarshalTypeFromType (Type? type) {
+            if (type is null)
+                return MarshalType.VOID;
+
+            var typeCode = Type.GetTypeCode(type);
+            if (type.IsEnum) {
+                switch (typeCode) {
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                        return MarshalType.ENUM;
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        return MarshalType.ENUM64;
+                    default:
+                        throw new WasmInteropException($"Unsupported enum underlying type {typeCode}");
+                }
+            }
+
+            switch (typeCode) {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                    return MarshalType.INT;
+                case TypeCode.UInt32:
+                    return MarshalType.UINT32;
+                case TypeCode.Boolean:
+                    return MarshalType.BOOL;
+                case TypeCode.Int64:
+                    return MarshalType.INT64;
+                case TypeCode.UInt64:
+                    return MarshalType.UINT64;
+                case TypeCode.Single:
+                    return MarshalType.FP32;
+                case TypeCode.Double:
+                    return MarshalType.FP64;
+                case TypeCode.String:
+                    return MarshalType.STRING;
+                case TypeCode.Char:
+                    return MarshalType.CHAR;
+            }
+
+            if (type.IsArray) {
+                if (!type.IsSZArray)
+                    throw new WasmInteropException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
+
+                var elementType = type.GetElementType();
+                switch (Type.GetTypeCode(elementType)) {
+                    case TypeCode.Byte:
+                        return MarshalType.ARRAY_UBYTE;
+                    case TypeCode.SByte:
+                        return MarshalType.ARRAY_BYTE;
+                    case TypeCode.Int16:
+                        return MarshalType.ARRAY_SHORT;
+                    case TypeCode.UInt16:
+                        return MarshalType.ARRAY_USHORT;
+                    case TypeCode.Int32:
+                        return MarshalType.ARRAY_INT;
+                    case TypeCode.UInt32:
+                        return MarshalType.ARRAY_UINT;
+                    case TypeCode.Single:
+                        return MarshalType.ARRAY_FLOAT;
+                    case TypeCode.Double:
+                        return MarshalType.ARRAY_DOUBLE;
+                    default:
+                        throw new WasmInteropException($"Unsupported array element type {elementType}");
+                }
+            } else if (type == typeof(IntPtr))
+                return MarshalType.INT;
+            else if (type == typeof(UIntPtr))
+                return MarshalType.UINT32;
+            else if (type == typeof(SafeHandle))
+                return MarshalType.SAFEHANDLE;
+            else if (typeof(Delegate).IsAssignableFrom(type))
+                return MarshalType.DELEGATE;
+            else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
+                return MarshalType.TASK;
+            // HACK: You could theoretically inherit from Uri, but I consider this out of scope.
+            // If you really need to marshal a custom Uri, define a custom marshaler for it
+            else if (typeof(Uri) == type)
+                return MarshalType.URI;
+            else if (type.IsPointer)
+                return MarshalType.POINTER;
+
+            if (type.IsValueType)
+                return MarshalType.VT;
+            else
+                return MarshalType.OBJECT;
+        }
+
+        private static char GetCallSignatureCharacterForMarshalType (MarshalType t, char? defaultValue) {
+            switch (t) {
+                case MarshalType.BOOL:
+                case MarshalType.INT:
+                case MarshalType.UINT32:
+                    return 'i';
+                case MarshalType.UINT64:
+                case MarshalType.INT64:
+                    return 'l';
+                case MarshalType.FP32:
+                    return 'f';
+                case MarshalType.FP64:
+                    return 'd';
+                case MarshalType.STRING:
+                    return 's';
+                case MarshalType.URI:
+                    return 'u';
+                case MarshalType.SAFEHANDLE:
+                    return 'h';
+                case MarshalType.ENUM:
+                    return 'j';
+                case MarshalType.ENUM64:
+                    return 'k';
+                case MarshalType.OBJECT:
+                    return 'o';
+                case MarshalType.VT:
+                    return 'a';
+                case MarshalType.POINTER:
+                    return 'm';
+                default:
+                    if (defaultValue.HasValue)
+                        return defaultValue.Value;
+                    else
+                        throw new WasmInteropException($"Unsupported marshal type {t}");
+            }
+        }
+
+        public static string GetCallSignature(IntPtr methodHandle, object? objForRuntimeType)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
-            MethodBase? mb = objForRuntimeType == null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
-            if (mb == null)
+            MethodBase? mb = objForRuntimeType is null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
+            if (mb is null)
                 return string.Empty;
 
             ParameterInfo[] parms = mb.GetParameters();
@@ -273,70 +612,23 @@ namespace System.Runtime.InteropServices.JavaScript
             if (parmsLength == 0)
                 return string.Empty;
 
-            char[] res = new char[parmsLength];
-
-            for (int c = 0; c < parmsLength; c++)
-            {
-                Type t = parms[c].ParameterType;
-                switch (Type.GetTypeCode(t))
-                {
-                    case TypeCode.Byte:
-                    case TypeCode.SByte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Boolean:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'j';
-                        else
-                            res[c] = 'i';
-                        break;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'k';
-                        else
-                            res[c] = 'l';
-                        break;
-                    case TypeCode.Single:
-                        res[c] = 'f';
-                        break;
-                    case TypeCode.Double:
-                        res[c] = 'd';
-                        break;
-                    case TypeCode.String:
-                        res[c] = 's';
-                        break;
-                    default:
-                        if (t == typeof(IntPtr))
-                        {
-                            res[c] = 'i';
-                        }
-                        else if (t == typeof(Uri))
-                        {
-                            res[c] = 'u';
-                        }
-                        else if (t == typeof(SafeHandle))
-                        {
-                            res[c] = 'h';
-                        }
-                        else
-                        {
-                            if (t.IsValueType)
-                                throw new NotSupportedException(SR.ValueTypeNotSupported);
-                            res[c] = 'o';
-                        }
-                        break;
-                }
+            var result = new char[parmsLength];
+            for (int i = 0; i < parmsLength; i++) {
+                Type t = parms[i].ParameterType;
+                var mt = GetMarshalTypeFromType(t);
+                result[i] = GetCallSignatureCharacterForMarshalType(mt, null);
             }
-            return new string(res);
+
+            return new string(result);
         }
 
-        public static void SetupJSContinuation(Task task, JSObject continuationObj)
+        public static void SetupJSContinuation(Task? task, JSObject? continuationObj)
         {
+            if (task is null)
+                throw new ArgumentNullException(nameof(task));
+            if (continuationObj is null)
+                throw new ArgumentNullException(nameof(continuationObj));
+
             if (task.IsCompleted)
                 Complete();
             else
@@ -346,7 +638,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 try
                 {
-                    if (task.Exception == null)
+                    if (task.Exception is null)
                     {
                         object? result;
                         Type task_type = task.GetType();
@@ -402,37 +694,16 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
         }
 
-        public static string ObjectToString(object o)
+        public static string ObjectToString(object? o)
         {
-            return o.ToString() ?? string.Empty;
+            return o?.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValue(object dtv)
+        public static bool SafeHandleAddRef(SafeHandle? safeHandle)
         {
-            if (dtv == null)
-                throw new ArgumentNullException(nameof(dtv));
-            if (!(dtv is DateTime dt))
-                throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
-            if (dt.Kind == DateTimeKind.Local)
-                dt = dt.ToUniversalTime();
-            else if (dt.Kind == DateTimeKind.Unspecified)
-                dt = new DateTime(dt.Ticks, DateTimeKind.Utc);
-            return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
-        }
+            if (safeHandle is null)
+                throw new ArgumentNullException(nameof(safeHandle));
 
-        public static DateTime CreateDateTime(double ticks)
-        {
-            DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
-            return unixTime.DateTime;
-        }
-
-        public static Uri CreateUri(string uri)
-        {
-            return new Uri(uri);
-        }
-
-        public static bool SafeHandleAddRef(SafeHandle safeHandle)
-        {
             bool _addRefSucceeded = false;
 #if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
@@ -458,13 +729,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 #if DEBUG_HANDLE
-            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
+            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref is null) ? 0 : _anyref.RefCount)}");
 #endif
             return _addRefSucceeded;
         }
 
-        public static void SafeHandleRelease(SafeHandle safeHandle)
+        public static void SafeHandleRelease(SafeHandle? safeHandle)
         {
+            if (safeHandle is null)
+                throw new ArgumentNullException(nameof(safeHandle));
+
             safeHandle.DangerousRelease();
 #if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
@@ -496,8 +770,11 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
+        public static IntPtr SafeHandleGetHandle(SafeHandle? safeHandle, bool addRef)
         {
+            if (safeHandle is null)
+                throw new ArgumentNullException(nameof(safeHandle));
+
 #if DEBUG_HANDLE
             Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
 #endif
@@ -505,5 +782,15 @@ namespace System.Runtime.InteropServices.JavaScript
             return safeHandle.DangerousGetHandle();
         }
 
+    }
+
+    public class WasmInteropException : Exception {
+        public WasmInteropException (string message)
+            : base (message) {
+        }
+
+        public WasmInteropException (string message, Exception innerException)
+            : base (message, innerException) {
+        }
     }
 }

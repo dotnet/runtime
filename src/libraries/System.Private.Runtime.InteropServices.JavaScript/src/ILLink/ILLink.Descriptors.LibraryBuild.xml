@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System.Private.Runtime.InteropServices.JavaScript">
+    <!-- We need to preserve these marshalers during the library build, because whether they are used is not known -->
+    <!--  until end users' applications are built. At that point they can be linked out -->
+    <type fullname="System.Runtime.InteropServices.JavaScript.UriMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.DateTimeMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler" />
+  </assembly>
+</linker>
