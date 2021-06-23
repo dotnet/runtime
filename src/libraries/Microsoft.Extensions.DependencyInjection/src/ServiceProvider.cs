@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection
             _createServiceAccessor = CreateServiceAccessor;
             _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
 
-            Root = new ServiceProviderEngineScope(this);
+            Root = new ServiceProviderEngineScope(this, isRootScope: true);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             // The list of built in services that aren't part of the list of service descriptors
             // keep this in sync with CallSiteFactory.IsService
@@ -173,7 +173,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return new ServiceProviderEngineScope(this);
+            return new ServiceProviderEngineScope(this, isRootScope: false);
         }
 
         private ServiceProviderEngine GetEngine()
