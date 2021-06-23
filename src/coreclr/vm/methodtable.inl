@@ -1589,7 +1589,9 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
                 // However, we are only considering the statically available slots here
                 // (m_wNumInterface doesn't contain the dynamic slots), so we can safely
                 // ignore this detail.
+#ifndef DACCESS_COMPILE
                 pInfo->SetMethodTable(pInterface);
+#endif
                 return TRUE;
             }
             pInfo++;

@@ -14301,9 +14301,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
                     while (it.Next())
                     {
-                        if (pInterfaceTypeCanonical == it.GetInterface()->GetCanonicalMethodTable())
+                        MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
+                        if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
                         {
-                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, it.GetInterface(), FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
+                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
                             break;
                         }
                     }
