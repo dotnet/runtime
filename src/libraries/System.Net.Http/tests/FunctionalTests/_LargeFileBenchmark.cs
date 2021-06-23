@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -25,8 +26,8 @@ namespace System.Net.Http.Functional.Tests
     public class LargeFileBenchmark : IDisposable
     {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        //public const string SkipSwitch = null;
-        public const string SkipSwitch = "Local benchmark";
+        public const string SkipSwitch = null;
+        //public const string SkipSwitch = "Local benchmark";
 
         private readonly ITestOutputHelper _output;
         private LogHttpEventListener _listener;
@@ -55,7 +56,7 @@ namespace System.Net.Http.Functional.Tests
 
         //private const string ReportDir = @"C:\_dev\r6r\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
         //private const string ReportDir = @"C:\Users\anfirszo\dev\dotnet\6.0\runtime\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
-        private const string ReportDir = @"C:\_dev\r6r\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
+        private const string ReportDir = @"C:\_dev\r6d\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Debug\TestResults";
 
         [Theory(Skip = SkipSwitch)]
         [InlineData(BenchmarkServer)]
@@ -80,12 +81,13 @@ namespace System.Net.Http.Functional.Tests
         {
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
-                EnableDynamicHttp2StreamWindowSizing = false,
                 InitialHttp2StreamWindowSize = initialWindowKbytes * 1024
             };
+            ChangeSettingValue(handler, "_disableDynamicHttp2WindowSizing", true);
             string details = $"SpecificWindow({initialWindowKbytes})";
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler, details);
         }
+
 
         public static TheoryData<string, int, int> Download20_Data = new TheoryData<string, int, int>
         {
@@ -139,13 +141,13 @@ namespace System.Net.Http.Functional.Tests
                 _listener.Filter = m => m.Contains("[FlowControl]") && m.Contains("Updated");
             }
 
-            var handler = new SocketsHttpHandler()
-            {
-                StreamWindowUpdateRatio = ratio,
-                StreamWindowThresholdMultiplier = correction
-            };
+            var handler = new SocketsHttpHandler();
+
+            double multiplier = (double)ratio / correction;
+            ChangeSettingValue(handler, "_http2StreamWindowScaleThresholdMultiplier", multiplier);
+
             string details = $"Dynamic_R({ratio})_C({correction})";
-            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} ratio={ratio} correction={handler.StreamWindowThresholdMultiplier}",
+            await TestHandler($"SocketsHttpHandler HTTP 2.0 Dynamic single stream | host:{hostName} multiplier: {multiplier}",
                 hostName, true, LengthMb, handler, details);
         }
 
@@ -159,11 +161,7 @@ namespace System.Net.Http.Functional.Tests
             _listener.Filter = m => m.Contains("[FlowControl]") && m.Contains("Updated");
             string info = $"SocketsHttpHandler HTTP 2.0 Dynamic {streamCount} concurrent streams R=8 D=8";
 
-            var handler = new SocketsHttpHandler()
-            {
-                StreamWindowUpdateRatio = 8,
-                StreamWindowThresholdMultiplier = 8
-            };
+            var handler = new SocketsHttpHandler();
 
             string details = $"SC({streamCount})";
 
@@ -304,14 +302,14 @@ namespace System.Net.Http.Functional.Tests
 
         private static SocketsHttpHandler CopyHandler(SocketsHttpHandler h)
         {
-            return new SocketsHttpHandler()
-            {
-                EnableDynamicHttp2StreamWindowSizing = h.EnableDynamicHttp2StreamWindowSizing,
-                InitialHttp2StreamWindowSize = h.InitialHttp2StreamWindowSize,
-                StreamWindowUpdateRatio = h.StreamWindowUpdateRatio,
-                StreamWindowThresholdMultiplier = h.StreamWindowThresholdMultiplier,
-                ConnectCallback = h.ConnectCallback
-            };
+            var clone = new SocketsHttpHandler();
+
+            FieldInfo fieldInfo = h.GetType().GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance);
+            object settings = fieldInfo.GetValue(h);
+            MethodInfo m = settings.GetType().GetMethod("CloneAndNormalize", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            fieldInfo.SetValue(clone, m.Invoke(settings, Array.Empty<object>()));
+            return clone;
         }
 
         private static async ValueTask<Stream> CustomConnect(SocketsHttpConnectionContext ctx, CancellationToken cancellationToken)
@@ -358,6 +356,20 @@ namespace System.Net.Http.Functional.Tests
             }
 
             return msg;
+        }
+
+
+        private static object GetInnerSettings(SocketsHttpHandler handler)
+        {
+            FieldInfo fieldInfo = handler.GetType().GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance);
+            return fieldInfo.GetValue(handler);
+        }
+
+        private static void ChangeSettingValue(SocketsHttpHandler handler, string name, object value)
+        {
+            object settings = GetInnerSettings(handler);
+            FieldInfo field = settings.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(settings, value);
         }
     }
 

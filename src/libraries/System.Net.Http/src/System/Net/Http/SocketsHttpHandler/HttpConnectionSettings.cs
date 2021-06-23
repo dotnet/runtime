@@ -15,11 +15,6 @@ namespace System.Net.Http
     /// <summary>Provides a state bag of settings for configuring HTTP connections.</summary>
     internal sealed class HttpConnectionSettings
     {
-        private const string Http2SupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT";
-        private const string Http2SupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2Support";
-        private const string Http3DraftSupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT";
-        private const string Http3DraftSupportAppCtxSettingName = "System.Net.SocketsHttpHandler.Http3DraftSupport";
-
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         internal bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
@@ -67,12 +62,11 @@ namespace System.Net.Http
 
         internal IDictionary<string, object?>? _properties;
 
-        internal TimeSpan? _fakeRtt;
-        internal bool _enableDynamicHttp2StreamWindowSizing = true;
-
+        // Http2 flow control settings:
+        internal bool _disableDynamicHttp2WindowSizing = DisableDynamicHttp2WindowSizing;
+        internal int _maxHttp2StreamWindowSize = MaxHttp2StreamWindowSize;
+        internal double _http2StreamWindowScaleThresholdMultiplier = Http2StreamWindowScaleThresholdMultiplier;
         internal int _initialHttp2StreamWindowSize = Http2Connection.DefaultInitialWindowSize;
-        internal int _streamWindowUpdateRatio = 8;
-        internal int _streamWindowThresholdMultiplier = 1;
 
         public HttpConnectionSettings()
         {
@@ -127,11 +121,10 @@ namespace System.Net.Http
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
-                _fakeRtt = _fakeRtt,
+                _disableDynamicHttp2WindowSizing = _disableDynamicHttp2WindowSizing,
+                _maxHttp2StreamWindowSize = _maxHttp2StreamWindowSize,
+                _http2StreamWindowScaleThresholdMultiplier = _http2StreamWindowScaleThresholdMultiplier,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
-                _streamWindowUpdateRatio = _streamWindowUpdateRatio,
-                _streamWindowThresholdMultiplier = _streamWindowThresholdMultiplier,
-                _enableDynamicHttp2StreamWindowSizing = _enableDynamicHttp2StreamWindowSizing
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
@@ -145,11 +138,59 @@ namespace System.Net.Http
 
         // Default to allowing HTTP/2, but enable that to be overridden by an
         // AppContext switch, or by an environment variable being set to false/0.
-        private static bool AllowHttp2 => RuntimeSettingParser.QueryRuntimeSettingSwitch(Http2SupportAppCtxSettingName, Http2SupportEnvironmentVariableSettingName, true);
+        private static bool AllowHttp2 => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.Http.SocketsHttpHandler.Http2Support",
+            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
+            true);
 
         // Default to allowing draft HTTP/3, but enable that to be overridden
         // by an AppContext switch, or by an environment variable being set to false/0.
-        private static bool AllowDraftHttp3 => RuntimeSettingParser.QueryRuntimeSettingSwitch(Http3DraftSupportAppCtxSettingName, Http3DraftSupportEnvironmentVariableSettingName, true);
+        private static bool AllowDraftHttp3 => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.SocketsHttpHandler.Http3DraftSupport",
+            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT",
+            true);
+
+        // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
+        private static bool DisableDynamicHttp2WindowSizing => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamic2WindowSizing",
+            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2FLOWCONTROL_DISABLEDYNAMICWINDOWSIZING",
+            false);
+
+        // The maximum size of the HTTP/2 stream receive window. Defaults to 16 MB.
+        private static int MaxHttp2StreamWindowSize
+        {
+            get
+            {
+                int value = RuntimeSettingParser.ParseInt32EnvironmentVariableValue(
+                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE",
+                    HttpHandlerDefaults.DefaultHttp2MaxStreamWindowSize);
+
+                // Disallow small values:
+                if (value < Http2Connection.DefaultInitialWindowSize)
+                {
+                    value = Http2Connection.DefaultInitialWindowSize;
+                }
+                return value;
+            }
+        }
+
+        // Defaults to 1.0. Higher values result in shorter window, but slower downloads.
+        private static double Http2StreamWindowScaleThresholdMultiplier
+        {
+            get
+            {
+                double value = RuntimeSettingParser.ParseDoubleEnvironmentVariableValue(
+                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER",
+                    HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier);
+
+                // Disallow negative values:
+                if (value < 0)
+                {
+                    value = HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier;
+                }
+                return value;
+            }
+        }
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 

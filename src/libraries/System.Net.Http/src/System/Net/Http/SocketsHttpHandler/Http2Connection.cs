@@ -134,8 +134,9 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
             InitialClientStreamWindowSize = pool.Settings._initialHttp2StreamWindowSize;
-            _rttEstimator = pool.Settings._enableDynamicHttp2StreamWindowSizing ?
-                new RttEstimator(this, pool.Settings._fakeRtt) : null;
+            _rttEstimator = pool.Settings._disableDynamicHttp2WindowSizing ?
+                null :
+                new RttEstimator(this);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 

@@ -353,12 +353,8 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
         public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         public static bool IsSupported { get { throw null; } }
-        public bool EnableDynamicHttp2StreamWindowSizing { get { throw null; } set { } }
-        public int StreamWindowUpdateRatio { get { throw null; } set { } }
-        public int StreamWindowThresholdMultiplier { get { throw null; } set { } }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
         public System.TimeSpan ConnectTimeout { get { throw null; } set { } }

@@ -97,9 +97,9 @@ namespace System.Net.Http
 
                 _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
-                _windowManager = connection._pool.Settings._enableDynamicHttp2StreamWindowSizing  ?
-                    new DynamicHttp2StreamWindowManager(connection, this) :
-                    new Http2StreamWindowManager(connection, this);
+                _windowManager = connection._pool.Settings._disableDynamicHttp2WindowSizing ?
+                    new Http2StreamWindowManager(connection, this) :
+                    new DynamicHttp2StreamWindowManager(connection, this);
 
                 Trace($"_windowManager: {_windowManager.GetType().Name}");
 

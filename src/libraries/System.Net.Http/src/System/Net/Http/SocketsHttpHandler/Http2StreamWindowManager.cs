@@ -15,8 +15,7 @@ namespace System.Net.Http
 
         private class Http2StreamWindowManager
         {
-            // See comment on ConnectionWindowThreshold.
-            protected int _streamWindowUpdateRatio;
+            public const int StreamWindowUpdateRatio = 8;
             protected int _delivered;
             protected int _streamWindowSize;
 
@@ -29,13 +28,12 @@ namespace System.Net.Http
 
                 _stream = stream;
                 _streamWindowSize = connection.InitialClientStreamWindowSize;
-                _streamWindowUpdateRatio = _connection._pool.Settings._streamWindowUpdateRatio;
-                _stream.TraceFlowControl($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, streamWindowUpdateRatio: {_streamWindowUpdateRatio}");
+                _stream.TraceFlowControl($"InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
             }
 
             internal int StreamWindowSize => _streamWindowSize;
 
-            internal int StreamWindowThreshold => _streamWindowSize / _streamWindowUpdateRatio;
+            internal int StreamWindowThreshold => _streamWindowSize / StreamWindowUpdateRatio;
 
             public virtual void AdjustWindow(int bytesConsumed)
             {
@@ -69,13 +67,13 @@ namespace System.Net.Http
 
             private long _lastWindowUpdate;
 
-            private int _streamWindowThresholdMultiplier = 1;
+            private double _windowScaleThresholdMultiplier;
 
             public DynamicHttp2StreamWindowManager(Http2Connection connection, Http2Stream stream)
                 : base(connection, stream)
             {
-                _streamWindowThresholdMultiplier = connection._pool.Settings._streamWindowThresholdMultiplier;
-                _stream.TraceFlowControl($" _streamWindowThresholdMultiplier:{_streamWindowThresholdMultiplier} | Stopwatch: IsHighResolution={Stopwatch.IsHighResolution}, Frequency={Stopwatch.Frequency}");
+                _windowScaleThresholdMultiplier = connection._pool.Settings._http2StreamWindowScaleThresholdMultiplier;
+                _stream.TraceFlowControl($" http2StreamWindowScaleThresholdMultiplier: {_windowScaleThresholdMultiplier}");
                 _lastWindowUpdate = Stopwatch.GetTimestamp();
             }
 
@@ -95,7 +93,7 @@ namespace System.Net.Http
                     TimeSpan rtt = _connection._rttEstimator.MinRtt;
                     TimeSpan dt = StopwatchTicksToTimeSpan(currentTime - _lastWindowUpdate);
 
-                    if (_delivered * rtt.Ticks > StreamWindowThreshold * dt.Ticks * _streamWindowThresholdMultiplier)
+                    if (_delivered * rtt.Ticks > _streamWindowSize * dt.Ticks * _windowScaleThresholdMultiplier)
                     {
                         windowSizeIncrement += _streamWindowSize;
                         _streamWindowSize *= 2;
@@ -140,29 +138,19 @@ namespace System.Net.Http
 
             public TimeSpan MinRtt { get; private set; }
 
-            private readonly TimeSpan? _staticRtt;
-
-            public RttEstimator(Http2Connection connection, TimeSpan? staticRtt)
+            public RttEstimator(Http2Connection connection)
             {
                 _connection = connection;
-                _staticRtt = staticRtt;
-                if (_staticRtt.HasValue)
-                {
-                    MinRtt = _staticRtt.Value;
-                    _connection.TraceFlowControl($"Using static RTT: {MinRtt.TotalMilliseconds} ms");
-                }
             }
 
             internal void OnInitialSettingsSent()
             {
-                if (_staticRtt.HasValue) return;
                 _connection.TraceFlowControl("Initial SETTINGS sent");
                 _pingSentTimestamp = Stopwatch.GetTimestamp();
             }
 
             internal void OnInitialSettingsAckReceived()
             {
-                if (_staticRtt.HasValue) return;
                 _connection.TraceFlowControl("Initial SETTINGS ACK received");
                 RefreshRtt();
                 _status = Status.Waiting;
@@ -170,8 +158,6 @@ namespace System.Net.Http
 
             internal void OnDataOrHeadersReceived()
             {
-                if (_staticRtt.HasValue) return;
-
                 if (_status == Status.Waiting)
                 {
                     long now = Stopwatch.GetTimestamp();
@@ -193,7 +179,6 @@ namespace System.Net.Http
             internal void OnPingAckReceived(long payload)
             {
                 Debug.Assert(payload < 0);
-                if (_staticRtt.HasValue) return;
                 if (_status != Status.PingSent) return;
 
                 if (Interlocked.Read(ref _pingCounter) != payload)

@@ -237,7 +237,7 @@
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs"
              Link="ProductionCode\System\Net\Http\StringContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs"
-            Link="ProductionCode\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+            Link="ProductionCode\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
@@ -327,7 +327,7 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
-    <Compile Include="RuntimeSettingParserTest.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="RuntimeSettingParserTest.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
     <Compile Include="HttpEnvironmentProxyTest.cs" />
     <Compile Include="HttpRequestExceptionTests.cs" />

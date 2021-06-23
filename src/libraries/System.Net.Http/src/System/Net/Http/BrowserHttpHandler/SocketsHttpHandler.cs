@@ -25,25 +25,7 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool EnableDynamicHttp2StreamWindowSizing
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
         public int InitialHttp2StreamWindowSize
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        public int StreamWindowUpdateRatio
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        public int StreamWindowThresholdMultiplier
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

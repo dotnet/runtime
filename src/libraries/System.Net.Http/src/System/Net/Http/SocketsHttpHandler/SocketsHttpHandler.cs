@@ -55,12 +55,6 @@ namespace System.Net.Http
             }
         }
 
-        public bool EnableDynamicHttp2StreamWindowSizing
-        {
-            get => _settings._enableDynamicHttp2StreamWindowSizing;
-            set => _settings._enableDynamicHttp2StreamWindowSizing = value;
-        }
-
         public int InitialHttp2StreamWindowSize
         {
             get => _settings._initialHttp2StreamWindowSize;
@@ -69,18 +63,6 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 _settings._initialHttp2StreamWindowSize = value;
             }
-        }
-
-        public int StreamWindowUpdateRatio
-        {
-            get => _settings._streamWindowUpdateRatio;
-            set => _settings._streamWindowUpdateRatio = value;
-        }
-
-        public int StreamWindowThresholdMultiplier
-        {
-            get => _settings._streamWindowThresholdMultiplier;
-            set => _settings._streamWindowThresholdMultiplier = value;
         }
 
         [AllowNull]
