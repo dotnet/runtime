@@ -243,10 +243,7 @@ namespace System.Net.Http
                     return default;
                 }
 
-                if (_shutdownWaiter is null)
-                {
-                    _shutdownWaiter = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                }
+                _shutdownWaiter ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 return new ValueTask(_shutdownWaiter.Task);
             }

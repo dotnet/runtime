@@ -443,7 +443,7 @@ namespace System.Net.Http
             return newException;
         }
 
-        private async Task AddHttp11Connection(HttpRequestMessage request)
+        private async Task AddHttp11ConnectionAsync(HttpRequestMessage request)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/1.1 connection for pool.");
 
@@ -487,7 +487,7 @@ namespace System.Net.Http
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
 
-                Task.Run(() => AddHttp11Connection(request));
+                Task.Run(() => AddHttp11ConnectionAsync(request));
             }
         }
 
@@ -614,7 +614,7 @@ namespace System.Net.Http
             ReturnHttp11Connection(http11Connection, isNewConnection: true);
         }
 
-        private async Task AddHttp2Connection(HttpRequestMessage request)
+        private async Task AddHttp2ConnectionAsync(HttpRequestMessage request)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/2 connection for pool.");
 
@@ -695,7 +695,7 @@ namespace System.Net.Http
                 _associatedHttp2ConnectionCount++;
                 _pendingHttp2Connection = true;
 
-                Task.Run(() => AddHttp2Connection(request));
+                Task.Run(() => AddHttp2ConnectionAsync(request));
             }
         }
 
@@ -1911,8 +1911,8 @@ namespace System.Net.Http
                     _availableHttp11Connections.ForEach(c => c.Dispose());
                     _availableHttp11Connections.Clear();
 
-                    Debug.Assert(_associatedHttp2ConnectionCount >= (_availableHttp11Connections?.Count ?? 0));
-                    _associatedHttp11ConnectionCount -= (_availableHttp11Connections?.Count ?? 0);
+                    Debug.Assert(_associatedHttp2ConnectionCount >= (_availableHttp2Connections?.Count ?? 0));
+                    _associatedHttp2ConnectionCount -= (_availableHttp2Connections?.Count ?? 0);
                     _availableHttp2Connections?.ForEach(c => c.Dispose());
                     _availableHttp2Connections?.Clear();
 
@@ -1930,7 +1930,7 @@ namespace System.Net.Http
                     }
                 }
 
-                Debug.Assert(_availableHttp11Connections!.Count == 0, $"Expected {nameof(_availableHttp11Connections)}.{nameof(_availableHttp11Connections.Count)} == 0");
+                Debug.Assert(_availableHttp11Connections.Count == 0, $"Expected {nameof(_availableHttp11Connections)}.{nameof(_availableHttp11Connections.Count)} == 0");
                 Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"Expected {nameof(_availableHttp2Connections)}.{nameof(_availableHttp2Connections.Count)} == 0");
             }
         }
