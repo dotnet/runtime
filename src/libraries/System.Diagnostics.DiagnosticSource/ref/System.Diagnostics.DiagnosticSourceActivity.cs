@@ -266,7 +266,7 @@ namespace System.Diagnostics
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out System.Diagnostics.ActivityContext context);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? baggage);
-        public static TextMapPropagator DefaultPropagator { get; set; }
+        public static TextMapPropagator Default { get; set; }
         public static TextMapPropagator CreateLegacyPropagator() { throw null; }
         public static TextMapPropagator CreatePassThroughPropagator() { throw null; }
         public static TextMapPropagator CreateOutputSuppressionPropagator() { throw null; }
