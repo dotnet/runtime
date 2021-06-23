@@ -61,16 +61,14 @@ namespace System.Net.Http
             set => _settings._enableDynamicHttp2StreamWindowSizing = value;
         }
 
-        public TimeSpan? FakeRtt
+        public int InitialHttp2StreamWindowSize
         {
-            get => _settings._fakeRtt;
-            set => _settings._fakeRtt = value;
-        }
-
-        public int InitialStreamWindowSize
-        {
-            get => _settings._initialStreamWindowSize;
-            set => _settings._initialStreamWindowSize = value;
+            get => _settings._initialHttp2StreamWindowSize;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._initialHttp2StreamWindowSize = value;
+            }
         }
 
         public int StreamWindowUpdateRatio

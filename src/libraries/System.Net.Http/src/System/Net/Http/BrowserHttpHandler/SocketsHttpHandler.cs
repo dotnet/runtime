@@ -25,19 +25,13 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public TimeSpan? FakeRtt
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
         public bool EnableDynamicHttp2StreamWindowSizing
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        public int InitialStreamWindowSize
+        public int InitialHttp2StreamWindowSize
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

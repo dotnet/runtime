@@ -25,8 +25,8 @@ namespace System.Net.Http.Functional.Tests
     public class LargeFileBenchmark : IDisposable
     {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        public const string SkipSwitch = null;
-        //public const string SkipSwitch = "Local benchmark";
+        //public const string SkipSwitch = null;
+        public const string SkipSwitch = "Local benchmark";
 
         private readonly ITestOutputHelper _output;
         private LogHttpEventListener _listener;
@@ -81,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
             SocketsHttpHandler handler = new SocketsHttpHandler()
             {
                 EnableDynamicHttp2StreamWindowSizing = false,
-                InitialStreamWindowSize = initialWindowKbytes * 1024
+                InitialHttp2StreamWindowSize = initialWindowKbytes * 1024
             };
             string details = $"SpecificWindow({initialWindowKbytes})";
             return TestHandler($"SocketsHttpHandler HTTP 2.0 - W: {initialWindowKbytes} KB", hostName, true, LengthMb, handler, details);
@@ -306,9 +306,8 @@ namespace System.Net.Http.Functional.Tests
         {
             return new SocketsHttpHandler()
             {
-                FakeRtt = h.FakeRtt,
                 EnableDynamicHttp2StreamWindowSizing = h.EnableDynamicHttp2StreamWindowSizing,
-                InitialStreamWindowSize = h.InitialStreamWindowSize,
+                InitialHttp2StreamWindowSize = h.InitialHttp2StreamWindowSize,
                 StreamWindowUpdateRatio = h.StreamWindowUpdateRatio,
                 StreamWindowThresholdMultiplier = h.StreamWindowThresholdMultiplier,
                 ConnectCallback = h.ConnectCallback

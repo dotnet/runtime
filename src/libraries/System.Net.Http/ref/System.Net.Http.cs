@@ -354,9 +354,8 @@ namespace System.Net.Http
     {
         public SocketsHttpHandler() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
+        public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         public static bool IsSupported { get { throw null; } }
-        public TimeSpan? FakeRtt { get { throw null; } set { } }
-        public int InitialStreamWindowSize { get { throw null; } set { } }
         public bool EnableDynamicHttp2StreamWindowSizing { get { throw null; } set { } }
         public int StreamWindowUpdateRatio { get { throw null; } set { } }
         public int StreamWindowThresholdMultiplier { get { throw null; } set { } }

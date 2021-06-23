@@ -70,7 +70,7 @@ namespace System.Net.Http
         internal TimeSpan? _fakeRtt;
         internal bool _enableDynamicHttp2StreamWindowSizing = true;
 
-        internal int _initialStreamWindowSize = 65535;
+        internal int _initialHttp2StreamWindowSize = Http2Connection.DefaultInitialWindowSize;
         internal int _streamWindowUpdateRatio = 8;
         internal int _streamWindowThresholdMultiplier = 1;
 
@@ -128,7 +128,7 @@ namespace System.Net.Http
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _fakeRtt = _fakeRtt,
-                _initialStreamWindowSize = _initialStreamWindowSize,
+                _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
                 _streamWindowUpdateRatio = _streamWindowUpdateRatio,
                 _streamWindowThresholdMultiplier = _streamWindowThresholdMultiplier,
                 _enableDynamicHttp2StreamWindowSizing = _enableDynamicHttp2StreamWindowSizing

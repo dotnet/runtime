@@ -80,9 +80,9 @@ namespace System.Net.Http
 #else
         private const int InitialConnectionBufferSize = 4096;
 #endif
-        // The default initial window size streams and connections according to the RFC:
+        // The default initial window size for streams and connections according to the RFC:
         // https://datatracker.ietf.org/doc/html/rfc7540#section-5.2.1
-        private const int DefaultInitialWindowSize = 65535;
+        internal const int DefaultInitialWindowSize = 65535;
 
         // We don't really care about limiting control flow at the connection level.
         // We limit it per stream, and the user controls how many streams are created.
@@ -133,7 +133,7 @@ namespace System.Net.Http
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
-            InitialClientStreamWindowSize = pool.Settings._initialStreamWindowSize;
+            InitialClientStreamWindowSize = pool.Settings._initialHttp2StreamWindowSize;
             _rttEstimator = pool.Settings._enableDynamicHttp2StreamWindowSizing ?
                 new RttEstimator(this, pool.Settings._fakeRtt) : null;
 
