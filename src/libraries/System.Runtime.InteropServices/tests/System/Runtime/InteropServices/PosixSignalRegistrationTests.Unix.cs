@@ -176,11 +176,11 @@ namespace System.Tests
                 Assert.True(entered);
 
                 // Give the default signal handler a chance to run.
-                Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(30) : Timeout);
+                Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(1) : TimeSpan.FromMinutes(10));
 
                 return 0;
             }, signal.ToString(), cancel.ToString(),
-               new RemoteInvokeOptions() { ExpectedExitCode = expectedExitCode }).Dispose();
+               new RemoteInvokeOptions() { ExpectedExitCode = expectedExitCode, TimeOut = 10 * 60 * 1000 }).Dispose();
         }
 
         public static TheoryData<PosixSignal> PosixSignalValues
