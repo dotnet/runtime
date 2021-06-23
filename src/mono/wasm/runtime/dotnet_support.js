@@ -46,7 +46,7 @@ var DotNetSupportLib = {
 			var funcNameJsString = DOTNET.conv_string(functionName);
 			var argsJsonJsString = argsJson && DOTNET.conv_string (argsJson);
 
-			var dotNetExports = globaThis.DotNet;
+			var dotNetExports = globalThis.DotNet;
 			if (!dotNetExports) {
 				throw new Error('The Microsoft.JSInterop.js library is not loaded.');
 			}

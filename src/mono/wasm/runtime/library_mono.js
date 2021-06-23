@@ -50,25 +50,34 @@
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
+		active_frames: [],
 		pump_count: 0,
 		timeout_queue: [],
-		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+		num_icu_assets_loaded_successfully: 0,
+		_async_method_objectId: 0,
+		_next_id_var: 0,
+		_next_call_function_res_id: 0,
+		_scratch_root_buffer: null,
+		_scratch_root_free_indices: null,
+		_scratch_root_free_indices_count: 0,
+		_scratch_root_free_instances: [],
+		_vt_stack: [],
 
 		/** @type {object.<string, object>} */
 		_id_table: {},
 
 		pump_message: function () {
-			if (!this.mono_background_exec)
-				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
+			if (!MONO.mono_background_exec)
+				MONO.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
 				MONO.timeout_queue.shift()();
 			}
 			while (MONO.pump_count > 0) {
 				--MONO.pump_count;
-				this.mono_background_exec ();
+				MONO.mono_background_exec ();
 			}
 		},
 
@@ -247,11 +256,6 @@ var MonoSupportLib = {
 			}
 		},
 
-		_scratch_root_buffer: null,
-		_scratch_root_free_indices: null,
-		_scratch_root_free_indices_count: 0,
-		_scratch_root_free_instances: [],
-
 		_mono_wasm_root_prototype: {
 			/** @returns {NativePointer} */
 			get_address: function () {
@@ -297,20 +301,20 @@ var MonoSupportLib = {
 			if (index === undefined)
 				return;
 
-			this._scratch_root_buffer.set (index, 0);
-			this._scratch_root_free_indices[this._scratch_root_free_indices_count] = index;
-			this._scratch_root_free_indices_count++;
+			MONO._scratch_root_buffer.set (index, 0);
+			MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count] = index;
+			MONO._scratch_root_free_indices_count++;
 		},
 
 		_mono_wasm_claim_scratch_index: function () {
-			if (!this._scratch_root_buffer) {
+			if (!MONO._scratch_root_buffer) {
 				const maxScratchRoots = 8192;
-				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
+				MONO._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
 
-				this._scratch_root_free_indices = new Int32Array (maxScratchRoots);
-				this._scratch_root_free_indices_count = maxScratchRoots;
+				MONO._scratch_root_free_indices = new Int32Array (maxScratchRoots);
+				MONO._scratch_root_free_indices_count = maxScratchRoots;
 				for (var i = 0; i < maxScratchRoots; i++)
-					this._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
+					MONO._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
 
 				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
 					get: this._mono_wasm_root_prototype.get,
@@ -319,11 +323,11 @@ var MonoSupportLib = {
 				});
 			}
 
-			if (this._scratch_root_free_indices_count < 1)
+			if (MONO._scratch_root_free_indices_count < 1)
 				throw new Error ("Out of scratch root space");
 
-			var result = this._scratch_root_free_indices[this._scratch_root_free_indices_count - 1];
-			this._scratch_root_free_indices_count--;
+			var result = MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count - 1];
+			MONO._scratch_root_free_indices_count--;
 			return result;
 		},
 
@@ -420,11 +424,11 @@ var MonoSupportLib = {
 		mono_wasm_new_root: function (value) {
 			var result;
 
-			if (this._scratch_root_free_instances.length > 0) {
-				result = this._scratch_root_free_instances.pop ();
+			if (MONO._scratch_root_free_instances.length > 0) {
+				result = MONO._scratch_root_free_instances.pop ();
 			} else {
 				var index = this._mono_wasm_claim_scratch_index ();
-				var buffer = this._scratch_root_buffer;
+				var buffer = MONO._scratch_root_buffer;
 
 				result = Object.create (this._mono_wasm_root_prototype);
 				result.__buffer = buffer;
@@ -485,8 +489,7 @@ var MonoSupportLib = {
 			}
 		},
 
-		mono_text_decoder: undefined,
-		string_decoder: {
+		string_decoder: {			
 			copy: function (mono_string) {
 				if (mono_string === 0)
 					return null;
@@ -578,11 +581,11 @@ var MonoSupportLib = {
 				this.mono_wasm_enum_frames = Module.cwrap ("mono_wasm_enum_frames", null);
 
 			var bp_id = this.mono_wasm_current_bp_id ();
-			this.active_frames = [];
+			MONO.active_frames = [];
 			this.mono_wasm_enum_frames ();
 
-			var the_frames = this.active_frames;
-			this.active_frames = [];
+			var the_frames = MONO.active_frames;
+			MONO.active_frames = [];
 			return {
 				"breakpoint_id": bp_id,
 				"frames": the_frames,
@@ -734,71 +737,71 @@ var MonoSupportLib = {
 			return res;
 		},
 
-        _resolve_member_by_name: function (base_object, base_name, expr_parts) {
-            if (base_object === undefined || base_object.value === undefined)
-                throw new Error(`Bug: base_object is undefined`);
+		_resolve_member_by_name: function (base_object, base_name, expr_parts) {
+			if (base_object === undefined || base_object.value === undefined)
+				throw new Error(`Bug: base_object is undefined`);
 
-            if (base_object.value.type === 'object' && base_object.value.subtype === 'null')
-                throw new ReferenceError(`Null reference: ${base_name} is null`);
+			if (base_object.value.type === 'object' && base_object.value.subtype === 'null')
+				throw new ReferenceError(`Null reference: ${base_name} is null`);
 
-            if (base_object.value.type !== 'object')
-                throw new ReferenceError(`'.' is only supported on non-primitive types. Failed on '${base_name}'`);
+			if (base_object.value.type !== 'object')
+				throw new ReferenceError(`'.' is only supported on non-primitive types. Failed on '${base_name}'`);
 
-            if (expr_parts.length == 0)
-                throw new Error(`Invalid member access expression`);//FIXME: need the full expression here
+			if (expr_parts.length == 0)
+				throw new Error(`Invalid member access expression`);//FIXME: need the full expression here
 
-            const root = expr_parts[0];
-            const props = this.mono_wasm_get_details(base_object.value.objectId, {});
-            let resObject = props.find(l => l.name == root);
-            if (resObject !== undefined) {
-                if (resObject.value === undefined && resObject.get !== undefined)
-                    resObject = this._invoke_getter(base_object.value.objectId, root);
-            }
+			const root = expr_parts[0];
+			const props = this.mono_wasm_get_details(base_object.value.objectId, {});
+			let resObject = props.find(l => l.name == root);
+			if (resObject !== undefined) {
+				if (resObject.value === undefined && resObject.get !== undefined)
+					resObject = this._invoke_getter(base_object.value.objectId, root);
+			}
 
-            if (resObject === undefined || expr_parts.length == 1)
-                return resObject;
-            else {
-                expr_parts.shift();
-                return this._resolve_member_by_name(resObject, root, expr_parts);
-            }
-        },
+			if (resObject === undefined || expr_parts.length == 1)
+				return resObject;
+			else {
+				expr_parts.shift();
+				return this._resolve_member_by_name(resObject, root, expr_parts);
+			}
+		},
 
-        mono_wasm_eval_member_access: function (scope, var_list, rootObjectId, expr) {
-            if (expr === undefined || expr.length == 0)
-                throw new Error(`expression argument required`);
+		mono_wasm_eval_member_access: function (scope, var_list, rootObjectId, expr) {
+			if (expr === undefined || expr.length == 0)
+				throw new Error(`expression argument required`);
 
-            let parts = expr.split('.');
-            if (parts.length == 0)
-                throw new Error(`Invalid member access expression: ${expr}`);
+			let parts = expr.split('.');
+			if (parts.length == 0)
+				throw new Error(`Invalid member access expression: ${expr}`);
 
-            const root = parts[0];
+			const root = parts[0];
 
-            const locals = this.mono_wasm_get_variables(scope, var_list);
-            let rootObject = locals.find(l => l.name === root);
-            if (rootObject === undefined) {
-                // check `this`
-                const thisObject = locals.find(l => l.name == "this");
-                if (thisObject === undefined)
-                    throw new ReferenceError(`Could not find ${root} in locals, and no 'this' found.`);
+			const locals = this.mono_wasm_get_variables(scope, var_list);
+			let rootObject = locals.find(l => l.name === root);
+			if (rootObject === undefined) {
+				// check `this`
+				const thisObject = locals.find(l => l.name == "this");
+				if (thisObject === undefined)
+					throw new ReferenceError(`Could not find ${root} in locals, and no 'this' found.`);
 
-                const thisProps = this.mono_wasm_get_details(thisObject.value.objectId, {});
-                rootObject = thisProps.find(tp => tp.name == root);
-                if (rootObject === undefined)
-                    throw new ReferenceError(`Could not find ${root} in locals, or in 'this'`);
+				const thisProps = this.mono_wasm_get_details(thisObject.value.objectId, {});
+				rootObject = thisProps.find(tp => tp.name == root);
+				if (rootObject === undefined)
+					throw new ReferenceError(`Could not find ${root} in locals, or in 'this'`);
 
-                if (rootObject.value === undefined && rootObject.get !== undefined)
-                    rootObject = this._invoke_getter(thisObject.value.objectId, root);
-            }
+				if (rootObject.value === undefined && rootObject.get !== undefined)
+					rootObject = this._invoke_getter(thisObject.value.objectId, root);
+			}
 
-            parts.shift();
+			parts.shift();
 
-            if (parts.length == 0)
-                return rootObject;
+			if (parts.length == 0)
+				return rootObject;
 
-            if (rootObject === undefined || rootObject.value === undefined)
-                throw new Error(`Could not get a value for ${root}`);
+			if (rootObject === undefined || rootObject.value === undefined)
+				throw new Error(`Could not get a value for ${root}`);
 
-            return this._resolve_member_by_name(rootObject, root, parts);
+			return this._resolve_member_by_name(rootObject, root, parts);
 		},
 
 		mono_wasm_set_variable_value: function (scope, index, name, newValue) {
@@ -806,8 +809,8 @@ var MonoSupportLib = {
 			var ret = this._c_fn_table.mono_wasm_set_variable_on_frame_wrapper(scope, index, name, newValue);
 			if (ret == false)
 				throw new Error(`Could not get a value for ${name}`);
-            return ret;
-        },
+			return ret;
+		},
 
 		/**
 		 * @param  {WasmId} id
@@ -882,18 +885,18 @@ var MonoSupportLib = {
 				heapBytes[i] = var_list[i].index;
 			}
 
-			this._async_method_objectId = 0;
+			MONO._async_method_objectId = 0;
 			let { res_ok, res } = this.mono_wasm_get_local_vars_info (scope, heapBytes.byteOffset, var_list.length);
 			Module._free(heapBytes.byteOffset);
 			if (!res_ok)
 				throw new Error (`Failed to get locals for scope ${scope}`);
 
-			if (this._async_method_objectId != 0)
-				this._assign_vt_ids (res, v => ({ containerId: this._async_method_objectId, fieldOffset: v.fieldOffset }));
+			if (MONO._async_method_objectId != 0)
+				this._assign_vt_ids (res, v => ({ containerId: MONO._async_method_objectId, fieldOffset: v.fieldOffset }));
 
 			for (let i in res) {
 				const res_name = res [i].name;
-				if (this._async_method_objectId != 0) {
+				if (MONO._async_method_objectId != 0) {
 					//Async methods are special in the way that local variables can be lifted to generated class fields
 					//value of "this" comes here either
 					if (res_name !== undefined && res_name.indexOf ('>') > 0) {
@@ -994,7 +997,7 @@ var MonoSupportLib = {
 		 * @returns {number}
 		 */
 		_next_id: function () {
-			return ++this._next_id_var;
+			return ++MONO._next_id_var;
 		},
 
 		_extract_and_cache_value_types: function (var_list) {
@@ -1138,14 +1141,14 @@ var MonoSupportLib = {
 			let idStr;
 			if (objectId !== undefined) {
 				idStr = objectId;
-				const old_props = this._id_table [idStr];
+				const old_props = MONO._id_table [idStr];
 				if (old_props === undefined)
 					throw new Error (`ObjectId not found in the id table: ${idStr}`);
 
-				this._id_table [idStr] = Object.assign (old_props, props);
+				MONO._id_table [idStr] = Object.assign (old_props, props);
 			} else {
 				idStr = `dotnet:${scheme}:${JSON.stringify (idArgs)}`;
-				this._id_table [idStr] = props;
+				MONO._id_table [idStr] = props;
 			}
 
 			return idStr;
@@ -1156,7 +1159,7 @@ var MonoSupportLib = {
 		 * @returns {object}
 		 */
 		_get_id_props: function (objectId) {
-			return this._id_table [objectId];
+			return MONO._id_table [objectId];
 		},
 
 		_get_deref_ptr_value: function (objectId) {
@@ -1214,7 +1217,7 @@ var MonoSupportLib = {
 		},
 
 		_cache_call_function_res: function (obj) {
-			const id = `dotnet:cfo_res:${this._next_call_function_res_id++}`;
+			const id = `dotnet:cfo_res:${MONO._next_call_function_res_id++}`;
 			this._call_function_res_cache[id] = obj;
 			return id;
 		},
@@ -1330,7 +1333,7 @@ var MonoSupportLib = {
 				throw new Error (`"arguments" should be an array, but was ${request.arguments}`);
 
 			const objId = request.objectId;
-			let proxy;
+			let proxy; // Note: this variable is used in the fn_eval_str
 
 			if (objId.startsWith ('dotnet:cfo_res:')) {
 				if (objId in this._call_function_res_cache)
@@ -1377,8 +1380,8 @@ var MonoSupportLib = {
 		},
 
 		_clear_per_step_state: function () {
-			this._next_id_var = 0;
-			this._id_table = {};
+			MONO._next_id_var = 0;
+			MONO._id_table = {};
 		},
 
 		mono_wasm_debugger_resume: function () {
@@ -1453,11 +1456,11 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
-			this.mono_wasm_runtime_is_ready = true;
+			MONO.mono_wasm_runtime_is_ready = true;
 			this._clear_per_step_state ();
 
 			// FIXME: where should this go?
-			this._next_call_function_res_id = 0;
+			MONO._next_call_function_res_id = 0;
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
@@ -1758,15 +1761,13 @@ var MonoSupportLib = {
 			return memoryOffset;
 		},
 
-		num_icu_assets_loaded_successfully: 0,
-
 		// @offset must be the address of an ICU data archive in the native heap.
 		// returns true on success.
 		mono_wasm_load_icu_data: function (offset) {
 			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
 			var ok = (fn (offset)) === 1;
 			if (ok)
-				this.num_icu_assets_loaded_successfully++;
+				MONO.num_icu_assets_loaded_successfully++;
 			return ok;
 		},
 
@@ -1969,7 +1970,7 @@ var MonoSupportLib = {
 				invariantMode = true;
 
 			if (!invariantMode) {
-				if (this.num_icu_assets_loaded_successfully > 0) {
+				if (MONO.num_icu_assets_loaded_successfully > 0) {
 					console.debug ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (globalization_mode !== "icu") {
 					console.debug ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
@@ -2039,7 +2040,7 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_add_getter_var: function(className) {
-			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className);
+			const fixed_class_name = MONO._mono_csharp_fixup_class_name (className); // TODO: unused var
 			var name;
 			if (MONO.var_info.length > 0)
 				name = MONO.var_info [MONO.var_info.length - 1].name;
@@ -2308,7 +2309,7 @@ var MonoSupportLib = {
 
 			var manifest;
 			try {
-				manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+				var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
 				manifest = JSON.parse(manifestContent);
 				if (!(manifest instanceof Array))
 					return false;
@@ -2335,7 +2336,7 @@ var MonoSupportLib = {
 				Module['FS_createPath'](prefix, folder, true, true);
 			});
 
-			for (row of manifest) {
+			for (var row of manifest) {
 				var name = row[0];
 				var length = row[1];
 				var bytes = data.slice(0, length);
@@ -2526,17 +2527,17 @@ var MonoSupportLib = {
 	},
 
 	mono_set_timeout: function (timeout, id) {
-		if (!this.mono_set_timeout_exec)
-			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
+		if (!MONO.mono_set_timeout_exec)
+			MONO.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
 			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_set_timeout_exec (id);
 			})
 		}
 	},

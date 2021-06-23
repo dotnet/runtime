@@ -543,6 +543,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number": {
+					let result  = null;
 					if ((js_obj | 0) === js_obj)
 						result = this._box_js_int (js_obj);
 					else if ((js_obj >>> 0) === js_obj)
@@ -860,7 +861,7 @@ var BindingSupportLib = {
 		},
 
 		_create_named_function: function (name, argumentNames, body, closure) {
-			var result = null, keys = null, closureArgumentList = null, closureArgumentNames = null;
+			var result = null, closureArgumentList = null, closureArgumentNames = null;
 
 			if (closure) {
 				closureArgumentNames = Object.keys (closure);
@@ -959,7 +960,7 @@ var BindingSupportLib = {
 
 				var conv = primitiveConverters.get (key);
 				if (!conv)
-					throw new Error ("Unknown parameter type " + type);
+					throw new Error ("Unknown parameter type " + key);
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;
@@ -1009,7 +1010,7 @@ var BindingSupportLib = {
 
 			// worst-case allocation size instead of allocating dynamically, plus padding
 			var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
-			var rootBufferSize = args_marshal.length;
+
 			// ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
 			var indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
@@ -1110,7 +1111,7 @@ var BindingSupportLib = {
 
 			body.push(");");
 
-			bodyJs = body.join ("\r\n");
+			var bodyJs = body.join ("\r\n");
 			try {
 				compiledVariadicFunction = this._create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_variadic_function = compiledVariadicFunction;
@@ -1298,10 +1299,10 @@ var BindingSupportLib = {
 		) {
 			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
+			let result = resultRoot.value;
+
 			if (is_result_marshaled)
 				result = this._unbox_mono_obj_root (resultRoot);
-			else
-				result = resultRoot.value;
 
 			this._teardown_after_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 			return result;
@@ -1440,7 +1441,7 @@ var BindingSupportLib = {
 				"return result;"
 			);
 
-			bodyJs = body.join ("\r\n");
+			var bodyJs = body.join ("\r\n");
 
 			if (friendly_name) {
 				var escapeRE = /[^A-Za-z0-9_]/g;
@@ -1743,7 +1744,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string (res);
 		}
 	},
-    mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception) {
+	mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception) {
 
 		BINDING.bindings_lazy_init ();
 
@@ -1759,36 +1760,36 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
 		}
 
-        var result = false;
+		var result = false;
 
 		var js_value = BINDING.unbox_mono_obj(value);
 		BINDING.mono_wasm_save_LMF();
 
-        if (createIfNotExist) {
-            requireObject[property] = js_value;
-            result = true;
-        }
-        else {
+		if (createIfNotExist) {
+			requireObject[property] = js_value;
+			result = true;
+		}
+		else {
 			result = false;
 			if (!createIfNotExist)
 			{
 				if (!requireObject.hasOwnProperty(property))
 					return false;
 			}
-            if (hasOwnProperty === true) {
-                if (requireObject.hasOwnProperty(property)) {
-                    requireObject[property] = js_value;
-                    result = true;
-                }
-            }
-            else {
-                requireObject[property] = js_value;
-                result = true;
-            }
+			if (hasOwnProperty === true) {
+				if (requireObject.hasOwnProperty(property)) {
+					requireObject[property] = js_value;
+					result = true;
+				}
+			}
+			else {
+				requireObject[property] = js_value;
+				result = true;
+			}
 
 		}
 		BINDING.mono_wasm_unwind_LMF();
-        return BINDING._box_js_bool (result);
+		return BINDING._box_js_bool (result);
 	},
 	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
 		BINDING.bindings_lazy_init ();
