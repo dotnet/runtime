@@ -840,13 +840,7 @@ namespace System.Net.Security
             // _internalOffset is 0 after ResetReadBuffer and we use _internalBufferCount to determined where to read.
             while (_internalBufferCount < frameSize)
             {
-                // We don't have enough bytes buffered so we need to read more. Same logic applies to finishing frame
-                // as well as cases when we don't have enough data to even determine the size.
-                // This is done in this method both to better consolidate error handling logic (the first read is the special
-                // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
-                // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
-                // helper needs to yield and allocate a state machine.
-
+                // We either don't have full frame or we don't have enough data to even determine the size.
                 int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
@@ -874,7 +868,7 @@ namespace System.Net.Security
         {
             Debug.Assert(_decryptedBytesCount == 0);
 
-            // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
+            // Set _decryptedBytesOffset/Count to the current frame we have (including header)
             // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
             _decryptedBytesOffset = _internalOffset;
             _decryptedBytesCount = frameSize;
@@ -958,8 +952,9 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
-                if (_receivedEOF && _internalBufferCount == 0)
+                if (_receivedEOF)
                 {
+                    Debug.Assert(_internalBufferCount == 0);
                     // We received EOF during previous read but had buffered data to return.
                     return 0;
                 }
@@ -1052,7 +1047,7 @@ namespace System.Net.Security
 
                     if (!HaveFullTlsFrame(out payloadBytes))
                     {
-                        // We don't have anuther frame to process but we have some data to return to caller.
+                        // We don't have another frame to process but we have some data to return to caller.
                         break;
                     }
 
@@ -1060,6 +1055,7 @@ namespace System.Net.Security
                     if (_lastFrame.Header.Type != TlsContentType.AppData)
                     {
                         // Alerts, handshake and anything else will be processed separately.
+                        // This may not be necessary but it improves compatibility with older versions.
                         break;
                     }
                 }
