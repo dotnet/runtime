@@ -58,7 +58,7 @@ namespace CoreclrTestLib
                 appExtension = "app";
             }
 
-            cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --app={testBinaryBase}/{category}.{appExtension} --output-directory={reportBase}/install";
+            cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --output-directory={reportBase}/install";
 
             Directory.CreateDirectory(Path.Combine(reportBase, action));
             var outputStream = new FileStream(outputFile, FileMode.Create);
