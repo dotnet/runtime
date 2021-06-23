@@ -1414,6 +1414,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
+                    if (connection is Http2LoopbackConnection http2Connection)
+                    {
+                        http2Connection.SetupAutomaticPingResponse(); // Handle RTT PING
+                    }
+
                     // Send unexpected 1xx responses.
                     HttpRequestData requestData = await connection.ReadRequestDataAsync(readBody: false);
                     await connection.SendResponseAsync(responseStatusCode, isFinal: false);
