@@ -173,10 +173,8 @@ foreach(component IN LISTS components)
 endforeach()
 
 if(NOT MONO_CROSS_COMPILE)
-  # Write a component-manifest.props file in the artifacts/obj/mono/<host>/ directory
   set(TemplateMonoRuntimeComponentSharedLibExt "${CMAKE_SHARED_LIBRARY_SUFFIX}")
   set(TemplateMonoRuntimeComponentStaticLibExt "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-  file(READ "${MONO_COMPONENT_PATH}/component-manifest.props.in" MONO_COMPONENT_MANIFEST_STR)
   if(DISABLE_COMPONENTS)
     set(TemplateMonoRuntimeComponentLinking "static")
     set(TemplateMonoRuntimeAvailableComponents "")
@@ -188,8 +186,9 @@ if(NOT MONO_CROSS_COMPILE)
       set(TemplateMonoRuntimeComponentLinking "dynamic")
     endif()
   endif()
+  # Write a component-manifest.props file in the artifacts/obj/mono/<host>/ directory
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
-  file(CONFIGURE OUTPUT ../../component-manifest.props CONTENT ${MONO_COMPONENT_MANIFEST_STR})
+  configure_file( "${MONO_COMPONENT_PATH}/component-manifest.props.in" "../../component-manifest.props")
   # without the .. this goes to artifacts/obj/mono/<host>/out/
   install(FILES "${MONO_COMPONENT_PATH}/component-manifest.targets" DESTINATION ..)
 endif()
