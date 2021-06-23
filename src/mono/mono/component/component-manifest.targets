@@ -5,7 +5,7 @@
     <!-- Output: _MonoRuntimeComponentName item list: the components provided by the runtime, with ComponentLib and ComponentStubLib metadata that gives the filenames of the components relative to the runtime pack native subdirectory -->
     <ItemGroup Condition="'$(_MonoRuntimeComponentLinking)' == 'dynamic'">
       <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)">
-	<ComponentLib>libmono-component-%(Identity)(_MonoRuntimeComponentSharedLibExt)</ComponentLib>
+	<ComponentLib>libmono-component-%(Identity)$(_MonoRuntimeComponentSharedLibExt)</ComponentLib>
       </_MonoRuntimeComponentName>
     </ItemGroup>
     <ItemGroup Condition="'$(_MonoRuntimeComponentLinking)' == 'static'">
