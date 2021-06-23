@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -176,8 +176,6 @@
              Link="Internal\Cryptography\UniversalCryptoEncryptor.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoDecryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoDecryptor.cs" />
-    <Compile Include="$(CommonPath)System\NativeMemoryHelper.cs"
-             Link="Common\System\NativeMemoryHelper.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
