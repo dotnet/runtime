@@ -150,7 +150,7 @@ if ($iOSMono) {
     }
     Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
-    $Configurations += " iOSLlvmBuild=$(iOSLlvmBuild)"
+    $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
 }
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
