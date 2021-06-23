@@ -24,6 +24,9 @@ namespace NetClient
 
             // The CoClass should be the activated type, _not_ the activation interface.
             Assert.AreEqual(test.GetType(), typeof(CoClass.ConsumeNETServerTestingClass));
+            Assert.IsTrue(typeof(CoClass.ConsumeNETServerTestingClass).IsCOMObject);
+            Assert.IsFalse(typeof(CoClass.ConsumeNETServerTesting).IsCOMObject);
+            Assert.IsTrue(Marshal.IsComObject(test));
         }
 
         static void Validate_CCW_Wasnt_Unwrapped()

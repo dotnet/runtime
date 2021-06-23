@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31229.75
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RemoteLoopServer", "RemoteLoopServer\RemoteLoopServer.csproj", "{86E9A13D-9F4A-45DE-B0BB-CBB6A6533868}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCoreServer", "NetCoreServer\NetCoreServer.csproj", "{2BB687CC-3F0C-43A9-8F38-140E91892EB0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86E9A13D-9F4A-45DE-B0BB-CBB6A6533868}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86E9A13D-9F4A-45DE-B0BB-CBB6A6533868}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86E9A13D-9F4A-45DE-B0BB-CBB6A6533868}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86E9A13D-9F4A-45DE-B0BB-CBB6A6533868}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BB687CC-3F0C-43A9-8F38-140E91892EB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BB687CC-3F0C-43A9-8F38-140E91892EB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BB687CC-3F0C-43A9-8F38-140E91892EB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BB687CC-3F0C-43A9-8F38-140E91892EB0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2F9A0637-452E-4FB9-9403-CB52944982DA}
+	EndGlobalSection
+EndGlobal

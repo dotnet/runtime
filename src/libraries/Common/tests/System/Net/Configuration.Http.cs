@@ -12,11 +12,12 @@ namespace System.Net.Test.Common
         {
             private static readonly string DefaultHttp2AzureServer = "corefx-net-http2.azurewebsites.net";
 
+            // for the local server hosted in XHarness we are passing also port as part of the environment variables, because it's bound to random port number
             public static string Host => GetValue("DOTNET_TEST_HTTPHOST", DefaultAzureServer);
-
             public static string SecureHost => GetValue("DOTNET_TEST_SECUREHTTPHOST", DefaultAzureServer);
-
             public static string Http2Host => GetValue("DOTNET_TEST_HTTP2HOST", DefaultHttp2AzureServer);
+            public static int Port = GetPortValue("DOTNET_TEST_HTTPHOST", 80);
+            public static int SecurePort = GetPortValue("DOTNET_TEST_SECUREHTTPHOST", 443);
 
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
@@ -44,12 +45,15 @@ namespace System.Net.Test.Common
             public static string EchoClientCertificateRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
             public static string Http2ForceUnencryptedLoopback => GetValue("DOTNET_TEST_HTTP2_FORCEUNENCRYPTEDLOOPBACK");
 
+            public static string RemoteLoopHost => GetValue("DOTNET_TEST_REMOTE_LOOP_HOST");
+
             private const string EchoHandler = "Echo.ashx";
             private const string EmptyContentHandler = "EmptyContent.ashx";
             private const string RedirectHandler = "Redirect.ashx";
             private const string VerifyUploadHandler = "VerifyUpload.ashx";
             private const string DeflateHandler = "Deflate.ashx";
             private const string GZipHandler = "GZip.ashx";
+            private const string RemoteLoopHandler = "RemoteLoop";
 
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
@@ -66,6 +70,7 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteGZipServer = new Uri("http://" + Host + "/" + GZipHandler);
             public static readonly Uri Http2RemoteDeflateServer = new Uri("https://" + Http2Host + "/" + DeflateHandler);
             public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
+            public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
             public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };

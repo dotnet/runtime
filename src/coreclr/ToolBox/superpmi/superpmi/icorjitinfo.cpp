@@ -1859,7 +1859,7 @@ uint16_t MyICJI::getRelocTypeHint(void* target)
 
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
-// is cross-compiling (such as the case for crossgen), it will return a
+// is cross-compiling (such as the case for crossgen2), it will return a
 // different value than if it was compiling for the host architecture.
 //
 uint32_t MyICJI::getExpectedTargetArchitecture()

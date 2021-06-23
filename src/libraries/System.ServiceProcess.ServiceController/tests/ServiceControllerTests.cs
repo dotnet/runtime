@@ -7,7 +7,7 @@ namespace System.ServiceProcess.Tests
 {
     [OuterLoop(/* Modifies machine state */)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Persistent issues starting test service on NETFX")]
-    public class ServiceControllerTests : IDisposable
+    public partial class ServiceControllerTests : IDisposable
     {
         private const int connectionTimeout = 30000;
         private readonly TestServiceProvider _testService;

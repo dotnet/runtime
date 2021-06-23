@@ -1392,16 +1392,17 @@
         "4.7.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
-      "InboxOn": {},
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
         "4.1.0.0": "4.4.0",
         "4.1.1.0": "4.5.0",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "Microsoft.Win32.Registry.AccessControl": {
@@ -2724,7 +2725,8 @@
         "netcoreapp2.1": "4.0.3.1",
         "netcoreapp3.0": "4.0.4.0",
         "netcoreapp3.1": "4.0.5.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -3415,7 +3417,8 @@
       "InboxOn": {
         "netcoreapp2.1": "4.2.1.0",
         "netcoreapp3.1": "4.2.2.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.2.0.0": "4.4.0",
@@ -3505,16 +3508,17 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
-      "InboxOn": {},
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
         "4.0.4.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.IO.FileSystem.DriveInfo": {
@@ -3734,14 +3738,15 @@
         "4.5.1",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
-      "InboxOn": {},
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.IO.Ports": {
@@ -4827,7 +4832,8 @@
     },
     "System.Private.Runtime.InteropServices.JavaScript": {
       "InboxOn": {
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       }
     },
     "System.Private.Uri": {
@@ -5420,7 +5426,8 @@
       "InboxOn": {
         "netcoreapp3.0": "4.0.5.0",
         "netcoreapp3.1": "4.0.6.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.3.0": "4.4.0",
@@ -5657,7 +5664,8 @@
       "InboxOn": {
         "netcoreapp3.0": "4.0.0.0",
         "netcoreapp3.1": "4.0.1.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       }
     },
     "System.Runtime.Loader": {
@@ -5671,12 +5679,12 @@
         "netcoreapp2.1": "4.0.3.0",
         "netcoreapp3.0": "4.1.0.0",
         "netcoreapp3.1": "4.1.1.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0",
-        "4.1.0.0": "4.6.0"
+        "4.0.1.0": "4.3.0"
       }
     },
     "System.Runtime.Numerics": {
@@ -5994,16 +6002,17 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
-      "InboxOn": {},
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
         "4.1.0.0": "4.4.0",
         "4.1.1.0": "4.5.0",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.Security.Claims": {
@@ -6385,8 +6394,10 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
-      "InboxOn": {},
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -6394,8 +6405,7 @@
         "4.1.1.0": "4.5.0",
         "4.1.1.1": "4.5.1",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.Security.SecureString": {
@@ -6790,7 +6800,8 @@
       "InboxOn": {
         "netcoreapp3.0": "4.0.4.0",
         "netcoreapp3.1": "4.0.5.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -6815,7 +6826,8 @@
       "InboxOn": {
         "netcoreapp3.0": "4.0.0.0",
         "netcoreapp3.1": "4.0.1.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
@@ -6949,7 +6961,8 @@
       "InboxOn": {
         "netcoreapp3.0": "4.0.1.0",
         "netcoreapp3.1": "4.0.2.0",
-        "net5.0": "5.0.0.0"
+        "net5.0": "5.0.0.0",
+        "net6.0": "6.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",

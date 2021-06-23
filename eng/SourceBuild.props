@@ -1,0 +1,73 @@
+<Project>
+
+  <PropertyGroup>
+    <GitHubRepositoryName>runtime</GitHubRepositoryName>
+  </PropertyGroup>
+
+  <!-- Set up the dotnet/runtime source-build command. -->
+  <PropertyGroup>
+    <BaseInnerSourceBuildCommand>./build.sh</BaseInnerSourceBuildCommand>
+
+    <SourceBuildPortable>true</SourceBuildPortable>
+    <SourceBuildPortable Condition="'$(SourceBuildNonPortable)' == 'true'">false</SourceBuildPortable>
+
+    <!-- If TargetRid not specified, detect RID based on portability. -->
+    <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
+
+    <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
+    <_targetRidPlatformIndex>$(TargetRid.LastIndexOfAny("-"))</_targetRidPlatformIndex>
+    <TargetRidWithoutPlatform>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetRidWithoutPlatform>
+    <TargetRidPlatform>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetRidPlatform>
+
+    <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
+    <InnerBuildEnv Include="EnableSourceControlManagerQueries=false" />
+    <InnerBuildEnv Include="EnableSourceLink=false" />
+    <InnerBuildEnv Include="DisableSourceLink=true" />
+    <InnerBuildEnv Include="DeterministicSourcePaths=false" />
+  </ItemGroup>
+
+  <Target Name="GetRuntimeSourceBuildCommandConfiguration"
+          BeforeTargets="GetSourceBuildCommandConfiguration">
+    <PropertyGroup>
+      <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetRidPlatform)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --ci</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:MicrosoftNetFrameworkReferenceAssembliesVersion=1.0.0</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:ContinuousIntegrationBuild=true</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CategorizeRuntimeSupplementalArtifacts"
+          BeforeTargets="GetCategorizedIntermediateNupkgContents">
+    <ItemGroup>
+      <!--
+        Runtime artifacts are too large to fit into a single package (Azure DevOps feeds 500 mb constraint).
+        Split large components into separate packages.
+      -->
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*.tar.gz" Category="runtime" />
+
+      <IntermediateNupkgArtifactFile
+        Include="
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+        Category="Crossgen2Pack" />
+    </ItemGroup>
+  </Target>
+
+</Project>

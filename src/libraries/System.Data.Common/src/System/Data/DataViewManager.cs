@@ -97,6 +97,7 @@ namespace System.Data
                 builder.Append("</DataViewSettingCollectionString>");
                 return builder.ToString();
             }
+            [RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed.")]
             set
             {
                 if (string.IsNullOrEmpty(value))

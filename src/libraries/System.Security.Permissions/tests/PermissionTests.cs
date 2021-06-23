@@ -213,7 +213,7 @@ namespace System.Security.Permissions.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography.X509Certificates is not supported on this platform.")]
         public static void PublisherIdentityPermissionCallMethods()
         {
-            PublisherIdentityPermission pip = new PublisherIdentityPermission(new System.Security.Cryptography.X509Certificates.X509Certificate());
+            PublisherIdentityPermission pip = new PublisherIdentityPermission(new System.Security.Cryptography.X509Certificates.X509Certificate2(stackalloc byte[0]));
             PublisherIdentityPermission pip2 = new PublisherIdentityPermission(new Permissions.PermissionState());
             IPermission ip = pip.Copy();
             IPermission ip2 = pip.Intersect(ip);

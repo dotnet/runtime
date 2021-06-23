@@ -16,7 +16,6 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
-    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]

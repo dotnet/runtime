@@ -12,6 +12,7 @@
 #include "fstream.h"
 #include "typestring.h"
 #include "win32threadpool.h"
+#include "clrversion.h"
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
@@ -1161,6 +1162,25 @@ ep_rt_coreclr_config_lock_get (void)
 	return &_ep_rt_coreclr_config_lock_handle;
 }
 
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	return reinterpret_cast<const ep_char8_t*>(GetAppDomain ()->GetRootAssembly ()->GetSimpleName ());
+}
+
+static
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	return reinterpret_cast<const ep_char8_t*>(CLR_PRODUCT_VERSION);
+}
+
 /*
 * Atomics.
 */
@@ -1448,10 +1468,6 @@ void
 ep_rt_prepare_provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-	auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 }
 
 static
@@ -1645,9 +1661,9 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 
 #ifndef DACCESS_COMPILE
 		// Let the profiler know the provider has been created so it can register if it wants to
-		BEGIN_PIN_PROFILER (CORProfilerIsMonitoringEventPipe ());
-		g_profControlBlock.pProfInterface->EventPipeProviderCreated (provider);
-		END_PIN_PROFILER ();
+		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
+		(&g_profControlBlock)->EventPipeProviderCreated (provider);
+		END_PROFILER_CALLBACK ();
 #endif // DACCESS_COMPILE
 }
 

@@ -40,9 +40,9 @@
       <AssemblyToLoadResourceCulture>fr-FR</AssemblyToLoadResourceCulture>
     </PropertyGroup>
     <ItemGroup>
-      <SatelliteAssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.resources.*" />
+      <SatelliteAssembliesToMove Include="$(OutDir)/**/AssemblyToLoad_*.resources.*" />
       <AssembliesToCopy Include="$(OutDir)/AssemblyToLoad.dll" />
-      <AssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.*" Exclude="@(SatelliteAssembliesToMove)" />
+      <AssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.*" />
       <AssembliesToMove Include="$(OutDir)/AssemblyToLoadDependency.*" />
     </ItemGroup>
     <Copy SourceFiles="@(AssembliesToCopy)" DestinationFolder="$(OutDir)/DependentAssemblies" />

@@ -66,7 +66,8 @@ namespace System.Diagnostics.Tracing
             ChangePoint,
             Stabilizing,
             Starvation,
-            ThreadTimedOut
+            ThreadTimedOut,
+            CooperativeBlocking,
         }
 
 #if !ES_BUILD_STANDALONE

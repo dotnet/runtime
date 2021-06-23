@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -21,7 +22,7 @@ namespace System.Data.Common
 
         private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 
-        public SqlUdtStorage(DataColumn column, Type type)
+        public SqlUdtStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
         : this(column, type, GetStaticNullForUdtType(type))
         {
         }
@@ -34,7 +35,11 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        internal static object GetStaticNullForUdtType(Type type) => s_typeToNull.GetOrAdd(type, t =>
+        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(type));
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The only callsite is marked with DynamicallyAccessedMembers. Workaround for https://github.com/mono/linker/issues/1981")]
+        private static object GetStaticNullForUdtTypeCore(Type type)
         {
             // TODO: Is it OK for the null value of a UDT to be null? For now annotating is non-nullable.
             PropertyInfo? propInfo = type.GetProperty("Null", BindingFlags.Public | BindingFlags.Static);
@@ -50,7 +55,7 @@ namespace System.Data.Common
             }
 
             throw ExceptionBuilder.INullableUDTwithoutStaticNull(type.AssemblyQualifiedName!);
-        });
+        }
 
         public override bool IsNull(int record)
         {
@@ -143,6 +148,7 @@ namespace System.Data.Common
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             if (_implementsIXmlSerializable)
@@ -166,6 +172,7 @@ namespace System.Data.Common
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
             if (null == xmlAttrib)
@@ -192,7 +199,7 @@ namespace System.Data.Common
             }
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             StringWriter strwriter = new StringWriter(FormatProvider);
@@ -211,6 +218,7 @@ namespace System.Data.Common
             return (strwriter.ToString());
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             if (null == xmlAttrib)

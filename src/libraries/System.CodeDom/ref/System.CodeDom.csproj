@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Condition="'$(TargetFramework)' != 'net461'" Include="System.CodeDom.cs" />
     <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.CodeDom.net461.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
-    <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
   </ItemGroup>
 </Project>

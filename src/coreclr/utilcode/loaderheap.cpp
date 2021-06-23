@@ -1330,8 +1330,14 @@ again:
         if (pData)
         {
 #ifdef _DEBUG
+            BYTE *pAllocatedBytes = (BYTE*)pData;
+            ExecutableWriterHolder<void> dataWriterHolder;
+            if (m_Options & LHF_EXECUTABLE)
+            {
+                dataWriterHolder = ExecutableWriterHolder<void>(pData, dwSize);
+                pAllocatedBytes = (BYTE *)dataWriterHolder.GetRW();
+            }
 
-            BYTE *pAllocatedBytes = (BYTE *)pData;
 #if LOADER_HEAP_DEBUG_BOUNDARY > 0
             // Don't fill the memory we allocated - it is assumed to be zeroed - fill the memory after it
             memset(pAllocatedBytes + dwRequestedSize, 0xEE, LOADER_HEAP_DEBUG_BOUNDARY);
@@ -1344,7 +1350,7 @@ again:
 
             if (!m_fExplicitControl)
             {
-                LoaderHeapValidationTag *pTag = AllocMem_GetTag(pData, dwRequestedSize);
+                LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes, dwRequestedSize);
                 pTag->m_allocationType  = kAllocMem;
                 pTag->m_dwRequestedSize = dwRequestedSize;
                 pTag->m_szFile          = szFile;
@@ -1514,7 +1520,14 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     {
         // Cool. This was the last block allocated. We can just undo the allocation instead
         // of going to the freelist.
-        memset(pMem, 0x00, dwSize); // Fill freed region with 0
+        void *pMemRW = pMem;
+        ExecutableWriterHolder<void> memWriterHolder;
+        if (m_Options & LHF_EXECUTABLE)
+        {
+            memWriterHolder = ExecutableWriterHolder<void>(pMem, dwSize);
+            pMemRW = memWriterHolder.GetRW();
+        }
+        memset(pMemRW, 0x00, dwSize); // Fill freed region with 0
         m_pAllocPtr = (BYTE*)pMem;
     }
     else
@@ -1626,7 +1639,14 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     ((BYTE*&)pResult) += extra;
 
 #ifdef _DEBUG
-     BYTE *pAllocatedBytes = (BYTE *)pResult;
+    BYTE *pAllocatedBytes = (BYTE *)pResult;
+    ExecutableWriterHolder<void> resultWriterHolder;
+    if (m_Options & LHF_EXECUTABLE)
+    {
+        resultWriterHolder = ExecutableWriterHolder<void>(pResult, dwSize - extra);
+        pAllocatedBytes = (BYTE *)resultWriterHolder.GetRW();
+    }
+
 #if LOADER_HEAP_DEBUG_BOUNDARY > 0
     // Don't fill the entire memory - we assume it is all zeroed -just the memory after our alloc
     memset(pAllocatedBytes + dwRequestedSize, 0xee, LOADER_HEAP_DEBUG_BOUNDARY);
@@ -1656,7 +1676,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 
     if (!m_fExplicitControl)
     {
-        LoaderHeapValidationTag *pTag = AllocMem_GetTag(((BYTE*)pResult) - extra, dwRequestedSize + extra);
+        LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes - extra, dwRequestedSize + extra);
         pTag->m_allocationType  = kAllocMem;
         pTag->m_dwRequestedSize = dwRequestedSize + extra;
         pTag->m_szFile          = szFile;

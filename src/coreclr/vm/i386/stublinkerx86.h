@@ -457,8 +457,8 @@ inline TADDR rel32Decode(/*PTR_INT32*/ TADDR pRel32)
     return pRel32 + 4 + *PTR_INT32(pRel32);
 }
 
-void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, MethodDesc* pMD);
-BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, TADDR target, TADDR expected, MethodDesc* pMD);
+void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, MethodDesc* pMD);
+BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, TADDR expected, MethodDesc* pMD);
 
 //------------------------------------------------------------------------
 //
@@ -521,7 +521,7 @@ struct StubPrecode {
     BYTE            m_jmp;
     INT32           m_rel32;
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = NULL);
+    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = NULL);
 
     TADDR GetMethodDesc()
     {
@@ -546,7 +546,8 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        rel32SetInterlocked(&m_rel32, GetPreStubEntryPoint(), (MethodDesc*)GetMethodDesc());
+        ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
+        rel32SetInterlocked(&m_rel32, rel32WriterHolder.GetRW(), GetPreStubEntryPoint(), (MethodDesc*)GetMethodDesc());
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
@@ -558,7 +559,8 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        return rel32SetInterlocked(&m_rel32, target, expected, (MethodDesc*)GetMethodDesc());
+        ExecutableWriterHolder<void> rel32Holder(&m_rel32, 4);
+        return rel32SetInterlocked(&m_rel32, rel32Holder.GetRW(), target, expected, (MethodDesc*)GetMethodDesc());
     }
 };
 IN_TARGET_64BIT(static_assert_no_msg(offsetof(StubPrecode, m_movR10) == OFFSETOF_PRECODE_TYPE);)
@@ -586,7 +588,7 @@ struct NDirectImportPrecode : StubPrecode {
     // jmp NDirectImportThunk
 #endif // HOST_64BIT
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     LPVOID GetEntrypoint()
     {
@@ -633,7 +635,7 @@ struct FixupPrecode {
     TADDR           m_pMethodDesc;
 #endif
 
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
+    void Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex = 0, int iPrecodeChunkIndex = 0);
 
 #ifdef HAS_FIXUP_PRECODE_CHUNKS
     TADDR GetBase()

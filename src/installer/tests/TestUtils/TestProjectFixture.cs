@@ -358,7 +358,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestored(params string[] fallbackSources)
         {
-            if ( ! TestProject.IsRestored())
+            if (!TestProject.IsRestored())
             {
                 RestoreProject(fallbackSources);
             }
@@ -368,7 +368,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
-            if ( ! TestProject.IsRestored())
+            if (!TestProject.IsRestored())
             {
                 string extraMSBuildProperties = $"/p:TestTargetRid={rid}";
                 RestoreProject(fallbackSources, extraMSBuildProperties);

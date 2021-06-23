@@ -11,7 +11,10 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    public sealed partial class EcmaMethodIL : MethodIL
+    // Marker interface implemented by EcmaMethodIL and EcmaMethodILScope
+    public interface IEcmaMethodIL { }
+
+    public sealed partial class EcmaMethodIL : MethodIL, IEcmaMethodIL
     {
         private readonly EcmaModule _module;
         private readonly EcmaMethod _method;
@@ -129,6 +132,48 @@ namespace Internal.IL
 
             Interlocked.CompareExchange(ref _ilExceptionRegions, ilExceptionRegions, null);
             return _ilExceptionRegions;
+        }
+
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
+        {
+            // UserStrings cannot be wrapped in EntityHandle
+            if ((token & 0xFF000000) == 0x70000000)
+                return _module.GetUserString(MetadataTokens.UserStringHandle(token));
+
+            return _module.GetObject(MetadataTokens.EntityHandle(token), notFoundBehavior);
+        }
+    }
+
+    public sealed partial class EcmaMethodILScope : MethodILScope, IEcmaMethodIL
+    {
+        private readonly EcmaModule _module;
+        private readonly EcmaMethod _method;
+
+        public static EcmaMethodILScope Create(EcmaMethod method)
+        {
+            return new EcmaMethodILScope(method);
+        }
+
+        private EcmaMethodILScope(EcmaMethod method)
+        {
+            _method = method;
+            _module = method.Module;
+        }
+
+        public EcmaModule Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
+        public override MethodDesc OwningMethod
+        {
+            get
+            {
+                return _method;
+            }
         }
 
         public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)

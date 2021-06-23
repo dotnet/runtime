@@ -7,6 +7,8 @@
     <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
     <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
+
+    <UseMonoRuntime>false</UseMonoRuntime>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />

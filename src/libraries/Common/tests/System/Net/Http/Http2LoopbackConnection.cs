@@ -20,7 +20,7 @@ namespace System.Net.Test.Common
     {
         public const string Http2Prefix = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
 
-        private Socket _connectionSocket;
+        private SocketWrapper _connectionSocket;
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
@@ -34,19 +34,19 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        private Http2LoopbackConnection(Socket socket, Stream stream, TimeSpan timeout)
+        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout)
         {
             _connectionSocket = socket;
             _connectionStream = stream;
             _timeout = timeout;
         }
 
-        public static Task<Http2LoopbackConnection> CreateAsync(Socket socket, Stream stream, Http2Options httpOptions)
+        public static Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions)
         {
             return CreateAsync(socket, stream, httpOptions, Http2LoopbackServer.Timeout);
         }
 
-        public static async Task<Http2LoopbackConnection> CreateAsync(Socket socket, Stream stream, Http2Options httpOptions, TimeSpan timeout)
+        public static async Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions, TimeSpan timeout)
         {
             if (httpOptions.UseSsl)
             {
@@ -230,9 +230,9 @@ namespace System.Net.Test.Common
         }
 
         // Reset and return underlying networking objects.
-        public (Socket, Stream) ResetNetwork()
+        public (SocketWrapper, Stream) ResetNetwork()
         {
-            Socket oldSocket = _connectionSocket;
+            SocketWrapper oldSocket = _connectionSocket;
             Stream oldStream = _connectionStream;
             _connectionSocket = null;
             _connectionStream = null;

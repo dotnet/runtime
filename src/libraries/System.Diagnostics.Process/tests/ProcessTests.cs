@@ -21,7 +21,6 @@ using Xunit.Sdk;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class ProcessTests : ProcessTestBase
     {
         private class FinalizingProcess : Process

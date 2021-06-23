@@ -20,9 +20,12 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/metadata-internals.h>
+#include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
@@ -1822,6 +1825,22 @@ ep_rt_diagnostics_command_line_get (void)
 		cmd_line = ep_rt_os_command_line_get ();
 
 	return cmd_line;
+}
+
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	return (const ep_char8_t *)m_image_get_assembly_name (mono_assembly_get_main ()->image);
+}
+
+static
+inline
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	return (const ep_char8_t *)EGLIB_TOSTRING (RuntimeProductVersion);
 }
 
 /*

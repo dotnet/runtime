@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
+using Xunit;
 
 namespace System
 {
@@ -59,6 +60,8 @@ namespace System
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
+        public static bool LocalEchoServerIsAvailable => IsBrowser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;

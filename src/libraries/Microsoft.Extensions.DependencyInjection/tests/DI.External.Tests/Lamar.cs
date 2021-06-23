@@ -7,6 +7,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class LamarDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
     {
+        public override bool SupportsIServiceProviderIsService => false;
+
         public override string[] SkippedTests => new[]
         {
             "DisposesInReverseOrderOfCreation",

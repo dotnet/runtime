@@ -367,6 +367,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "pefile.inl"
 #include "excep.h"
 #include "method.hpp"
+#include "field.h"
 #include "callingconvention.h"
 #include "frames.h"
 #include "qcall.h"

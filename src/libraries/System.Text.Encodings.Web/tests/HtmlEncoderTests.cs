@@ -16,7 +16,6 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData("&#x1F602; 21", "\U0001F602 21")]
         [InlineData("x&#x1F602;y", "x\U0001F602y")]
         [InlineData("&#x1F602;x&#x1F602;y", "\U0001F602x\U0001F602y")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestSurrogate(string expected, string actual)
         {
             Assert.Equal(expected, HtmlEncoder.Default.Encode(actual));
@@ -96,7 +95,6 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData("'", "&#x27;")]
         [InlineData("\"", "&quot;")]
         [InlineData("+", "&#x2B;")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void HtmlEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple(string input, string expected)
         {
             // Arrange

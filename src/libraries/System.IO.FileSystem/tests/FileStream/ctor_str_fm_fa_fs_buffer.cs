@@ -22,7 +22,9 @@ namespace System.IO.Tests
         [Fact]
         public void NegativeBufferSizeThrows()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("bufferSize"),
+                () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, -1));
         }
 
         [Fact]

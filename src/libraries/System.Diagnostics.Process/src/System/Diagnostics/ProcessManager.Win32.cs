@@ -42,7 +42,7 @@ namespace System.Diagnostics
 
         private static bool IsMainWindow(IntPtr handle)
         {
-            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle);
+            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle) != Interop.BOOL.FALSE;
         }
 
         [UnmanagedCallersOnly]
@@ -51,7 +51,7 @@ namespace System.Diagnostics
             MainWindowFinder* instance = (MainWindowFinder*)extraParameter;
 
             int processId = 0; // Avoid uninitialized variable if the window got closed in the meantime
-            Interop.User32.GetWindowThreadProcessId(handle, out processId);
+            Interop.User32.GetWindowThreadProcessId(handle, &processId);
 
             if ((processId == instance->_processId) && IsMainWindow(handle))
             {

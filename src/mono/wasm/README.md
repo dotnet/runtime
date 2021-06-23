@@ -2,7 +2,7 @@
 
 This depends on `emsdk` to be installed.
 
-## emsdk
+## emsdk on mac
 
 * You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk`.
 Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
@@ -21,7 +21,9 @@ Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for 
 
 Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
 
-## Building
+If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
+
+## Building on mac
 
 * To build the whole thing, with libraries:
 
@@ -33,7 +35,7 @@ Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/wo
 
 ### Note: Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
 
-### Windows
+### Bulding on windows
 
 * To build everything
 
@@ -103,7 +105,7 @@ Examples of running tests for individual libraries:
 `.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
 `.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
-### Browser tests
+### Browser tests on mac
 
 Or they can be run with a browser (Chrome):
 
@@ -125,7 +127,7 @@ The wrapper script used to actually run these tests, accepts:
 
 ### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
-## Debugger tests
+## Debugger tests on mac
 
 Debugger tests need `Google Chrome` to be installed.
 

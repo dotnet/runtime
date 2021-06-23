@@ -410,7 +410,7 @@ namespace System.Tests
             for (int i = start; i != end; i++)
             {
                 double d = Math.Pow(b, i);
-                ulong bits = (ulong)BitConverter.DoubleToInt64Bits(d);
+                ulong bits = BitConverter.DoubleToUInt64Bits(d);
 
                 TestRoundTripDouble(bits - 1);
                 TestRoundTripDouble(bits);
@@ -594,7 +594,7 @@ namespace System.Tests
             for (int i = start; i != end; ++i)
             {
                 float f = MathF.Pow(b, i);
-                uint bits = (uint)BitConverter.SingleToInt32Bits(f);
+                uint bits = BitConverter.SingleToUInt32Bits(f);
 
                 TestRoundTripSingle(bits - 1);
                 TestRoundTripSingle(bits);
@@ -604,7 +604,7 @@ namespace System.Tests
 
         private void CheckOneDouble(string s, ulong expectedBits)
         {
-            CheckOneDouble(s, BitConverter.Int64BitsToDouble((long)(expectedBits)));
+            CheckOneDouble(s, BitConverter.UInt64BitsToDouble(expectedBits));
         }
 
         private void CheckOneDouble(string s, double expected)
@@ -620,7 +620,7 @@ namespace System.Tests
 
         private void CheckOneSingle(string s, uint expectedBits)
         {
-            CheckOneSingle(s, BitConverter.Int32BitsToSingle((int)(expectedBits)));
+            CheckOneSingle(s, BitConverter.UInt32BitsToSingle(expectedBits));
         }
 
         private void CheckOneSingle(string s, float expected)
@@ -642,7 +642,7 @@ namespace System.Tests
 
         private void TestRoundTripDouble(ulong bits)
         {
-            double d = BitConverter.Int64BitsToDouble((long)(bits));
+            double d = BitConverter.UInt64BitsToDouble(bits);
 
             if (double.IsFinite(d))
             {
@@ -659,7 +659,7 @@ namespace System.Tests
 
         private void TestRoundTripSingle(uint bits)
         {
-            float d = BitConverter.Int32BitsToSingle((int)(bits));
+            float d = BitConverter.UInt32BitsToSingle(bits);
 
             if (float.IsFinite(d))
             {

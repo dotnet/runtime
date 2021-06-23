@@ -209,7 +209,28 @@ namespace Microsoft.Extensions.Configuration
         {
             if (instance != null)
             {
-                foreach (PropertyInfo property in GetAllProperties(instance.GetType()))
+                List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+
+                if (options.ErrorOnUnknownConfiguration)
+                {
+                    HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                        StringComparer.OrdinalIgnoreCase);
+
+                    IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
+                    List<string> missingPropertyNames = configurationSections
+                        .Where(cs => !propertyNames.Contains(cs.Key))
+                        .Select(mp => $"'{mp.Key}'")
+                        .ToList();
+
+                    if (missingPropertyNames.Count > 0)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
+                            nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
+                            string.Join(", ", missingPropertyNames)));
+                    }
+                }
+
+                foreach (PropertyInfo property in modelProperties)
                 {
                     BindProperty(property, instance, configuration, options);
                 }
@@ -622,7 +643,7 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static IEnumerable<PropertyInfo> GetAllProperties(
+        private static List<PropertyInfo> GetAllProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type)
         {

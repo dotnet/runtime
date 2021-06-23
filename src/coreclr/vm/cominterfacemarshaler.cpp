@@ -400,6 +400,7 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
         // This was previously provided by IProvideClassinfo. If the type handle isn't
         // set fallback to the opaque __ComObject type.
         m_typeHandle = TypeHandle(g_pBaseCOMObject);
+        _ASSERTE(!m_typeHandle.IsNull());
     }
 }
 

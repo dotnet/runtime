@@ -93,7 +93,7 @@ extern "C"
     return TRUE;
 }
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
 {
     SetDefaultPaths();
     SetLibName();
@@ -117,7 +117,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
     pnjitStartup(g_ourJitHost);
 }
 
-extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
+extern "C" DLLEXPORT ICorJitCompiler* getJit()
 {
     DWORD             dwRetVal = 0;
     PgetJit           pngetJit;

@@ -243,7 +243,8 @@ jobs:
           /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
           /p:SignDiagnostics=true
           /p:DotNetSignType=$(SignType)
-          /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/SignDiagnostics.binlog
+          -noBl
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfig)/SignDiagnostics.binlog
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Diagnostic Binaries
 

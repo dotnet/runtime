@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
   </PropertyGroup>
 </Project>

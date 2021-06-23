@@ -93,6 +93,7 @@ namespace System.Xml.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53987", TestRuntimes.Mono)]
         public static void SynchronizationContextCurrent_NotUsedForAsyncOperations()
         {
             Task.Run(() =>

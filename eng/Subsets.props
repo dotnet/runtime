@@ -25,8 +25,8 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
-    <!-- On Windows mono is supported for x86/x64 only -->
-    <DefaultSubsets Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64'">clr+libs+host+packs</DefaultSubsets>
+    <!-- mono is not supported in source build. On Windows mono is supported for x86/x64 only. -->
+    <DefaultSubsets Condition="'$(DotNetBuildFromSource)' == 'true' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+host+packs</DefaultSubsets>
   </PropertyGroup>
 
   <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
@@ -49,18 +49,21 @@
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
-     
+
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src+libs.packages</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultLibrariesSubsets)+libs.pretest</DefaultLibrariesSubsets>
 
-    <DefaultHostSubsets>host.native+host.pkg+host.tools+host.tests</DefaultHostSubsets>
+    <DefaultHostSubsets>host.native+host.tools</DefaultHostSubsets>
+    <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.pkg+host.tests</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono'"></DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">host.native</DefaultHostSubsets>
 
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
+    <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -204,12 +207,12 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
                              $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
                              $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
-                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
-                             $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
-      Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
+      Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64' and '$(DotNetBuildFromSource)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
@@ -221,7 +224,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(PgoInstrument)' != 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
   </ItemGroup>
 
   <!-- Mono sets -->

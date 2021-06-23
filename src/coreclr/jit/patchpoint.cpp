@@ -50,7 +50,7 @@ public:
         }
 
         int count = 0;
-        for (BasicBlock* block = compiler->fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {

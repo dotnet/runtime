@@ -5,4 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
+  </ItemGroup>
+
 </Project>

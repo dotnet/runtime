@@ -1,0 +1,107 @@
+<Project>
+  <PropertyGroup>
+    <ShouldVerifyClosure>true</ShouldVerifyClosure>
+    <ShouldVerifyTypes>true</ShouldVerifyTypes>
+    <SkipVerifyClosureForRuntime>true</SkipVerifyClosureForRuntime>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- these are part of the targeting pack but not actual assemblies -->
+    <ExcludeReference Include="System.EnterpriseServices.Thunk;System.EnterpriseServices.Wrapper" />
+    
+    <!-- these are part of the targeting pack but contain many duplicate types -->
+    <ExcludeReference Include="PresentationFramework.Aero;PresentationFramework.Aero2;PresentationFramework.AeroLite;PresentationFramework.Classic;PresentationFramework.Luna;PresentationFramework.Royale" />
+
+    <!-- Ignoring dangling references and cycles comming in from the netfx targeting pack -->
+    <IgnoredReference Include="ADODB" />
+    <IgnoredReference Include="Microsoft.Internal.Tasks.Dataflow" />
+    <IgnoredReference Include="Microsoft.StdFormat" />
+    <IgnoredReference Include="Microsoft.Transactions.Bridge" />
+    <IgnoredReference Include="Microsoft.VisualBasic.Activities.Compiler" />
+    <IgnoredReference Include="Microsoft.Workflow.Compiler" />
+    <IgnoredReference Include="Microsoft.Win32.Registry" />
+    <IgnoredReference Include="Microsoft.Win32.SystemEvents" />
+    <IgnoredReference Include="MSDATASRC" />
+    <IgnoredReference Include="PresentationFramework" />
+    <IgnoredReference Include="PresentationUI" />
+    <IgnoredReference Include="ReachFramework" />
+    <IgnoredReference Include="SMDiagnostics" />
+    <IgnoredReference Include="stdole" />
+    <IgnoredReference Include="System" />
+    <IgnoredReference Include="System.CodeDom" />
+    <IgnoredReference Include="System.Configuration" />
+    <IgnoredReference Include="System.Configuration.ConfigurationManager" />
+    <IgnoredReference Include="System.Core" />
+    <IgnoredReference Include="System.Data" />
+    <IgnoredReference Include="System.Data.Odbc" />
+    <IgnoredReference Include="System.Data.OleDb" />
+    <IgnoredReference Include="System.Data.Services.Design" />
+    <IgnoredReference Include="System.Data.SqlClient" />
+    <IgnoredReference Include="System.Data.SqlXml" />
+    <IgnoredReference Include="System.Deployment" />
+    <IgnoredReference Include="System.Design" />
+    <IgnoredReference Include="System.Diagnostics.EventLog" />
+    <IgnoredReference Include="System.Diagnostics.PerformanceCounter" />
+    <IgnoredReference Include="System.Drawing.Common" />
+    <IgnoredReference Include="System.Dynamic" />
+    <IgnoredReference Include="System.EnterpriseServices" />
+    <IgnoredReference Include="System.IO.FileSystem.AccessControl" />
+    <IgnoredReference Include="System.IO.Packaging" />
+    <IgnoredReference Include="System.IO.Pipes.AccessControl" />
+    <IgnoredReference Include="System.IO.Ports" />
+    <IgnoredReference Include="System.Printing" />
+    <IgnoredReference Include="System.Runtime.Caching" />
+    <IgnoredReference Include="System.Runtime.Remoting" />
+    <IgnoredReference Include="System.Security" />
+    <IgnoredReference Include="System.Security.AccessControl" />
+    <IgnoredReference Include="System.Security.Cryptography.Cng" />
+    <IgnoredReference Include="System.Security.Cryptography.Pkcs" />
+    <IgnoredReference Include="System.Security.Cryptography.ProtectedData" />
+    <IgnoredReference Include="System.Security.Cryptography.Xml" />
+    <IgnoredReference Include="System.Security.Permissions" />
+    <IgnoredReference Include="System.Security.Principal.Windows" />
+    <IgnoredReference Include="System.ServiceModel" />
+    <IgnoredReference Include="System.ServiceModel.Activation" />
+    <IgnoredReference Include="System.ServiceModel.Activities" />
+    <IgnoredReference Include="System.ServiceModel.Internals" />
+    <IgnoredReference Include="System.ServiceModel.Syndication" />
+    <IgnoredReference Include="System.ServiceProcess.ServiceController" />
+    <IgnoredReference Include="System.Transactions" />
+    <IgnoredReference Include="System.Threading.AccessControl" />
+    <IgnoredReference Include="System.Web" />
+    <IgnoredReference Include="System.Web.Extensions" />
+    <IgnoredReference Include="System.Web.Services" />
+    <IgnoredReference Include="System.Windows.Extensions" />
+    <IgnoredReference Include="System.Windows.Forms" />
+    <IgnoredReference Include="System.Workflow.Activities" />
+    <IgnoredReference Include="System.Workflow.Runtime" />
+    <IgnoredReference Include="System.Xaml.Hosting" />
+    <IgnoredReference Include="System.Xml" />
+
+    <!-- these duplicate types exist in the targeting pack -->
+    <IgnoredTypes Include="XamlGeneratedNamespace.GeneratedInternalTypeHelper" />
+    <IgnoredTypes Include="System.Deployment.Internal.CodeSigning.RSAPKCS1SHA256SignatureDescription" />
+    <IgnoredTypes Include="System.ServiceModel.Channels.HttpRequestMessageExtensionMethods" />
+
+    <!-- windows.winmd is not part of the framework -->
+    <IgnoredReference Include="Windows" />
+
+    <!-- this assembly is part of the netstandard support libs and has built in conflicts and dangling references -->
+    <ExcludeFromClosure Include="netfx.force.conflicts" />
+  </ItemGroup>
+
+  <!-- this target must run before ResolveLockFileReferences so
+       that the SDK targets de-dup the References it adds against those
+       that come from packages -->
+  <Target Name="ReferenceEntireFramework" 
+          BeforeTargets="ResolveLockFileReferences" 
+          DependsOnTargets="GetFrameworkPaths;GetReferenceAssemblyPaths">
+    <ItemGroup Condition="'$(TargetFrameworkDirectory)' != ''">
+      <!-- TargetFrameworkDirectory may contain many paths -->
+      <_frameworkDirectoriesToInclude Include="$(TargetFrameworkDirectory)" />
+
+      <_allFrameworkReferences Include="%(_frameworkDirectoriesToInclude.Identity)\*.dll" />
+      <Reference Include="@(_allFrameworkReferences->'%(FileName)')" Exclude="@(ExcludeReference)" />
+    </ItemGroup>
+  </Target>
+</Project>

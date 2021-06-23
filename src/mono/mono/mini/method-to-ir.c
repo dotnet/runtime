@@ -6498,11 +6498,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		for (int i = 0; i < header->num_clauses; ++i) {
-			MonoExceptionClause *clause = &header->clauses [i];
-			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-				cfg->interp_entry_only = TRUE;
-		}
+		if (!cfg->method->wrapper_type && header->num_clauses)
+			cfg->interp_entry_only = TRUE;
 
 		if (cfg->interp_entry_only)
 			emit_llvmonly_interp_entry (cfg, header);
@@ -7158,7 +7155,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto calli_end;
 				}
 			}
-			ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, NULL, NULL, tailcall);
+			if (cfg->llvm_only && !(cfg->method->wrapper_type && cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD))
+				ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
+			else
+				ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, NULL, NULL, tailcall);
 			goto calli_end;
 		}
 		case MONO_CEE_CALL:
@@ -7392,9 +7392,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Conversion to a JIT intrinsic */
-			if ((ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
+			gboolean ins_type_initialized;
+			if ((ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp, &ins_type_initialized))) {
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
+					if (!ins_type_initialized)
+						mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
 					emit_widen = FALSE;
 				}
 				// FIXME This is only missed if in fact the intrinsic involves a call.
@@ -10258,7 +10260,7 @@ field_access_end:
 						EMIT_NEW_PCONST (cfg, ins, rt);
 					}
 					ins->type = STACK_OBJ;
-					ins->klass = cmethod->klass;
+					ins->klass = mono_defaults.runtimetype_class;
 					il_op = (MonoOpcodeEnum)next_ip [0];
 					next_ip += 5;
 				} else {

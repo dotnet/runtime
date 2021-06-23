@@ -220,10 +220,12 @@ namespace System.Security.Cryptography.Xml
             //
 
             string keyName = null;
+#pragma warning disable CA1416 // This call site is reachable on all platforms. 'CspKeyContainerInfo.KeyContainerName' is supported on: 'windows'.
             if (cspKey != null && cspKey.CspKeyContainerInfo.KeyContainerName != null)
             {
                 keyName = "\"" + cspKey.CspKeyContainerInfo.KeyContainerName + "\"";
             }
+#pragma warning restore CA1416
             else if (certificate2 != null)
             {
                 keyName = "\"" + certificate2.GetNameInfo(X509NameType.SimpleName, false) + "\"";

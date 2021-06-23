@@ -2,18 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides classes for retrieving the current Windows user and for interacting with Windows users and groups.
-
-Commonly Used Types:
-System.Security.Principal.WindowsIdentity
-System.Security.Principal.SecurityIdentifier
-System.Security.Principal.NTAccount
-System.Security.Principal.WindowsPrincipal
-System.Security.Principal.IdentityReference
-System.Security.Principal.IdentityNotMappedException
-System.Security.Principal.WindowsBuiltInRole
-System.Security.Principal.WellKnownSidType</PackageDescription>
   </PropertyGroup>
 </Project>

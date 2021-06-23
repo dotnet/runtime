@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <DisableProjectRestore>true</DisableProjectRestore>
+    <DisableProjectRestore Condition="'$(MSBuildProjectName)' != 'testPackages'">true</DisableProjectRestore>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props" />

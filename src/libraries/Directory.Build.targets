@@ -41,8 +41,7 @@
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == '' and
                                 '$(IsReferenceAssembly)' == 'true' and
-                                $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
-                                !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
+                                $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -245,10 +244,6 @@
   <ItemGroup Condition="'$(Nullable)' != '' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
-  </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(DotnetBuildFromSource)' == 'true' and '$(IsPackable)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetFrameworkIdentifier)' != '.NETStandard' and '$(TargetFrameworkVersion)' != 'v2.0'">
     <IncludeBuildOutput>false</IncludeBuildOutput>

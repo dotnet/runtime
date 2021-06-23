@@ -9,6 +9,8 @@ namespace System.IO.Tests
     {
         protected abstract long PreallocationSize { get; }
 
+        protected override string GetExpectedParamName(string paramName) => "value";
+
         protected override FileStream CreateFileStream(string path, FileMode mode)
             => new FileStream(path,
                     new FileStreamOptions
@@ -67,7 +69,7 @@ namespace System.IO.Tests
     public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
         [Fact]
-        public void NegativePreallocationSizeThrows()
+        public virtual void NegativePreallocationSizeThrows()
         {
             string filePath = GetPathToNonExistingFile();
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(

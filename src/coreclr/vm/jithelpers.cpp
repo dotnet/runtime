@@ -5471,7 +5471,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // As a result, we specially decorate this method to have the correct calling convention
 // and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
 // since this method doesn't follow the contracts.
-void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
 
@@ -5520,8 +5520,9 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvoke
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
@@ -5552,8 +5553,9 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5574,8 +5576,9 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeF
     }
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5589,6 +5592,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
 //========================================================================
 //

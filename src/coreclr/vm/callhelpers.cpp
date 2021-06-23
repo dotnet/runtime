@@ -62,10 +62,6 @@ void CallDescrWorkerWithHandler(
 
 #endif
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
 
     CallDescrWorker(pCallDescrData);

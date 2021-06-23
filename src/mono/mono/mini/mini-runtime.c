@@ -159,10 +159,7 @@ GSList *mono_interp_only_classes;
 
 static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
-#ifdef ENABLE_METADATA_UPDATE
-static void mini_metadata_update_init (MonoError *error);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
-#endif
 
 gboolean
 mono_running_on_valgrind (void)
@@ -2690,6 +2687,22 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 	return code;
 }
 
+/*
+ * get_ftnptr_for_method:
+ *
+ *   Return a function pointer for METHOD which is indirectly callable from managed code.
+ * On llvmonly, this returns a MonoFtnDesc, otherwise it returns a normal function pointer.
+ */
+static gpointer
+get_ftnptr_for_method (MonoMethod *method, MonoError *error)
+{
+	if (!mono_llvm_only) {
+		return mono_jit_compile_method (method, error);
+	} else {
+		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
+	}
+}
+
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
 static void
 invalidated_delegate_trampoline (char *desc)
@@ -3227,6 +3240,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		gboolean use_interp = FALSE;
+
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+			/* The runtime invoke wrappers contain clauses so they are not AOTed */
+			use_interp = TRUE;
 
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
@@ -4325,6 +4342,7 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
 	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
+	callbacks.get_ftnptr = get_ftnptr_for_method;
 #endif
 	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
@@ -4332,10 +4350,7 @@ mini_init (const char *filename, const char *runtime_version)
 #ifndef DISABLE_CRASH_REPORTING
 	callbacks.install_state_summarizer = mini_register_sigterm_handler;
 #endif
-#ifdef ENABLE_METADATA_UPDATE
-	callbacks.metadata_update_init = mini_metadata_update_init;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
-#endif
 	callbacks.init_mem_manager = init_jit_mem_manager;
 	callbacks.free_mem_manager = free_jit_mem_manager;
 
@@ -5118,19 +5133,12 @@ mono_runtime_install_custom_handlers_usage (void)
 }
 #endif /* HOST_WIN32 */
 
-#ifdef ENABLE_METADATA_UPDATE
-void
-mini_metadata_update_init (MonoError *error)
-{
-	mini_get_interp_callbacks ()->metadata_update_init (error);
-}
-
 void
 mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc G_GNUC_UNUSED, uint32_t generation G_GNUC_UNUSED)
 {
 	mini_get_interp_callbacks ()->invalidate_transformed ();
 }
-#endif
+
 
 /*
  * mini_get_default_mem_manager:

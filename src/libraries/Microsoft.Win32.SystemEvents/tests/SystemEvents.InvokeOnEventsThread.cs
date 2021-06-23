@@ -54,6 +54,7 @@ namespace Microsoft.Win32.SystemEventsTests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void RegisterFromSTAThreadThatGoesAway_MessageStillDelivered()
         {
             RemoteExecutor.Invoke(() => // to ensure no one has registered for any events before

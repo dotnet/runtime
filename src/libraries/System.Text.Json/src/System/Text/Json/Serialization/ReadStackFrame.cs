@@ -89,20 +89,5 @@ namespace System.Text.Json
         {
             return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
         }
-
-        public void Reset()
-        {
-            CtorArgumentStateIndex = 0;
-            CtorArgumentState = null;
-            JsonTypeInfo = null!;
-            ObjectState = StackFrameObjectState.None;
-            OriginalDepth = 0;
-            OriginalTokenType = JsonTokenType.None;
-            PropertyIndex = 0;
-            PropertyRefCache = null;
-            ReturnValue = null;
-
-            EndProperty();
-        }
     }
 }

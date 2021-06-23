@@ -170,7 +170,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/53688")]
-            if (streamLimit == 10 && this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
             {
                 return;
             }

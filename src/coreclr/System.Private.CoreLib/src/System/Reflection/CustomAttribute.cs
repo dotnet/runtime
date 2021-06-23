@@ -237,6 +237,10 @@ namespace System.Reflection
         private static IList<CustomAttributeData> GetCustomAttributes(RuntimeModule module, int tkTarget)
         {
             CustomAttributeRecord[] records = GetCustomAttributeRecords(module, tkTarget);
+            if (records.Length == 0)
+            {
+                return Array.Empty<CustomAttributeData>();
+            }
 
             CustomAttributeData[] customAttributes = new CustomAttributeData[records.Length];
             for (int i = 0; i < records.Length; i++)

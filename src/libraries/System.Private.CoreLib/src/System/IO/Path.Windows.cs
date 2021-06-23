@@ -230,9 +230,6 @@ namespace System.IO
             return pathRoot <= 0 ? ReadOnlySpan<char>.Empty : path.Slice(0, pathRoot);
         }
 
-        /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive => false;
-
         /// <summary>
         /// Returns the volume name for dos, UNC and device paths.
         /// </summary>

@@ -6,6 +6,7 @@ Revisions:
 * 3.1 - [Tomas Rylek](https://github.com/trylek) - 2019
 * 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
 * 5.3 - [Tomas Rylek](https://github.com/trylek) - 2021
+* 5.4 - [David Wrighton](https://github.com/davidwrighton) - 2021
 
 # Introduction
 
@@ -251,6 +252,10 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_IndirectPInvokeTarget   |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_PInvokeTarget           |  0x2F | Target of an inlined PInvoke. Followed by method signature.
 | READYTORUN_FIXUP_Check_InstructionSetSupport | 0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
+| READYTORUN_FIXUP_Verify_FieldOffset      | 0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Verify_TypeLayout       | 0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Check_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
 | READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -268,6 +273,7 @@ token, and additional data determined by the flags.
 | READYTORUN_METHOD_SIG_MemberRefToken      |  0x10 | If set, the token is memberref token. If not set, the token is methoddef token.
 | READYTORUN_METHOD_SIG_Constrained         |  0x20 | Constrained type for method resolution. Typespec appended as additional data.
 | READYTORUN_METHOD_SIG_OwnerType           |  0x40 | Method type. Typespec appended as additional data.
+| READYTORUN_METHOD_SIG_UpdateContext       |  0x80 | If set, update the module which is used to parse tokens before performing any token processing. A uint index into the modules table immediately follows the flags
 
 #### Field Signatures
 
@@ -280,6 +286,16 @@ additional data determined by the flags.
 | READYTORUN_FIELD_SIG_IndexInsteadOfToken |  0x08 | Used as an optimization for stable fields. Cannot be combined with `MemberRefToken`.
 | READYTORUN_FIELD_SIG_MemberRefToken      |  0x10 | If set, the token is memberref token. If not set, the token is fielddef token.
 | READYTORUN_FIELD_SIG_OwnerType           |  0x40 | Field type. Typespec appended as additional data.
+
+#### Virtual override signatures
+
+ECMA 335 does not have a natural encoding for describing an overriden method. These signatures are encoded as a ReadyToRunVirtualFunctionOverrideFlags byte, followed by a method signature representing the declaration method, a type signature representing the type which is being devirtualized, and (optionally) a method signature indicating the implementation method.
+
+| ReadyToRunVirtualFunctionOverrideFlags                | Value | Description
+|:------------------------------------------------------|------:|:-----------
+| READYTORUN_VIRTUAL_OVERRIDE_None                      |  0x00 | No flags are set
+| READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden  |  0x01 | If set, then the virtual function has an implementation, which is encoded in the optional method implementation signature.
+
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 

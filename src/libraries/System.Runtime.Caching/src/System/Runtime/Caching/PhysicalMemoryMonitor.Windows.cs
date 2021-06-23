@@ -14,7 +14,7 @@ namespace System.Runtime.Caching
         {
             Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
             memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
-            if (!Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
+            if (Interop.Kernel32.GlobalMemoryStatusEx(&memoryStatus) == Interop.BOOL.FALSE)
             {
                 return 0;
             }

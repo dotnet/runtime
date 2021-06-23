@@ -26,6 +26,7 @@ namespace System.Data
             return TypeDescriptor.GetConverter(type);
         }
 
+        [RequiresUnreferencedCode("Calls into TypeDescriptor.GetProperties. Type cannot be statically discovered.")]
         internal static void SetProperties(object instance, XmlAttributeCollection attrs)
         {
             // This is called from both XSD and XDR schemas.
@@ -263,6 +264,7 @@ namespace System.Data
                 return name;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal static void SetProperties(object instance, XmlAttribute[] attrs)
         {
             // This is called from both XSD and XDR schemas.
@@ -323,6 +325,7 @@ namespace System.Data
             }
         }// SetProperties
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static void SetExtProperties(object instance, XmlAttribute[] attrs)
         {
             PropertyCollection props = null;
@@ -396,6 +399,7 @@ namespace System.Data
             return null;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static void SetExtProperties(object instance, XmlAttributeCollection attrs)
         {
             PropertyCollection props = null;
@@ -415,6 +419,7 @@ namespace System.Data
             }
         }// SetExtProperties
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleRefTableProperties(ArrayList RefTables, XmlSchemaElement element)
         {
             string typeName = GetInstanceName(element);
@@ -425,6 +430,7 @@ namespace System.Data
             SetExtProperties(table, element.UnhandledAttributes);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleRelation(XmlElement node, bool fNested)
         {
             string strName;
@@ -644,11 +650,14 @@ namespace System.Data
             return null;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void LoadSchema(XmlSchemaSet schemaSet, DataTable dt)
         {
             if (dt.DataSet != null)
                 LoadSchema(schemaSet, dt.DataSet);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void LoadSchema(XmlSchemaSet schemaSet, DataSet ds)
         { //Element schemaRoot, DataSet ds) {
             _constraintNodes = new Hashtable();
@@ -857,6 +866,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void HandleRelations(XmlSchemaAnnotation ann, bool fNested)
         {
             foreach (object __items in ann.Items)
@@ -892,6 +902,7 @@ namespace System.Data
             return null;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleParticle(XmlSchemaParticle pt, DataTable table, ArrayList tableChildren, bool isBase)
         {
             XmlSchemaObjectCollection items = GetParticleItems(pt);
@@ -980,6 +991,7 @@ namespace System.Data
             return;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleAttributes(XmlSchemaObjectCollection attributes, DataTable table, bool isBase)
         {
             foreach (XmlSchemaObject so in attributes)
@@ -1000,6 +1012,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void HandleAttributeGroup(XmlSchemaAttributeGroup attributeGroup, DataTable table, bool isBase)
         {
             foreach (XmlSchemaObject obj in attributeGroup.Attributes)
@@ -1027,6 +1040,8 @@ namespace System.Data
                 }
             }
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleComplexType(XmlSchemaComplexType ct, DataTable table, ArrayList tableChildren, bool isNillable)
         {
             if (_complexTypes.Contains(ct))
@@ -1267,6 +1282,7 @@ namespace System.Data
                 return ForeignKeyConstraint.Rule_Default;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleKeyref(XmlSchemaKeyref keyref)
         {
             string refer = XmlConvert.DecodeName(keyref.Refer.Name); // check here!!!
@@ -1374,7 +1390,7 @@ namespace System.Data
             }
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleConstraint(XmlSchemaIdentityConstraint keyNode)
         {
             string name = null;
@@ -1428,6 +1444,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable InstantiateSimpleTable(XmlSchemaElement node)
         {
             DataTable table;
@@ -1542,6 +1559,7 @@ namespace System.Data
         }
 
         // Sequences of handling Elements, Attributes and Text-only column should be the same as in InferXmlSchema
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable InstantiateTable(XmlSchemaElement node, XmlSchemaComplexType typeNode, bool isRef)
         {
             DataTable table;
@@ -1760,8 +1778,9 @@ namespace System.Data
         private sealed class NameType : IComparable
         {
             public readonly string name;
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
             public readonly Type type;
-            public NameType(string n, Type t)
+            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type t)
             {
                 name = n;
                 type = t;
@@ -1852,6 +1871,7 @@ namespace System.Data
         }
 
         // input param dt is a "qName" for UDSimpleType else it assumes it's a XSD builtin simpleType
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type ParseDataType(string dt)
         {
             if (!IsXsdType(dt))
@@ -1938,7 +1958,7 @@ namespace System.Data
             return typeNode;
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleSimpleTypeSimpleContentColumn(XmlSchemaSimpleType typeNode, string strType, DataTable table, bool isBase, XmlAttribute[] attrs, bool isNillable)
         {
             // disallow multiple simple content columns for the table
@@ -2075,6 +2095,7 @@ namespace System.Data
                 }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleSimpleContentColumn(string strType, DataTable table, bool isBase, XmlAttribute[] attrs, bool isNillable)
         {
             // for Named Simple type support : We should not recieved anything here other than string.
@@ -2175,6 +2196,7 @@ namespace System.Data
                 }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleAttributeColumn(XmlSchemaAttribute attrib, DataTable table, bool isBase)
         {
             Type type = null;
@@ -2337,6 +2359,7 @@ namespace System.Data
                 }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleElementColumn(XmlSchemaElement elem, DataTable table, bool isBase)
         {
             Type type = null;
@@ -2537,6 +2560,7 @@ namespace System.Data
                 }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleDataSet(XmlSchemaElement node, bool isNewDataSet)
         {
             string dsName = node.Name;
@@ -2824,6 +2848,7 @@ namespace System.Data
         //        internal bool IsTopLevelElement (XmlSchemaElement node) {
         //            return (elements.IndexOf(node) != -1);
         //        }
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable HandleTable(XmlSchemaElement node)
         {
             if (!IsTable(node))

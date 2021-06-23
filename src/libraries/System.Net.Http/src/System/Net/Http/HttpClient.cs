@@ -43,7 +43,7 @@ namespace System.Net.Http
         }
 
         public HttpRequestHeaders DefaultRequestHeaders =>
-            _defaultRequestHeaders ??= new HttpRequestHeaders(forceHeaderStoreItems: true);
+            _defaultRequestHeaders ??= new HttpRequestHeaders();
 
         public Version DefaultRequestVersion
         {
@@ -552,8 +552,9 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException(nameof(request));
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
+
             CheckDisposed();
             CheckRequestMessage(request);
 

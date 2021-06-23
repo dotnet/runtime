@@ -24,7 +24,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- GenTree -->
   <Type Name="GenTree">
-    <DisplayString>[{gtOper,en}, {gtType,en}}]</DisplayString>
+    <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
   <Type Name="GenTreeIntCon">
     <DisplayString>[IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}]</DisplayString>
@@ -53,6 +53,10 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <Type Name="GenTreeLclVar" Inheritable="false">
     <DisplayString>[{gtOper,en}, {gtType,en} V{((GenTreeLclVar*)this)-&gt;_gtLclNum,u}]</DisplayString>
+  </Type>
+
+  <Type Name="GenTreeLclFld" Inheritable="false">
+    <DisplayString>[{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]]</DisplayString>
   </Type>
 
   <!-- Register allocation -->

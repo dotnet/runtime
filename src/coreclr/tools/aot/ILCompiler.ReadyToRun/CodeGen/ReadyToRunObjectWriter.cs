@@ -198,11 +198,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
                 {
-                    headerBuilder = PEHeaderProvider.Create(
-                        imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll,
-                        dllCharacteristics: default(DllCharacteristics),
-                        Subsystem.Unknown,
-                        _nodeFactory.Target);
+                    headerBuilder = PEHeaderProvider.Create(Subsystem.Unknown, _nodeFactory.Target);
                     peIdProvider = new Func<IEnumerable<Blob>, BlobContentId>(content => BlobContentId.FromHash(CryptographicHashProvider.ComputeSourceHash(content)));
                     timeDateStamp = null;
                     r2rHeaderExportSymbol = _nodeFactory.Header;
@@ -210,7 +206,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
-                    headerBuilder = PEHeaderProvider.Copy(inputPeReader.PEHeaders, _nodeFactory.Target);
+                    headerBuilder = PEHeaderProvider.Create(inputPeReader.PEHeaders.PEHeader.Subsystem, _nodeFactory.Target);
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                     r2rHeaderExportSymbol = null;
                 }

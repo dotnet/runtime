@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
@@ -50,6 +49,9 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyDictionary.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyDictionary.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyDictionary.ValueCollection.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
@@ -62,8 +64,6 @@
     <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonObject.KeyCollection.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonObject.ValueCollection.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />

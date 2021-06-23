@@ -33,7 +33,6 @@ internal static class Utils
     {
         LogInfo($"Running: {path} {args}", debugMessageImportance);
         var outputBuilder = new StringBuilder();
-        var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
         {
             FileName = path,
@@ -72,9 +71,8 @@ internal static class Utils
                 if (!silent)
                 {
                     LogWarning(e.Data);
-                    outputBuilder.AppendLine(e.Data);
                 }
-                errorBuilder.AppendLine(e.Data);
+                outputBuilder.AppendLine(e.Data);
             }
         };
         process.OutputDataReceived += (sender, e) =>
@@ -84,8 +82,8 @@ internal static class Utils
                 if (!silent)
                 {
                     LogInfo(e.Data, outputMessageImportance);
-                    outputBuilder.AppendLine(e.Data);
                 }
+                outputBuilder.AppendLine(e.Data);
             }
         };
         process.BeginOutputReadLine();
@@ -96,10 +94,10 @@ internal static class Utils
         {
             Logger?.LogMessage(MessageImportance.High, $"Exit code: {process.ExitCode}");
             if (!ignoreErrors)
-                throw new Exception("Error: Process returned non-zero exit code: " + errorBuilder);
+                throw new Exception("Error: Process returned non-zero exit code: " + outputBuilder);
         }
 
-        return outputBuilder.ToString().Trim('\r', '\n');
+        return silent ? string.Empty : outputBuilder.ToString().Trim('\r', '\n');
     }
 
 #if NETCOREAPP

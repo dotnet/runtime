@@ -3,6 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
     <PackageDescription>Provides types that support using configuration files.
 
 Commonly Used Types:

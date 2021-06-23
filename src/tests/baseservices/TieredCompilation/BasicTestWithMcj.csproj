@@ -4,6 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- Disable test for GCStress. Tracking: https://github.com/dotnet/runtime/issues/54203 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Generated shell script and corresponding assembly have different names -->
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
@@ -22,13 +24,13 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 mkdir r2r
-"%CORE_ROOT%\crossgen" -ReadyToRun -Platform_Assemblies_Paths "%CORE_ROOT%" -out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+"%CORE_ROOT%\corerun" %CORE_ROOT%\crossgen2\crossgen2.dll --out r2r\$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r %CORE_ROOT%\*.dll
 set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 mkdir r2r
-"$CORE_ROOT/crossgen" -ReadyToRun -Platform_Assemblies_Paths "$CORE_ROOT" -out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll
+"$CORE_ROOT/corerun" $CORE_ROOT/crossgen2/crossgen2.dll --out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r $CORE_ROOT/*.dll
 chmod +x ./RunBasicTestWithMcj.sh
 export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"
 ]]></BashCLRTestPreCommands>

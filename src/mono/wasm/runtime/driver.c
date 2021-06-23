@@ -98,29 +98,19 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	int is_interned = mono_string_instance_is_interned (str);
-	mono_unichar2 *native_chars = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-	int native_res_len;
+	int native_res_len = 0;
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var str;
-		// If the expression is interned, use binding_support's intern table implementation to
-		//  avoid decoding it again unless necessary
-		// We could technically use conv_string for both cases here, but it's more expensive
-		//  than using decode directly in the case where the expression isn't interned
-		if ($4)
-			str = BINDING.conv_string($5, true);
-		else
-			str = MONO.string_decoder.decode ($0, $0 + $1);
+		var js_str = MONO.string_decoder.copy ($0);
 
 		try {
-			var res = eval (str);
-			if (res === null || res == undefined)
-				return 0;
-			res = res.toString ();
+			var res = eval (js_str);
 			setValue ($2, 0, "i32");
+			if (res === null || res === undefined)
+				return 0;
+			else
+				res = res.toString ();
 		} catch (e) {
 			res = e.toString();
 			setValue ($2, 1, "i32");
@@ -139,9 +129,9 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
-		setValue ($3, res.length, "i32");
+		setValue ($1, res.length, "i32");
 		return buff;
-	}, (int)native_chars, native_len, is_exception, p_native_res_len, is_interned, (int)str);
+	}, (int)str, p_native_res_len, is_exception);
 
 	if (native_res == NULL)
 		return NULL;
@@ -731,6 +721,7 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
+// Deprecated
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_convert (MonoString *str)
 {
@@ -1131,4 +1122,27 @@ EMSCRIPTEN_KEEPALIVE MonoString *
 mono_wasm_intern_string (MonoString *string) 
 {
 	return mono_string_intern (string);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	if (!string) {
+		if (outChars)
+			*outChars = 0;
+		if (outLengthBytes)
+			*outLengthBytes = 0;
+		if (outIsInterned)
+			*outIsInterned = 1;
+		return;
+	}
+
+	if (outChars)
+		*outChars = mono_string_chars (string);
+	if (outLengthBytes)
+		*outLengthBytes = mono_string_length (string) * 2;
+	if (outIsInterned)
+		*outIsInterned = mono_string_instance_is_interned (string);
+	return;
 }

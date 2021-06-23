@@ -11,6 +11,12 @@
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
+      <ExtraTrimmerArgs>--feature System.Globalization.Invariant false</ExtraTrimmerArgs>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <ExtraTrimmerArgs>--feature System.Globalization.Invariant true</ExtraTrimmerArgs>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This

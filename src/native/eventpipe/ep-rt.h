@@ -600,6 +600,14 @@ static
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 
+static
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void);
+
+static
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void);
+
 /*
 * Lock
 */

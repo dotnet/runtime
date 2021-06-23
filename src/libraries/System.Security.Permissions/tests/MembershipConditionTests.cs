@@ -82,7 +82,7 @@ namespace System.Security.Permissions.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography.X509Certificates is not supported on this platform.")]
         public static void PublisherMembershipConditionCallMethods()
         {
-            PublisherMembershipCondition pmc = new PublisherMembershipCondition(new System.Security.Cryptography.X509Certificates.X509Certificate());
+            PublisherMembershipCondition pmc = new PublisherMembershipCondition(new System.Security.Cryptography.X509Certificates.X509Certificate2(stackalloc byte[0]));
             bool check = pmc.Check(new Evidence());
             IMembershipCondition obj = pmc.Copy();
             check = pmc.Equals(new object());

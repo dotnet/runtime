@@ -9,5 +9,7 @@ System.CodeDom.CodeObject
 System.CodeDom.Compiler.CodeDomProvider
 Microsoft.CSharp.CSharpCodeProvider
 Microsoft.VisualBasic.VBCodeProvider</PackageDescription>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <UnsupportedOSPlatforms>browser;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>

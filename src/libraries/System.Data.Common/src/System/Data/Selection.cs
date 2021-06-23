@@ -896,6 +896,7 @@ namespace System.Data
                 }
             }
         }
+
         // new RecordChanged which takes oldIndex and newIndex and fires _onListChanged
         public void RecordChanged(int oldIndex, int newIndex)
         {

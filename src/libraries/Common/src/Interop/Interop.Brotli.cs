@@ -19,32 +19,32 @@ internal static partial class Interop
             ref nuint availableOut, byte** nextOut, out nuint totalOut);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern unsafe bool BrotliDecoderDecompress(nuint availableInput, byte* inBytes, ref nuint availableOutput, byte* outBytes);
+        internal static extern unsafe BOOL BrotliDecoderDecompress(nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
 
         [DllImport(Libraries.CompressionNative)]
         internal static extern void BrotliDecoderDestroyInstance(IntPtr state);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern bool BrotliDecoderIsFinished(SafeBrotliDecoderHandle state);
+        internal static extern BOOL BrotliDecoderIsFinished(SafeBrotliDecoderHandle state);
 
         [DllImport(Libraries.CompressionNative)]
         internal static extern SafeBrotliEncoderHandle BrotliEncoderCreateInstance(IntPtr allocFunc, IntPtr freeFunc, IntPtr opaque);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern bool BrotliEncoderSetParameter(SafeBrotliEncoderHandle state, BrotliEncoderParameter parameter, uint value);
+        internal static extern BOOL BrotliEncoderSetParameter(SafeBrotliEncoderHandle state, BrotliEncoderParameter parameter, uint value);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern unsafe bool BrotliEncoderCompressStream(
+        internal static extern unsafe BOOL BrotliEncoderCompressStream(
             SafeBrotliEncoderHandle state, BrotliEncoderOperation op, ref nuint availableIn,
             byte** nextIn, ref nuint availableOut, byte** nextOut, out nuint totalOut);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern bool BrotliEncoderHasMoreOutput(SafeBrotliEncoderHandle state);
+        internal static extern BOOL BrotliEncoderHasMoreOutput(SafeBrotliEncoderHandle state);
 
         [DllImport(Libraries.CompressionNative)]
         internal static extern void BrotliEncoderDestroyInstance(IntPtr state);
 
         [DllImport(Libraries.CompressionNative)]
-        internal static extern unsafe bool BrotliEncoderCompress(int quality, int window, int v, nuint availableInput, byte* inBytes, ref nuint availableOutput, byte* outBytes);
+        internal static extern unsafe BOOL BrotliEncoderCompress(int quality, int window, int v, nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
     }
 }

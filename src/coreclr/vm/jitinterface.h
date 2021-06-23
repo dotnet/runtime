@@ -961,8 +961,8 @@ protected :
 
 
     EEJitManager*           m_jitManager;   // responsible for allocating memory
-    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
-    CodeHeader*             m_CodeHeaderRW;
+    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
+    CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
     size_t                  m_codeWriteBufferSize;
 #ifdef USE_INDIRECT_CODEHEADER
     BYTE*                   m_pRealCodeHeader;

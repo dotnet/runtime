@@ -242,7 +242,7 @@ void Compiler::optEarlyProp()
 
     assert(fgSsaPassesCompleted == 1);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
 #ifndef DEBUG
         if (!optDoEarlyPropForBlock(block))

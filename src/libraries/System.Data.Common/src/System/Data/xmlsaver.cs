@@ -106,6 +106,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddXdoProperties(object? instance, XmlElement root, XmlDocument xd)
         {
             if (instance == null)
@@ -127,6 +128,7 @@ namespace System.Data
             return;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddXdoProperty(PropertyDescriptor pd, object instance, XmlElement root, XmlDocument xd)
         {
             Type type = pd.PropertyType;
@@ -538,6 +540,7 @@ namespace System.Data
 
         // SxS: this method can generate XSD files if the input xmlWriter is XmlTextWriter or DataTextWriter and its underlying stream is FileStream
         // These XSDs are located in the same folder as the underlying stream's file path (see SetPath method).
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SchemaTree(XmlDocument xd, XmlWriter xmlWriter, DataSet? ds, DataTable? dt, bool writeHierarchy)
         {
             _constraintNames = new ArrayList();
@@ -934,6 +937,7 @@ namespace System.Data
             return; // rootSchema;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement SchemaTree(XmlDocument xd, DataTable dt)
         {
             _dsElement = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_ELEMENT, Keywords.XSDNS);
@@ -1092,11 +1096,13 @@ namespace System.Data
                 _filePath = _filePath + "\\";
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet ds, XmlWriter xw)
         {
             Save(ds, null, xw);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataTable dt, XmlWriter xw)
         {
             XmlDocument doc = new XmlDocument();
@@ -1109,16 +1115,19 @@ namespace System.Data
             doc.Save(xw);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet ds, DataTable? dt, XmlWriter xw)
         {
             Save(ds, dt, xw, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet? ds, DataTable? dt, XmlWriter xw, bool writeHierarchy)
         {
             Save(ds, dt, xw, writeHierarchy, null);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet? ds, DataTable? dt, XmlWriter xw, bool writeHierarchy, Converter<Type, string>? multipleTargetConverter)
         {
             _targetConverter = multipleTargetConverter;
@@ -1406,6 +1415,7 @@ namespace System.Data
             return tgNamespace;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement HandleColumn(DataColumn col, XmlDocument dc, XmlElement schema, bool fWriteOrdinal)
         {
             Debug.Assert(_prefixes != null);
@@ -1581,6 +1591,7 @@ namespace System.Data
             return null;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement HandleTable(DataTable table, XmlDocument dc, XmlElement schema)
         {
             return HandleTable(table, dc, schema, true);
@@ -1710,6 +1721,7 @@ namespace System.Data
             return false;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement HandleTable(DataTable table, XmlDocument dc, XmlElement schema, bool genNested)
         {
             Debug.Assert(_prefixes != null);
@@ -2331,11 +2343,13 @@ namespace System.Data
             return true;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(XmlWriter xmlw)
         {
             Save(xmlw, null);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(XmlWriter xmlw, DataTable? table)
         {
             _xmlw = DataTextWriter.CreateWriter(xmlw);
@@ -2395,6 +2409,7 @@ namespace System.Data
             _xmlw.Flush();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateTable(DataTable table)
         {
             int rowCount = table.Rows.Count;
@@ -2470,6 +2485,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateRow(DataRow row)
         {
             DataRowState state = row.RowState;
@@ -2526,6 +2542,7 @@ namespace System.Data
             _xmlw.WriteEndElement();  //old row
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateColumn(DataRow row, DataColumn col, DataRowVersion version)
         {
             string? value = null;
@@ -2776,6 +2793,7 @@ namespace System.Data
         // the following line writes the data part
         // for the new diffgram format
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SaveDiffgramData(XmlWriter xw, Hashtable rowsOrder)
         {
             Debug.Assert(_ds != null || _dt != null);
@@ -2818,7 +2836,7 @@ namespace System.Data
             _xmlw.Flush();
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(XmlWriter xw, bool writeSchema)
         {
             Debug.Assert(_ds != null || _dt != null);
@@ -2910,7 +2928,7 @@ namespace System.Data
             return list;
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void XmlDataRowWriter(DataRow row, string encodedTableName)
         {
             Debug.Assert(_xmlw != null);

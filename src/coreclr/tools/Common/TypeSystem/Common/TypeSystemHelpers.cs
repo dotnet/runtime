@@ -382,6 +382,26 @@ namespace Internal.TypeSystem
             return result;
         }
 
+        /// <summary>
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no
+        /// implementation is found.
+        /// </summary>
+        public static MethodDesc ResolveInterfaceMethodTargetWithVariance(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)
+        {
+            Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
+
+            MethodDesc result = null;
+            TypeDesc currentType = thisType;
+            do
+            {
+                result = currentType.ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethodToResolve);
+                currentType = currentType.BaseType;
+            }
+            while (result == null && currentType != null);
+
+            return result;
+        }
+
         public static bool ContainsSignatureVariables(this TypeDesc thisType, bool treatGenericParameterLikeSignatureVariable = false)
         {
             switch (thisType.Category)

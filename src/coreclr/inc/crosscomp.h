@@ -422,6 +422,8 @@ enum
 #define DAC_CS_NATIVE_DATA_SIZE 76
 #elif defined(TARGET_LINUX) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
+#elif defined(TARGET_LINUX) && defined(TARGET_S390X)
+#define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_NETBSD) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_NETBSD) && defined(TARGET_ARM)

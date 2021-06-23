@@ -38,6 +38,20 @@ namespace Microsoft.Extensions.Logging
         public LoggerMessageAttribute() { }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
+        /// which is used to guide the production of a strongly-typed logging method.
+        /// </summary>
+        /// <param name="eventId">The log event Id.</param>
+        /// <param name="level">The log level.</param>
+        /// <param name="message">Format string of the log message.</param>
+        public LoggerMessageAttribute(int eventId, LogLevel level, string message)
+        {
+            EventId = eventId;
+            Level = level;
+            Message = message;
+        }
+
+        /// <summary>
         /// Gets the logging event id for the logging method.
         /// </summary>
         public int EventId { get; set; } = -1;
@@ -59,5 +73,10 @@ namespace Microsoft.Extensions.Logging
         /// Gets the message text for the logging method.
         /// </summary>
         public string Message { get; set; } = "";
+
+        /// <summary>
+        /// Gets the flag to skip IsEnabled check for the logging method.
+        /// </summary>
+        public bool SkipEnabledCheck { get; set; }
     }
 }

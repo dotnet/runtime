@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
@@ -96,6 +97,7 @@ namespace System.Data.Common
             _values = newValues;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             SqlBinary newValue = default;
@@ -111,6 +113,7 @@ namespace System.Data.Common
             return (new SqlBytes((SqlBinary)tmp));
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             Debug.Assert(!DataStorage.IsObjectNull(value), "we shouldn't have null here");

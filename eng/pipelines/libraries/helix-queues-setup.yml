@@ -128,7 +128,7 @@ jobs:
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.Open
@@ -152,14 +152,10 @@ jobs:
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
 
-      # AllConfigurations
-      - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
-        - Windows.10.Amd64.Server19H1.Open
-
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open

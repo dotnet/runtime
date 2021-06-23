@@ -860,7 +860,7 @@ namespace System.IO
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="relativeTo"/> or <paramref name="path"/> is <c>null</c> or an empty string.</exception>
         public static string GetRelativePath(string relativeTo, string path)
         {
-            return GetRelativePath(relativeTo, path, StringComparison);
+            return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
         private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
@@ -956,12 +956,6 @@ namespace System.IO
 
             return sb.ToString();
         }
-
-        /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
-        internal static StringComparison StringComparison =>
-            IsCaseSensitive ?
-                StringComparison.Ordinal :
-                StringComparison.OrdinalIgnoreCase;
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.

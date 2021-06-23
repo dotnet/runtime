@@ -361,7 +361,7 @@ namespace System.Text.RegularExpressions
             else
             {
                 // Otherwise, try to parse it as a number.
-                return uint.TryParse(name, NumberStyles.None, provider: null, out uint result) && result < capsize ? (int)result : -1;
+                return uint.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out uint result) && result < capsize ? (int)result : -1;
             }
         }
 

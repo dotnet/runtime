@@ -119,17 +119,19 @@ namespace Microsoft.Extensions.Logging
     public sealed partial class LoggerMessageAttribute : System.Attribute
     {
         public LoggerMessageAttribute() { }
+        public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string message) { }
         public int EventId { get { throw null; } set { } }
         public string? EventName { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel Level { get { throw null; } set { } }
         public string Message { get { throw null; } set { } }
+        public bool SkipEnabledCheck { get { throw null; } set { } }
     }
     public partial class Logger<T> : Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T>
     {
         public Logger(Microsoft.Extensions.Logging.ILoggerFactory factory) { }
         System.IDisposable Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
         bool Microsoft.Extensions.Logging.ILogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
-        void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception exception, System.Func<TState, System.Exception, string> formatter) { }
+        void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
     public enum LogLevel
     {

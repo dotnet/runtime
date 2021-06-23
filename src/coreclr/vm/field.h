@@ -483,22 +483,7 @@ public:
         return *(OBJECTREF *)GetCurrentStaticAddress();
     }
 
-    VOID SetStaticOBJECTREF(OBJECTREF objRef)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-            INJECT_FAULT(COMPlusThrowOM());
-        }
-        CONTRACTL_END
-
-        GCPROTECT_BEGIN(objRef);
-        OBJECTREF *pObjRef = (OBJECTREF *)GetCurrentStaticAddress();
-        SetObjectReference(pObjRef, objRef);
-        GCPROTECT_END();
-    }
+    VOID SetStaticOBJECTREF(OBJECTREF objRef);
 
     void*   GetStaticValuePtr()
     {

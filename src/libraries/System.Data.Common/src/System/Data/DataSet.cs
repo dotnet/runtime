@@ -30,8 +30,10 @@ namespace System.Data
     [XmlSchemaProvider(nameof(GetDataSetSchema))]
     [XmlRoot(nameof(DataSet))]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] // needed by Clone() to preserve derived ctors
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
+        internal const string RequiresUnreferencedCodeMessage = "Members from serialized types may be trimmed if not referenced directly.";
         private const string KEY_XMLSCHEMA = "XmlSchema";
         private const string KEY_XMLDIFFGRAM = "XmlDiffGram";
 
@@ -203,6 +205,7 @@ namespace System.Data
 
         // Deserialize all the tables data of the dataset from binary/xml stream.
         // 'instance' method that consumes SerializationInfo
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected void GetSerializationData(SerializationInfo info, StreamingContext context)
         {
             // mainly for typed DS
@@ -223,10 +226,12 @@ namespace System.Data
 
 
         // Deserialize all the tables schema and data of the dataset from binary/xml stream.
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected DataSet(SerializationInfo info, StreamingContext context) : this(info, context, true)
         {
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected DataSet(SerializationInfo info, StreamingContext context, bool ConstructSchema) : this()
         {
             SerializationFormat remotingFormat = SerializationFormat.Xml;
@@ -273,6 +278,7 @@ namespace System.Data
         protected virtual void InitializeDerivedDataSet() { }
 
         // Serialize all the tables.
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void SerializeDataSet(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat)
         {
             Debug.Assert(info != null);
@@ -358,6 +364,7 @@ namespace System.Data
         }
 
         // Deserialize all the tables - marked internal so that DataTable can call into this
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void DeserializeDataSet(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat, SchemaSerializationMode schemaSerializationMode)
         {
             // deserialize schema
@@ -367,6 +374,7 @@ namespace System.Data
         }
 
         // Deserialize schema.
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void DeserializeDataSetSchema(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat, SchemaSerializationMode schemaSerializationMode)
         {
             if (remotingFormat != SerializationFormat.Xml)
@@ -425,6 +433,7 @@ namespace System.Data
         }
 
         // Deserialize all  data.
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void DeserializeDataSetData(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat)
         {
             if (remotingFormat != SerializationFormat.Xml)
@@ -1088,6 +1097,13 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Only parameterless constructors are used here but since nonPublic=true, all non-public constructors are being preserved causing a warning for the serialization constructors. Those constructors won't be used here.")]
+        private DataSet CreateInstanceOfThisType()
+        {
+            return (DataSet)Activator.CreateInstance(GetType(), true)!;
+        }
+
         /// <summary>
         /// Clones the structure of the <see cref='System.Data.DataSet'/>, including all <see cref='System.Data.DataTable'/> schemas, relations, and
         /// constraints.
@@ -1099,7 +1115,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Clone|API> {0}", ObjectID);
             try
             {
-                DataSet ds = (DataSet)Activator.CreateInstance(GetType(), true)!;
+                DataSet ds = CreateInstanceOfThisType();
 
                 if (ds.Tables.Count > 0)  // To clean up all the schema in strong typed dataset.
                 {
@@ -1173,7 +1189,7 @@ namespace System.Data
                     {
                         if (col.Expression.Length != 0)
                         {
-                            ds.Tables[table.TableName, table.Namespace]!.Columns[col.ColumnName]!.Expression = col.Expression;
+                            ds.Tables[table.TableName, table.Namespace]!.Columns[col.ColumnName]!.CopyExpressionFrom(col);
                         }
                     }
                 }
@@ -1395,11 +1411,12 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
         IList IListSource.GetList() => DefaultViewManager;
 #nullable enable
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal string GetRemotingDiffGram(DataTable table)
         {
             StringWriter strWriter = new StringWriter(CultureInfo.InvariantCulture);
@@ -1411,6 +1428,7 @@ namespace System.Data
             return strWriter.ToString();
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public string GetXml()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.GetXml|API> {0}", ObjectID);
@@ -1430,6 +1448,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public string GetXmlSchema()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.GetXmlSchema|API> {0}", ObjectID);
@@ -1448,6 +1467,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal string GetXmlSchemaForRemoting(DataTable? table)
         {
             StringWriter strWriter = new StringWriter(CultureInfo.InvariantCulture);
@@ -1520,6 +1540,7 @@ namespace System.Data
         /// <summary>
         /// Infer the XML schema from the specified <see cref='System.IO.TextReader'/> into the <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void InferXmlSchema(XmlReader? reader, string[]? nsArray)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.InferXmlSchema|API> {0}", ObjectID);
@@ -1557,6 +1578,7 @@ namespace System.Data
         /// <summary>
         /// Infer the XML schema from the specified <see cref='System.IO.TextReader'/> into the <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void InferXmlSchema(Stream? stream, string[]? nsArray)
         {
             if (stream == null)
@@ -1570,6 +1592,7 @@ namespace System.Data
         /// <summary>
         /// Infer the XML schema from the specified <see cref='System.IO.TextReader'/> into the <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void InferXmlSchema(TextReader? reader, string[]? nsArray)
         {
             if (reader == null)
@@ -1583,6 +1606,7 @@ namespace System.Data
         /// <summary>
         /// Infer the XML schema from the specified file into the <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void InferXmlSchema(string fileName, string[]? nsArray)
         {
             XmlTextReader xr = new XmlTextReader(fileName);
@@ -1599,8 +1623,10 @@ namespace System.Data
         /// <summary>
         /// Reads the XML schema from the specified <see cref="System.Xml.XmlReader" /> into the <see cref="System.Data.DataSet" />
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(XmlReader? reader) => ReadXmlSchema(reader, false);
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void ReadXmlSchema(XmlReader? reader, bool denyResolving)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXmlSchema|INFO> {0}, reader, denyResolving={1}", ObjectID, denyResolving);
@@ -1745,6 +1771,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void ReadXSDSchema(XmlReader reader, bool denyResolving)
         {
             XmlSchemaSet sSet = new XmlSchemaSet();
@@ -1784,6 +1811,7 @@ namespace System.Data
             schema.LoadSchema(sSet, this);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void ReadXDRSchema(XmlReader reader)
         {
             XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
@@ -1798,6 +1826,7 @@ namespace System.Data
         /// Reads the XML schema from the specified <see cref='System.IO.Stream'/> into the
         /// <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(Stream? stream)
         {
             if (stream == null)
@@ -1811,6 +1840,7 @@ namespace System.Data
         /// <summary>
         /// Reads the XML schema from the specified <see cref='System.IO.TextReader'/> into the <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(TextReader? reader)
         {
             if (reader == null)
@@ -1824,6 +1854,7 @@ namespace System.Data
         /// <summary>
         /// Reads the XML schema from the specified file into the <see cref='System.Data.DataSet'/>.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(string fileName)
         {
             XmlTextReader xr = new XmlTextReader(fileName);
@@ -1840,11 +1871,13 @@ namespace System.Data
         #region WriteXmlSchema
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to using the specified <see cref='Stream'/> object.</summary>
         /// <param name="stream">A <see cref='Stream'/> object used to write to a file.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(Stream? stream) => WriteXmlSchema(stream, SchemaFormat.Public, null);
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to using the specified <see cref='Stream'/> object.</summary>
         /// <param name="stream">A <see cref='Stream'/> object used to write to a file.</param>
         /// <param name="multipleTargetConverter">A delegate used to convert <see cref='Type'/> into string.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(Stream? stream, Converter<Type, string> multipleTargetConverter)
         {
             ADP.CheckArgumentNull(multipleTargetConverter, nameof(multipleTargetConverter));
@@ -1853,11 +1886,13 @@ namespace System.Data
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to a file.</summary>
         /// <param name="fileName">The file name (including the path) to which to write.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(string fileName) => WriteXmlSchema(fileName, SchemaFormat.Public, null);
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to a file.</summary>
         /// <param name="fileName">The file name (including the path) to which to write.</param>
         /// <param name="multipleTargetConverter">A delegate used to convert <see cref='Type'/> into string.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(string fileName, Converter<Type, string> multipleTargetConverter)
         {
             ADP.CheckArgumentNull(multipleTargetConverter, nameof(multipleTargetConverter));
@@ -1866,11 +1901,13 @@ namespace System.Data
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to a <see cref='TextWriter'/> object.</summary>
         /// <param name="writer">The <see cref='TextWriter'/> object with which to write.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(TextWriter? writer) => WriteXmlSchema(writer, SchemaFormat.Public, null);
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to a <see cref='TextWriter'/> object.</summary>
         /// <param name="writer">The <see cref='TextWriter'/> object with which to write.</param>
         /// <param name="multipleTargetConverter">A delegate used to convert <see cref='Type'/> into string.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(TextWriter? writer, Converter<Type, string> multipleTargetConverter)
         {
             ADP.CheckArgumentNull(multipleTargetConverter, nameof(multipleTargetConverter));
@@ -1879,17 +1916,20 @@ namespace System.Data
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to an <see cref='XmlWriter'/> object.</summary>
         /// <param name="writer">The <see cref='XmlWriter'/> object with which to write.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(XmlWriter? writer) => WriteXmlSchema(writer, SchemaFormat.Public, null);
 
         /// <summary>Writes the <see cref='DataSet'/> structure as an XML schema to an <see cref='XmlWriter'/> object.</summary>
         /// <param name="writer">The <see cref='XmlWriter'/> object with which to write.</param>
         /// <param name="multipleTargetConverter">A delegate used to convert <see cref='Type'/> into string.</param>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(XmlWriter? writer, Converter<Type, string> multipleTargetConverter)
         {
             ADP.CheckArgumentNull(multipleTargetConverter, nameof(multipleTargetConverter));
             WriteXmlSchema(writer, SchemaFormat.Public, multipleTargetConverter);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void WriteXmlSchema(string fileName, SchemaFormat schemaFormat, Converter<Type, string>? multipleTargetConverter)
         {
             XmlTextWriter xw = new XmlTextWriter(fileName, null);
@@ -1906,6 +1946,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void WriteXmlSchema(Stream? stream, SchemaFormat schemaFormat, Converter<Type, string>? multipleTargetConverter)
         {
             if (stream == null)
@@ -1919,6 +1960,7 @@ namespace System.Data
             WriteXmlSchema(w, schemaFormat, multipleTargetConverter);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void WriteXmlSchema(TextWriter? writer, SchemaFormat schemaFormat, Converter<Type, string>? multipleTargetConverter)
         {
             if (writer == null)
@@ -1932,6 +1974,7 @@ namespace System.Data
             WriteXmlSchema(w, schemaFormat, multipleTargetConverter);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void WriteXmlSchema(XmlWriter? writer, SchemaFormat schemaFormat, Converter<Type, string>? multipleTargetConverter)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.WriteXmlSchema|INFO> {0}, schemaFormat={1}", ObjectID, schemaFormat);
@@ -1962,8 +2005,10 @@ namespace System.Data
         }
         #endregion
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(XmlReader? reader) => ReadXml(reader, false);
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal XmlReadMode ReadXml(XmlReader? reader, bool denyResolving)
         {
             IDisposable? restrictedScope = null;
@@ -2243,6 +2288,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(Stream? stream)
         {
             if (stream == null)
@@ -2258,6 +2304,7 @@ namespace System.Data
             return ReadXml(xr, false);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(TextReader? reader)
         {
             if (reader == null)
@@ -2273,6 +2320,7 @@ namespace System.Data
             return ReadXml(xr, false);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(string fileName)
         {
             XmlTextReader xr = new XmlTextReader(fileName);
@@ -2290,6 +2338,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void InferSchema(XmlDocument xdoc, string[]? excludedNamespaces, XmlReadMode mode)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.InferSchema|INFO> {0}, mode={1}", ObjectID, mode);
@@ -2341,6 +2390,7 @@ namespace System.Data
             return true;
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void ReadXmlDiffgram(XmlReader reader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.ReadXmlDiffgram|INFO> {0}", ObjectID);
@@ -2471,8 +2521,10 @@ namespace System.Data
 
         /// <summary>
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode) => ReadXml(reader, mode, false);
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
             IDisposable? restictedScope = null;
@@ -2726,6 +2778,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(Stream? stream, XmlReadMode mode)
         {
             if (stream == null)
@@ -2739,6 +2792,7 @@ namespace System.Data
             return ReadXml(reader, mode, false);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(TextReader? reader, XmlReadMode mode)
         {
             if (reader == null)
@@ -2752,6 +2806,7 @@ namespace System.Data
             return ReadXml(xmlreader, mode, false);
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(string fileName, XmlReadMode mode)
         {
             XmlTextReader? xr = null;
@@ -2778,17 +2833,22 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(Stream? stream) => WriteXml(stream, XmlWriteMode.IgnoreSchema);
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(TextWriter? writer) => WriteXml(writer, XmlWriteMode.IgnoreSchema);
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(XmlWriter? writer) => WriteXml(writer, XmlWriteMode.IgnoreSchema);
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(string fileName) => WriteXml(fileName, XmlWriteMode.IgnoreSchema);
 
         /// <summary>
         /// Writes schema and data for the DataSet.
         /// </summary>
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(Stream? stream, XmlWriteMode mode)
         {
             if (stream != null)
@@ -2800,6 +2860,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(TextWriter? writer, XmlWriteMode mode)
         {
             if (writer != null)
@@ -2811,6 +2872,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(XmlWriter? writer, XmlWriteMode mode)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.WriteXml|API> {0}, mode={1}", ObjectID, mode);
@@ -2837,6 +2899,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public void WriteXml(string fileName, XmlWriteMode mode)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.WriteXml|API> {0}, fileName='{1}', mode={2}", ObjectID, fileName, (int)mode);
@@ -3297,6 +3360,7 @@ namespace System.Data
             return null;
         }
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected virtual void ReadXmlSerializable(XmlReader reader)
         {
             // <DataSet xsi:nil="true"> does not mean DataSet is null,but it does not have any child

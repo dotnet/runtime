@@ -659,11 +659,6 @@ Thread* SetupThread()
     }
 #endif
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    // Initialize new threads to JIT Write disabled
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
@@ -767,17 +762,17 @@ Thread* SetupThread()
     // thread has been created.
     if (!IsGCSpecialThread())
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ThreadCreated(
+            (&g_profControlBlock)->ThreadCreated(
                 (ThreadID)pThread);
         }
 
         DWORD osThreadId = ::GetCurrentThreadId();
-        g_profControlBlock.pProfInterface->ThreadAssignedToOSThread(
+        (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID)pThread, osThreadId);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1151,11 +1146,11 @@ void InitThreadManager()
         COMPlusThrowWin32();
     }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+    {
+        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+        ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
+        memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
+    }
 
     // Store the JIT_WriteBarrier copy location to a global variable so that helpers
     // can jump to it.
@@ -1434,9 +1429,6 @@ Thread::Thread()
     m_debuggerFilterContext = NULL;
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-    m_dwProfilerEvacuationCounter = 0;
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
     m_pProfilerFilterContext = NULL;
 
@@ -1876,20 +1868,20 @@ BOOL Thread::HasStarted()
     // information
     if (!IsGCSpecial())
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         BOOL gcOnTransition = GC_ON_TRANSITIONS(FALSE);     // disable GCStress 2 to avoid the profiler receiving a RuntimeThreadSuspended notification even before the ThreadCreated notification
-
+        
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ThreadCreated((ThreadID) this);
+            (&g_profControlBlock)->ThreadCreated((ThreadID) this);
         }
 
         GC_ON_TRANSITIONS(gcOnTransition);
 
         DWORD osThreadId = ::GetCurrentThreadId();
-        g_profControlBlock.pProfInterface->ThreadAssignedToOSThread(
+        (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID) this, osThreadId);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3014,10 +3006,10 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 #ifdef PROFILING_SUPPORTED
         // If a profiler is present, then notify the profiler of thread destroy
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ThreadDestroyed((ThreadID) this);
-            END_PIN_PROFILER();
+            (&g_profControlBlock)->ThreadDestroyed((ThreadID) this);
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
 

@@ -495,6 +495,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override string ToString()
         {
+            if (!IsSupported)
+                return base.ToString()!;
+
             return SR.Format(SR.EventSource_ToString, Name, Guid);
         }
 

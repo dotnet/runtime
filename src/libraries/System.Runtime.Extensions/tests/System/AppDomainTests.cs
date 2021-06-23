@@ -45,7 +45,6 @@ namespace System.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "throws pNSE")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void TargetFrameworkTest()
@@ -212,7 +211,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();
