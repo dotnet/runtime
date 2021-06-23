@@ -190,6 +190,8 @@ if(NOT MONO_CROSS_COMPILE)
   endif()
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
   file(CONFIGURE OUTPUT ../../component-manifest.props CONTENT ${MONO_COMPONENT_MANIFEST_STR})
+  # without the .. this goes to artifacts/obj/mono/<host>/out/
+  install(FILES "${MONO_COMPONENT_PATH}/component-manifest.targets" DESTINATION ..)
 endif()
 
 # component tests
