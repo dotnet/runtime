@@ -143,57 +143,13 @@ namespace System.Net.Http
             return settings;
         }
 
-        private static bool AllowHttp2
-        {
-            get
-            {
-                // Default to allowing HTTP/2, but enable that to be overridden by an
-                // AppContext switch, or by an environment variable being set to false/0.
+        // Default to allowing HTTP/2, but enable that to be overridden by an
+        // AppContext switch, or by an environment variable being set to false/0.
+        private static bool AllowHttp2 => RuntimeSettingParser.QueryRuntimeSettingSwitch(Http2SupportAppCtxSettingName, Http2SupportEnvironmentVariableSettingName, true);
 
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(Http2SupportAppCtxSettingName, out bool allowHttp2))
-                {
-                    return allowHttp2;
-                }
-
-                // AppContext switch wasn't used. Check the environment variable.
-                string? envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Disallow HTTP/2 protocol.
-                    return false;
-                }
-
-                // Default to a maximum of HTTP/2.
-                return true;
-            }
-        }
-
-        private static bool AllowDraftHttp3
-        {
-            get
-            {
-                // Default to allowing draft HTTP/3, but enable that to be overridden
-                // by an AppContext switch, or by an environment variable being set to false/0.
-
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(Http3DraftSupportAppCtxSettingName, out bool allowHttp3))
-                {
-                    return allowHttp3;
-                }
-
-                // AppContext switch wasn't used. Check the environment variable.
-                string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Disallow HTTP/3 protocol for HTTP endpoints.
-                    return false;
-                }
-
-                // Default to allow.
-                return true;
-            }
-        }
+        // Default to allowing draft HTTP/3, but enable that to be overridden
+        // by an AppContext switch, or by an environment variable being set to false/0.
+        private static bool AllowDraftHttp3 => RuntimeSettingParser.QueryRuntimeSettingSwitch(Http3DraftSupportAppCtxSettingName, Http3DraftSupportEnvironmentVariableSettingName, true);
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 
