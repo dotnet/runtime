@@ -325,7 +325,6 @@ namespace System.Net.Http
 
             private void SendReset()
             {
-                Debug.Assert(!Monitor.IsEntered(SyncObject));
                 Debug.Assert(_requestCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_responseCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed,
