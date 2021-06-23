@@ -25,8 +25,8 @@ namespace System.Net.Http.Functional.Tests
     public class LargeFileBenchmark : IDisposable
     {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        //public const string SkipSwitch = null;
-        public const string SkipSwitch = "Local benchmark";
+        public const string SkipSwitch = null;
+        //public const string SkipSwitch = "Local benchmark";
 
         private readonly ITestOutputHelper _output;
         private LogHttpEventListener _listener;
@@ -55,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
 
         //private const string ReportDir = @"C:\_dev\r6r\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
         //private const string ReportDir = @"C:\Users\anfirszo\dev\dotnet\6.0\runtime\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
-        private const string ReportDir = @"C:\_dev\r6d\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Debug\TestResults";
+        private const string ReportDir = @"C:\_dev\r6r\artifacts\bin\System.Net.Http.Functional.Tests\net6.0-windows-Release\TestResults";
 
         [Theory(Skip = SkipSwitch)]
         [InlineData(BenchmarkServer)]
@@ -150,35 +150,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory(Skip = SkipSwitch)]
-        [InlineData(BenchmarkServer)]
-        public async Task Download20_Dynamic_MultiStream(string hostName)
+        [InlineData(BenchmarkServer, 1)]
+        [InlineData(BenchmarkServer, 10)]
+        [InlineData(BenchmarkServer, 50)]
+        public async Task Download20_Dynamic_MultiStream(string hostName, int streamCount)
         {
             _listener.Enabled = true;
-            var handler = new SocketsHttpHandler();
-            using var client = new HttpClient(handler, true);
-            client.Timeout = TimeSpan.FromMinutes(3);
-            const int NStreams = 4;
-            string info = $"SocketsHttpHandler HTTP 2.0 Dynamic {NStreams} concurrent streams";
+            _listener.Filter = m => m.Contains("[FlowControl]") && m.Contains("Updated");
+            string info = $"SocketsHttpHandler HTTP 2.0 Dynamic {streamCount} concurrent streams R=8 D=8";
 
-
-            var message = GenerateRequestMessage(hostName, true, LengthMb);
-            _output.WriteLine($"{info} / {LengthMb} MB from {message.RequestUri}");
-
-            Stopwatch sw = Stopwatch.StartNew();
-            List<Task> tasks = new List<Task>();
-            for (int i = 0; i < NStreams; i++)
+            var handler = new SocketsHttpHandler()
             {
-                var task = Task.Run(() => client.SendAsync(GenerateRequestMessage(hostName, true, LengthMb)));
-                tasks.Add(task);
-            }
+                StreamWindowUpdateRatio = 8,
+                StreamWindowThresholdMultiplier = 8
+            };
 
-            await Task.WhenAll(tasks);
+            string details = $"SC({streamCount})";
 
-            double elapsedSec = sw.ElapsedMilliseconds * 0.001;
-            _output.WriteLine($"{info}: completed in {elapsedSec} sec");
+            await TestHandler(info, hostName, true, LengthMb, handler, details, streamCount);
         }
 
-        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null, string details = "")
+        private async Task TestHandler(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler = null, string details = "", int streamCount = -1)
         {
             handler ??= new SocketsHttpHandler();
 
@@ -194,7 +186,15 @@ namespace System.Net.Http.Functional.Tests
             for (int i = 0; i < TestRunCount; i++)
             {
                 _output.WriteLine($"############ run {i} ############");
-                await TestHandlerCore(info, hostName, http2, lengthMb, handler, report);
+                if (streamCount > 0)
+                {
+                    await TestHandlerCoreMultiStream(info, hostName, http2, lengthMb, handler, report, streamCount);
+                }
+                else
+                {
+                    await TestHandlerCore(info, hostName, http2, lengthMb, handler, report);
+                }
+                await report.FlushAsync();                
             }
             handler.Dispose();
         }
@@ -210,10 +210,10 @@ namespace System.Net.Http.Functional.Tests
             _listener.Log2.Clear();
             using var client = new HttpClient(CopyHandler(handler), true);
             client.Timeout = TimeSpan.FromMinutes(3);
-            var message = GenerateRequestMessage(hostName, http2, lengthMb);
+            using var message = GenerateRequestMessage(hostName, http2, lengthMb);
             _output.WriteLine($"{info} / {lengthMb} MB from {message.RequestUri}");
             Stopwatch sw = Stopwatch.StartNew();
-            var response = await client.SendAsync(message);
+            using var response = await client.SendAsync(message);
 
             double elapsedSec = sw.ElapsedMilliseconds * 0.001;
             elapsedSec = Math.Round(elapsedSec, 3);
@@ -222,6 +222,48 @@ namespace System.Net.Http.Functional.Tests
             if (report != null)
             {
                 report.Write(elapsedSec);
+                double? window = GetStreamWindowSizeInMegabytes();
+                if (window.HasValue) report.Write($", {window}");
+                double? rtt = GetRtt();
+                if (rtt.HasValue) report.Write($", {rtt}");
+                report.WriteLine();
+            }
+        }
+
+        private async Task TestHandlerCoreMultiStream(string info, string hostName, bool http2, double lengthMb, SocketsHttpHandler handler, StreamWriter report, int streamCount)
+        {
+            _listener.Log2.Clear();
+            using var client = new HttpClient(CopyHandler(handler), true);
+            client.Timeout = TimeSpan.FromMinutes(3);
+
+            async Task<double> SendRequestAsync(int i)
+            {
+                using var message = GenerateRequestMessage(hostName, http2, lengthMb);
+                _output.WriteLine($"[STREAM {i}] {info} / {lengthMb} MB from {message.RequestUri}");
+                Stopwatch sw = Stopwatch.StartNew();
+
+                using var response = await client.SendAsync(message).ConfigureAwait(false);
+                double elapsedSec = sw.ElapsedMilliseconds * 0.001;
+                elapsedSec = Math.Round(elapsedSec, 3);
+                _output.WriteLine($"[STREAM {i}] {info}: completed in {elapsedSec} sec");
+                return elapsedSec;
+            }
+
+            List<Task<double>> allTasks = new List<Task<double>>();
+
+            for (int i =  0; i < streamCount; i++)
+            {
+                Task<double> task = SendRequestAsync(i);
+                allTasks.Add(task);
+            }
+
+            await Task.WhenAll(allTasks);
+
+            if (report != null)
+            {
+                double averageTime = allTasks.Select(t => t.Result).Average();
+                averageTime = Math.Round(averageTime, 3);
+                report.Write($"{averageTime}");
                 double? window = GetStreamWindowSizeInMegabytes();
                 if (window.HasValue) report.Write($", {window}");
                 double? rtt = GetRtt();
