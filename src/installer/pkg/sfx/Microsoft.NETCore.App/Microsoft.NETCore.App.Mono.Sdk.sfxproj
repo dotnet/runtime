@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != 'Mono'">true</SkipBuild>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <SharedFrameworkName>Microsoft.NETCore.App.Mono.Sdk</SharedFrameworkName>
+    <OverridePackageId>Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier).Sdk</OverridePackageId>
+    <!-- Do I need to set ArchiveName? -->
+    <ArchiveName>dotnet-mono-sdk</ArchiveName>
+    <!-- What does this do? -->
+    <SharedFrameworkHostFileNameOverride>mono-sdk-what-is-this</SharedFrameworkHostFileNameOverride>
+    <!-- RuntimeIdentifiers / -->
+    <GenerateInstallers>false</GenerateInstallers>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <HostJsonTargetPath>tools/</HostJsonTargetPath>
+    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    <MonoComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(MonoConfiguration)'))</MonoComponentManifestDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- FIXME: also need an Sdk/Sdk.props file, and the component-manifest.targets file -->
+    <NativeRuntimeAsset Include="$(MonoComponentManifestDir)component-manifest.props" TargetPath="Sdk/component-manifest.props" />
+    <NativeRuntimeAsset Include="Microsoft.NETCoreApp.Mono.Sdk.Sdk.props" TargetPath="Sdk/Sdk.props" />
+    <NativeRuntimeAsset Include="Microsoft.NETCoreApp.Mono.Sdk.Sdk.targets" TargetPath="Sdk/Sdk.targets" />
+  </ItemGroup>
+</Project>
