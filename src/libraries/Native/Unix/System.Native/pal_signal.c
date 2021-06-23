@@ -40,7 +40,11 @@ static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and w
 
 static int GetSignalMax() // Returns the highest usable signal number.
 {
+#ifdef SIGRTMAX
     return SIGRTMAX;
+#else
+    return NSIG;
+#endif
 }
 
 static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
