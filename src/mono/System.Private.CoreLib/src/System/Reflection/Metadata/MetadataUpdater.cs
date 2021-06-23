@@ -47,14 +47,14 @@ namespace System.Reflection.Metadata
 
         public static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
+        public static bool IsSupported { get; } = ApplyUpdateEnabled() != 0;
+
         private static Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(() => InitializeApplyUpdateCapabilities());
 
         private static string InitializeApplyUpdateCapabilities()
         {
             return ApplyUpdateEnabled() != 0 ? "Baseline" : string.Empty ;
         }
-
-        public static bool IsSupported { get; } = (Debugger.IsAttached || Environment.GetEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES") != "") && ApplyUpdateEnabled() != 0;
 
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static extern int ApplyUpdateEnabled ();
