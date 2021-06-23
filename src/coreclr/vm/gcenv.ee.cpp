@@ -1655,11 +1655,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             {
                 EX_TRY
                 {
-#ifdef HOST_WIN32
-                    GenerateCrashDump (GENAWARE_DUMP_FILE_NAME, 2, false);
-#else
-                    PAL_GenerateCoreDump (GENAWARE_DUMP_FILE_NAME, 2, false);
-#endif
+                    GenerateDump (GENAWARE_DUMP_FILE_NAME, 2, false);
                 }
                 EX_CATCH {}
                 EX_END_CATCH(SwallowAllExceptions);
