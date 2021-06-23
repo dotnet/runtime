@@ -2372,7 +2372,7 @@ var MonoSupportLib = {
 		 * @throws Will throw an error if the config file loading fails
 		 */
 		mono_wasm_load_config: async function (configFilePath) {
-			Module.addRunDependency('mono-config.json');	
+			Module.addRunDependency(configFilePath);	
 			try {
 				let config = null;
 				// NOTE: when we add nodejs make sure to include the nodejs fetch package
@@ -2384,11 +2384,11 @@ var MonoSupportLib = {
 				} else { // shell or worker
 					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
 				}
-				Module.removeDependency('mono-config.json');
 				return config;
 			} catch(e) {
-				Module.removeDependency('mono-config.json');
 				return {message: "failed to load config file", error: e};
+			} finally {
+				Module.removeRunDependency(configFilePath);
 			}
 		}
 	},
