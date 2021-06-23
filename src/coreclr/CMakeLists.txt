@@ -34,6 +34,10 @@ endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+if(CLR_CMAKE_HOST_ARCH_S390X)
+  add_definitions(-DBIGENDIAN)
+endif(CLR_CMAKE_HOST_ARCH_S390X)
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------

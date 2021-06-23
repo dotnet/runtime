@@ -4,6 +4,7 @@
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -44,6 +45,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate()
         {
         }
@@ -171,7 +173,9 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
+#pragma warning disable SYSLIB0026
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
+#pragma warning restore SYSLIB0026
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
@@ -195,7 +199,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+#pragma warning disable SYSLIB0026
         public X509Certificate(SerializationInfo info, StreamingContext context) : this()
+#pragma warning restore SYSLIB0026
         {
             throw new PlatformNotSupportedException();
         }
@@ -569,33 +575,39 @@ namespace System.Security.Cryptography.X509Certificates
             return sb.ToString();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(byte[] rawData)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(string fileName)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);

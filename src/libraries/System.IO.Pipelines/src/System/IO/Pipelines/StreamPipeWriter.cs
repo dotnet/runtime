@@ -206,6 +206,9 @@ namespace System.IO.Pipelines
         }
 
         /// <inheritdoc />
+        public override bool CanGetUnflushedBytes => true;
+
+        /// <inheritdoc />
         public override void Complete(Exception? exception = null)
         {
             if (_isCompleted)
@@ -258,6 +261,9 @@ namespace System.IO.Pipelines
 
             return FlushAsyncInternal(writeToStream: true, data: Memory<byte>.Empty, cancellationToken);
         }
+
+        /// <inheritdoc />
+        public override long UnflushedBytes => _bytesBuffered;
 
         public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {

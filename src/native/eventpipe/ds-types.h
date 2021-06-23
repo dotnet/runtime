@@ -29,6 +29,7 @@ typedef struct _DiagnosticsPort DiagnosticsPort;
 typedef struct _DiagnosticsPortBuilder DiagnosticsPortBuilder;
 typedef struct _DiagnosticsPortVtable DiagnosticsPortVtable;
 typedef struct _DiagnosticsProcessInfoPayload DiagnosticsProcessInfoPayload;
+typedef struct _DiagnosticsProcessInfo2Payload DiagnosticsProcessInfo2Payload;
 typedef struct _EventPipeCollectTracingCommandPayload EventPipeCollectTracingCommandPayload;
 typedef struct _EventPipeCollectTracing2CommandPayload EventPipeCollectTracing2CommandPayload;
 typedef struct _EventPipeStopTracingCommandPayload EventPipeStopTracingCommandPayload;
@@ -67,6 +68,7 @@ typedef enum {
 	DS_PROCESS_COMMANDID_RESUME_RUNTIME = 0x01,
 	DS_PROCESS_COMMANDID_GET_PROCESS_ENV = 0x02,
 	DS_PROCESS_COMMANDID_SET_ENV_VAR = 0x03,
+	DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2 = 0x04
 	// future
 } DiagnosticsProcessCommandId;
 
