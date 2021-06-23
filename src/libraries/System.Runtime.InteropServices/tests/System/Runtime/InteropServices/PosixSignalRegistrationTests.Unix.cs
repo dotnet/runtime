@@ -176,7 +176,7 @@ namespace System.Tests
                 Assert.True(entered);
 
                 // Give the default signal handler a chance to run.
-                Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(1) : Timeout);
+                Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(30) : Timeout);
 
                 return 0;
             }, signal.ToString(), cancel.ToString(),
