@@ -33,7 +33,7 @@ internal static partial class Interop
 
         private static unsafe void Sysctl(int* name, int name_len, ref byte* value, ref int len)
         {
-            IntPtr bytesLength = (nint)len;
+            var bytesLength = (nint)len;
             int ret = -1;
             bool autoSize = (value == null && len == 0);
 
@@ -45,13 +45,13 @@ internal static partial class Interop
                 {
                     throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
                 }
-                value = (byte*)NativeMemory.Alloc((nuint)(nint)bytesLength);
+                value = (byte*)NativeMemory.Alloc((nuint)bytesLength);
             }
 
             ret = Sysctl(name, name_len, value, &bytesLength);
             while (autoSize && ret != 0 && GetLastErrorInfo().Error == Error.ENOMEM)
             {
-                // Do not use ReAllocHGlobal() here: we don't care about
+                // Do not use Realloc here: we don't care about
                 // previous contents, and proper checking of value returned
                 // will make code more complex.
                 NativeMemory.Free(value);
@@ -61,20 +61,20 @@ internal static partial class Interop
                 }
                 if ((int)bytesLength >= int.MaxValue / 2)
                 {
-                    bytesLength = (nint)int.MaxValue;
+                    bytesLength = int.MaxValue;
                 }
                 else
                 {
-                    bytesLength = (nint)((int)bytesLength * 2);
+                    bytesLength = ((int)bytesLength * 2);
                 }
-                value = (byte*)NativeMemory.Alloc((nuint)(nint)bytesLength);
+                value = (byte*)NativeMemory.Alloc((nuint)bytesLength);
                 ret = Sysctl(name, name_len, value, &bytesLength);
             }
             if (ret != 0)
             {
                 if (autoSize)
                 {
-                    NativeMemory.Alloc((nuint)value);
+                    NativeMemory.Free(value);
                 }
                 throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
             }

@@ -15,25 +15,25 @@ namespace System.Net.Http
         private int _size;
         private string _cachedToString;
 
-        internal WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
+        internal unsafe WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
         {
-            IntPtr data = IntPtr.Zero;
+            void* data = null;
             uint dataSize = 0;
 
-            if (!Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, IntPtr.Zero, ref dataSize))
+            if (!Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, null, ref dataSize))
             {
                 if (Marshal.GetLastWin32Error() == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
                 {
-                    data = NativeMemoryHelper.Alloc((int)dataSize);
+                    data = NativeMemory.Alloc(dataSize);
 
                     if (Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, data, ref dataSize))
                     {
-                        SetHandle(data);
+                        SetHandle((nint)data);
                         _size = (int)dataSize;
                     }
                     else
                     {
-                        NativeMemoryHelper.Free(data);
+                        NativeMemory.Free(data);
                     }
                 }
             }

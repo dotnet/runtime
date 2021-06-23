@@ -518,7 +518,7 @@ internal static partial class Interop
             public static unsafe SafeLocalFreeChannelBinding LocalAlloc(int cb)
             {
                 SafeLocalFreeChannelBinding result = new SafeLocalFreeChannelBinding();
-                result.SetHandle(NativeMemory.Alloc((uint)cb));
+                result.SetHandle((nint)NativeMemory.Alloc((uint)cb));
                 result._size = cb;
                 return result;
             }

@@ -14,17 +14,14 @@ namespace System.Data.ProviderBase
     {
         private readonly int _bufferLength;
 
-        protected DbBuffer(int initialSize) : base(IntPtr.Zero, true)
+        protected unsafe DbBuffer(int initialSize) : base(IntPtr.Zero, true)
         {
             if (0 < initialSize)
             {
                 _bufferLength = initialSize;
 
-                try { }
-                finally
-                {
-                    base.handle = NativeMemoryHelper.Alloc(initialSize);
-                }
+                base.handle = (nint)NativeMemory.Alloc((uint)initialSize);
+
                 if (IntPtr.Zero == base.handle)
                 {
                     throw new OutOfMemoryException();
@@ -368,15 +365,12 @@ namespace System.Data.ProviderBase
             return *(float*)&value;
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
-            IntPtr ptr = base.handle;
+            nint ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if ((nint)ptr != 0)
-            {
-                NativeMemoryHelper.Free(ptr);
-            }
+            NativeMemory.Free((void*)ptr);
             return true;
         }
 

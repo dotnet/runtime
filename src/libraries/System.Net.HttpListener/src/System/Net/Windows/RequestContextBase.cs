@@ -49,10 +49,10 @@ namespace System.Net
 
         protected virtual void Dispose(bool disposing)
         {
-            IntPtr backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
-            if (backingBuffer != IntPtr.Zero)
+            nint backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
+            if (backingBuffer != 0)
             {
-                NativeMemory.Free((void*)(nint)backingBuffer);
+                NativeMemory.Free((void*)backingBuffer);
             }
         }
 
