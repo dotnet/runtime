@@ -401,14 +401,14 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
     return SSL_read(ssl, buf, num);
 }
 
-// static  int verify_callback(int preverify_ok, X509_STORE_CTX* store)
-// {
-//     (void)preverify_ok;
-//     (void)store;
-//     // We don't care. Real verification happens in managed code.
-//     printf("%s:%d: called!!!\n", __func__, __LINE__);
-//     return 1;
-// }
+static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
+{
+    (void)preverify_ok;
+    (void)store;
+    // We don't care. Real verification happens in managed code.
+    printf("%s:%d: called!!!\n", __func__, __LINE__);
+    return 1;
+}
 
 int32_t CryptoNative_SslPeek(SSL* ssl)
 {
@@ -418,9 +418,6 @@ int32_t CryptoNative_SslPeek(SSL* ssl)
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl)
 {
-    // pokusit se odmazat
-    // int mode = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
     int pending = SSL_renegotiate_pending(ssl);
@@ -431,8 +428,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl)
     printf("%s:%d: version=%lu 0x%lx pending %d state %d in_init %d\n", __func__, __LINE__, OpenSSL_version_num(), OpenSSL_version_num(), pending , SSL_get_state(ssl), SSL_in_init(ssl));
     if (!pending)
     {
-        
-        // SSL_set_verify(ssl, mode, verify_callback);
+        SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_callback);
         printf("%s:%d: set verify in init %s state \n", __func__, __LINE__, SSL_state_string_long(ssl));
         ret = SSL_renegotiate(ssl);
         if(ret!=1)
