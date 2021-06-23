@@ -198,7 +198,7 @@
                              $(NativeBinDir)libSystem.Native.a;
                              $(NativeBinDir)libSystem.IO.Compression.Native.a" />
       <MonoLibFiles Include="@(ICULibNativeFiles)" />
-      <MonoLibFiles Include="@(MonoComponentLibs)" />        
+      <MonoLibFiles Include="@(MonoComponentLibs)" />
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
