@@ -629,7 +629,7 @@
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Quic" />
+    <ProjectReference Include="..\..\System.Net.Quic\ref\System.Net.Quic.csproj" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
