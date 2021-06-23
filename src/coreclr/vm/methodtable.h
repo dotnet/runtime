@@ -3153,7 +3153,7 @@ public:
 
 protected:
     //--------------------------------------------------------------------------------------
-    class MethodDataObject : public MethodData
+    class MethodDataObject final : public MethodData
     {
       public:
         // Static method that returns the amount of memory to allocate for a particular type.
@@ -3233,19 +3233,32 @@ protected:
                 { LIMITED_METHOD_CONTRACT; return m_pMDImpl; }
         };
 
-        //
-        // At the end of this object is an array, so you cannot derive from this class.
-        //
 
         inline MethodDataObjectEntry *GetEntryData()
-            { LIMITED_METHOD_CONTRACT; return (MethodDataObjectEntry *)(this + 1); }
+            { LIMITED_METHOD_CONTRACT; return &m_rgEntries[0]; }
 
         inline MethodDataObjectEntry *GetEntry(UINT32 i)
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
         void FillEntryDataForAncestor(MethodTable *pMT);
 
-        // MethodDataObjectEntry m_rgEntries[...];
+        //
+        // At the end of this object is an array
+        //
+        MethodDataObjectEntry m_rgEntries[0];
+
+      public:
+        struct TargetMethodTable
+        {
+            MethodTable* pMT;
+        };
+
+        static void* operator new(size_t size, TargetMethodTable targetMT)
+        {
+            _ASSERTE(size <= GetObjectSize(targetMT.pMT));
+            return ::operator new(GetObjectSize(targetMT.pMT));
+        }
+        static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
     //--------------------------------------------------------------------------------------
@@ -3299,7 +3312,7 @@ protected:
     };  // class MethodDataInterface
 
     //--------------------------------------------------------------------------------------
-    class MethodDataInterfaceImpl : public MethodData
+    class MethodDataInterfaceImpl final : public MethodData
     {
       public:
         // Object construction-related methods
@@ -3373,12 +3386,25 @@ protected:
         //
 
         inline MethodDataEntry *GetEntryData()
-            { LIMITED_METHOD_CONTRACT; return (MethodDataEntry *)(this + 1); }
+            { LIMITED_METHOD_CONTRACT; return &m_rgEntries[0]; }
 
         inline MethodDataEntry *GetEntry(UINT32 i)
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
-        // MethodDataEntry m_rgEntries[...];
+        MethodDataEntry m_rgEntries[0];
+
+      public:
+        struct TargetMethodTable
+        {
+            MethodTable* pMT;
+        };
+
+        static void* operator new(size_t size, TargetMethodTable targetMT)
+        {
+            _ASSERTE(size <= GetObjectSize(targetMT.pMT));
+            return ::operator new(GetObjectSize(targetMT.pMT));
+        }
+        static void* operator new(size_t size) = delete;
     };  // class MethodDataInterfaceImpl
 
     //--------------------------------------------------------------------------------------
