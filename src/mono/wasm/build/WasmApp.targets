@@ -14,7 +14,7 @@
       - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
       - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
       - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
-      - $(RunAOTCompilation) - Defaults to false.
+      - $(  ) - Defaults to false.
 
       - $(WasmDebugLevel)
                               > 0 enables debugging and sets the debug log level to debug_level
