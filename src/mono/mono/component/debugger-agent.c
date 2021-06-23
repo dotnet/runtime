@@ -802,7 +802,6 @@ debugger_agent_init (void)
 
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
-	mono_component_debugger ()->init ();
 }
 
 /*
@@ -1280,7 +1279,7 @@ register_socket_fd_transport (void)
 static DebuggerTransport *transport;
 
 static DebuggerTransport transports [MAX_TRANSPORTS];
-static int ntransports;
+static int ntransports = 0;
 
 static void
 register_transport (DebuggerTransport *trans)
