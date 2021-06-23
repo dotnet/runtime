@@ -89,7 +89,7 @@ namespace System.Timers
         /// Gets or sets a value indicating whether the Timer raises the Tick event immediately upon start,
         /// when Enabled is set to true.
         /// </summary>
-        [TimersDescription(nameof(SR.TimerTickImmediately), null), DefaultValue(true)]
+        [TimersDescription(nameof(SR.TimerTickImmediately), null), DefaultValue(false)]
         public bool TickImmediately
         {
             get => _tickImmediately;
