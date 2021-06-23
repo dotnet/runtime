@@ -133,9 +133,17 @@ const IOHandler = {
 				loadFunc = WScript.LoadScriptFile;
 
 			} else if (is_node) { // NodeJS
-				const fs = require ('fs');
-				loadFunc = function (file) {
-					eval (fs.readFileSync(file).toString());
+				loadFunc = async function (file) {
+					let req = require(file);
+
+					// sometimes the require returns a function which returns a promise (such as in dotnet.js).
+					// othertimes it returns the variable or object that is needed. We handle both cases
+					if (typeof(req) === 'function') {
+						req = await req(Module); // pass Module so emsdk can use it
+					}
+
+					// add to the globalThis the file under the namespace of the upercase filename without js extension
+					globalThis[file.substring(2,file.length - 3).replace("-","_").toUpperCase()] = req;
 				};
 			} else if (is_browser) { // vanila JS in browser
 				loadFunc = function (file) {
@@ -145,7 +153,7 @@ const IOHandler = {
 				}
 			}
 		}
-		IOHandler.load = async (file) => loadFunc(file);
+		IOHandler.load = async (file) => await loadFunc(file);
 
 		// read: function that just reads a file into a variable
 		let readFunc = globalThis.read; // shells (v8, JavaScriptCore, Spidermonkey)
@@ -291,7 +299,7 @@ var Module = {
 	 * @type {() => Promise<void>}
 	 */
 	preInit: async function() {
-		Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+		Module.config = await Module.MONO.mono_wasm_load_config("./mono-config.json");
 	},
 
 	/** Called after an exception occurs during execution
@@ -312,7 +320,7 @@ var Module = {
 	onRuntimeInitialized: function () {
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (let variable in setenv) {
-			MONO.mono_wasm_setenv (variable, setenv [variable]);
+			Module.MONO.mono_wasm_setenv (variable, setenv [variable]);
 		}
 
 		if (!enable_gc) {
@@ -320,13 +328,13 @@ var Module = {
 		}
 
 		Module.config.loaded_cb = function () {
-			let wds = FS.stat (working_dir);
-			if (wds === undefined || !FS.isDir (wds.mode)) {
+			let wds = Module.FS.stat (working_dir);
+			if (wds === undefined || !Module.FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
 				return;
 			}
 
-			FS.chdir (working_dir);
+			Module.FS.chdir (working_dir);
 			App.init ();
 		};
 		Module.config.fetch_file_cb = function (asset) {
@@ -336,14 +344,16 @@ var Module = {
 			/*
 			var content = new Uint8Array (read (asset, 'binary'));
 			var path = asset.substr(Module.config.deploy_prefix.length);
-			writeContentToFile(content, path);
+			IOHandler.writeContentToFile(content, path);
 			*/
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
-		MONO.mono_load_runtime_and_bcl_args (Module.config);
+		Module.MONO.mono_load_runtime_and_bcl_args (Module.config);
 	},
 };
+
+globalThis.Module = Module; // needed so that dotnet.js can access the module
 
 const App = {
 	/** Runs the tests (runtime is now loaded and running)
@@ -387,7 +397,7 @@ const App = {
 		}
 
 		if (runtime_args.length > 0)
-			MONO.mono_wasm_set_runtime_options (runtime_args);
+			Module.MONO.mono_wasm_set_runtime_options (runtime_args);
 
 		if (testArguments[0] == "--run") {
 			// Run an exe
@@ -401,7 +411,7 @@ const App = {
 
 			const main_argc = testArguments.length - 2 + 1;
 			const main_argv = Module._malloc (main_argc * 4);
-			aindex = 0;
+			let aindex = 0;
 			Module.setValue (main_argv + (aindex * 4), wasm_strdup (testArguments [1]), "i32");
 			aindex += 1;
 			for (let i = 2; i < testArguments.length; ++i) {
@@ -441,7 +451,7 @@ const App = {
 
 		const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
 		try {
-			return BINDING.call_static_method(fqn, args || [], signature);
+			return Module.BINDING.call_static_method(fqn, args || [], signature);
 		} catch (exc) {
 			console.error("exception thrown in", fqn);
 			throw exc;
@@ -452,7 +462,7 @@ const App = {
 // load the config and runtime files which will start the runtime init and subsiquently the tests
 // uses promise chain as loading is async but we can't use await here
 IOHandler
-	.load ("dotnet.js")
+	.load ("./dotnet.js")
 	.catch(function(err) {
 		console.error(err);
 		fail_exec("failed to load the mono-config.js or dotnet.js files");
