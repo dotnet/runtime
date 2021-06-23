@@ -123,6 +123,9 @@
   <data name="Cryptography_PlaintextTooLarge" xml:space="preserve">
     <value>The specified plaintext size is too large.</value>
   </data>
+  <data name="Cryptography_EncryptedIncorrectPadding" xml:space="preserve">
+    <value>TryEncryptEcbCore unexpectedly produced a ciphertext which has the incorrect amount of padding.</value>
+  </data>
   <data name="NotSupported_SubclassOverride" xml:space="preserve">
     <value>Method not supported. Derived class must override.</value>
   </data>

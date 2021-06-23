@@ -612,10 +612,8 @@ namespace System.Security.Cryptography
 
             if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written))
             {
-                // This means a user-derived imiplementation added more padding than we
-                // expected.
-                // TODO: better error message
-                throw new CryptographicException();
+                // This means a user-derived imiplementation added more padding than we expected.
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
             }
 
             if (written != ciphertextLength)
@@ -626,8 +624,7 @@ namespace System.Security.Cryptography
                 // place. It doesn't make sense to try and support partial block encryption, likely
                 // something went very wrong. So throw.
 
-                // TODO: better error message
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Cryptography_EncryptedIncorrectPadding);
             }
 
             return buffer;
