@@ -113,14 +113,14 @@ namespace System.Net.Http.Functional.Tests
     }
 
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocksProxyTest_Http1_Async : SocksProxyTest
     {
         public SocksProxyTest_Http1_Async(ITestOutputHelper helper) : base(helper) { }
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocksProxyTest_Http1_Sync : SocksProxyTest
     {
         public SocksProxyTest_Http1_Sync(ITestOutputHelper helper) : base(helper) { }
@@ -128,7 +128,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocksProxyTest_Http2 : SocksProxyTest
     {
         public SocksProxyTest_Http2(ITestOutputHelper helper) : base(helper) { }

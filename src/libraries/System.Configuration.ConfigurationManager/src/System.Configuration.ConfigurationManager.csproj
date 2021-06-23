@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <SetIsTrimmable>false</SetIsTrimmable>
+    <NoWarn>$(NoWarn);CA1847</NoWarn>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

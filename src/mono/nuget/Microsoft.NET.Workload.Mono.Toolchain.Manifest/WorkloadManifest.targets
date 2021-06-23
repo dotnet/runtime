@@ -26,8 +26,7 @@
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos'">
