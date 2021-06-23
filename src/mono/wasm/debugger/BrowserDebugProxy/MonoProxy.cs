@@ -1203,15 +1203,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Log("verbose", $"Failed to clear breakpoints");
             }
 
-<<<<<<< HEAD
             if (context.PauseOnCaught && context.PauseOnUncaught)
-                await SendMonoCommand(sessionId, MonoCommands.SetPauseOnExceptions("all"), token);
+                await sdbHelper.EnableExceptions(sessionId, "all", token);
             else if (context.PauseOnUncaught)
-                await SendMonoCommand(sessionId, MonoCommands.SetPauseOnExceptions("uncaught"), token);
-=======
+                await sdbHelper.EnableExceptions(sessionId, "uncaught", token);
+
             await sdbHelper.SetProtocolVersion(sessionId, token);
             await sdbHelper.EnableReceiveUserBreakRequest(sessionId, token);
->>>>>>> origin/main
 
             DebugStore store = await LoadStore(sessionId, token);
 
