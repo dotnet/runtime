@@ -835,6 +835,17 @@ namespace System.Collections.Generic
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
                 Resize(entries.Length, true);
+
+                exists = false;
+
+                // At this point the entries array has been resized, so the current reference we have is no longer valid.
+                // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
+                // lookup is guaranteed to always find a value though and it will never return a null reference here.
+                ref TValue? value = ref FindValue(key)!;
+
+                Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
+
+                return ref value;
             }
 
             exists = false;
