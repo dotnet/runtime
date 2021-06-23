@@ -252,8 +252,9 @@ int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t ha
                 // New handlers got registered.
                 return 0;
             }
-            // Disposition changed back to the default.
-            resendSignal = !g_handlerIsInstalled[signalCode - 1];
+            // Disposition changed back to SIG_DFL.
+            resendSignal = !g_handlerIsInstalled[signalCode - 1] &&
+                            OrigActionFor(signalCode)->sa_handler == SIG_DFL;
         }
         if (resendSignal)
         {
