@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <_MonoRuntimeComponentLinking>${TemplateMonoRuntimeComponentLinking}</_MonoRuntimeComponentLinking>
-    <_MonoRuntimeComponentSharedLibExt>${TemplateMonoRuntimeComponentSharedLibExt}<_MonoRuntimeComponentSharedLibExt>
-    <_MonoRuntimeComponentStaticLibExt>${TemplateMonoRuntimeComponentStaticLibExt}<_MonoRuntimeComponentStaticLibExt>
+    <_MonoRuntimeComponentSharedLibExt>${TemplateMonoRuntimeComponentSharedLibExt}</_MonoRuntimeComponentSharedLibExt>
+    <_MonoRuntimeComponentStaticLibExt>${TemplateMonoRuntimeComponentStaticLibExt}</_MonoRuntimeComponentStaticLibExt>
   </PropertyGroup>
   <ItemGroup>
     <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" />
