@@ -936,7 +936,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54159", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -969,21 +968,24 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Assert.False(responseStream.CanSeek);
+                        Assert.Equal(PlatformDetection.IsBrowser, responseStream.CanSeek);
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
-                        Assert.Throws<NotSupportedException>(() => responseStream.Length);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            Assert.Throws<NotSupportedException>(() => responseStream.Length);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        }
                         Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
 #if !NETFRAMEWORK
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new Span<byte>(new byte[1])));
-                        Assert.Throws<NotSupportedException>(() => { responseStream.WriteAsync(new Memory<byte>(new byte[1])); });
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await responseStream.WriteAsync(new Memory<byte>(new byte[1])));
 #endif
-                        Assert.Throws<NotSupportedException>(() => { responseStream.WriteAsync(new byte[1], 0, 1); });
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await responseStream.WriteAsync(new byte[1], 0, 1));
                         Assert.Throws<NotSupportedException>(() => responseStream.WriteByte(1));
 
                         // Invalid arguments
@@ -1102,7 +1104,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54159", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1122,14 +1123,17 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Assert.False(responseStream.CanSeek);
+                        Assert.Equal(PlatformDetection.IsBrowser, responseStream.CanSeek);
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
-                        Assert.Throws<NotSupportedException>(() => responseStream.Length);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            Assert.Throws<NotSupportedException>(() => responseStream.Length);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        }
                         Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
 #if !NETFRAMEWORK
