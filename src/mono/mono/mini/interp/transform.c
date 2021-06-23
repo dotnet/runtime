@@ -2429,6 +2429,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		// We do a reference comparison only if we know both operands are runtime type
 		// (they originate from object.GetType or ldftn + GetTypeFromHandle)
 		*op = MINT_CEQ_P;
+	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Inequality") &&
+			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
+		*op = MINT_CNE_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
 		if (!strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
