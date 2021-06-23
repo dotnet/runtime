@@ -992,7 +992,7 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
 {
     XATTR_R8(m_Multiplier);
     XATTR_I4(m_CodeSize);
-    XATTR_I4((int)m_CallsiteFrequency);
+    XATTR_I4(m_CallsiteFrequency);
     XATTR_I4(m_CallsiteDepth);
     XATTR_I4(m_InstructionCount);
     XATTR_I4(m_LoadStoreCount);
@@ -1362,11 +1362,13 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
                 {
+                    // We won't have any profile data and most likely will miss
+                    // some foldable branches in m_IsPrejitRoot
                     bbLimit += 5;
                 }
                 if (m_ProfileFrequency > 0.5)
                 {
-                    bbLimit += 2;
+                    bbLimit += (unsigned)JitConfig.JitExtDefaultPolicyProfBB();
                 }
                 bbLimit += m_FoldableBranch;
 
