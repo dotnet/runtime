@@ -7242,8 +7242,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
-				needs_stack_walk = TRUE;
+			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod)) {
+				if (cfg->interp && !cfg->interp_entry_only) {
+					/* Use the interpreter instead */
+					cfg->exception_message = g_strdup ("stack walk");
+					cfg->disable_llvm = TRUE;
+				} else {
+					needs_stack_walk = TRUE;
+				}
+			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (!mono_class_is_interface (method->klass))
