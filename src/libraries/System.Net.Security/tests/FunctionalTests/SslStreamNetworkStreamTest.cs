@@ -315,6 +315,106 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    //Assert.True(false, "Clent shouldn't send certificate in this test");
+                    return clientCertificate;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    //Assert.True(false, "Server shouldn't receive certificate in this test");
+                    return true;
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+
+                var t = server.NegotiateClientCertificateAsync(cts.Token);
+
+                // Send application data instead of Client hello.
+                await client.WriteAsync(new byte[500], cts.Token);
+                // Fail as it is not allowed to receive non hnadshake frames during handshake.
+                await Assert.ThrowsAsync<InvalidOperationException>(()=> t);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_NegotiateClientCertificateAsync_ServerDontDrainClientData()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    //Assert.True(false, "Clent shouldn't send certificate in this test");
+                    return clientCertificate;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    //Assert.True(false, "Server shouldn't receive certificate in this test");
+                    return true;
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+                // Send application data instead of Client hello.
+                await client.WriteAsync(new byte[500], cts.Token);
+                // Server don't drain the client data
+                await server.ReadAsync(new byte[1]);
+                // Fail as it is not allowed to receive non hnadshake frames during handshake.
+                await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                    server.NegotiateClientCertificateAsync(cts.Token)
+                );
+            }
+        }
+
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
         [InlineData(true)]
         [InlineData(false)]
