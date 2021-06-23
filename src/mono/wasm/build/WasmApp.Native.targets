@@ -165,7 +165,7 @@
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
 
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
-      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(_EmccOptimizationFlagDefault) -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(_EmccOptimizationFlagDefault)</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <ItemGroup>
