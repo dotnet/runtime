@@ -329,7 +329,8 @@ namespace System.IO.Tests
             string devicePath = filePath.Replace(drive, volumeNameBuffer.ToString());
             Assert.StartsWith(@"\\?\", devicePath);
 #if DEBUG
-            devicePath = devicePath.Replace(@"\\?\", @"\\.\"); // we want to test both \\.\ and \\?\
+            // we do want to test \\.\ prefix as well
+            devicePath = devicePath.Replace(@"\\?\", @"\\.\");
 #endif
 
             return devicePath;
@@ -377,7 +378,12 @@ namespace System.IO.Tests
             }
 
             // now once the folder has been shared we can use "localhost" to access it:
+            // both type of slashes are valid, so let's test one for Debug and another for other configs
+#if DEBUG
+            return @$"//localhost/{shareName}/{fileName}";
+#else
             return @$"\\localhost\{shareName}\{fileName}";
+#endif
         }
 
         protected override void Dispose(bool disposing)
