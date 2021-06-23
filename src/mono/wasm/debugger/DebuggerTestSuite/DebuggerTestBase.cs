@@ -706,7 +706,6 @@ namespace DebuggerTests
 
                     var exp_val_str = jp.Value.Value<string>();
                     bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
                     var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
                     var actual_field_val_str = actual_field_val?.Value?.Value<string>();
                     if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
