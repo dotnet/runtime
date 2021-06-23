@@ -278,6 +278,7 @@ jobs:
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: False
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml

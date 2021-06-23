@@ -24,7 +24,8 @@ Param(
     [switch] $iOSMono,
     [switch] $NoPGO,
     [switch] $DynamicPGO,
-    [switch] $FullPGO
+    [switch] $FullPGO,
+    [switch] $iOSLlvmBuild
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -149,6 +150,7 @@ if ($iOSMono) {
     }
     Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
+    $Configurations += " iOSLlvmBuild=$(iOSLlvmBuild)"
 }
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
@@ -178,6 +180,7 @@ Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false
