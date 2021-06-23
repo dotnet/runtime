@@ -624,8 +624,19 @@ void UninstallTTOUHandlerForConsole(void)
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling()
 {
-    errno = ENOSYS;
-    return 0;
+    static int32_t initialized = 0;
+
+    // The Process, Console and PosixSignalRegistration classes call this method for initialization.
+    if (pthread_mutex_lock(&lock) == 0)
+    {
+        if (initialized == 0)
+        {
+            initialized = InitializeSignalHandlingCore();
+        }
+        pthread_mutex_unlock(&lock);
+    }
+
+    return initialized;
 }
 
 #endif
