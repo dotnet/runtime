@@ -73,6 +73,11 @@ pPrivateKeyOut: Receives a SecKeyRef for the private key associated with the ide
 */
 PALEXPORT int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity, SecKeyRef* pPrivateKeyOut);
 
+/*
+Extract a string that contains a human-readable summary of the contents of the certificate
+*/
+PALEXPORT int32_t AppleCryptoNative_X509GetSubjectSummary(SecCertificateRef cert, CFStringRef* ppSummaryOut);
+
 #if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Read cbData bytes of data from pbData and interpret it to a collection of certificates (or identities).
