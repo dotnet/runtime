@@ -10,8 +10,8 @@
     </ItemGroup>
     <ItemGroup Condition="'$(_MonoRuntimeComponentLinking)' == 'static'">
       <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)">
-	<ComponentLib>libmono-component-%(Identity)$(_MonoRuntimeComponentStaticLibExt)</ComponentLib>
-	<ComponentStubLib>libmono-component-%(Identity)-stub$(_MonoRuntimeComponentStaticLibExt)</ComponentStubLib>
+	<ComponentLib>libmono-component-%(Identity)-static$(_MonoRuntimeComponentStaticLibExt)</ComponentLib>
+	<ComponentStubLib>libmono-component-%(Identity)-stub-static$(_MonoRuntimeComponentStaticLibExt)</ComponentStubLib>
       </_MonoRuntimeComponentName>
     </ItemGroup>
   </Target>
