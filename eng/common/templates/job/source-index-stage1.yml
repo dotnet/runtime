@@ -7,9 +7,13 @@ parameters:
   binlogPath: artifacts/log/Debug/Build.binlog
   pool:
     vmImage: vs2017-win2016
+  condition: ''
+  dependsOn: ''
 
 jobs:
 - job: SourceIndexStage1
+  dependsOn: ${{ parameters.dependsOn }}
+  condition: ${{ parameters.condition }}
   variables:
   - name: SourceIndexPackageVersion
     value: ${{ parameters.sourceIndexPackageVersion }}
