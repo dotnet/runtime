@@ -5,12 +5,6 @@
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.Icon.OleCreatePictureIndirect(System.Drawing.Icon.PICTDESC,System.Guid@,System.Boolean)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateBitmapFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
