@@ -19,6 +19,7 @@ namespace System.Timers
         private bool _delayedEnable;
         private ElapsedEventHandler _onIntervalElapsed;
         private bool _autoReset;
+        private bool _tickImmediately;
         private ISynchronizeInvoke _synchronizingObject;
         private bool _disposed;
         private Threading.Timer _timer;
@@ -34,6 +35,7 @@ namespace System.Timers
             _interval = 100;
             _enabled = false;
             _autoReset = true;
+            _tickImmediately = false;
             _initializing = false;
             _delayedEnable = false;
             _callback = new TimerCallback(MyTimerCallback);
@@ -84,6 +86,27 @@ namespace System.Timers
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the Timer raises the Tick event immediately upon start,
+        /// when Enabled is set to true.
+        /// </summary>
+        [TimersDescription(nameof(SR.TimerTickImmediately), null), DefaultValue(true)]
+        public bool TickImmediately
+        {
+            get => _tickImmediately;
+            set
+            {
+                if (DesignMode)
+                {
+                    _tickImmediately = value;
+                }
+                else if (_tickImmediately != value)
+                {
+                    _tickImmediately = value;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether the <see cref='System.Timers.Timer'/>
         /// is able to raise events at a defined interval.
         /// The default value by design is false, don't change it.
@@ -128,7 +151,7 @@ namespace System.Timers
                             int i = (int)Math.Ceiling(_interval);
                             _cookie = new object();
                             _timer = new Threading.Timer(_callback, _cookie, Timeout.Infinite, Timeout.Infinite);
-                            _timer.Change(i, _autoReset ? i : Timeout.Infinite);
+                            _timer.Change(_tickImmediately ? 0 : i, _autoReset ? i : Timeout.Infinite);
                         }
                         else
                         {
@@ -142,7 +165,7 @@ namespace System.Timers
         private void UpdateTimer()
         {
             int i = (int)Math.Ceiling(_interval);
-            _timer.Change(i, _autoReset ? i : Timeout.Infinite);
+            _timer.Change(_tickImmediately ? 0 : i, _autoReset ? i : Timeout.Infinite);
         }
 
         /// <summary>
