@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -37,5 +38,12 @@ namespace System.IO.Tests
         [Fact]
         public void ResolveLinkTarget_Throws_NotExists() =>
             ResolveLinkTarget_Throws_NotExists_Internal<FileNotFoundException>();
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CreateSymbolicLink_PathToTarget_RelativeToLinkPath()
+        {
+            RemoteExecutor.Invoke(() => CreateSymbolicLink_PathToTarget_RelativeToLinkPath_Internal(false)).Dispose();
+            RemoteExecutor.Invoke(() => CreateSymbolicLink_PathToTarget_RelativeToLinkPath_Internal(true)).Dispose();
+        }
     }
 }

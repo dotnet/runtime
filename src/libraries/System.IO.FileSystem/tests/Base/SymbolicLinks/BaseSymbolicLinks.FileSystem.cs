@@ -78,23 +78,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void CreateSymbolicLink_PathToTargetRelativeToLinkPath()
-        {
-            string tempFileName = GetRandomFileName();
-
-            // Create file or directory inside the current working directory.
-            CreateFileOrDirectory(tempFileName);
-
-            // Create link in our temporary folder with the target using the same name as the file in the current working directory.
-            // No issues may occur.
-            FileSystemInfo linkInfo = CreateSymbolicLink(GetRandomLinkPath(), tempFileName);
-            FileSystemInfo targetInfo = linkInfo.ResolveLinkTarget();
-
-            Assert.False(targetInfo.Exists);
-            Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
-        }
-
-        [Fact]
         public void CreateSymbolicLink_RelativeTargetPath_TargetExists()
         {
             // /path/to/link -> /path/to/existingtarget
@@ -429,6 +412,29 @@ namespace System.IO.Tests
             AssertFullNameEquals(filePath, finalTarget.FullName);
         }
 
+        protected void CreateSymbolicLink_PathToTarget_RelativeToLinkPath_Internal(bool createOpposite)
+        {
+            string tempCwd = GetRandomDirPath();
+            Directory.CreateDirectory(tempCwd);
+            Directory.SetCurrentDirectory(tempCwd);
+
+            // Create a dummy file or directory in cwd.
+            string fileOrDirectoryInCwd = GetRandomFileName();
+            CreateFileOrDirectory(fileOrDirectoryInCwd, createOpposite);
+
+            string oneLevelUpPath = Path.Combine(tempCwd, "one-level-up");
+            Directory.CreateDirectory(oneLevelUpPath);
+            string linkPath = Path.Combine(oneLevelUpPath, GetRandomLinkName());
+
+            // Create a link with a similar Target Path to the one of our dummy file or directory.
+            FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, fileOrDirectoryInCwd);
+            FileSystemInfo targetInfo = linkInfo.ResolveLinkTarget();
+
+            // Verify that Target is resolved and is relative to Link's directory and not to the cwd.
+            Assert.False(targetInfo.Exists);
+            Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
+        }
+
         public static IEnumerable<object[]> ResolveLinkTarget_PathToTarget_Data
         {
             get
@@ -448,7 +454,9 @@ namespace System.IO.Tests
             // Rooted relative
             "\\foo",
             // Rooted absolute
-            Path.Combine(Path.GetTempPath(), "foo")
+            Path.Combine(Path.GetTempPath(), "foo"),
+            //Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
+            //@"\\server\share\path", @"\\.\pipe\foo",
         };
     }
 }
