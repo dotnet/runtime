@@ -46,52 +46,46 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(PosixSignalValues))]
-        public void SignalHandlerCalledForKnownSignals(PosixSignal signal)
+        public void SignalHandlerCalledForKnownSignals(PosixSignal s)
         {
-            if (TriggersConsoleCancelKeyPress(signal))
-            {
-                // skip: xunit test runner returns non zero exit code.
-                return;
-            }
+            RemoteExecutor.Invoke((signalStr) => {
+                PosixSignal signal = Enum.Parse<PosixSignal>(signalStr);
+                using SemaphoreSlim semaphore = new(0);
+                using var _ = PosixSignalRegistration.Create(signal, ctx =>
+                {
+                    Assert.Equal(signal, ctx.Signal);
 
-            using SemaphoreSlim semaphore = new(0);
-            using var _ = PosixSignalRegistration.Create(signal, ctx =>
-            {
-                Assert.Equal(signal, ctx.Signal);
+                    // Ensure signal doesn't cause the process to terminate.
+                    ctx.Cancel = true;
 
-                // Ensure signal doesn't cause the process to terminate.
-                ctx.Cancel = true;
-
-                semaphore.Release();
-            });
-            kill(signal);
-            bool entered = semaphore.Wait(Timeout);
-            Assert.True(entered);
+                    semaphore.Release();
+                });
+                kill(signal);
+                bool entered = semaphore.Wait(Timeout);
+                Assert.True(entered);
+            }, s.ToString()).Dispose();
         }
 
         [Theory]
         [MemberData(nameof(PosixSignalAsRawValues))]
-        public void SignalHandlerCalledForRawSignals(PosixSignal signal)
+        public void SignalHandlerCalledForRawSignals(PosixSignal s)
         {
-            if (TriggersConsoleCancelKeyPress(signal))
-            {
-                // skip: xunit test runner returns non zero exit code.
-                return;
-            }
+            RemoteExecutor.Invoke((signalStr) => {
+                PosixSignal signal = Enum.Parse<PosixSignal>(signalStr);
+                using SemaphoreSlim semaphore = new(0);
+                using var _ = PosixSignalRegistration.Create(signal, ctx =>
+                {
+                    Assert.Equal(signal, ctx.Signal);
 
-            using SemaphoreSlim semaphore = new(0);
-            using var _ = PosixSignalRegistration.Create(signal, ctx =>
-            {
-                Assert.Equal(signal, ctx.Signal);
+                    // Ensure signal doesn't cause the process to terminate.
+                    ctx.Cancel = true;
 
-                // Ensure signal doesn't cause the process to terminate.
-                ctx.Cancel = true;
-
-                semaphore.Release();
-            });
-            kill(signal);
-            bool entered = semaphore.Wait(Timeout);
-            Assert.True(entered);
+                    semaphore.Release();
+                });
+                kill(signal);
+                bool entered = semaphore.Wait(Timeout);
+                Assert.True(entered);
+            }, s.ToString()).Dispose();
         }
 
         [Fact]
@@ -160,7 +154,7 @@ namespace System.Tests
         [InlineData(PosixSignal.SIGTERM, true, 0)]
         [InlineData(PosixSignal.SIGTERM, false, 143)]
         [InlineData(PosixSignal.SIGQUIT, true, 0)]
-        [InlineData(PosixSignal.SIGQUIT, false, 999)] // TODO: 131
+        [InlineData(PosixSignal.SIGQUIT, false, 131)]
         public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
         {
             RemoteExecutor.Invoke((signalStr, cancelStr) =>
@@ -183,6 +177,8 @@ namespace System.Tests
 
                 // Give the default signal handler a chance to run.
                 Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(1) : Timeout);
+
+                return 0;
             }, signal.ToString(), cancel.ToString(),
                new RemoteInvokeOptions() { ExpectedExitCode = expectedExitCode }).Dispose();
         }
@@ -229,13 +225,5 @@ namespace System.Tests
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
         [SuppressGCTransition]
         private static extern int GetPlatformSignalNumber(PosixSignal signal);
-
-        private static bool TriggersConsoleCancelKeyPress(PosixSignal signal)
-        {
-            return (signal == PosixSignal.SIGINT ||
-                    signal == PosixSignal.SIGQUIT ||
-                    signal == (PosixSignal)2 || // SIGINT raw
-                    signal == (PosixSignal)3);  // SIGQUIT raw
-        }
     }
 }

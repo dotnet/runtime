@@ -183,10 +183,14 @@ namespace System.Runtime.InteropServices
                             }
                         }
                     }
+                    if (ctx.Cancel)
+                    {
+                        return;
+                    }
                 }
                 if (Interop.Sys.HandleNonCanceledPosixSignal(state.signo, handlersCalled ? 0 : 1))
                 {
-                    break;
+                    return;
                 }
                 // HandleNonCanceledPosixSignal returns false when handlers got registered.
                 state.registrations = GetRegistrations(state.signo);
