@@ -9,20 +9,25 @@ using Internal.Runtime.CompilerServices;
 namespace System.Runtime
 {
     /// <summary>
-    /// Represents a dependent GC handle, which will conditionally keep a dependent object instance alive
-    /// as long as a target object instance is alive as well, without representing a strong reference to the
-    /// target object instance. That is, a <see cref="DependentHandle"/> value with a given object instance as
-    /// target will not cause the target to be kept alive if there are no other strong references to it, but
-    /// it will do so for the dependent object instance as long as the target is alive.
-    /// <para>
-    /// This type is conceptually equivalent to having a weak reference to a given target object instance A, with
-    /// that object having a field or property (or some other strong reference) to a dependent object instance B.
-    /// </para>
+    /// Represents a dependent GC handle, which will conditionally keep a dependent object instance alive as long as
+    /// a target object instance is alive as well, without representing a strong reference to the target instance.
     /// </summary>
     /// <remarks>
+    /// A <see cref="DependentHandle"/> value with a given object instance as target will not cause the target
+    /// to be kept alive if there are no other strong references to it, but it will do so for the dependent
+    /// object instance as long as the target is alive.
+    /// <para>
+    /// Using this type is conceptually equivalent to having a weak reference to a given target object instance A,
+    /// with that object having a field or property (or some other strong reference) to a dependent object instance B.
+    /// </para>
+    /// <para>
     /// The <see cref="DependentHandle"/> type is not thread-safe, and consumers are responsible for ensuring that
     /// <see cref="Dispose"/> is not called concurrently with other APIs. Not doing so results in undefined behavior.
-    /// <para>The <see cref="Target"/> and <see cref="Dependent"/> properties are instead thread-safe.</para>
+    /// </para>
+    /// <para>
+    /// The <see cref="IsAllocated"/>, <see cref="Target"/>, <see cref="Dependent"/> and <see cref="TargetAndDependent"/>
+    /// properties are instead thread-safe, and safe to use if <see cref="Dispose"/> is not concurrently invoked as well.
+    /// </para>
     /// </remarks>
     public struct DependentHandle : IDisposable
     {
@@ -60,13 +65,15 @@ namespace System.Runtime
         /// <param name="dependent">The dependent object instance to associate with <paramref name="target"/>.</param>
         public DependentHandle(object? target, object? dependent)
         {
-            // no need to check for null result: nInitialize expected to throw OOM.
+            // no need to check for null result: InternalInitialize expected to throw OOM.
             _handle = InternalInitialize(target, dependent);
         }
 
         /// <summary>
-        /// Gets a value indicating whether this handle has been allocated or not.
+        /// Gets a value indicating whether this instance was constructed with
+        /// <see cref="DependentHandle(object?, object?)"/> and has not yet been disposed.
         /// </summary>
+        /// <remarks>This property is thread-safe.</remarks>
         public bool IsAllocated => (nint)_handle != 0;
 
         /// <summary>
@@ -144,11 +151,12 @@ namespace System.Runtime
         /// Gets the values of both <see cref="Target"/> and <see cref="Dependent"/> (if available) as an atomic operation.
         /// That is, even if <see cref="Target"/> is concurrently set to <see langword="null"/>, calling this method
         /// will either return <see langword="null"/> for both target and dependent, or return both previous values.
-        /// If <see cref="Target"/> and <see cref="Dependent"/> were used sequentially in this scenario instead, it's
-        /// could be possible to sometimes successfully retrieve the previous target, but then fail to get the dependent.
+        /// If <see cref="Target"/> and <see cref="Dependent"/> were used sequentially in this scenario instead, it
+        /// would be possible to sometimes successfully retrieve the previous target, but then fail to get the dependent.
         /// </summary>
         /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
+        /// <remarks>This property is thread-safe.</remarks>
         public (object? Target, object? Dependent) TargetAndDependent
         {
             get
