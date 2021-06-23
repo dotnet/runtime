@@ -3,6 +3,7 @@
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <WasmGenerateRunNodeScript>true</WasmGenerateRunNodeScript>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -10,4 +11,5 @@
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
+  <Target Name="RunSampleNode" DependsOnTargets="RunSampleWithNode" />
 </Project>

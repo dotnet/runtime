@@ -1,0 +1,18 @@
+{
+    "name": "console-sample-in-node",
+    "version": "1.0.0",
+    "description": "Runs the MONO WASM Console sample in the NodeJS environment",
+    "main": "runtime.js",
+    "scripts": {
+      "test": "node --trace-warnings runtime.js --run Wasm.Console.Sample.dll"
+    },
+    "author": "Microsoft",
+    "license": "MIT",
+    "dependencies": {
+      "fs": "0.0.1-security",
+      "node-fetch": "^2.6.1",
+      "path": "^0.12.7",
+      "perf_hooks": "0.0.1",
+      "ws": "^7.5.0"
+    }
+}
