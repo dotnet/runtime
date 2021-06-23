@@ -9,12 +9,17 @@
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
+  <!-- Browser specific files -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
+             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
