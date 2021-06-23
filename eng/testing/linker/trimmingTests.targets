@@ -74,6 +74,7 @@
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
+                                                 .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')

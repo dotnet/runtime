@@ -150,6 +150,98 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteZeroFlag: check if the instruction write the
+//     ZF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the ZF flag, false otherwise.
+//
+bool emitter::DoesWriteZeroFlag(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & Writes_ZF) != 0;
+}
+
+//------------------------------------------------------------------------
+// DoesResetOverflowAndCarryFlags: check if the instruction resets the
+//     OF and CF flag to 0.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction resets the OF and CF flag, false otherwise.
+//
+bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
+}
+
+//------------------------------------------------------------------------
+// IsFlagsAlwaysModified: check if the instruction guarantee to modify any flags.
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    false, if instruction is guaranteed to not modify any flag.
+//    true, if instruction will modify some flag.
+//
+bool emitter::IsFlagsAlwaysModified(instrDesc* id)
+{
+    instruction ins = id->idIns();
+    insFormat   fmt = id->idInsFmt();
+
+    if (fmt == IF_RRW_SHF)
+    {
+        if (id->idIsLargeCns())
+        {
+            return true;
+        }
+        else if (id->idSmallCns() == 0)
+        {
+            switch (ins)
+            {
+                // If shift-amount for below instructions is 0, then flags are unaffected.
+                case INS_rcl_N:
+                case INS_rcr_N:
+                case INS_rol_N:
+                case INS_ror_N:
+                case INS_shl_N:
+                case INS_shr_N:
+                case INS_sar_N:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+    }
+    else if (fmt == IF_RRW)
+    {
+        switch (ins)
+        {
+            // If shift-amount for below instructions is 0, then flags are unaffected.
+            // So, to be conservative, do not optimize if the instruction has register
+            // as the shift-amount operand.
+            case INS_rcl:
+            case INS_rcr:
+            case INS_rol:
+            case INS_ror:
+            case INS_shl:
+            case INS_shr:
+            case INS_sar:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
 //
@@ -225,9 +317,9 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 //                       the same values as if there were a compare to 0
 //
 // Arguments:
-//    reg - register of interest
-//    opSize - size of register
-//    needsOCFlags - additionally check the overflow and carry flags
+//    reg     - register of interest
+//    opSize  - size of register
+//    treeOps - type of tree node operation
 //
 // Return Value:
 //    true if the previous instruction set the flags for reg
@@ -235,17 +327,19 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 //
 // Notes:
 //    Currently only looks back one instruction.
-bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCFlags)
+bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps)
 {
     assert(reg != REG_NA);
+
     // Don't look back across IG boundaries (possible control flow)
     if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
 
-    instrDesc* id  = emitLastIns;
-    insFormat  fmt = id->idInsFmt();
+    instrDesc*  id      = emitLastIns;
+    instruction lastIns = id->idIns();
+    insFormat   fmt     = id->idInsFmt();
 
     // make sure op1 is a reg
     switch (fmt)
@@ -264,7 +358,6 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
         case IF_RRD:
         case IF_RRW:
             break;
-
         default:
             return false;
     }
@@ -274,34 +367,20 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
         return false;
     }
 
-    switch (id->idIns())
+    // Certain instruction like and, or and xor modifies exactly same flags
+    // as "test" instruction.
+    // They reset OF and CF to 0 and modifies SF, ZF and PF.
+    if (DoesResetOverflowAndCarryFlags(lastIns))
     {
-        case INS_adc:
-        case INS_add:
-        case INS_dec:
-        case INS_dec_l:
-        case INS_inc:
-        case INS_inc_l:
-        case INS_neg:
-        case INS_shr_1:
-        case INS_shl_1:
-        case INS_sar_1:
-        case INS_sbb:
-        case INS_sub:
-        case INS_xadd:
-            if (needsOCFlags)
-            {
-                return false;
-            }
-            FALLTHROUGH;
-        // these always set OC to 0
-        case INS_and:
-        case INS_or:
-        case INS_xor:
-            return id->idOpSize() == opSize;
+        return id->idOpSize() == opSize;
+    }
 
-        default:
-            break;
+    if ((treeOps == GT_EQ) || (treeOps == GT_NE))
+    {
+        if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
     }
 
     return false;
@@ -4164,6 +4243,20 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
 // Arguments:
 //    ins       -- The instruction being checked
 //
+// Return Value:
+//    true if the instruction is a qualifying move instruction; otherwise, false
+//
+// Remarks:
+//    This methods covers most kinds of two operand move instructions that copy a
+//    value between two registers. It does not cover all move-like instructions
+//    and so doesn't currently cover things like movsb/movsw/movsd/movsq or cmovcc
+//    and doesn't currently cover cases where a value is read/written from memory.
+//
+//    The reason it doesn't cover all instructions was namely to limit the scope
+//    of the initial change to that which was impactful to move elision so that
+//    it could be centrally managed and optimized. It may be beneficial to support
+//    the other move instructions in the future but that may require more extensive
+//    changes to ensure relevant codegen/emit paths flow and check things correctly.
 bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
@@ -4174,7 +4267,6 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movd:
         case INS_movdqa:
         case INS_movdqu:
-        case INS_movsd:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -4198,6 +4290,183 @@ bool emitter::IsMovInstruction(instruction ins)
             return false;
         }
     }
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register on TARGET_AMD64
+//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+//
+//         mov rax, rax
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rax, rbx  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rbx, rax  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 dst  - The current destination
+//                 src  - The current source
+// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+{
+    assert(IsMovInstruction(ins));
+
+    if (canIgnoreSideEffects && (dst == src))
+    {
+        // These elisions used to be explicit even when optimizations were disabled
+
+        // Some instructions have a side effect and shouldn't be skipped
+        // however existing codepaths were skipping these instructions in
+        // certain scenarios and so we skip them as well for back-compat
+        // when canIgnoreSideEffects is true (see below for which have a
+        // side effect).
+        //
+        // Long term, these paths should be audited and should likely be
+        // replaced with copies rather than extensions.
+        return true;
+    }
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
+    // is not an important detail, such as when "regular" floating-point code is generated
+    //
+    // This differs from cases like HWIntrinsics that deal with the entire vector and so
+    // they need to be "aware" that a given move impacts the upper-bits.
+    //
+    // Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
+    // the below optimizations for those scenarios as well.
+
+    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
+    bool hasSideEffect = false;
+
+    switch (ins)
+    {
+        case INS_mov:
+        {
+            // non EA_PTRSIZE moves may zero-extend the source
+            hasSideEffect = (size != EA_PTRSIZE);
+            break;
+        }
+
+        case INS_movapd:
+        case INS_movaps:
+        case INS_movdqa:
+        case INS_movdqu:
+        case INS_movupd:
+        case INS_movups:
+        {
+            // non EA_32BYTE moves clear the upper bits under VEX encoding
+            hasSideEffect = UseVEXEncoding() && (size != EA_32BYTE);
+            break;
+        }
+
+        case INS_movd:
+        {
+            // Clears the upper bits
+            hasSideEffect = true;
+            break;
+        }
+
+        case INS_movsdsse2:
+        case INS_movss:
+        {
+            // Clears the upper bits under VEX encoding
+            hasSideEffect = UseVEXEncoding();
+            break;
+        }
+
+        case INS_movsx:
+        case INS_movzx:
+        {
+            // Sign/Zero-extends the source
+            hasSideEffect = true;
+            break;
+        }
+
+#if defined(TARGET_AMD64)
+        case INS_movq:
+        {
+            // Clears the upper bits
+            hasSideEffect = true;
+            break;
+        }
+
+        case INS_movsxd:
+        {
+            // Sign-extends the source
+            hasSideEffect = true;
+            break;
+        }
+#endif // TARGET_AMD64
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    // Check if we are already in the correct register and don't have a side effect
+    if ((dst == src) && !hasSideEffect)
+    {
+        JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
+        return true;
+    }
+
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
+    // functionality even if their actual identifier differs and we should optimize these
+
+    if (isFirstInstrInBlock ||               // Don't optimize if instruction is the first instruction in IG.
+        (emitLastIns == nullptr) ||          // or if a last instruction doesn't exist
+        (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
+        (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
+    {
+        return false;
+    }
+
+    regNumber lastDst = emitLastIns->idReg1();
+    regNumber lastSrc = emitLastIns->idReg2();
+
+    // Check if we did same move in last instruction, side effects don't matter since they already happened
+    if ((lastDst == dst) && (lastSrc == src))
+    {
+        JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst register.\n");
+        return true;
+    }
+
+    // Check if we did a switched mov in the last instruction  and don't have a side effect
+    if ((lastDst == src) && (lastSrc == dst) && !hasSideEffect)
+    {
+        JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src register and the mov has "
+                "no side-effects.\n");
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -4230,7 +4499,6 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movaps:
         case INS_movdqa:
         case INS_movdqu:
-        case INS_movsd:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movupd:
@@ -4272,66 +4540,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
-    if (canSkip && (dstReg == srcReg))
-    {
-        switch (ins)
-        {
-            case INS_mov:
-            {
-                // These instructions have no side effect and can be skipped
-                return;
-            }
-
-            case INS_movapd:
-            case INS_movaps:
-            case INS_movdqa:
-            case INS_movdqu:
-            case INS_movupd:
-            case INS_movups:
-            {
-                // These instructions have no side effect and can be skipped
-                return;
-            }
-
-            case INS_movd:
-            case INS_movsd:
-            case INS_movsdsse2:
-            case INS_movss:
-            case INS_movsx:
-            case INS_movzx:
-            {
-                // These instructions have a side effect and shouldn't be skipped
-                // however existing codepaths were skipping these instructions in
-                // certain scenarios and so we skip them as well for back-compat.
-                //
-                // Long term, these paths should be audited and should likely be
-                // replaced with copies rather than extensions.
-                return;
-            }
-
-#if defined(TARGET_AMD64)
-            case INS_movq:
-            case INS_movsxd:
-            {
-                // These instructions have a side effect and shouldn't be skipped
-                // however existing codepaths were skipping these instructions in
-                // certain scenarios and so we skip them as well for back-compat.
-                //
-                // Long term, these paths should be audited and should likely be
-                // replaced with copies rather than extensions.
-                return;
-            }
-#endif // TARGET_AMD64
-
-            default:
-            {
-                unreached();
-            }
-        }
-    }
-
     UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
     insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+
+    if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
+    {
+        return;
+    }
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);

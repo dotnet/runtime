@@ -64,7 +64,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Set once writes have been shutdown.
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-
             public ShutdownState ShutdownState;
 
             // Set once stream have been shutdown.
@@ -75,7 +74,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             _state.Handle = streamHandle;
-            _state.ConnectionState = connectionState;
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
@@ -94,6 +92,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            if (!connectionState.TryAddStream(this))
+            {
+                _stateHandle.Free();
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+
+            _state.ConnectionState = connectionState;
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
@@ -108,10 +114,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(connectionState.Handle != null);
 
-            _state.ConnectionState = connectionState;
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
-
             _stateHandle = GCHandle.Alloc(_state);
             try
             {
@@ -124,7 +128,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
-                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.ASYNC);
+                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED);
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
             catch
@@ -133,6 +137,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            if (!connectionState.TryAddStream(this))
+            {
+                _state.Handle?.Dispose();
+                _stateHandle.Free();
+                throw new ObjectDisposedException(nameof(QuicConnection));
+            }
+
+            _state.ConnectionState = connectionState;
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -322,7 +335,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         shouldComplete = true;
                     }
-
                     state.ReadState = ReadState.Aborted;
                 }
 
@@ -492,6 +504,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void Shutdown()
         {
             ThrowIfDisposed();
+
             // it is ok to send shutdown several times, MsQuic will ignore it
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
         }
@@ -500,8 +513,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
-
-            return ReadAsync(buffer.ToArray()).AsTask().GetAwaiter().GetResult();
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            try
+            {
+                int readLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
+                rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
+                return readLength;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
 
         internal override void Write(ReadOnlySpan<byte> buffer)
@@ -557,6 +579,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
+            _state.ConnectionState?.RemoveStream(this);
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -592,7 +615,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Stream has started.
                     // Will only be done for outbound streams (inbound streams have already started)
                     case QUIC_STREAM_EVENT_TYPE.START_COMPLETE:
-                        return HandleStartComplete(state);
+                        return HandleEventStartComplete(state);
                     // Received data on the stream
                     case QUIC_STREAM_EVENT_TYPE.RECEIVE:
                         return HandleEventRecv(state, ref evt);
@@ -678,7 +701,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private static uint HandleStartComplete(State state)
+        private static uint HandleEventStartComplete(State state)
         {
             bool shouldComplete = false;
             lock (state)
