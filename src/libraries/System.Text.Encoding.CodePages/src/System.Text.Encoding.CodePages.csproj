@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
@@ -17,6 +17,9 @@
     <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Link="System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Compile Include="Microsoft\Win32\SafeHandles\NativeMemoryHandle.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.cs" />
     <Compile Include="System\Text\CodePagesEncodingProvider.cs" />
@@ -40,11 +43,16 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs" Link="Common\Interop\Windows\Interop.GetCPInfoEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Common\Interop\Windows\Interop.MAX_PATH.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs"
+             Link="Common\Interop\Windows\Interop.GetCPInfoEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
+             Link="Common\Interop\Windows\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' and '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
@@ -52,10 +60,6 @@
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="System\Text\CodePagesEncodingProvider.netcoreapp.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs"
-             Link="System\Runtime\InteropServices\NativeMemory.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\codepages.nlp">
