@@ -48,16 +48,10 @@ namespace System.Reflection.Metadata
 
         internal static bool HasApplyUpdateCapabilities()
         {
-            var ty = typeof(AssemblyExtensions);
-            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
-
-            if (mi == null)
-                return false;
-
-            var caps = mi.Invoke(null, null);
+            string caps = MetadataUpdater.GetCapabilities();
 
             // any non-empty string, assumed to be at least "baseline"
-            return caps is string {Length: > 0};
+            return caps.Length > 0;
         }
 
         private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();
@@ -83,15 +77,15 @@ namespace System.Reflection.Metadata
             byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
             byte[] dpdb_data = null; // TODO also use the dpdb data
 
-            AssemblyExtensions.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
+            MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
         }
 
         internal static bool UseRemoteExecutor => !IsModifiableAssembliesSet;
 
         internal static void AddRemoteInvokeOptions (ref RemoteInvokeOptions options)
         {
-                options = options ?? new RemoteInvokeOptions();
-                options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
+            options = options ?? new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
         }
 
         /// Run the given test case, which applies updates to the given assembly.

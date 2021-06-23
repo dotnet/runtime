@@ -12,6 +12,12 @@ namespace System.Reflection.Metadata
         public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
         public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta) { throw null; }
     }
+    public static partial class MetadataUpdater
+    {
+        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta) { throw null; }
+        public static string GetCapabilities() { throw null; }
+        public static bool IsSupported { get { throw null; } }
+    }
     [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class MetadataUpdateHandlerAttribute : System.Attribute
     {
