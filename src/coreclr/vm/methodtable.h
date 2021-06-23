@@ -1240,6 +1240,20 @@ public:
 
     BOOL ContainsGenericMethodVariables();
 
+    // When creating an interface map, under some circumstances the
+    // runtime will place the special marker type in the interface map instead
+    // of the fully loaded type. This is to reduce the amount of type loading
+    // performed at process startup.
+    //
+    // The current rule is that these interfaces can only appear
+    // on valuetypes that are not shared generic, and that the special
+    // marker type is the open generic type.
+    // 
+    inline bool IsSpecialMarkerTypeForGenericCasting()
+    {
+        return IsGenericTypeDefinition();
+    }
+
     static BOOL ComputeContainsGenericVariables(Instantiation inst);
 
     inline void SetContainsGenericVariables()
@@ -1913,7 +1927,7 @@ public:
     BOOL ArraySupportsBizarreInterface(MethodTable* pInterfaceMT, TypeHandlePairList* pVisited);
     BOOL ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
 
-    BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
+    BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited, MethodTable* pMTInterfaceMapOwner = NULL);
 
     // The inline part of equivalence check.
 #ifndef DACCESS_COMPILE
@@ -2211,7 +2225,7 @@ public:
             {
                 if (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT) && 
                     pMT->HasInstantiation() && 
-                    m_pMap->GetMethodTable()->IsGenericTypeDefinition() && 
+                    m_pMap->GetMethodTable()->IsSpecialMarkerTypeForGenericCasting() && 
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;
@@ -3695,6 +3709,7 @@ private:
                                              | enum_flag_ComObject
                                              | enum_flag_ICastable
                                              | enum_flag_IDynamicInterfaceCastable
+                                             | enum_flag_Category_ValueType
 
     };  // enum WFLAGS_HIGH_ENUM
 

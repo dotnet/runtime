@@ -1570,7 +1570,6 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     }
     while (--numInterfaces);
 
-    // TODO! Consider breaking out into seperate function!
     // Second scan, looking for the curiously recurring generic scenario
     if (pInterface->HasInstantiation() && pInterface->GetInstantiation().ContainsAllOneType(this))
     {
@@ -1579,7 +1578,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
 
         do
         {
-            if (pInfo->GetMethodTable()->HasSameTypeDefAs(pInterface) && pInfo->GetMethodTable()->IsGenericTypeDefinition())
+            if (pInfo->GetMethodTable()->HasSameTypeDefAs(pInterface) && pInfo->GetMethodTable()->IsSpecialMarkerTypeForGenericCasting())
             {
                 // Extensible RCW's need to be handled specially because they can have interfaces
                 // in their map that are added at runtime. These interfaces will have a start offset
@@ -1590,7 +1589,8 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
                 // (m_wNumInterface doesn't contain the dynamic slots), so we can safely
                 // ignore this detail.
 #ifndef DACCESS_COMPILE
-                pInfo->SetMethodTable(pInterface);
+                if (pInterface->IsFullyLoaded())
+                    pInfo->SetMethodTable(pInterface);
 #endif
                 return TRUE;
             }

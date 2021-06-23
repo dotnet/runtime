@@ -257,12 +257,12 @@ namespace System.Runtime.CompilerServices
                 }
 
             extra:
-//                if (mt->NonTrivialInterfaceCast) Remove the NonTrivialInterfaceCast check for now as the uninstantiated interface being used for the curiously recurring pattern scenario makes more cases NonTrivial
+                if (mt->NonTrivialInterfaceCast)
                 {
                     goto slowPath;
                 }
 
-//                obj = null;
+                obj = null;
             }
 
         done:

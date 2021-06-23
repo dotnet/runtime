@@ -2520,13 +2520,14 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMapFrom(intfIndex);
 
         // If the number of slots is 0, then no need to proceed
-        if (intIt.GetInterfaceApprox()->GetNumVirtuals() != 0)
+        MethodTable* pItf = intIt.GetInterfaceApprox();
+        if (pItf->GetNumVirtuals() != 0)
         {
             MethodDesc *pClsMD = NULL;
-            _ASSERTE(!intIt.GetInterfaceApprox()->HasInstantiation());
+            _ASSERTE(!pItf->HasInstantiation());
 
             // Find the implementation for the first slot of the interface
-            DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterfaceApprox()->GetTypeID(), 0, FALSE /* throwOnConflict */));
+            DispatchSlot impl(pMT->FindDispatchSlot(pItf->GetTypeID(), 0, FALSE /* throwOnConflict */));
             CONSISTENCY_CHECK(!impl.IsNull());
 
             // Get the MethodDesc for this slot in the class
