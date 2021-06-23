@@ -105,7 +105,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
     }
 
-    return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
+    return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
