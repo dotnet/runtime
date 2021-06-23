@@ -59,7 +59,7 @@ namespace System.IO.Tests
 
             // instead of:
             // 'C:\Users\x\AppData\Local\Temp\y\z
-            // we want sth like:
+            // we want something like:
             // '\\.\Volume{724edb31-eaa5-4728-a4e3-f2474fd34ae2}\Users\x\AppData\Local\Temp\y\z
             string devicePath = filePath.Replace(drive, volumeNameBuffer.ToString());
             Assert.StartsWith(@"\\?\", devicePath);
@@ -78,25 +78,24 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
     [Collection("NoParallelTests")] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
-    [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(UncFilePathFileStreamStandaloneConformanceTests.CanShareFiles))]
+    [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
-        public static bool CanShareFiles
-        {
-            get
-            {
-                if (!PlatformDetection.IsAdmin_IsNotNano)
-                {
-                    return false;
-                }
+        public static bool CanShareFiles => _canShareFiles.Value;
 
-                // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.    
-                using (ServiceController sharingService = new ServiceController("Server"))
-                {
-                    return sharingService.Status == ServiceControllerStatus.Running;
-                }
+        private static Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
+        {
+            if (!PlatformDetection.IsWindowsAndElevated || PlatformDetection.IsWindowsNanoServer)
+            {
+                return false;
             }
-        }
+
+            // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.    
+            using (ServiceController sharingService = new ServiceController("Server"))
+            {
+                return sharingService.Status == ServiceControllerStatus.Running;
+            }
+        });
 
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
