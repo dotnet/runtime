@@ -9115,27 +9115,29 @@ namespace System.Reflection
     }
     public sealed class NullabilityInfoContext
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.EventInfo eventInfo) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.FieldInfo fieldInfo) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.ParameterInfo parameterInfo) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.PropertyInfo propertyInfo) { throw null; }
     }
     public sealed class NullabilityInfo
     {
-        internal NullabilityInfo(System.Type type, System.Reflection.NullableState readState, System.Reflection.NullableState writeState, System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? arrayElements, System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? typeArguments) { }
+        internal NullabilityInfo(System.Type type, System.Reflection.NullabilityState readState, System.Reflection.NullabilityState writeState, System.Reflection.NullabilityInfo? elementType, System.Reflection.NullabilityInfo[] typeArguments) { }
         public System.Type Type { get; }
-        public System.Reflection.NullableState ReadState { get; }
-        public System.Reflection.NullableState WriteState { get; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? ArrayElements { get; }
-        public System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.NullableState>? TypeArguments { get; }
+        public System.Reflection.NullabilityState ReadState { get; }
+        public System.Reflection.NullabilityState WriteState { get; }
+        public System.Reflection.NullabilityInfo? ElementType { get; }
+        public System.Reflection.NullabilityInfo[] TypeArguments { get; }
     }
-    public enum NullableState
+    public enum NullabilityState
     {
         Unknown,
-        NonNullable,
-        Nullable,
-        NotNullableWhen,
-        NullableWhen
+        NotNull,
+        Nullable
     }
     public delegate System.Reflection.Module ModuleResolveEventHandler(object sender, System.ResolveEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]

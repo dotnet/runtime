@@ -7,43 +7,27 @@ namespace System.Reflection
 {
     public sealed class NullabilityInfo
     {
-        /*internal NullabilityInfo(Type type, NullableState state)
-        {
-            Type = type;
-            ReadState = state;
-            WriteState = state;
-        }
-
-        internal NullabilityInfo(Type type, NullableState readState, NullableState writeState)
+        internal NullabilityInfo(Type type, NullabilityState readState, NullabilityState writeState,
+            NullabilityInfo? elementType, NullabilityInfo[] typeArguments)
         {
             Type = type;
             ReadState = readState;
             WriteState = writeState;
-        }*/
-
-        internal NullabilityInfo(Type type, NullableState readState, NullableState writeState,
-            ReadOnlyCollection<NullableState>? arrayElements, ReadOnlyCollection<NullableState>? typeArguments)
-        {
-            Type = type;
-            ReadState = readState;
-            WriteState = writeState;
-            ArrayElements = arrayElements;
+            ElementType = elementType;
             TypeArguments = typeArguments;
         }
 
         public Type Type { get; }
-        public NullableState ReadState { get; internal set; }
-        public NullableState WriteState { get; internal set; }
-        public ReadOnlyCollection<NullableState>? ArrayElements { get; }
-        public ReadOnlyCollection<NullableState>? TypeArguments { get; }
+        public NullabilityState ReadState { get; internal set; }
+        public NullabilityState WriteState { get; internal set; }
+        public NullabilityInfo? ElementType { get; }
+        public NullabilityInfo[] TypeArguments { get; }
     }
 
-    public enum NullableState
+    public enum NullabilityState
     {
         Unknown,
-        NonNullable,
-        Nullable,
-        NotNullableWhen, // Has NotNullWhenAttribute or NotNullIfNotNullAttribute, check CustomAttributes for the attribute and value
-        NullableWhen // Has MaybeNullWhenAttribute check CustomAttributes for the value
+        NotNull,
+        Nullable
     }
 }
