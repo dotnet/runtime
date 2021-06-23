@@ -1,15 +1,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -26,8 +23,8 @@ namespace System.Net.Http.Functional.Tests
     public class LargeFileBenchmark : IDisposable
     {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        public const string SkipSwitch = null;
-        //public const string SkipSwitch = "Local benchmark";
+        //public const string SkipSwitch = null;
+        public const string SkipSwitch = "Local benchmark";
 
         private readonly ITestOutputHelper _output;
         private LogHttpEventListener _listener;
