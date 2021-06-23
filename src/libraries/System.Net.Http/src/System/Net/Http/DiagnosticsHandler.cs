@@ -141,8 +141,19 @@ namespace System.Net.Http
                     base.Send(request, cancellationToken);
                 return response;
             }
-            catch (Exception ex) when (LogException(ex, request, ref taskStatus))
+            catch (OperationCanceledException)
             {
+                taskStatus = TaskStatus.Canceled;
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (s_diagnosticListener.IsEnabled(ExceptionEventName))
+                {
+                    Write(ExceptionEventName, new ExceptionData(ex, request));
+                }
+
+                taskStatus = TaskStatus.Faulted;
                 throw;
             }
             finally
@@ -163,25 +174,6 @@ namespace System.Net.Http
                 {
                     Write(ResponseWriteNameDeprecated, new ResponseData(response, loggingRequestId, Stopwatch.GetTimestamp(), taskStatus));
                 }
-            }
-
-            static bool LogException(Exception ex, HttpRequestMessage request, ref TaskStatus taskStatus)
-            {
-                if (ex is OperationCanceledException)
-                {
-                    taskStatus = TaskStatus.Canceled;
-                }
-                else
-                {
-                    taskStatus = TaskStatus.Faulted;
-
-                    if (s_diagnosticListener.IsEnabled(ExceptionEventName))
-                    {
-                        Write(ExceptionEventName, new ExceptionData(ex, request));
-                    }
-                }
-
-                return false;
             }
         }
 
