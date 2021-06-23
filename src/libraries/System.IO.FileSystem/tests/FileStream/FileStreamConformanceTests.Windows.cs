@@ -4,9 +4,11 @@
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.IO.Pipes;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.ServiceProcess;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -76,9 +78,26 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
     [Collection("NoParallelTests")] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsAdmin_IsNotNano))]
+    [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(UncFilePathFileStreamStandaloneConformanceTests.CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
+        public static bool CanShareFiles
+        {
+            get
+            {
+                if (!PlatformDetection.IsAdmin_IsNotNano)
+                {
+                    return false;
+                }
+
+                // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.    
+                using (ServiceController sharingService = new ServiceController("Server"))
+                {
+                    return sharingService.Status == ServiceControllerStatus.Running;
+                }
+            }
+        }
+
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
             string testDirectoryPath = Path.GetFullPath(TestDirectory);
