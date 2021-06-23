@@ -52,7 +52,6 @@ namespace Sample
             return success;
         }
 
-
         private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();
 
         internal static void ApplyUpdate (System.Reflection.Assembly assm)
