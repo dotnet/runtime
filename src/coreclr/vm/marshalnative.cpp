@@ -947,30 +947,6 @@ FCIMPL0(FC_BOOL_RET, MarshalNative::AreComObjectsAvailableForCleanup)
 FCIMPLEND
 
 //====================================================================
-// check if the object is classic COM component
-//====================================================================
-FCIMPL1(FC_BOOL_RET, MarshalNative::IsComObject, Object* objUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL retVal = FALSE;
-    OBJECTREF obj = (OBJECTREF) objUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-
-    if(!obj)
-        COMPlusThrowArgumentNull(W("o"));
-
-    MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-    retVal = pMT->IsComObjectType();
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-
-//====================================================================
 // free the COM component and zombie this object if the ref count hits 0
 // further usage of this Object might throw an exception,
 //====================================================================

@@ -13,13 +13,18 @@
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+
+    <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
+  <Import Project="$(_PropsFile)" />
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <Target Name="PrepareForWasmBuildApp">
+    <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *wasm* part of the build. See $(MSBuildThisFullPath), and $(_PropsFile). **"
+             Importance="High" />
+
     <PropertyGroup>
       <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
@@ -28,17 +33,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(OriginalPublishDir)**\*.resources.dll" />
-      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-
-      <WasmAssembliesToBundle Include="$(OriginalPublishDir)*.dll" />
+      <WasmAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
 
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
       <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
-      <_SatelliteAssembliesForVFS Include="@(WasmSatelliteAssemblies)" />
+      <_SatelliteAssembliesForVFS Include="$(OriginalPublishDir)**\*.resources.dll" />
+      <_SatelliteAssembliesForVFS CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssembliesForVFS TargetPath="%(CultureName)\%(FileName)%(Extension)" />
 
       <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssembliesForVFS)" />

@@ -824,6 +824,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeMemory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeLibrary.cs" />
@@ -1425,6 +1426,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_BASIC_INFO.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FILE_BASIC_INFO.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_ALLOCATION_INFO.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FILE_ALLOCATION_INFO.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_END_OF_FILE_INFO.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FILE_END_OF_FILE_INFO.cs</Link>
     </Compile>
@@ -1611,6 +1615,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs">
       <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SecurityOptions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs</Link>
     </Compile>
@@ -1725,6 +1732,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Ucrtbase\Interop.MemAlloc.cs">
+      <Link>Common\Interop\Windows\Ucrtbase\Interop.MemAlloc.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Constants.cs">
       <Link>Common\Interop\Windows\User32\Interop.Constants.cs</Link>
     </Compile>
@@ -1796,6 +1806,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeMemory.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
@@ -2067,6 +2078,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeMemory.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
