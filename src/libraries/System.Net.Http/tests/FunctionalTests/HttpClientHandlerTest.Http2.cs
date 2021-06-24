@@ -1467,8 +1467,6 @@ namespace System.Net.Http.Functional.Tests
             return bytesReceived;
         }
 
-        const int DefaultInitialWindowSize = 65535;
-
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_FlowControl_HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
         {

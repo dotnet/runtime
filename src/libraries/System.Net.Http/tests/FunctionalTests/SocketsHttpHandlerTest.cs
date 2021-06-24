@@ -1934,7 +1934,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(65535)]
+        [InlineData(HttpClientHandlerTestBase.DefaultInitialWindowSize)]
         [InlineData(1048576)]
         public void InitialHttp2StreamWindowSize_Roundtrips(int value)
         {
@@ -1993,7 +1993,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
-                Assert.Equal(65535, handler.InitialHttp2StreamWindowSize);
+                Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);

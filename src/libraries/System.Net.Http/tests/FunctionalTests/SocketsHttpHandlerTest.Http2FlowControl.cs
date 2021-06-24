@@ -38,8 +38,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && PlatformDetection.IsNotBrowser;
 
-        const int DefaultInitialWindowSize = 65535;
-
         protected override Version UseVersion => HttpVersion20.Value;
 
         public SocketsHttpHandler_Http2FlowControl_Test(ITestOutputHelper output) : base(output)
@@ -47,35 +45,102 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task Http2_FlowControl_HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
+        public async Task InitialHttp2StreamWindowSize_SentInSettingsFrame()
+        {
+            const int WindowSize = 123456;
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            using var handler = CreateHttpClientHandler();
+            GetUnderlyingSocketsHttpHandler(handler).InitialHttp2StreamWindowSize = WindowSize;
+            using HttpClient client = CreateHttpClient(handler);
+
+            Task<HttpResponseMessage> clientTask = client.GetAsync(server.Address);
+            Http2LoopbackConnection connection = await server.AcceptConnectionAsync().ConfigureAwait(false);
+            SettingsFrame clientSettingsFrame = await connection.ReadSettingsAsync().ConfigureAwait(false);
+            SettingsEntry entry = clientSettingsFrame.Entries.First(e => e.SettingId == SettingId.InitialWindowSize);
+
+            Assert.Equal(WindowSize, (int)entry.Value);
+        }
+
+        [Fact]
+        public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
+        {
+            static async Task RunTest()
+            {
+                AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamic2WindowSizing", true);
+
+                int maxCredit = await TestClientWindowScalingAsync(
+                    TimeSpan.FromMilliseconds(30),
+                    TimeSpan.Zero,
+                    2 * 1024 * 1024,
+                    null);
+
+                Assert.Equal(DefaultInitialWindowSize, maxCredit);
+            }
+
+            RemoteExecutor.Invoke(RunTest).Dispose();
+        }
+
+        [Fact]
+        public void MaxHttp2StreamWindowSize_HighBandwidthDelayProduct_WindowStopsAtMaxValue()
+        {
+            const int MaxWindow = 524288;
+
+            static async Task RunTest()
+            {
+                int maxCredit = await TestClientWindowScalingAsync(
+                    TimeSpan.FromMilliseconds(30),
+                    TimeSpan.Zero,
+                    2 * 1024 * 1024,
+                    null);
+
+                Assert.True(maxCredit <= MaxWindow);
+            }
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE"] = MaxWindow.ToString();
+
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
+        }
+
+        [Fact]
+        public async Task HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
         {
             int maxCredit = await TestClientWindowScalingAsync(
                 TimeSpan.FromMilliseconds(30),
                 TimeSpan.Zero,
-                2 * 1024 * 1024);
+                2 * 1024 * 1024,
+                _output);
 
             // Expect the client receive window to grow over 1MB:
             Assert.True(maxCredit > 1024 * 1024);
         }
 
         [Fact]
-        public async Task Http2_FlowControl_LowBandwidthDelayProduct_ClientStreamReceiveWindowStopsScaling()
+        public async Task LowBandwidthDelayProduct_ClientStreamReceiveWindowStopsScaling()
         {
             int maxCredit = await TestClientWindowScalingAsync(
                 TimeSpan.Zero,
                 TimeSpan.FromMilliseconds(15),
-                2 * 1024 * 1024);
+                2 * 1024 * 1024,
+                _output);
 
             // Expect the client receive window to stay below 1MB:
             Assert.True(maxCredit < 1024 * 1024);
         }
 
-        private async Task<int> TestClientWindowScalingAsync(TimeSpan networkDelay, TimeSpan slowBandwidthSimDelay, int bytesToDownload)
+        private static async Task<int> TestClientWindowScalingAsync(
+            TimeSpan networkDelay,
+            TimeSpan slowBandwidthSimDelay,
+            int bytesToDownload,
+            ITestOutputHelper output)
         {
             TimeSpan timeout = TimeSpan.FromSeconds(30);
 
+            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion20.Value);
+
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = new HttpClient(handler, true);
+            client.DefaultRequestVersion = HttpVersion20.Value;
 
             Task<HttpResponseMessage> clientTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await server.AcceptConnectionAsync().ConfigureAwait(false);
@@ -153,7 +218,7 @@ namespace System.Net.Http.Functional.Tests
 
                         credit += windowUpdateFrame.UpdateSize;
                         maxCredit = Math.Max(credit, maxCredit); // Detect if client grows the window
-                        _output.WriteLine("MaxCredit: " + maxCredit);
+                        output?.WriteLine("MaxCredit: " + maxCredit);
                         creditReceivedSemaphore.Release();
                     }
                     else if (frame is not null)
