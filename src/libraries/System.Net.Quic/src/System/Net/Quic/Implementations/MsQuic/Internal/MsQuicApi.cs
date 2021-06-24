@@ -119,18 +119,19 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
+        private const int MsQuicVersion = 1;
+
         static MsQuicApi()
         {
-            // TODO: Consider updating all of these delegates to instead use function pointers.
             if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
             {
                 try
                 {
-                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpen", out IntPtr msQuicOpenAddress))
+                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
                     {
-                        MsQuicOpenDelegate msQuicOpen =
-                            Marshal.GetDelegateForFunctionPointer<MsQuicOpenDelegate>(msQuicOpenAddress);
-                        uint status = msQuicOpen(out NativeApi* vtable);
+                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
+                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
+                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;
@@ -148,6 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
+        // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal RegistrationCloseDelegate RegistrationCloseDelegate { get; }
 

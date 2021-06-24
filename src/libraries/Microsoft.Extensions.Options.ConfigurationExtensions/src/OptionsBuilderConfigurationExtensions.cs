@@ -70,6 +70,7 @@ namespace Microsoft.Extensions.DependencyInjection
             _ = configSectionPath ?? throw new ArgumentNullException(nameof(configSectionPath));
 
             optionsBuilder.Configure<IConfiguration>((opts, config) => BindFromOptions<TOptions>(opts, config, configSectionPath, configureBinder));
+            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();
             return optionsBuilder;
         }
 

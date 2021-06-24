@@ -20,12 +20,13 @@ namespace System.IO.Enumeration
         {
             Debug.Assert(_directoryHandle != (IntPtr)(-1) && _directoryHandle != IntPtr.Zero && !_lastEntryFound);
 
+            Interop.NtDll.IO_STATUS_BLOCK statusBlock;
             int status = Interop.NtDll.NtQueryDirectoryFile(
                 FileHandle: _directoryHandle,
                 Event: IntPtr.Zero,
                 ApcRoutine: IntPtr.Zero,
                 ApcContext: IntPtr.Zero,
-                IoStatusBlock: out Interop.NtDll.IO_STATUS_BLOCK statusBlock,
+                IoStatusBlock: &statusBlock,
                 FileInformation: _buffer,
                 Length: (uint)_bufferLength,
                 FileInformationClass: Interop.NtDll.FILE_INFORMATION_CLASS.FileFullDirectoryInformation,
