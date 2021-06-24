@@ -1446,7 +1446,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (asyncLocal["name"].Value<string>().EndsWith("__this"))
                         asyncLocal["name"] = "this";
-                    else if (asyncLocal["name"].Value<string>().Contains("<"))
+                    else if (asyncLocal["name"].Value<string>().Contains('<'))
                         asyncLocal["name"] = Regex.Match(asyncLocal["name"].Value<string>(), @"\<([^)]*)\>").Groups[1].Value;
                 }
                 return asyncLocals;
