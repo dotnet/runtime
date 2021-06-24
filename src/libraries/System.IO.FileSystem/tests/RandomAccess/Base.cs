@@ -46,7 +46,7 @@ namespace System.IO.Tests
         public void ThrowsNotSupportedExceptionForUnseekableFile()
         {
             using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
-            using (SafeFileHandle handle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), true))
+            using (SafeFileHandle handle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false))
             {
                 Assert.Throws<NotSupportedException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
             }

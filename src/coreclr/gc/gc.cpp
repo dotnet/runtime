@@ -641,6 +641,10 @@ process_sync_log_stats()
 #ifndef DACCESS_COMPILE
 uint32_t g_num_active_processors = 0;
 
+// Note that when a join is no longer used we still keep the values here because
+// tooling already recognized them as having the meaning they were assigned originally.
+// It doesn't break tooling if we stop using them but does if we assign a new meaning 
+// to them. 
 enum gc_join_stage
 {
     gc_join_init_cpu_mapping = 0,
@@ -681,6 +685,7 @@ enum gc_join_stage
     gc_join_after_commit_soh_no_gc = 35,
     gc_join_expand_loh_no_gc = 36,
     gc_join_final_no_gc = 37,
+    // No longer in use but do not remove, see comments for this enum.
     gc_join_disable_software_write_watch = 38,
     gc_join_max = 39
 };
@@ -10808,7 +10813,7 @@ void gc_heap::return_free_region (heap_segment* region)
         heap_segment_mem (region), num_basic_regions, num_free_regions));
     for (int i = 0; i < num_basic_regions; i++)
     {
-        uint8_t* basic_region_start = region_start + (i << min_segment_size_shr);
+        uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
         heap_segment* basic_region = get_region_info (basic_region_start);
         heap_segment_allocated (basic_region) = 0;
 #ifdef MULTIPLE_HEAPS
@@ -20587,6 +20592,7 @@ void gc_heap::garbage_collect (int n)
             update_collection_counts_for_no_gc();
 
 #ifdef MULTIPLE_HEAPS
+            gc_start_event.Reset();
             gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
@@ -31804,23 +31810,6 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent revisit dirtied pages on LOH");
         concurrent_print_time_delta ("NRre LOH");
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef MULTIPLE_HEAPS
-        bgc_t_join.join(this, gc_join_disable_software_write_watch);
-        if (bgc_t_join.joined())
-#endif // MULTIPLE_HEAPS
-        {
-            // The runtime is suspended, and we will be doing a final query of dirty pages, so pause tracking written pages to
-            // avoid further perf penalty after the runtime is restarted
-            SoftwareWriteWatch::DisableForGCHeap();
-
-#ifdef MULTIPLE_HEAPS
-            dprintf(3, ("Restarting BGC threads after disabling software write watch"));
-            bgc_t_join.restart();
-#endif // MULTIPLE_HEAPS
-        }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
         dprintf (2, ("before NR 1st Hov count: %d", bgc_overflow_count));
         bgc_overflow_count = 0;
 
@@ -31845,6 +31834,12 @@ void gc_heap::background_mark_phase ()
         if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            // The runtime is suspended, take this opportunity to pause tracking written pages to
+            // avoid further perf penalty after the runtime is restarted
+            SoftwareWriteWatch::DisableForGCHeap();
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
             GCToEEInterface::AfterGcScanRoots (max_generation, max_generation, &sc);
 
 #ifdef MULTIPLE_HEAPS
@@ -42262,6 +42257,15 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, gen_num, acontext->alloc_bytes_uoh);
         ASSERT(((size_t)newAlloc & 7) == 0);
 
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = gc_heap::heap_of ((uint8_t*)newAlloc);
+        }
+#endif //MULTIPLE_HEAPS
+
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
 #endif // FEATURE_STRUCTALIGN
@@ -42280,6 +42284,16 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         {
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }
+
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = acontext->get_alloc_heap()->pGenGCHeap;
+            assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
+        }
+#endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
@@ -44409,6 +44423,9 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
     unsigned int Seg = gen_segment (gen);
 
     Object** startIndex = SegQueue (Seg);
+
+    dprintf (3, ("RelocateFinalizationData gen=%d, [%Ix,%Ix[", gen, startIndex, SegQueue (FreeList)));
+
     for (Object** po = startIndex; po < SegQueue (FreeList);po++)
     {
         GCHeap::Relocate (po, &sc);
@@ -44418,6 +44435,8 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
 void
 CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
 {
+    dprintf(3, ("UpdatePromotedGenerations gen=%d, gen_0_empty_p=%d", gen, gen_0_empty_p));
+
     // update the generation fill pointers.
     // if gen_0_empty is FALSE, test each object to find out if
     // it was promoted or not
@@ -44442,6 +44461,8 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
                 int new_gen = g_theGCHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
+                    dprintf (3, ("Moving object %Ix->%Ix from gen %d to gen %d", po, *po, i, new_gen));
+
                     if (new_gen > i)
                     {
                         //promotion
@@ -44472,6 +44493,8 @@ CFinalize::GrowArray()
         return FALSE;
     }
     memcpy (newArray, m_Array, oldArraySize*sizeof(Object*));
+
+    dprintf (3, ("Grow finalizer array [%Ix,%Ix[ -> [%Ix,%Ix[", m_Array, m_EndArray, newArray, &m_Array[newArraySize]));
 
     //adjust the fill pointers
     for (int i = 0; i < FreeList; i++)
