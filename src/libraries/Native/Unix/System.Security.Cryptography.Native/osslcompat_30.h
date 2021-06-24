@@ -26,6 +26,7 @@ int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
 int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
+int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
 int EVP_PKEY_get_size(const EVP_PKEY* pkey);
 OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX* , const char* name, int retain_fallbacks);
 X509* SSL_get1_peer_certificate(const SSL* ssl);

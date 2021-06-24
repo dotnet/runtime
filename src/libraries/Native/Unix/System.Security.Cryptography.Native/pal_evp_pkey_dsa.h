@@ -1,21 +1,31 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_types.h"
-#include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_compiler.h"
+#include "pal_types.h"
 
 /*
-Shims the EVP_PKEY_get1_DSA method.
-
-Returns the DSA instance for the EVP_PKEY.
+Creates an EVP_PKEY* from an existing DSA*
 */
-PALEXPORT DSA* CryptoNative_EvpPkeyGetDsa(EVP_PKEY* pkey);
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyCreateDsa(DSA* currentKey);
 
 /*
-Shims the EVP_PKEY_set1_DSA method to set the DSA
-instance on the EVP_KEY.
-
-Returns 1 upon success, otherwise 0.
+Generate a new DSA key whose P/G/Y values are of size keySize, and the Q/X values
+are appropriate for the key size.
 */
-PALEXPORT int32_t CryptoNative_EvpPkeySetDsa(EVP_PKEY* pkey, DSA* dsa);
+PALEXPORT EVP_PKEY* CryptoNative_DsaGenerateKey(int32_t keySize);
+
+/*
+Returns the size of the q parameter in bytes.
+*/
+PALEXPORT int32_t CryptoNative_DsaSizeQ(EVP_PKEY* pkey);
+
+/*
+Complete the DSA signature generation for the specified hash using the provided DSA key
+(wrapped in an EVP_PKEY).
+
+Returns the number of bytes written to destination, -1 on error.
+*/
+PALEXPORT int32_t CryptoNative_DsaSignHash(
+    EVP_PKEY* pkey, const uint8_t* hash, int32_t hashLen, uint8_t* destination, int32_t destinationLen);

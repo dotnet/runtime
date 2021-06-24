@@ -16,6 +16,7 @@ void local_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX* ctx);
 EVP_CIPHER_CTX* local_EVP_CIPHER_CTX_new(void);
 int32_t local_EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx);
 int local_EVP_PKEY_check(EVP_PKEY_CTX* ctx);
+DSA* local_EVP_PKEY_get0_DSA(EVP_PKEY* pkey);
 RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey);
 int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx);
 int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey);

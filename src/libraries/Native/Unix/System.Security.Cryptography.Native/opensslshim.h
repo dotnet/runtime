@@ -343,7 +343,9 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
+    RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
     RENAMED_FUNCTION(EVP_PKEY_get_size, EVP_PKEY_size) \
+    FALLBACK_FUNCTION(EVP_PKEY_get0_DSA) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
@@ -351,6 +353,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_keygen) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
     REQUIRED_FUNCTION(EVP_PKEY_new) \
+    REQUIRED_FUNCTION(EVP_PKEY_paramgen) \
+    REQUIRED_FUNCTION(EVP_PKEY_paramgen_init) \
     FALLBACK_FUNCTION(EVP_PKEY_public_check) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
@@ -791,7 +795,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
+#define EVP_PKEY_get_bits EVP_PKEY_get_bits_ptr
 #define EVP_PKEY_get_size EVP_PKEY_get_size_ptr
+#define EVP_PKEY_get0_DSA EVP_PKEY_get0_DSA_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
@@ -799,6 +805,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
 #define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
+#define EVP_PKEY_paramgen EVP_PKEY_paramgen_ptr
+#define EVP_PKEY_paramgen_init EVP_PKEY_paramgen_init_ptr
 #define EVP_PKEY_public_check EVP_PKEY_public_check_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
@@ -1106,6 +1114,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // Undo renames for renamed-in-3.0
 #define EVP_MD_get_size EVP_MD_size
 #define EVP_PKEY_get_base_id EVP_PKEY_base_id
+#define EVP_PKEY_get_bits EVP_PKEY_bits
 #define EVP_PKEY_get_size EVP_PKEY_size
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
 
@@ -1128,6 +1137,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_new local_EVP_CIPHER_CTX_new
 #define EVP_CIPHER_CTX_reset local_EVP_CIPHER_CTX_reset
 #define EVP_PKEY_check local_EVP_PKEY_check
+#define EVP_PKEY_get0_DSA local_EVP_PKEY_get0_DSA
 #define EVP_PKEY_get0_RSA local_EVP_PKEY_get0_RSA
 #define EVP_PKEY_public_check local_EVP_PKEY_public_check
 #define EVP_PKEY_up_ref local_EVP_PKEY_up_ref
