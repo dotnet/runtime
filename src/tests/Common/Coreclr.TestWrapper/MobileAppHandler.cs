@@ -58,7 +58,14 @@ namespace CoreclrTestLib
                 appExtension = "app";
             }
 
-            cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --output-directory={reportBase}/install";
+            if(action == "install")
+            {
+                cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --app={testBinaryBase}/{category}.{appExtension} --package-name=net.dot.{category} --output-directory={reportBase}/install";
+            }
+            else
+            {
+                cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --output-directory={reportBase}/install";
+            }
 
             Directory.CreateDirectory(Path.Combine(reportBase, action));
             var outputStream = new FileStream(outputFile, FileMode.Create);
