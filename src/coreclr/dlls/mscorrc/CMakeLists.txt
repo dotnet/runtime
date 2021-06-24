@@ -13,10 +13,6 @@ if(CLR_CMAKE_HOST_WIN32)
     # remove /guard:cf from resource-only libraries
     string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
 
-    # remove asan from resource-only libraries
-    string(REPLACE "/INFERASANLIBS" "" CMAKE_SHARED_LINKER_FLAGS_DEBUG ${CMAKE_SHARED_LINKER_FLAGS_DEBUG})
-    string(REPLACE "/INFERASANLIBS" "" CMAKE_SHARED_LINKER_FLAGS_CHECKED ${CMAKE_SHARED_LINKER_FLAGS_CHECKED})
-
     add_library_clr(mscorrc SHARED
         include.rc
     )
