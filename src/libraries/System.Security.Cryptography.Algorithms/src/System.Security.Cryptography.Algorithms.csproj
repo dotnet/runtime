@@ -122,6 +122,8 @@
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\EccKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"

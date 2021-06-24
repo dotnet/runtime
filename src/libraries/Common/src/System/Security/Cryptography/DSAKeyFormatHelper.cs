@@ -9,7 +9,7 @@ using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
-    internal static class DSAKeyFormatHelper
+    internal static partial class DSAKeyFormatHelper
     {
         private static readonly string[] s_validOids =
         {
@@ -156,36 +156,6 @@ namespace System.Security.Cryptography
             KeyFormatHelper.ReadPkcs8<DSAParameters>(
                 s_validOids,
                 source,
-                ReadDsaPrivateKey,
-                out bytesRead,
-                out key);
-        }
-
-        internal static void ReadEncryptedPkcs8(
-            ReadOnlySpan<byte> source,
-            ReadOnlySpan<char> password,
-            out int bytesRead,
-            out DSAParameters key)
-        {
-            KeyFormatHelper.ReadEncryptedPkcs8<DSAParameters>(
-                s_validOids,
-                source,
-                password,
-                ReadDsaPrivateKey,
-                out bytesRead,
-                out key);
-        }
-
-        internal static void ReadEncryptedPkcs8(
-            ReadOnlySpan<byte> source,
-            ReadOnlySpan<byte> passwordBytes,
-            out int bytesRead,
-            out DSAParameters key)
-        {
-            KeyFormatHelper.ReadEncryptedPkcs8<DSAParameters>(
-                s_validOids,
-                source,
-                passwordBytes,
                 ReadDsaPrivateKey,
                 out bytesRead,
                 out key);
