@@ -127,5 +127,24 @@ namespace System.IO.Tests
                 Assert.Equal(0, AdminHelpers.RunAsSudo($"umount {readOnlyDirectory}"));
             }
         }
+
+        /// <summary>
+        /// Determines whether the file system is case sensitive by creating a file in the specified folder and observing the result.
+        /// </summary>
+        /// <remarks>
+        /// Ideally we'd use something like pathconf with _PC_CASE_SENSITIVE, but that is non-portable,
+        /// not supported on Windows or Linux, etc. For now, this function creates a tmp file with capital letters
+        /// and then tests for its existence with lower-case letters.  This could return invalid results in corner
+        /// cases where, for example, different file systems are mounted with differing sensitivities.
+        /// </remarks>
+        protected static bool GetIsCaseSensitiveByProbing(string probingDirectory)
+        {
+            string pathWithUpperCase = Path.Combine(probingDirectory, "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
+            using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+            {
+                string lowerCased = pathWithUpperCase.ToLowerInvariant();
+                return !File.Exists(lowerCased);
+            }
+        }
     }
 }

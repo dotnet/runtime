@@ -2906,6 +2906,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 IDS_CLASSLOAD_BADSPECIALMETHOD,
                 tok);
         }
+
+        // Check for the presence of virtual static methods
+        if (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs))
+        {
+            bmtProp->fHasVirtualStaticMethods = TRUE;
+        }
+
         //
         // But first - minimal flags validity checks
         //
@@ -2972,11 +2979,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 if(IsMdStatic(dwMemberAttrs))
                 {
-                    if (fIsClassInterface)
-                    {
-                        bmtProp->fHasVirtualStaticMethods = TRUE;
-                    }
-                    else
+                    if (!fIsClassInterface)
                     {
                         // Static virtual methods are only allowed to exist in interfaces
                         BuildMethodTableThrowException(BFA_VIRTUAL_STATIC_METHOD);

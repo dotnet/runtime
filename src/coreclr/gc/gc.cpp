@@ -42257,6 +42257,15 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, gen_num, acontext->alloc_bytes_uoh);
         ASSERT(((size_t)newAlloc & 7) == 0);
 
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = gc_heap::heap_of ((uint8_t*)newAlloc);
+        }
+#endif //MULTIPLE_HEAPS
+
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
 #endif // FEATURE_STRUCTALIGN
@@ -42275,6 +42284,16 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         {
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }
+
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = acontext->get_alloc_heap()->pGenGCHeap;
+            assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
+        }
+#endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
@@ -44404,6 +44423,9 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
     unsigned int Seg = gen_segment (gen);
 
     Object** startIndex = SegQueue (Seg);
+
+    dprintf (3, ("RelocateFinalizationData gen=%d, [%Ix,%Ix[", gen, startIndex, SegQueue (FreeList)));
+
     for (Object** po = startIndex; po < SegQueue (FreeList);po++)
     {
         GCHeap::Relocate (po, &sc);
@@ -44413,6 +44435,8 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
 void
 CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
 {
+    dprintf(3, ("UpdatePromotedGenerations gen=%d, gen_0_empty_p=%d", gen, gen_0_empty_p));
+
     // update the generation fill pointers.
     // if gen_0_empty is FALSE, test each object to find out if
     // it was promoted or not
@@ -44437,6 +44461,8 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
                 int new_gen = g_theGCHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
+                    dprintf (3, ("Moving object %Ix->%Ix from gen %d to gen %d", po, *po, i, new_gen));
+
                     if (new_gen > i)
                     {
                         //promotion
@@ -44467,6 +44493,8 @@ CFinalize::GrowArray()
         return FALSE;
     }
     memcpy (newArray, m_Array, oldArraySize*sizeof(Object*));
+
+    dprintf (3, ("Grow finalizer array [%Ix,%Ix[ -> [%Ix,%Ix[", m_Array, m_EndArray, newArray, &m_Array[newArraySize]));
 
     //adjust the fill pointers
     for (int i = 0; i < FreeList; i++)
