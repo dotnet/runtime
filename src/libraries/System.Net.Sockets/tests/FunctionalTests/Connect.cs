@@ -109,7 +109,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54677", TestPlatforms.Linux)]
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
             var localhostAddresses = Dns.GetHostAddresses("localhost");
@@ -130,7 +129,7 @@ namespace System.Net.Sockets.Tests
 
                 var localEndPoint = client.LocalEndPoint as IPEndPoint;
                 Assert.NotNull(localEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), localEndPoint.Address);
+                Assert.True(localEndPoint.Address == IPAddress.Loopback || localEndPoint.Address == IPAddress.Loopback.MapToIPv6());
 
                 var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
                 Assert.NotNull(remoteEndPoint);
