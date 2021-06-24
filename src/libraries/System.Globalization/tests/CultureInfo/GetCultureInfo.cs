@@ -142,21 +142,25 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void TestAllowInvariantCultureOnly(bool enableInvariant, bool enableInvariantOnly)
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, true)]
+        public void TestAllowInvariantCultureOnly(bool enableInvariant, bool predefinedCulturesOnly, bool declarePredefinedCulturesOnly)
         {
             var psi = new ProcessStartInfo();
             psi.Environment.Clear();
 
-            if (enableInvariant)     { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT",              "true"); }
-            if (enableInvariantOnly) { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT_CULTURE_ONLY", "true"); }
+            if (enableInvariant)     { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true"); }
+            if (declarePredefinedCulturesOnly) { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnly ? "true" : "false"); }
 
-            RemoteExecutor.Invoke((invariantEnabled, invariantOnlyEnabled) =>
+            bool restricted = enableInvariant && (declarePredefinedCulturesOnly ? predefinedCulturesOnly : true);
+
+            RemoteExecutor.Invoke((invariantEnabled, isRestricted) =>
             {
-                bool restrictedMode = bool.Parse(invariantEnabled) && bool.Parse(invariantOnlyEnabled);
+                bool restrictedMode = bool.Parse(isRestricted);
 
                 // First ensure we can create the current cultures regardless of the mode we are in
                 Assert.NotNull(CultureInfo.CurrentCulture);
@@ -202,7 +206,7 @@ namespace System.Globalization.Tests
                     Assert.Equal("Invariant Language (Invariant Country)", CultureInfo.CurrentCulture.NativeName);
                 }
 
-            }, enableInvariant.ToString(), enableInvariantOnly.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, enableInvariant.ToString(), restricted.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

@@ -957,6 +957,9 @@
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
   </data>
+  <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
+    <value>Globalization Invariant mode is enabled which limit the cultures that can be created. Either turn off the Invariant mode or use only the Invariant culture. Consult the link https://aka.ms/GlobalizationInvariantMode for more information.</value>
+  </data>
   <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
     <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
   </data>

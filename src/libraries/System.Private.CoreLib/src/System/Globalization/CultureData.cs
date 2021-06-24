@@ -669,7 +669,7 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (GlobalizationMode.AllowInvariantCultureOnly)
+            if (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly)
             {
                 return null;
             }
@@ -870,7 +870,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 // LCID is not supported in the InvariantMode
-                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupportedInInvariantMode);
             }
 
             // Convert the lcid to a name, then use that

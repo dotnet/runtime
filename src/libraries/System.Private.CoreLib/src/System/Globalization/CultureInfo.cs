@@ -174,7 +174,7 @@ namespace System.Globalization
 
             if (cultureData == null)
             {
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported);
             }
 
             _cultureData = cultureData;
@@ -249,7 +249,7 @@ namespace System.Globalization
             }
 
             CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
-                throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(cultureName), cultureName, GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported);
 
             _cultureData = cultureData;
 
@@ -1060,7 +1060,7 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
-                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported);
             }
 
             lock (lcidTable)
@@ -1096,7 +1096,7 @@ namespace System.Globalization
             }
 
             result = CreateCultureInfoNoThrow(name, useUserOverride: false) ??
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported);
             result._isReadOnly = true;
 
             // Remember our name as constructed.  Do NOT use alternate sort name versions because
