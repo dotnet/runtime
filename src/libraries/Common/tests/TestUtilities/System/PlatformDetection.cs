@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
+using Xunit;
 
 namespace System
 {
@@ -57,7 +58,10 @@ namespace System
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
+        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
+        public static bool LocalEchoServerIsAvailable => IsBrowser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
@@ -136,6 +140,9 @@ namespace System
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+
+        public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
@@ -242,7 +249,7 @@ namespace System
             int version = 0;
             try
             {
-                Type interopGlobalization = Type.GetType("Interop+Globalization");
+                Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
                 if (interopGlobalization != null)
                 {
                     MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);

@@ -292,6 +292,9 @@
   <data name="Cryptography_X509_PKCS7_NoSigner" xml:space="preserve">
     <value>Cannot find the original signer.</value>
   </data>
+  <data name="Cryptography_X509_PKCS7_Unsupported" xml:space="preserve">
+    <value>PKCS#7 certificate format is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_X509_StoreAddFailure" xml:space="preserve">
     <value>The X509 certificate could not be added to the store.</value>
   </data>
@@ -319,11 +322,17 @@
   <data name="Cryptography_X509_StoreEnumerateFailure" xml:space="preserve">
     <value>Failed to enumerate certificates from the store.</value>
   </data>
+  <data name="Cryptography_X509_Store_RootUnsupported" xml:space="preserve">
+    <value>Root certificate store is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_X509_NoPemCertificate" xml:space="preserve">
     <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>
   </data>
   <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
     <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
+  </data>
+  <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
+    <value>Certificate '{0}' is corrupted.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>

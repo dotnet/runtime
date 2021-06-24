@@ -78,7 +78,7 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal Net5CompatFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        internal Net5CompatFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -89,11 +89,11 @@ namespace System.IO.Strategies
             if ((options & FileOptions.Asynchronous) != 0)
                 _useAsyncIO = true;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
+            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {
-                Init(mode, share, path, options);
+                Init(mode, path, options);
             }
             catch
             {

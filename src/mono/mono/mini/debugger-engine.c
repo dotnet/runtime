@@ -388,13 +388,6 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	jit_mm_unlock (jit_mm);
 }
 
-void
-mono_de_clear_all_breakpoints (void)
-{
-	while (breakpoints->len)
-		mono_de_clear_breakpoint ((MonoBreakpoint*)g_ptr_array_index (breakpoints, 0));
-}
-
 /*
  * mono_de_set_breakpoint:
  *
@@ -1609,13 +1602,14 @@ mono_debugger_free_objref (gpointer value)
 // Returns true if TaskBuilder has NotifyDebuggerOfWaitCompletion method
 // false if not(AsyncVoidBuilder)
 MonoClass *
-get_class_to_get_builder_field(DbgEngineStackFrame *frame)
+get_class_to_get_builder_field (DbgEngineStackFrame *frame)
 {
 	ERROR_DECL (error);
+	StackFrame *the_frame = (StackFrame *)frame;
 	gpointer this_addr = get_this_addr (frame);
 	MonoClass *original_class = frame->method->klass;
 	MonoClass *ret;
-	if (!m_class_is_valuetype (original_class) && mono_class_is_open_constructed_type (m_class_get_byval_arg (original_class))) {
+	if (mono_class_is_open_constructed_type (m_class_get_byval_arg (original_class))) {
 		MonoObject *this_obj = *(MonoObject**)this_addr;
 		MonoGenericContext context;
 		MonoType *inflated_type;
@@ -1623,7 +1617,7 @@ get_class_to_get_builder_field(DbgEngineStackFrame *frame)
 		if (!this_obj)
 			return NULL;
 			
-		context = mono_get_generic_context_from_stack_frame (frame->ji, this_obj->vtable);
+		context = mono_get_generic_context_from_stack_frame (frame->ji, mono_get_generic_info_from_stack_frame (frame->ji, &the_frame->ctx));
 		inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (original_class), &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -30,18 +31,18 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (value is JsonObject jsonObject)
+                if (value is JsonValue jsonValue)
+                {
+                    ValueConverter.Write(writer, jsonValue, options);
+                }
+                else if (value is JsonObject jsonObject)
                 {
                     ObjectConverter.Write(writer, jsonObject, options);
                 }
-                else if (value is JsonArray jsonArray)
-                {
-                    ArrayConverter.Write(writer, (JsonArray)value, options);
-                }
                 else
                 {
-                    Debug.Assert(value is JsonValue);
-                    ValueConverter.Write(writer, (JsonValue)value, options);
+                    Debug.Assert(value is JsonArray);
+                    ArrayConverter.Write(writer, (JsonArray)value, options);
                 }
             }
         }
@@ -55,10 +56,10 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
                     return ValueConverter.Read(ref reader, typeToConvert, options);
-                case JsonTokenType.StartArray:
-                    return ArrayConverter.Read(ref reader, typeToConvert, options);
                 case JsonTokenType.StartObject:
                     return ObjectConverter.Read(ref reader, typeToConvert, options);
+                case JsonTokenType.StartArray:
+                    return ArrayConverter.Read(ref reader, typeToConvert, options);
                 default:
                     Debug.Assert(false);
                     throw new JsonException();
@@ -81,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValue<JsonElement>(element, options);
+                    node = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
                     break;
             }
 

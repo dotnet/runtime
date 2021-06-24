@@ -1052,7 +1052,9 @@ namespace System.ComponentModel
                 ArrayList filteredEvents = FilterMembers(events, attributes);
                 if (filteredEvents != null)
                 {
-                    events = new EventDescriptorCollection((EventDescriptor[])filteredEvents.ToArray(typeof(EventDescriptor)), true);
+                    var descriptors = new EventDescriptor[filteredEvents.Count];
+                    filteredEvents.CopyTo(descriptors);
+                    events = new EventDescriptorCollection(descriptors, true);
                 }
             }
 
@@ -1281,7 +1283,9 @@ namespace System.ComponentModel
                 ArrayList filteredProperties = FilterMembers(properties, attributes);
                 if (filteredProperties != null)
                 {
-                    properties = new PropertyDescriptorCollection((PropertyDescriptor[])filteredProperties.ToArray(typeof(PropertyDescriptor)), true);
+                    var descriptors = new PropertyDescriptor[filteredProperties.Count];
+                    filteredProperties.CopyTo(descriptors);
+                    properties = new PropertyDescriptorCollection(descriptors, true);
                 }
             }
 

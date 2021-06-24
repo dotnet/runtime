@@ -542,6 +542,20 @@ inline INT32 MethodTable::MethodIterator::GetNumMethods() const
 }
 
 //==========================================================================================
+inline BOOL MethodTable::HasVirtualStaticMethods() const
+{
+    WRAPPER_NO_CONTRACT;
+    return GetFlag(enum_flag_HasVirtualStaticMethods);
+}
+
+//==========================================================================================
+inline void MethodTable::SetHasVirtualStaticMethods()
+{
+    WRAPPER_NO_CONTRACT;
+    return SetFlag(enum_flag_HasVirtualStaticMethods);
+}
+
+//==========================================================================================
 // Returns TRUE if it's valid to request data from the current position
 inline BOOL MethodTable::MethodIterator::IsValid() const
 {

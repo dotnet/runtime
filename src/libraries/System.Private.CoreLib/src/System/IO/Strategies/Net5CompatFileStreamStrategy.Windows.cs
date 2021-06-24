@@ -38,48 +38,17 @@ namespace System.IO.Strategies
 {
     internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
-        private bool _canSeek;
-        private bool _isPipe;      // Whether to disable async buffering code.
         private long _appendStart; // When appending, prevent overwriting file.
 
         private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private CompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
+        private void Init(FileMode mode, string originalPath, FileOptions options)
         {
             FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
 
-            // This is necessary for async IO using IO Completion ports via our
-            // managed Threadpool API's.  This (theoretically) calls the OS's
-            // BindIoCompletionCallback method, and passes in a stub for the
-            // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
-            // struct for this request and gets a delegate to a managed callback
-            // from there, which it then calls on a threadpool thread.  (We allocate
-            // our native OVERLAPPED structs 2 pointers too large and store EE state
-            // & GC handles there, one to an IAsyncResult, the other to a delegate.)
-            if (_useAsyncIO)
-            {
-                try
-                {
-                    _fileHandle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_fileHandle);
-                }
-                catch (ArgumentException ex)
-                {
-                    throw new IOException(SR.IO_BindHandleFailed, ex);
-                }
-                finally
-                {
-                    if (_fileHandle.ThreadPoolBinding == null)
-                    {
-                        // We should close the handle so that the handle is not open until SafeFileHandle GC
-                        Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
-                        _fileHandle.Dispose();
-                    }
-                }
-            }
-
-            _canSeek = true;
+            Debug.Assert(!_useAsyncIO || _fileHandle.ThreadPoolBinding != null);
 
             // For Append mode...
             if (mode == FileMode.Append)
@@ -113,39 +82,9 @@ namespace System.IO.Strategies
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            FileStreamHelpers.GetFileTypeSpecificInformation(handle, out _canSeek, out _isPipe);
+            handle.InitThreadPoolBindingIfNeeded();
 
-            // This is necessary for async IO using IO Completion ports via our
-            // managed Threadpool API's.  This calls the OS's
-            // BindIoCompletionCallback method, and passes in a stub for the
-            // LPOVERLAPPED_COMPLETION_ROUTINE.  This stub looks at the Overlapped
-            // struct for this request and gets a delegate to a managed callback
-            // from there, which it then calls on a threadpool thread.  (We allocate
-            // our native OVERLAPPED structs 2 pointers too large and store EE
-            // state & a handle to a delegate there.)
-            //
-            // If, however, we've already bound this file handle to our completion port,
-            // don't try to bind it again because it will fail.  A handle can only be
-            // bound to a single completion port at a time.
-            if (useAsyncIO && !(handle.IsAsync ?? false))
-            {
-                try
-                {
-                    handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
-                }
-                catch (Exception ex)
-                {
-                    // If you passed in a synchronous handle and told us to use
-                    // it asynchronously, throw here.
-                    throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle), ex);
-                }
-            }
-            else if (!useAsyncIO)
-            {
-                FileStreamHelpers.VerifyHandleIsSync(handle);
-            }
-
-            if (_canSeek)
+            if (handle.CanSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);
             else
                 _filePosition = 0;
@@ -153,13 +92,13 @@ namespace System.IO.Strategies
 
         private bool HasActiveBufferOperation => !_activeBufferOperation.IsCompleted;
 
-        public override bool CanSeek => _canSeek;
+        public override bool CanSeek => _fileHandle.CanSeek;
 
         public unsafe override long Length
         {
             get
             {
-                long len = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                long len = RandomAccess.GetFileLength(_fileHandle, _path);
 
                 // If we're writing near the end of the file, we must include our
                 // internal buffer in our Length calculation.  Don't flush because
@@ -208,7 +147,6 @@ namespace System.IO.Strategies
                 }
 
                 _preallocatedOverlapped?.Dispose();
-                _canSeek = false;
 
                 // Don't set the buffer to null, to avoid a NullReferenceException
                 // when users have a race condition in their code (i.e. they call
@@ -236,7 +174,6 @@ namespace System.IO.Strategies
                 }
 
                 _preallocatedOverlapped?.Dispose();
-                _canSeek = false;
                 GC.SuppressFinalize(this); // the handle is closed; nothing further for the finalizer to do
             }
         }
@@ -380,7 +317,7 @@ namespace System.IO.Strategies
 
             // If we are reading from a device with no clear EOF like a
             // serial port or a pipe, this will cause us to block incorrectly.
-            if (!_isPipe)
+            if (!_fileHandle.IsPipe)
             {
                 // If we hit the end of the buffer and didn't have enough bytes, we must
                 // read some more from the underlying stream.  However, if we got
@@ -533,7 +470,7 @@ namespace System.IO.Strategies
         // internal position
         private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
-            Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
+            Debug.Assert(fileHandle.CanSeek, "fileHandle.CanSeek");
 
             return _filePosition = FileStreamHelpers.Seek(fileHandle, _path, offset, origin, closeInvalidHandle);
         }
@@ -544,7 +481,7 @@ namespace System.IO.Strategies
             Debug.Assert(_preallocatedOverlapped == null);
 
             if (_useAsyncIO)
-                _preallocatedOverlapped = new PreAllocatedOverlapped(CompletionSource.s_ioCallback, this, _buffer);
+                _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(CompletionSource.s_ioCallback, this, _buffer);
         }
 
         private CompletionSource? CompareExchangeCurrentOverlappedOwner(CompletionSource? newSource, CompletionSource? existingSource)
@@ -655,7 +592,7 @@ namespace System.IO.Strategies
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
-            if (_isPipe)
+            if (_fileHandle.IsPipe)
             {
                 // Pipes are tricky, at least when you have 2 different pipes
                 // that you want to use simultaneously.  When redirecting stdout
@@ -686,7 +623,7 @@ namespace System.IO.Strategies
                 }
             }
 
-            Debug.Assert(!_isPipe, "Should not be a pipe.");
+            Debug.Assert(!_fileHandle.IsPipe, "Should not be a pipe.");
 
             // Handle buffering.
             if (_writePos > 0) FlushWriteBuffer();
@@ -865,12 +802,12 @@ namespace System.IO.Strategies
         {
             Debug.Assert(_useAsyncIO);
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
-            Debug.Assert(!_isPipe || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
+            Debug.Assert(!_fileHandle.IsPipe || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
             if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             bool writeDataStoredInBuffer = false;
-            if (!_isPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
+            if (!_fileHandle.IsPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
             {
                 // Ensure the buffer is clear for writing
                 if (_writePos == 0)
@@ -1068,14 +1005,14 @@ namespace System.IO.Strategies
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 
-            return FileStreamHelpers.ReadFileNative(handle, bytes, false, overlapped, out errorCode);
+            return RandomAccess.ReadFileNative(handle, bytes, false, overlapped, out errorCode);
         }
 
         private unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 
-            return FileStreamHelpers.WriteFileNative(handle, buffer, false, overlapped, out errorCode);
+            return RandomAccess.WriteFileNative(handle, buffer, false, overlapped, out errorCode);
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

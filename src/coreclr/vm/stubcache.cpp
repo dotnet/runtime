@@ -59,7 +59,8 @@ StubCacheBase::~StubCacheBase()
     while (phe)
     {
         _ASSERTE(NULL != phe->m_pStub);
-        phe->m_pStub->DecRef();
+        ExecutableWriterHolder<Stub> stubWriterHolder(phe->m_pStub, sizeof(Stub));
+        stubWriterHolder.GetRW()->DecRef();
         phe = (STUBHASHENTRY*)GetNext((BYTE*)phe);
     }
 }
@@ -95,8 +96,9 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
             StubHolder<Stub> pstub;
             pstub = phe->m_pStub;
 
+            ExecutableWriterHolder<Stub> stubWriterHolder(pstub, sizeof(Stub));
             // IncRef as we're returning a reference to our caller.
-            pstub->IncRef();
+            stubWriterHolder.GetRW()->IncRef();
 
             pstub.SuppressRelease();
             RETURN pstub;
@@ -149,7 +151,8 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
                 pstub = phe->m_pStub;
             }
             // IncRef so that caller has firm ownership of stub.
-            pstub->IncRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pstub, sizeof(Stub));
+            stubWriterHolder.GetRW()->IncRef();
         }
     }
 

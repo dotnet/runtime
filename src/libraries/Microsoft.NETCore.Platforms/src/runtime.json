@@ -1377,6 +1377,12 @@
         "linux-armel"
       ]
     },
+    "linux-musl-s390x": {
+      "#import": [
+        "linux-musl",
+        "linux-s390x"
+      ]
+    },
     "linux-musl-x64": {
       "#import": [
         "linux-musl",
@@ -1387,6 +1393,12 @@
       "#import": [
         "linux-musl",
         "linux-x86"
+      ]
+    },
+    "linux-s390x": {
+      "#import": [
+        "linux",
+        "unix-s390x"
       ]
     },
     "linux-x64": {
@@ -3079,6 +3091,11 @@
       ]
     },
     "unix-mips64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-s390x": {
       "#import": [
         "unix"
       ]

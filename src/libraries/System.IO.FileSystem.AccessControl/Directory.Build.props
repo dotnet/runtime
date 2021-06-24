@@ -3,15 +3,5 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides types for managing access and audit control lists for files and directories.
-
-Commonly Used Types:
-System.Security.AccessControl.DirectoryObjectSecurity
-System.Security.AccessControl.DirectorySecurity
-System.Security.AccessControl.FileSecurity
-System.Security.AccessControl.FileSystemAccessRule
-System.Security.AccessControl.FileSystemAuditRule
-System.Security.AccessControl.FileSystemRights
-System.Security.AccessControl.FileSystemSecurity</PackageDescription>
   </PropertyGroup>
 </Project>

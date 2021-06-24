@@ -449,4 +449,13 @@
   <data name="SystemNetSecurity_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Security is not supported on this platform.</value>
   </data>
+  <data name="net_ssl_certificate_exist" xml:space="preserve">
+    <value>Remote certificate is already available.</value>
+  </data>
+  <data name="net_ssl_renegotiate_data" xml:space="preserve">
+    <value>Received data during renegotiation.</value>
+  </data>
+  <data name="net_android_ssl_api_level_unsupported" xml:space="preserve">
+    <value>Setting an SNI hostname is not supported on this API level.</value>
+  </data>
 </root>

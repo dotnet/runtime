@@ -10,9 +10,6 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        // Members accessed by the serializer when serializing.
-        private const DynamicallyAccessedMemberTypes MembersAccessedOnWrite = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
-
         private static bool WriteCore<TValue>(
             JsonConverter jsonConverter,
             Utf8JsonWriter writer,
@@ -41,15 +38,25 @@ namespace System.Text.Json
 
         private static void WriteUsingMetadata<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
         {
-            WriteStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: false);
+            if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
+                typedInfo.Serialize != null &&
+                typedInfo.Options._context?.CanUseSerializationLogic == true)
+            {
+                typedInfo.Serialize(writer, value);
+                writer.Flush();
+            }
+            else
+            {
+                WriteStack state = default;
+                state.Initialize(jsonTypeInfo, supportContinuation: false);
 
-            JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
-            Debug.Assert(converter != null);
+                JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+                Debug.Assert(converter != null);
 
-            Debug.Assert(jsonTypeInfo.Options != null);
+                Debug.Assert(jsonTypeInfo.Options != null);
 
-            WriteCore(converter, writer, value, jsonTypeInfo.Options, ref state);
+                WriteCore(converter, writer, value, jsonTypeInfo.Options, ref state);
+            }
         }
 
         private static Type GetRuntimeType<TValue>(in TValue value)

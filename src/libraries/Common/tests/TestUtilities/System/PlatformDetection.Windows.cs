@@ -103,30 +103,6 @@ namespace System
             }
         }
 
-        public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
-        public static bool IsNotWindowsSubsystemForLinux => !IsWindowsSubsystemForLinux;
-
-        private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
-        private static bool GetIsWindowsSubsystemForLinux()
-        {
-            // https://github.com/Microsoft/BashOnWindows/issues/423#issuecomment-221627364
-            if (IsLinux)
-            {
-                const string versionFile = "/proc/version";
-                if (File.Exists(versionFile))
-                {
-                    string s = File.ReadAllText(versionFile);
-
-                    if (s.Contains("Microsoft") || s.Contains("WSL"))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         private static string GetWindowsInstallationType()
         {
             string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";

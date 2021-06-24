@@ -893,6 +893,9 @@
 /* The JIT/AOT targets tvOS */
 #cmakedefine TARGET_TVOS 1
 
+/* The JIT/AOT targets Mac Catalyst */
+#cmakedefine TARGET_MACCAT 1
+
 /* The JIT/AOT targets OSX */
 #cmakedefine TARGET_OSX 1
 
@@ -907,6 +910,9 @@
 
 /* size of target machine integer registers */
 #define SIZEOF_REGISTER @SIZEOF_REGISTER@
+
+/* host or target doesn't allow unaligned memory access */
+#cmakedefine NO_UNALIGNED_ACCESS 1
 
 /* Support for the visibility ("hidden") attribute */
 #cmakedefine HAVE_VISIBILITY_HIDDEN 1
@@ -1063,9 +1069,6 @@
 
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
-
-/* Enable runtime support for metadata updates */
-#cmakedefine ENABLE_METADATA_UPDATE 1
 
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS

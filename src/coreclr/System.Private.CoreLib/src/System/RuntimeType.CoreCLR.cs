@@ -1089,6 +1089,10 @@ namespace System
                     return list.ToArray();
                 }
 
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                    Justification = "Calls to ResolveTypeHandle technically require all types to be kept " +
+                        "But this is not a public API to enumerate reflection items, all the public APIs which do that " +
+                        "should be annotated accordingly.")]
                 private RuntimeType[] PopulateNestedClasses(Filter filter)
                 {
                     RuntimeType declaringType = ReflectedType;
@@ -1733,6 +1737,7 @@ namespace System
                 typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
             return GetMethodBase(new ModuleHandle(scope).ResolveMethodHandle(typeMetadataToken).GetMethodInfo());
@@ -2691,15 +2696,15 @@ namespace System
             if (IsSZArray && ifaceType.IsGenericType)
                 throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
 
-            int ifaceInstanceMethodCount = RuntimeTypeHandle.GetNumVirtuals(ifaceRtType);
+            int ifaceVirtualMethodCount = RuntimeTypeHandle.GetNumVirtualsAndStaticVirtuals(ifaceRtType);
 
             InterfaceMapping im;
             im.InterfaceType = ifaceType;
             im.TargetType = this;
-            im.InterfaceMethods = new MethodInfo[ifaceInstanceMethodCount];
-            im.TargetMethods = new MethodInfo[ifaceInstanceMethodCount];
+            im.InterfaceMethods = new MethodInfo[ifaceVirtualMethodCount];
+            im.TargetMethods = new MethodInfo[ifaceVirtualMethodCount];
 
-            for (int i = 0; i < ifaceInstanceMethodCount; i++)
+            for (int i = 0; i < ifaceVirtualMethodCount; i++)
             {
                 RuntimeMethodHandleInternal ifaceRtMethodHandle = RuntimeTypeHandle.GetMethodAt(ifaceRtType, i);
 
@@ -3062,6 +3067,131 @@ namespace System
             Debug.Assert(i == compressMembers.Length);
 
             return compressMembers;
+        }
+
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        {
+            if (member is null) throw new ArgumentNullException(nameof(member));
+
+            RuntimeType? runtimeType = this;
+            while (runtimeType != null)
+            {
+                MemberInfo? result = member.MemberType switch
+                {
+                    MemberTypes.Method => GetMethodWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Constructor => GetConstructorWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Property => GetPropertyWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Field => GetFieldWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.Event => GetEventWithSameMetadataDefinitionAs(runtimeType, member),
+                    MemberTypes.NestedType => GetNestedTypeWithSameMetadataDefinitionAs(runtimeType, member),
+                    _ => null
+                };
+
+                if (result != null)
+                {
+                    return result;
+                }
+
+                runtimeType = runtimeType.GetBaseType();
+            }
+
+            throw CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(member);
+        }
+
+        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo method)
+        {
+            RuntimeMethodInfo[] cache = runtimeType.Cache.GetMethodList(MemberListType.CaseSensitive, method.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeMethodInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(method))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructor)
+        {
+            RuntimeConstructorInfo[] cache = runtimeType.Cache.GetConstructorList(MemberListType.CaseSensitive, constructor.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeConstructorInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(constructor))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo property)
+        {
+            RuntimePropertyInfo[] cache = runtimeType.Cache.GetPropertyList(MemberListType.CaseSensitive, property.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimePropertyInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(property))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo field)
+        {
+            RuntimeFieldInfo[] cache = runtimeType.Cache.GetFieldList(MemberListType.CaseSensitive, field.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeFieldInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(field))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
+        {
+            RuntimeEventInfo[] cache = runtimeType.Cache.GetEventList(MemberListType.CaseSensitive, eventInfo.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeEventInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(eventInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        {
+            RuntimeType[] cache = runtimeType.Cache.GetNestedTypeList(MemberListType.CaseSensitive, nestedType.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeType candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(nestedType))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
         }
         #endregion
 

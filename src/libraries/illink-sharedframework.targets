@@ -30,7 +30,6 @@
       <_RuntimePackSuppressionsXmls Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_RuntimePackSuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
       <_RuntimePackSuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
       <_RuntimePackSuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
     </ItemGroup>

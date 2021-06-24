@@ -873,6 +873,8 @@ mono_arch_init (void)
 	   have a way to properly detect CPU features on it. */
 	thumb_supported = TRUE;
 	iphone_abi = TRUE;
+#elif defined(TARGET_ANDROID)
+	thumb_supported = TRUE;
 #else
 	thumb_supported = mono_hwcap_arm_has_thumb;
 	thumb2_supported = mono_hwcap_arm_has_thumb2;
@@ -2311,10 +2313,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	 *   in 1 or 2 integer registers.
 	 */
 	switch (cinfo->ret.storage) {
-	case RegTypeGeneral:
 	case RegTypeNone:
+		linfo->ret.storage = LLVMArgNone;
+		break;
+	case RegTypeGeneral:
 	case RegTypeFP:
 	case RegTypeIRegPair:
+		linfo->ret.storage = LLVMArgNormal;
 		break;
 	case RegTypeStructByAddr:
 		if (sig->pinvoke) {

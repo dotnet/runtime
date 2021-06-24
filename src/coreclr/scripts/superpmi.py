@@ -262,9 +262,8 @@ collect_parser.add_argument("collection_command", nargs='?', help=superpmi_colle
 collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command. This is a single string; quote it if necessary if the arguments contain spaces.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
-collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
-collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
@@ -631,6 +630,39 @@ def create_unique_directory_name(root_directory, base_name):
     return full_path
 
 
+def create_unique_file_name(directory, base_name, extension):
+    """ Create a unique file name in the specified directory by joining `base_name` and `extension`.
+        If this name already exists, append ".1", ".2", ".3", etc., to the `base_name`
+        name component until the full file name is not found.
+
+    Args:
+        directory (str)  : directory in which a new file will be created
+        base_name (str)  : the base name of the new filename to be added
+        extension (str)  : the filename extension of the new filename to be added
+
+    Returns:
+        (str) The full absolute path of the new filename.
+    """
+
+    directory = os.path.abspath(directory)
+    if not os.path.isdir(directory):
+        try:
+            os.makedirs(directory)
+        except Exception as exception:
+            logging.critical(exception)
+            raise exception
+
+    full_path = os.path.join(directory, base_name + "." + extension)
+
+    count = 1
+    while os.path.isfile(full_path):
+        new_full_path = os.path.join(directory, base_name + "." + str(count) + "." + extension)
+        count += 1
+        full_path = new_full_path
+
+    return full_path
+
+
 def get_files_from_path(path, match_func=lambda path: True):
     """ Return all files in a directory tree matching a criteria.
 
@@ -906,15 +938,12 @@ class SuperPMICollect:
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
-            self.crossgen_tool_name = "crossgen"
         elif coreclr_args.host_os == "Linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.corerun_tool_name = "corerun"
-            self.crossgen_tool_name = "crossgen"
         elif coreclr_args.host_os == "windows":
             self.collection_shim_name = "superpmi-shim-collector.dll"
             self.corerun_tool_name = "corerun.exe"
-            self.crossgen_tool_name = "crossgen.exe"
         else:
             raise RuntimeError("Unsupported OS.")
 
@@ -931,9 +960,6 @@ class SuperPMICollect:
             self.pmi_location = determine_pmi_location(coreclr_args)
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
 
-        if coreclr_args.crossgen:
-            self.crossgen_tool = os.path.join(self.core_root, self.crossgen_tool_name)
-
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
             if coreclr_args.dotnet_tool_path is None:
@@ -942,7 +968,7 @@ class SuperPMICollect:
                 self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
             logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
-        if coreclr_args.pmi or coreclr_args.crossgen or coreclr_args.crossgen2:
+        if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
 
@@ -1081,7 +1107,7 @@ class SuperPMICollect:
 
             # If we need them, collect all the assemblies we're going to use for the collection(s).
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
-            if self.coreclr_args.pmi or self.coreclr_args.crossgen or self.coreclr_args.crossgen2:
+            if self.coreclr_args.pmi or self.coreclr_args.crossgen2:
                 assemblies = []
                 for item in self.assemblies:
                     assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
@@ -1179,84 +1205,6 @@ class SuperPMICollect:
                 os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
-
-            ################################################################################################ Do collection using crossgen
-            if self.coreclr_args.crossgen is True:
-                logging.debug("Starting collection using crossgen")
-
-                async def run_crossgen(print_prefix, assembly, self):
-                    """ Run crossgen over all dlls
-                    """
-
-                    root_crossgen_output_filename = make_safe_filename("crossgen_" + assembly) + ".out.dll"
-                    crossgen_output_assembly_filename = os.path.join(self.temp_location, root_crossgen_output_filename)
-                    try:
-                        if os.path.exists(crossgen_output_assembly_filename):
-                            os.remove(crossgen_output_assembly_filename)
-                    except OSError as ose:
-                        if "[WinError 32] The process cannot access the file because it is being used by another " \
-                           "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s", crossgen_output_assembly_filename, ose)
-                            return
-                        else:
-                            raise ose
-
-                    command = [self.crossgen_tool, "/Platform_Assemblies_Paths", self.core_root, "/in", assembly, "/out", crossgen_output_assembly_filename]
-                    command_string = " ".join(command)
-                    logging.debug("%s%s", print_prefix, command_string)
-
-                    # Save the stdout and stderr to files, so we can see if crossgen wrote any interesting messages.
-                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
-                    # is unique.
-                    root_output_filename = make_safe_filename("crossgen_" + assembly + "_")
-                    try:
-                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
-                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
-
-                        proc = await asyncio.create_subprocess_shell(
-                            command_string,
-                            stdout=stdout_file_handle,
-                            stderr=stderr_file_handle)
-
-                        await proc.communicate()
-
-                        os.close(stdout_file_handle)
-                        os.close(stderr_file_handle)
-
-                        # No need to keep zero-length files
-                        if is_zero_length_file(stdout_filepath):
-                            os.remove(stdout_filepath)
-                        if is_zero_length_file(stderr_filepath):
-                            os.remove(stderr_filepath)
-
-                        return_code = proc.returncode
-                        if return_code != 0:
-                            logging.debug("'%s': Error return code: %s", command_string, return_code)
-                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
-
-                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
-                    except OSError as ose:
-                        if "[WinError 32] The process cannot access the file because it is being used by another " \
-                           "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
-                        else:
-                            raise ose
-
-                # Set environment variables.
-                crossgen_command_env = env_copy.copy()
-                crossgen_complus_env = complus_env.copy()
-                crossgen_complus_env["JitName"] = self.collection_shim_name
-                set_and_report_env(crossgen_command_env, root_env, crossgen_complus_env)
-
-                old_env = os.environ.copy()
-                os.environ.update(crossgen_command_env)
-
-                helper = AsyncSubprocessHelper(assemblies, verbose=True)
-                helper.run_to_completion(run_crossgen, self)
-
-                os.environ.clear()
-                os.environ.update(old_env)
-            ################################################################################################ end of "self.coreclr_args.crossgen is True"
 
             ################################################################################################ Do collection using crossgen2
             if self.coreclr_args.crossgen2 is True:
@@ -1602,14 +1550,6 @@ class SuperPMIReplay:
 
         result = True  # Assume success
 
-        # Possible return codes from SuperPMI
-        #
-        # 0  : success
-        # -1 : general fatal error (e.g., failed to initialize, failed to read files)
-        # -2 : JIT failed to initialize
-        # 1  : there were compilation failures
-        # 2  : there were assembly diffs
-
         with TempDir() as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
@@ -1681,8 +1621,12 @@ class SuperPMIReplay:
                 if return_code == 0:
                     logging.info("Clean SuperPMI replay")
                 else:
-                    files_with_replay_failures.append(mch_file)
                     result = False
+                    # Don't report as replay failure missing data (return code 3).
+                    # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                    # reported as a replay failure.
+                    if return_code != 3:
+                        files_with_replay_failures.append(mch_file)
 
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
@@ -1754,14 +1698,6 @@ class SuperPMIReplayAsmDiffs:
 
         result = True  # Assume success
 
-        # Possible return codes from SuperPMI
-        #
-        # 0  : success
-        # -1 : general fatal error (e.g., failed to initialize, failed to read files)
-        # -2 : JIT failed to initialize
-        # 1  : there were compilation failures
-        # 2  : there were assembly diffs
-
         # Set up some settings we'll use below.
 
         asm_complus_vars = {
@@ -1829,6 +1765,9 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
+        # List of all Markdown summary files
+        all_md_summary_files = []
+
         with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
@@ -1889,8 +1828,12 @@ class SuperPMIReplayAsmDiffs:
                         if return_code == 0:
                             logging.info("Clean SuperPMI replay")
                         else:
-                            files_with_replay_failures.append(mch_file)
                             result = False
+                            # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                            # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                            # reported as a replay failure.
+                            if return_code != 2 and return_code != 3:
+                                files_with_replay_failures.append(mch_file)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
@@ -1953,7 +1896,7 @@ class SuperPMIReplayAsmDiffs:
                         # as the LoadLibrary path will be relative to the current directory.
                         with ChangeDir(self.coreclr_args.core_root):
 
-                            async def create_one_artifact(jit_path: str, location: str, flags: list[str]) -> str:
+                            async def create_one_artifact(jit_path: str, location: str, flags) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
                                 with open(item_path, 'w') as file_handle:
@@ -2023,7 +1966,10 @@ class SuperPMIReplayAsmDiffs:
                             jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
-                                command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                                md_summary_file = os.path.join(asm_root_dir, "summary.md")
+                                summary_file_info = ( mch_file, md_summary_file )
+                                all_md_summary_files.append(summary_file_info)
+                                command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
 
@@ -2056,7 +2002,31 @@ class SuperPMIReplayAsmDiffs:
 
             ################################################################################################ end of for mch_file in self.mch_files
 
+        # Report the overall results summary of the asmdiffs run
+
         logging.info("Asm diffs summary:")
+
+        # Construct an overall Markdown summary file.
+
+        if len(all_md_summary_files) > 0:
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
+
+            with open(overall_md_summary_file, "w") as write_fh:
+                for summary_file_info in all_md_summary_files:
+                    summary_mch  = summary_file_info[0]
+                    summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
+                    summary_file = summary_file_info[1]
+                    with open(summary_file, "r") as read_fh:
+                        write_fh.write("## " + summary_mch_filename + ":\n\n")
+                        shutil.copyfileobj(read_fh, write_fh)
+
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        # Report the set of MCH files with asm diffs and replay failures.
 
         if len(files_with_replay_failures) != 0:
             logging.info("  Replay failures in %s MCH files:", len(files_with_replay_failures))
@@ -2407,45 +2377,69 @@ def list_superpmi_collections_container_via_rest_api(path_filter=lambda unused: 
 
     # This URI will return *all* the blobs, for all jit-ee-version/OS/architecture combinations.
     # pass "prefix=foo/bar/..." to only show a subset. Or, we can filter later using string search.
-    list_superpmi_container_uri = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + az_collections_root_folder + "/"
-
-    try:
-        contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
-    except Exception as exception:
-        logging.error("Didn't find any collections using %s", list_superpmi_container_uri)
-        logging.error("  Error: %s", exception)
-        return None
-
-    # Contents is an XML file with contents like:
     #
-    # <EnumerationResults ContainerName="https://clrjit.blob.core.windows.net/superpmi/collections">
-    #   <Blobs>
-    #     <Blob>
-    #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Name>
-    #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Url>
-    #       <Properties>
-    #         ...
-    #       </Properties>
-    #     </Blob>
-    #     <Blob>
-    #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Name>
-    #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Url>
-    #     ... etc. ...
-    #   </Blobs>
-    # </EnumerationResults>
+    # Note that there is a maximum number of results returned in one query of 5000. So we might need to
+    # iterate. In that case, the XML result contains a `<NextMarker>` element like:
     #
-    # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
-    # use regular expressions.
+    # <NextMarker>2!184!MDAwMDkyIWJ1aWxkcy8wMTZlYzI5OTAzMzkwMmY2ZTY4Yzg0YWMwYTNlYzkxN2Y5MzA0OTQ2L0xpbnV4L3g2NC9DaGVja2VkL2xpYmNscmppdF93aW5fYXJtNjRfeDY0LnNvITAwMDAyOCE5OTk5LTEyLTMxVDIzOjU5OjU5Ljk5OTk5OTlaIQ--</NextMarker>
+    #
+    # which we need to pass to the REST API with `marker=...`.
 
-    url_prefix = az_blob_storage_superpmi_container_uri + "/" + az_collections_root_folder + "/"
-
-    urls_split = contents.split("<Url>")[1:]
     paths = []
-    for item in urls_split:
-        url = item.split("</Url>")[0].strip()
-        path = remove_prefix(url, url_prefix)
-        if path_filter(path):
-            paths.append(path)
+
+    list_superpmi_container_uri_base = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + az_collections_root_folder + "/"
+
+    iter = 1
+    marker = ""
+
+    while True:
+        list_superpmi_container_uri = list_superpmi_container_uri_base + marker
+
+        try:
+            contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
+        except Exception as exception:
+            logging.error("Didn't find any collections using %s", list_superpmi_container_uri)
+            logging.error("  Error: %s", exception)
+            return None
+
+        # Contents is an XML file with contents like:
+        #
+        # <EnumerationResults ContainerName="https://clrjit.blob.core.windows.net/superpmi/collections">
+        #   <Blobs>
+        #     <Blob>
+        #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Name>
+        #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Url>
+        #       <Properties>
+        #         ...
+        #       </Properties>
+        #     </Blob>
+        #     <Blob>
+        #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Name>
+        #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Url>
+        #     ... etc. ...
+        #   </Blobs>
+        # </EnumerationResults>
+        #
+        # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
+        # use regular expressions.
+
+        url_prefix = az_blob_storage_superpmi_container_uri + "/" + az_collections_root_folder + "/"
+
+        urls_split = contents.split("<Url>")[1:]
+        for item in urls_split:
+            url = item.split("</Url>")[0].strip()
+            path = remove_prefix(url, url_prefix)
+            if path_filter(path):
+                paths.append(path)
+
+        # Look for a continuation marker.
+        re_match = re.match(r'.*<NextMarker>(.*)</NextMarker>.*', contents)
+        if re_match:
+            marker_text = re_match.group(1)
+            marker = "&marker=" + marker_text
+            iter += 1
+        else:
+            break
 
     return paths
 
@@ -3234,7 +3228,7 @@ def setup_args(args):
     log_file = None
     if coreclr_args.log_file is None:
         if hasattr(coreclr_args, "spmi_location"):
-            log_file = os.path.join(coreclr_args.spmi_location, "superpmi.log")
+            log_file = create_unique_file_name(coreclr_args.spmi_location, "superpmi", "log")
             if not os.path.isdir(coreclr_args.spmi_location):
                 os.makedirs(coreclr_args.spmi_location)
     else:
@@ -3412,11 +3406,6 @@ def setup_args(args):
                             "Unable to set pmi")
 
         coreclr_args.verify(args,
-                            "crossgen",
-                            lambda unused: True,
-                            "Unable to set crossgen")
-
-        coreclr_args.verify(args,
                             "crossgen2",
                             lambda unused: True,
                             "Unable to set crossgen2")
@@ -3488,8 +3477,8 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set tiered_compilation")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen is False) and (args.crossgen2 is False):
-            print("Either a collection command or `--pmi` or `--crossgen` or `--crossgen2` must be specified")
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
+            print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
@@ -3500,13 +3489,13 @@ def setup_args(args):
             print("Don't specify `-exclude` if a collection command is given")
             sys.exit(1)
 
-        if ((args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
-            print("Specify `-assemblies` if `--pmi` or `--crossgen` or `--crossgen2` is given")
+        if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
+            print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
-            assert (args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)
+            assert (args.pmi is True) or (args.crossgen2 is True)
             assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:

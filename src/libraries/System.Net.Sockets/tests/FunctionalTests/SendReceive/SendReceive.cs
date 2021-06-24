@@ -952,7 +952,8 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
-                await Task.WhenAny(disposeTask, receiveTask).WaitAsync(TimeSpan.FromSeconds(30));
+                await Task.WhenAny(disposeTask, receiveTask)
+                          .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -996,15 +997,16 @@ namespace System.Net.Sockets.Tests
             { false, true, false },
         };
 
-        [Theory(Timeout = 40000)]
+        [Theory]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
         {
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
             // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
+            // This bug is fixed in kernel 3.10.0-1160.25+.
             // TODO: Remove this, once CI machines are updated to a newer kernel.
-            bool expectGracefulShutdown = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
+            bool mayShutdownGraceful = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
@@ -1027,7 +1029,9 @@ namespace System.Net.Sockets.Tests
                             var buffer = new ArraySegment<byte>(new byte[4096]);
                             while (true)
                             {
-                                SendAsync(socket1, buffer).GetAwaiter().GetResult();
+                                SendAsync(socket1, buffer)
+                                    .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout))
+                                    .GetAwaiter().GetResult();
                             }
                         });
                     }
@@ -1037,14 +1041,17 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));
-                    await disposeTask;
+                    await Task.WhenAny(disposeTask, socketOperation)
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
+                    await disposeTask
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
 
                     SocketError? localSocketError = null;
                     bool disposedException = false;
                     try
                     {
-                        await socketOperation;
+                        await socketOperation
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                     }
                     catch (SocketException se)
                     {
@@ -1079,7 +1086,8 @@ namespace System.Net.Sockets.Tests
                         {
                             try
                             {
-                                int received = await ReceiveAsync(socket2, receiveBuffer);
+                                int received = await ReceiveAsync(socket2, receiveBuffer)
+                                                     .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                                 if (received == 0)
                                 {
                                     break;
@@ -1092,17 +1100,17 @@ namespace System.Net.Sockets.Tests
                             }
                         }
 
-                        if (!expectGracefulShutdown)
+                        try
                         {
                             Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                         }
-                        else
+                        catch when (mayShutdownGraceful)
                         {
                             Assert.Null(peerSocketError);
                         }
                     }
                 }
-            }, maxAttempts: 10, retryWhen: e => e is XunitException);
+            }, maxAttempts: 8, retryWhen: e => e is XunitException);
         }
 
         [Fact]

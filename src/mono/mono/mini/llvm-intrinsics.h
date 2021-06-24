@@ -255,15 +255,15 @@ INTRINS(AESNI_AESENCLAST, x86_aesni_aesenclast, X86)
 INTRINS(AESNI_AESIMC, x86_aesni_aesimc, X86)
 #if LLVM_API_VERSION >= 800
 	// these intrinsics were renamed in LLVM 8
-INTRINS_OVR(SSE_SADD_SATI8, sadd_sat, Generic, sse_i1_t)
-INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, sse_i1_t)
-INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, sse_i1_t)
-INTRINS_OVR(SSE_UADD_SATI16, uadd_sat, Generic, sse_i1_t)
+INTRINS_OVR(SSE_SADD_SATI8, sadd_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, v128_i2_t)
+INTRINS_OVR(SSE_UADD_SATI16, uadd_sat, Generic, v128_i2_t)
 
-INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, sse_i2_t)
-INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, sse_i2_t)
-INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, sse_i2_t)
-INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, sse_i2_t)
+INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
+INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
 #else
 INTRINS(SSE_SADD_SATI8, x86_sse2_padds_b, X86)
 INTRINS(SSE_UADD_SATI8, x86_sse2_paddus_b, X86)
@@ -425,9 +425,9 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RBIT, aarch64_neon_rbit, Arm64, V64 | V128 | I1
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTA, round, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Arm64, Scalar | V64 | V128 | R4 | R8)
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Arm64, Scalar | V64 | V128 | R4 | R8)
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Arm64, Scalar | V64 | V128 | R4 | R8)
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Arm64, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Generic, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Generic, Scalar | V64 | V128 | R4 | R8)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SUQADD, aarch64_neon_suqadd, Arm64, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_USQADD, aarch64_neon_usqadd, Arm64, Scalar | V64 | V128 | I1 | I2 | I4 | I8)

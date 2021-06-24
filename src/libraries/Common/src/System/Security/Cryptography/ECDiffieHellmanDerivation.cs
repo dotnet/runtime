@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
                     // If useSecretAsKey is false then hmacKey is owned by the caller, not ours to clear.
                     if (useSecretAsKey)
                     {
-                        Array.Clear(hmacKey, 0, hmacKey.Length);
+                        Array.Clear(hmacKey);
                     }
                 }
             }
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(secretAgreement, 0, secretAgreement.Length);
+                    Array.Clear(secretAgreement);
                 }
             }
         }
@@ -255,7 +255,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(secretTmp, 0, secretTmp.Length);
+                    Array.Clear(secretTmp);
                 }
             }
 #endif

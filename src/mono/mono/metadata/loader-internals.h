@@ -254,6 +254,7 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
+MONO_COMPONENT_API
 MonoAssemblyLoadContext *
 mono_alc_get_default (void);
 
@@ -301,6 +302,7 @@ mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
 
+MONO_COMPONENT_API
 void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 

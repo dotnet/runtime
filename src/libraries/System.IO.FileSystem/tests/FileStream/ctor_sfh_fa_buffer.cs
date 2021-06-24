@@ -18,22 +18,19 @@ namespace System.IO.Tests
             return new FileStream(handle, access, bufferSize);
         }
 
-
-        [Theory,
-            InlineData(0),
-            InlineData(-1)]
-        public void InvalidBufferSize_Throws(int size)
+        [Fact]
+        public void NegativeBufferSize_Throws()
         {
-            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(handle, FileAccess.Read, size));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(handle, FileAccess.Read, -1));
             }
         }
 
         [Fact]
         public void InvalidBufferSize_DoesNotCloseHandle()
         {
-            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => CreateFileStream(handle, FileAccess.Read, -1));
                 GC.Collect();

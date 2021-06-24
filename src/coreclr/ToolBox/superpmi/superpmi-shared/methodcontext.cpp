@@ -18,9 +18,6 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-bool g_debugRec = false;
-bool g_debugRep = false;
-
 // static variable initialization
 Hash MethodContext::m_hash;
 
@@ -3167,22 +3164,53 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     }
 
     Agnostic_ResolveVirtualMethodKey key;
+    ZeroMemory(&key, sizeof(key)); // Zero token including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
+
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
     Agnostic_ResolveVirtualMethodResult result;
-    result.returnValue = returnValue;
-    result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
+    result.returnValue                = returnValue;
+    result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
-    result.exactContext = CastHandle(info->exactContext);
+    result.exactContext               = CastHandle(info->exactContext);
+    result.detail                     = (DWORD) info->detail;
+
+    if (returnValue)
+    {
+        result.resolvedTokenDevirtualizedMethod        = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedMethod, ResolveToken);
+        result.resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+    }
+    else
+    {
+        ZeroMemory(&result.resolvedTokenDevirtualizedMethod, sizeof(result.resolvedTokenDevirtualizedMethod));
+        ZeroMemory(&result.resolvedTokenDevirtualizedUnboxedMethod, sizeof(result.resolvedTokenDevirtualizedUnboxedMethod));
+    }
+
     ResolveVirtualMethod->Add(key, result);
     DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX",
-        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext);
+    printf("ResolveVirtualMethod key virtMethod-%016llX, objClass-%016llX, context-%016llX pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
+        key.virtualMethod,
+        key.objClass,
+        key.context,
+        key.pResolvedTokenVirtualMethodNonNull,
+        key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
+    printf(", value returnValue-%s, devirtMethod-%016llX, requiresInstArg-%s, exactContext-%016llX, detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+        result.returnValue ? "true" : "false",
+        result.devirtualizedMethod,
+        result.requiresInstMethodTableArg ? "true" : "false",
+        result.exactContext,
+        result.detail,
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod).c_str() : "???");
 }
 
 bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
@@ -3193,7 +3221,11 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
-    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
+    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
     Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
@@ -3201,6 +3233,12 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
+    info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
+    if (result.returnValue)
+    {
+        info->resolvedTokenDevirtualizedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedMethod, ResolveToken);
+        info->resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+    }
     return result.returnValue;
 }
 
@@ -4805,6 +4843,7 @@ void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
     printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
         GetStringLiteral->GetBuffer(value.B), value.A);
+    GetStringLiteral->Unlock();
 }
 
 const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
@@ -5466,6 +5505,7 @@ void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agno
             printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
         }
+        AllocPgoInstrumentationBySchema->Unlock();
     }
     printf("}");
 }
@@ -5543,6 +5583,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
                                                     ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                     UINT32* pCountSchemaItems,
                                                     BYTE** pInstrumentationData,
+                                                    ICorJitInfo::PgoSource* pPgoSource,
                                                     HRESULT result)
 {
     if (GetPgoInstrumentationResults == nullptr)
@@ -5571,6 +5612,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     value.data_index    = GetPgoInstrumentationResults->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)maxOffset);
     value.dataByteCount = (unsigned)maxOffset;
     value.result        = (DWORD)result;
+    value.pgoSource     = (DWORD)*pPgoSource;
 
     DWORDLONG key = CastHandle(ftnHnd);
     GetPgoInstrumentationResults->Add(key, value);
@@ -5578,8 +5620,8 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
 }
 void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value)
 {
-    printf("GetPgoInstrumentationResults key ftn-%016llX, value res-%08X schemaCnt-%u profileBufSize-%u schema{",
-        key, value.result, value.countSchemaItems, value.dataByteCount);
+    printf("GetPgoInstrumentationResults key ftn-%016llX, value res-%08X schemaCnt-%u profileBufSize-%u source-%u schema{",
+        key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource);
 
     if (value.countSchemaItems > 0)
     {
@@ -5608,8 +5650,11 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                     printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
+                    printf("T %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
@@ -5630,13 +5675,15 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 
             printf("}\n");
         }
+        GetPgoInstrumentationResults->Unlock();
     }
     printf("} data_index-%u", value.data_index);
 }
 HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
                                                        ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                        UINT32* pCountSchemaItems,
-                                                       BYTE** pInstrumentationData)
+                                                       BYTE** pInstrumentationData,
+                                                       ICorJitInfo::PgoSource* pPgoSource)
 {
     DWORDLONG key = CastHandle(ftnHnd);
     AssertMapAndKeyExist(GetPgoInstrumentationResults, key, ": key %016llX", key);
@@ -5646,6 +5693,7 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
 
     *pCountSchemaItems    = (UINT32)tempValue.countSchemaItems;
     *pInstrumentationData = (BYTE*)GetPgoInstrumentationResults->GetBuffer(tempValue.data_index);
+    *pPgoSource           = (ICorJitInfo::PgoSource)tempValue.pgoSource;
 
     ICorJitInfo::PgoInstrumentationSchema* pOutSchema = (ICorJitInfo::PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.countSchemaItems * sizeof(ICorJitInfo::PgoInstrumentationSchema));
 
@@ -6814,7 +6862,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
         ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData);
+        ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData, &pgoSource);
 
         size_t minOffset = (size_t) ~0;
         size_t maxOffset = 0;
@@ -6902,7 +6951,7 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
@@ -6919,7 +6968,7 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
         ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData);
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &pgoSource);
 
         if (SUCCEEDED(pgoHR))
         {
@@ -6927,7 +6976,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
                 if (hasEdgeProfile && hasClassProfile && hasLikelyClass)
@@ -7109,4 +7159,31 @@ void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
         isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
     }
 
+}
+
+
+bool g_debugRec = false;
+bool g_debugRep = false;
+
+void SetDebugDumpVariables()
+{
+    static WCHAR* g_debugRecStr = nullptr;
+    static WCHAR* g_debugRepStr = nullptr;
+    if (g_debugRecStr == nullptr)
+    {
+        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
+    }
+    if (g_debugRepStr == nullptr)
+    {
+        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+    }
+
+    if (0 == wcscmp(g_debugRecStr, W("1")))
+    {
+        g_debugRec = true;
+    }
+    if (0 == wcscmp(g_debugRepStr, W("1")))
+    {
+        g_debugRep = true;
+    }
 }

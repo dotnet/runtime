@@ -312,8 +312,8 @@ namespace System.Net.Sockets.Tests
             if (copy.IsBound)
             {
                 // On Unix, we may successfully obtain an (empty) local end point, even though Bind wasn't called.
-                Debug.Assert(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
+                Debug.Assert(!OperatingSystem.IsWindows());
+                if (OperatingSystem.IsLinux()) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
                 {
                     switch (addressFamily)
                     {
@@ -379,7 +379,9 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
             Assert.Equal(orig.SendBufferSize, copy.SendBufferSize);
             Assert.Equal(orig.SendTimeout, copy.SendTimeout);
+#pragma warning disable 0618
             Assert.Equal(orig.UseOnlyOverlappedIO, copy.UseOnlyOverlappedIO);
+#pragma warning restore 0618
         }
 
         [Theory]
@@ -424,7 +426,6 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.SendBufferSize, client.SendBufferSize);
             Assert.Equal(orig.SendTimeout, client.SendTimeout);
             Assert.Equal(orig.Ttl, client.Ttl);
-            Assert.Equal(orig.UseOnlyOverlappedIO, client.UseOnlyOverlappedIO);
 
             // Validate setting various properties on the new instance and seeing them roundtrip back to the original.
             client.ReceiveTimeout = 42;

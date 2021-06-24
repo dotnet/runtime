@@ -1223,12 +1223,19 @@ namespace System.Net.Http
                     while (buffer.Length > 0)
                     {
                         int sendSize = -1;
+                        bool flush = false;
                         lock (_creditSyncObject)
                         {
                             if (_availableCredit > 0)
                             {
                                 sendSize = Math.Min(buffer.Length, _availableCredit);
                                 _availableCredit -= sendSize;
+
+                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                                if (_availableCredit == 0)
+                                {
+                                    flush = true;
+                                }
                             }
                             else
                             {
@@ -1249,12 +1256,23 @@ namespace System.Net.Http
                             // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
+
+                            lock (_creditSyncObject)
+                            {
+                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                                if (_availableCredit == 0)
+                                {
+                                    flush = true;
+                                }
+                            }
                         }
+
+                        Debug.Assert(sendSize > 0);
 
                         ReadOnlyMemory<byte> current;
                         (current, buffer) = SplitBuffer(buffer, sendSize);
 
-                        await _connection.SendStreamDataAsync(StreamId, current, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                        await _connection.SendStreamDataAsync(StreamId, current, flush, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
                 }
                 finally

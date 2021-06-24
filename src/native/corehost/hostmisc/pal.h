@@ -104,13 +104,13 @@
 namespace pal
 {
 #if defined(_WIN32)
-    #ifdef EXPORT_SHARED_API
-        #define SHARED_API extern "C" __declspec(dllexport)
-    #else
-        #define SHARED_API extern "C"
-    #endif
+#ifdef EXPORT_SHARED_API
+#define SHARED_API extern "C" __declspec(dllexport)
+#else
+#define SHARED_API extern "C"
+#endif
 
-    #define STDMETHODCALLTYPE __stdcall
+#define STDMETHODCALLTYPE __stdcall
 
     typedef wchar_t char_t;
     typedef std::wstring string_t;
@@ -151,13 +151,13 @@ namespace pal
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::_wcsicmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, size_t len) { return ::wcsncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, size_t len) { return ::_wcsnicmp(str1, str2, len); }
-    inline int pathcmp(const pal::string_t &path1, const pal::string_t &path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
+    inline int pathcmp(const pal::string_t& path1, const pal::string_t& path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
     inline string_t to_string(int value) { return std::to_wstring(value); }
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
 
 #pragma warning(suppress : 4996)  // error C4996: '_wfopen': This function or variable may be unsafe.
-    inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
+    inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
 
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
@@ -170,32 +170,32 @@ namespace pal
     // Suppressing warning since the 'safe' version requires an input buffer that is unnecessary for
     // uses of this function.
 #pragma warning(suppress : 4996) //  error C4996: '_wcserror': This function or variable may be unsafe.
-    inline const char_t* strerror(int errnum){ return ::_wcserror(errnum); }
+    inline const char_t* strerror(int errnum) { return ::_wcserror(errnum); }
 
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
 
     inline bool mkdir(const char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
-    inline bool rmdir (const char_t* path) { return RemoveDirectoryW(path) != 0; }
+    inline bool rmdir(const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
     inline bool munmap(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
 #else
-    #ifdef EXPORT_SHARED_API
-        #define SHARED_API extern "C" __attribute__((__visibility__("default")))
-    #else
-        #define SHARED_API extern "C"
-    #endif
+#ifdef EXPORT_SHARED_API
+#define SHARED_API extern "C" __attribute__((__visibility__("default")))
+#else
+#define SHARED_API extern "C"
+#endif
 
-    #define __cdecl    /* nothing */
-    #define __stdcall  /* nothing */
-    #if !defined(TARGET_FREEBSD)
-        #define __fastcall /* nothing */
-    #endif
-    #define STDMETHODCALLTYPE __stdcall
+#define __cdecl    /* nothing */
+#define __stdcall  /* nothing */
+#if !defined(TARGET_FREEBSD)
+#define __fastcall /* nothing */
+#endif
+#define STDMETHODCALLTYPE __stdcall
 
     typedef char char_t;
     typedef std::string string_t;
@@ -219,7 +219,7 @@ namespace pal
     inline string_t to_string(int value) { return std::to_string(value); }
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
-    inline FILE * file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
+    inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
     inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
@@ -237,7 +237,6 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
-
 #endif
 
     inline int snwprintf(char_t* buffer, size_t count, const char_t* format, ...)
@@ -252,10 +251,8 @@ namespace pal
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
-    string_t to_lower(const string_t& in);
 
-
-    inline void file_flush(FILE *f) { std::fflush(f); }
+    inline void file_flush(FILE* f) { std::fflush(f); }
     inline void err_flush() { std::fflush(stderr); }
     inline void out_flush() { std::fflush(stdout); }
 
@@ -283,7 +280,7 @@ namespace pal
     bool get_own_module_path(string_t* recv);
     bool get_method_module_path(string_t* recv, void* method);
     bool get_module_path(dll_t mod, string_t* recv);
-    bool get_current_module(dll_t *mod);
+    bool get_current_module(dll_t* mod);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
 
@@ -301,15 +298,13 @@ namespace pal
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
-    bool get_temp_directory(string_t& tmp_dir);
-
-    // Returns a platform-specific, user-private directory within get_temp_directory()
+    // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.
     bool get_default_bundle_extraction_base_dir(string_t& extraction_dir);
 
     int xtoi(const char_t* input);
 
-    bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ string_t *path);
+    bool get_loaded_library(const char_t* library_name, const char* symbol_name, /*out*/ dll_t* dll, /*out*/ string_t* path);
     bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
