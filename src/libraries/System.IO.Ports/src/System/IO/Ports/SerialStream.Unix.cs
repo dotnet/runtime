@@ -423,14 +423,8 @@ namespace System.IO.Ports
         public override int EndRead(IAsyncResult asyncResult)
             => EndReadWrite(asyncResult);
 
-        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private Task<int> ReadInternalAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            CheckReadWriteArguments(array, offset, count);
-
-            if (count == 0)
-                return Task<int>.FromResult(0); // return immediately if no bytes requested; no need for overhead.
-
-            Memory<byte> buffer = new Memory<byte>(array, offset, count);
             SerialStreamIORequest result = new(cancellationToken, buffer);
             _readQueue.Enqueue(result);
 
@@ -439,44 +433,40 @@ namespace System.IO.Ports
             return result.Task;
         }
 
-#if NETCOREAPP
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        private Task WriteInternalAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             SerialStreamIORequest result = new(cancellationToken, buffer);
-            _readQueue.Enqueue(result);
+            _writeQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
 
-            return new ValueTask<int>(result.Task);
+            return result.Task;
         }
-#endif
+
+        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        {
+            CheckReadWriteArguments(array, offset, count);
+
+            return count == 0 
+                ? Task<int>.FromResult(0) // return immediately if no bytes requested; no need for overhead.
+                : ReadInternalAsync(new Memory<byte>(array, offset, count), cancellationToken);
+        }
 
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckWriteArguments(array, offset, count);
 
-            if (count == 0)
-                return Task.CompletedTask; // return immediately if no bytes to write; no need for overhead.
-
-            Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new(cancellationToken, buffer);
-            _writeQueue.Enqueue(result);
-
-            EnsureIOLoopRunning();
-
-            return result.Task;
+            return count == 0
+                ? Task.CompletedTask // return immediately if no bytes to write; no need for overhead.
+                : WriteInternalAsync(new ReadOnlyMemory<byte>(array, offset, count), cancellationToken);
         }
 
 #if NETCOREAPP
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => new ValueTask<int>(ReadInternalAsync(buffer, cancellationToken));
+
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            SerialStreamIORequest result = new(cancellationToken, buffer);
-            _writeQueue.Enqueue(result);
-
-            EnsureIOLoopRunning();
-
-            return new ValueTask(result.Task);
-        }
+            => new ValueTask(WriteInternalAsync(buffer, cancellationToken));
 #endif
 
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
