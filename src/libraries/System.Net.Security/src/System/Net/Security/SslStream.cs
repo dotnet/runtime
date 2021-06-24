@@ -523,17 +523,17 @@ namespace System.Net.Security
 
         public virtual bool CheckCertRevocationStatus => _context != null && _context.CheckCertRevocationStatus != X509RevocationMode.NoCheck;
 
-         //
-         // This will return selected local cert for both client/server streams
-         //
-         public virtual X509Certificate? LocalCertificate
-         {
-             get
-             {
-                 ThrowIfExceptionalOrNotAuthenticated();
-                 return _context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate;
-             }
-         }
+        //
+        // This will return selected local cert for both client/server streams
+        //
+        public virtual X509Certificate? LocalCertificate
+        {
+            get
+            {
+                ThrowIfExceptionalOrNotAuthenticated();
+                return _context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate;
+            }
+        }
 
         public virtual X509Certificate? RemoteCertificate
         {
@@ -697,7 +697,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.net_ssl_certificate_exist);
             }
 
-            return RenegotiateAsync(cancellationToken);
+            return RenegotiateAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken));
         }
 
         protected override void Dispose(bool disposing)

@@ -81,36 +81,17 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
-        public static SecurityStatusPal Peek(ref SafeDeleteSslContext? securityContext)
-        {
-            int ret = Interop.Ssl.SslPeek(((SafeDeleteSslContext)securityContext!).SslContext);
-            return new SecurityStatusPal(ret == 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.InternalError);
-        }
-
-
         public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? securityContext, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
         {
-//            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
-
-            Console.WriteLine("RENEGO ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext!).SslContext));
-
-            int ret = Interop.Ssl.SslRenegotiate(((SafeDeleteSslContext)securityContext).SslContext);
-            Console.WriteLine("RENEGO {1} ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext!).SslContext), ret);
+            var sslContext = ((SafeDeleteSslContext)securityContext!).SslContext;
+            SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate(sslContext, out outputBuffer);
 
             outputBuffer = Array.Empty<byte>();
-
-            return new SecurityStatusPal(ret == 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.InternalError);
-        }
-
-        public static SecurityStatusPal Renegotiate(SafeDeleteContext securityContext)
-        {
-//            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
-
-            Console.WriteLine("RENEGO ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext).SslContext));
-
-            int ret = Interop.Ssl.SslRenegotiate(((SafeDeleteSslContext)securityContext).SslContext);
-            Console.WriteLine("RENEGO {1} ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)securityContext).SslContext), ret);
-            return new SecurityStatusPal(ret == 1 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.InternalError);
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            {
+                return status;
+            }
+            return HandshakeInternal(credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
@@ -136,8 +117,6 @@ namespace System.Net.Security
             byte[]? output = null;
             int outputSize = 0;
 
-            Console.WriteLine("HandshakeInternal: giving {0} bytes", inputBuffer.Length);
-
             try
             {
                 if ((null == context) || context.IsInvalid)
@@ -145,17 +124,11 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
-
-Console.WriteLine("RENEGO ? {0}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext));
                 bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
                 if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext))
                 {
-                    Console.WriteLine("WTF fif got nothe! {0} trying again", done);
                     done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, ReadOnlySpan<byte>.Empty, out output, out outputSize);
-                    Console.WriteLine("WTF {0} {1}", done, outputSize);
                 }
-Console.WriteLine("RENEGO ? {0} done ? {1}", Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext), done);
-
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.

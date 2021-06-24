@@ -19,20 +19,6 @@ c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
 
-/*
-#define DOTNET_DEFAULT_CIPHERSTRING \
-    "ECDHE-ECDSA-AES256-GCM-SHA384:" \
-    "ECDHE-ECDSA-AES128-GCM-SHA256:" \
-    "ECDHE-RSA-AES256-GCM-SHA384:" \
-    "ECDHE-RSA-AES128-GCM-SHA256:" \
-    "ECDHE-ECDSA-AES256-SHA384:" \
-    "ECDHE-ECDSA-AES128-SHA256:" \
-    "ECDHE-RSA-AES256-SHA384:" \
-    "ECDHE-RSA-AES128-SHA256:" \
-    "DHE-RSA-AES256-GCM-SHA384:ALL" \
-    
-*/
-
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 #ifdef NEED_OPENSSL_1_0
@@ -143,15 +129,6 @@ void CryptoNative_EnsureLibSslInitialized()
     EnsureLibSsl10Initialized();
 #endif
 
-    printf("%s:%d: ++++++++++++++++++++++Init keylog\n", __func__, __LINE__);
-    fp = fopen("/tmp/keylog.txt", "a+");
-    if(setvbuf(fp, NULL, _IONBF, 0))
-    {
-        fclose(fp);
-        return;
-    }
-    printf("%s:%d: ++++++++++++++++++++++Initialised\n", __func__, __LINE__);
-
     DetectCiphersuiteConfiguration();
 }
 
@@ -160,21 +137,6 @@ const SSL_METHOD* CryptoNative_SslV2_3Method()
     const SSL_METHOD* method = TLS_method();
     assert(method != NULL);
     return method;
-}
-
-void SSL_CTX_keylog_cb_func_cb(const SSL *ssl, const char *line);
-void SSL_CTX_keylog_cb_func_cb(const SSL *ssl, const char *line)
-{
-
-    if (!line || !fp) {
-        return;
-    }
-
-    printf("%s:%d: SSL_CTX_keylog_cb_func_cb\n", __func__, __LINE__);
-    (void)ssl;
-
-    fprintf(fp, "%s\n" ,line);
-    fflush(fp);
 }
 
 SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
@@ -193,14 +155,12 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
         // If openssl.cnf doesn't have an opinion for CipherString, then use this value instead
         if (!g_config_specified_ciphersuites)
         {
-            //if (!SSL_CTX_set_cipher_list(ctx, DOTNET_DEFAULT_CIPHERSTRING))
             if (!SSL_CTX_set_cipher_list(ctx, "ALL"))
             {
                 SSL_CTX_free(ctx);
                 return NULL;
             }
         }
-        SSL_CTX_set_keylog_callback(ctx, SSL_CTX_keylog_cb_func_cb);
     }
 
     return ctx;
@@ -320,8 +280,7 @@ void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
-    SSL* ssl = SSL_new(ctx);
-    return ssl;
+    return SSL_new(ctx);
 }
 
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
@@ -357,13 +316,11 @@ void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
 
 void CryptoNative_SslSetConnectState(SSL* ssl)
 {
-    printf("%s:%d: connset state\n", __func__, __LINE__);
     SSL_set_connect_state(ssl);
 }
 
 void CryptoNative_SslSetAcceptState(SSL* ssl)
 {
-    printf("%s:%d: accept state\n", __func__, __LINE__);
     SSL_set_accept_state(ssl);
 }
 
@@ -406,45 +363,30 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
     (void)preverify_ok;
     (void)store;
     // We don't care. Real verification happens in managed code.
-    printf("%s:%d: called!!!\n", __func__, __LINE__);
     return 1;
 }
-
-int32_t CryptoNative_SslPeek(SSL* ssl)
-{
-    return SSL_peek(ssl, NULL, 0);
-}
-
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl)
 {
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
     int pending = SSL_renegotiate_pending(ssl);
-    printf("%s:%d: +++++++++++++++++++++++++++++++++++++++++++++++++\n", __func__, __LINE__);
-    printf("%s:%d: pending=%d ssl=%p\n", __func__, __LINE__, pending, (void*)ssl);
-
-    int ret=0;
-    printf("%s:%d: version=%lu 0x%lx pending %d state %d in_init %d\n", __func__, __LINE__, OpenSSL_version_num(), OpenSSL_version_num(), pending , SSL_get_state(ssl), SSL_in_init(ssl));
     if (!pending)
     {
         SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_callback);
-        printf("%s:%d: set verify in init %s state \n", __func__, __LINE__, SSL_state_string_long(ssl));
-        ret = SSL_renegotiate(ssl);
-        if(ret!=1)
+        int ret = SSL_renegotiate(ssl);
+        if(ret != 1)
             return ret;
 
         return SSL_do_handshake(ssl);
     }
 
-    return ret;
+    return 0;
 }
 
 int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
-    printf("%s:%d: pending=%d ssl=%p\n", __func__, __LINE__, SSL_renegotiate_pending(ssl), (void*)ssl);
     SSL_peek(ssl, NULL, 0);
-    printf("%s:%d: pending=%d ssl=%p\n", __func__, __LINE__, SSL_renegotiate_pending(ssl), (void*)ssl);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 

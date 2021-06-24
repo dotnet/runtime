@@ -183,12 +183,11 @@ namespace System.Net.Security.Tests
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-            //using (client)
+            using (client)
             using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
-                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
-                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
-
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
                     TargetHost = Guid.NewGuid().ToString("N"),
@@ -205,8 +204,7 @@ namespace System.Net.Security.Tests
                 {
                     if (negotiateClientCertificateCalled && sendClientCertificate)
                     {
-                        if (TestHelper.AllowClient)
-                            Assert.Equal(clientCertificate.GetCertHash(), certificate?.GetCertHash());
+                        Assert.Equal(clientCertificate.GetCertHash(), certificate?.GetCertHash());
                     }
                     else
                     {
@@ -217,22 +215,15 @@ namespace System.Net.Security.Tests
                 };
 
 
-                if (TestHelper.AllowClient)
-                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                                    client.AuthenticateAsClientAsync(clientOptions, cts.Token),
-                                    server.AuthenticateAsServerAsync(serverOptions, cts.Token));
-                else 
-                    await server.AuthenticateAsServerAsync(serverOptions, cts.Token);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
                 Assert.Null(server.RemoteCertificate);
 
-
-                ValueTask<int> t = new ();
-                if (TestHelper.AllowClient) 
-                {
-                    // Client needs to be reading for renegotiation to happen.
-                    byte[] buffer = new byte[TestHelper.s_ping.Length];
-                    t = client.ReadAsync(buffer, cts.Token);
-                }
+                // Client needs to be reading for renegotiation to happen.
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
 
                 negotiateClientCertificateCalled = true;
                 await server.NegotiateClientCertificateAsync(cts.Token);
@@ -245,21 +236,13 @@ namespace System.Net.Security.Tests
                     Assert.Null(server.RemoteCertificate);
                 }
 
-
-
                 // Finish the client's read
                 await server.WriteAsync(TestHelper.s_ping, cts.Token);
-                if (TestHelper.AllowClient)  
-                    await t;
-
+                await t;
 
                 // verify that the session is usable with or without client's certificate
-                if (TestHelper.AllowClient)
-                    {
-                        await TestHelper.PingPong(client, server, cts.Token);
-                        await TestHelper.PingPong(server, client, cts.Token);
-                    }
-
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
             }
         }
 

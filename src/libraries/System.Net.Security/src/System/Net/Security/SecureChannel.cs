@@ -21,7 +21,7 @@ namespace System.Net.Security
         internal const int ReadHeaderSize = 5;
 
         private SafeFreeCredentials? _credentialsHandle;
-        internal SafeDeleteSslContext? _securityContext;
+        private SafeDeleteSslContext? _securityContext;
 
         private SslConnectionInfo? _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
@@ -944,11 +944,9 @@ namespace System.Net.Security
             X509Chain? chain = null;
             X509Certificate2Collection? remoteCertificateStore = null;
 
-
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
-Console.WriteLine("VerifyRemoteCertificate called, remote is {0}", certificate);
 
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawData.AsSpan().SequenceEqual(_remoteCertificate.RawData))
@@ -1114,17 +1112,6 @@ Console.WriteLine("VerifyRemoteCertificate called, remote is {0}", certificate);
             }
 
             return GenerateAlertToken();
-        }
-
-        public SecurityStatusPal Renegotiate()
-        {
-            return SslStreamPal.Renegotiate(_securityContext!);
-        }
-
-
-        public SecurityStatusPal Peek()
-        {
-            return SslStreamPal.Peek(ref _securityContext!);
         }
 
         private ProtocolToken GenerateAlertToken()

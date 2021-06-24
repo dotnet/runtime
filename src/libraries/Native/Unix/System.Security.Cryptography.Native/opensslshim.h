@@ -457,7 +457,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
-    REQUIRED_FUNCTION(SSL_CTX_set_cert_verify_callback) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
@@ -902,7 +901,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
-#define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_set_keylog_callback SSL_CTX_set_keylog_callback_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
 #define SSL_CTX_set_ciphersuites SSL_CTX_set_ciphersuites_ptr

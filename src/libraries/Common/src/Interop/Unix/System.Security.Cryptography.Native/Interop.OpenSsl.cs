@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
@@ -226,6 +227,19 @@ internal static partial class Interop
             return context;
         }
 
+        internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
+        {
+            int ret = Interop.Ssl.SslRenegotiate(sslContext);
+
+            outputBuffer = Array.Empty<byte>();
+            if (ret != 1)
+            {
+                GetSslError(sslContext, ret, out Exception? exception);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exception);
+            }
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+        }
+
         internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
         {
             sendBuf = null;
@@ -241,9 +255,7 @@ internal static partial class Interop
                 }
             }
 
-            Console.WriteLine("Going to do handshake " +  Ssl.IsSslRenegotiatePending(context));
             int retVal = Ssl.SslDoHandshake(context);
-            Console.WriteLine("After handshake " +  Ssl.IsSslRenegotiatePending(context));
             if (retVal != 1)
             {
                 Exception? innerError;

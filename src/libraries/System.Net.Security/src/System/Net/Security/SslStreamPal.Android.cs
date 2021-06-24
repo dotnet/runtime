@@ -241,15 +241,5 @@ namespace System.Net.Security
 
             return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
         }
-
-        public static SecurityStatusPal Peek(ref SafeDeleteSslContext? securityContext)
-        {
-           throw  new PlatformNotSupportedException();
-        }
-
-        public static SecurityStatusPal Renegotiate(SafeDeleteContext securityContext)
-        {
-            throw  new PlatformNotSupportedException();
-        }
     }
 }
