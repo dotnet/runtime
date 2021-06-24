@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private class Http2StreamWindowManager
+        private struct Http2StreamWindowManager
         {
             public const int StreamWindowUpdateRatio = 8;
             private static readonly double StopWatchToTimesSpan = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
@@ -37,6 +37,7 @@ namespace System.Net.Http
                 _maxStreamWindowSize = settings._maxHttp2StreamWindowSize;
                 _windowScaleThresholdMultiplier = settings._http2StreamWindowScaleThresholdMultiplier;
                 _lastWindowUpdate = Stopwatch.GetTimestamp();
+                _deliveredBytes = 0;
 
                 if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {_windowScaleThresholdMultiplier}");
             }
@@ -45,7 +46,7 @@ namespace System.Net.Http
 
             internal int StreamWindowThreshold => _streamWindowSize / StreamWindowUpdateRatio;
 
-            public virtual void AdjustWindow(int bytesConsumed)
+            public void AdjustWindow(int bytesConsumed)
             {
                 Debug.Assert(bytesConsumed > 0);
                 Debug.Assert(_deliveredBytes < StreamWindowThreshold);
