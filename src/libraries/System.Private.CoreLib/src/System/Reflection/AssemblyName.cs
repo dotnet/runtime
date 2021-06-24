@@ -126,7 +126,7 @@ namespace System.Reflection
                 _publicKey = (byte[]?)_publicKey?.Clone(),
                 _publicKeyToken = (byte[]?)_publicKeyToken?.Clone(),
                 _cultureInfo = _cultureInfo,
-                _version = (Version?)_version?.Clone(),
+                _version = _version,
                 _flags = _flags,
                 _codeBase = _codeBase,
                 _hashAlgorithm = _hashAlgorithm,
