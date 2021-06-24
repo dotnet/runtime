@@ -228,11 +228,7 @@ namespace System.Data.Common
                     // <value> -> <value>
                     builder.Append(keyValue);
                 }
-#if NETCOREAPP
-                else if (keyValue.Contains('\"') && !keyValue.Contains('\''))
-#else
                 else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
-#endif
                 {
                     // <val"ue> -> <'val"ue'>
                     builder.Append('\'');
@@ -770,17 +766,9 @@ namespace System.Data.Common
             {
 #if DEBUG
                 bool compValue = ConnectionStringValidValueRegex.IsMatch(keyvalue);
-#if NETCOREAPP
-                Debug.Assert(!keyvalue.Contains('\u0000') == compValue, "IsValueValid mismatch with regex");
-#else
                 Debug.Assert((-1 == keyvalue.IndexOf('\u0000')) == compValue, "IsValueValid mismatch with regex");
 #endif
-#endif
-#if NETCOREAPP
-                return !keyvalue.Contains('\u0000');
-#else
                 return (-1 == keyvalue.IndexOf('\u0000'));
-#endif
             }
             return true;
         }
@@ -791,20 +779,9 @@ namespace System.Data.Common
             {
 #if DEBUG
                 bool compValue = ConnectionStringValidKeyRegex.IsMatch(keyname);
-                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) &&
-#if NETCOREAPP
-                !keyname.Contains('\u0000')
-#else
-                (-1 == keyname.IndexOf('\u0000'))
+                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000'))) == compValue, "IsValueValid mismatch with regex");
 #endif
-                ) == compValue, "IsValueValid mismatch with regex");
-#endif
-                return ((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) &&
-#if NETCOREAPP
-               !keyname.Contains('\u0000'));
-#else
-               (-1 == keyname.IndexOf('\u0000')));
-#endif
+                return ((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000')));
             }
             return false;
         }
