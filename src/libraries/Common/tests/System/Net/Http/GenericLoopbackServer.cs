@@ -247,5 +247,7 @@ namespace System.Net.Test.Common
         {
             return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase)).Count();
         }
+
+        public override string ToString() => $"{Method} {Path} HTTP/{Version}\r\n{string.Join("\r\n", Headers)}\r\n\r\n";
     }
 }
