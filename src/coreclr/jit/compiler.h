@@ -79,6 +79,8 @@ class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
 class CSE_DataFlow;        // defined in OptCSE.cpp
+struct OptBoolsDsc;        // defined in optimizer.cpp
+struct OptTestInfo;
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -6315,7 +6317,13 @@ public:
     void optOptimizeBools();
 
 private:
-    GenTree* optIsBoolCond(GenTree* condBranch, GenTree** compPtr, bool* boolPtr);
+    bool optOptimizeBoolsCondBlock(OptBoolsDsc* pOptBoolsDsc);
+    bool optOptimizeBoolsReturnBlock(OptBoolsDsc* pOptBoolsDsc);
+    Statement* optOptimizeBoolsChkBlkCond(OptBoolsDsc* pOptBoolsDsc);
+    GenTree* optIsBoolComp(OptTestInfo* optTest);
+    bool optOptimizeBoolsChkTypeCostCond(OptBoolsDsc* pOptBoolsDsc);
+    void optOptimizeBoolsUpdateTrees(OptBoolsDsc* pOptBoolsDsc);
+    void optReturnGetFoldAndCompOper(OptBoolsDsc* pOptBoolsDsc);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif
