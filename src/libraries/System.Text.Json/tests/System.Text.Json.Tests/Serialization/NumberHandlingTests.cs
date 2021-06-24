@@ -1631,24 +1631,24 @@ namespace System.Text.Json.Serialization.Tests
 
     public class NumberHandlingTests_AsyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_AsyncStreamOverload() : base(SerializationWrapper.AsyncStreamSerializer) { }
+        public NumberHandlingTests_AsyncStreamOverload() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncStreamOverload() : base(SerializationWrapper.SyncStreamSerializer) { }
+        public NumberHandlingTests_SyncStreamOverload() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncOverload() : base(SerializationWrapper.StringSerializer) { }
+        public NumberHandlingTests_SyncOverload() : base(JsonSerializerWrapperForString.StringSerializer) { }
     }
 
     public abstract class NumberHandlingTests_OverloadSpecific
     {
-        private SerializationWrapper Deserializer { get; }
+        private JsonSerializerWrapperForString Deserializer { get; }
 
-        public NumberHandlingTests_OverloadSpecific(SerializationWrapper deserializer)
+        public NumberHandlingTests_OverloadSpecific(JsonSerializerWrapperForString deserializer)
         {
             Deserializer = deserializer;
         }

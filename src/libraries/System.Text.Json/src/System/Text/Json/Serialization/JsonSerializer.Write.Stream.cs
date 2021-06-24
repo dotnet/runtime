@@ -16,7 +16,7 @@ namespace System.Text.Json
         // We flush the Stream when the buffer is >=90% of capacity.
         // This threshold is a compromise between buffer utilization and minimizing cases where the buffer
         // needs to be expanded\doubled because it is not large enough to write the current property or element.
-        // We check for flush after each object property and array element is written to the buffer.
+        // We check for flush after each JSON property and element is written to the buffer.
         // Once the buffer is expanded to contain the largest single element\property, a 90% thresold
         // means the buffer may be expanded a maximum of 4 times: 1-(1\(2^4))==.9375.
         private const float FlushThreshold = .9f;

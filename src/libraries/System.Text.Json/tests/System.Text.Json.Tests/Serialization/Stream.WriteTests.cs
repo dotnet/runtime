@@ -9,25 +9,8 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class StreamTests_Async : StreamTests
+    public partial class StreamTests
     {
-        public StreamTests_Async() : base(SerializationWrapperForStream.AsyncStreamSerializer) { }
-    }
-
-    public class StreamTests_Sync : StreamTests
-    {
-        public StreamTests_Sync() : base(SerializationWrapperForStream.SyncStreamSerializer) { }
-    }
-
-    public abstract partial class StreamTests
-    {
-        private SerializationWrapperForStream Serializer { get; }
-
-        public StreamTests(SerializationWrapperForStream serializer)
-        {
-            Serializer = serializer;
-        }
-
         [Fact]
         public static async Task WriteNullArgumentFail()
         {

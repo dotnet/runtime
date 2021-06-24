@@ -8,34 +8,34 @@ namespace System.Text.Json.Tests.Serialization
 {
     public sealed class MetadataTests_Span : MetadataTests
     {
-        public MetadataTests_Span() : base(SerializationWrapper.SpanSerializer) { }
+        public MetadataTests_Span() : base(JsonSerializerWrapperForString.SpanSerializer) { }
     }
 
     public sealed class MetadataTests_String : MetadataTests
     {
-        public MetadataTests_String() : base(SerializationWrapper.StringSerializer) { }
+        public MetadataTests_String() : base(JsonSerializerWrapperForString.StringSerializer) { }
     }
 
     public sealed class MetadataTests_AsyncStream : MetadataTests
     {
-        public MetadataTests_AsyncStream() : base(SerializationWrapper.AsyncStreamSerializer) { }
+        public MetadataTests_AsyncStream() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
     }
 
     public sealed class MetadataTests_SyncStream : MetadataTests
     {
-        public MetadataTests_SyncStream() : base(SerializationWrapper.SyncStreamSerializer) { }
+        public MetadataTests_SyncStream() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
     }
 
     public sealed class MetadataTests_LowLevel : MetadataTests
     {
-        public MetadataTests_LowLevel() : base(SerializationWrapper.ReaderWriterSerializer) { }
+        public MetadataTests_LowLevel() : base(JsonSerializerWrapperForString.ReaderWriterSerializer) { }
     }
 
     public abstract partial class MetadataTests
     {
-        protected SerializationWrapper Serializer { get; }
+        protected JsonSerializerWrapperForString Serializer { get; }
 
-        public MetadataTests(SerializationWrapper serializer)
+        public MetadataTests(JsonSerializerWrapperForString serializer)
         {
             Serializer = serializer;
         }

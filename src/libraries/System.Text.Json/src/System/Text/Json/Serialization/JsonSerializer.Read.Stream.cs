@@ -417,7 +417,7 @@ namespace System.Text.Json
             CancellationToken cancellationToken)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            var asyncState = new ReadBufferState(options.DefaultBufferSize);
+            var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
             JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
@@ -427,10 +427,10 @@ namespace System.Text.Json
             {
                 while (true)
                 {
-                    asyncState = await ReadFromStreamAsync(utf8Json, asyncState, cancellationToken).ConfigureAwait(false);
-                    TValue value = ContinueDeserialize<TValue>(ref asyncState, ref jsonReaderState, ref readStack, converter, options);
+                    bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
+                    TValue value = ContinueDeserialize<TValue>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
 
-                    if (asyncState.IsFinalBlock)
+                    if (bufferState.IsFinalBlock)
                     {
                         return value!;
                     }
@@ -438,7 +438,7 @@ namespace System.Text.Json
             }
             finally
             {
-                asyncState.Dispose();
+                bufferState.Dispose();
             }
         }
 
@@ -447,7 +447,7 @@ namespace System.Text.Json
             JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            var asyncState = new ReadBufferState(options.DefaultBufferSize);
+            var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
             JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
@@ -457,10 +457,10 @@ namespace System.Text.Json
             {
                 while (true)
                 {
-                    asyncState = ReadFromStream(utf8Json, asyncState);
-                    TValue value = ContinueDeserialize<TValue>(ref asyncState, ref jsonReaderState, ref readStack, converter, options);
+                    bufferState = ReadFromStream(utf8Json, bufferState);
+                    TValue value = ContinueDeserialize<TValue>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
 
-                    if (asyncState.IsFinalBlock)
+                    if (bufferState.IsFinalBlock)
                     {
                         return value!;
                     }
@@ -468,7 +468,7 @@ namespace System.Text.Json
             }
             finally
             {
-                asyncState.Dispose();
+                bufferState.Dispose();
             }
         }
 

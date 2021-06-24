@@ -9,18 +9,18 @@ using Xunit;
 namespace System.Text.Json.Serialization.Tests
 {
     /// <summary>
-    /// Base class for wrapping serialization calls which allows tests to run under different configurations.
+    /// Base class for wrapping string-based JsonSerializer methods which allows tests to run under different configurations.
     /// </summary>
-    public abstract class SerializationWrapper
+    public abstract class JsonSerializerWrapperForString
     {
         private static readonly JsonSerializerOptions _optionsWithSmallBuffer = new JsonSerializerOptions { DefaultBufferSize = 1 };
 
-        public static SerializationWrapper SpanSerializer => new SpanSerializerWrapper();
-        public static SerializationWrapper StringSerializer => new StringSerializerWrapper();
-        public static SerializationWrapper AsyncStreamSerializer => new AsyncStreamSerializerWrapper();
-        public static SerializationWrapper AsyncStreamSerializerWithSmallBuffer => new AsyncStreamSerializerWrapperWithSmallBuffer();
-        public static SerializationWrapper SyncStreamSerializer => new SyncStreamSerializerWrapper();
-        public static SerializationWrapper ReaderWriterSerializer => new ReaderWriterSerializerWrapper();
+        public static JsonSerializerWrapperForString SpanSerializer => new SpanSerializerWrapper();
+        public static JsonSerializerWrapperForString StringSerializer => new StringSerializerWrapper();
+        public static JsonSerializerWrapperForString AsyncStreamSerializer => new AsyncStreamSerializerWrapper();
+        public static JsonSerializerWrapperForString AsyncStreamSerializerWithSmallBuffer => new AsyncStreamSerializerWrapperWithSmallBuffer();
+        public static JsonSerializerWrapperForString SyncStreamSerializer => new SyncStreamSerializerWrapper();
+        public static JsonSerializerWrapperForString ReaderWriterSerializer => new ReaderWriterSerializerWrapper();
 
         protected internal abstract Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null);
 
@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Tests
 
         protected internal abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
 
-        private class SpanSerializerWrapper : SerializationWrapper
+        private class SpanSerializerWrapper : JsonSerializerWrapperForString
         {
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class StringSerializerWrapper : SerializationWrapper
+        private class StringSerializerWrapper : JsonSerializerWrapperForString
         {
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class AsyncStreamSerializerWrapper : SerializationWrapper
+        private class AsyncStreamSerializerWrapper : JsonSerializerWrapperForString
         {
             protected internal override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -209,7 +209,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class SyncStreamSerializerWrapper : SerializationWrapper
+        private class SyncStreamSerializerWrapper : JsonSerializerWrapperForString
         {
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class ReaderWriterSerializerWrapper : SerializationWrapper
+        private class ReaderWriterSerializerWrapper : JsonSerializerWrapperForString
         {
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
