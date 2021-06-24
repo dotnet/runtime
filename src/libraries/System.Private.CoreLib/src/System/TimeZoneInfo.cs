@@ -51,7 +51,6 @@ namespace System
 
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
         private const string UtcId = "UTC";
-        private const string LocalId = "Local";
 
         private static CachedData s_cachedData = new CachedData();
 
