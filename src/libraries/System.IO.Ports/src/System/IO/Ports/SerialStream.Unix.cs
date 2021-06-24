@@ -447,7 +447,7 @@ namespace System.IO.Ports
         {
             CheckReadWriteArguments(array, offset, count);
 
-            return count == 0 
+            return count == 0
                 ? Task<int>.FromResult(0) // return immediately if no bytes requested; no need for overhead.
                 : ReadInternalAsync(new Memory<byte>(array, offset, count), cancellationToken);
         }
