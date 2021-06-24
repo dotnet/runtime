@@ -18,7 +18,9 @@ namespace System.Drawing
     {
         private const int OK = 0;
         private static readonly Guid IStreamIID = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+
         private static readonly ComInterfaceEntry* s_wrapperEntry = InitializeComInterfaceEntry();
+
         internal static DrawingComWrappers Instance { get; } = new DrawingComWrappers();
 
         private DrawingComWrappers() { }
@@ -27,6 +29,12 @@ namespace System.Drawing
         {
             if (result != OK)
             {
+                Exception? ex = Marshal.GetExceptionForHR(result);
+                if (ex != null)
+                {
+                    throw ex;
+                }
+
                 throw new ExternalException() { HResult = result };
             }
         }
@@ -35,12 +43,11 @@ namespace System.Drawing
         {
             GetIUnknownImpl(out IntPtr fpQueryInteface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-            IntPtr iStreamVtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IStreamVtbl), sizeof(IStreamVtbl));
-            IStreamVtbl.Fill((IStreamVtbl*)iStreamVtblRaw, fpQueryInteface, fpAddRef, fpRelease);
+            IntPtr iStreamVtbl = IStreamVtbl.Create(fpQueryInteface, fpAddRef, fpRelease);
 
-            ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IStreamVtbl), sizeof(ComInterfaceEntry));
+            ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingComWrappers), sizeof(ComInterfaceEntry));
             wrapperEntry->IID = IStreamIID;
-            wrapperEntry->Vtable = iStreamVtblRaw;
+            wrapperEntry->Vtable = iStreamVtbl;
             return wrapperEntry;
         }
 
@@ -73,141 +80,210 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
-        internal struct IUnknownVtbl
+        internal static class IStreamVtbl
         {
-            public IntPtr QueryInterface;
-            public IntPtr AddRef;
-            public IntPtr Release;
-        }
-
-        internal unsafe struct IStreamVtbl
-        {
-            public IUnknownVtbl IUnknownImpl;
-            public delegate* unmanaged<IntPtr, byte*, uint, uint*, Interop.HRESULT> Read;
-            public delegate* unmanaged<IntPtr, byte*, uint, uint*, Interop.HRESULT> Write;
-            public delegate* unmanaged<IntPtr, long, SeekOrigin, ulong*, Interop.HRESULT> Seek;
-            public delegate* unmanaged<IntPtr, ulong, Interop.HRESULT> SetSize;
-            public delegate* unmanaged<IntPtr, IntPtr, ulong, ulong*, ulong*, Interop.HRESULT> CopyTo;
-            public delegate* unmanaged<IntPtr, uint, Interop.HRESULT> Commit;
-            public delegate* unmanaged<IntPtr, Interop.HRESULT> Revert;
-            public delegate* unmanaged<IntPtr, ulong, ulong, uint, Interop.HRESULT> LockRegion;
-            public delegate* unmanaged<IntPtr, ulong, ulong, uint, Interop.HRESULT> UnlockRegion;
-            public delegate* unmanaged<IntPtr, out Interop.Ole32.STATSTG, Interop.Ole32.STATFLAG, Interop.HRESULT> Stat;
-            public delegate* unmanaged<IntPtr, IntPtr*, Interop.HRESULT> Clone;
-
-            public static void Fill(IStreamVtbl* vtable, IntPtr fpQueryInteface, IntPtr fpAddRef, IntPtr fpRelease)
+            public static IntPtr Create(IntPtr fpQueryInteface, IntPtr fpAddRef, IntPtr fpRelease)
             {
-                vtable->IUnknownImpl = new IUnknownVtbl()
+                IntPtr* vtblRaw = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IStreamVtbl), IntPtr.Size * 14);
+                vtblRaw[0] = fpQueryInteface;
+                vtblRaw[1] = fpAddRef;
+                vtblRaw[2] = fpRelease;
+                vtblRaw[3] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&ReadImplementation;
+                vtblRaw[4] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&WriteImplementation;
+                vtblRaw[5] = (IntPtr)(delegate* unmanaged<IntPtr, long, SeekOrigin, ulong*, int>)&SeekImplementation;
+                vtblRaw[6] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, int>)&SetSizeImplementation;
+                vtblRaw[7] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, ulong, ulong*, ulong*, int>)&CopyToImplementation;
+                vtblRaw[8] = (IntPtr)(delegate* unmanaged<IntPtr, uint, int>)&CommitImplementation;
+                vtblRaw[9] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&RevertImplementation;
+                vtblRaw[10] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, ulong, uint, int>)&LockRegionImplementation;
+                vtblRaw[11] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, ulong, uint, int>)&UnlockRegionImplementation;
+                vtblRaw[12] = (IntPtr)(delegate* unmanaged<IntPtr, out Interop.Ole32.STATSTG, Interop.Ole32.STATFLAG, int>)&StatImplementation;
+                vtblRaw[13] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr*, int>)&CloneImplementation;
+
+                return (IntPtr)vtblRaw;
+            }
+
+            [UnmanagedCallersOnly]
+            private static int ReadImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbRead)
+            {
+                try
                 {
-                    QueryInterface = fpQueryInteface,
-                    AddRef = fpAddRef,
-                    Release = fpRelease
-                };
-                vtable->Read = &ReadImplementation;
-                vtable->Write = &WriteImplementation;
-                vtable->Seek = &SeekImplementation;
-                vtable->SetSize = &SetSizeImplementation;
-                vtable->CopyTo = &CopyToImplementation;
-                vtable->Commit = &CommitImplementation;
-                vtable->Revert = &RevertImplementation;
-                vtable->LockRegion = &LockRegionImplementation;
-                vtable->UnlockRegion = &UnlockRegionImplementation;
-                vtable->Stat = &StatImplementation;
-                vtable->Clone = &CloneImplementation;
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.Read(pv, cb, pcbRead);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT ReadImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbRead)
+            private static int WriteImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbWritten)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.Read(pv, cb, pcbRead);
-                return Interop.HRESULT.S_OK;
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.Write(pv, cb, pcbWritten);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT WriteImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbWritten)
+            private static int SeekImplementation(IntPtr thisPtr, long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.Write(pv, cb, pcbWritten);
-                return Interop.HRESULT.S_OK;
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.Seek(dlibMove, dwOrigin, plibNewPosition);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT SeekImplementation(IntPtr thisPtr, long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition)
+            private static int SetSizeImplementation(IntPtr thisPtr, ulong libNewSize)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.Seek(dlibMove, dwOrigin, plibNewPosition);
-                return Interop.HRESULT.S_OK;
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.SetSize(libNewSize);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT SetSizeImplementation(IntPtr thisPtr, ulong libNewSize)
+            private static int CopyToImplementation(IntPtr thisPtr, IntPtr pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.SetSize(libNewSize);
-                return Interop.HRESULT.S_OK;
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    Interop.Ole32.IStream pstmStream = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)pstm);
+
+                    inst.CopyTo(pstmStream, cb, pcbRead, pcbWritten);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT CopyToImplementation(IntPtr thisPtr, IntPtr pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
+            private static int CommitImplementation(IntPtr thisPtr, uint grfCommitFlags)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                Interop.Ole32.IStream pstmStream = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)pstm);
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.Commit(grfCommitFlags);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
 
-                inst.CopyTo(pstmStream, cb, pcbRead, pcbWritten);
-                return Interop.HRESULT.S_OK;
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT CommitImplementation(IntPtr thisPtr, uint grfCommitFlags)
+            private static int RevertImplementation(IntPtr thisPtr)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.Commit(grfCommitFlags);
-                return Interop.HRESULT.S_OK;
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.Revert();
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT RevertImplementation(IntPtr thisPtr)
+            private static int LockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.Revert();
-                return Interop.HRESULT.S_OK;
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    return (int)inst.LockRegion(libOffset, cb, dwLockType);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT LockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
+            private static int UnlockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                return inst.LockRegion(libOffset, cb, dwLockType);
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    return (int)inst.UnlockRegion(libOffset, cb, dwLockType);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT UnlockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
+            private static int StatImplementation(IntPtr thisPtr, out Interop.Ole32.STATSTG pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
             {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                return inst.UnlockRegion(libOffset, cb, dwLockType);
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                    inst.Stat(out pstatstg, grfStatFlag);
+                }
+                catch (Exception e)
+                {
+                    pstatstg = default;
+                    return e.HResult;
+                }
+
+                return OK;
             }
 
             [UnmanagedCallersOnly]
-            private static Interop.HRESULT StatImplementation(IntPtr thisPtr, out Interop.Ole32.STATSTG pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
-            {
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                inst.Stat(out pstatstg, grfStatFlag);
-                return Interop.HRESULT.S_OK;
-            }
-
-            [UnmanagedCallersOnly]
-            private static Interop.HRESULT CloneImplementation(IntPtr thisPtr, IntPtr* ppstm)
+            private static int CloneImplementation(IntPtr thisPtr, IntPtr* ppstm)
             {
                 if (ppstm == null)
                 {
-                    return Interop.HRESULT.STG_E_INVALIDPOINTER;
+                    return (int)Interop.HRESULT.STG_E_INVALIDPOINTER;
                 }
 
-                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                try
+                {
+                    Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
 
-                *ppstm = Instance.GetOrCreateComInterfaceForObject(inst.Clone(), CreateComInterfaceFlags.None);
-                return Interop.HRESULT.S_OK;
+                    *ppstm = Instance.GetOrCreateComInterfaceForObject(inst.Clone(), CreateComInterfaceFlags.None);
+                }
+                catch (Exception e)
+                {
+                    return e.HResult;
+                }
+
+                return OK;
             }
         }
 
