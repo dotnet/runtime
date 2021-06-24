@@ -157,10 +157,18 @@ namespace System.Tests
         [InlineData(PosixSignal.SIGQUIT, false, 131)]
         public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
         {
-            RemoteExecutor.Invoke((signalStr, cancelStr) =>
+            // Mono doesn't restore and call SIG_DFL on SIGQUIT.
+            bool isMono = Type.GetType("Mono.Runtime") != null;
+            if (isMono && signal ==  PosixSignal.SIGQUIT && cancel == false)
+            {
+                expectedExitCode = 0;
+            }
+
+            RemoteExecutor.Invoke((signalStr, cancelStr, expectedStr) =>
             {
                 PosixSignal signalArg = Enum.Parse<PosixSignal>(signalStr);
                 bool cancelArg = bool.Parse(cancelStr);
+                int expected = int.Parse(expectedStr);
 
                 using SemaphoreSlim semaphore = new(0);
                 using var _ = PosixSignalRegistration.Create(signalArg, ctx =>
@@ -176,10 +184,10 @@ namespace System.Tests
                 Assert.True(entered);
 
                 // Give the default signal handler a chance to run.
-                Thread.Sleep(cancelArg ? TimeSpan.FromSeconds(1) : TimeSpan.FromMinutes(10));
+                Thread.Sleep(expected == 0 ? TimeSpan.FromSeconds(5) : TimeSpan.FromMinutes(10));
 
                 return 0;
-            }, signal.ToString(), cancel.ToString(),
+            }, signal.ToString(), cancel.ToString(), expectedExitCode.ToString(),
                new RemoteInvokeOptions() { ExpectedExitCode = expectedExitCode, TimeOut = 10 * 60 * 1000 }).Dispose();
         }
 
