@@ -299,7 +299,7 @@ var Module = {
 	 * @type {() => Promise<void>}
 	 */
 	preInit: async function() {
-		await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
+		await Module.MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
 	},
 
 	/** Called after an exception occurs during execution
@@ -465,5 +465,5 @@ IOHandler
 	.load ("./dotnet.js")
 	.catch(function(err) {
 		console.error(err);
-		fail_exec("failed to load the mono-config.js or dotnet.js files");
+		fail_exec("failed to load the dotnet.js file");
 	});
