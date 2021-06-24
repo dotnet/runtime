@@ -4251,9 +4251,11 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Array.Fill(new string[arrayLength], "", startIndex, count));
         }
 
-        public class Bar
+        public class Bar : IEquatable<Bar>
         {
             public string Value { get; set; }
+
+            public bool Equals(Bar other) => string.Equals(Value, other.Value);
         }
 
         public class Foo
