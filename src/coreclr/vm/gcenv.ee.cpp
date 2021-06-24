@@ -1644,13 +1644,17 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes) && (gcIndex > (uint64_t)gcGenAnalysisIndex))
 #endif
         {
-            EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
-            FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
-            s_forcedGCInProgress = true;
-            GCProfileWalkHeap(true);
-            s_forcedGCInProgress = false;
-            reportGenerationBounds();
-            FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
+            if (gcGenAnalysisTrace)
+            {
+                EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
+                FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
+                s_forcedGCInProgress = true;
+                GCProfileWalkHeap(true);
+                s_forcedGCInProgress = false;
+                reportGenerationBounds();
+                FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
+                EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
+            }
             if (gcGenAnalysisDump)
             {
                 EX_TRY
@@ -1660,7 +1664,6 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                 EX_CATCH {}
                 EX_END_CATCH(SwallowAllExceptions);
             }
-            EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);
         }

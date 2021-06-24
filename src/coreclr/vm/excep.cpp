@@ -4193,7 +4193,7 @@ bool GenerateDump(
     }
 #else // TARGET_UNIX
     return GenerateCrashDump(dumpName, dumpType, diag);
-#endif
+#endif // TARGET_UNIX
 }
 
 //************************************************************************************

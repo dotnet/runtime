@@ -30,6 +30,7 @@ extern GcGenAnalysisState gcGenAnalysisConfigured;
 extern int64_t gcGenAnalysisGen;
 extern int64_t gcGenAnalysisBytes;
 extern int64_t gcGenAnalysisIndex;
+extern bool gcGenAnalysisTrace;
 extern bool gcGenAnalysisDump;
 
 class GenAnalysis
