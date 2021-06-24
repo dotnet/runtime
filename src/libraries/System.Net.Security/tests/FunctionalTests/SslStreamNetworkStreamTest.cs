@@ -327,7 +327,6 @@ namespace System.Net.Security.Tests
             using (server)
             {
                 using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
-                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
 
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
@@ -335,18 +334,8 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
                 };
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
-                {
-                    //Assert.True(false, "Clent shouldn't send certificate in this test");
-                    return clientCertificate;
-                };
 
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
-                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                {
-                    //Assert.True(false, "Server shouldn't receive certificate in this test");
-                    return true;
-                };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions, cts.Token),
@@ -376,7 +365,6 @@ namespace System.Net.Security.Tests
             using (server)
             {
                 using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
-                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
 
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
@@ -384,18 +372,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
                 };
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
-                {
-                    //Assert.True(false, "Clent shouldn't send certificate in this test");
-                    return clientCertificate;
-                };
-
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
-                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                {
-                    //Assert.True(false, "Server shouldn't receive certificate in this test");
-                    return true;
-                };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions, cts.Token),
