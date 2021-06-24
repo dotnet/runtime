@@ -129,17 +129,5 @@ namespace System.IO
             return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString.AsSpan() : ReadOnlySpan<char>.Empty;
         }
 
-        /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive
-        {
-            get
-            {
-                #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    return false;
-                #else
-                    return true;
-                #endif
-            }
-        }
     }
 }

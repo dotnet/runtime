@@ -417,8 +417,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         try
         {
             // run the AOT compiler
-            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, assemblyDir, silent: false,
-                    outputMessageImportance: MessageImportance.Low, debugMessageImportance: MessageImportance.Low);
+            (int exitCode, string output) = Utils.TryRunProcess(CompilerBinaryPath,
+                                                                string.Join(" ", processArgs),
+                                                                envVariables,
+                                                                assemblyDir,
+                                                                silent: false,
+                                                                debugMessageImportance: MessageImportance.Low);
+            if (exitCode != 0)
+            {
+                Log.LogError($"Precompiling failed for {assembly}: {output}");
+                return false;
+            }
         }
         catch (Exception ex)
         {
