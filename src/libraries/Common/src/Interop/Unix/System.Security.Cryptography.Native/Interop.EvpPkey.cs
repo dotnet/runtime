@@ -40,11 +40,71 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static extern void EvpPkeyDestroy(IntPtr pkey);
 
+        /// <summary>
+        ///  Gets the size of the key, in bits, in an algorithm-specific manner.
+        /// </summary>
+        /// <remarks>
+        ///  * RSA: The bit length of the modulus value.
+        ///  * DSA: The bit length of the P value.
+        /// </remarks>
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
+        internal static extern int EvpPKeyBits(SafeEvpPKeyHandle pkey);
+
+        /// <summary>
+        ///  Gets the maximum size, in bytes, of a buffer used in conjunction with this key.
+        /// </summary>
+        /// <remarks>
+        ///  * RSA: The length of the modulus value.
+        ///  * DSA: The length of a DER-encoded SEQUENCE(INTEGER(r),INTEGER(s)) signature.
+        /// </remarks>
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
         internal static extern int EvpPKeySize(SafeEvpPKeyHandle pkey);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern unsafe int CryptoNative_SimpleVerifyHash(
+            SafeEvpPKeyHandle pkey,
+            byte* hash,
+            int hashLen,
+            byte* signature,
+            int signatureLen);
+
+        internal static bool SimpleVerifyHash(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature)
+        {
+            int ret;
+
+            unsafe
+            {
+                fixed (byte* hashPtr = hash)
+                fixed (byte* signaturePtr = signature)
+                {
+                    ret = CryptoNative_SimpleVerifyHash(
+                        pkey,
+                        hashPtr,
+                        hash.Length,
+                        signaturePtr,
+                        signature.Length);
+                }
+            }
+
+            if (ret == 1)
+            {
+                return true;
+            }
+
+            if (ret == 0)
+            {
+                return false;
+            }
+
+            Debug.Assert(ret == -1);
+            throw CreateOpenSslCryptographicException();
+        }
 
         [DllImport(Libraries.CryptoNative)]
         private static extern unsafe SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(

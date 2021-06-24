@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Numerics;
@@ -128,6 +129,25 @@ namespace System.Security.Cryptography
                 out bytesRead);
         }
 
+        /// <summary>
+        ///   Checks that a SubjectPublicKeyInfo represents a DSA key.
+        /// </summary>
+        /// <returns>The number of bytes read from <paramref name="source"/>.</returns>
+        internal static unsafe int CheckSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+        {
+            int bytesRead;
+
+            fixed (byte* ptr = source)
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    _ = ReadSubjectPublicKeyInfo(manager.Memory, out bytesRead);
+                }
+            }
+
+            return bytesRead;
+        }
+
         internal static void ReadPkcs8(
             ReadOnlySpan<byte> source,
             out int bytesRead,
@@ -169,6 +189,24 @@ namespace System.Security.Cryptography
                 ReadDsaPrivateKey,
                 out bytesRead,
                 out key);
+        }
+
+        internal static unsafe int CheckPkcs8(ReadOnlySpan<byte> source)
+        {
+            int bytesRead;
+
+            fixed (byte* ptr = source)
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    _ = KeyFormatHelper.ReadPkcs8(
+                        s_validOids,
+                        manager.Memory,
+                        out bytesRead);
+                }
+            }
+
+            return bytesRead;
         }
 
         internal static AsnWriter WriteSubjectPublicKeyInfo(in DSAParameters dsaParameters)

@@ -22,8 +22,6 @@ namespace System.Security.Cryptography
 #endif
     public sealed partial class RSAOpenSsl : RSA
     {
-        private const int BitsPerByte = 8;
-
         private Lazy<SafeEvpPKeyHandle> _key;
 
         public RSAOpenSsl()
@@ -666,7 +664,7 @@ namespace System.Security.Cryptography
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.EvpPKeySize(newKey));
+            ForceSetKeySize(Interop.Crypto.EvpPKeyBits(newKey));
         }
 
         private static void ValidateParameters(ref RSAParameters parameters)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -32,7 +33,7 @@ namespace System.Security.Cryptography
             private const int SignatureStackBufSize = 72;
             private const int BitsPerByte = 8;
 
-            private Lazy<SafeDsaHandle> _key = null!;
+            private Lazy<SafeEvpPKeyHandle> _key = null!;
 
             public DSAOpenSsl()
                 : this(2048)
@@ -43,7 +44,7 @@ namespace System.Security.Cryptography
             {
                 LegalKeySizesValue = s_legalKeySizes;
                 base.KeySize = keySize;
-                _key = new Lazy<SafeDsaHandle>(GenerateKey);
+                _key = new Lazy<SafeEvpPKeyHandle>(GenerateKey);
             }
 
             public override int KeySize
@@ -60,7 +61,7 @@ namespace System.Security.Cryptography
 
                     ThrowIfDisposed();
                     FreeKey();
-                    _key = new Lazy<SafeDsaHandle>(GenerateKey);
+                    _key = new Lazy<SafeEvpPKeyHandle>(GenerateKey);
                 }
             }
 
@@ -84,15 +85,43 @@ namespace System.Security.Cryptography
             public override DSAParameters ExportParameters(bool includePrivateParameters)
             {
                 // It's entirely possible that this line will cause the key to be generated in the first place.
-                SafeDsaHandle key = GetKey();
+                SafeEvpPKeyHandle key = GetKey();
+                DSAParameters ret;
 
-                DSAParameters dsaParameters = Interop.Crypto.ExportDsaParameters(key, includePrivateParameters);
-                bool hasPrivateKey = dsaParameters.X != null;
+                if (includePrivateParameters)
+                {
+                    ArraySegment<byte> pkcs8 = Interop.Crypto.RentEncodePkcs8PrivateKey(key);
 
-                if (hasPrivateKey != includePrivateParameters)
-                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                    try
+                    {
+                        DSAKeyFormatHelper.ReadPkcs8(pkcs8, out int read, out ret);
+                        Debug.Assert(read == pkcs8.Count);
+                    }
+                    catch (CryptographicException)
+                    {
+                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(pkcs8);
+                    }
+                }
+                else
+                {
+                    ArraySegment<byte> spki = Interop.Crypto.RentEncodeSubjectPublicKeyInfo(key);
 
-                return dsaParameters;
+                    try
+                    {
+                        DSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read, out ret);
+                        Debug.Assert(read == spki.Count);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(spki);
+                    }
+                }
+
+                return ret;
             }
 
             public override void ImportParameters(DSAParameters parameters)
@@ -116,19 +145,66 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
 
-                SafeDsaHandle key;
-                if (!Interop.Crypto.DsaKeyCreateByExplicitParameters(
-                    out key,
-                    parameters.P, parameters.P.Length,
-                    parameters.Q, parameters.Q.Length,
-                    parameters.G, parameters.G.Length,
-                    parameters.Y, parameters.Y.Length,
-                    parameters.X, parameters.X != null ? parameters.X.Length : 0))
+                if (hasPrivateKey)
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    AsnWriter writer = DSAKeyFormatHelper.WritePkcs8(parameters);
+                    ArraySegment<byte> pkcs8 = writer.RentAndEncode();
+
+                    try
+                    {
+                        ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(pkcs8);
+                    }
+                }
+                else
+                {
+                    AsnWriter writer = DSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                    ArraySegment<byte> spki = writer.RentAndEncode();
+
+                    try
+                    {
+                        ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(spki);
+                    }
+                }
+            }
+
+            public override void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
+            {
+                ThrowIfDisposed();
+
+                ImportSubjectPublicKeyInfo(source, checkAlgorithm: true, out bytesRead);
+            }
+
+            private void ImportSubjectPublicKeyInfo(
+                ReadOnlySpan<byte> source,
+                bool checkAlgorithm,
+                out int bytesRead)
+            {
+                int read;
+
+                if (checkAlgorithm)
+                {
+                    read = DSAKeyFormatHelper.CheckSubjectPublicKeyInfo(source);
+                }
+                else
+                {
+                    read = source.Length;
                 }
 
-                SetKey(key);
+                SafeEvpPKeyHandle newKey = Interop.Crypto.DecodeSubjectPublicKeyInfo(
+                    source.Slice(0, read),
+                    Interop.Crypto.EvpAlgorithmId.DSA);
+
+                Debug.Assert(!newKey.IsInvalid);
+                SetKey(newKey);
+                bytesRead = read;
             }
 
             public override void ImportEncryptedPkcs8PrivateKey(
@@ -149,6 +225,35 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
+            public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+            {
+                ThrowIfDisposed();
+
+                ImportPkcs8PrivateKey(source, checkAlgorithm: true, out bytesRead);
+            }
+
+            private void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, bool checkAlgorithm, out int bytesRead)
+            {
+                int read;
+
+                if (checkAlgorithm)
+                {
+                    read = DSAKeyFormatHelper.CheckPkcs8(source);
+                }
+                else
+                {
+                    read = source.Length;
+                }
+
+                SafeEvpPKeyHandle newKey = Interop.Crypto.DecodePkcs8PrivateKey(
+                    source.Slice(0, read),
+                    Interop.Crypto.EvpAlgorithmId.DSA);
+
+                Debug.Assert(!newKey.IsInvalid);
+                SetKey(newKey);
+                bytesRead = read;
+            }
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
@@ -164,7 +269,7 @@ namespace System.Security.Cryptography
             {
                 if (_key != null && _key.IsValueCreated)
                 {
-                    SafeDsaHandle handle = _key.Value;
+                    SafeEvpPKeyHandle handle = _key.Value;
 
                     if (handle != null)
                     {
@@ -173,7 +278,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private static void CheckInvalidKey(SafeDsaHandle key)
+            private static void CheckInvalidKey(SafeEvpPKeyHandle key)
             {
                 if (key == null || key.IsInvalid)
                 {
@@ -181,16 +286,9 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private SafeDsaHandle GenerateKey()
+            private SafeEvpPKeyHandle GenerateKey()
             {
-                SafeDsaHandle key;
-
-                if (!Interop.Crypto.DsaGenerateKey(out key, KeySize))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return key;
+                return Interop.Crypto.DsaGenerateKey(KeySize);
             }
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
@@ -215,12 +313,14 @@ namespace System.Security.Cryptography
                 if (rgbHash == null)
                     throw new ArgumentNullException(nameof(rgbHash));
 
-                SafeDsaHandle key = GetKey();
-                int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
+                SafeEvpPKeyHandle key = GetKey();
+
+                int signatureSize = Interop.Crypto.EvpPKeySize(key);
                 int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
+                Debug.Assert(signatureSize <= SignatureStackBufSize);
                 Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
-                ReadOnlySpan<byte> derSignature = SignHash(rgbHash, signDestination, signatureSize, key);
+                ReadOnlySpan<byte> derSignature = SignHash(key, rgbHash, signDestination);
                 return AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, signatureFieldSize);
             }
 
@@ -246,8 +346,10 @@ namespace System.Security.Cryptography
             public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
 #endif
             {
-                SafeDsaHandle key = GetKey();
-                int maxSignatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
+                SafeEvpPKeyHandle key = GetKey();
+
+                int maxSignatureSize = Interop.Crypto.EvpPKeySize(key);
+                Debug.Assert(maxSignatureSize <= SignatureStackBufSize);
                 Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
@@ -265,7 +367,7 @@ namespace System.Security.Cryptography
 
                     int fieldSizeBits = fieldSizeBytes * 8;
 
-                    ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, maxSignatureSize, key);
+                    ReadOnlySpan<byte> derSignature = SignHash(key, hash, signDestination);
                     bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, fieldSizeBits, destination);
                     Debug.Assert(bytesWritten == p1363SignatureSize);
                     return true;
@@ -284,7 +386,7 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, maxSignatureSize, key);
+                    ReadOnlySpan<byte> derSignature = SignHash(key, hash, signDestination);
 
                     if (destination == signDestination)
                     {
@@ -305,29 +407,11 @@ namespace System.Security.Cryptography
             }
 
             private static ReadOnlySpan<byte> SignHash(
+                SafeEvpPKeyHandle key,
                 ReadOnlySpan<byte> hash,
-                Span<byte> destination,
-                int signatureLength,
-                SafeDsaHandle key)
+                Span<byte> destination)
             {
-                if (signatureLength > destination.Length)
-                {
-                    Debug.Fail($"Stack-based signDestination is insufficient ({signatureLength} needed)");
-                    destination = new byte[signatureLength];
-                }
-
-                if (!Interop.Crypto.DsaSign(key, hash, destination, out int actualLength))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                Debug.Assert(
-                    actualLength <= signatureLength,
-                    "DSA_sign reported an unexpected signature size",
-                    "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
-                    actualLength,
-                    signatureLength);
-
+                int actualLength = Interop.Crypto.DsaSignHash(key, hash, destination);
                 return destination.Slice(0, actualLength);
             }
 
@@ -354,7 +438,7 @@ namespace System.Security.Cryptography
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 #endif
             {
-                SafeDsaHandle key = GetKey();
+                SafeEvpPKeyHandle key = GetKey();
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
@@ -377,8 +461,35 @@ namespace System.Security.Cryptography
                         SR.Cryptography_UnknownSignatureFormat,
                         signatureFormat.ToString());
                 }
+                else
+                {
+                    // Ensure that the signature is a valid DER SEQUENCE(INTEGER,INTEGER), otherwise
+                    // OpenSSL will return -1 without setting an error.
+                    try
+                    {
+                        AsnValueReader reader = new AsnValueReader(signature, AsnEncodingRules.DER);
+                        AsnValueReader payload = reader.ReadSequence();
+
+                        if (reader.HasData)
+                        {
+                            return false;
+                        }
+
+                        payload.ReadIntegerBytes();
+                        payload.ReadIntegerBytes();
+
+                        if (payload.HasData)
+                        {
+                            return false;
+                        }
+                    }
+                    catch (AsnContentException)
+                    {
+                        return false;
+                    }
+                }
 #endif
-                return Interop.Crypto.DsaVerify(key, hash, signature);
+                return Interop.Crypto.SimpleVerifyHash(key, hash, signature);
             }
 
             private void ThrowIfDisposed()
@@ -395,25 +506,27 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private SafeDsaHandle GetKey()
+            private SafeEvpPKeyHandle GetKey()
             {
                 ThrowIfDisposed();
 
-                SafeDsaHandle key = _key.Value;
+                SafeEvpPKeyHandle key = _key.Value;
                 CheckInvalidKey(key);
 
                 return key;
             }
 
-            private void SetKey(SafeDsaHandle newKey)
+            [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_key))]
+            private void SetKey(SafeEvpPKeyHandle newKey)
             {
+                Debug.Assert(!newKey.IsInvalid);
                 // Do not call ThrowIfDisposed here, as it breaks the SafeEvpPKey ctor
+                FreeKey();
+                _key = new Lazy<SafeEvpPKeyHandle>(newKey);
 
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.Crypto.DsaKeySize(newKey));
-
-                _key = new Lazy<SafeDsaHandle>(newKey);
+                ForceSetKeySize(Interop.Crypto.EvpPKeyBits(newKey));
             }
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
