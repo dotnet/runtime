@@ -35,12 +35,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
 
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation) /p:EmccLinkOptimizationFlag='-Oz -Wl%252C-O0 -Wl%252C-lto-O0'</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) &amp;&amp; cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
@@ -69,8 +69,7 @@
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
-      <BundleFiles Include="@(WasmSatelliteAssemblies)"         TargetDir="publish/%(WasmSatelliteAssemblies.CultureName)" />
-      <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish" />
+      <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish\%(WasmAssembliesToBundle.RecursiveDir)" />
 
       <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
     </ItemGroup>
@@ -96,16 +95,23 @@
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
         Name="%(_WasmPropertyNames.Identity)"
-        ConditionToUse="%(_WasmPropertyNames.ConditionToUse)" />
+        ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
 
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
       <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+
+      <!-- Example of passing items to the project
+
+          <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
+
+      -->
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->
     <GenerateAOTProps
         Properties="@(_WasmPropertiesToPass)"
-        OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
+        Items="@(_WasmItemsToPass)"
+        OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
@@ -124,17 +130,17 @@
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssemblies)" />
+    </ItemGroup>
+
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-
-      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
-
+      <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll"/>
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
-      <WasmFilesToIncludeInFileSystem
-              Include="@(WasmSatelliteAssemblies)"
-              TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.FileName)%(WasmSatelliteAssemblies.Extension)"
-              Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'" />
 
       <_CopyLocalPaths
               Include="@(PublishItemsOutputGroupOutputs)"

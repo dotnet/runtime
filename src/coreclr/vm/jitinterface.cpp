@@ -12526,7 +12526,7 @@ void CEEJitInfo::getEHinfo(
 #endif // CROSSGEN_COMPILE
 
 #if defined(CROSSGEN_COMPILE)
-EXTERN_C ICorJitCompiler* __stdcall getJit();
+EXTERN_C ICorJitCompiler* getJit();
 #endif // defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER

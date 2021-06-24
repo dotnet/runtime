@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
                             ProjectName = projectName,
                             ExtraBuildArgs = $"/p:EMSDK_PATH={emsdkPath}"
             };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
             (_, string buildOutput) = BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -54,7 +54,7 @@ namespace Wasm.Build.Tests
             string projectName = $"{projectNamePrefix}_{buildArgs.Config}_{buildArgs.AOT}";
 
             buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = projectContents };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
             BuildProject(buildArgs,

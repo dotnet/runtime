@@ -1,7 +1,5 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-using System;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -24,19 +22,5 @@ namespace Microsoft.NET.HostModel.AppHost
         MemoryMapAccessFault,   // Error reading the memory-mapped apphost
         InvalidUTF8,            // UTF8 decoding failed
         SignNotRemoved,         // Signature not removed from the host (while processing a single-file bundle)
-    }
-
-    /// <summary>
-    /// The MachO application host executable cannot be customized because
-    /// it was not in the expected format
-    /// </summary>
-    public class AppHostMachOFormatException : AppHostUpdateException
-    {
-        public readonly MachOFormatError Error;
-
-        public AppHostMachOFormatException(MachOFormatError error)
-        {
-            Error = error;
-        }
     }
 }
