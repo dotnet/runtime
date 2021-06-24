@@ -21,7 +21,9 @@ namespace System.Reflection.Metadata
         /// <param name="metadataDelta">The metadata changes to be applied.</param>
         /// <param name="ilDelta">The IL changes to be applied.</param>
         /// <param name="pdbDelta">The PDB changes to be applied.</param>
+        /// <exception cref="ArgumentException">The assembly argument is not a runtime assembly.</exception>
         /// <exception cref="ArgumentNullException">The assembly argument is null.</exception>
+        /// <exception cref="InvalidOperationException">The assembly is not editable.</exception>
         /// <exception cref="NotSupportedException">The update could not be applied.</exception>
         public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta)
         {
@@ -45,7 +47,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
+        internal static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
         public static bool IsSupported { get; } = ApplyUpdateEnabled() != 0;
 

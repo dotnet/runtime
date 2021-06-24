@@ -28,18 +28,15 @@ namespace System.Reflection.Metadata
         /// <param name="metadataDelta">The metadata changes to be applied.</param>
         /// <param name="ilDelta">The IL changes to be applied.</param>
         /// <param name="pdbDelta">The PDB changes to be applied.</param>
+        /// <exception cref="ArgumentException">The assembly argument is not a runtime assembly.</exception>
         /// <exception cref="ArgumentNullException">The assembly argument is null.</exception>
+        /// <exception cref="InvalidOperationException">The assembly is not editable.</exception>
         /// <exception cref="NotSupportedException">The update could not be applied.</exception>
         public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta)
         {
-            if (assembly == null)
+            if (assembly is not RuntimeAssembly runtimeAssembly)
             {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
-            RuntimeAssembly? runtimeAssembly = assembly as RuntimeAssembly;
-            if (runtimeAssembly == null)
-            {
+                if (assembly is null) throw new ArgumentNullException(nameof(assembly));
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             }
 
@@ -56,7 +53,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Returns the metadata update capabilities.
         /// </summary>
-        public static string GetCapabilities() => "Baseline AddMethodToExistingType AddStaticFieldToExistingType AddInstanceFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
+        internal static string GetCapabilities() => "Baseline AddMethodToExistingType AddStaticFieldToExistingType AddInstanceFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
 
         /// <summary>
         /// Returns true if the apply assembly update is enabled and available.

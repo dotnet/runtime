@@ -111,11 +111,19 @@ namespace System.Reflection.Metadata
         [Fact]
         public static void GetCapabilities()
         {
-            string result = MetadataUpdater.GetCapabilities();
+            var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+
+            Assert.NotNull(mi);
+
+            var result = mi.Invoke(null, null);
+
             Assert.NotNull(result);
+            Assert.Equal(typeof(string), result.GetType());
         }
 
         [Fact]
+        [ActiveIssue("Returns true on mono", TestRuntimes.Mono)]
         public static void IsSupported()
         {
             bool result = MetadataUpdater.IsSupported;

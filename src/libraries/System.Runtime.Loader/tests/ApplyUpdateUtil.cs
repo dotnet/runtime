@@ -48,10 +48,16 @@ namespace System.Reflection.Metadata
 
         internal static bool HasApplyUpdateCapabilities()
         {
-            string caps = MetadataUpdater.GetCapabilities();
+            var ty = typeof(MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+
+            if (mi == null)
+                return false;
+
+            var caps = mi.Invoke(null, null);
 
             // any non-empty string, assumed to be at least "baseline"
-            return caps.Length > 0;
+            return caps is string {Length: > 0};
         }
 
         private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();
