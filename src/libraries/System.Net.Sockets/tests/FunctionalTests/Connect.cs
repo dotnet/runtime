@@ -129,7 +129,7 @@ namespace System.Net.Sockets.Tests
 
                 var localEndPoint = client.LocalEndPoint as IPEndPoint;
                 Assert.NotNull(localEndPoint);
-                Assert.True(localEndPoint.Address == IPAddress.Loopback || localEndPoint.Address == IPAddress.Loopback.MapToIPv6());
+                Assert.True(localEndPoint.Address.Equals(IPAddress.Loopback) || localEndPoint.Address.Equals(IPAddress.Loopback.MapToIPv6()));
 
                 var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
                 Assert.NotNull(remoteEndPoint);
