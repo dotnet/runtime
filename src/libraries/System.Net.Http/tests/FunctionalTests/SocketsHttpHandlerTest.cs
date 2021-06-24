@@ -1934,6 +1934,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(65535)]
+        [InlineData(1048576)]
+        public void InitialHttp2StreamWindowSize_Roundtrips(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            handler.InitialHttp2StreamWindowSize = value;
+            Assert.Equal(value, handler.InitialHttp2StreamWindowSize);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(65534)]
+        [InlineData(32 * 1024 * 1024)]
+        public void InitialHttp2StreamWindowSize_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.InitialHttp2StreamWindowSize = value);
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AfterDisposeSendAsync_GettersUsable_SettersThrow(bool dispose)
@@ -1972,6 +1993,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
+                Assert.Equal(65535, handler.InitialHttp2StreamWindowSize);
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
@@ -1993,6 +2015,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
                 Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.PlaintextStreamFilter = (context, token) => default);
+                Assert.Throws(expectedExceptionType, () => handler.InitialHttp2StreamWindowSize = 128 * 1024);
             }
         }
     }
