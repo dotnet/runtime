@@ -184,12 +184,13 @@ typedef LPSTR   LPUTF8;
 #    define HAS_ADDRESS_SANITIZER
 #    define DISABLE_ASAN __declspec(no_sanitize_address)
 #  endif
-#endif
-#if defined __llvm__
+#elif defined(__llvm__)
 #  if defined(__has_feature) && __has_feature(address_sanitizer)
 #    define HAS_ADDRESS_SANITIZER 
 #    define DISABLE_ASAN __attribute__((no_sanitize("address")))
 #  endif
+#else
+#    define DISABLE_ASAN
 #endif
 
 //=--------------------------------------------------------------------------=
