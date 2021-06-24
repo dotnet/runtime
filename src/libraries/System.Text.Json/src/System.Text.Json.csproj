@@ -212,7 +212,7 @@
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceResolver.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReadAsyncBufferState.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReadBufferState.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />

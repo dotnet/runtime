@@ -1,24 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.IO.Pipes.AccessControl.PipesAclExtensions.cs" />
-    <Compile Include="System.IO.Pipes.AccessControl.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
-    <Compile Include="System.IO.Pipes.AccessControl.cs" Condition="'$(TargetFramework)' != 'net461'" />
-    <Compile Include="System.IO.Pipes.AccessControl.netcoreapp.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
+    <Compile Include="System.IO.Pipes.AccessControl.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\ref\System.IO.Pipes.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="netstandard" />
-    <Reference Include="System.IO.Pipes" />
-    <Reference Include="System.Runtime" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
   </ItemGroup>
 </Project>

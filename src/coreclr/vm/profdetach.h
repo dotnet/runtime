@@ -24,13 +24,8 @@ struct ProfilerDetachInfo
     ProfilerDetachInfo();
     void Init();
 
-    // NULL if we're not trying to detach a profiler.  Otherwise, this is the
-    // EEToProfInterfaceImpl instance we're detaching.
-    //
-    // FUTURE: Although m_pEEToProf, when non-NULL, is always the same as
-    // g_profControlBlock.pProfInterface, that will no longer be the case once we allow
-    // re-attach with neutered profilers.
-    EEToProfInterfaceImpl * m_pEEToProf;
+    // This is the profiler instance we're detaching.
+    ProfilerInfo           *m_pProfilerInfo;
 
     // Time when profiler originally called RequestProfilerDetach()
     ULONGLONG               m_ui64DetachStartTime;
@@ -48,23 +43,25 @@ class ProfilingAPIDetach
 public:
     static HRESULT Initialize();
 
-    static HRESULT RequestProfilerDetach(DWORD dwExpectedCompletionMilliseconds);
+    static HRESULT RequestProfilerDetach(ProfilerInfo *profilerInfo, DWORD dwExpectedCompletionMilliseconds);
 
     static HRESULT CreateDetachThread();
     static DWORD WINAPI ProfilingAPIDetachThreadStart(LPVOID lpParameter);
     static void ExecuteEvacuationLoop();
 
-    static EEToProfInterfaceImpl * GetEEToProfPtr();
+    static BOOL IsEEToProfPtrRegisteredForDetach(EEToProfInterfaceImpl *pEEToProf);
 
 private:
-    static ProfilerDetachInfo s_profilerDetachInfo;
+    static CQuickArrayList<ProfilerDetachInfo> s_profilerDetachInfos;
 
     // Signaled by RequestProfilerDetach() when there is detach work ready to be
     // done by the DetachThread
     static CLREvent           s_eventDetachWorkAvailable;
 
-    static void SleepWhileProfilerEvacuates();
-    static void UnloadProfiler();
+    static Volatile<BOOL>     s_profilerDetachThreadCreated;
+
+    static void SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetachInfo);
+    static void UnloadProfiler(ProfilerDetachInfo *pDetachInfo);
 
     // Prevent instantiation of ProfilingAPIDetach objects (should be static-only)
     ProfilingAPIDetach();

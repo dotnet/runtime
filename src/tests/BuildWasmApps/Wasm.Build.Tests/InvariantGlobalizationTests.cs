@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
@@ -76,8 +76,8 @@ namespace Wasm.Build.Tests
                         hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
 
             string expectedOutputString = invariantGlobalization == true
-                                            ? "False - en (ES)"
-                                            : "True - Invariant Language (Invariant Country)";
+                                            ? "True - Invariant Language (Invariant Country)"
+                                            : "False - es (ES)";
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains(expectedOutputString, output), host: host, id: id);
         }

@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.Hosting
             return (IServiceProvider?)servicesProperty?.GetValue(host);
         }
 
-        private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+        private sealed class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
         {
             private readonly string[] _args;
             private readonly MethodInfo _entryPoint;
@@ -321,7 +321,7 @@ namespace Microsoft.Extensions.Hosting
                 }
             }
 
-            private class StopTheHostException : Exception
+            private sealed class StopTheHostException : Exception
             {
 
             }

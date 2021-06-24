@@ -1115,17 +1115,15 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
 
-#if defined(TARGET_X86)
-#ifdef TARGET_ANDROID
-	g_string_append_printf (acfg->llc_args, " -mtriple=i686-none-linux-android21");
-#else
+#if TARGET_X86 || TARGET_AMD64
 	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
-	g_string_append_printf (acfg->llc_args, " -march=x86 %s", has_custom_args ? "" : "-mcpu=generic");
 #endif
+
+#if defined(TARGET_X86)
+	g_string_append_printf (acfg->llc_args, " -march=x86 %s", has_custom_args ? "" : "-mcpu=generic");
 #endif
 
 #if defined(TARGET_AMD64)
-	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc || acfg->aot_opts.use_current_cpu;
 	g_string_append_printf (acfg->llc_args, " -march=x86-64 %s", has_custom_args ? "" : "-mcpu=generic");
 	/* NOP */
 	acfg->align_pad_value = 0x90;
@@ -1159,7 +1157,13 @@ arch_init (MonoAotCompile *acfg)
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16 -float-abi=hard");
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #elif defined(ARM_FPU_VFP)
+
+#if defined(TARGET_ARM)
+		// +d16 triggers a warning on arm
+		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon");
+#else
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16");
+#endif
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #else
 		g_string_append (acfg->llc_args, " -mattr=+soft-float");
@@ -8236,7 +8240,7 @@ parse_cpu_features (const gchar *attr)
 	// if we disable a feature from the SSE-AVX tree we also need to disable all dependencies
 	if (!enabled && (feature & MONO_CPU_X86_FULL_SSEAVX_COMBINED))
 		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
-	
+
 #elif defined(TARGET_ARM64)
 	// MONO_CPU_ARM64_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "crc"))
@@ -8245,6 +8249,10 @@ parse_cpu_features (const gchar *attr)
 		feature = MONO_CPU_ARM64_CRYPTO;
 	else if (!strcmp (attr + prefix, "neon"))
 		feature = MONO_CPU_ARM64_NEON;
+	else if (!strcmp (attr + prefix, "rdm"))
+		feature = MONO_CPU_ARM64_RDM;
+	else if (!strcmp (attr + prefix, "dotprod"))
+		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
