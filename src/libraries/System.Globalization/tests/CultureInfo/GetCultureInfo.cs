@@ -153,8 +153,15 @@ namespace System.Globalization.Tests
             var psi = new ProcessStartInfo();
             psi.Environment.Clear();
 
-            if (enableInvariant)     { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true"); }
-            if (declarePredefinedCulturesOnly) { psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnly ? "true" : "false"); }
+            if (enableInvariant)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true");
+            }
+
+            if (declarePredefinedCulturesOnly)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnly ? "true" : "false");
+            }
 
             bool restricted = enableInvariant && (declarePredefinedCulturesOnly ? predefinedCulturesOnly : true);
 
