@@ -6,7 +6,7 @@ using System.IO;
 
 namespace System.Drawing.Internal
 {
-    internal sealed class GPStream : Interop.Ole32.IStream, Interop.Ole32.IStreamComWrapper
+    internal sealed class GPStream : Interop.Ole32.IStream
     {
         private readonly Stream _dataStream;
 
@@ -50,15 +50,6 @@ namespace System.Drawing.Internal
             };
         }
 
-        Interop.Ole32.IStreamComWrapper Interop.Ole32.IStreamComWrapper.Clone()
-        {
-            // The cloned object should have the same current "position"
-            return new GPStream(_dataStream)
-            {
-                _virtualPosition = _virtualPosition
-            };
-        }
-
         public void Commit(uint grfCommitFlags)
         {
             _dataStream.Flush();
@@ -68,43 +59,6 @@ namespace System.Drawing.Internal
         }
 
         public unsafe void CopyTo(Interop.Ole32.IStream pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
-        {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
-
-            ulong remaining = cb;
-            ulong totalWritten = 0;
-            ulong totalRead = 0;
-
-            fixed (byte* b = buffer)
-            {
-                while (remaining > 0)
-                {
-                    uint read = remaining < (ulong)buffer.Length ? (uint)remaining : (uint)buffer.Length;
-                    Read(b, read, &read);
-                    remaining -= read;
-                    totalRead += read;
-
-                    if (read == 0)
-                    {
-                        break;
-                    }
-
-                    uint written;
-                    pstm.Write(b, read, &written);
-                    totalWritten += written;
-                }
-            }
-
-            ArrayPool<byte>.Shared.Return(buffer);
-
-            if (pcbRead != null)
-                *pcbRead = totalRead;
-
-            if (pcbWritten != null)
-                *pcbWritten = totalWritten;
-        }
-
-        unsafe void Interop.Ole32.IStreamComWrapper.CopyTo(Interop.Ole32.IStreamComWrapper pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
 

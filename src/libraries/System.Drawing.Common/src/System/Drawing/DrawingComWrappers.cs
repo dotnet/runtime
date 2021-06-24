@@ -17,6 +17,7 @@ namespace System.Drawing
     internal unsafe class DrawingComWrappers : ComWrappers
     {
         private const int OK = 0;
+        private static readonly Guid IStreamIID = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
         private static readonly ComInterfaceEntry* s_wrapperEntry = InitializeComInterfaceEntry();
         internal static DrawingComWrappers Instance { get; } = new DrawingComWrappers();
 
@@ -38,14 +39,14 @@ namespace System.Drawing
             IStreamVtbl.Fill((IStreamVtbl*)iStreamVtblRaw, fpQueryInteface, fpAddRef, fpRelease);
 
             ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IStreamVtbl), sizeof(ComInterfaceEntry));
-            wrapperEntry->IID = Interop.Ole32.IStreamComWrapper.IID;
+            wrapperEntry->IID = IStreamIID;
             wrapperEntry->Vtable = iStreamVtblRaw;
             return wrapperEntry;
         }
 
         protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
-            Debug.Assert(obj is Interop.Ole32.IStreamComWrapper);
+            Debug.Assert(obj is Interop.Ole32.IStream);
             Debug.Assert(s_wrapperEntry != null);
 
             // Always return the same table mappings.
@@ -118,7 +119,7 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT ReadImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbRead)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.Read(pv, cb, pcbRead);
                 return Interop.HRESULT.S_OK;
             }
@@ -126,7 +127,7 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT WriteImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbWritten)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.Write(pv, cb, pcbWritten);
                 return Interop.HRESULT.S_OK;
             }
@@ -134,7 +135,7 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT SeekImplementation(IntPtr thisPtr, long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.Seek(dlibMove, dwOrigin, plibNewPosition);
                 return Interop.HRESULT.S_OK;
             }
@@ -142,7 +143,7 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT SetSizeImplementation(IntPtr thisPtr, ulong libNewSize)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.SetSize(libNewSize);
                 return Interop.HRESULT.S_OK;
             }
@@ -150,8 +151,8 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT CopyToImplementation(IntPtr thisPtr, IntPtr pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
-                Interop.Ole32.IStreamComWrapper pstmStream = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)pstm);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream pstmStream = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)pstm);
 
                 inst.CopyTo(pstmStream, cb, pcbRead, pcbWritten);
                 return Interop.HRESULT.S_OK;
@@ -160,7 +161,7 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT CommitImplementation(IntPtr thisPtr, uint grfCommitFlags)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.Commit(grfCommitFlags);
                 return Interop.HRESULT.S_OK;
             }
@@ -168,7 +169,7 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT RevertImplementation(IntPtr thisPtr)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.Revert();
                 return Interop.HRESULT.S_OK;
             }
@@ -176,21 +177,21 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static Interop.HRESULT LockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 return inst.LockRegion(libOffset, cb, dwLockType);
             }
 
             [UnmanagedCallersOnly]
             private static Interop.HRESULT UnlockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 return inst.UnlockRegion(libOffset, cb, dwLockType);
             }
 
             [UnmanagedCallersOnly]
             private static Interop.HRESULT StatImplementation(IntPtr thisPtr, out Interop.Ole32.STATSTG pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
             {
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
                 inst.Stat(out pstatstg, grfStatFlag);
                 return Interop.HRESULT.S_OK;
             }
@@ -203,7 +204,7 @@ namespace System.Drawing
                     return Interop.HRESULT.STG_E_INVALIDPOINTER;
                 }
 
-                Interop.Ole32.IStreamComWrapper inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStreamComWrapper>((ComInterfaceDispatch*)thisPtr);
+                Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
 
                 *ppstm = Instance.GetOrCreateComInterfaceForObject(inst.Clone(), CreateComInterfaceFlags.None);
                 return Interop.HRESULT.S_OK;
@@ -236,7 +237,7 @@ namespace System.Drawing
             public unsafe int SaveAsFile(IntPtr pstm, int fSaveMemCopy, int* pcbSize)
             {
                 // Get the IStream implementation, since the ComWrappers runtime returns a pointer to the IUnknown interface implementation
-                Guid streamIID = Interop.Ole32.IStreamComWrapper.IID;
+                Guid streamIID = IStreamIID;
                 CheckStatus(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
 
                 try
