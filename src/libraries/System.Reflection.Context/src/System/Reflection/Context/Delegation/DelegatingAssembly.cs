@@ -72,13 +72,12 @@ namespace System.Reflection.Context.Delegation
 
 #if NETCOREAPP
         [Obsolete]
+        [RequiresAssemblyFiles]
 #endif
-#pragma warning disable IL3002 // Using member which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app
         public override string CodeBase
         {
             get { return UnderlyingAssembly.CodeBase; }
         }
-#pragma warning restore IL3002
 
         public override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
@@ -92,13 +91,12 @@ namespace System.Reflection.Context.Delegation
 
 #if NETCOREAPP
         [Obsolete]
+        [RequiresAssemblyFiles]
 #endif
-#pragma warning disable IL3002 // Using member which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app
         public override string EscapedCodeBase
         {
             get { return UnderlyingAssembly.EscapedCodeBase; }
         }
-#pragma warning restore IL3002
 
         public override string FullName
         {
