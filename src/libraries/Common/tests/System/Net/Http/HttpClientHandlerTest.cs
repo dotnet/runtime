@@ -972,7 +972,7 @@ namespace System.Net.Http.Functional.Tests
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
-                        if (PlatformDetection.IsNotBrowser)
+                        if (!responseStream.CanSeek)
                         {
                             Assert.Throws<NotSupportedException>(() => responseStream.Length);
                             Assert.Throws<NotSupportedException>(() => responseStream.Position);
@@ -1127,7 +1127,7 @@ namespace System.Net.Http.Functional.Tests
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
-                        if (PlatformDetection.IsNotBrowser)
+                        if (!responseStream.CanSeek)
                         {
                             Assert.Throws<NotSupportedException>(() => responseStream.Length);
                             Assert.Throws<NotSupportedException>(() => responseStream.Position);
