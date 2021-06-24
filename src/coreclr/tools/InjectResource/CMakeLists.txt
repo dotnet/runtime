@@ -5,6 +5,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 add_executable(InjectResource InjectResource.cpp)
 
 target_link_libraries(InjectResource
+    PUBLIC
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
 )

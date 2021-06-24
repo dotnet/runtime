@@ -48,6 +48,7 @@ target_precompile_headers(superpmi-shim-collector PRIVATE "$<$<COMPILE_LANGUAGE:
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-collector
+        PUBLIC
         utilcodestaticnohost
         mscorrc
         coreclrpal
@@ -55,6 +56,7 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 else()
     target_link_libraries(superpmi-shim-collector
+        PUBLIC
         advapi32.lib
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}

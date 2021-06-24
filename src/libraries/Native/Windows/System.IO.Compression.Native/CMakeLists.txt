@@ -106,9 +106,9 @@ SET_TARGET_PROPERTIES(System.IO.Compression.Native-Static PROPERTIES STATIC_LIBR
 
 # Allow specification of libraries that should be linked against
 if (GEN_SHARED_LIB)
-    target_link_libraries(System.IO.Compression.Native ${__LinkLibraries})
+    target_link_libraries(System.IO.Compression.Native PRIVATE ${__LinkLibraries})
 endif()
-target_link_libraries(System.IO.Compression.Native-Static ${__LinkLibraries})
+target_link_libraries(System.IO.Compression.Native-Static PRIVATE ${__LinkLibraries})
 
 if (GEN_SHARED_LIB)
     GENERATE_EXPORT_HEADER( System.IO.Compression.Native

@@ -49,6 +49,7 @@ target_precompile_headers(superpmi PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpc
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
+        PUBLIC
         utilcodestaticnohost
         mscorrc
         coreclrpal
@@ -56,6 +57,7 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 else()
     target_link_libraries(superpmi
+        PUBLIC
         version.lib
         advapi32.lib
         ${STATIC_MT_CRT_LIB}

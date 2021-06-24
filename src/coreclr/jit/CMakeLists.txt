@@ -14,13 +14,18 @@ function(create_standalone_jit)
   set(multiValueArgs DESTINATIONS)
   cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+  set(sanitizer_suffix "")
+  if (NOT CLR_CMAKE_ENABLE_ASAN)
+    set(sanitizer_suffix "_nosanitizer")
+  endif()
+
   if(TARGETDETAILS_OS STREQUAL "unix_osx")
     if (NOT (TARGETDETAILS_ARCH STREQUAL "arm64"))
       message(FATAL_ERROR "Only arm64 Apple has a special ABI, use just unix for x64 Mac OS." )
     endif()
-    set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_arm64)
+    set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_arm64${sanitizer_suffix})
   else()
-    set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
+    set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH}${sanitizer_suffix})
   endif()
 
   if(TARGETDETAILS_ARCH STREQUAL "x64")
@@ -406,41 +411,41 @@ endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
-set(JIT_LINK_LIBRARIES
-   utilcodestaticnohost
-)
-
-set(JIT_ARCH_LINK_LIBRARIES
-   gcinfo
-)
-
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND JIT_LINK_LIBRARIES
-       mscorrc
-       coreclrpal
-       palrt
-    )
-else()
-    list(APPEND JIT_LINK_LIBRARIES
-       ${STATIC_MT_CRT_LIB}
-       ${STATIC_MT_VCRT_LIB}
-       kernel32.lib
-       advapi32.lib
-       ole32.lib
-       oleaut32.lib
-       uuid.lib
-       user32.lib
-       version.lib
-       shlwapi.lib
-       bcrypt.lib
-       crypt32.lib
-       RuntimeObject.lib
-    )
-endif(CLR_CMAKE_HOST_UNIX)
-
 # Shared function for generating JIT
 # optional arguments: DESTINATIONS path
 function(add_jit jitName)
+    set(sanitizer_suffix "")
+    if (NOT CLR_CMAKE_ENABLE_ASAN)
+      set(sanitizer_suffix "_nosanitizer")
+    endif()
+
+    set(JIT_LINK_LIBRARIES
+      utilcodestaticnohost${sanitizer_suffix}
+    )
+
+    if(CLR_CMAKE_HOST_UNIX)
+        list(APPEND JIT_LINK_LIBRARIES
+          mscorrc
+          coreclrpal${sanitizer_suffix}
+          palrt${sanitizer_suffix}
+        )
+    else()
+        list(APPEND JIT_LINK_LIBRARIES
+          ${STATIC_MT_CRT_LIB}
+          ${STATIC_MT_VCRT_LIB}
+          kernel32.lib
+          advapi32.lib
+          ole32.lib
+          oleaut32.lib
+          uuid.lib
+          user32.lib
+          version.lib
+          shlwapi.lib
+          bcrypt.lib
+          crypt32.lib
+          RuntimeObject.lib
+        )
+    endif(CLR_CMAKE_HOST_UNIX)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
@@ -467,6 +472,7 @@ function(add_jit jitName)
     set_target_properties(${jitName} PROPERTIES MSVC_WARNING_LEVEL 4)
 
     target_link_libraries(${jitName}
+      PRIVATE
         ${JIT_LINK_LIBRARIES}
         ${JIT_ARCH_LINK_LIBRARIES}
     )
@@ -502,6 +508,8 @@ install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
 # Enable profile guided optimization
 add_pgo(clrjit)
 
+set(CLR_CMAKE_ENABLE_ASAN OFF)
+
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64 DESTINATIONS .)
   create_standalone_jit(TARGET clrjit_unix_osx_arm64_${ARCH_HOST_NAME} OS unix_osx ARCH arm64 DESTINATIONS .)
@@ -510,6 +518,7 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
+create_standalone_jit(TARGET clrjitilc OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS .)
 create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH armel DESTINATIONS .)
 create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm DESTINATIONS .)
 target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
