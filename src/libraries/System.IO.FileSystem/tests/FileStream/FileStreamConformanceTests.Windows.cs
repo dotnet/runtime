@@ -178,6 +178,7 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
+    [OuterLoop("Has a very complex setup logic that in theory might have some side-effects")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class DeviceInterfaceTests
