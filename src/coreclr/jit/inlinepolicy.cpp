@@ -1411,7 +1411,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_IsInstanceCtor)
     {
-        multiplier += 1.0;
+        multiplier += 1.5;
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
     }
 
@@ -1423,19 +1423,19 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     else if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 2.0;
+        multiplier += 1.7;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 2.0;
+        multiplier += 1.7;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
             multiplier);
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += 1.5;
+        multiplier += 1.2;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
             m_FldAccessOverArgStruct, multiplier);
@@ -1461,7 +1461,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 3.0;
+        multiplier += 1.5;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1475,9 +1475,21 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 2.0 + m_FoldableBranch;
+        multiplier += 3.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
+    }
+    else if (m_ConstantArgFeedsConstantTest > 0)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+    else if (m_ArgIsConst > 0)
+    {
+        // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
+        // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
+        multiplier += 3.0;
+        JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_FoldableBox > 0)
@@ -1490,8 +1502,9 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_HasSimd)
     {
-        multiplier += 2.0;
-        JITDUMP("\nInline has SIMD ops.  Multiplier increased to %g.", multiplier);
+        multiplier += JitConfig.JitInlineSIMDMultiplier();
+        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
+            multiplier);
     }
 
     if (m_Intrinsic > 0)
@@ -1528,14 +1541,6 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
                 "increased to %g.",
                 m_ArgIsExactClsSigIsNot, multiplier);
-    }
-
-    if (m_ArgIsConst > 0)
-    {
-        // Normally, we try to note all the places where constant arguments lead to folding/feed tests
-        // but just in case:
-        multiplier += 1.0;
-        JITDUMP("\n%d arguments are constants at the callsite.  Multiplier increased to %g.", m_ArgIsConst, multiplier);
     }
 
     if (m_FoldableIntrinsic > 0)
@@ -1582,7 +1587,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += 1.5;
+        multiplier += 0.5;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
             m_BinaryExprWithCns, multiplier);
 
@@ -1591,8 +1596,19 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // foldable.
         if (m_IsPrejitRoot)
         {
-            multiplier += 1.0 + m_BinaryExprWithCns;
+            multiplier += m_BinaryExprWithCns;
         }
+    }
+
+    if (m_ArgFeedsConstantTest > 0)
+    {
+        multiplier += m_IsPrejitRoot ? 3.0 : 1.0;
+        JITDUMP("\nInline candidate has an arg that feeds a constant test.  Multiplier increased to %g.", multiplier);
+    }
+    else if (m_IsPrejitRoot && (m_ArgFeedsTest > 0))
+    {
+        multiplier += 3.0;
+        JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
     switch (m_CallsiteFrequency)

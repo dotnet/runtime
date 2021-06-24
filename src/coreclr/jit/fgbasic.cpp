@@ -1445,10 +1445,29 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             {
                                 compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_BRANCH);
                             }
+                            if (FgStack::IsConstArgument(op1, impInlineInfo) ||
+                                FgStack::IsConstArgument(op2, impInlineInfo))
+                            {
+                                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+                            }
                             else if ((FgStack::IsArgument(op1) && FgStack::IsArrayLen(op2)) ||
                                      (FgStack::IsArgument(op2) && FgStack::IsArrayLen(op1)))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
+                            }
+                            else if (FgStack::IsArgument(op1) &&
+                                     FgStack::IsConstantOrConstArg(op2, impInlineInfo))
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+                            }
+                            else if (FgStack::IsArgument(op2) &&
+                                     FgStack::IsConstantOrConstArg(op1, impInlineInfo))
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+                            }
+                            else if (FgStack::IsArgument(op1) || FgStack::IsArgument(op2))
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
                             }
                             break;
                         }
@@ -1466,7 +1485,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             else if (FgStack::IsArgument(pushedStack.Top()))
                             {
                                 // E.g. brtrue is basically "if (X == 0)"
-                                compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
+                                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                             }
                             break;
                         }
@@ -1478,12 +1497,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
             break;
 
+            case CEE_LDFLDA:
             case CEE_LDFLD:
             case CEE_STFLD:
             {
                 if (FgStack::IsArgument(pushedStack.Top()))
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS);
+                    handled = true; // keep argument on top of the stack
                 }
                 break;
             }
