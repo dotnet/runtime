@@ -1069,6 +1069,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStateException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimeoutHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PeriodicTimer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Portable.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Volatile.cs" />
