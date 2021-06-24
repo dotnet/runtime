@@ -83,6 +83,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.Globalization.Native
+        PRIVATE
         dl
     )
 

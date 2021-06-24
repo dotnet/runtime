@@ -81,7 +81,7 @@ else()
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
-target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
+target_link_libraries(dbgshim PRIVATE ${DBGSHIM_LIBRARIES})
 
 # add the install targets
 install_clr(TARGETS dbgshim DESTINATIONS . sharedFramework COMPONENT runtime)

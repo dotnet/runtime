@@ -16,5 +16,13 @@ add_library_clr(palrt
     ${PALRT_SOURCES}
 )
 
+set(CLR_CMAKE_ENABLE_ASAN OFF)
+
+add_library_clr(palrt_nosanitizer
+    STATIC
+    ${PALRT_SOURCES}
+)
+
 # Install the static PAL library for VS
 install_clr(TARGETS palrt DESTINATIONS lib)
+install_clr(TARGETS palrt_nosanitizer DESTINATIONS lib)

@@ -45,6 +45,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         )
 
         target_link_libraries(System.IO.Compression.Native
+            PRIVATE
             ${NATIVE_LIBS_EXTRA}
         )
 

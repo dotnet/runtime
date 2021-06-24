@@ -273,12 +273,30 @@ if(CLR_CMAKE_TARGET_LINUX)
   target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
+# Define a no-sanitizer version of the PAL for our standalone DLLs that are loaded by unsanitized exes.
+set (CLR_CMAKE_ENABLE_ASAN OFF)
+add_library(coreclrpal_nosanitizer
+  STATIC
+  ${SOURCES}
+  ${ARCH_SOURCES}
+  ${PLATFORM_SOURCES}
+  ${LIBUNWIND_OBJECTS}
+)
+
 if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
   find_library(SECURITY Security)
   find_library(SYSTEM System)
   target_link_libraries(coreclrpal
+    PUBLIC
+    ${COREFOUNDATION}
+    ${CORESERVICES}
+    ${SECURITY}
+    ${SYSTEM}
+  )
+  target_link_libraries(coreclrpal_nosanitizer
+    PUBLIC
     ${COREFOUNDATION}
     ${CORESERVICES}
     ${SECURITY}
@@ -288,6 +306,13 @@ endif(CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal
+    PUBLIC
+    pthread
+    rt
+    ${UNWIND_LIBS}
+  )
+  target_link_libraries(coreclrpal_nosanitizer
+    PUBLIC
     pthread
     rt
     ${UNWIND_LIBS}
@@ -298,6 +323,13 @@ if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt
   if(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
+      PUBLIC
+      gcc_s
+      pthread
+      rt
+    )
+    target_link_libraries(coreclrpal_nosanitizer
+      PUBLIC
       gcc_s
       pthread
       rt
@@ -306,14 +338,23 @@ if(CLR_CMAKE_TARGET_LINUX)
     target_link_libraries(coreclrpal
       ${ANDROID_GLOB}
       ${LZMA})
+    target_link_libraries(coreclrpal_nosanitizer
+      ${ANDROID_GLOB}
+      ${LZMA})
   endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal
+    PUBLIC
+    dl
+  )
+  target_link_libraries(coreclrpal_nosanitizer
+    PUBLIC
     dl
   )
 
   if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-    target_link_libraries(coreclrpal ${UNWIND_LIBS})
+    target_link_libraries(coreclrpal PUBLIC ${UNWIND_LIBS})
+    target_link_libraries(coreclrpal_nosanitizer PUBLIC ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 endif(CLR_CMAKE_TARGET_LINUX)
@@ -325,6 +366,14 @@ if(CLR_CMAKE_TARGET_NETBSD)
   add_definitions(-D_KMEMUSER)
   find_library(KVM kvm)
   target_link_libraries(coreclrpal
+    PUBLIC
+    pthread
+    rt
+    ${UNWIND}
+    ${KVM}
+  )
+  target_link_libraries(coreclrpal_nosanitizer
+    PUBLIC
     pthread
     rt
     ${UNWIND}
@@ -334,6 +383,12 @@ endif(CLR_CMAKE_TARGET_NETBSD)
 
 if(CLR_CMAKE_TARGET_SUNOS)
   target_link_libraries(coreclrpal
+    PUBLIC
+    pthread
+    rt
+  )
+  target_link_libraries(coreclrpal_nosanitizer
+    PUBLIC
     pthread
     rt
   )
@@ -345,3 +400,4 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+install_clr (TARGETS coreclrpal_nosanitizer DESTINATIONS lib)

@@ -55,8 +55,8 @@ else()
     install(TARGETS libhostfxr DESTINATION corehost)
 endif(WIN32)
 
-target_link_libraries(hostfxr libhostcommon)
+target_link_libraries(hostfxr PRIVATE libhostcommon)
 
 if (CLR_CMAKE_TARGET_ARCH_ARMV6)
-    target_link_libraries(${DOTNET_PROJECT_NAME} atomic)
+    target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE atomic)
 endif()

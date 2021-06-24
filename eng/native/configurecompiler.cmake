@@ -113,20 +113,12 @@ if (MSVC)
   string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
   string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
 
-  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>>:-fsanitize=address>)
-  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>>:-fno-sanitize-address-vcasan-lib>)
-  add_linker_flag(/INFERASANLIBS DEBUG CHECKED)
-
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
 
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-
-  # Configure ASAN for Clang/GCC
-  add_compile_options($<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:-fsanitize=address>)
-  add_linker_flag(-fsanitize=address DEBUG CHECKED)
 
   set(CLR_SANITIZE_CXX_OPTIONS "")
   set(CLR_SANITIZE_LINK_OPTIONS "")

@@ -86,6 +86,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.Native
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 
