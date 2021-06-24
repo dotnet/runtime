@@ -360,6 +360,7 @@ enum {
 	INTRIN_kind_widen,
 	INTRIN_kind_widen_across,
 	INTRIN_kind_across,
+	INTRIN_kind_arm64_dot_prod,
 };
 
 static const uint8_t intrin_kind [] = {
@@ -9660,6 +9661,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_SELECT_QUAD: {
+			LLVMTypeRef src_type = simd_class_to_llvm_type (ctx, ins->data.op [1].klass);
+			LLVMTypeRef ret_type = simd_class_to_llvm_type (ctx, ins->klass);
+			unsigned int src_type_bits = mono_llvm_get_prim_size_bits (src_type);
+			unsigned int ret_type_bits = mono_llvm_get_prim_size_bits (ret_type);
+			unsigned int src_intermediate_elems = src_type_bits / 32;
+			unsigned int ret_intermediate_elems = ret_type_bits / 32;
+			LLVMTypeRef intermediate_type = LLVMVectorType (i4_t, src_intermediate_elems);
+			LLVMValueRef result = LLVMBuildBitCast (builder, lhs, intermediate_type, "arm64_select_quad");
+			result = LLVMBuildExtractElement (builder, result, rhs, "arm64_select_quad");
+			result = broadcast_element (ctx, result, ret_intermediate_elems);
+			result = LLVMBuildBitCast (builder, result, ret_type, "arm64_select_quad");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_LSCNT32:
 		case OP_LSCNT64: {
 			// %shr = ashr i32 %x, 31
@@ -9681,6 +9697,43 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = add;
 			args [1] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LSCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
+			break;
+		}
+		case OP_ARM64_SQRDMLAH:
+		case OP_ARM64_SQRDMLAH_BYSCALAR:
+		case OP_ARM64_SQRDMLAH_SCALAR:
+		case OP_ARM64_SQRDMLSH:
+		case OP_ARM64_SQRDMLSH_BYSCALAR:
+		case OP_ARM64_SQRDMLSH_SCALAR: {
+			gboolean byscalar = FALSE;
+			gboolean scalar = FALSE;
+			gboolean subtract = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_SQRDMLAH_BYSCALAR: byscalar = TRUE; break;
+			case OP_ARM64_SQRDMLAH_SCALAR: scalar = TRUE; break;
+			case OP_ARM64_SQRDMLSH: subtract = TRUE; break;
+			case OP_ARM64_SQRDMLSH_BYSCALAR: subtract = TRUE; byscalar = TRUE; break;
+			case OP_ARM64_SQRDMLSH_SCALAR: subtract = TRUE; scalar = TRUE; break;
+			}
+			int acc_iid = subtract ? INTRINS_AARCH64_ADV_SIMD_SQSUB : INTRINS_AARCH64_ADV_SIMD_SQADD;
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (ret_t);
+			ScalarOpFromVectorOpCtx sctx = scalar_op_from_vector_op (ctx, ret_t, ins);
+			LLVMValueRef args [] = { lhs, rhs, arg3 };
+			if (byscalar) {
+				unsigned int elems = LLVMGetVectorSize (ret_t);
+				args [2] = broadcast_element (ctx, scalar_from_vector (ctx, args [2]), elems);
+			}
+			if (scalar) {
+				ovr_tag = sctx.ovr_tag;
+				scalar_op_from_vector_op_process_args (&sctx, args, 3);
+			}
+			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SQRDMULH, ovr_tag, &args [1], "arm64_sqrdmlxh");
+			args [1] = result;
+			result = call_overloaded_intrins (ctx, acc_iid, ovr_tag, &args [0], "arm64_sqrdmlxh");
+			if (scalar)
+				result = scalar_op_from_vector_op_process_result (&sctx, result);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_SMULH:
@@ -12136,6 +12189,13 @@ add_intrinsic (LLVMModuleRef module, int id)
 						int associated_prim = MAX(ew, 2);
 						LLVMTypeRef associated_scalar_type = intrin_types [0][associated_prim];
 						intrins = add_intrins2 (module, id, associated_scalar_type, distinguishing_type);
+					} else if (kind == INTRIN_kind_arm64_dot_prod) {
+						/*
+						 * @llvm.aarch64.neon.sdot.v2i32.v8i8
+						 * @llvm.aarch64.neon.sdot.v4i32.v16i8
+						 */
+						 LLVMTypeRef associated_type = intrin_types [vw][0];
+						 intrins = add_intrins2 (module, id, distinguishing_type, associated_type);
 					} else
 						intrins = add_intrins1 (module, id, distinguishing_type);
 					int key = key_from_id_and_tag (id, test);
@@ -13530,9 +13590,11 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "bmi2",	MONO_CPU_X86_BMI2 },
 #endif
 #if defined(TARGET_ARM64)
-		{ "crc",	MONO_CPU_ARM64_CRC },
-		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
-		{ "neon",	MONO_CPU_ARM64_NEON }
+		{ "crc",     MONO_CPU_ARM64_CRC },
+		{ "crypto",  MONO_CPU_ARM64_CRYPTO },
+		{ "neon",    MONO_CPU_ARM64_NEON },
+		{ "rdm",     MONO_CPU_ARM64_RDM },
+		{ "dotprod", MONO_CPU_ARM64_DP },
 #endif
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },
