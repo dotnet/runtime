@@ -511,13 +511,13 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
         {
-            Span<char> native = new Span<char>((char*)nativeHome, length);
-            int nullTerminatorIndex = native.IndexOf('\0');
-            if (nullTerminatorIndex != -1)
+            int end = SpanHelpers.IndexOf(ref *(char*)nativeHome, '\0', length);
+            if (end != -1)
             {
-                return new string(native[..nullTerminatorIndex]);
+                length = end;
             }
-            return new string(native);
+
+            return new string((char*)nativeHome, 0, length);
         }
     }  // class WSTRBufferMarshaler
 #if FEATURE_COMINTEROP
