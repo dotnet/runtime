@@ -547,7 +547,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             var command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(MAJOR_VERSION);
             command_params_writer.Write(MINOR_VERSION);
-            command_params_writer.Write((byte)0);
 
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.SetProtocolVersion, command_params, token);
             return true;
