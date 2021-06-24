@@ -29,17 +29,22 @@
       <_SdkPropsProperties Condition="$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value=".exe" />
       <_SdkPropsProperties Include="TargetRid" Value="$(TargetCrossRid)" />
     </ItemGroup>
+    <PropertyGroup>
+      <_PermissionsFiles>&lt;File Path=&quot;tools/mono-aot-cross&quot; Permission=&quot;755&quot; /&gt;</_PermissionsFiles>
+    </PropertyGroup>
+    <PropertyGroup Condition="(!$([MSBuild]::IsOsPlatform('Windows')) and '$(TargetCrossRid)' != 'browser-wasm')">
+      <_PermissionsFiles>$(_PermissionsFiles)
+    &lt;File Path=&quot;tools/opt&quot; Permission=&quot;755&quot; /&gt;</_PermissionsFiles>
+      <_PermissionsFiles>$(_PermissionsFiles)
+    &lt;File Path=&quot;tools/llc&quot; Permission=&quot;755&quot; /&gt;</_PermissionsFiles>
+    </PropertyGroup>
     <ItemGroup>
-      <_PermissionsFiles Include="PermissionsFiles" Value="&lt;File Path=&quot;tools/mono-aot-cross&quot; Permission=&quot;755&quot; /&gt;" />
-    </ItemGroup>
-    <ItemGroup Condition="(!$([MSBuild]::IsOsPlatform('Windows')) and '$(TargetCrossRid)' != 'browser-wasm')">
-      <_PermissionsFiles Include="PermissionsFiles" Value="&lt;File Path=&quot;tools/opt&quot; Permission=&quot;755&quot; /&gt;" />
-      <_PermissionsFiles Include="PermissionsFiles" Value="&lt;File Path=&quot;tools/llc&quot; Permission=&quot;755&quot; /&gt;" />
+      <_PermissionsProperties Include="PermissionsProperties" Value="$(_PermissionsFiles)" />
     </ItemGroup>
     <GenerateFileFromTemplate
       Condition="!$([MSBuild]::IsOsPlatform('Windows'))"
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml.in"
-      Properties="@(_PermissionsFiles)"
+      Properties="@(_PermissionsProperties)"
       OutputPath="$(MonoAotCrossDir)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" />
     <GenerateFileFromTemplate
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"
