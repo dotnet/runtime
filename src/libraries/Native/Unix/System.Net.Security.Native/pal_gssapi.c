@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 c_static_assert(PAL_GSS_C_DELEG_FLAG == GSS_C_DELEG_FLAG);
 c_static_assert(PAL_GSS_C_MUTUAL_FLAG == GSS_C_MUTUAL_FLAG);
