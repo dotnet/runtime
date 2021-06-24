@@ -2675,12 +2675,13 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 /*
  * emit_rgctx_fetch:
  *
- *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx
- * given by RGCTX.
+ *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx.
  */
 static MonoInst*
-emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
+emit_rgctx_fetch (MonoCompile *cfg, int context_used, MonoJumpInfoRgctxEntry *entry)
 {
+	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
+
 	if (cfg->llvm_only)
 		return emit_rgctx_fetch_inline (cfg, rgctx, entry);
 	else
@@ -2710,9 +2711,8 @@ mini_emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 	}
 
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_CLASS, klass, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 static MonoInst*
@@ -2720,9 +2720,8 @@ emit_get_rgctx_sig (MonoCompile *cfg, int context_used,
 					MonoMethodSignature *sig, MonoRgctxInfoType rgctx_type)
 {
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_SIGNATURE, sig, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 static MonoInst*
@@ -2731,16 +2730,14 @@ emit_get_rgctx_gsharedvt_call (MonoCompile *cfg, int context_used,
 {
 	MonoJumpInfoGSharedVtCall *call_info;
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	call_info = (MonoJumpInfoGSharedVtCall *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoGSharedVtCall));
 	call_info->sig = sig;
 	call_info->method = cmethod;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_GSHAREDVT_CALL, call_info, rgctx_type);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 /*
@@ -2754,16 +2751,14 @@ emit_get_rgctx_virt_method (MonoCompile *cfg, int context_used,
 {
 	MonoJumpInfoVirtMethod *info;
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	info = (MonoJumpInfoVirtMethod *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoVirtMethod));
 	info->klass = klass;
 	info->method = virt_method;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_VIRT_METHOD, info, rgctx_type);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 static MonoInst*
@@ -2771,12 +2766,10 @@ emit_get_rgctx_gsharedvt_method (MonoCompile *cfg, int context_used,
 								 MonoMethod *cmethod, MonoGSharedVtMethodInfo *info)
 {
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_GSHAREDVT_METHOD, info, MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 /*
@@ -2810,9 +2803,8 @@ emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 		}
 	} else {
 		MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_METHODCONST, cmethod, rgctx_type);
-		MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-		return emit_rgctx_fetch (cfg, rgctx, entry);
+		return emit_rgctx_fetch (cfg, context_used, entry);
 	}
 }
 
@@ -2821,9 +2813,8 @@ emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 					  MonoClassField *field, MonoRgctxInfoType rgctx_type)
 {
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_FIELD, field, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 MonoInst*
@@ -3522,7 +3513,6 @@ emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
 {
 	MonoDelegateClassMethodPair *info;
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	info = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
 	info->klass = klass;
@@ -3530,11 +3520,9 @@ emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
 	info->is_virtual = _virtual;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, info, rgctx_type);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
-
 
 /*
  * Returns NULL and set the cfg exception on error.
