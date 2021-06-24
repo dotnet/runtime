@@ -597,8 +597,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Include="mattr=crc" />
       <MonoAotOption Include="mattr=crypto" />
       <MonoAotOption Include="mattr=neon" />
-      <MonoAotOption Include="mattr=rdm" />
-      <MonoAotOption Include="mattr=dotprod" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
       <MonoAotOption Include="mattr=sse4.2" />
