@@ -78,12 +78,31 @@ namespace System.Net.Http.Functional.Tests
             }
 
             RemoteExecutor.Invoke(RunTest).Dispose();
+            //RunTest().GetAwaiter().GetResult();
+        }
+
+        [Fact]
+        public async Task Hobluj()
+        {
+            using var listener = new LogHttpEventListener(_output);
+            listener.Enabled = true;
+            listener.Filter = m => m.Contains("[FlowControl]") || m.Contains("SERVER");
+
+            int maxCredit = await TestClientWindowScalingAsync(
+                    TimeSpan.FromMilliseconds(30),
+                    TimeSpan.Zero,
+                    8 * 1024 * 1024,
+                    _output,
+                    listener);
+
+            _output.WriteLine("maxCredit: " + maxCredit);
         }
 
         [Fact]
         public void MaxHttp2StreamWindowSize_HighBandwidthDelayProduct_WindowStopsAtMaxValue()
         {
-            const int MaxWindow = 524288;
+            //const int MaxWindow = 654321;
+            const int MaxWindow = 123456;
 
             static async Task RunTest()
             {
@@ -93,7 +112,8 @@ namespace System.Net.Http.Functional.Tests
                     2 * 1024 * 1024,
                     null);
 
-                Assert.True(maxCredit <= MaxWindow);
+                //Assert.True(maxCredit <= MaxWindow);
+                Assert.Equal(MaxWindow, maxCredit);
             }
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -132,7 +152,8 @@ namespace System.Net.Http.Functional.Tests
             TimeSpan networkDelay,
             TimeSpan slowBandwidthSimDelay,
             int bytesToDownload,
-            ITestOutputHelper output)
+            ITestOutputHelper output,
+            LogHttpEventListener listener = null)
         {
             TimeSpan timeout = TimeSpan.FromSeconds(30);
 
@@ -182,10 +203,10 @@ namespace System.Net.Http.Functional.Tests
                 bool endStream = nextRemainingBytes == 0;
 
                 await writeSemaphore.WaitAsync();
+                Interlocked.Add(ref credit, -bytesToSend);
                 await connection.SendResponseDataAsync(streamId, responseData, endStream);
                 writeSemaphore.Release();
-
-                credit -= bytesToSend;
+                await Log($"Sent {bytesToSend}, credit reduced: {credit}");
 
                 remainingBytes = nextRemainingBytes;
             }
@@ -195,6 +216,12 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(bytesToDownload, dataReceived);
 
             return maxCredit;
+
+            async Task Log(string msg)
+            {
+                if (listener != null) await listener.WriteAsync("  ## SERVER " + msg);
+                else output?.WriteLine(msg);
+            }
 
             async Task ProcessIncomingFramesAsync()
             {
@@ -216,10 +243,11 @@ namespace System.Net.Http.Functional.Tests
                         // Ignore connection window:
                         if (windowUpdateFrame.StreamId != streamId) continue;
 
-                        credit += windowUpdateFrame.UpdateSize;
-                        maxCredit = Math.Max(credit, maxCredit); // Detect if client grows the window
-                        output?.WriteLine("MaxCredit: " + maxCredit);
+                        int currentCredit = Interlocked.Add(ref credit, windowUpdateFrame.UpdateSize);
+                        maxCredit = Math.Max(currentCredit, maxCredit); // Detect if client grows the window
                         creditReceivedSemaphore.Release();
+
+                        await Log($">> UpdateSize:{windowUpdateFrame.UpdateSize} currentCredit:{currentCredit} MaxCredit: {maxCredit}");
                     }
                     else if (frame is not null)
                     {

@@ -420,6 +420,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public ValueTask WriteAsync(string message) => _messagesChannel.Writer.WriteAsync(message);
+
         protected override async void OnEventWritten(EventWrittenEventArgs eventData)
         {
             if (!Enabled) return;

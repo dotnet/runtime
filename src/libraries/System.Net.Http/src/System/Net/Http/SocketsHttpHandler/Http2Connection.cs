@@ -133,10 +133,8 @@ namespace System.Net.Http
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
-            InitialClientStreamWindowSize = pool.Settings._initialHttp2StreamWindowSize;
-            _rttEstimator = pool.Settings._disableDynamicHttp2WindowSizing ?
-                null :
-                new RttEstimator(this);
+
+            _rttEstimator = pool.Settings._disableDynamicHttp2WindowSizing ? null : new RttEstimator(this);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -194,7 +192,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
                 _outgoingBuffer.Commit(2);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)InitialClientStreamWindowSize);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)_pool.Settings._initialHttp2StreamWindowSize);
                 _outgoingBuffer.Commit(4);
 
                 // The connection-level window size can not be initialized by SETTINGS frames:
