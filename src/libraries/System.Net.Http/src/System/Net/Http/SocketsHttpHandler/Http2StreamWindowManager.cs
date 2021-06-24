@@ -78,7 +78,6 @@ namespace System.Net.Http
                 int windowUpdateIncrement = _deliveredBytes;
                 _deliveredBytes = 0;
 
-                _stream.TraceFlowControl($"Sending WINDOW_UPDATE of increment {windowUpdateIncrement}");
                 Task sendWindowUpdateTask = _connection.SendWindowUpdateAsync(_stream.StreamId, windowUpdateIncrement);
                 _connection.LogExceptions(sendWindowUpdateTask);
             }
@@ -87,7 +86,6 @@ namespace System.Net.Http
             {
                 _deliveredBytes += bytesConsumed;
 
-                _stream.TraceFlowControl($"Received {bytesConsumed}, _deliveredBytes: {_deliveredBytes}");
                 if (_deliveredBytes < StreamWindowThreshold)
                 {
                     return;
@@ -120,7 +118,6 @@ namespace System.Net.Http
 
                 _deliveredBytes = 0;
 
-                _stream.TraceFlowControl($"Sending WINDOW_UPDATE of increment {windowUpdateIncrement}");
                 Task sendWindowUpdateTask = _connection.SendWindowUpdateAsync(_stream.StreamId, windowUpdateIncrement);
                 _connection.LogExceptions(sendWindowUpdateTask);
 
