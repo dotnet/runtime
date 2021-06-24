@@ -1909,8 +1909,9 @@ void ILFixedWSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmi
     pslILEmit->EmitDUP();
     pslILEmit->EmitCALL(METHOD__STRING__WCSLEN, 1, 1);
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
-
-    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR, 1);
+    pslILEmit->EmitLDC(0);
+    pslILEmit->EmitLDC(m_pargs->fs.fixedStringLength);
+    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR_START_LEN, 1);
     EmitStoreManagedValue(pslILEmit);
 }
 
