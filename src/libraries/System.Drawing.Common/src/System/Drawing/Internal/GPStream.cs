@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Drawing.Internal
 {
