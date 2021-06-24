@@ -2384,9 +2384,9 @@ var MonoSupportLib = {
 				} else { // shell or worker
 					config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
 				}
-				return config;
+				Module.config = config;
 			} catch(e) {
-				return {message: "failed to load config file", error: e};
+				Module.config = {message: "failed to load config file", error: e};
 			} finally {
 				Module.removeRunDependency(configFilePath);
 			}
