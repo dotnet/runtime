@@ -1036,6 +1036,10 @@ namespace Internal.JitInterface
                 if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
                 {
                     VerifyMethodSignatureIsStable(method.Signature);
+                    if (!owningDefType.LayoutAbiStable)
+                    {
+                        throw new RequiresRuntimeJitException("This type layout is unstable");
+                    }
                 }
             }
 #endif
