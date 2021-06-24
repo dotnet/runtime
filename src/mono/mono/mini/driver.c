@@ -11,58 +11,6 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#if defined(__linux__)
-#include <sys/auxv.h>
-
-#define ARM64_HWCAPS(_) \
-	_(ARM64_HWCAP_FP, (1 << 0)) \
-	_(ARM64_HWCAP_ASIMD, (1 << 1)) \
-	_(ARM64_HWCAP_EVTSTRM, (1 << 2)) \
-	_(ARM64_HWCAP_AES, (1 << 3)) \
-	_(ARM64_HWCAP_PMULL, (1 << 4)) \
-	_(ARM64_HWCAP_SHA1, (1 << 5)) \
-	_(ARM64_HWCAP_SHA2, (1 << 6)) \
-	_(ARM64_HWCAP_CRC32, (1 << 7)) \
-	_(ARM64_HWCAP_ATOMICS, (1 << 8)) \
-	_(ARM64_HWCAP_FPHP, (1 << 9)) \
-	_(ARM64_HWCAP_ASIMDHP, (1 << 10)) \
-	_(ARM64_HWCAP_CPUID, (1 << 11)) \
-	_(ARM64_HWCAP_ASIMDRDM, (1 << 12)) \
-	_(ARM64_HWCAP_JSCVT, (1 << 13)) \
-	_(ARM64_HWCAP_FCMA, (1 << 14)) \
-	_(ARM64_HWCAP_LRCPC, (1 << 15)) \
-	_(ARM64_HWCAP_DCPOP, (1 << 16)) \
-	_(ARM64_HWCAP_SHA3, (1 << 17)) \
-	_(ARM64_HWCAP_SM3, (1 << 18)) \
-	_(ARM64_HWCAP_SM4, (1 << 19)) \
-	_(ARM64_HWCAP_ASIMDDP, (1 << 20)) \
-	_(ARM64_HWCAP_SHA512, (1 << 21)) \
-	_(ARM64_HWCAP_SVE, (1 << 22)) \
-	_(ARM64_HWCAP_ASIMDFHM, (1 << 23)) \
-	_(ARM64_HWCAP_DIT, (1 << 24)) \
-	_(ARM64_HWCAP_USCAT, (1 << 25)) \
-	_(ARM64_HWCAP_ILRCPC, (1 << 26)) \
-	_(ARM64_HWCAP_FLAGM, (1 << 27)) \
-	_(ARM64_HWCAP_SSBS, (1 << 28))
-
-struct uintstrpair {
-	unsigned int f;
-	const char *s;
-};
-
-enum {
-	#define expand_as_case(name, val) name = val,
-	ARM64_HWCAPS(expand_as_case)
-	#undef expand_as_case
-};
-
-static const struct uintstrpair arm64_hwcap_arr[] = {
-	#define expand_as_str(name, _) { name, #name },
-	ARM64_HWCAPS(expand_as_str)
-	#undef expand_as_str
-};
-#endif
-
 #include <config.h>
 #include <signal.h>
 #if HAVE_SCHED_SETAFFINITY
@@ -2115,15 +2063,6 @@ print_icall_table (void)
 int
 mono_main (int argc, char* argv[])
 {
-	#if defined(__linux__) && defined(__aarch64__)
-	{
-		unsigned long hwcap = getauxval(AT_HWCAP);
-		for (int i = 0; i < (sizeof (arm64_hwcap_arr) / sizeof (arm64_hwcap_arr [0])); ++i) {
-			struct uintstrpair p = arm64_hwcap_arr [i];
-			printf ("arm64 hwcap: %s available: %s\n", p.s, hwcap & p.f ? "yes" : "no");
-		}
-	}
-	#endif
 	MainThreadArgs main_args;
 	MonoAssembly *assembly;
 	MonoMethodDesc *desc;
