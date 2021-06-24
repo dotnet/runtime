@@ -1331,14 +1331,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                     }
-                    else if (FgStack::IsConstantOrConstArg(arg0, impInlineInfo) ||
-                             FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
-                    {
-                        // "X op CNS" or "CNS op X"
-                        pushedStack.Push(FgStack::FgSlot::SLOT_UNKNOWN);
-                        handled = true;
-                        compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
-                    }
 
                     if (FgStack::IsConstArgument(arg1, impInlineInfo))
                     {
@@ -1471,7 +1463,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             {
                                 compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_BRANCH);
                             }
-                            else
+                            else if (FgStack::IsArgument(pushedStack.Top()))
                             {
                                 // E.g. brtrue is basically "if (X == 0)"
                                 compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);

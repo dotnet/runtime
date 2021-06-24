@@ -1407,7 +1407,7 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
 
 double ExtendedDefaultPolicy::DetermineMultiplier()
 {
-    double multiplier = 1.0;
+    double multiplier = 0.0;
 
     if (m_IsInstanceCtor)
     {
@@ -1423,35 +1423,22 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     else if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.2;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.2;
+        multiplier += 2.0;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
             multiplier);
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += 1.0;
+        multiplier += 1.5;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
             m_FldAccessOverArgStruct, multiplier);
-    }
-    else if (m_BinaryExprWithCns > 0)
-    {
-        // In some cases we're not able to detect potentially foldable expressions, e.g.:
-        //
-        //   ldc.i4.0
-        //   call int SomeFoldableNonIntrinsicCall
-        //   ceq
-        //
-        // so at least we can note potential constant tests
-        multiplier += 1.0;
-        JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
-            m_BinaryExprWithCns, multiplier);
     }
 
     if (m_LooksLikeWrapperMethod)
@@ -1468,7 +1455,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_ArgFeedsRangeCheck > 0)
     {
-        multiplier += 1.0;
+        multiplier += 0.5;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1537,7 +1524,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
         //
-        multiplier += 3.0;
+        multiplier += 2.5;
         JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
                 "increased to %g.",
                 m_ArgIsExactClsSigIsNot, multiplier);
@@ -1547,7 +1534,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         // Normally, we try to note all the places where constant arguments lead to folding/feed tests
         // but just in case:
-        multiplier += m_ArgIsConst;
+        multiplier += 1.0;
         JITDUMP("\n%d arguments are constants at the callsite.  Multiplier increased to %g.", m_ArgIsConst, multiplier);
     }
 
@@ -1586,19 +1573,57 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d Div-by-constArg expressions.  Multiplier increased to %g.", m_DivByCns, multiplier);
     }
 
-    // For prejit roots we do not see the call sites. To be suitably optimistic
-    // assume that call sites may pass constants.
-    if (m_IsPrejitRoot)
+    if (m_BinaryExprWithCns > 0)
     {
-        multiplier += 2.0 + m_BinaryExprWithCns;
+        // In some cases we're not able to detect potentially foldable expressions, e.g.:
+        //
+        //   ldc.i4.0
+        //   call int SomeFoldableNonIntrinsicCall
+        //   ceq
+        //
+        // so at least we can note potential constant tests
+        multiplier += 1.5;
+        JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
+            m_BinaryExprWithCns, multiplier);
+
+        // For prejit roots we do not see the call sites. To be suitably optimistic
+        // assume that call sites may pass constants and make these m_BinaryExprWithCns
+        // foldable.
+        if (m_IsPrejitRoot)
+        {
+            multiplier += 1.0 + m_BinaryExprWithCns;
+        }
     }
 
-    if (m_CallsiteFrequency == InlineCallsiteFrequency::RARE)
+    switch (m_CallsiteFrequency)
     {
-        multiplier = 1.3;
-        JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+        case InlineCallsiteFrequency::RARE:
+            // Note this one is not additive, it uses '=' instead of '+='
+            multiplier = 1.3;
+            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::BORING:
+            multiplier += 1.3;
+            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::WARM:
+            multiplier += 2.0;
+            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::LOOP:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::HOT:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+            break;
+        default:
+            assert(!"Unexpected callsite frequency");
+            break;
     }
-    else if (m_HasProfile)
+
+    if (m_HasProfile)
     {
         const double profileMaxValue = 1.2;
         // m_ProfileFrequency values:
@@ -1620,16 +1645,11 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
-    else if (m_CallsiteFrequency == InlineCallsiteFrequency::LOOP)
-    {
-        multiplier += 2.0;
-        JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-    }
 
     if (m_BackwardJump)
     {
         // TODO: investigate in which cases we should [never] inline callees with loops.
-        multiplier *= 0.75;
+        multiplier *= 0.7;
         JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump, multiplier);
     }
 
