@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString)
-            => Define(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues(formatter), exception, LogValues.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString)
-            => Define<T1>(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define<T1>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -181,7 +181,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
 
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1>(formatter, arg1), exception, LogValues<T1>.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }
@@ -214,7 +214,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString)
-            => Define<T1, T2>(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define<T1, T2>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -226,7 +226,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
@@ -235,7 +235,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2>(formatter, arg1, arg2), exception, LogValues<T1, T2>.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString)
-            => Define<T1, T2, T3>(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define<T1, T2, T3>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -273,7 +273,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
@@ -282,7 +282,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3), exception, LogValues<T1, T2, T3>.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }
@@ -308,7 +308,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString)
-            => Define<T1, T2, T3, T4>(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define<T1, T2, T3, T4>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -322,7 +322,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
 
@@ -331,7 +331,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4), exception, LogValues<T1, T2, T3, T4>.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }
@@ -358,7 +358,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString)
-            => Define<T1, T2, T3, T4, T5>(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define<T1, T2, T3, T4, T5>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -373,7 +373,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
 
@@ -382,7 +382,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4, T5>(formatter, arg1, arg2, arg3, arg4, arg5), exception, LogValues<T1, T2, T3, T4, T5>.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }
@@ -410,7 +410,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString)
-            => Define<T1, T2, T3, T4, T5, T6>(logLevel, eventId, formatString, options: new LogDefineOptions() { SkipEnabledCheck = false});
+            => Define<T1, T2, T3, T4, T5, T6>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
         /// Creates a delegate which can be invoked for logging a message.
@@ -426,7 +426,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="formatString">The named format string</param>
         /// <param name="options">The <see cref="LogDefineOptions"/></param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions options)
+        public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
 
@@ -435,7 +435,7 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4, T5, T6>(formatter, arg1, arg2, arg3, arg4, arg5, arg6), exception, LogValues<T1, T2, T3, T4, T5, T6>.Callback);
             }
 
-            if (options.SkipEnabledCheck)
+            if (options != null && options.SkipEnabledCheck)
             {
                 return Log;
             }

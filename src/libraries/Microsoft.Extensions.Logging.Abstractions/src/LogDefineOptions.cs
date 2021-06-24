@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging
     public class LogDefineOptions
     {
         /// <summary>
-        /// Gets the flag to skip IsEnabled check for the logging method.
+        /// Gets or sets the flag to skip IsEnabled check for the logging method.
         /// </summary>
         public bool SkipEnabledCheck { get; set; }
     }
