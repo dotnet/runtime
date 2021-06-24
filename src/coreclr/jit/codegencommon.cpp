@@ -12537,7 +12537,7 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 
 void CodeGen::genSetRegsModifiedForPoisoning()
 {
-    // For ARM32 we need a callee-reserved register since the scratch registers may have args.
+// For ARM32 we need a callee-reserved register since the scratch registers may have args.
 #if defined(TARGET_ARM)
     regSet.rsSetRegsModified(RBM_R4);
 #endif
@@ -12566,7 +12566,8 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
     assert(compiler->compShouldPoisonFrame());
     assert((regLiveIn & genRegMask(immRegNum)) == 0);
 
-    // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that we can fit.
+    // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
+    // we can fit.
     bool hasPoisonImm = false;
     for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
     {
@@ -12588,15 +12589,15 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             hasPoisonImm = true;
         }
 
-        // For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
+// For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
 #ifdef TARGET_64BIT
         bool fpBased;
-        int addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+        int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
 #else
         int addr = 0;
 #endif
         int size = (int)compiler->lvaLclSize(varNum);
-        int end = addr + size;
+        int end  = addr + size;
         for (int offs = addr; offs < end;)
         {
 #ifdef TARGET_64BIT
@@ -12613,4 +12614,4 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             offs += 4;
         }
     }
-} 
+}
