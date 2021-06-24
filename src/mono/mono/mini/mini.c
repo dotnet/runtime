@@ -2940,13 +2940,18 @@ remove_empty_finally_pass (MonoCompile *cfg)
 				}
 			}
 			if (empty) {
-				bb->flags &= ~BB_EXCEPTION_HANDLER;
+				/* Nullify OP_START_HANDLER */
 				NULLIFY_INS (first);
 				last = mono_bb_last_inst (bb, 0);
 				if (last->opcode == OP_ENDFINALLY)
 					NULLIFY_INS (last);
 				if (cfg->verbose_level > 1)
 					g_print ("removed empty finally clause %d.\n", i);
+
+				/* Mark the handler bb as not used anymore */
+				bb = cfg->cil_offset_to_bb [clause->handler_offset];
+				bb->flags &= ~BB_EXCEPTION_HANDLER;
+
 				cfg->clause_is_dead [i] = TRUE;
 				remove_call_handler = TRUE;
 			}
@@ -2956,17 +2961,13 @@ remove_empty_finally_pass (MonoCompile *cfg)
 	if (remove_call_handler) {
 		/* Remove OP_CALL_HANDLER opcodes pointing to the removed finally blocks */
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *handler_ins = NULL;
 			MONO_BB_FOR_EACH_INS (bb, ins) {
 				if (ins->opcode == OP_CALL_HANDLER && ins->inst_target_bb && !(ins->inst_target_bb->flags & BB_EXCEPTION_HANDLER)) {
-					handler_ins = ins;
+					NULLIFY_INS (ins);
+					for (MonoInst *ins2 = ins->next; ins2; ins2 = ins2->next)
+						NULLIFY_INS (ins2);
 					break;
 				}
-			}
-			if (handler_ins) {
-				handler_ins->opcode = OP_BR;
-				for (ins = handler_ins->next; ins; ins = ins->next)
-					NULLIFY_INS (ins);
 			}
 		}
 	}
@@ -3596,8 +3597,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "if_conversion");
 	}
 
-	// This still causes failures
 	remove_empty_finally_pass (cfg);
+
+	if (cfg->llvm_only && cfg->interp && !cfg->method->wrapper_type && !interp_entry_only) {
+		/* Disable llvm if there are still finally clauses left */
+		for (int i = 0; i < cfg->header->num_clauses; ++i) {
+			MonoExceptionClause *clause = &header->clauses [i];
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY && !cfg->clause_is_dead [i]) {
+				cfg->exception_message = g_strdup ("finally clause.");
+				cfg->disable_llvm = TRUE;
+				break;
+			}
+		}
+	}
 
 	mono_threads_safepoint ();
 

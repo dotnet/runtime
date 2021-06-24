@@ -6498,9 +6498,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		if (!cfg->method->wrapper_type && header->num_clauses)
-			cfg->interp_entry_only = TRUE;
-
+		if (!cfg->method->wrapper_type && header->num_clauses) {
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
+		}
 		if (cfg->interp_entry_only)
 			emit_llvmonly_interp_entry (cfg, header);
 	}
@@ -7237,8 +7242,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
-				needs_stack_walk = TRUE;
+			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod)) {
+				if (cfg->interp && !cfg->interp_entry_only) {
+					/* Use the interpreter instead */
+					cfg->exception_message = g_strdup ("stack walk");
+					cfg->disable_llvm = TRUE;
+				} else {
+					needs_stack_walk = TRUE;
+				}
+			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (!mono_class_is_interface (method->klass))
