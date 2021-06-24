@@ -24,47 +24,26 @@ namespace CoreclrTestLib
             string outputFile = Path.Combine(reportBase, action, $"{category}_{action}.output.txt");
             string errorFile = Path.Combine(reportBase, action, $"{category}_{action}.error.txt");
             string dotnetCmd_raw = System.Environment.GetEnvironmentVariable("__TestDotNetCmd");
-            string dotnetCmd;
             string xharnessCmd_raw = System.Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
-            string xharnessCmd;
-            string cmdStr;
-            string appExtension;
             int timeout = 600000; // Set timeout to 4 mins, because the installation on Android arm64/32 devices could take up to 10 mins on CI
 
-            if(String.IsNullOrEmpty(dotnetCmd_raw))
+            string dotnetCmd = string.IsNullOrEmpty(dotnetCmd_raw) ? "dotnet" : dotnetCmd_raw;
+            string xharnessCmd = string.IsNullOrEmpty(xharnessCmd_raw) ? "xharness" : $"exec {xharnessCmd_raw}";
+            string appExtension = platform == "android" ? "apk" : "app";
+            string cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --output-directory={reportBase}/{action}";
+
+            if (action == "install")
             {
-                dotnetCmd = "dotnet";
+                cmdStr += $" --app={testBinaryBase}/{category}.{appExtension}";
             }
-            else
+            else if (platform != "android")
             {
-                dotnetCmd = dotnetCmd_raw;
+                cmdStr += $" --app=net.dot.{category}";
             }
 
-            if(String.IsNullOrEmpty(xharnessCmd_raw))
+            if (platform == "android")
             {
-                xharnessCmd = "xharness";
-            }
-            else
-            {
-                xharnessCmd = $"exec {xharnessCmd_raw}";
-            }
-
-            if(platform == "android")
-            {
-                appExtension = "apk";
-            }
-            else
-            {
-                appExtension = "app";
-            }
-
-            if(action == "install")
-            {
-                cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --app={testBinaryBase}/{category}.{appExtension} --package-name=net.dot.{category} --output-directory={reportBase}/install";
-            }
-            else
-            {
-                cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action} --package-name=net.dot.{category} --output-directory={reportBase}/install";
+                cmdStr += $" --package-name=net.dot.{category}";
             }
 
             Directory.CreateDirectory(Path.Combine(reportBase, action));
