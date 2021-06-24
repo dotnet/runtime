@@ -30,7 +30,7 @@ namespace System.Drawing
                 PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
                 Guid iid = DrawingComWrappers.IPicture.IID;
                 IntPtr lpPicture;
-                DrawingComWrappers.CheckStatus(OleCreatePictureIndirect(&pictdesc, &iid, fOwn: 0, &lpPicture));
+                Marshal.ThrowExceptionForHR(OleCreatePictureIndirect(&pictdesc, &iid, fOwn: 0, &lpPicture));
 
                 IntPtr streamPtr = IntPtr.Zero;
                 try
@@ -40,7 +40,7 @@ namespace System.Drawing
                     var gpStream = new GPStream(outputStream, makeSeekable: false);
                     streamPtr = DrawingComWrappers.Instance.GetOrCreateComInterfaceForObject(gpStream, CreateComInterfaceFlags.None);
 
-                    DrawingComWrappers.CheckStatus(picture.SaveAsFile(streamPtr, -1, null));
+                    Marshal.ThrowExceptionForHR(picture.SaveAsFile(streamPtr, -1, null));
                 }
                 finally
                 {

@@ -16,28 +16,14 @@ namespace System.Drawing
     /// </summary>
     internal unsafe class DrawingComWrappers : ComWrappers
     {
-        private const int OK = 0;
-        private static readonly Guid IStreamIID = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+        private const int S_OK = (int)Interop.HRESULT.S_OK;
+        private static readonly Guid IID_IStream = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
         private static readonly ComInterfaceEntry* s_wrapperEntry = InitializeComInterfaceEntry();
 
         internal static DrawingComWrappers Instance { get; } = new DrawingComWrappers();
 
         private DrawingComWrappers() { }
-
-        internal static void CheckStatus(int result)
-        {
-            if (result != OK)
-            {
-                Exception? ex = Marshal.GetExceptionForHR(result);
-                if (ex != null)
-                {
-                    throw ex;
-                }
-
-                throw new ExternalException() { HResult = result };
-            }
-        }
 
         private static ComInterfaceEntry* InitializeComInterfaceEntry()
         {
@@ -46,7 +32,7 @@ namespace System.Drawing
             IntPtr iStreamVtbl = IStreamVtbl.Create(fpQueryInteface, fpAddRef, fpRelease);
 
             ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingComWrappers), sizeof(ComInterfaceEntry));
-            wrapperEntry->IID = IStreamIID;
+            wrapperEntry->IID = IID_IStream;
             wrapperEntry->Vtable = iStreamVtbl;
             return wrapperEntry;
         }
@@ -67,7 +53,7 @@ namespace System.Drawing
 
             Guid pictureIID = IPicture.IID;
             int hr = Marshal.QueryInterface(externalComObject, ref pictureIID, out IntPtr comObject);
-            if (hr == 0)
+            if (hr == S_OK)
             {
                 return new PictureWrapper(comObject);
             }
@@ -88,23 +74,23 @@ namespace System.Drawing
                 vtblRaw[0] = fpQueryInteface;
                 vtblRaw[1] = fpAddRef;
                 vtblRaw[2] = fpRelease;
-                vtblRaw[3] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&ReadImplementation;
-                vtblRaw[4] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&WriteImplementation;
-                vtblRaw[5] = (IntPtr)(delegate* unmanaged<IntPtr, long, SeekOrigin, ulong*, int>)&SeekImplementation;
-                vtblRaw[6] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, int>)&SetSizeImplementation;
-                vtblRaw[7] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, ulong, ulong*, ulong*, int>)&CopyToImplementation;
-                vtblRaw[8] = (IntPtr)(delegate* unmanaged<IntPtr, uint, int>)&CommitImplementation;
-                vtblRaw[9] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&RevertImplementation;
-                vtblRaw[10] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, ulong, uint, int>)&LockRegionImplementation;
-                vtblRaw[11] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, ulong, uint, int>)&UnlockRegionImplementation;
-                vtblRaw[12] = (IntPtr)(delegate* unmanaged<IntPtr, out Interop.Ole32.STATSTG, Interop.Ole32.STATFLAG, int>)&StatImplementation;
-                vtblRaw[13] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr*, int>)&CloneImplementation;
+                vtblRaw[3] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&Read;
+                vtblRaw[4] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&Write;
+                vtblRaw[5] = (IntPtr)(delegate* unmanaged<IntPtr, long, SeekOrigin, ulong*, int>)&Seek;
+                vtblRaw[6] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, int>)&SetSize;
+                vtblRaw[7] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, ulong, ulong*, ulong*, int>)&CopyTo;
+                vtblRaw[8] = (IntPtr)(delegate* unmanaged<IntPtr, uint, int>)&Commit;
+                vtblRaw[9] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&Revert;
+                vtblRaw[10] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, ulong, uint, int>)&LockRegion;
+                vtblRaw[11] = (IntPtr)(delegate* unmanaged<IntPtr, ulong, ulong, uint, int>)&UnlockRegion;
+                vtblRaw[12] = (IntPtr)(delegate* unmanaged<IntPtr, Interop.Ole32.STATSTG*, Interop.Ole32.STATFLAG, int>)&Stat;
+                vtblRaw[13] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr*, int>)&Clone;
 
                 return (IntPtr)vtblRaw;
             }
 
             [UnmanagedCallersOnly]
-            private static int ReadImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbRead)
+            private static int Read(IntPtr thisPtr, byte* pv, uint cb, uint* pcbRead)
             {
                 try
                 {
@@ -116,11 +102,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int WriteImplementation(IntPtr thisPtr, byte* pv, uint cb, uint* pcbWritten)
+            private static int Write(IntPtr thisPtr, byte* pv, uint cb, uint* pcbWritten)
             {
                 try
                 {
@@ -132,11 +118,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int SeekImplementation(IntPtr thisPtr, long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition)
+            private static int Seek(IntPtr thisPtr, long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition)
             {
                 try
                 {
@@ -148,11 +134,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int SetSizeImplementation(IntPtr thisPtr, ulong libNewSize)
+            private static int SetSize(IntPtr thisPtr, ulong libNewSize)
             {
                 try
                 {
@@ -164,11 +150,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int CopyToImplementation(IntPtr thisPtr, IntPtr pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
+            private static int CopyTo(IntPtr thisPtr, IntPtr pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
             {
                 try
                 {
@@ -182,11 +168,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int CommitImplementation(IntPtr thisPtr, uint grfCommitFlags)
+            private static int Commit(IntPtr thisPtr, uint grfCommitFlags)
             {
                 try
                 {
@@ -198,12 +184,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int RevertImplementation(IntPtr thisPtr)
+            private static int Revert(IntPtr thisPtr)
             {
                 try
                 {
@@ -215,12 +200,11 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int LockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
+            private static int LockRegion(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
             {
                 try
                 {
@@ -234,7 +218,7 @@ namespace System.Drawing
             }
 
             [UnmanagedCallersOnly]
-            private static int UnlockRegionImplementation(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
+            private static int UnlockRegion(IntPtr thisPtr, ulong libOffset, ulong cb, uint dwLockType)
             {
                 try
                 {
@@ -248,24 +232,23 @@ namespace System.Drawing
             }
 
             [UnmanagedCallersOnly]
-            private static int StatImplementation(IntPtr thisPtr, out Interop.Ole32.STATSTG pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
+            private static int Stat(IntPtr thisPtr, Interop.Ole32.STATSTG* pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
             {
                 try
                 {
                     Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                    inst.Stat(out pstatstg, grfStatFlag);
+                    inst.Stat(pstatstg, grfStatFlag);
                 }
                 catch (Exception e)
                 {
-                    pstatstg = default;
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
 
             [UnmanagedCallersOnly]
-            private static int CloneImplementation(IntPtr thisPtr, IntPtr* ppstm)
+            private static int Clone(IntPtr thisPtr, IntPtr* ppstm)
             {
                 if (ppstm == null)
                 {
@@ -283,7 +266,7 @@ namespace System.Drawing
                     return e.HResult;
                 }
 
-                return OK;
+                return S_OK;
             }
         }
 
@@ -313,8 +296,8 @@ namespace System.Drawing
             public unsafe int SaveAsFile(IntPtr pstm, int fSaveMemCopy, int* pcbSize)
             {
                 // Get the IStream implementation, since the ComWrappers runtime returns a pointer to the IUnknown interface implementation
-                Guid streamIID = IStreamIID;
-                CheckStatus(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
+                Guid streamIID = IID_IStream;
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
 
                 try
                 {
