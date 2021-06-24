@@ -478,7 +478,8 @@ namespace System.Security.Cryptography
             // that needed to get removed, so don't rent from a pool.
             byte[] decryptBuffer = GC.AllocateUninitializedArray<byte>(ciphertext.Length);
 
-            if (!TryDecryptEcbCore(ciphertext, decryptBuffer, paddingMode, out int written))
+            if (!TryDecryptEcbCore(ciphertext, decryptBuffer, paddingMode, out int written)
+                || written > decryptBuffer.Length)
             {
                 // This means decrypting the ciphertext grew in to a larger plaintext.
                 // A user-derived class could do this, but it is not expected in any of the
