@@ -4292,7 +4292,7 @@ namespace System.Tests
         {
             uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
             Array.Fill<uint>(uintArray, 42);
-            Assert.Equal(new uint[] { 42, 42, 42, 42 }, uintArray);
+            Assert.Equal(new int[] { 42, 42, 42, 42 }, uintArray);
         }
 
         [Fact]
@@ -4300,7 +4300,7 @@ namespace System.Tests
         {
             uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
             Array.Fill<uint>(uintArray, 42, 1, 2);
-            Assert.Equal(new uint[] { 0, 42, 42, 3 }, uintArray);
+            Assert.Equal(new int[] { 0, 42, 42, 3 }, uintArray);
         }
 
         [Fact]
