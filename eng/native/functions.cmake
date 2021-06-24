@@ -604,7 +604,6 @@ endfunction()
 
 function(add_sanitizers targetName)
   if (CLR_CMAKE_ENABLE_ASAN)
-    # TODO Add ASAN flags here
     get_target_property(kind "${targetName}" KIND)
     if ("${kind}" STREQUAL "SHARED" OR "${kind}" STREQUAL "EXECUTABLE")
       target_sources(${targetName} PRIVATE "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/common/asanoptions.cpp>")
