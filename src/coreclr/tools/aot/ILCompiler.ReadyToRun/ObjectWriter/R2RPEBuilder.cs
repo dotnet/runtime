@@ -697,6 +697,7 @@ namespace ILCompiler.PEWriter
 
             imageCharacteristics &= ~(Characteristics.Bit32Machine | Characteristics.LargeAddressAware);
             imageCharacteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
+            imageCharacteristics |= Characteristics.Dll;
 
             ulong imageBase = PE32HeaderConstants.ImageBase;
             if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
