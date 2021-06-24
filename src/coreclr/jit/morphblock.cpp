@@ -80,7 +80,7 @@ protected:
 // static
 GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)
 {
-    const bool           initBlock = false;
+    const bool           initBlock = true;
     MorphInitBlockHelper helper(comp, tree, initBlock);
     return helper.Morph();
 }
