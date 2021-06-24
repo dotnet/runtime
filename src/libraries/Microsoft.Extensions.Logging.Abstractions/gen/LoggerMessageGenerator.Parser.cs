@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             /// <summary>
-            /// Gets the set of logging classes containing methods to output.
+            /// Gets the set of logging classes or structs containing methods to output.
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
