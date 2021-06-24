@@ -124,6 +124,10 @@ while (($# > 0)); do
       wasm_runtime_loc=$2
       shift 2
       ;;
+    --wasmaot)
+      wasmaot=true
+      shift 1
+      ;;
     --compare)
       compare=true
       shift 1
@@ -158,6 +162,7 @@ while (($# > 0)); do
       echo "  --internal                     If the benchmarks are running as an official job."
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
       echo "  --wasm                         Path to the unpacked wasm runtime pack."
+      echo "  --wasmaot                      Indicate wasm aot"  
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --alpine                       Set for runs on Alpine"
       echo ""
@@ -264,7 +269,11 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+    if [[ "$wasmaot" == "true" ]]; then
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --runtimeSrcDir $wasm_runtime_loc --buildTimeout 3600" 
+    else
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+    fi
 fi
 
 if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
@@ -316,3 +325,4 @@ Write-PipelineSetVariable -name "_BuildConfig" -value "$architecture.$kind.$fram
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
+Write-PipelineSetVariable -name "runtimeSrcDir" -value "$wasm_runtime_loc" -is_multi_job_variable false
