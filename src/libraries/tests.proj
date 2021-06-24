@@ -363,15 +363,6 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'  or '$(TargetOS)' == 'MacCatalyst')">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
-
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
