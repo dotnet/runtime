@@ -69,15 +69,15 @@ namespace System.Drawing
             public readonly int PicType;
             public readonly IntPtr Icon;
 
-            private PICTDESC(int sizeOfStruct, int picType, IntPtr hicon)
+            private unsafe PICTDESC(int picType, IntPtr hicon)
             {
-                SizeOfStruct = sizeOfStruct;
+                SizeOfStruct = sizeof(PICTDESC);
                 PicType = picType;
                 Icon = hicon;
             }
 
             public static PICTDESC CreateIconPICTDESC(IntPtr hicon) =>
-                new PICTDESC(8 + IntPtr.Size, Ole.PICTYPE_ICON, hicon);
+                new PICTDESC(Ole.PICTYPE_ICON, hicon);
         }
     }
 }

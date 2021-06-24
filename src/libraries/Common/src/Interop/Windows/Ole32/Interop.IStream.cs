@@ -93,15 +93,11 @@ internal static partial class Interop
 
             void Revert();
 
-            // Using PreserveSig to allow explicitly returning the HRESULT for "not supported".
-
-            [PreserveSig]
             HRESULT LockRegion(
                 ulong libOffset,
                 ulong cb,
                 uint dwLockType);
 
-            [PreserveSig]
             HRESULT UnlockRegion(
                 ulong libOffset,
                 ulong cb,

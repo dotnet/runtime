@@ -16,6 +16,7 @@ namespace System.Drawing
     /// </summary>
     internal unsafe class DrawingComWrappers : ComWrappers
     {
+        private const int OK = 0;
         private static readonly ComInterfaceEntry* s_wrapperEntry = InitializeComInterfaceEntry();
         internal static DrawingComWrappers Instance { get; } = new DrawingComWrappers();
 
@@ -23,7 +24,7 @@ namespace System.Drawing
 
         internal static void CheckStatus(int result)
         {
-            if (result != 0)
+            if (result != OK)
             {
                 throw new ExternalException() { HResult = result };
             }
@@ -209,33 +210,6 @@ namespace System.Drawing
             }
         }
 
-#pragma warning disable CS0649 // fields are never assigned to
-        internal struct IPictureVtbl
-        {
-            public IUnknownVtbl IUnknownImpl;
-            public IntPtr GetHandle;
-            public IntPtr GetHPal;
-            public IntPtr GetPictureType;
-            public IntPtr GetWidth;
-            public IntPtr GetHeight;
-            public IntPtr Render;
-            public IntPtr SetHPal;
-            public IntPtr GetCurDC;
-            public IntPtr SelectPicture;
-            public IntPtr GetKeepOriginalFormat;
-            public IntPtr SetKeepOriginalFormat;
-            public IntPtr PictureChanged;
-            public delegate* unmanaged<IntPtr, IntPtr, int, int*, int> SaveAsFile;
-            public IntPtr GetAttributes;
-            public IntPtr SetHdc;
-        }
-
-        internal struct VtblPtr
-        {
-            public IntPtr Vtbl;
-        }
-#pragma warning restore CS0649
-
         internal interface IPicture : IDisposable
         {
             static readonly Guid IID = new Guid(0x7BF80980, 0xBF32, 0x101A, 0x8B, 0xBB, 0, 0xAA, 0x00, 0x30, 0x0C, 0xAB);
@@ -245,17 +219,13 @@ namespace System.Drawing
             int SaveAsFile(IntPtr pstm, int fSaveMemCopy, int* pcbSize);
         }
 
-        private unsafe class PictureWrapper : IPicture
+        private class PictureWrapper : IPicture
         {
             private readonly IntPtr _wrappedInstance;
-            private readonly IPictureVtbl* _vtable;
 
             public PictureWrapper(IntPtr wrappedInstance)
             {
                 _wrappedInstance = wrappedInstance;
-
-                VtblPtr* inst = (VtblPtr*)_wrappedInstance;
-                _vtable = (IPictureVtbl*)inst->Vtbl;
             }
 
             public void Dispose()
@@ -263,7 +233,7 @@ namespace System.Drawing
                 Marshal.Release(_wrappedInstance);
             }
 
-            public int SaveAsFile(IntPtr pstm, int fSaveMemCopy, int* pcbSize)
+            public unsafe int SaveAsFile(IntPtr pstm, int fSaveMemCopy, int* pcbSize)
             {
                 // Get the IStream implementation, since the ComWrappers runtime returns a pointer to the IUnknown interface implementation
                 Guid streamIID = Interop.Ole32.IStreamComWrapper.IID;
@@ -271,7 +241,8 @@ namespace System.Drawing
 
                 try
                 {
-                    return _vtable->SaveAsFile(_wrappedInstance, pstmImpl, fSaveMemCopy, pcbSize);
+                    return ((delegate* unmanaged<IntPtr, IntPtr, int, int*, int>)(*(*(void***)_wrappedInstance + 15 /* IPicture.SaveAsFile slot */)))
+                        (_wrappedInstance, pstmImpl, fSaveMemCopy, pcbSize);
                 }
                 finally
                 {
