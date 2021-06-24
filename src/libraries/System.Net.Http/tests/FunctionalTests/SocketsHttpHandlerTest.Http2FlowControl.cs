@@ -81,10 +81,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void MaxHttp2StreamWindowSize_HighBandwidthDelayProduct_WindowStopsAtMaxValue()
+        public void MaxStreamWindowSize_HighBandwidthDelayProduct_WindowStopsAtMaxValue()
         {
-            //const int MaxWindow = 654321;
-            const int MaxWindow = 123456;
+            const int MaxWindow = 654321;
 
             static async Task RunTest()
             {
@@ -127,6 +126,46 @@ namespace System.Net.Http.Functional.Tests
 
             // Expect the client receive window to stay below 1MB:
             Assert.True(maxCredit < 1024 * 1024);
+        }
+
+        [Fact]
+        public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
+        {
+            static async Task RunTest()
+            {
+                int maxCredit = await TestClientWindowScalingAsync(
+                    TimeSpan.FromMilliseconds(30),
+                    TimeSpan.Zero,
+                    2 * 1024 * 1024,
+                    null);
+
+                Assert.True(maxCredit <= 128 * 1024);
+            }
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER"] = "1000"; // Extreme value
+
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
+        }
+
+        [Fact]
+        public void StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
+        {
+            static async Task RunTest()
+            {
+                int maxCredit = await TestClientWindowScalingAsync(
+                    TimeSpan.Zero,
+                    TimeSpan.FromMilliseconds(15), // Low bandwidth * delay product
+                    2 * 1024 * 1024,
+                    null);
+
+                Assert.True(maxCredit >= 256 * 1024);
+            }
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER"] = "0.00001"; // Extreme value
+
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
         private static async Task<int> TestClientWindowScalingAsync(
