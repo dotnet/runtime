@@ -1420,16 +1420,17 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         multiplier += 3.0;
         JITDUMP("\nmultiplier in methods of struct increased to %g.", multiplier);
     }
-    else if (m_ReturnsStructByValue)
+
+    if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.7;
+        multiplier += 1.5;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.7;
+        multiplier += 1.5;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
             multiplier);
     }
@@ -1587,7 +1588,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += 0.5;
+        multiplier += m_BinaryExprWithCns * 0.3;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
             m_BinaryExprWithCns, multiplier);
 
@@ -1658,7 +1659,16 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
+        double value = (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
+        if (JitConfig.JitExtDefaultPolicyProfStrategy() == 0)
+        {
+            multiplier *= value;
+        }
+        else
+        {
+            multiplier += value;
+        }
+        multiplier = max(0.0, multiplier);
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
 

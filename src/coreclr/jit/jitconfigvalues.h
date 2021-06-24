@@ -464,6 +464,7 @@ CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 6)
 CONFIG_INTEGER(JitExtDefaultPolicyProfBB, W("JitExtDefaultPolicyProfBB"), 2)
 CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x22)
 CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 0x8)
+CONFIG_INTEGER(JitExtDefaultPolicyProfStrategy, W("JitExtDefaultPolicyProfStrategy"), 0) // 0 - Multiply, 1 - Add
 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)

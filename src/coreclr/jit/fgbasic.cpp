@@ -914,10 +914,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
     CORINFO_RESOLVED_TOKEN resolvedToken;
 
-    bool handled = false;
+    OPCODE opcode     = CEE_NOP;
+    OPCODE prevOpcode = CEE_NOP;
+    bool   handled    = false;
     while (codeAddr < codeEndp)
     {
-        OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        prevOpcode = opcode;
+        opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
 
         if (!handled && preciseScan)
@@ -1203,7 +1206,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
 
-                // TODO: Recognize noreturn calls and note CALLEE_THROW_BLOCK
+                //// TODO: investigate impact:
+                //if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()) &&
+                //    !FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
+                //{
+                //    // Assume that "call(arg)" returns something arg-dependent.
+                //    handled = true;
+                //}
             }
             break;
 
@@ -1761,6 +1770,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
             }
             break;
+
+            case CEE_LDLOC_0:
+            case CEE_LDLOC_1:
+            case CEE_LDLOC_2:
+            case CEE_LDLOC_3:
+                //
+                if (makeInlineObservations && (prevOpcode == (CEE_STLOC_3 - (CEE_LDLOC_3 - opcode))))
+                {
+                    // Fold stloc+ldloc
+                    pushedStack.Push(pushedStack.Top(1)); // throw away SLOT_UNKNOWN inserted by STLOC
+                    handled = true;
+                }
+                break;
 
             case CEE_LDARGA:
             case CEE_LDARGA_S:
