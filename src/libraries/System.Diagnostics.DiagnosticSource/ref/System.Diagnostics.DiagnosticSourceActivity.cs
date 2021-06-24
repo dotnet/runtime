@@ -258,7 +258,7 @@ namespace System.Diagnostics
 
     public abstract class TextMapPropagator
     {
-        public delegate bool PropagatorGetterCallback(object carrier, string fieldName, out string? value);
+        public delegate void PropagatorGetterCallback(object carrier, string fieldName, out string? value, out System.Collections.Generic.IEnumerable<string>? values);
         public abstract System.Collections.Generic.IReadOnlyCollection<string> Fields { get; }
         public abstract bool Inject(System.Diagnostics.Activity activity, object carrier, Action<object, string, string> setter);
         public abstract bool Inject(System.Diagnostics.ActivityContext context, object carrier, Action<object, string, string> setter);
@@ -266,10 +266,10 @@ namespace System.Diagnostics
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out string? id, out string? state);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out System.Diagnostics.ActivityContext context);
         public abstract bool Extract(object carrier, PropagatorGetterCallback getter, out System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? baggage);
-        public static TextMapPropagator Default { get; set; }
+        public static TextMapPropagator Current { get; set; }
         public static TextMapPropagator CreateLegacyPropagator() { throw null; }
         public static TextMapPropagator CreatePassThroughPropagator() { throw null; }
-        public static TextMapPropagator CreateOutputSuppressionPropagator() { throw null; }
+        public static TextMapPropagator CreateNoOutputPropagator() { throw null; }
         public static TextMapPropagator CreateW3CPropagator() { throw null; }
     }
 }

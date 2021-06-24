@@ -9,7 +9,7 @@ namespace System.Diagnostics
 {
     public abstract class TextMapPropagator
     {
-        public delegate bool PropagatorGetterCallback(object carrier, string fieldName, out string? value);
+        public delegate void PropagatorGetterCallback(object carrier, string fieldName, out string? value, out IEnumerable<string>? values);
 
         public abstract IReadOnlyCollection<string> Fields { get; }
 
@@ -29,13 +29,13 @@ namespace System.Diagnostics
         // Static APIs
         //
 
-        public static TextMapPropagator Default { get; set; } = CreateLegacyPropagator();
+        public static TextMapPropagator Current { get; set; } = CreateLegacyPropagator();
 
         // For Microsoft compatibility. e.g., it will propagate Baggage header name as "Correlation-Context" instead of "baggage".
         public static TextMapPropagator CreateLegacyPropagator() => new LegacyTextMapPropagator();
 
         // Suppress context propagation.
-        public static TextMapPropagator CreateOutputSuppressionPropagator() => new OutputSuppressionPropagator();
+        public static TextMapPropagator CreateNoOutputPropagator() => new OutputSuppressionPropagator();
 
         // propagate only root parent context and ignore any intermediate created context.
         public static TextMapPropagator CreatePassThroughPropagator() => new PassThroughPropagator();
@@ -209,13 +209,13 @@ namespace System.Diagnostics
                 return false;
             }
 
-            getter(carrier, TraceParent, out id);
+            getter(carrier, TraceParent, out id, out _);
             if (id is null)
             {
-                getter(carrier, RequestId, out id);
+                getter(carrier, RequestId, out id, out _);
             }
 
-            getter(carrier, TraceState, out state);
+            getter(carrier, TraceState, out state, out _);
             return true;
         }
 
@@ -228,8 +228,8 @@ namespace System.Diagnostics
                 return false;
             }
 
-            getter(carrier, TraceParent, out string? traceParent);
-            getter(carrier, TraceState, out string? traceState);
+            getter(carrier, TraceParent, out string? traceParent, out _);
+            getter(carrier, TraceState, out string? traceState, out _);
 
             return ActivityContext.TryParse(traceParent, traceState, out context);
         }
@@ -242,10 +242,10 @@ namespace System.Diagnostics
                 return false;
             }
 
-            getter(carrier, Baggage, out string? theBaggage);
+            getter(carrier, Baggage, out string? theBaggage, out _);
             if (theBaggage is null || !TryExtractBaggage(theBaggage, out baggage))
             {
-                getter(carrier, CorrelationContext, out theBaggage);
+                getter(carrier, CorrelationContext, out theBaggage, out _);
                 if (theBaggage is not null)
                 {
                     TryExtractBaggage(theBaggage, out baggage);
@@ -529,8 +529,8 @@ namespace System.Diagnostics
                 return false;
             }
 
-            getter(carrier, TraceParent, out id);
-            getter(carrier, TraceState, out state);
+            getter(carrier, TraceParent, out id, out _);
+            getter(carrier, TraceState, out state, out _);
 
             if (id is not null && !ActivityContext.TryParse(id, state, out ActivityContext context))
             {
@@ -551,7 +551,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            getter(carrier, Baggage, out string? theBaggage);
+            getter(carrier, Baggage, out string? theBaggage, out _);
 
             if (theBaggage is not null)
             {
