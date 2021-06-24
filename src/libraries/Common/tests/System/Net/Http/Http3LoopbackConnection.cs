@@ -172,6 +172,11 @@ namespace System.Net.Test.Common
             return GetOpenRequest(requestId).SendResponseHeadersAsync(statusCode, headers);
         }
 
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        {
+            return GetOpenRequest(requestId).SendPartialResponseHeadersAsync(statusCode, headers);
+        }
+
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             Http3LoopbackStream stream = await AcceptRequestStreamAsync().ConfigureAwait(false);

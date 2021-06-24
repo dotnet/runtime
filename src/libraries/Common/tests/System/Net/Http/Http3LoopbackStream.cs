@@ -75,7 +75,7 @@ namespace System.Net.Test.Common
             await SendFrameAsync(SettingsFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendHeadersFrameAsync(IEnumerable<HttpHeaderData> headers)
+        private Memory<byte> ConstructHeadersPayload(IEnumerable<HttpHeaderData> headers)
         {
             int bufferLength = QPackTestEncoder.MaxPrefixLength;
 
@@ -98,7 +98,24 @@ namespace System.Net.Test.Common
                 bytesWritten += QPackTestEncoder.EncodeHeader(buffer.AsSpan(bytesWritten), header.Name, header.Value, header.ValueEncoding, header.HuffmanEncoded ? QPackFlags.HuffmanEncode : QPackFlags.None);
             }
 
-            await SendFrameAsync(HeadersFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
+            return buffer.AsMemory(0, bytesWritten);
+        }
+
+        private async Task SendHeadersFrameAsync(IEnumerable<HttpHeaderData> headers)
+        {
+            await SendFrameAsync(HeadersFrame, ConstructHeadersPayload(headers)).ConfigureAwait(false);
+        }
+
+        private async Task SendPartialHeadersFrameAsync(IEnumerable<HttpHeaderData> headers)
+        {
+            Memory<byte> payload = ConstructHeadersPayload(headers);
+
+            await SendFrameHeaderAsync(HeadersFrame, payload.Length);
+
+            // Slice off final byte so the payload is not complete
+            payload = payload.Slice(0, payload.Length - 1);
+
+            await _stream.WriteAsync(payload).ConfigureAwait(false);
         }
 
         public async Task SendDataFrameAsync(ReadOnlyMemory<byte> data)
@@ -115,16 +132,21 @@ namespace System.Net.Test.Common
             await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten));
         }
 
-        public async Task SendFrameAsync(long frameType, ReadOnlyMemory<byte> framePayload)
+        private async Task SendFrameHeaderAsync(long frameType, int payloadLength)
         {
             var buffer = new byte[MaximumVarIntBytes * 2];
 
             int bytesWritten = 0;
 
             bytesWritten += EncodeHttpInteger(frameType, buffer.AsSpan(bytesWritten));
-            bytesWritten += EncodeHttpInteger(framePayload.Length, buffer.AsSpan(bytesWritten));
+            bytesWritten += EncodeHttpInteger(payloadLength, buffer.AsSpan(bytesWritten));
 
             await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
+        }
+
+        public async Task SendFrameAsync(long frameType, ReadOnlyMemory<byte> framePayload)
+        {
+            await SendFrameHeaderAsync(frameType, framePayload.Length).ConfigureAwait(false);
             await _stream.WriteAsync(framePayload).ConfigureAwait(false);
         }
 
@@ -216,7 +238,7 @@ namespace System.Net.Test.Common
             await SendResponseBodyAsync(Encoding.UTF8.GetBytes(content ?? ""), isFinal).ConfigureAwait(false);
         }
 
-        public async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        private IEnumerable<HttpHeaderData> PrepareHeaders(HttpStatusCode? statusCode, IEnumerable<HttpHeaderData> headers)
         {
             headers ??= Enumerable.Empty<HttpHeaderData>();
 
@@ -228,7 +250,19 @@ namespace System.Net.Test.Common
                 headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
             }
 
+            return headers;
+        }
+
+        public async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        {
+            headers = PrepareHeaders(statusCode, headers);
             await SendHeadersFrameAsync(headers).ConfigureAwait(false);
+        }
+
+        public async Task SendPartialResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        {
+            headers = PrepareHeaders(statusCode, headers);
+            await SendPartialHeadersFrameAsync(headers).ConfigureAwait(false);
         }
 
         public async Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
