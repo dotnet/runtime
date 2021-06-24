@@ -508,6 +508,17 @@ namespace System.StubHelpers
             managed.Slice(0, numChars).CopyTo(native);
             native[numChars] = '\0';
         }
+
+        internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
+        {
+            Span<char> native = new Span<char>((char*)nativeHome, length);
+            int nullTerminatorIndex = native.IndexOf('\0');
+            if (nullTerminatorIndex != -1)
+            {
+                return new string(native[..nullTerminatorIndex]);
+            }
+            return new string(native);
+        }
     }  // class WSTRBufferMarshaler
 #if FEATURE_COMINTEROP
 
