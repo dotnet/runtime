@@ -33,6 +33,7 @@ namespace System.Net.Test.Common
 
         private readonly QuicConnection _connection;
         private readonly Dictionary<int, Http3LoopbackStream> _openStreams = new Dictionary<int, Http3LoopbackStream>();
+        private Http3LoopbackStream _controlStream;     // Our outbound control stream
         private Http3LoopbackStream _currentStream;
         private bool _closed;
 
@@ -138,6 +139,13 @@ namespace System.Net.Test.Common
             }
         }
 
+        public async Task EstablishControlStreamAsync()
+        {
+            _controlStream = OpenUnidirectionalStream();
+            await _controlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
+            await _controlStream.SendSettingsFrameAsync();
+       }
+
         public override async Task<byte[]> ReadRequestBodyAsync()
         {
             return await _currentStream.ReadRequestBodyAsync().ConfigureAwait(false);
@@ -167,9 +175,17 @@ namespace System.Net.Test.Common
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             Http3LoopbackStream stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
-            HttpRequestData request = await stream.HandleRequestAsync(statusCode, headers, content);
+
+            HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+            // We are about to close the connection, after we send the response.
+            // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
+            await _controlStream.SendGoAwayFrameAsync(request.Http3StreamId);
+
+            await stream.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
 
             // closing the connection here causes bytes written to streams to go missing.
+            // Regardless, we told the client we are closing so it shouldn't matter -- they should not use this connection anymore.
             //await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);
 
             return request;

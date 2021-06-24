@@ -184,7 +184,8 @@ namespace System.Net.Test.Common
         public string Path;
         public Version Version;
         public List<HttpHeaderData> Headers { get; }
-        public int RequestId;       // Generic request ID. Currently only used for HTTP/2 to hold StreamId.
+        public int RequestId;       // HTTP/2 StreamId.
+        public long Http3StreamId;
 
         public HttpRequestData()
         {

@@ -23,6 +23,7 @@ namespace System.Net.Test.Common
         private const long DataFrame = 0x0;
         private const long HeadersFrame = 0x1;
         private const long SettingsFrame = 0x4;
+        private const long GoAwayFrame = 0x7;
 
         public const long ControlStream = 0x0;
         public const long PushStream = 0x1;
@@ -57,8 +58,10 @@ namespace System.Net.Test.Common
             await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendSettingsFrameAsync(ICollection<(long settingId, long settingValue)> settings)
+        public async Task SendSettingsFrameAsync(ICollection<(long settingId, long settingValue)> settings = null)
         {
+            settings ??= Array.Empty<(long settingId, long settingValue)>();
+
             var buffer = new byte[settings.Count * MaximumVarIntBytes * 2];
 
             int bytesWritten = 0;
@@ -101,6 +104,15 @@ namespace System.Net.Test.Common
         public async Task SendDataFrameAsync(ReadOnlyMemory<byte> data)
         {
             await SendFrameAsync(DataFrame, data).ConfigureAwait(false);
+        }
+
+        public async Task SendGoAwayFrameAsync(long streamId)
+        {
+            var buffer = new byte[QPackTestEncoder.MaxVarIntLength];
+            int bytesWritten = 0;
+
+            bytesWritten += EncodeHttpInteger(streamId, buffer);
+            await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten));
         }
 
         public async Task SendFrameAsync(long frameType, ReadOnlyMemory<byte> framePayload)
@@ -180,6 +192,8 @@ namespace System.Net.Test.Common
             if (frameType != HeadersFrame) throw new Exception($"unable to read request headers; received frame type 0x{frameType:x}.");
 
             HttpRequestData requestData = ParseHeaders(payload);
+
+            requestData.Http3StreamId = _stream.StreamId;
 
             if (readBody)
             {
