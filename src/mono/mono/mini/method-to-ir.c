@@ -2482,29 +2482,23 @@ context_used_is_mrgctx (MonoCompile *cfg, int context_used)
 /*
  * emit_get_rgctx:
  *
- *   Emit IR to return either the this pointer for instance method,
- * or the mrgctx for static methods.
+ *   Emit IR to return either the vtable or the mrgctx.
  */
 static MonoInst*
 emit_get_rgctx (MonoCompile *cfg, int context_used)
 {
-	MonoInst *this_ins = NULL;
 	MonoMethod *method = cfg->method;
 
 	g_assert (cfg->gshared);
 
-	if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&
-			!(context_used & MONO_GENERIC_CONTEXT_USED_METHOD) &&
-			!m_class_is_valuetype (method->klass))
-		EMIT_NEW_VARLOAD (cfg, this_ins, cfg->this_arg, mono_get_object_type ());
-
+	/* Data whose context contains method type vars is stored in the mrgctx */
 	if (context_used_is_mrgctx (cfg, context_used)) {
 		MonoInst *mrgctx_loc, *mrgctx_var;
 
-		if (!mini_method_is_default_method (method)) {
-			g_assert (!this_ins);
+		g_assert (cfg->rgctx_access == MONO_RGCTX_ACCESS_MRGCTX);
+
+		if (!mini_method_is_default_method (method))
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
-		}
 
 		if (cfg->llvm_only) {
 			mrgctx_var = mono_get_mrgctx_var (cfg);
@@ -2515,10 +2509,34 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
 		}
 		return mrgctx_var;
-	} else if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass)) {
+	}
+
+	/*
+	 * The rest of the entries are stored in vtable->runtime_generic_context so
+	 * have to return a vtable.
+	 */
+	if (cfg->rgctx_access == MONO_RGCTX_ACCESS_MRGCTX) {
+		MonoInst *mrgctx_loc, *mrgctx_var, *vtable_var;
+		int vtable_reg;
+
+		/* We are passed an mrgctx, return mrgctx->class_vtable */
+
+		if (cfg->llvm_only) {
+			mrgctx_var = mono_get_mrgctx_var (cfg);
+		} else {
+			mrgctx_loc = mono_get_mrgctx_var (cfg);
+			g_assert (mrgctx_loc->flags & MONO_INST_VOLATILE);
+			EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
+		}
+
+		vtable_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_var, OP_LOAD_MEMBASE, vtable_reg, mrgctx_var->dreg, MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable));
+		vtable_var->type = STACK_PTR;
+		return vtable_var;
+	} else if (cfg->rgctx_access == MONO_RGCTX_ACCESS_VTABLE) {
 		MonoInst *vtable_loc, *vtable_var;
 
-		g_assert (!this_ins);
+		/* We are passed a vtable, return it */
 
 		if (cfg->llvm_only) {
 			vtable_var = mono_get_vtable_var (cfg);
@@ -2527,20 +2545,15 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (vtable_loc->flags & MONO_INST_VOLATILE);
 			EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
 		}
-
-		if (method->is_inflated && mono_method_get_context (method)->method_inst) {
-			MonoInst *mrgctx_var = vtable_var;
-			int vtable_reg;
-
-			vtable_reg = alloc_preg (cfg);
-			EMIT_NEW_LOAD_MEMBASE (cfg, vtable_var, OP_LOAD_MEMBASE, vtable_reg, mrgctx_var->dreg, MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable));
-			vtable_var->type = STACK_PTR;
-		}
-
+		vtable_var->type = STACK_PTR;
 		return vtable_var;
 	} else {
-		MonoInst *ins;
+		MonoInst *ins, *this_ins;
 		int vtable_reg;
+
+		/* We are passed a this pointer, return this->vtable */
+
+		EMIT_NEW_VARLOAD (cfg, this_ins, cfg->this_arg, mono_get_object_type ());
 	
 		vtable_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this_ins->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
@@ -2705,6 +2718,12 @@ mini_emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 		case MONO_RGCTX_INFO_KLASS:
 			EMIT_NEW_CLASSCONST (cfg, ins, klass);
 			return ins;
+		case MONO_RGCTX_INFO_VTABLE: {
+			MonoVTable *vtable = mono_class_vtable_checked (klass, cfg->error);
+			CHECK_CFG_ERROR;
+			EMIT_NEW_VTABLECONST (cfg, ins, vtable);
+			return ins;
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -2713,6 +2732,9 @@ mini_emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_CLASS, klass, rgctx_type);
 
 	return emit_rgctx_fetch (cfg, context_used, entry);
+
+mono_error_exit:
+	return NULL;
 }
 
 static MonoInst*
@@ -5551,25 +5573,23 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 {
 	MonoInst *vtable_arg = NULL, *callvirt_this_arg = NULL, *ins;
 
-	if (m_class_is_valuetype (cmethod->klass) && mono_class_generic_sharing_enabled (cmethod->klass) &&
-					mono_method_is_generic_sharable (cmethod, TRUE)) {
-		if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
+	if (mono_class_generic_sharing_enabled (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE)) {
+		MonoRgctxAccess access = mini_get_rgctx_access_for_method (cmethod);
+
+		if (access == MONO_RGCTX_ACCESS_MRGCTX) {
 			mono_class_vtable_checked (cmethod->klass, cfg->error);
 			CHECK_CFG_ERROR;
 			CHECK_TYPELOAD (cmethod->klass);
 
 			vtable_arg = emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
+		} else if (access == MONO_RGCTX_ACCESS_VTABLE) {
+			vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
+													cmethod->klass, MONO_RGCTX_INFO_VTABLE);
+			CHECK_CFG_ERROR;
+			CHECK_TYPELOAD (cmethod->klass);
 		} else {
-			if (context_used) {
-				vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
-												   cmethod->klass, MONO_RGCTX_INFO_VTABLE);
-			} else {
-				MonoVTable *vtable = mono_class_vtable_checked (cmethod->klass, cfg->error);
-				CHECK_CFG_ERROR;
-				CHECK_TYPELOAD (cmethod->klass);
-				EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
-			}
+			g_assert (access == MONO_RGCTX_ACCESS_THIS);
 		}
 	}
 
