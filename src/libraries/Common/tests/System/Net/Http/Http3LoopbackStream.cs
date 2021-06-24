@@ -225,7 +225,7 @@ namespace System.Net.Test.Common
             return requestData;
         }
 
-        public async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
+        public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
             IEnumerable<HttpHeaderData> newHeaders = headers ?? Enumerable.Empty<HttpHeaderData>();
 
@@ -238,28 +238,25 @@ namespace System.Net.Test.Common
             await SendResponseBodyAsync(Encoding.UTF8.GetBytes(content ?? ""), isFinal).ConfigureAwait(false);
         }
 
-        private IEnumerable<HttpHeaderData> PrepareHeaders(HttpStatusCode? statusCode, IEnumerable<HttpHeaderData> headers)
+        private IEnumerable<HttpHeaderData> PrepareHeaders(HttpStatusCode statusCode, IEnumerable<HttpHeaderData> headers)
         {
             headers ??= Enumerable.Empty<HttpHeaderData>();
 
             // Some tests use Content-Length with a null value to indicate Content-Length should not be set.
             headers = headers.Where(x => x.Name != "Content-Length" || x.Value != null);
 
-            if (statusCode != null)
-            {
-                headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
-            }
+            headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
 
             return headers;
         }
 
-        public async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        public async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
         {
             headers = PrepareHeaders(statusCode, headers);
             await SendHeadersFrameAsync(headers).ConfigureAwait(false);
         }
 
-        public async Task SendPartialResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        public async Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
         {
             headers = PrepareHeaders(statusCode, headers);
             await SendPartialHeadersFrameAsync(headers).ConfigureAwait(false);

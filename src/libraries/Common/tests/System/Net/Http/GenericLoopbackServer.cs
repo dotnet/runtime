@@ -120,8 +120,9 @@ namespace System.Net.Test.Common
         /// <summary>Read complete request body if not done by ReadRequestData.</summary>
         public abstract Task<Byte[]> ReadRequestBodyAsync();
 
-        /// <summary>Sends Response back with provided statusCode, headers and content. Can be called multiple times on same response if isFinal was set to false before.</summary>
-        public abstract Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
+        /// <summary>Sends Response back with provided statusCode, headers and content.
+        /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
+        public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
         /// <summary>Sends response headers.</summary>
         public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
         /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>

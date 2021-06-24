@@ -866,7 +866,7 @@ namespace System.Net.Test.Common
                 return buffer;
             }
 
-            public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+            public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
             {
                 MemoryStream headerBytes = new MemoryStream();
                 int contentLength = -1;
@@ -909,21 +909,18 @@ namespace System.Net.Test.Common
                     headerBytes.Write(corsBytes, 0, corsBytes.Length);
                 }
 
-                if (statusCode != null)
-                {
-                    byte[] temp = headerBytes.ToArray();
+                byte[] temp = headerBytes.ToArray();
 
-                    headerBytes.SetLength(0);
+                headerBytes.SetLength(0);
 
-                    byte[] headerStartBytes = Encoding.ASCII.GetBytes(
-                        $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
-                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
+                byte[] headerStartBytes = Encoding.ASCII.GetBytes(
+                    $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+                    (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
 
-                    headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
-                    headerBytes.Write(temp, 0, temp.Length);
+                headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
+                headerBytes.Write(temp, 0, temp.Length);
 
-                    headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
-                }
+                headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
 
                 headerBytes.Position = 0;
                 await headerBytes.CopyToAsync(_stream).ConfigureAwait(false);
