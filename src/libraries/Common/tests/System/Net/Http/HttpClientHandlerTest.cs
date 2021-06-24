@@ -577,6 +577,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54655", TestPlatforms.Browser)]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
