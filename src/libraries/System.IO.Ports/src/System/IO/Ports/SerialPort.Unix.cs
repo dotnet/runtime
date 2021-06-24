@@ -13,22 +13,16 @@ namespace System.IO.Ports
     {
         public static string[] GetPortNames()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-              return GetPortNames_Linux();
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return GetPortNames_OSX();
-            }
 #if NETCOREAPP
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
-            {
-                return GetPortNames_FreeBSD();
-            }
+            return OperatingSystem.IsLinux() ? GetPortNames_Linux()
+                : OperatingSystem.IsMacOS() ? GetPortNames_OSX()
+                : OperatingSystem.IsFreeBSD() ? GetPortNames_FreeBSD()
+#else
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux() 
+                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX() 
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
 #endif
-
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_SerialPort_GetPortNames);
+                : throw new PlatformNotSupportedException(SR.PlatformNotSupported_SerialPort_GetPortNames);
         }
 
         private static string[] GetPortNames_Linux()
@@ -117,7 +111,6 @@ namespace System.IO.Ports
             return ports.ToArray();
         }
 
-#if NETCOREAPP
         private static string[] GetPortNames_FreeBSD()
         {
             List<string> ports = new List<string>();
@@ -140,6 +133,5 @@ namespace System.IO.Ports
 
             return ports.ToArray();
         }
-#endif
     }
 }
