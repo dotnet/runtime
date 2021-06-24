@@ -18,6 +18,7 @@ namespace System.Reflection.Metadata
     public class ApplyUpdateTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void StaticMethodBodyUpdate()
         {
             ApplyUpdateUtil.TestCase(static () =>
