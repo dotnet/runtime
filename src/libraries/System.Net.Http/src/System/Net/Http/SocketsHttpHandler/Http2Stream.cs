@@ -1351,9 +1351,6 @@ namespace System.Net.Http
             public void Trace(string message, [CallerMemberName] string? memberName = null) =>
                 _connection.Trace(StreamId, message, memberName);
 
-            public void TraceFlowControl(string message, [CallerMemberName] string? memberName = null) =>
-                Trace("[FlowControl] " + message, memberName);
-
             private enum ResponseProtocolState : byte
             {
                 ExpectingStatus,

@@ -38,7 +38,7 @@ namespace System.Net.Http
                 _windowScaleThresholdMultiplier = settings._http2StreamWindowScaleThresholdMultiplier;
                 _lastWindowUpdate = Stopwatch.GetTimestamp();
 
-                _stream.TraceFlowControl($"InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {_windowScaleThresholdMultiplier}");
+                if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {_windowScaleThresholdMultiplier}");
             }
 
             internal int StreamWindowSize => _streamWindowSize;
@@ -105,12 +105,12 @@ namespace System.Net.Http
                         windowUpdateIncrement += extendedWindowSize - _streamWindowSize;
                         _streamWindowSize = extendedWindowSize;
 
-                        _stream.TraceFlowControl($"Updated Stream Window. StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
+                        if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] Updated Stream Window. StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
 
                         Debug.Assert(_streamWindowSize <= _maxStreamWindowSize);
                         if (_streamWindowSize == _maxStreamWindowSize)
                         {
-                            _stream.TraceFlowControl($"StreamWindowSize reached the configured maximum of {_maxStreamWindowSize}.");
+                            if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] StreamWindowSize reached the configured maximum of {_maxStreamWindowSize}.");
                             _windowScalingEnabled = false;
                         }
                     }
@@ -160,13 +160,11 @@ namespace System.Net.Http
 
             internal void OnInitialSettingsSent()
             {
-                _connection.TraceFlowControl("Initial SETTINGS sent");
                 _pingSentTimestamp = Stopwatch.GetTimestamp();
             }
 
             internal void OnInitialSettingsAckReceived()
             {
-                _connection.TraceFlowControl("Initial SETTINGS ACK received");
                 RefreshRtt();
                 _state = State.Waiting;
             }
@@ -183,7 +181,6 @@ namespace System.Net.Http
 
                         // Send a PING
                         long payload = Interlocked.Decrement(ref _pingCounter);
-                        _connection.TraceFlowControl("Sending PING in response to DATA.");
                         _connection.LogExceptions(_connection.SendPingAsync(payload, isAck: false));
                         _pingSentTimestamp = now;
                         _state = State.PingSent;
@@ -213,7 +210,7 @@ namespace System.Net.Http
                 TimeSpan prevRtt = MinRtt == TimeSpan.Zero ? TimeSpan.MaxValue : MinRtt;
                 TimeSpan currentRtt = TimeSpan.FromSeconds(elapsedTicks / (double)Stopwatch.Frequency);
                 MinRtt = new TimeSpan(Math.Min(prevRtt.Ticks, currentRtt.Ticks));
-                _connection.TraceFlowControl($"Updated MinRtt: {MinRtt.TotalMilliseconds} ms || prevRtt:{prevRtt.TotalMilliseconds} ms, currentRtt:{currentRtt.TotalMilliseconds} ms)");
+                if (NetEventSource.Log.IsEnabled()) _connection.Trace($"[FlowControl] Updated MinRtt: {MinRtt.TotalMilliseconds} ms");
             }
         }
     }
