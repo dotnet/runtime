@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
-        private readonly RttEstimator? _rttEstimator;
+        private readonly RttEstimator _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
@@ -134,7 +134,7 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
 
-            _rttEstimator = pool.Settings._disableDynamicHttp2WindowSizing ? null : new RttEstimator(this);
+            _rttEstimator = new RttEstimator(this);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -206,7 +206,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
 
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
-                _rttEstimator?.OnInitialSettingsSent();
+                _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
                 _expectingSettingsAck = true;
@@ -453,7 +453,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
-                _rttEstimator?.OnDataOrHeadersReceived();
+                _rttEstimator.OnDataOrHeadersReceived();
                 headersHandler = http2Stream;
             }
             else
@@ -589,7 +589,7 @@ namespace System.Net.Http
 
                 if (!endStream && frameData.Length > 0)
                 {
-                    _rttEstimator?.OnDataOrHeadersReceived();
+                    _rttEstimator.OnDataOrHeadersReceived();
                 }
             }
 
@@ -625,7 +625,7 @@ namespace System.Net.Http
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
                 _expectingSettingsAck = false;
-                _rttEstimator?.OnInitialSettingsAckReceived();
+                _rttEstimator.OnInitialSettingsAckReceived();
             }
             else
             {
@@ -1689,7 +1689,7 @@ namespace System.Net.Http
             _pool.InvalidateHttp2Connection(this);
 
             // There is no point sending more PING frames for RTT estimation:
-            _rttEstimator?.OnGoAwayReceived();
+            _rttEstimator.OnGoAwayReceived();
 
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
 
@@ -2002,7 +2002,7 @@ namespace System.Net.Http
         {
             if (payload < 0) // RTT ping
             {
-                _rttEstimator?.OnPingAckReceived(payload);
+                _rttEstimator.OnPingAckReceived(payload);
                 return;
             }
             else // Keepalive ping

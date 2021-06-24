@@ -95,7 +95,7 @@ namespace System.Net.Http
                 int windowUpdateIncrement = _deliveredBytes;
                 long currentTime = Stopwatch.GetTimestamp();
 
-                if (_connection._rttEstimator!.MinRtt > TimeSpan.Zero)
+                if (_connection._rttEstimator.MinRtt > TimeSpan.Zero)
                 {
                     TimeSpan rtt = _connection._rttEstimator.MinRtt;
                     TimeSpan dt = StopwatchTicksToTimeSpan(currentTime - _lastWindowUpdate);
@@ -136,6 +136,7 @@ namespace System.Net.Http
         {
             private enum State
             {
+                Disabled,
                 Init,
                 Waiting,
                 PingSent,
@@ -157,42 +158,44 @@ namespace System.Net.Http
             public RttEstimator(Http2Connection connection)
             {
                 _connection = connection;
+                _state = connection._pool.Settings._disableDynamicHttp2WindowSizing ? State.Disabled : State.Init;
             }
 
             internal void OnInitialSettingsSent()
             {
+                if (_state == State.Disabled) return;
                 _pingSentTimestamp = Stopwatch.GetTimestamp();
             }
 
             internal void OnInitialSettingsAckReceived()
             {
+                if (_state == State.Disabled) return;
                 RefreshRtt();
                 _state = State.Waiting;
             }
 
             internal void OnDataOrHeadersReceived()
             {
-                if (_state == State.Waiting)
-                {
-                    long now = Stopwatch.GetTimestamp();
-                    bool initial = Interlocked.Decrement(ref _initialBurst) >= 0;
-                    if (initial || now - _pingSentTimestamp > PingIntervalInTicks)
-                    {
-                        if (_initialBurst > 0) Interlocked.Decrement(ref _initialBurst);
+                if (_state != State.Waiting) return;
 
-                        // Send a PING
-                        long payload = Interlocked.Decrement(ref _pingCounter);
-                        _connection.LogExceptions(_connection.SendPingAsync(payload, isAck: false));
-                        _pingSentTimestamp = now;
-                        _state = State.PingSent;
-                    }
+                long now = Stopwatch.GetTimestamp();
+                bool initial = Interlocked.Decrement(ref _initialBurst) >= 0;
+                if (initial || now - _pingSentTimestamp > PingIntervalInTicks)
+                {
+                    if (_initialBurst > 0) Interlocked.Decrement(ref _initialBurst);
+
+                    // Send a PING
+                    long payload = Interlocked.Decrement(ref _pingCounter);
+                    _connection.LogExceptions(_connection.SendPingAsync(payload, isAck: false));
+                    _pingSentTimestamp = now;
+                    _state = State.PingSent;
                 }
             }
 
             internal void OnPingAckReceived(long payload)
             {
-                Debug.Assert(payload < 0);
                 if (_state != State.PingSent) return;
+                Debug.Assert(payload < 0);
 
                 if (Interlocked.Read(ref _pingCounter) != payload)
                     ThrowProtocolError();
@@ -202,6 +205,7 @@ namespace System.Net.Http
 
             internal void OnGoAwayReceived()
             {
+                if (_state == State.Disabled) return;
                 _state = State.Terminating;
             }
 
