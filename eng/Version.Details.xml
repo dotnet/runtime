@@ -9,6 +9,7 @@
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.21311.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4a2b475948d498b89fedef7cf890883f49bc1ea3</Sha>
+      <SourceBuild RepoName="arcade" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="6.0.0-beta.21311.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -206,13 +207,21 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>4e5bea15eb5a9c8cf9142195b1c9c78437a5b27f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.21.Node.win-x64" Version="6.0.0-preview.6.21275.1">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64" Version="6.0.0-preview.7.21323.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>defa37b05c734e025292c5747664e970cd2ac444</Sha>
+      <Sha>617928847d1e11458527b8bbafb5577982291847</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21311.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
       <Sha>25b814e010cd4796cedfbcce72a274c26928f496</Sha>
+    </Dependency>
+    <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.21314.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>8d7b898b96cbdb868cac343e938173105287ed9e</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="6.0.0-rc1.21320.2">
+      <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
+      <Sha>fcddb771f42866f9521f23f093b1f30e129018bb</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

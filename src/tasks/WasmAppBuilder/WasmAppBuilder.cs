@@ -3,16 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -189,6 +184,13 @@ public class WasmAppBuilder : Task
             {
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
                 string fullPath = assembly.GetMetadata("Identity");
+                if (string.IsNullOrEmpty(culture))
+                {
+                    Log.LogWarning($"Missing CultureName metadata for satellite assembly {fullPath}");
+                    continue;
+                }
+                // FIXME: validate the culture?
+
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
                 Directory.CreateDirectory(directory);
