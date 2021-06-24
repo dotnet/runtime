@@ -54,7 +54,7 @@ namespace System.IO.Strategies
 
             try
             {
-                Init(mode, path);
+                Init(mode);
             }
             catch
             {
@@ -230,10 +230,8 @@ namespace System.IO.Strategies
 
         internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
 
-        private void Init(FileMode mode, string originalPath)
+        private void Init(FileMode mode)
         {
-            FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
-
             // For Append mode...
             if (mode == FileMode.Append)
             {

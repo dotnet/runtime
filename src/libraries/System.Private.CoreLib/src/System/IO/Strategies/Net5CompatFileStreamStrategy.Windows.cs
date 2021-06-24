@@ -46,8 +46,6 @@ namespace System.IO.Strategies
 
         private void Init(FileMode mode, string originalPath, FileOptions options)
         {
-            FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
-
             Debug.Assert(!_useAsyncIO || _fileHandle.ThreadPoolBinding != null);
 
             // For Append mode...

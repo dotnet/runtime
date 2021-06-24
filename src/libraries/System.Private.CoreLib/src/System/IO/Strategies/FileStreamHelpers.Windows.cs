@@ -142,32 +142,6 @@ namespace System.IO.Strategies
             }
         }
 
-        internal static void ValidateFileTypeForNonExtendedPaths(SafeFileHandle handle, string originalPath)
-        {
-            if (!PathInternal.IsExtended(originalPath))
-            {
-                // To help avoid stumbling into opening COM/LPT ports by accident, we will block on non file handles unless
-                // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
-                // \\.\CON, so we'll only allow the \\?\ syntax.
-
-                int fileType = handle.GetFileType();
-                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
-                {
-                    int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
-                        ? Marshal.GetLastPInvokeError()
-                        : Interop.Errors.ERROR_SUCCESS;
-
-                    handle.Dispose();
-
-                    if (errorCode != Interop.Errors.ERROR_SUCCESS)
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                    }
-                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
-                }
-            }
-        }
-
         internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
@@ -187,8 +161,6 @@ namespace System.IO.Strategies
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
             }
         }
-
-
 
         internal static async Task AsyncModeCopyToAsync(SafeFileHandle handle, string? path, bool canSeek, long filePosition, Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
