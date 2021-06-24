@@ -6319,13 +6319,9 @@ public:
 private:
     bool optOptimizeBoolsCondBlock(OptBoolsDsc* pOptBoolsDsc);
     bool optOptimizeBoolsReturnBlock(OptBoolsDsc* pOptBoolsDsc);
-    Statement* optOptimizeBoolsChkBlkCond(OptBoolsDsc* pOptBoolsDsc);
     GenTree* optIsBoolComp(OptTestInfo* optTest);
-    bool optOptimizeBoolsChkTypeCostCond(OptBoolsDsc* pOptBoolsDsc);
-    void optOptimizeBoolsUpdateTrees(OptBoolsDsc* pOptBoolsDsc);
-    void optReturnGetFoldAndCompOper(OptBoolsDsc* pOptBoolsDsc);
 #ifdef DEBUG
-    void optOptimizeBoolsGcStress(BasicBlock* condBlock);
+    void optOptimizeBoolsGcStress(BasicBlock* b1);
 #endif
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
