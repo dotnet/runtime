@@ -158,7 +158,7 @@ namespace System.Tests
         public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
         {
             // Mono doesn't restore and call SIG_DFL on SIGQUIT.
-            bool isMono = Type.GetType("Mono.Runtime") != null;
+            bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
             if (isMono && signal ==  PosixSignal.SIGQUIT && cancel == false)
             {
                 expectedExitCode = 0;
@@ -184,7 +184,7 @@ namespace System.Tests
                 Assert.True(entered);
 
                 // Give the default signal handler a chance to run.
-                Thread.Sleep(expected == 0 ? TimeSpan.FromSeconds(5) : TimeSpan.FromMinutes(10));
+                Thread.Sleep(expected == 0 ? TimeSpan.FromSeconds(2) : TimeSpan.FromMinutes(10));
 
                 return 0;
             }, signal.ToString(), cancel.ToString(), expectedExitCode.ToString(),
