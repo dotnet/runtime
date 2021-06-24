@@ -6316,13 +6316,6 @@ private:
 public:
     void optOptimizeBools();
 
-private:
-    bool optOptimizeBoolsCondBlock(OptBoolsDsc* pOptBoolsDsc);
-    bool optOptimizeBoolsReturnBlock(OptBoolsDsc* pOptBoolsDsc);
-    GenTree* optIsBoolComp(OptTestInfo* optTest);
-#ifdef DEBUG
-    void optOptimizeBoolsGcStress(BasicBlock* b1);
-#endif
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
