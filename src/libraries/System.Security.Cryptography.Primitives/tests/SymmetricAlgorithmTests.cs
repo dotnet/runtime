@@ -209,12 +209,50 @@ namespace System.Security.Cryptography.Primitives.Tests
         }
 
         [Fact]
+        public static void EncryptEcb_EncryptCoreOverflowWritten()
+        {
+            static bool EncryptImpl(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = -1;
+                return true;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptEcbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
         public static void DecryptEcb_DecryptCoreFails()
         {
             static bool DecryptImpl(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
             {
                 bytesWritten = 0;
                 return false;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptEcbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void DecryptEcb_DecryptCoreOverflowWritten()
+        {
+            static bool DecryptImpl(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = -1;
+                return true;
             }
 
             EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm

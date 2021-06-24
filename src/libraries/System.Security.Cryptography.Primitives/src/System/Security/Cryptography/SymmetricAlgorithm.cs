@@ -479,9 +479,9 @@ namespace System.Security.Cryptography
             byte[] decryptBuffer = GC.AllocateUninitializedArray<byte>(ciphertext.Length);
 
             if (!TryDecryptEcbCore(ciphertext, decryptBuffer, paddingMode, out int written)
-                || written > decryptBuffer.Length)
+                || (uint)written > decryptBuffer.Length)
             {
-                // This means decrypting the ciphertext grew in to a larger plaintext.
+                // This means decrypting the ciphertext grew in to a larger plaintext or overflowed.
                 // A user-derived class could do this, but it is not expected in any of the
                 // implementations that we ship.
 
