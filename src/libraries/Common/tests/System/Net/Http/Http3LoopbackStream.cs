@@ -123,12 +123,13 @@ namespace System.Net.Test.Common
             await SendFrameAsync(DataFrame, data).ConfigureAwait(false);
         }
 
-        public async Task SendGoAwayFrameAsync(long streamId)
+        // Note that unlike HTTP2, the stream ID here indicates the *first invalid* stream.
+        public async Task SendGoAwayFrameAsync(long firstInvalidStreamId)
         {
             var buffer = new byte[QPackTestEncoder.MaxVarIntLength];
             int bytesWritten = 0;
 
-            bytesWritten += EncodeHttpInteger(streamId, buffer);
+            bytesWritten += EncodeHttpInteger(firstInvalidStreamId, buffer);
             await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten));
         }
 
