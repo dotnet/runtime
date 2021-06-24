@@ -781,7 +781,7 @@ namespace System.Runtime.Loader
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
             bool exists = System.IO.FileSystem.FileExists(assemblyPath);
-            if (!exists && Path.IsCaseSensitive)
+            if (!exists && PathInternal.IsCaseSensitive)
             {
 #if CORECLR
                 if (AssemblyLoadContext.IsTracingEnabled())

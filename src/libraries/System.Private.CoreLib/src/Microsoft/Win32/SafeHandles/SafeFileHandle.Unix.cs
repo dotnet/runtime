@@ -44,8 +44,8 @@ namespace Microsoft.Win32.SafeHandles
 
             if (handle.IsInvalid)
             {
-                handle.Dispose();
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                handle.Dispose();
 
                 // If we fail to open the file due to a path not existing, we need to know whether to blame
                 // the file itself or its directory.  If we're creating the file, then we blame the directory,
@@ -70,8 +70,9 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Sys.FileStatus status;
             if (Interop.Sys.FStat(handle, out status) != 0)
             {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                 handle.Dispose();
-                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path);
+                throw Interop.GetExceptionForIoErrno(error, path);
             }
             if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
             {
