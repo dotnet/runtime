@@ -132,7 +132,7 @@ namespace System.Net.Http
             }
         }
 
-        private class RttEstimator
+        private struct RttEstimator
         {
             private enum State
             {
@@ -150,15 +150,19 @@ namespace System.Net.Http
 
             private State _state;
             private long _pingSentTimestamp;
-            private long _pingCounter = -1;
-            private int _initialBurst = 4;
+            private long _pingCounter;
+            private int _initialBurst;
 
-            public TimeSpan MinRtt { get; private set; }
+            public TimeSpan MinRtt;
 
             public RttEstimator(Http2Connection connection)
             {
                 _connection = connection;
                 _state = connection._pool.Settings._disableDynamicHttp2WindowSizing ? State.Disabled : State.Init;
+                _pingCounter = -1;
+                _initialBurst = 4;
+                _pingSentTimestamp = default;
+                MinRtt = default;
             }
 
             internal void OnInitialSettingsSent()

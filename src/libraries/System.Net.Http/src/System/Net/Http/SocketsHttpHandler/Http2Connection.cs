@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
-        private readonly RttEstimator _rttEstimator;
+        private RttEstimator _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
