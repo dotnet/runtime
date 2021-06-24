@@ -13,6 +13,7 @@ class LPTStrTest
 {
     private static readonly string InitialString = "Hello World";
     private static readonly string LongString = "0123456789abcdefghi";
+    private static readonly string LongUnicodeString = "👨‍👨‍👧‍👧🐱‍👤";
 
     public static int Main()
     {
@@ -69,5 +70,10 @@ class LPTStrTest
 
         Assert.AreEqual(Helpers.Reverse(LongString[^10..]), uniStrSplit.str1);
         Assert.AreEqual(Helpers.Reverse(LongString[..^10]), uniStrSplit.str2);
+
+        ReverseCopyByValStringUni(new ByValStringInStructUnicode { str = LongUnicodeString }, out ByValStringInStructSplitUnicode uniStrSplit2);
+
+        Assert.AreEqual(Helpers.Reverse(LongUnicodeString[^10..]), uniStrSplit2.str1);
+        Assert.AreEqual(Helpers.Reverse(LongUnicodeString[..^10]), uniStrSplit2.str2);
     }
 }
