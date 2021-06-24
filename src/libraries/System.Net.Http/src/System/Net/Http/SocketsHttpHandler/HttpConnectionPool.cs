@@ -378,7 +378,16 @@ namespace System.Net.Http
         private bool EnableMultipleHttp2Connections => _poolManager.Settings.EnableMultipleHttp2Connections;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
-        private object SyncObj => _availableHttp11Connections;
+        private object SyncObj
+        {
+            get
+            {
+                Debug.Assert(!Monitor.IsEntered(_availableHttp11Connections));
+                return _availableHttp11Connections;
+            }
+        }
+
+        private bool HasSyncObjLock => Monitor.IsEntered(_availableHttp11Connections);
 
         // Overview of connection management (mostly HTTP version independent):
         //
@@ -472,7 +481,7 @@ namespace System.Net.Http
 
         private void CheckForHttp11ConnectionInjection()
         {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
+            Debug.Assert(HasSyncObjLock);
 
             if (!_http11RequestQueue.TryPeekNextRequest(out HttpRequestMessage? request))
             {
@@ -680,7 +689,7 @@ namespace System.Net.Http
 
         private void CheckForHttp2ConnectionInjection()
         {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
+            Debug.Assert(HasSyncObjLock);
 
             if (!_http2RequestQueue.TryPeekNextRequest(out HttpRequestMessage? request))
             {
@@ -1646,6 +1655,9 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
+                Debug.Assert(_associatedHttp11ConnectionCount > 0);
+                Debug.Assert(!_availableHttp11Connections.Contains(connection));
+
                 _associatedHttp11ConnectionCount--;
 
                 CheckForHttp11ConnectionInjection();
@@ -1756,6 +1768,7 @@ namespace System.Net.Http
             {
                 lock (SyncObj)
                 {
+                    Debug.Assert(_availableHttp2Connections is null || !_availableHttp2Connections.Contains(connection));
                     Debug.Assert(_associatedHttp2ConnectionCount > (_availableHttp2Connections?.Count ?? 0));
                     _associatedHttp2ConnectionCount--;
                 }
@@ -1770,6 +1783,7 @@ namespace System.Net.Http
             lock (SyncObj)
             {
                 Debug.Assert(_availableHttp2Connections is null || !_availableHttp2Connections.Contains(connection));
+                Debug.Assert(_associatedHttp2ConnectionCount > (_availableHttp2Connections?.Count ?? 0));
 
                 if (isNewConnection)
                 {
@@ -1897,6 +1911,8 @@ namespace System.Net.Http
         /// </summary>
         public void Dispose()
         {
+            List<HttpConnectionBase>? toDispose = null;
+
             lock (SyncObj)
             {
                 if (!_disposed)
@@ -1905,15 +1921,22 @@ namespace System.Net.Http
 
                     _disposed = true;
 
+                    toDispose = new List<HttpConnectionBase>(_availableHttp11Connections.Count + (_availableHttp2Connections?.Count ?? 0));
+                    toDispose.AddRange(_availableHttp11Connections);
+                    if (_availableHttp2Connections is not null)
+                    {
+                        toDispose.AddRange(_availableHttp2Connections);
+                    }
+
+                    // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
+                    // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
+
                     Debug.Assert(_associatedHttp11ConnectionCount >= _availableHttp11Connections.Count,
                         $"Expected {nameof(_associatedHttp11ConnectionCount)}={_associatedHttp11ConnectionCount} >= {nameof(_availableHttp11Connections)}.Count={_availableHttp11Connections.Count}");
-                    _associatedHttp11ConnectionCount -= _availableHttp11Connections.Count;
-                    _availableHttp11Connections.ForEach(c => c.Dispose());
                     _availableHttp11Connections.Clear();
 
                     Debug.Assert(_associatedHttp2ConnectionCount >= (_availableHttp2Connections?.Count ?? 0));
                     _associatedHttp2ConnectionCount -= (_availableHttp2Connections?.Count ?? 0);
-                    _availableHttp2Connections?.ForEach(c => c.Dispose());
                     _availableHttp2Connections?.Clear();
 
                     if (_authorityExpireTimer != null)
@@ -1933,6 +1956,9 @@ namespace System.Net.Http
                 Debug.Assert(_availableHttp11Connections.Count == 0, $"Expected {nameof(_availableHttp11Connections)}.{nameof(_availableHttp11Connections.Count)} == 0");
                 Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"Expected {nameof(_availableHttp2Connections)}.{nameof(_availableHttp2Connections.Count)} == 0");
             }
+
+            // Dispose outside the lock to avoid lock re-entrancy issues.
+            toDispose?.ForEach(c => c.Dispose());
         }
 
         /// <summary>
@@ -1971,7 +1997,11 @@ namespace System.Net.Http
                 ScavengeConnectionList(_availableHttp11Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
                 if (_availableHttp2Connections is not null)
                 {
-                    ScavengeConnectionList(_availableHttp2Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
+                    int removed = ScavengeConnectionList(_availableHttp2Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
+                    _associatedHttp2ConnectionCount -= removed;
+
+                    // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
+                    // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
             }
 
@@ -1981,7 +2011,7 @@ namespace System.Net.Http
             // Pool is active.  Should not be removed.
             return false;
 
-            static void ScavengeConnectionList<T>(List<T> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
+            static int ScavengeConnectionList<T>(List<T> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
                 where T : HttpConnectionBase
             {
                 int freeIndex = 0;
@@ -1992,6 +2022,7 @@ namespace System.Net.Http
 
                 // If freeIndex == list.Count, nothing needs to be removed.
                 // But if it's < list.Count, at least one connection needs to be purged.
+                int removed = 0;
                 if (freeIndex < list.Count)
                 {
                     // We know the connection at freeIndex is unusable, so dispose of it.
@@ -2021,8 +2052,11 @@ namespace System.Net.Http
 
                     // At this point, good connections have been moved below freeIndex, and garbage connections have
                     // been added to the dispose list, so clear the end of the list past freeIndex.
-                    list.RemoveRange(freeIndex, list.Count - freeIndex);
+                    removed = list.Count - freeIndex;
+                    list.RemoveRange(freeIndex, removed);
                 }
+
+                return removed;
             }
 
             static bool IsUsableConnection(HttpConnectionBase connection, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
