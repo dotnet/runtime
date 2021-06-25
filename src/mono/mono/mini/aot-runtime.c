@@ -3260,7 +3260,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		if (!async) {
 			// FIXME: Call a function in seq-points.c
 			// FIXME:
-			MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
+			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 			jit_mm_lock (jit_mm);
 			/* This could be set already since this function can be called more than once for the same method */
 			if (!g_hash_table_lookup (jit_mm->seq_points, method))
