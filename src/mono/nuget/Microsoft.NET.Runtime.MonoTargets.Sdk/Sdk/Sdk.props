@@ -1,2 +1,3 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)\RuntimeConfigParserTask.props" />
 </Project>
