@@ -730,13 +730,53 @@ OPTIMIZECAST:
             break;
 
             case GT_CAST:
-                /* Check for two consecutive casts into the same dstType */
+                // Check for two consecutive casts into the same dstType.
+                // Also check for consecutive casts to small types.
                 if (!tree->gtOverflow())
                 {
-                    var_types dstType2 = oper->CastToType();
-                    if (dstType == dstType2)
+                    var_types dstCastToType = dstType;
+                    var_types srcCastToType = oper->CastToType();
+                    if (dstCastToType == srcCastToType)
                     {
                         goto REMOVE_CAST;
+                    }
+                    // We can take advantage of the implicit zero/sign-extension for
+                    // small integer types and eliminate some casts.
+                    if (opts.OptimizationEnabled() && !oper->gtOverflow() && !gtIsActiveCSE_Candidate(oper) &&
+                        varTypeIsSmall(dstCastToType) && varTypeIsSmall(srcCastToType))
+                    {
+                        // Gather some facts about our casts.
+                        bool     srcZeroExtends = varTypeIsUnsigned(srcCastToType);
+                        bool     dstZeroExtends = varTypeIsUnsigned(dstCastToType);
+                        unsigned srcCastToSize  = genTypeSize(srcCastToType);
+                        unsigned dstCastToSize  = genTypeSize(dstCastToType);
+
+                        // If the previous cast to a smaller type was zero-extending,
+                        // this cast will also always be zero-extending. Example:
+                        // CAST(ubyte): 000X => CAST(short): Sign-extend(0X) => 000X.
+                        if (srcZeroExtends && (dstCastToSize > srcCastToSize))
+                        {
+                            dstZeroExtends = true;
+                        }
+
+                        // Case #1: cast to a smaller or equal in size type.
+                        // We can discard the intermediate cast. Examples:
+                        // CAST(short): --XX => CAST(ubyte): 000X.
+                        // CAST(ushort): 00XX => CAST(short): --XX.
+                        if (dstCastToSize <= srcCastToSize)
+                        {
+                            tree->AsCast()->CastOp() = oper->AsCast()->CastOp();
+                            DEBUG_DESTROY_NODE(oper);
+                        }
+                        // Case #2: cast to a larger type with the same effect.
+                        // Here we can eliminate the outer cast. Example:
+                        // CAST(byte): ---X => CAST(short): Sign-extend(-X) => ---X.
+                        // Example of a sequence where this does not hold:
+                        // CAST(byte): ---X => CAST(ushort): Zero-extend(-X) => 00-X.
+                        else if (srcZeroExtends == dstZeroExtends)
+                        {
+                            goto REMOVE_CAST;
+                        }
                     }
                 }
                 break;
