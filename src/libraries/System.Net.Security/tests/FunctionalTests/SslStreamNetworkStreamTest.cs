@@ -343,6 +343,7 @@ namespace System.Net.Security.Tests
 
                 Assert.Null(server.RemoteCertificate);
 
+                Console.WriteLine("AA " + server.SslProtocol);
 
                 var t = server.NegotiateClientCertificateAsync(cts.Token);
 
