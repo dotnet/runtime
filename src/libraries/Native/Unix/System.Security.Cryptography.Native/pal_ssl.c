@@ -19,6 +19,16 @@ c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
 
+#define DOTNET_DEFAULT_CIPHERSTRING \
+    "ECDHE-ECDSA-AES256-GCM-SHA384:" \
+    "ECDHE-ECDSA-AES128-GCM-SHA256:" \
+    "ECDHE-RSA-AES256-GCM-SHA384:" \
+    "ECDHE-RSA-AES128-GCM-SHA256:" \
+    "ECDHE-ECDSA-AES256-SHA384:" \
+    "ECDHE-ECDSA-AES128-SHA256:" \
+    "ECDHE-RSA-AES256-SHA384:" \
+    "ECDHE-RSA-AES128-SHA256:" \
+
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 #ifdef NEED_OPENSSL_1_0
@@ -29,7 +39,7 @@ static void EnsureLibSsl10Initialized()
 }
 #endif
 
-static int32_t g_config_specified_ciphersuites = 1;
+static int32_t g_config_specified_ciphersuites = 0;
 
 static void DetectCiphersuiteConfiguration()
 {
@@ -155,7 +165,7 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
         // If openssl.cnf doesn't have an opinion for CipherString, then use this value instead
         if (!g_config_specified_ciphersuites)
         {
-            if (!SSL_CTX_set_cipher_list(ctx, "ALL"))
+            if (!SSL_CTX_set_cipher_list(ctx, DOTNET_DEFAULT_CIPHERSTRING))
             {
                 SSL_CTX_free(ctx);
                 return NULL;
@@ -368,12 +378,14 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl)
 {
+    // The openssl context is destroyed so we can't use ticket or session resumption.
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
     int pending = SSL_renegotiate_pending(ssl);
     if (!pending)
     {
-        SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_callback);
+
+        // SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_callback);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
             return ret;

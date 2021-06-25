@@ -321,6 +321,12 @@ namespace System.Net.Security
             {
                 SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
 
+                if (nextmsg!.Length > 0)
+                {
+                    await adapter.WriteAsync(nextmsg, 0, nextmsg!.Length).ConfigureAwait(false);
+                    await adapter.FlushAsync().ConfigureAwait(false);
+                }
+
                 if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
                     if (status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
@@ -332,12 +338,6 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
-                if (nextmsg!.Length > 0)
-                {
-                    await adapter.WriteAsync(nextmsg, 0, nextmsg!.Length).ConfigureAwait(false);
-                    await adapter.FlushAsync().ConfigureAwait(false);
-                }
-
                 _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
                 ProtocolToken message = null!;
                 do {
@@ -347,14 +347,10 @@ namespace System.Net.Security
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                         await adapter.FlushAsync().ConfigureAwait(false);
                     }
-                    // else: Should it throw?
+                    Debug.Assert(!(message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded && message.Size == 0));
                 } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
-                ProtocolToken? alertToken = null;
-                if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
-                {
-                    //Should it throw? Console.WriteLine(" CompleteHandshakefailed!");
-                }
+                CompleteHandshake(_sslAuthenticationOptions!);
             }
             finally
             {
@@ -468,25 +464,7 @@ namespace System.Net.Security
                     _internalBufferCount = _handshakeBuffer.ActiveLength;
                 }
 
-                ProtocolToken? alertToken = null;
-                if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
-                {
-                    if (_sslAuthenticationOptions!.CertValidationDelegate != null)
-                    {
-                        // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                        SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
-                    }
-                    else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
-                    {
-                        // We failed only because of chain and we have some insight.
-                        SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
-                    }
-                    else
-                    {
-                        // Simple add sslPolicyErrors as crude info.
-                        SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
-                    }
-                }
+                CompleteHandshake(_sslAuthenticationOptions!);
             }
             finally
             {
@@ -690,6 +668,29 @@ namespace System.Net.Security
 
             _handshakeCompleted = true;
             return true;
+        }
+
+        private void CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            ProtocolToken? alertToken = null;
+            if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            {
+                if (sslAuthenticationOptions!.CertValidationDelegate != null)
+                {
+                    // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
+                }
+                else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
+                {
+                    // We failed only because of chain and we have some insight.
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
+                }
+                else
+                {
+                    // Simple add sslPolicyErrors as crude info.
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
+                }
+            }
         }
 
         private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)

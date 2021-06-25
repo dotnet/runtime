@@ -28,6 +28,11 @@ namespace System.Net.Security
 
         internal CipherSuitesPolicyPal(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {
+            if (!Interop.Ssl.Tls13Supported)
+            {
+                throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
+            }
+
             using (SafeSslContextHandle innerContext = Ssl.SslCtxCreate(Ssl.SslMethods.SSLv23_method))
             {
                 if (innerContext.IsInvalid)

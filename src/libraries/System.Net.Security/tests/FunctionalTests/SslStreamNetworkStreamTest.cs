@@ -174,7 +174,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(true)]
-       // [InlineData(false)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_Succeeds(bool sendClientCertificate)
         {
