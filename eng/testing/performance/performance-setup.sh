@@ -266,13 +266,10 @@ else
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
-    echo "***********************************************"
-    echo "source_directory: $source_directory"
-    echo "***********************************************"
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
-    cp -R $source_directory $wasm_dotnet_path
+    cp -r $source_directory/* $wasm_dotnet_path
     if [[ "$wasmaot" == "true" ]]; then
         # --wasmEngine and --customRuntimePack are not used under wasm aot. The related info is found by looking under --runtimeSrcDir
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600" 
