@@ -52,6 +52,7 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm.Props.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm64.Props.Sdk",
+        "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x86.Props.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64.Props.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.iossimulator-arm64.Props.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.ios-arm",
@@ -224,6 +225,10 @@
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64.Props.Sdk": {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x86.Props.Sdk": {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
