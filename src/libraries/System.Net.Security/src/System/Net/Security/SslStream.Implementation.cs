@@ -528,53 +528,56 @@ namespace System.Net.Security
             }
 
             // At this point, we have at least one TLS frame.
-            if (_lastFrame.Header.Type == TlsContentType.Alert)
+            switch (_lastFrame.Header.Type)
             {
-                if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
-                {
-                    if (NetEventSource.Log.IsEnabled() && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
-                }
-            }
-            else if (_lastFrame.Header.Type == TlsContentType.Handshake)
-            {
-                // During renegotiation the client hello is encrypted. Possibly race condition when the encrypted client hello flag is 0x01 but the content of the message is encrypted.
-                // Assume the Client Hello is not encrypted. It doesn't apply for renegotiation.
-                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
-                    _sslAuthenticationOptions!.ServerOptionDelegate != null))
-                {
-                    TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
-                                                                TlsFrameHelper.ProcessingOptions.All :
-                                                                TlsFrameHelper.ProcessingOptions.ServerName;
-
-                    // Process SNI from Client Hello message
-                    if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
+                case TlsContentType.Alert:
+                    if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to parse TLS hello.");
+                        if (NetEventSource.Log.IsEnabled() && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
                     }
-
-                    if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
+                    break;
+                case TlsContentType.Handshake:
+                    // During renegotiation the client hello is encrypted. Possibly race condition when the encrypted client hello flag is 0x01 but the content of the message is encrypted.
+                    // Assume the Client Hello is not encrypted. It doesn't apply for renegotiation.
+                    if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                        (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
+                        _sslAuthenticationOptions!.ServerOptionDelegate != null))
                     {
-                        // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
-                        if (_lastFrame.TargetName != null)
+                        TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
+                                                                    TlsFrameHelper.ProcessingOptions.All :
+                                                                    TlsFrameHelper.ProcessingOptions.ServerName;
+
+                        // Process SNI from Client Hello message
+                        if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
                         {
-                            _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to parse TLS hello.");
                         }
 
-                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
                         {
-                            SslServerAuthenticationOptions userOptions =
-                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
-                                                                                    _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
-                            _sslAuthenticationOptions.UpdateOptions(userOptions);
+                            // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
+                            if (_lastFrame.TargetName != null)
+                            {
+                                _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                            }
+
+                            if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                            {
+                                SslServerAuthenticationOptions userOptions =
+                                    await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
+                                                                                        _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
+                                _sslAuthenticationOptions.UpdateOptions(userOptions);
+                            }
+                        }
+
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Log.ReceivedFrame(this, _lastFrame);
                         }
                     }
-
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Log.ReceivedFrame(this, _lastFrame);
-                    }
-                }
+                    break;
+                case TlsContentType.AppData:
+                    throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
             }
 
             return ProcessBlob(frameSize);
@@ -935,15 +938,12 @@ namespace System.Net.Security
             return status;
         }
 
-        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer, bool renegotiation = false)
+        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (!renegotiation)
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
-                {
-                    throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
-                }
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
             ThrowIfExceptionalOrNotAuthenticated();
@@ -956,11 +956,6 @@ namespace System.Net.Security
             {
                 if (_decryptedBytesCount != 0)
                 {
-                    if (renegotiation)
-                    {
-                        throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
-                    }
-
                     processedLength = CopyDecryptedData(buffer);
                     if (processedLength == buffer.Length || !HaveFullTlsFrame(out payloadBytes))
                     {
@@ -1025,11 +1020,6 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
                             await ReplyOnReAuthenticationAsync(adapter, extraBuffer).ConfigureAwait(false);
-                            if (renegotiation)
-                            {
-                                // if we received data frame instead, we would not be here but we would decrypt data and hit check above.
-                                return 0;
-                            }
                             // Loop on read.
                             continue;
                         }
@@ -1083,7 +1073,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested) || renegotiation)
+                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }

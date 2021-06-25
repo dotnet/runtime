@@ -249,7 +249,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsyncNoRenego_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
@@ -319,7 +319,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
         {
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -358,7 +358,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ServerDontDrainClientData()
         {
             using CancellationTokenSource cts = new CancellationTokenSource();
