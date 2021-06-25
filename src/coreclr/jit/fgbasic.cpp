@@ -1774,7 +1774,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_LDLOC_2:
             case CEE_LDLOC_3:
                 //
-                if (makeInlineObservations && (prevOpcode == (CEE_STLOC_3 - (CEE_LDLOC_3 - opcode))))
+                if (preciseScan && makeInlineObservations &&
+                    (prevOpcode == (CEE_STLOC_3 - (CEE_LDLOC_3 - opcode))))
                 {
                     // Fold stloc+ldloc
                     pushedStack.Push(pushedStack.Top(1)); // throw away SLOT_UNKNOWN inserted by STLOC
