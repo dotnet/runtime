@@ -2171,8 +2171,16 @@ public:
             return (m_i == m_count);
         }
 
-        // Get the interface at the current position
-        inline PTR_MethodTable GetInterface()
+#ifndef DACCESS_COMPILE
+        // Get the interface at the current position. This GetInterfaceMethod
+        // will ensure that the exact correct instantiation of the interface
+        // is found, even if the MethodTable in the interface map is the generic
+        // approximation
+        PTR_MethodTable GetInterface(MethodTable* pMTOwner, ClassLoadLevel loadLevel = CLASS_LOADED);
+#endif
+
+        // Get the interface at the current position, with whatever its normal load level is
+        inline PTR_MethodTable GetInterfaceApprox()
         {
             CONTRACT(PTR_MethodTable)
             {
@@ -2185,6 +2193,53 @@ public:
             CONTRACT_END;
 
             RETURN (m_pMap->GetMethodTable());
+        }
+
+        inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
+        {
+            CONTRACT(bool)
+            {
+                GC_NOTRIGGER;
+                NOTHROW;
+                SUPPORTS_DAC;
+                PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+            }
+            CONTRACT_END;
+
+            bool exactMatch = m_pMap->GetMethodTable() == pMT;
+            if (!exactMatch)
+            {
+                if (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT) && 
+                    pMT->HasInstantiation() && 
+                    m_pMap->GetMethodTable()->IsGenericTypeDefinition() && 
+                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                {
+                    exactMatch = true;
+#ifndef DACCESS_COMPILE
+                    // We match exactly, and have an actual pMT loaded. Insert
+                    // the searched for interface if it is fully loaded, so that
+                    // future checks are more efficient
+                    if (pMT->IsFullyLoaded())
+                        SetInterface(pMT);
+#endif
+                }
+            }
+
+            RETURN (exactMatch);
+        }
+
+        inline bool HasSameTypeDefAs(MethodTable* pMT)
+        {
+            CONTRACT(bool)
+            {
+                GC_NOTRIGGER;
+                NOTHROW;
+                SUPPORTS_DAC;
+                PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+            }
+            CONTRACT_END;
+
+            RETURN (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
         }
 
 #ifndef DACCESS_COMPILE
@@ -2390,7 +2445,10 @@ public:
     UINT32 GetTypeID();
 
 
+    // Will return either the dispatch map type. May trigger type loader in order to get
+    // exact result.
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
+    bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
 
     MethodDesc *GetIntroducingMethodDesc(DWORD slotNumber);
 

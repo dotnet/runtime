@@ -2520,12 +2520,13 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMapFrom(intfIndex);
 
         // If the number of slots is 0, then no need to proceed
-        if (intIt.GetInterface()->GetNumVirtuals() != 0)
+        if (intIt.GetInterfaceApprox()->GetNumVirtuals() != 0)
         {
             MethodDesc *pClsMD = NULL;
+            _ASSERTE(!intIt.GetInterfaceApprox()->HasInstantiation());
 
             // Find the implementation for the first slot of the interface
-            DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterface()->GetTypeID(), 0, FALSE /* throwOnConflict */));
+            DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterfaceApprox()->GetTypeID(), 0, FALSE /* throwOnConflict */));
             CONSISTENCY_CHECK(!impl.IsNull());
 
             // Get the MethodDesc for this slot in the class
@@ -3991,7 +3992,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
     while (it.Next())
     {
-        MethodTable *pItfMT = it.GetInterface();
+        MethodTable *pItfMT = it.GetInterface(pMT);
         AppendInterface(pItfMT);
     }
 

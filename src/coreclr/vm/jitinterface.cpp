@@ -8973,7 +8973,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 int canonicallyMatchingInterfacesFound = 0;
                 while (it.Next())
                 {
-                    if (it.GetInterface()->GetCanonicalMethodTable() == pOwnerMT)
+                    if (it.GetInterface(pObjMT)->GetCanonicalMethodTable() == pOwnerMT)
                     {
                         canonicallyMatchingInterfacesFound++;
                         if (canonicallyMatchingInterfacesFound > 1)

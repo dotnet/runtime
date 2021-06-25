@@ -1902,7 +1902,8 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     InterfaceMapIterator it = IterateInterfaceMap();
     if (it.Next())
     {
-        return TypeHandle(it.GetInterface());
+        // Can use GetInterfaceApprox, as there are no generic default interfaces
+        return TypeHandle(it.GetInterfaceApprox()); 
     }
     else
     {
