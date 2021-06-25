@@ -1321,7 +1321,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                     if ((FgStack::IsConstant(arg0) && FgStack::IsConstArgument(arg1, impInlineInfo)) ||
                         (FgStack::IsConstant(arg1) && FgStack::IsConstArgument(arg0, impInlineInfo)) ||
-                        (FgStack::IsConstArgument(arg0, impInlineInfo) && FgStack::IsConstArgument(arg1, impInlineInfo)))
+                        (FgStack::IsConstArgument(arg0, impInlineInfo) &&
+                         FgStack::IsConstArgument(arg1, impInlineInfo)))
                     {
                         // keep stack unchanged
                         handled = true;
@@ -1788,8 +1789,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_LDLOC_2:
             case CEE_LDLOC_3:
                 //
-                if (preciseScan && makeInlineObservations &&
-                    (prevOpcode == (CEE_STLOC_3 - (CEE_LDLOC_3 - opcode))))
+                if (preciseScan && makeInlineObservations && (prevOpcode == (CEE_STLOC_3 - (CEE_LDLOC_3 - opcode))))
                 {
                     // Fold stloc+ldloc
                     pushedStack.Push(pushedStack.Top(1)); // throw away SLOT_UNKNOWN inserted by STLOC
