@@ -245,9 +245,10 @@ namespace System.Net.Http
 
                         _requestCompletionState = StreamCompletionState.Failed;
                         Complete();
+
+                        SendReset();
                     }
 
-                    SendReset();
                     if (signalWaiter)
                     {
                         _waitSource.SetResult(true);
@@ -325,6 +326,7 @@ namespace System.Net.Http
 
             private void SendReset()
             {
+                Debug.Assert(Monitor.IsEntered(SyncObject));
                 Debug.Assert(_requestCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_responseCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed,
@@ -335,13 +337,9 @@ namespace System.Net.Http
                 // Don't send a RST_STREAM if we've already received one from the server.
                 if (_resetException == null)
                 {
-                    // Use dedicated lock to prevent sending a frame with EndStream flag after an RST_STREAM frame.
                     // If execution reached this line, it's guaranteed that
                     // _requestCompletionState == StreamCompletionState.Failed or _responseCompletionState == StreamCompletionState.Failed
-                    lock (SyncObject)
-                    {
-                        _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
-                    }
+                    _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                 }
             }
 
@@ -389,9 +387,13 @@ namespace System.Net.Http
                 // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
                 requestBodyCancellationSource?.Cancel();
 
-                if (sendReset)
+                // SendReset must be called under a lock and after a cancellation of requestBodyCancellationSource.
+                lock (SyncObject)
                 {
-                    SendReset();
+                    if (sendReset)
+                    {
+                        SendReset();
+                    }
                 }
 
                 if (signalWaiter)
