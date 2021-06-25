@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -908,6 +909,315 @@ namespace System.Net.Http.Functional.Tests
                             Assert.DoesNotContain(stringContent.Substring(0, startingPosition), bodyContent);
                         }
                     }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> RemoteServersAndRedirectStatusCodes()
+        {
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            {
+                yield return new object[] { remoteServer, 300 };
+                yield return new object[] { remoteServer, 301 };
+                yield return new object[] { remoteServer, 302 };
+                yield return new object[] { remoteServer, 303 };
+                yield return new object[] { remoteServer, 307 };
+                yield return new object[] { remoteServer, 308 };
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: statusCode,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(statusCode, (int)response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: statusCode,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(remoteServer.EchoUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Fact]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Uri uri = Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: Configuration.Http.RemoteSecureHttp11Server.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(Configuration.Http.SecureRemoteEchoServer, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Fact]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Uri uri = Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: Configuration.Http.RemoteHttp11Server.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            Uri targetUri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: targetUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    Assert.Equal(targetUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory]
+        [InlineData(3, 2)]
+        [InlineData(3, 3)]
+        [InlineData(3, 4)]
+        public async Task GetAsync_MaxAutomaticRedirectionsNServerHops_ThrowsIfTooMany(int maxHops, int hops)
+        {
+            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
+            {
+                // Skip this test if using WinHttpHandler but on a release prior to Windows 10 Creators Update.
+                _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.MaxAutomaticRedirections = maxHops;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Task<HttpResponseMessage> t = client.GetAsync(Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: Configuration.Http.RemoteHttp11Server.EchoUri,
+                    hops: hops));
+
+                if (hops <= maxHops)
+                {
+                    using (HttpResponseMessage response = await t)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Equal(Configuration.Http.RemoteEchoServer, response.RequestMessage.RequestUri);
+                    }
+                }
+                else
+                {
+                    if (!IsWinHttpHandler)
+                    {
+                        using (HttpResponseMessage response = await t)
+                        {
+                            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                        }
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => t);
+                    }
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithRelativeLocation(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1,
+                    relative: true);
+                _output.WriteLine("Uri: {0}", uri);
+
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(remoteServer.EchoUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [OuterLoop("Uses external servers")]
+        public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = _credential;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri redirectUri = remoteServer.RedirectUriForCreds(
+                    statusCode: 302,
+                    userName: Username,
+                    password: Password);
+                using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
+                }
+            }
+        }
+
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [OuterLoop("Uses external servers")]
+        public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = _credential;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri redirectUri = remoteServer.RedirectUriForCreds(
+                    statusCode: 302,
+                    userName: Username,
+                    password: Password);
+                using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
+                }
+
+                // Use the same handler to perform get request, authentication should succeed after redirect.
+                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                using (HttpResponseMessage authResponse = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, authResponse.StatusCode);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            Uri redirectUri = remoteServer.RedirectUriForCreds(
+                statusCode: statusCode,
+                userName: Username,
+                password: Password);
+            _output.WriteLine(uri.AbsoluteUri);
+            _output.WriteLine(redirectUri.AbsoluteUri);
+            var credentialCache = new CredentialCache();
+            credentialCache.Add(uri, "Basic", _credential);
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = credentialCache;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                using (HttpResponseMessage response = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                string credentialString = _credential.UserName + ":" + _credential.Password;
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentialString);
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: statusCode,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    string responseText = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
+                    Assert.False(TestHelper.JsonMessageContainsKey(responseText, "Authorization"));
                 }
             }
         }
