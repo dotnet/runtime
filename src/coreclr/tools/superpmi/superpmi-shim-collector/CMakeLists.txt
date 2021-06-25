@@ -6,11 +6,6 @@ remove_definitions(-D_UNICODE)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 
-if(CLR_CMAKE_HOST_WIN32)
-  #use static crt
-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-endif(CLR_CMAKE_HOST_WIN32)
-
 include_directories(.)
 include_directories(../superpmi-shared)
 
@@ -48,6 +43,7 @@ target_precompile_headers(superpmi-shim-collector PRIVATE "$<$<COMPILE_LANGUAGE:
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-collector
+        PRIVATE
         utilcodestaticnohost
         mscorrc
         coreclrpal
@@ -55,6 +51,7 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 else()
     target_link_libraries(superpmi-shim-collector
+        PRIVATE
         advapi32.lib
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}

@@ -8,8 +8,6 @@ set(DBGSHIM_SOURCES
 )
 
 if(CLR_CMAKE_HOST_WIN32)
-    # Use static crt
-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
     add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
 endif(CLR_CMAKE_HOST_WIN32)
 
