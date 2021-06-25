@@ -1455,6 +1455,7 @@ private:
 
 public:
     virtual void dumpLsraStatsCsv(FILE* file);
+    virtual void dumpLsraStatsSummary(FILE* file);
     static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x

@@ -178,7 +178,7 @@ namespace System.IO.Pipelines.Tests
             Pipe.Writer.WriteEmpty(10);
             await Pipe.Writer.FlushAsync();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+            await Assert.ThrowsAsync<TaskCanceledException>(() => task);
         }
 
         [Fact]

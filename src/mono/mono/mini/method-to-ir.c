@@ -182,7 +182,7 @@ int mono_op_to_op_imm (int opcode);
 int mono_op_to_op_imm_noemul (int opcode);
 
 static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
-						  guchar *ip, guint real_offset, gboolean inline_always);
+						  guchar *ip, guint real_offset, gboolean inline_always, gboolean *is_empty);
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins);
 
@@ -2227,7 +2227,7 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 		 * an exception check.
 		 */
 		costs = inline_method (cfg, info->wrapper_method, NULL,
-							   args, NULL, il_offset, TRUE);
+							   args, NULL, il_offset, TRUE, NULL);
 		g_assert (costs > 0);
 		g_assert (!MONO_TYPE_IS_VOID (info->sig->ret));
 
@@ -4559,7 +4559,7 @@ emit_init_local (MonoCompile *cfg, int local, MonoType *type, gboolean init)
 int
 mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp, guchar *ip, guint real_offset, gboolean inline_always)
 {
-	return inline_method (cfg, cmethod, fsig, sp, ip, real_offset, inline_always);
+	return inline_method (cfg, cmethod, fsig, sp, ip, real_offset, inline_always, NULL);
 }
 
 /*
@@ -4569,7 +4569,7 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
  */
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
-	       guchar *ip, guint real_offset, gboolean inline_always)
+			   guchar *ip, guint real_offset, gboolean inline_always, gboolean *is_empty)
 {
 	ERROR_DECL (error);
 	MonoInst *ins, *rvar = NULL;
@@ -4611,6 +4611,9 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		cmethod->inline_info = 1;
 	}
 
+	if (is_empty)
+		*is_empty = FALSE;
+
 	/* allocate local variables */
 	cheader = mono_method_get_header_checked (cmethod, error);
 	if (!cheader) {
@@ -4622,6 +4625,9 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		}
 		return 0;
 	}
+
+	if (is_empty && cheader->code_size == 1 && cheader->code [0] == CEE_RET)
+		*is_empty = TRUE;
 
 	/* allocate space to store the return value */
 	if (!MONO_TYPE_IS_VOID (fsig->ret)) {
@@ -5589,7 +5595,7 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 			   !mono_class_is_subclass_of_internal (cmethod->klass, mono_defaults.exception_class, FALSE)) {
 		int costs;
 
-		if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE))) {
+		if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE, NULL))) {
 			cfg->real_offset += 5;
 
 			*inline_costs += costs - 5;
@@ -6057,6 +6063,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBitSet *seq_point_set_locs = NULL;
 	gboolean emitted_funccall_seq_point = FALSE;
 	gboolean detached_before_ret = FALSE;
+	gboolean ins_has_side_effect;
 
 	cfg->disable_inline = (method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION) || is_jit_optimizer_disabled (method);
 	cfg->current_method = method;
@@ -6491,12 +6498,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		for (int i = 0; i < header->num_clauses; ++i) {
-			MonoExceptionClause *clause = &header->clauses [i];
-			if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
-				cfg->interp_entry_only = TRUE;
+		if (!cfg->method->wrapper_type && header->num_clauses) {
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
 		}
-
 		if (cfg->interp_entry_only)
 			emit_llvmonly_interp_entry (cfg, header);
 	}
@@ -6654,6 +6663,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (cfg->verbose_level > 3)
 			printf ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
 
+		/*
+		 * This is used to compute BB_HAS_SIDE_EFFECTS, which is used for the elimination of
+		 * foreach finally clauses, so only IL opcodes which occur in such clauses
+		 * need to set this.
+		 */
+		ins_has_side_effect = TRUE;
+
 		// Variables shared by CEE_CALLI CEE_CALL CEE_CALLVIRT CEE_JMP.
 		// Initialize to either what they all need or zero.
 		gboolean emit_widen = TRUE;
@@ -6706,6 +6722,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, OP_NOP);
 			MONO_ADD_INS (cfg->cbb, ins);
 			emitted_funccall_seq_point = FALSE;
+			ins_has_side_effect = FALSE;
 			break;
 		case MONO_CEE_BREAK:
 			if (mini_should_insert_breakpoint (cfg->method)) {
@@ -6787,6 +6804,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
+			ins_has_side_effect = FALSE;
 			EMIT_NEW_LOCLOADA (cfg, ins, n);
 			*sp++ = ins;
 			break;
@@ -7050,7 +7068,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					gboolean inline_wrapper = cfg->opt & MONO_OPT_INLINE || cfg->compile_aot;
 					if (inline_wrapper) {
-						int costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE);
+						int costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE, NULL);
 						CHECK_CFG_EXCEPTION;
 						g_assert (costs > 0);
 						cfg->real_offset += 5;
@@ -7142,7 +7160,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto calli_end;
 				}
 			}
-			ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, NULL, NULL, tailcall);
+			if (cfg->llvm_only && !(cfg->method->wrapper_type && cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD))
+				ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
+			else
+				ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, NULL, NULL, tailcall);
 			goto calli_end;
 		}
 		case MONO_CEE_CALL:
@@ -7221,8 +7242,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
-				needs_stack_walk = TRUE;
+			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod)) {
+				if (cfg->interp && !cfg->interp_entry_only) {
+					/* Use the interpreter instead */
+					cfg->exception_message = g_strdup ("stack walk");
+					cfg->disable_llvm = TRUE;
+				} else {
+					needs_stack_walk = TRUE;
+				}
+			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (!mono_class_is_interface (method->klass))
@@ -7376,9 +7404,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Conversion to a JIT intrinsic */
-			if ((ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
+			gboolean ins_type_initialized;
+			if ((ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp, &ins_type_initialized))) {
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
+					if (!ins_type_initialized)
+						mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
 					emit_widen = FALSE;
 				}
 				// FIXME This is only missed if in fact the intrinsic involves a call.
@@ -7403,6 +7433,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			    mono_method_check_inlining (cfg, cmethod)) {
 				int costs;
 				gboolean always = FALSE;
+				gboolean is_empty = FALSE;
 
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 					/* Prevent inlining of methods that call wrappers */
@@ -7413,7 +7444,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					always = TRUE;
 				}
 
-				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always);
+				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always, &is_empty);
 				if (costs) {
 					cfg->real_offset += 5;
 
@@ -7435,6 +7466,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					// signature match/mismatch.
 					if (inst_tailcall) // FIXME
 						mono_tailcall_print ("missed tailcall inline %s -> %s\n", method->name, cmethod->name);
+					if (is_empty)
+						ins_has_side_effect = FALSE;
 					goto call_end;
 				}
 			}
@@ -7807,7 +7840,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Inline the wrapper */
 				wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
 
-				costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE);
+				costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE, NULL);
 				g_assert (costs > 0);
 				cfg->real_offset += 5;
 
@@ -8336,7 +8369,8 @@ calli_end:
 		case MONO_CEE_LDIND_REF:
 			--sp;
 
-			MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
+			if (!(ins_flag & MONO_INST_NONULLCHECK))
+				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
 
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (ldind_to_type (il_op)), sp [0], 0, ins_flag);
 			*sp++ = ins;
@@ -10238,7 +10272,7 @@ field_access_end:
 						EMIT_NEW_PCONST (cfg, ins, rt);
 					}
 					ins->type = STACK_OBJ;
-					ins->klass = cmethod->klass;
+					ins->klass = mono_defaults.runtimetype_class;
 					il_op = (MonoOpcodeEnum)next_ip [0];
 					next_ip += 5;
 				} else {
@@ -10302,6 +10336,7 @@ field_access_end:
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (cfg->cbb, ins);
 			start_new_bblock = 1;
+			ins_has_side_effect = FALSE;
 
 			/*
 			 * Control will leave the method so empty the stack, otherwise
@@ -11270,6 +11305,7 @@ mono_ldptr:
 		case MONO_CEE_CONSTRAINED_:
 			constrained_class = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (constrained_class);
+			ins_has_side_effect = FALSE;
 			break;
 		case MONO_CEE_CPBLK:
 			sp -= 3;
@@ -11284,13 +11320,12 @@ mono_ldptr:
 			inline_costs += 1;
 			break;
 		case MONO_CEE_NO_:
-			if (ip [2] & 1)
+			if (ip [2] & CEE_NO_TYPECHECK)
 				ins_flag |= MONO_INST_NOTYPECHECK;
-			if (ip [2] & 2)
+			if (ip [2] & CEE_NO_RANGECHECK)
 				ins_flag |= MONO_INST_NORANGECHECK;
-			/* we ignore the no-nullcheck for now since we
-			 * really do it explicitly only when doing callvirt->call
-			 */
+			if (ip [2] & CEE_NO_NULLCHECK)
+				ins_flag |= MONO_INST_NONULLCHECK;
 			break;
 		case MONO_CEE_RETHROW: {
 			MonoInst *load;
@@ -11401,6 +11436,9 @@ mono_ldptr:
 			g_warning ("opcode 0x%02x not handled", il_op);
 			UNVERIFIED;
 		}
+
+		if (ins_has_side_effect)
+			cfg->cbb->flags |= BB_HAS_SIDE_EFFECTS;
 	}
 	if (start_new_bblock != 1)
 		UNVERIFIED;

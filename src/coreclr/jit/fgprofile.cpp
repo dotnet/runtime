@@ -131,9 +131,9 @@ void Compiler::fgApplyProfileScale()
             calleeWeight, scale);
     JITDUMP("Scaling inlinee blocks\n");
 
-    for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        bb->scaleBBWeight(scale);
+        block->scaleBBWeight(scale);
     }
 }
 
@@ -314,7 +314,7 @@ void BlockCountInstrumentor::Prepare(bool preImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         block->bbCountSchemaIndex = -1;
     }
@@ -563,10 +563,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     //
     if (!compIsForInlining())
     {
-        EHblkDsc* HBtab = compHndBBtab;
-        unsigned  XTnum = 0;
-
-        for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
@@ -1125,11 +1122,14 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 #ifdef DEBUG
                 // Verify the edge still exists.
                 //
-                const unsigned numSucc = block->NumSucc(comp);
-                bool           found   = false;
-                for (unsigned i = 0; i < numSucc && !found; i++)
+                bool found = false;
+                for (BasicBlock* const succ : block->Succs(comp))
                 {
-                    found = (target == block->GetSucc(i, comp));
+                    if (target == succ)
+                    {
+                        found = true;
+                        break;
+                    }
                 }
                 assert(found);
 #endif
@@ -1391,7 +1391,7 @@ void ClassProbeInstrumentor::Prepare(bool isPreImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         block->bbClassSchemaIndex = -1;
     }
@@ -1420,7 +1420,7 @@ void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     //
     BuildClassProbeSchemaGen                    schemaGen(schema, m_schemaCount);
     ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(m_comp, schemaGen);
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -1453,7 +1453,7 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
 
     ClassProbeInserter                    insertProbes(schema, profileMemory, &classSchemaIndex, m_instrCount);
     ClassProbeVisitor<ClassProbeInserter> visitor(m_comp, insertProbes);
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
@@ -1474,14 +1474,14 @@ void ClassProbeInstrumentor::SuppressProbes()
     SuppressProbesFunctor                    suppressProbes(cleanupCount);
     ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
 
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
         {
             continue;
         }
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
@@ -1589,7 +1589,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Walk the flow graph to build up the instrumentation schema.
     //
     Schema schema(getAllocator(CMK_Pgo));
-    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (fgCountInstrumentor->ShouldProcess(block))
         {
@@ -1670,7 +1670,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     // Add the instrumentation code
     //
-    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (fgCountInstrumentor->ShouldProcess(block))
         {
@@ -1852,7 +1852,7 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profil
 //
 void Compiler::fgIncorporateBlockCounts()
 {
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BasicBlock::weight_t profileWeight;
 
@@ -2172,7 +2172,7 @@ void EfficientEdgeCountReconstructor::Prepare()
 {
     // Create per-block info, and set up the key to block map.
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         m_keyToBlockMap.Set(BlockToKey(block), block);
         BlockInfo* const info = new (m_allocator) BlockInfo();
@@ -2536,7 +2536,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 
     // Set weight on all blocks.
     //
-    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* const block : m_comp->Blocks())
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
@@ -3222,7 +3222,6 @@ void Compiler::fgComputeEdgeWeights()
 
     BasicBlock*          bSrc;
     BasicBlock*          bDst;
-    flowList*            edge;
     BasicBlock::weight_t slop;
     unsigned             goodEdgeCountCurrent     = 0;
     unsigned             goodEdgeCountPrevious    = 0;
@@ -3247,7 +3246,7 @@ void Compiler::fgComputeEdgeWeights()
             bDstWeight -= fgCalledCount;
         }
 
-        for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+        for (flowList* const edge : bDst->PredEdges())
         {
             bool assignOK = true;
 
@@ -3327,7 +3326,7 @@ void Compiler::fgComputeEdgeWeights()
         JITDUMP("\n -- step 1 --\n");
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
         {
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
                 bool assignOK = true;
 
@@ -3432,11 +3431,8 @@ void Compiler::fgComputeEdgeWeights()
                 BasicBlock::weight_t maxEdgeWeightSum = 0;
 
                 // Calculate the sums of the minimum and maximum edge weights
-                for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+                for (flowList* const edge : bDst->PredEdges())
                 {
-                    // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->getBlock();
-
                     maxEdgeWeightSum += edge->edgeWeightMax();
                     minEdgeWeightSum += edge->edgeWeightMin();
                 }
@@ -3444,7 +3440,7 @@ void Compiler::fgComputeEdgeWeights()
                 // maxEdgeWeightSum is the sum of all flEdgeWeightMax values into bDst
                 // minEdgeWeightSum is the sum of all flEdgeWeightMin values into bDst
 
-                for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+                for (flowList* const edge : bDst->PredEdges())
                 {
                     bool assignOK = true;
 
@@ -3567,14 +3563,13 @@ EARLY_EXIT:;
 
     // See if any edge weight are expressed in [min..max] form
 
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
-                bSrc = edge->getBlock();
-                // This is the control flow edge (bSrc -> bDst)
+                // This is the control flow edge (edge->getBlock() -> bDst)
 
                 if (edge->edgeWeightMin() != edge->edgeWeightMax())
                 {
@@ -3666,7 +3661,7 @@ void Compiler::fgDebugCheckProfileData()
 
     // Verify each profiled block.
     //
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (!block->hasProfileWeight())
         {
@@ -3801,7 +3796,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
     BasicBlock::weight_t       incomingWeightMax = 0;
     bool                       foundPreds        = false;
 
-    for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
+    for (flowList* const predEdge : block->PredEdges())
     {
         incomingWeightMin += predEdge->edgeWeightMin();
         incomingWeightMax += predEdge->edgeWeightMax();
@@ -3883,16 +3878,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     for (unsigned i = 0; i < numSuccs; i++)
     {
         BasicBlock* succBlock = block->GetSucc(i, this);
-        flowList*   succEdge  = nullptr;
-
-        for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
-        {
-            if (edge->getBlock() == block)
-            {
-                succEdge = edge;
-                break;
-            }
-        }
+        flowList*   succEdge  = fgGetPredForBlock(succBlock, block);
 
         if (succEdge == nullptr)
         {

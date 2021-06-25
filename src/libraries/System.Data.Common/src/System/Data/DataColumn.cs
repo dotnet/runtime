@@ -26,11 +26,13 @@ namespace System.Data
     [DefaultProperty(nameof(ColumnName))]
     [Editor("Microsoft.VSDesigner.Data.Design.DataColumnEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] // needed by Clone() to preserve derived ctors
     public class DataColumn : MarshalByValueComponent
     {
         private bool _allowNull = true;
         private string? _caption;
         private string _columnName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         private Type _dataType = null!; // Always set in UpdateColumnType
         private StorageType _storageType;
         internal object _defaultValue = DBNull.Value; // DefaultValue Converter
@@ -76,6 +78,8 @@ namespace System.Data
         /// Initializes a new instance of a <see cref='System.Data.DataColumn'/>
         /// class.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This is safe because type is string and expression is null.")]
         public DataColumn() : this(null, typeof(string), null, MappingType.Element)
         {
         }
@@ -84,6 +88,8 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This is safe because type is string and expression is null.")]
         public DataColumn(string? columnName) : this(columnName, typeof(string), null, MappingType.Element)
         {
         }
@@ -92,7 +98,9 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name and data type.
         /// </summary>
-        public DataColumn(string? columnName, Type dataType) : this(columnName, dataType, null, MappingType.Element)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Expression is null and `dataType` is marked appropriately.")]
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType) : this(columnName, dataType, null, MappingType.Element)
         {
         }
 
@@ -101,7 +109,8 @@ namespace System.Data
         /// of the <see cref='System.Data.DataColumn'/> class
         /// using the specified name, data type, and expression.
         /// </summary>
-        public DataColumn(string? columnName, Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
+        [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
         {
         }
 
@@ -111,7 +120,8 @@ namespace System.Data
         /// the specified name, data type, expression, and value that determines whether the
         /// column is an attribute.
         /// </summary>
-        public DataColumn(string? columnName, Type dataType, string? expr, MappingType type)
+        [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType, string? expr, MappingType type)
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataColumn.DataColumn|API> {0}, columnName='{1}', expr='{2}', type={3}", ObjectID, columnName, expr, type);
@@ -143,7 +153,7 @@ namespace System.Data
             _columnMapping = type;
         }
 
-        private void UpdateColumnType(Type type, StorageType typeCode)
+        private void UpdateColumnType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type, StorageType typeCode)
         {
             TypeLimiter.EnsureTypeIsAllowed(type);
             _dataType = type;
@@ -449,6 +459,7 @@ namespace System.Data
         // If the column type is string and it's value is empty, then the empty string is returned.
         // If the column type is not string, or the column type is string and the value is not empty string, then a non-empty string is returned
         // This method does not throw any formatting exceptions, since we can always format the field value to a string.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal string? GetColumnValueAsString(DataRow row, DataRowVersion version)
         {
             object objValue = this[row.GetRecordFromVersion(version)];
@@ -479,6 +490,7 @@ namespace System.Data
         [DefaultValue(typeof(string))]
         [RefreshProperties(RefreshProperties.All)]
         [TypeConverter(typeof(ColumnTypeConverter))]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         [AllowNull]
         public Type DataType
         {
@@ -716,6 +728,7 @@ namespace System.Data
         public string Expression
         {
             get { return (_expression == null ? "" : _expression.Expression); }
+            [RequiresUnreferencedCode("Members from types used in the expressions may be trimmed if not referenced directly.")]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_Expression|API> {0}, '{1}'", ObjectID, value);
@@ -1777,24 +1790,27 @@ namespace System.Data
             ColumnName :
             ColumnName + " + " + Expression;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object ConvertXmlToObject(string s)
         {
             Debug.Assert(s != null, "Caller is resposible for missing element/attribute case");
             return InsureStorage().ConvertXmlToObject(s);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
             return InsureStorage().ConvertXmlToObject(xmlReader, xmlAttrib);
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal string ConvertObjectToXml(object value)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is resposible for checking on DBNull");
             return InsureStorage().ConvertObjectToXml(value);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is resposible for checking on DBNull");
@@ -1812,6 +1828,7 @@ namespace System.Data
             _storage.CopyValueInternal(record, store, nullbits, storeIndex);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetStorage(object store, BitArray nullbits)
         {
             InsureStorage().SetStorageInternal(store, nullbits);
@@ -1875,6 +1892,14 @@ namespace System.Data
                 _table.AddDependentColumn(this);
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "User has already got warning when creating original column.")]
+        internal void CopyExpressionFrom(DataColumn source)
+        {
+            Expression = source.Expression;
+        }
+
     }
 
     internal abstract class AutoIncrementValue

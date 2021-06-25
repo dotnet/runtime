@@ -118,7 +118,7 @@ namespace System.IO.Compression
         public int AvailableBytes => _bytesUsed;
 
         /// <summary>Copy the decompressed bytes to output buffer.</summary>
-        public int CopyTo(Memory<byte> output)
+        public int CopyTo(Span<byte> output)
         {
             int copy_end;
 
@@ -140,19 +140,13 @@ namespace System.IO.Compression
             {
                 // this means we need to copy two parts separately
                 // copy the taillen bytes from the end of the output window
-                _window.AsSpan(WindowSize - tailLen, tailLen).CopyTo(output.Span);
+                _window.AsSpan(WindowSize - tailLen, tailLen).CopyTo(output);
                 output = output.Slice(tailLen, copy_end);
             }
-            _window.AsSpan(copy_end - output.Length, output.Length).CopyTo(output.Span);
+            _window.AsSpan(copy_end - output.Length, output.Length).CopyTo(output);
             _bytesUsed -= copied;
             Debug.Assert(_bytesUsed >= 0, "check this function and find why we copied more bytes than we have");
             return copied;
-        }
-
-        /// <summary>Copy the decompressed bytes to output array.</summary>
-        public int CopyTo(byte[] output, int offset, int length)
-        {
-            return CopyTo(output.AsMemory(offset, length));
         }
     }
 }

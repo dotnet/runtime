@@ -181,7 +181,8 @@ ep_enable (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback);
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 EventPipeSessionID
 ep_enable_2 (
@@ -192,7 +193,8 @@ ep_enable_2 (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback);
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 void
 ep_disable (EventPipeSessionID id);
