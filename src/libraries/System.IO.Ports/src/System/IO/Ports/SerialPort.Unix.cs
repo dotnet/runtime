@@ -18,8 +18,8 @@ namespace System.IO.Ports
                 : OperatingSystem.IsMacOS() ? GetPortNames_OSX()
                 : OperatingSystem.IsFreeBSD() ? GetPortNames_FreeBSD()
 #else
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux() 
-                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX() 
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
+                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
 #endif
                 : throw new PlatformNotSupportedException(SR.PlatformNotSupported_SerialPort_GetPortNames);
