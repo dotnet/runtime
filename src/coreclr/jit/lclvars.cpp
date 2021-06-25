@@ -1946,9 +1946,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 var_types fieldType = structPromotionInfo.fields[i].fldType;
                 // Non-HFA structs are always passed in general purpose registers.
                 // If there are any floating point fields, don't promote for now.
+                // Likewise, since HVA structs are passed in SIMD registers
+                // promotion of non FP or SIMD type fields is disallowed.
                 // TODO-1stClassStructs: add support in Lowering and prolog generation
                 // to enable promoting these types.
-                if (varDsc->lvIsParam && !varDsc->lvIsHfa() && varTypeUsesFloatReg(fieldType))
+                if (varDsc->lvIsParam && (varDsc->lvIsHfa() != varTypeUsesFloatReg(fieldType)))
                 {
                     canPromote = false;
                 }

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <IsNETCoreAppRef>false</IsNETCoreAppRef>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Quic.cs" />

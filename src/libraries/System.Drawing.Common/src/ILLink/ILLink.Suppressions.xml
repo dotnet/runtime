@@ -5,67 +5,61 @@
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.Icon.OleCreatePictureIndirect(System.Drawing.Icon.PICTDESC,System.Guid@,System.Boolean)</property>
+      <property name="Target">M:System.Drawing.Bitmap.#ctor(System.IO.Stream,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateBitmapFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Icon.Save(System.IO.Stream)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateBitmapFromStreamICM(Interop.Ole32.IStream,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Image.FromStream(System.IO.Stream,System.Boolean,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipCreateMetafileFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Image.InitializeFromStream(System.IO.Stream)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromStream(Interop.Ole32.IStream,System.IntPtr)</property>
+      <property name="Target">M:System.Drawing.Image.Save(System.IO.Stream,System.Drawing.Imaging.ImageCodecInfo,System.Drawing.Imaging.EncoderParameters)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipLoadImageFromStream(Interop.Ole32.IStream,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Imaging.Metafile.#ctor(System.IO.Stream,System.IntPtr,System.Drawing.Imaging.EmfType,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipLoadImageFromStreamICM(Interop.Ole32.IStream,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Imaging.Metafile.#ctor(System.IO.Stream,System.IntPtr,System.Drawing.Rectangle,System.Drawing.Imaging.MetafileFrameUnit,System.Drawing.Imaging.EmfType,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipRecordMetafileStream(Interop.Ole32.IStream,System.IntPtr,System.Drawing.Imaging.EmfType,System.Drawing.RectangleF@,System.Drawing.Imaging.MetafileFrameUnit,System.String,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Imaging.Metafile.#ctor(System.IO.Stream,System.IntPtr,System.Drawing.RectangleF,System.Drawing.Imaging.MetafileFrameUnit,System.Drawing.Imaging.EmfType,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipRecordMetafileStream(Interop.Ole32.IStream,System.IntPtr,System.Drawing.Imaging.EmfType,System.IntPtr,System.Drawing.Imaging.MetafileFrameUnit,System.String,System.IntPtr@)</property>
+      <property name="Target">M:System.Drawing.Imaging.Metafile.#ctor(System.IO.Stream)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipRecordMetafileStreamI(Interop.Ole32.IStream,System.IntPtr,System.Drawing.Imaging.EmfType,System.Drawing.Rectangle@,System.Drawing.Imaging.MetafileFrameUnit,System.String,System.IntPtr@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipSaveImageToStream(System.Runtime.InteropServices.HandleRef,Interop.Ole32.IStream,System.Guid@,System.Runtime.InteropServices.HandleRef)</property>
+      <property name="Target">M:System.Drawing.Imaging.Metafile.GetMetafileHeader(System.IO.Stream)</property>
     </attribute>
   </assembly>
 </linker>

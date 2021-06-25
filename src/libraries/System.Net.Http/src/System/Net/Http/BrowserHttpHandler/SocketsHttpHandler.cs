@@ -194,11 +194,5 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
-
-        public QuicImplementationProvider? QuicImplementationProvider
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
     }
 }
