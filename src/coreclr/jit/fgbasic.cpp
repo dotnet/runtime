@@ -920,7 +920,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     while (codeAddr < codeEndp)
     {
         prevOpcode = opcode;
-        opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        opcode     = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
 
         if (!handled && preciseScan)
@@ -1207,7 +1207,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
 
                 //// TODO: investigate impact:
-                //if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()) &&
+                // if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()) &&
                 //    !FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
                 //{
                 //    // Assume that "call(arg)" returns something arg-dependent.
@@ -1464,13 +1464,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                             }
-                            else if (FgStack::IsArgument(op1) &&
-                                     FgStack::IsConstantOrConstArg(op2, impInlineInfo))
+                            else if (FgStack::IsArgument(op1) && FgStack::IsConstantOrConstArg(op2, impInlineInfo))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                             }
-                            else if (FgStack::IsArgument(op2) &&
-                                     FgStack::IsConstantOrConstArg(op1, impInlineInfo))
+                            else if (FgStack::IsArgument(op2) && FgStack::IsConstantOrConstArg(op1, impInlineInfo))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                             }

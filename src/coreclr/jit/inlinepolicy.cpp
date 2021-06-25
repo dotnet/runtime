@@ -1425,14 +1425,14 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // Same here
         multiplier += 1.4;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
-            multiplier);
+                multiplier);
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
         multiplier += 1.0;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
-            m_FldAccessOverArgStruct, multiplier);
+                m_FldAccessOverArgStruct, multiplier);
     }
 
     if (m_LooksLikeWrapperMethod)
@@ -1499,7 +1499,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         multiplier += JitConfig.JitInlineSIMDMultiplier();
         JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
-            multiplier);
+                multiplier);
     }
 #endif
 
@@ -1585,7 +1585,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // so at least we can note potential constant tests
         multiplier += m_BinaryExprWithCns * 0.3;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
-            m_BinaryExprWithCns, multiplier);
+                m_BinaryExprWithCns, multiplier);
 
         // For prejit roots we do not see the call sites. To be suitably optimistic
         // assume that call sites may pass constants and make these m_BinaryExprWithCns
