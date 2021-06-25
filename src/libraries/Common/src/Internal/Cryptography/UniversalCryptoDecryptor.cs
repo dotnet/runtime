@@ -215,12 +215,6 @@ namespace Internal.Cryptography
                     decryptedBuffer = buffer.Slice(0, transformWritten);
                     int unpaddedLength = GetPaddingLength(decryptedBuffer); // validates padding
 
-                    if (unpaddedLength == 0)
-                    {
-                        bytesWritten = 0;
-                        return true;
-                    }
-
                     if (unpaddedLength > output.Length)
                     {
                         bytesWritten = 0;
