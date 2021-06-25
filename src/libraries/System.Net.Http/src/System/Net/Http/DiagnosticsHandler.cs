@@ -28,25 +28,8 @@ namespace System.Net.Http
 
         public static bool IsGloballyEnabled { get; } = GetEnableActivityPropagationValue();
 
-        private static bool GetEnableActivityPropagationValue()
-        {
-            // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch(Namespace + ".EnableActivityPropagation", out bool enableActivityPropagation))
-            {
-                return enableActivityPropagation;
-            }
-
-            // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION");
-            if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-            {
-                // Suppress Activity propagation.
-                return false;
-            }
-
-            // Defaults to enabling Activity propagation.
-            return true;
-        }
+        private static bool GetEnableActivityPropagationValue() =>
+            RuntimeSettingParser.QueryRuntimeSettingSwitch(Namespace + ".EnableActivityPropagation", "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION", true);
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler) : base(innerHandler)
         {
@@ -274,7 +257,6 @@ namespace System.Net.Http
             public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
         }
 
-            private static bool GetEnableActivityPropagationValue() => RuntimeSettingParser.QueryRuntimeSettingSwitch(EnableActivityPropagationAppCtxSettingName, EnableActivityPropagationEnvironmentVariableSettingName, true);
         private static void InjectHeaders(Activity currentActivity, HttpRequestMessage request)
         {
             const string TraceParentHeaderName = "traceparent";
