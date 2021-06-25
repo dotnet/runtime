@@ -38,6 +38,6 @@ namespace System.Runtime.InteropServices
         /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
         /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull
-            => ref dictionary.GetValueRefOrAddDefault(key, out exists);
+            => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
     }
 }
