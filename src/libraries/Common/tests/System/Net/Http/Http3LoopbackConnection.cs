@@ -185,7 +185,7 @@ namespace System.Net.Test.Common
 
             // We are about to close the connection, after we send the response.
             // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
-            await _controlStream.SendGoAwayFrameAsync(request.Http3StreamId + 4);
+            await _controlStream.SendGoAwayFrameAsync(stream.StreamId + 4);
 
             await stream.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
 

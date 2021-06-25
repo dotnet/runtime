@@ -44,6 +44,9 @@ namespace System.Net.Test.Common
         {
             _stream.Dispose();
         }
+
+        public long StreamId => _stream.StreamId;
+
         public async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
@@ -215,8 +218,6 @@ namespace System.Net.Test.Common
             if (frameType != HeadersFrame) throw new Exception($"unable to read request headers; received frame type 0x{frameType:x}.");
 
             HttpRequestData requestData = ParseHeaders(payload);
-
-            requestData.Http3StreamId = _stream.StreamId;
 
             if (readBody)
             {

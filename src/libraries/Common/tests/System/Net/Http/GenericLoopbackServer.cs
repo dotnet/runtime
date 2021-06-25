@@ -188,7 +188,6 @@ namespace System.Net.Test.Common
         public Version Version;
         public List<HttpHeaderData> Headers { get; }
         public int RequestId;       // HTTP/2 StreamId.
-        public long Http3StreamId;
 
         public HttpRequestData()
         {
