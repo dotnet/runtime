@@ -1649,6 +1649,12 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
+    else if (m_RootCompiler->lvaTableCnt > 50)
+    {
+        // Slow down inlining if we already have to many locals in the rootCompiler.
+        multiplier /= (m_RootCompiler->lvaTableCnt / 50.0);
+        JITDUMP("\nCaller %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
+    }
 
     if (m_BackwardJump)
     {

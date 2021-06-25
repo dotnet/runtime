@@ -1255,12 +1255,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if (makeInlineObservations)
                 {
                     FgStack::FgSlot arg = pushedStack.Top();
-                    if (FgStack::IsConstantOrConstArg(arg, impInlineInfo))
+                    if (FgStack::IsConstArgument(arg, impInlineInfo))
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR_UN);
                         handled = true;
                     }
-                    else if (FgStack::IsArgument(arg))
+                    else if (FgStack::IsArgument(arg) || FgStack::IsConstant(arg))
                     {
                         handled = true;
                     }
@@ -1319,12 +1319,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     FgStack::FgSlot arg0 = pushedStack.Top(1);
                     FgStack::FgSlot arg1 = pushedStack.Top(0);
 
-                    if (FgStack::IsConstantOrConstArg(arg0, impInlineInfo) &&
-                        FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
+                    if ((FgStack::IsConstant(arg0) && FgStack::IsConstArgument(arg1, impInlineInfo)) ||
+                        (FgStack::IsConstant(arg1) && FgStack::IsConstArgument(arg0, impInlineInfo)) ||
+                        (FgStack::IsConstArgument(arg0, impInlineInfo) && FgStack::IsConstArgument(arg1, impInlineInfo)))
                     {
                         // keep stack unchanged
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
+                    }
+                    if ((FgStack::IsConstant(arg0) && FgStack::IsConstant(arg1)) ||
+                        (FgStack::IsConstant(arg1) && FgStack::IsConstant(arg0)))
+                    {
+                        // both are constants, but we're mostly interested in cases where a const arg leads to
+                        // a foldable expression.
+                        handled = true;
                     }
                     else if (FgStack::IsArgument(arg0) && FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
                     {
@@ -1618,6 +1626,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 codeAddr += sizeof(__int8);
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
+                handled = true;
                 goto OBSERVE_OPCODE;
             }
 
@@ -1636,6 +1645,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                     }
                 }
+                handled = true;
                 goto OBSERVE_OPCODE;
             }
 
@@ -1652,6 +1662,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         BADCODE("readonly. has to be followed by ldelema or call");
                     }
                 }
+                handled = true;
                 goto OBSERVE_OPCODE;
             }
 
@@ -1661,6 +1672,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 prefixFlags |= PREFIX_VOLATILE;
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, true);
+                handled = true;
                 goto OBSERVE_OPCODE;
             }
 
@@ -1677,6 +1689,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
                 }
+                handled = true;
                 goto OBSERVE_OPCODE;
             }
 
