@@ -12535,8 +12535,7 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 // Remarks:
 //   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
 //   to be called when emitting code for the scratch BB that comes right after the prolog.
-//   The variables are poisoned using 0xcccccccc. This value is stored in EAX/RAX on xarch and r/x0 on ARM,
-//   so we expect that this reg is not live.
+//   The variables are poisoned using 0xcdcdcdcd.
 void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());

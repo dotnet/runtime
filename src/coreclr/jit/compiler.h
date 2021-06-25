@@ -9831,7 +9831,11 @@ public:
     // Returns true if address-exposed user variables should be poisoned with a recognizable value
     bool compShouldPoisonFrame()
     {
-        return true;  //!info.compInitMem&& opts.MinOpts() && opts.compDbgCode;
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (opts.IsOSR())
+            return false;
+#endif
+        return !info.compInitMem && opts.compDbgCode;
     }
 
 #if defined(DEBUG)
