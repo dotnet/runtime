@@ -2117,6 +2117,63 @@ public:
         return ((gtFlags & GTF_UNSIGNED) != 0);
     }
 
+    void SetUnsigned()
+    {
+        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        gtFlags |= GTF_UNSIGNED;
+    }
+
+    void ClearUnsigned()
+    {
+        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        gtFlags &= ~GTF_UNSIGNED;
+    }
+
+    void SetOverflow()
+    {
+        assert(OperMayOverflow());
+        gtFlags |= GTF_OVERFLOW;
+    }
+
+    void ClearOverflow()
+    {
+        assert(OperMayOverflow());
+        gtFlags &= ~GTF_OVERFLOW;
+    }
+
+    bool Is64RsltMul() const
+    {
+        return (gtFlags & GTF_MUL_64RSLT) != 0;
+    }
+
+    void Set64RsltMul()
+    {
+        gtFlags |= GTF_MUL_64RSLT;
+    }
+
+    void Clear64RsltMul()
+    {
+        gtFlags &= ~GTF_MUL_64RSLT;
+    }
+
+    void SetAllEffectsFlags(GenTree* source)
+    {
+        SetAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
+    }
+
+    void SetAllEffectsFlags(GenTree* source, GenTree* otherSource)
+    {
+        SetAllEffectsFlags((source->gtFlags | otherSource->gtFlags) & GTF_ALL_EFFECT);
+    }
+
+    void SetAllEffectsFlags(GenTreeFlags sourceFlags)
+    {
+        assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
+
+        gtFlags &= ~GTF_ALL_EFFECT;
+        gtFlags |= sourceFlags;
+    }
+
     inline bool IsCnsIntOrI() const;
 
     inline bool IsIntegralConst() const;
