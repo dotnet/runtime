@@ -25,12 +25,10 @@ namespace System.Data.ProviderBase
                 int flags = ((zeroBuffer) ? LMEM_ZEROINIT : LMEM_FIXED);
 
                 _bufferLength = initialSize;
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
-#endif
                 {
                     base.handle = SafeNativeMethods.LocalAlloc(flags, (IntPtr)initialSize);
                 }
@@ -75,9 +73,7 @@ namespace System.Data.ProviderBase
 
             string? value = null;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -103,9 +99,7 @@ namespace System.Data.ProviderBase
 
             byte value;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -138,9 +132,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= destination.Length, "destination too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -173,9 +165,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= destination.Length, "destination too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -207,9 +197,7 @@ namespace System.Data.ProviderBase
 
             short value;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -236,9 +224,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= destination.Length, "destination too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -263,9 +249,7 @@ namespace System.Data.ProviderBase
 
             int value;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -292,9 +276,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= destination.Length, "destination too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -319,9 +301,7 @@ namespace System.Data.ProviderBase
 
             long value;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -347,9 +327,7 @@ namespace System.Data.ProviderBase
 
             IntPtr value;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -393,9 +371,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -419,9 +395,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == offset % 4, "invalid alignment");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -447,9 +421,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= source.Length, "source too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -475,9 +447,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= source.Length, "source too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -506,9 +476,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == offset % 2, "invalid alignment");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -534,9 +502,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= source.Length, "source too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -560,9 +526,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == offset % 4, "invalid alignment");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -588,9 +552,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(startIndex + length <= source.Length, "source too small");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -614,9 +576,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -640,9 +600,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);

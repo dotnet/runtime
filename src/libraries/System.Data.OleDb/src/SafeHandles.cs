@@ -135,12 +135,10 @@ namespace System.Data.OleDb
 
         private ChapterHandle(object chapteredRowset, RowBinding binding, int valueOffset) : base(chapteredRowset)
         {
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 _chapterHandle = binding.InterlockedExchangePointer(valueOffset);
             }
@@ -668,12 +666,10 @@ namespace System.Data.OleDb
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             IntPtr hchapter = chapter;
             System.Data.Common.UnsafeNativeMethods.IChapteredRowset? chapteredRowset = null;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 Guid IID_IChapteredRowset = typeof(System.Data.Common.UnsafeNativeMethods.IChapteredRowset).GUID;
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_IChapteredRowset, out var pChapteredRowset);
@@ -692,12 +688,10 @@ namespace System.Data.OleDb
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             ITransactionLocal? transactionLocal = null;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 Guid IID_ITransactionLocal = typeof(ITransactionLocal).GUID;
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
@@ -716,12 +710,10 @@ namespace System.Data.OleDb
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             ITransactionLocal? transactionLocal = null;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 Guid IID_ITransactionLocal = typeof(ITransactionLocal).GUID;
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);

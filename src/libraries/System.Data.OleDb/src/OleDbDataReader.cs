@@ -1730,9 +1730,7 @@ namespace System.Data.OleDb
 
             RowHandleBuffer rowHandleBuffer = _rowHandleNativeBuffer!;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 rowHandleBuffer.DangerousAddRef(ref mustRelease);
@@ -1787,9 +1785,7 @@ namespace System.Data.OleDb
             IntPtr accessorHandle = rowBinding.DangerousGetAccessorHandle();
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 rowBinding.DangerousAddRef(ref mustRelease);
@@ -1884,9 +1880,7 @@ namespace System.Data.OleDb
             bool mustReleaseBinding = false;
             bool[] mustRelease = new bool[columnBindings.Length];
             StringMemHandle?[] sptr = new StringMemHandle[columnBindings.Length];
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 for (int i = 0; i < columnBindings.Length; ++i)

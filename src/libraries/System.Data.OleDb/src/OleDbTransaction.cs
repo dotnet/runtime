@@ -26,12 +26,10 @@ namespace System.Data.OleDb
             internal WrappedTransaction(UnsafeNativeMethods.ITransactionLocal transaction, int isolevel, out OleDbHResult hr) : base(transaction)
             {
                 int transactionLevel = 0;
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
-#endif
                 {
                     hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out transactionLevel);
                     if (0 <= hr)
@@ -51,18 +49,14 @@ namespace System.Data.OleDb
                 Debug.Assert(_mustComplete, "transaction already completed");
                 OleDbHResult hr;
                 bool mustRelease = false;
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
                     DangerousAddRef(ref mustRelease);
-#if !NETCOREAPP
                     RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     { }
                     finally
-#endif
                     {
                         hr = (OleDbHResult)NativeOledbWrapper.ITransactionAbort(DangerousGetHandle());
                         _mustComplete = false;
@@ -83,18 +77,14 @@ namespace System.Data.OleDb
                 Debug.Assert(_mustComplete, "transaction already completed");
                 OleDbHResult hr;
                 bool mustRelease = false;
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
                     DangerousAddRef(ref mustRelease);
-#if !NETCOREAPP
                     RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     { }
                     finally
-#endif
                     {
                         hr = (OleDbHResult)NativeOledbWrapper.ITransactionCommit(DangerousGetHandle());
                         if ((0 <= (int)hr) || (OleDbHResult.XACT_E_NOTRANSACTION == hr))

@@ -367,29 +367,17 @@ namespace System.Data.Common
                 if (!rootFolderEndsWith && !fileNameStartsWith)
                 {
                     // need to insert '\'
-#if NETCOREAPP
-                    fullPath = string.Concat(rootFolderPath + '\\', value.AsSpan(fileNamePosition));
-#else
                     fullPath = rootFolderPath + '\\' + value.Substring(fileNamePosition);
-#endif
                 }
                 else if (rootFolderEndsWith && fileNameStartsWith)
                 {
                     // need to strip one out
-#if NETCOREAPP
-                    fullPath = string.Concat(rootFolderPath, value.AsSpan(fileNamePosition + 1));
-#else
                     fullPath = rootFolderPath + value.Substring(fileNamePosition + 1);
-#endif
                 }
                 else
                 {
                     // simply concatenate the strings
-#if NETCOREAPP
-                    fullPath = string.Concat(rootFolderPath, value.AsSpan(fileNamePosition));
-#else
                     fullPath = rootFolderPath + value.Substring(fileNamePosition);
-#endif
                 }
 
                 // verify root folder path is a real path without unexpected "..\"

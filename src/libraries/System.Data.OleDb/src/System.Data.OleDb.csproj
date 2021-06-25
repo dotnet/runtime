@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <!-- Supress CA2249: Consider using String.Contains instead of String.IndexOf to avoid ifdefs. -->
     <NoWarn>$(NoWarn);CA2249</NoWarn>
+    <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete. -->
+    <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

@@ -240,9 +240,7 @@ namespace System.Data.ProviderBase
                 _poolSemaphore = new Semaphore(0, MAX_Q_SIZE);
                 _errorEvent = new ManualResetEvent(false);
                 _creationSemaphore = new Semaphore(1, 1);
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
                     // because SafeWaitHandle doesn't have reliability contract
@@ -731,12 +729,10 @@ namespace System.Data.ProviderBase
                 // timer allocation has to be done out of CER block
                 Timer t = new Timer(new TimerCallback(this.ErrorCallback), null, Timeout.Infinite, Timeout.Infinite);
                 bool timerIsNotDisposed;
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
-#endif
                 {
                     _waitHandles.ErrorEvent.Set();
                     _errorOccurred = true;
@@ -954,17 +950,13 @@ namespace System.Data.ProviderBase
             do
             {
                 bool started = false;
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
-#if !NETCOREAPP
                     RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     { }
                     finally
-#endif
                     {
                         started = Interlocked.CompareExchange(ref _pendingOpensWaiting, 1, 0) == 0;
                     }
@@ -994,9 +986,7 @@ namespace System.Data.ProviderBase
                         DbConnectionInternal? connection = null;
                         bool timeout = false;
                         Exception? caughtException = null;
-#if !NETCOREAPP
                         RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                         try
                         {
                             bool allowCreate = true;
@@ -1136,18 +1126,14 @@ namespace System.Data.ProviderBase
 
                     bool mustRelease = false;
                     int waitForMultipleObjectsExHR = 0;
-#if !NETCOREAPP
                     RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                     try
                     {
                         _waitHandles.DangerousAddRef(ref mustRelease);
 
                         // We absolutely must have the value of waitResult set,
                         // or we may leak the mutex in async abort cases.
-#if !NETCOREAPP
                         RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                         try
                         {
                             Debug.Assert(2 == waitHandleCount || 3 == waitHandleCount, "unexpected waithandle count");
@@ -1242,9 +1228,7 @@ namespace System.Data.ProviderBase
                                     {
                                         if (_waitHandles.CreationSemaphore.WaitOne(unchecked((int)waitForMultipleObjectsTimeout)))
                                         {
-#if !NETCOREAPP
                                             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                                             try
                                             {
                                                 obj = UserCreateRequest(owningObject, userOptions);
@@ -1462,21 +1446,17 @@ namespace System.Data.ProviderBase
                         bool mustRelease = false;
                         int waitResult = BOGUS_HANDLE;
                         uint timeout = (uint)CreationTimeout;
-#if !NETCOREAPP
                         RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                         try
                         {
                             _waitHandles.DangerousAddRef(ref mustRelease);
 
                             // Obtain creation mutex so we're the only one creating objects
                             // and we must have the wait result
-#if !NETCOREAPP
                             RuntimeHelpers.PrepareConstrainedRegions();
                             try
                             { }
                             finally
-#endif
                             {
                                 waitResult = SafeNativeMethods.WaitForSingleObjectEx(_waitHandles.CreationHandle.DangerousGetHandle(), timeout, false);
                             }

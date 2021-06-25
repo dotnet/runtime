@@ -25,12 +25,10 @@ namespace System.Data.OleDb
         {
             this.propertySetCount = propertysetCount;
             IntPtr countOfBytes = (IntPtr)(propertysetCount * ODB.SizeOf_tagDBPROPSET);
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 base.handle = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
                 if (ADP.PtrZero != base.handle)
@@ -177,9 +175,7 @@ namespace System.Data.OleDb
             ItagDBPROP[]? properties = null;
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -227,20 +223,16 @@ namespace System.Data.OleDb
             tagDBPROPSET propset = new tagDBPROPSET(properties.Length, propertySet);
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr propsetPtr = ADP.IntPtrOffset(DangerousGetHandle(), index * ODB.SizeOf_tagDBPROPSET);
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
-#endif
                 {
                     // must allocate and clear the memory without interruption
                     propset.rgProperties = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);

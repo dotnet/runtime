@@ -125,9 +125,7 @@ namespace System.Data.OleDb
             Debug.Assert(dbbindings.Length == BindingCount(), "count mismatch");
 
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -175,9 +173,7 @@ namespace System.Data.OleDb
 
             object? value = null;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
@@ -207,17 +203,13 @@ namespace System.Data.OleDb
 
             IntPtr buffer = ADP.PtrZero;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
 
                 buffer = ADP.IntPtrOffset(DangerousGetHandle(), offset);
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
                     // GetNativeVariantForObject must be in try block since it has no reliability contract
@@ -251,18 +243,14 @@ namespace System.Data.OleDb
 
             IntPtr ptr;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
-#endif
                 {
                     ptr = SafeNativeMethods.SysAllocStringLen(value, value.Length);
 
@@ -296,18 +284,14 @@ namespace System.Data.OleDb
                 pinnedValue = ADP.IntPtrOffset(base.handle, _emptyStringOffset);
             }
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
-#if !NETCOREAPP
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
-#endif
                 {
                     Marshal.WriteIntPtr(base.handle, offset, pinnedValue);               // parameter input value
                     Marshal.WriteIntPtr(base.handle, offset + ADP.PtrSize, pinnedValue); // original parameter value
@@ -360,9 +344,7 @@ namespace System.Data.OleDb
                 { // prevent Dispose/ResetValues race condition
 
                     bool mustRelease = false;
-#if !NETCOREAPP
                     RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                     try
                     {
                         DangerousAddRef(ref mustRelease);
@@ -501,12 +483,10 @@ namespace System.Data.OleDb
 
             // two contigous BSTR ptrs that need to be freed
             // the second should only be freed if different from the first
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
                 IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
@@ -532,12 +512,10 @@ namespace System.Data.OleDb
 
             // two contigous CoTaskMemAlloc ptrs that need to be freed
             // the first should only be freed if different from the first
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
                 IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
@@ -565,12 +543,10 @@ namespace System.Data.OleDb
             IntPtr currentHandle = ADP.IntPtrOffset(buffer, valueOffset);
             IntPtr originalHandle = ADP.IntPtrOffset(buffer, valueOffset + ODB.SizeOf_Variant);
             bool different = NativeOledbWrapper.MemoryCompare(currentHandle, originalHandle, ODB.SizeOf_Variant);
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 // always clear the first structure
                 SafeNativeMethods.VariantClear(currentHandle);
@@ -597,12 +573,10 @@ namespace System.Data.OleDb
             IntPtr currentHandle = ADP.IntPtrOffset(buffer, valueOffset);
             IntPtr originalHandle = ADP.IntPtrOffset(buffer, valueOffset + sizeof(PROPVARIANT));
             bool different = NativeOledbWrapper.MemoryCompare(currentHandle, originalHandle, sizeof(PROPVARIANT));
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
-#endif
             {
                 // always clear the first structure
                 SafeNativeMethods.PropVariantClear(currentHandle);
@@ -626,9 +600,7 @@ namespace System.Data.OleDb
 
             IntPtr value;
             bool mustRelease = false;
-#if !NETCOREAPP
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
             {
                 DangerousAddRef(ref mustRelease);
