@@ -608,12 +608,12 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             {
                 //
                 // This int->long cast is used by a GT_MUL that will be transformed by DecomposeMul into a
-                // GT_LONG_MUL and as a result the high operand produced by the cast will become dead.
+                // GT_MUL_LONG and as a result the high operand produced by the cast will become dead.
                 // Skip cast decomposition so DecomposeMul doesn't need to bother with dead code removal,
                 // especially in the case of sign extending casts that also introduce new lclvars.
                 //
 
-                assert((use.User()->gtFlags & GTF_MUL_64RSLT) != 0);
+                assert(use.User()->Is64RsltMul());
 
                 skipDecomposition = true;
             }
@@ -1541,19 +1541,29 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
 {
     assert(use.IsInitialized());
 
-    GenTree*   tree = use.Def();
-    genTreeOps oper = tree->OperGet();
+    GenTree* tree = use.Def();
 
-    assert(oper == GT_MUL);
-    assert((tree->gtFlags & GTF_MUL_64RSLT) != 0);
+    assert(tree->OperIs(GT_MUL));
+    assert(tree->Is64RsltMul());
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    // We expect both operands to be int->long casts. DecomposeCast specifically
-    // ignores such casts when they are used by GT_MULs.
-    assert((op1->OperGet() == GT_CAST) && (op1->TypeGet() == TYP_LONG));
-    assert((op2->OperGet() == GT_CAST) && (op2->TypeGet() == TYP_LONG));
+    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
+
+    // We expect the first operand to be an int->long cast.
+    // DecomposeCast specifically ignores such casts when they are used by GT_MULs.
+    assert(op1->OperIs(GT_CAST));
+
+    // The second operand can be a cast or a constant.
+    if (!op2->OperIs(GT_CAST))
+    {
+        assert(op2->OperIs(GT_LONG));
+        assert(op2->gtGetOp1()->IsIntegralConst());
+        assert(op2->gtGetOp2()->IsIntegralConst());
+
+        Range().Remove(op2->gtGetOp2());
+    }
 
     Range().Remove(op1);
     Range().Remove(op2);
