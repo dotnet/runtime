@@ -110,13 +110,13 @@ try {
 // abstract all IO into a compact universally available method so that it is consistent and reliable
 const IOHandler = {
 	/** Load js file into project and evaluate it
-	 * @type {(file: string) => Promise<void>} 
+	 * @type {(file: string) => Promise<void> | null} 
 	 * @param {string} file path to the file to load
 	*/
 	load: null,
 	
 	/** Read and return the contents of a file as a string
-	 * @type {(file: string) => Promise<string>} 
+	 * @type {(file: string) => Promise<string> | null} 
 	 * @param {string} file the path to the file to read
 	 * @return {string} the contents of the file
 	*/
@@ -432,7 +432,7 @@ const App = {
 	},
 
 	/** Runs a particular test
-	 * @type {(method_name: string, args: any[], signature: any?) => return number}
+	 * @type {(method_name: string, args: any[]=, signature: any=) => return number}
 	 */
 	call_test_method: function (method_name, args, signature) {
 		// note: arguments here is the array of arguments passsed to this function
