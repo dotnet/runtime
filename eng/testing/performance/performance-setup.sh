@@ -271,9 +271,9 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     mv $wasm_runtime_loc $wasm_dotnet_path
     if [[ "$wasmaot" == "true" ]]; then
         # cp -r $source_directory/!(payload|docs|src/coreclr|src/tests) $wasm_dotnet_path
-        rsync -a --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests
+        rsync -a --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
         # diagnostic logging for testing only, should be removed before PR.
-        ls \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm
+        ls $wasm_dotnet_path
         # --wasmEngine and --customRuntimePack are not used under wasm aot. The related info is found by looking under --runtimeSrcDir
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600" 
     else
