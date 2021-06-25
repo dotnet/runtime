@@ -1,10 +1,10 @@
 {
     "name": "console-sample-in-node",
     "version": "1.0.0",
-    "description": "Runs the MONO WASM Console sample in the NodeJS environment",
+    "description": "Runs the MONO WASM Console AOT Functional Test Sample in the NodeJS environment",
     "main": "runtime.js",
     "scripts": {
-      "test": "node --trace-warnings runtime.js --run Wasm.Console.Sample.dll"
+      "test": "node --trace-warnings runtime.js --run WebAssembly.Console.AOT.Test.dll"
     },
     "author": "Microsoft",
     "license": "MIT",
