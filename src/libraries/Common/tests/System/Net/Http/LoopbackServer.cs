@@ -965,9 +965,9 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
-            public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
+            public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
             {
-                await SendResponseAsync(body).ConfigureAwait(false);
+                await SendResponseAsync(content).ConfigureAwait(false);
             }
 
             public async Task<HttpRequestData> HandleCORSPreFlight(HttpRequestData requestData)

@@ -907,10 +907,10 @@ namespace System.Net.Test.Common
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: false, headers);
         }
 
-        public override Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
         {
             int streamId = requestId == 0 ? _lastStreamId : requestId;
-            return SendResponseBodyAsync(streamId, body, isFinal);
+            return SendResponseBodyAsync(streamId, content, isFinal);
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
