@@ -15,11 +15,6 @@ namespace System.Net.Http
     /// <summary>Provides a state bag of settings for configuring HTTP connections.</summary>
     internal sealed class HttpConnectionSettings
     {
-        private const string Http2SupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT";
-        private const string Http2SupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2Support";
-        private const string Http3DraftSupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT";
-        private const string Http3DraftSupportAppCtxSettingName = "System.Net.SocketsHttpHandler.Http3DraftSupport";
-
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         internal bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
@@ -66,6 +61,12 @@ namespace System.Net.Http
         internal QuicImplementationProvider? _quicImplementationProvider;
 
         internal IDictionary<string, object?>? _properties;
+
+        // Http2 flow control settings:
+        internal bool _disableDynamicHttp2WindowSizing = DisableDynamicHttp2WindowSizing;
+        internal int _maxHttp2StreamWindowSize = MaxHttp2StreamWindowSize;
+        internal double _http2StreamWindowScaleThresholdMultiplier = Http2StreamWindowScaleThresholdMultiplier;
+        internal int _initialHttp2StreamWindowSize = Http2Connection.DefaultInitialWindowSize;
 
         public HttpConnectionSettings()
         {
@@ -119,7 +120,11 @@ namespace System.Net.Http
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
-                _plaintextStreamFilter = _plaintextStreamFilter
+                _plaintextStreamFilter = _plaintextStreamFilter,
+                _disableDynamicHttp2WindowSizing = _disableDynamicHttp2WindowSizing,
+                _maxHttp2StreamWindowSize = _maxHttp2StreamWindowSize,
+                _http2StreamWindowScaleThresholdMultiplier = _http2StreamWindowScaleThresholdMultiplier,
+                _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
@@ -131,55 +136,59 @@ namespace System.Net.Http
             return settings;
         }
 
-        private static bool AllowHttp2
+        // Default to allowing HTTP/2, but enable that to be overridden by an
+        // AppContext switch, or by an environment variable being set to false/0.
+        private static bool AllowHttp2 => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.Http.SocketsHttpHandler.Http2Support",
+            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
+            true);
+
+        // Default to allowing draft HTTP/3, but enable that to be overridden
+        // by an AppContext switch, or by an environment variable being set to false/0.
+        private static bool AllowDraftHttp3 => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.SocketsHttpHandler.Http3DraftSupport",
+            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT",
+            true);
+
+        // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
+        private static bool DisableDynamicHttp2WindowSizing => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamic2WindowSizing",
+            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2FLOWCONTROL_DISABLEDYNAMICWINDOWSIZING",
+            false);
+
+        // The maximum size of the HTTP/2 stream receive window. Defaults to 16 MB.
+        private static int MaxHttp2StreamWindowSize
         {
             get
             {
-                // Default to allowing HTTP/2, but enable that to be overridden by an
-                // AppContext switch, or by an environment variable being set to false/0.
+                int value = RuntimeSettingParser.ParseInt32EnvironmentVariableValue(
+                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE",
+                    HttpHandlerDefaults.DefaultHttp2MaxStreamWindowSize);
 
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(Http2SupportAppCtxSettingName, out bool allowHttp2))
+                // Disallow small values:
+                if (value < Http2Connection.DefaultInitialWindowSize)
                 {
-                    return allowHttp2;
+                    value = Http2Connection.DefaultInitialWindowSize;
                 }
-
-                // AppContext switch wasn't used. Check the environment variable.
-                string? envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Disallow HTTP/2 protocol.
-                    return false;
-                }
-
-                // Default to a maximum of HTTP/2.
-                return true;
+                return value;
             }
         }
 
-        private static bool AllowDraftHttp3
+        // Defaults to 1.0. Higher values result in shorter window, but slower downloads.
+        private static double Http2StreamWindowScaleThresholdMultiplier
         {
             get
             {
-                // Default to allowing draft HTTP/3, but enable that to be overridden
-                // by an AppContext switch, or by an environment variable being set to false/0.
+                double value = RuntimeSettingParser.ParseDoubleEnvironmentVariableValue(
+                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER",
+                    HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier);
 
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(Http3DraftSupportAppCtxSettingName, out bool allowHttp3))
+                // Disallow negative values:
+                if (value < 0)
                 {
-                    return allowHttp3;
+                    value = HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier;
                 }
-
-                // AppContext switch wasn't used. Check the environment variable.
-                string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Disallow HTTP/3 protocol for HTTP endpoints.
-                    return false;
-                }
-
-                // Default to allow.
-                return true;
+                return value;
             }
         }
 

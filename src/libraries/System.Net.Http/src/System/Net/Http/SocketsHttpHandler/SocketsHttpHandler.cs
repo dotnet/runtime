@@ -55,6 +55,29 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Defines the initial HTTP2 stream receive window size for all connections opened by the this <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <remarks>
+        /// Larger the values may lead to faster download speed, but potentially higher memory footprint.
+        /// The property must be set to a value 65535 and the configured maximum window size, which is 16777216 by default.
+        /// </remarks>
+        public int InitialHttp2StreamWindowSize
+        {
+            get => _settings._initialHttp2StreamWindowSize;
+            set
+            {
+                if (value < Http2Connection.DefaultInitialWindowSize || value > _settings._maxHttp2StreamWindowSize)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(InitialHttp2StreamWindowSize),
+                        SR.Format(SR.net_http_http2_invalidinitialstreamwindowsize, Http2Connection.DefaultInitialWindowSize, _settings._maxHttp2StreamWindowSize));
+                }
+                CheckDisposedOrStarted();
+                _settings._initialHttp2StreamWindowSize = value;
+            }
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

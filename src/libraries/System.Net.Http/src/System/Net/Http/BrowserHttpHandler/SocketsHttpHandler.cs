@@ -25,6 +25,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public int InitialHttp2StreamWindowSize
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         [AllowNull]
         public CookieContainer CookieContainer
         {

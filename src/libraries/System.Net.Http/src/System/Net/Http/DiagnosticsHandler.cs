@@ -276,25 +276,7 @@ namespace System.Net.Http
 
             public static readonly bool s_activityPropagationEnabled = GetEnableActivityPropagationValue();
 
-            private static bool GetEnableActivityPropagationValue()
-            {
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(EnableActivityPropagationAppCtxSettingName, out bool enableActivityPropagation))
-                {
-                    return enableActivityPropagation;
-                }
-
-                // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-                string? envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Suppress Activity propagation.
-                    return false;
-                }
-
-                // Defaults to enabling Activity propagation.
-                return true;
-            }
+            private static bool GetEnableActivityPropagationValue() => RuntimeSettingParser.QueryRuntimeSettingSwitch(EnableActivityPropagationAppCtxSettingName, EnableActivityPropagationEnvironmentVariableSettingName, true);
 
             public static readonly DiagnosticListener s_diagnosticListener =
                 new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);

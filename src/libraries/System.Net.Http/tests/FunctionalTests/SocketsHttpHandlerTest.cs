@@ -1928,6 +1928,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(HttpClientHandlerTestBase.DefaultInitialWindowSize)]
+        [InlineData(1048576)]
+        public void InitialHttp2StreamWindowSize_Roundtrips(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            handler.InitialHttp2StreamWindowSize = value;
+            Assert.Equal(value, handler.InitialHttp2StreamWindowSize);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(65534)]
+        [InlineData(32 * 1024 * 1024)]
+        public void InitialHttp2StreamWindowSize_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.InitialHttp2StreamWindowSize = value);
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AfterDisposeSendAsync_GettersUsable_SettersThrow(bool dispose)
@@ -1966,6 +1987,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
+                Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
@@ -1987,6 +2009,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
                 Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.PlaintextStreamFilter = (context, token) => default);
+                Assert.Throws(expectedExceptionType, () => handler.InitialHttp2StreamWindowSize = 128 * 1024);
             }
         }
     }
@@ -2138,11 +2161,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 server.AllowMultipleConnections = true;
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams, setupAutomaticPingResponse: true).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, setupAutomaticPingResponse: true).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, setupAutomaticPingResponse: true).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
                 Task<(int Count, int LastStreamId)>[] handleRequestTasks = new[] {
@@ -2163,9 +2186,9 @@ namespace System.Net.Http.Functional.Tests
                 //Fill all connection1's stream slots
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
-                Http2LoopbackConnection connection3 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                Http2LoopbackConnection connection3 = await PrepareConnection(server, client, MaxConcurrentStreams, setupAutomaticPingResponse: true).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                Http2LoopbackConnection connection4 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                Http2LoopbackConnection connection4 = await PrepareConnection(server, client, MaxConcurrentStreams, setupAutomaticPingResponse: true).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
                 Task<(int Count, int LastStreamId)>[] finalHandleTasks = new[] {
@@ -2265,10 +2288,14 @@ namespace System.Net.Http.Functional.Tests
             SslOptions = { RemoteCertificateValidationCallback = delegate { return true; } }
         };
 
-        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarmUpTasks = 1)
+        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarmUpTasks = 1, bool setupAutomaticPingResponse = false)
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
+            if (setupAutomaticPingResponse)
+            {
+                connection.SetupAutomaticPingResponse(); // Respond to RTT PING frames
+            }
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
