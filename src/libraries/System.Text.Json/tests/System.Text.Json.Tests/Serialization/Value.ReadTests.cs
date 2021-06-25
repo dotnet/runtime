@@ -451,6 +451,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("23:59:59")]
+        [InlineData("\\u0032\\u0033\\u003A\\u0035\\u0039\\u003A\\u0035\\u0039", "23:59:59")]
         [InlineData("23:59:59.9", "23:59:59.9000000")]
         [InlineData("23:59:59.9999999")]
         [InlineData("1:00:00", "01:00:00")] // 'g' Format
@@ -486,6 +487,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("24:00:00")]
+        [InlineData("\\u0032\\u0034\\u003A\\u0030\\u0030\\u003A\\u0030\\u0030")]
         [InlineData("00:60:00")]
         [InlineData("00:00:60")]
         [InlineData("00:00:00.00000009")]

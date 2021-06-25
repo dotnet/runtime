@@ -11,6 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private const int MinimumTimeSpanFormatLength = 7; // h:mm:ss
         private const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
+        private const int MaximumEscapedTimeSpanFormatLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumTimeSpanFormatLength;
 
         public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -19,6 +20,9 @@ namespace System.Text.Json.Serialization.Converters
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
+            bool isEscaped = reader._stringHasEscaping;
+            int maximumLength = isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength;
+
             ReadOnlySpan<byte> source = stackalloc byte[0];
 
             if (reader.HasValueSequence)
@@ -26,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
                 ReadOnlySequence<byte> valueSequence = reader.ValueSequence;
                 long sequenceLength = valueSequence.Length;
 
-                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, MinimumTimeSpanFormatLength, MaximumTimeSpanFormatLength))
+                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, MinimumTimeSpanFormatLength, maximumLength))
                 {
                     throw ThrowHelper.GetFormatException();
                 }
@@ -40,10 +44,24 @@ namespace System.Text.Json.Serialization.Converters
             {
                 source = reader.ValueSpan;
 
-                if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumTimeSpanFormatLength, MaximumTimeSpanFormatLength))
+                if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumTimeSpanFormatLength, maximumLength))
                 {
                     throw ThrowHelper.GetFormatException();
                 }
+            }
+
+            if (isEscaped)
+            {
+                int backslash = source.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(backslash != -1);
+
+                Span<byte> sourceUnescaped = stackalloc byte[source.Length];
+
+                JsonReaderHelper.Unescape(source, sourceUnescaped, backslash, out int written);
+                Debug.Assert(written > 0);
+
+                source = sourceUnescaped.Slice(0, written);
+                Debug.Assert(!source.IsEmpty);
             }
 
             bool result = Utf8Parser.TryParse(source, out TimeSpan tmpValue, out int bytesConsumed, 'c');
