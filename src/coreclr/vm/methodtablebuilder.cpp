@@ -416,7 +416,7 @@ MethodTableBuilder::ExpandApproxInterface(
     // to have found all of the interfaces that the type implements, and to place them in the interface list itself. Also
     // we can assume no ambiguous interfaces
     // Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-   if (!(GetModule()->IsSystem() && IsValueClass()))
+    if (!(GetModule()->IsSystem() && IsValueClass()))
     {
         // Make sure to pass in the substitution from the new itf type created above as
         // these methods assume that substitutions are allocated in the stacking heap,
@@ -9146,9 +9146,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
-                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the instantiations to be exactly type variables
-                        // the current type
-
+                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the 
+                        // instantiations to be exactly simple type variables
                         if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()))
                         {
                             pItfPossiblyApprox = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();

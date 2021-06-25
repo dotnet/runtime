@@ -990,7 +990,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *pMTInterfaceMapOwner) const
+                 MethodTable *               pMTInterfaceMapOwner) const
 {
     CONTRACT(TypeHandle)
     {
