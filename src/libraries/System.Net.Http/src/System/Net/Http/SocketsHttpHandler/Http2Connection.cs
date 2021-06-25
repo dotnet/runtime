@@ -1999,6 +1999,8 @@ namespace System.Net.Http
 
         private void ProcessPingAck(long payload)
         {
+            // RttEstimator is using negative values in PING payloads.
+            // _keepAlivePingPayload is always non-negative.
             if (payload < 0) // RTT ping
             {
                 _rttEstimator.OnPingAckReceived(payload);
