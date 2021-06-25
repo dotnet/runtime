@@ -488,21 +488,10 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Argument_DestinationTooShort);
             }
 
-            if (written == decryptBuffer.Length)
-            {
+            // Array.Resize will no-op if the array does not need to be resized.
+            Array.Resize(ref decryptBuffer, written);
                 return decryptBuffer;
             }
-            else if (written == 0)
-            {
-                return Array.Empty<byte>();
-            }
-            else
-            {
-                byte[] returnBuffer = GC.AllocateUninitializedArray<byte>(written);
-                decryptBuffer.AsSpan(0, written).CopyTo(returnBuffer);
-                return returnBuffer;
-            }
-        }
 
         /// <summary>
         ///   Decrypts data into the specified buffer, using ECB mode with the specified padding mode.
