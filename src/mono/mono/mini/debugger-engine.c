@@ -357,13 +357,6 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 	insert_breakpoint (seq_points, domain, ji, bp, error);
 }
 
-typedef struct {
-	MonoBreakpoint *bp;
-	GPtrArray *methods;
-	GPtrArray *method_domains;
-	GPtrArray *method_seq_points;
-} CollectDomainData;
-
 /*
  * mono_de_set_breakpoint:
  *
