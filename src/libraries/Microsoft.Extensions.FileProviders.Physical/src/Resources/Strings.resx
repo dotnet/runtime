@@ -129,4 +129,7 @@
   <data name="UnexpectedFileSystemInfo" xml:space="preserve">
     <value>Unexpected type of FileSystemInfo</value>
   </data>
+  <data name="FileExcluded" xml:space="preserve">
+    <value>The file {0} has been excluded.</value>
+  </data>
 </root>

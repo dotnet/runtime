@@ -34,6 +34,18 @@ namespace Microsoft.Extensions.FileProviders.Internal
 }
 namespace Microsoft.Extensions.FileProviders.Physical
 {
+    public partial class ExcludedFileInfo : Microsoft.Extensions.FileProviders.IFileInfo
+    {
+        public ExcludedFileInfo(System.IO.FileInfo info, ExclusionFilters matchingFilter) { }
+        public Microsoft.Extensions.FileProviders.Physical.ExclusionFilters MatchingFilter { get { throw null; } }
+        public bool Exists { get { throw null; } }
+        public bool IsDirectory { get { throw null; } }
+        public System.DateTimeOffset LastModified { get { throw null; } }
+        public long Length { get { throw null; } }
+        public string Name { get { throw null; } }
+        public string PhysicalPath { get { throw null; } }
+        public System.IO.Stream CreateReadStream() { throw null; }
+    }
     [System.FlagsAttribute]
     public enum ExclusionFilters
     {
@@ -42,6 +54,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         Hidden = 2,
         System = 4,
         Sensitive = 7,
+    }
+    public partial class FileExcludedException : System.Exception
+    {
+        public FileExcludedException(string message, ExclusionFilters matchingFilter) { }
+        public Microsoft.Extensions.FileProviders.Physical.ExclusionFilters MatchingFilter { get { throw null; } }
     }
     public partial class PhysicalDirectoryInfo : Microsoft.Extensions.FileProviders.IFileInfo
     {

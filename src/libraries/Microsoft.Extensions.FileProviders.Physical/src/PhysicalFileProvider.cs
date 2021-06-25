@@ -266,9 +266,10 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             var fileInfo = new FileInfo(fullPath);
-            if (FileSystemInfoHelper.IsExcluded(fileInfo, _filters))
+            var matchingExclusion = FileSystemInfoHelper.FindMatchingExclusionFilter(fileInfo, _filters);
+            if (matchingExclusion != ExclusionFilters.None)
             {
-                return new NotFoundFileInfo(subpath);
+                return new ExcludedFileInfo(fileInfo, matchingExclusion);
             }
 
             return new PhysicalFileInfo(fileInfo);
