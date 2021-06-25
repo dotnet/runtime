@@ -241,9 +241,32 @@
 
   <!-- Setup NPM packages for NodeJS publish/builds -->
   <Target Name="_NodePrep" AfterTargets="_AfterWasmBuildApp" Condition="'$(ForNode)' == 'true'">
+    <!-- If package.json is in the directory copy it to new output directory -->
     <Copy SourceFiles="package.json"
         DestinationFolder="$(WasmAppDir)"
-        SkipUnchangedFiles="true" />
+        SkipUnchangedFiles="true" 
+        Condition="Exists('package.json')"/>
+
+    <!-- Otherwise create a new file in th eoutput directory with the defaults -->
+     <WriteLinesToFile
+      File="$(WasmAppDir)\package.json"
+      Lines='{
+          "name": "mono-wasm-test",
+          "version": "1.0.0",
+          "author": "Microsoft",
+          "license": "MIT",
+          "dependencies": {
+            "fs": "0.0.1-security",
+            "path": "^0.12.7",
+            "perf_hooks": "0.0.1",
+            "ws": "^7.5.0"
+         }
+      }'
+      Overwrite="true"
+      Condition="!Exists('package.json')">
+    </WriteLinesToFile>
+    
+    <!-- npm install -->
     <Exec Command="npm install --cwd $(WasmAppDir) --prefix $(WasmAppDir)"
         IgnoreStandardErrorWarningFormat="true" />
   </Target>
