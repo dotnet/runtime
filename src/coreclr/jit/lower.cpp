@@ -3097,6 +3097,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             varDsc = fldDsc;
         }
     }
+
+    // TODO-CQ: the condition could be improved for the struct types, for example,
+    // /--*  CALL      simd8  hackishModuleName.hackishMethodName
+    // *  STORE_LCL_VAR struct<HVA64_01[Byte], 8> V03 tmp1
+    // does not need a bitcast because the struct enreg type is SIMD8.
     if ((varTypeUsesFloatReg(lclStore) != varTypeUsesFloatReg(src)) && !src->TypeIs(TYP_STRUCT))
     {
         GenTree* bitcast = comp->gtNewBitCastNode(lclStore->TypeGet(), src);
