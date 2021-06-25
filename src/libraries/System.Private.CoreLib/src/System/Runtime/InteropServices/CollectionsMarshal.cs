@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -17,6 +18,25 @@ namespace System.Runtime.InteropServices
         /// <param name="list">The list to get the data view over.</param>
         public static Span<T> AsSpan<T>(List<T>? list)
             => list is null ? default : new Span<T>(list._items, 0, list._size);
+
+        /// <summary>
+        /// Gets a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/>.
+        /// </summary>
+        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
+        /// <param name="key">The key used for lookup.</param>
+        /// <remarks>Items should not be added or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
+        /// <exception cref="KeyNotFoundException">Thrown when <paramref name="key"/> does not exist in the <paramref name="dictionary"/>.</exception>
+        public static ref TValue GetValueRef<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
+        {
+            ref TValue valueRef = ref dictionary.FindValue(key);
+
+            if (Unsafe.IsNullRef(ref valueRef))
+            {
+                ThrowHelper.ThrowKeyNotFoundException(key);
+            }
+
+            return ref valueRef;
+        }
 
         /// <summary>
         /// Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/> or a ref null if it does not exist in the <paramref name="dictionary"/>.
