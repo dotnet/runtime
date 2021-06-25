@@ -269,8 +269,7 @@ mono_get_seq_points (MonoMethod *method)
 		mono_error_assert_ok (error);
 	}
 
-	// FIXME:
-	jit_mm = get_default_jit_mm ();
+	jit_mm = jit_mm_for_method (method);
 	jit_mm_lock (jit_mm);
 	seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, method);
 	if (!seq_points && method->is_inflated) {
