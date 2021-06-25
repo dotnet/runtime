@@ -71,7 +71,7 @@
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
       <_EmccCommonFlags Include="-emit-llvm" />
 
-      <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(ForNode)' == 'True' or '$(WasmEnableES6)' != 'false'"/>
+      <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(ForNode)' == 'true' or '$(WasmEnableES6)' != 'false'"/>
 
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
     </ItemGroup>

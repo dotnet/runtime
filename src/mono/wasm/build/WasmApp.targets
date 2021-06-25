@@ -159,8 +159,8 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 
-    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' != 'True'" />
-    <CallTarget Targets="_GenerateRunNodeScript" Condition="'$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' == 'True'" />
+    <CallTarget Targets="_GenerateRunV8Script" Condition="('$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' != 'true') or '$(WasmGenerateRunV8Script)' == 'true'" />
+    <CallTarget Targets="_GenerateRunNodeScript" Condition="('$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' == 'true') or '$(WasmGenerateRunNodeScript)' == 'true'" />
   </Target>
 
   <Target Name="_GenerateRunV8Script">
@@ -240,7 +240,7 @@
   </Target>
 
   <!-- Setup NPM packages for NodeJS publish/builds -->
-  <Target Name="_NodePrep" AfterTargets="_AfterWasmBuildApp" Condition="'$(ForNode)' == 'True'">
+  <Target Name="_NodePrep" AfterTargets="_AfterWasmBuildApp" Condition="'$(ForNode)' == 'true'">
     <Copy SourceFiles="package.json"
         DestinationFolder="$(WasmAppDir)"
         SkipUnchangedFiles="true" />

@@ -135,7 +135,7 @@ namespace Wasm.Build.Tests
               <PropertyGroup>
                 <TargetFramework>{s_targetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+                <WasmGenerateRunScript>true</WasmGenerateRunScript>
                 <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>

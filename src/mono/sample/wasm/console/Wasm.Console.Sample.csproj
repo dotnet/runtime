@@ -9,6 +9,6 @@
     <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
-  <Target Name="RunSample" Condition="'$(ForNode)' != 'True'" DependsOnTargets="RunSampleWithV8" />
-  <Target Name="RunSample" Condition="'$(ForNode)' == 'True'" DependsOnTargets="RunSampleWithNode" />
+  <Target Name="RunSample" Condition="'$(ForNode)' != 'true'" DependsOnTargets="RunSampleWithV8" />
+  <Target Name="RunSample" Condition="'$(ForNode)' == 'true'" DependsOnTargets="RunSampleWithNode" />
 </Project>
