@@ -431,6 +431,9 @@
     <ItemGroup Condition="'$(MonoComponentsStatic)' == 'true'">
       <_MonoCMakeArgs Include="-DSTATIC_COMPONENTS=1" />
     </ItemGroup>
+    <ItemGroup>
+      <_MonoCMakeArgs Include="-DMONO_COMPONENTS_RID=$(TargetOS)-$(TargetArchitecture)" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>

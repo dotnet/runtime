@@ -1,10 +1,10 @@
 <Project>
-  <PropertyGroup>
-    <_MonoRuntimeComponentLinking>${TemplateMonoRuntimeComponentLinking}</_MonoRuntimeComponentLinking>
-    <_MonoRuntimeComponentSharedLibExt>${TemplateMonoRuntimeComponentSharedLibExt}</_MonoRuntimeComponentSharedLibExt>
-    <_MonoRuntimeComponentStaticLibExt>${TemplateMonoRuntimeComponentStaticLibExt}</_MonoRuntimeComponentStaticLibExt>
-  </PropertyGroup>
   <ItemGroup>
-    <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" />
+    <_MonoRuntimeComponentLinking Include="${TemplateMonoRuntimeComponentLinking}" RuntimeIdentifier="${TemplateRuntimeIdentifier}" />
+    <_MonoRuntimeComponentSharedLibExt Include="${TemplateMonoRuntimeComponentSharedLibExt}" RuntimeIdentifier="${TemplateRuntimeIdentifier}" />
+    <_MonoRuntimeComponentStaticLibExt Include="${TemplateMonoRuntimeComponentStaticLibExt}" RuntimeIdentifier="${TemplateRuntimeIdentifier}" />
+  </ItemGroup>
+  <ItemGroup>
+    <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" RuntimeIdentifier="${TemplateRuntimeIdenfifier}" />
   </ItemGroup>
 </Project>

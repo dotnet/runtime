@@ -1,0 +1,15 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Provides the tasks+targets, for consumption by mono-based workloads</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\component-manifest.targets" TargetPath="Sdk" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

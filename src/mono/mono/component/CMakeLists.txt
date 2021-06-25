@@ -82,6 +82,7 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
 
 #define a library for each component and component stub
 function(define_component_libs)
+  # NOTE: keep library naming pattern in sync with component-manifest.targets
   if (NOT DISABLE_LIBS)
     foreach(component IN LISTS components)
       add_library("mono-component-${component}-static" STATIC $<TARGET_OBJECTS:${component}-objects>)
@@ -121,6 +122,7 @@ endforeach()
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   # define a shared library for each component
   foreach(component IN LISTS components)
+    # NOTE: keep library naming pattern in sync with component-manifest.targets
     if(HOST_WIN32)
       add_library("mono-component-${component}" SHARED "${${component}-sources}")
       target_compile_definitions("mono-component-${component}" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
@@ -175,6 +177,7 @@ endforeach()
 if(NOT MONO_CROSS_COMPILE)
   set(TemplateMonoRuntimeComponentSharedLibExt "${CMAKE_SHARED_LIBRARY_SUFFIX}")
   set(TemplateMonoRuntimeComponentStaticLibExt "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set(TemplateRuntimeIdentifier "${MONO_COMPONENTS_RID}")
   if(DISABLE_COMPONENTS)
     set(TemplateMonoRuntimeComponentLinking "static")
     set(TemplateMonoRuntimeAvailableComponents "")
@@ -189,8 +192,6 @@ if(NOT MONO_CROSS_COMPILE)
   # Write a component-manifest.props file in the artifacts/obj/mono/<host>/ directory
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
   configure_file( "${MONO_COMPONENT_PATH}/component-manifest.props.in" "../../component-manifest.props")
-  # without the .. this goes to artifacts/obj/mono/<host>/out/
-  install(FILES "${MONO_COMPONENT_PATH}/component-manifest.targets" DESTINATION ..)
 endif()
 
 # component tests
