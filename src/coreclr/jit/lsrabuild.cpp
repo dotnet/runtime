@@ -2333,6 +2333,15 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+        // For frame poisoning we generate code into scratch BB right after prolog since
+        // otherwise the prolog might become too large. In this case we will put the poison immediate
+        // into the scratch register, so it will be killed here.
+        if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
+        {
+            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            currentLoc += 2;
+        }
+
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange)
         {

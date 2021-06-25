@@ -12553,18 +12553,8 @@ void CodeGen::genSetRegsModifiedForPoisoning()
 //   so we expect that this reg is not live.
 void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 {
-#if defined(TARGET_XARCH)
-    const regNumber immRegNum = REG_EAX;
-#elif defined(TARGET_ARM)
-    const regNumber immRegNum = REG_R4;
-#elif defined(TARGET_ARM64)
-    const regNumber immRegNum = REG_R9;
-#else
-    return;
-#endif
-
     assert(compiler->compShouldPoisonFrame());
-    assert((regLiveIn & genRegMask(immRegNum)) == 0);
+    assert((regLiveIn & genRegMask(REG_SCRATCH)) == 0);
 
     // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
     // we can fit.
@@ -12582,9 +12572,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         if (!hasPoisonImm)
         {
 #ifdef TARGET_64BIT
-            instGen_Set_Reg_To_Imm(EA_8BYTE, immRegNum, (ssize_t)0xcccccccccccccccc);
+            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd, TYP_LONG);
 #else
-            instGen_Set_Reg_To_Imm(EA_4BYTE, immRegNum, (ssize_t)0xcccccccc);
+            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcd, TYP_INT);
 #endif
             hasPoisonImm = true;
         }
@@ -12603,14 +12593,14 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 #ifdef TARGET_64BIT
             if ((offs & 7) == 0 && end - offs >= 8)
             {
-                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, immRegNum, (int)varNum, offs - addr);
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
                 offs += 8;
                 continue;
             }
 #endif
 
             assert((offs & 3) == 0 && end - offs >= 4);
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, immRegNum, (int)varNum, offs - addr);
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
             offs += 4;
         }
     }
