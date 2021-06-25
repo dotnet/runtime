@@ -271,24 +271,31 @@ enable the workload to construct a runtime for various scenarios.
 
 For the target RID, we expose:
 
-- `$(_MonoRuntimeComponentLinking)` set to either `'static'` or `'dynamic'`
-  depending on whether the current runtime pack for the current target includes
-  runtime components as static archives or as shared libraries, respectively.
-- `$(_MonoRuntimeComponentSharedLibExt)` and `$(_MonoRuntimeComponentStaticLibExt)` set to the file extension of the runtime components for the current target (ie, `'.a', '.so', '.dylib'` etc).
-- `@(_MonoRuntimeAvailableComponents)` a list of component names without the
-  `lib` prefix (if any) or file extensions.  For example: `'hot_reload;
-  diagnostics_tracing'`.
+- `@(_MonoRuntimeComponentLinking)` set to either `'static'` or `'dynamic'` depending on whether the
+  current runtime pack for the current target includes runtime components as static archives or as
+  shared libraries, respectively.
+- `@(_MonoRuntimeComponentSharedLibExt)` and `@(_MonoRuntimeComponentStaticLibExt)` set to the file
+  extension of the runtime components for the current target (ie, `'.a', '.so', '.dylib'` etc).
+- `@(_MonoRuntimeAvailableComponents)` a list of component names without the `lib` prefix (if any)
+  or file extensions.  For example: `'hot_reload; diagnostics_tracing'`.
+
+Each of the above item lists has `RuntimeIdentifier` metadata.  For technical reasons the mono
+workload will provide a single `@(_MonoRuntimeAvailableComponent)` item list for all platforms.  We
+use the `RuntimeIdentifier` metadata to filter out the details applicable for the current platform.
+
 - The target `_MonoSelectRuntimeComponents` that has the following inputs and outputs:
-  - input `@(_MonoComponent)` : a list of components that a workload wants to use for the current app.  It is an error
-    if this specifies any unknown component name.
-  - output `@(_MonoRuntimeSelectedComponents)` and `@(_MonoRuntimeSelectedStubComponents)` The names of the components
-    that were (resp, were not) selected.  For example `'hot_reload; diagnostics_tracing'`.  Each item has two metadata
-    properties `ComponentLib` and `ComponentStubLib` (which may be empty) that specify the name of the static or dynamic
-    library of the compponent.  This is not the main output of the target, it's primarily for debugging.
-  - output `@(_MonoRuntimeComponentLink)` a list of library names (relative to the `native/` subdirectory of the runtime
-    pack) that (for dynamic components) must be placed next to the runtime in the application bundle, or (for static
-    components) that must be linked with the runtime to enable the components' functionality.  Each item in the list has
-    metadata `ComponentName` (e.g. `'hot_reload'`), `IsStub` (`true` or `false`), `Linking` (`'static'` or `'dynamic'`).
-    This output should be used by the workloads when linking the app and runtime.
+  - input `@(_MonoComponent)` : a list of components that a workload wants to use for the current
+    app.  It is an error if this specifies any unknown component name.
+  - output `@(_MonoRuntimeSelectedComponents)` and `@(_MonoRuntimeSelectedStubComponents)` The names
+    of the components that were (resp, were not) selected.  For example `'hot_reload;
+    diagnostics_tracing'`.  Each item has two metadata properties `ComponentLib` and
+    `ComponentStubLib` (which may be empty) that specify the name of the static or dynamic library
+    of the compponent.  This is not the main output of the target, it's primarily for debugging.
+  - output `@(_MonoRuntimeComponentLink)` a list of library names (relative to the `native/`
+    subdirectory of the runtime pack) that (for dynamic components) must be placed next to the
+    runtime in the application bundle, or (for static components) that must be linked with the
+    runtime to enable the components' functionality.  Each item in the list has metadata
+    `ComponentName` (e.g. `'hot_reload'`), `IsStub` (`true` or `false`), `Linking` (`'static'` or
+    `'dynamic'`).  This output should be used by the workloads when linking the app and runtime.
 
 
