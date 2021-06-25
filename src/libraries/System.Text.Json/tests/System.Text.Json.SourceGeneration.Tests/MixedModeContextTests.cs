@@ -14,7 +14,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(WeatherForecastWithPOCOs), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(EmptyPoco), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTemps), GenerationMode = JsonSourceGenerationMode.Serialization)]
-    [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.Default)]
     [JsonSerializable(typeof(MyType2), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -83,7 +83,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
 
-            if (!Diagnostics.Debugger.IsAttached) { Diagnostics.Debugger.Launch(); };
             string json = JsonSerializer.Serialize(expected, DefaultContext.WeatherForecastWithPOCOs);
             JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.WeatherForecastWithPOCOs), typeof(HighLowTemps));
 

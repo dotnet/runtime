@@ -310,18 +310,19 @@ namespace System.Text.Json.SourceGeneration
                         NameEqualsSyntax? propertyNameNode = childNodes.First() as NameEqualsSyntax;
                         Debug.Assert(propertyNameNode != null);
 
-                        SyntaxNode? propertyValueMode = childNodes.ElementAtOrDefault(1);
+                        SyntaxNode? propertyValueNode = childNodes.ElementAtOrDefault(1);
                         string optionName = propertyNameNode.Name.Identifier.ValueText;
 
                         if (optionName == nameof(JsonSerializableAttribute.TypeInfoPropertyName))
                         {
-                            typeInfoPropertyName = propertyValueMode.GetFirstToken().ValueText;
+                            typeInfoPropertyName = propertyValueNode.GetFirstToken().ValueText;
                         }
                         else if (optionName == nameof(JsonSerializableAttribute.GenerationMode))
                         {
-                            if (Enum.TryParse<JsonSourceGenerationMode>(propertyValueMode.GetLastToken().ValueText, out JsonSourceGenerationMode value))
+                            JsonSourceGenerationMode? mode = GetJsonSourceGenerationModeEnumVal(propertyValueNode);
+                            if (mode.HasValue)
                             {
-                                generationMode = value;
+                                generationMode = mode.Value;
                             }
                         }
                     }
@@ -348,10 +349,10 @@ namespace System.Text.Json.SourceGeneration
                     typeGenerationSpec.TypeInfoPropertyName = typeInfoPropertyName;
                 }
 
-                ClassType classType = typeGenerationSpec.ClassType;
-                CollectionType collectionType = typeGenerationSpec.CollectionType;
                 switch (generationMode)
                 {
+                    case JsonSourceGenerationMode.Default:
+                        break;
                     case JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization:
                         typeGenerationSpec.GenerateSerializationLogic = typeGenerationSpec.FastPathIsSupported();
                         typeGenerationSpec.GenerateMetadata = true;
@@ -369,6 +370,24 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return typeGenerationSpec;
+            }
+
+            private static JsonSourceGenerationMode? GetJsonSourceGenerationModeEnumVal(SyntaxNode propertyValueMode)
+            {
+                IEnumerable<string> enumTokens = propertyValueMode
+                    .DescendantTokens()
+                    .Where(token => IsValidEnumIdentifier(token.ValueText))
+                    .Select(token => token.ValueText);
+                string enumAsStr = string.Join(",", enumTokens);
+
+                if (Enum.TryParse<JsonSourceGenerationMode>(enumAsStr, out JsonSourceGenerationMode value))
+                {
+                    return value;
+                }
+
+                return null;
+
+                static bool IsValidEnumIdentifier(string token) => token != nameof(JsonSourceGenerationMode) && token != "." && token != "|";
             }
 
             private static JsonSourceGenerationOptionsAttribute? GetSerializerOptions(AttributeSyntax? attributeSyntax)
@@ -452,9 +471,10 @@ namespace System.Text.Json.SourceGeneration
                             break;
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
                             {
-                                if (Enum.TryParse<JsonSourceGenerationMode>(propertyValueStr, out JsonSourceGenerationMode value))
+                                JsonSourceGenerationMode? mode = GetJsonSourceGenerationModeEnumVal(propertyValueNode);
+                                if (mode.HasValue)
                                 {
-                                    options.GenerationMode = value;
+                                    options.GenerationMode = mode.Value;
                                 }
                             }
                             break;

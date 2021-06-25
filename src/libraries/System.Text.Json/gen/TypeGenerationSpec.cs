@@ -28,7 +28,7 @@ namespace System.Text.Json.SourceGeneration
         private bool? _generateMetadata;
         public bool GenerateMetadata
         {
-            get => _generateMetadata ??= (JsonSourceGenerationMode.Metadata & _generationMode) != 0;
+            get => _generateMetadata ??= GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);
             // Optionally set during type metadata computation.
             set => _generateMetadata = value;
         }
@@ -36,7 +36,7 @@ namespace System.Text.Json.SourceGeneration
         private bool? _generateSerializationLogic;
         public bool GenerateSerializationLogic
         {
-            get => _generateSerializationLogic ??= ((JsonSourceGenerationMode.Serialization & _generationMode) != 0) && FastPathIsSupported();
+            get => _generateSerializationLogic ??= GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
             // Optionally set during type metadata computation.
             set => _generateSerializationLogic = value;
         }
@@ -117,5 +117,7 @@ namespace System.Text.Json.SourceGeneration
 
             return false;
         }
+
+        private bool GenerationModeIsSpecified(JsonSourceGenerationMode mode) => _generationMode == JsonSourceGenerationMode.Default || (mode & _generationMode) != 0;
     }
 }

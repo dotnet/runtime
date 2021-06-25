@@ -51,8 +51,8 @@ namespace System.Text.Json.Serialization
         public bool WriteIndented { get; set; }
 
         /// <summary>
-        /// Specifies the source generation mode.
+        /// Specifies the source generation mode for types that don't explicitly set the mode with <see cref="JsonSerializableAttribute.GenerationMode"/>.
         /// </summary>
-        public JsonSourceGenerationMode GenerationMode { get; set; } = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
+        public JsonSourceGenerationMode GenerationMode { get; set; }
     }
 }

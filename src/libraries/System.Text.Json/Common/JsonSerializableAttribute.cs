@@ -36,7 +36,8 @@ namespace System.Text.Json.Serialization
         public string? TypeInfoPropertyName { get; set; }
 
         /// <summary>
-        /// Determines what the source generator should generate for the type.
+        /// Determines what the source generator should generate for the type. If the value is <see cref="JsonSourceGenerationMode.Default"/>,
+        /// then the setting specified on <see cref="JsonSourceGenerationOptionsAttribute.GenerationMode"/> will be used.
         /// </summary>
         public JsonSourceGenerationMode GenerationMode { get; set; }
     }

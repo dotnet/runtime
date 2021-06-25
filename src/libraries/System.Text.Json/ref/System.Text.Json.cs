@@ -831,7 +831,7 @@ namespace System.Text.Json.Serialization
     [System.FlagsAttribute]
     public enum JsonSourceGenerationMode
     {
-        Unspecified = 0,
+        Default = 0,
         Metadata = 1,
         Serialization = 2,
     }
