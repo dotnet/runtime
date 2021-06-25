@@ -2,14 +2,13 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-    <WasmGenerateRunNodeScript>true</WasmGenerateRunNodeScript>
+    <WasmGenerateRunScript>true</WasmGenerateRunScript>
   </PropertyGroup>
 
   <PropertyGroup>
     <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
-  <Target Name="RunSampleNode" DependsOnTargets="RunSampleWithNode" />
+  <Target Name="RunSample" Condition="'$(ForNode)' != 'True'" DependsOnTargets="RunSampleWithV8" />
+  <Target Name="RunSample" Condition="'$(ForNode)' == 'True'" DependsOnTargets="RunSampleWithNode" />
 </Project>

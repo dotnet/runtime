@@ -159,20 +159,29 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 
-    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
-    <CallTarget Targets="_GenerateRunNodeScript" Condition="'$(WasmGenerateRunNodeScript)' == 'true'" />
+    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' != 'True'" />
+    <CallTarget Targets="_GenerateRunNodeScript" Condition="'$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' == 'True'" />
   </Target>
 
   <Target Name="_GenerateRunV8Script">
     <PropertyGroup>
-      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
+      <WasmRunNodeScriptPath Condition="'$(WasmRunV8ScriptPath)' == '' and '$(OS)' != 'Windows_NT'">$(WasmAppDir)run-v8.sh</WasmRunNodeScriptPath>
+      <WasmRunNodeScriptPath Condition="'$(WasmRunV8ScriptPath)' == '' and '$(OS)' == 'Windows_NT'">$(WasmAppDir)run-v8.cmd</WasmRunNodeScriptPath>
     </PropertyGroup>
 
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
       Lines="v8 --expose_wasm runtime.js -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
-      Overwrite="true">
+      Overwrite="true"
+      Condition="'$(OS)' != 'Windows_NT'">
+    </WriteLinesToFile>
+
+    <WriteLinesToFile
+      File="$(WasmRunNodeScriptPath)"
+      Lines="v8 --expose_wasm runtime.js -- %RUNTIME_ARGS% --run $(WasmMainAssemblyFileName) %*"
+      Overwrite="true"
+      Condition="'$(OS)' == 'Windows_NT'">
     </WriteLinesToFile>
 
     <ItemGroup>
