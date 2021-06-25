@@ -1417,19 +1417,19 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.4;
+        multiplier += 1.5;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.4;
+        multiplier += 1.5;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += 1.0;
+        multiplier += 0.5;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
                 m_FldAccessOverArgStruct, multiplier);
@@ -1489,7 +1489,6 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)
     {
         // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
-        // Especially useful with m_IsGenericFromNonGeneric
         multiplier += 3.0;
         JITDUMP("\nInline has %d foldable BOX ops.  Multiplier increased to %g.", m_FoldableBox, multiplier);
     }
@@ -1506,7 +1505,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += m_Intrinsic;
+        multiplier += 1.0;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1607,69 +1606,54 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
+    switch (m_CallsiteFrequency)
+    {
+        case InlineCallsiteFrequency::RARE:
+            // Note this one is not additive, it uses '=' instead of '+='
+            multiplier = 1.3;
+            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::BORING:
+            multiplier += 1.3;
+            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::WARM:
+            multiplier += 2.0;
+            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::LOOP:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+            break;
+        case InlineCallsiteFrequency::HOT:
+            multiplier += 3.0;
+            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+            break;
+        default:
+            assert(!"Unexpected callsite frequency");
+            break;
+    }
+
     if (m_HasProfile)
     {
-        if (multiplier < 1.5)
-        {
-            // In case if none of the observations worked
-            // we need some initial multiplier to work with.
-            multiplier = 1.5;
-        }
-
-        const double profileMaxValue = 1.5;
-        // m_ProfileFrequency values:
-        //   > 1  -- the callsite is inside a hot loop
-        //   1    -- the callsite is as hot as its method's first block
-        //   ~= 0 -- the callsite is cold.
-        //
-        // There are still cases when a (semi-)hot blocks can be marked as cold:
-        //  1) We don't support context-sensitive instrumentation in Dynamic PGO mode
-        //  2) The Static PGO that we ship can be slightly irrelevant for the current app
-        //  3) We don't support deoptimizations so we can't re-collect profiles if a workflow suddenly
-        //     starts to flow differently.
-        //  4) Sometimes it's still makes sense to inline methods in cold blocks to improve type/esacape analysis
+        // There are cases when Profile Data can be misleading or polluted:
+        //  1) We don't support context-sensitive instrumentation
+        //  2) The static profile that we ship can be slightly irrelevant for the current app
+        //  3) We don't support deoptimizations so we can't re-collect profiles if something changes
+        //  4) Sometimes, it still makes sense to inline methods in cold blocks to improve type/esacape analysis
         //     for the whole caller.
         //
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
+        multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
-    }
-    else
-    {
-        switch (m_CallsiteFrequency)
-        {
-            case InlineCallsiteFrequency::RARE:
-                // Note this one is not additive, it uses '=' instead of '+='
-                multiplier = 1.3;
-                JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::BORING:
-                multiplier += 1.3;
-                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::WARM:
-                multiplier += 2.0;
-                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::LOOP:
-                multiplier += 3.0;
-                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-                break;
-            case InlineCallsiteFrequency::HOT:
-                multiplier += 3.0;
-                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-                break;
-            default:
-                assert(!"Unexpected callsite frequency");
-                break;
-        }
     }
 
     if (m_BackwardJump)
     {
         // TODO: investigate in which cases we should [never] inline callees with loops.
+        // For now let's add some friction.
         multiplier *= 0.7;
         JITDUMP("\nInline has %d backward jumps (loops?).  Multiplier decreased to %g.", m_BackwardJump, multiplier);
     }
