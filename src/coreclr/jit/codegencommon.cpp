@@ -6733,12 +6733,6 @@ void CodeGen::genFinalizeFrame()
     }
 #endif // TARGET_ARM
 
-    // When poisoning on ARM we need to use callee-preserved registers.
-    if (compiler->compShouldPoisonFrame())
-    {
-        genSetRegsModifiedForPoisoning();
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -12534,14 +12528,6 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 }
 #endif // DEBUG
 #endif // USING_VARIABLE_LIVE_RANGE
-
-void CodeGen::genSetRegsModifiedForPoisoning()
-{
-// For ARM32 we need a callee-reserved register since the scratch registers may have args.
-#if defined(TARGET_ARM)
-    regSet.rsSetRegsModified(RBM_R4);
-#endif
-}
 
 //-----------------------------------------------------------------------------
 // genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
