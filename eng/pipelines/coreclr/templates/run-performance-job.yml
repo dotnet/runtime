@@ -122,6 +122,11 @@ jobs:
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
+      # testing only. should be removed in real code
+    - script: ls $(Build.SourcesDirectory)
+      displayName: list sources directory
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+      continueOnError: ${{ parameters.continueOnError }}
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
       displayName: Run ci setup script
       # Run perf testing in helix
