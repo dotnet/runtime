@@ -2058,9 +2058,11 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [MemberData(nameof(LongRunSequence))]
+        public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled(int a)
         {
+            Assert.True(a > -1);
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
@@ -2098,9 +2100,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection()
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [MemberData(nameof(LongRunSequence))]
+        public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection(int a)
         {
+            Assert.True(a > -1);
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
@@ -2130,6 +2134,14 @@ namespace System.Net.Http.Functional.Tests
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
+            }
+        }
+
+        public static IEnumerable<object[]> LongRunSequence()
+        {
+            for (var i = 0; i < 30000; i++)
+            {
+                yield return new object[] { i };
             }
         }
 
