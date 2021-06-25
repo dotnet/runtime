@@ -1552,7 +1552,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 1.0 + m_FoldableExpr;
+        multiplier += 1.0 + max(4, m_FoldableExpr);
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
                 multiplier);
     }
@@ -1560,7 +1560,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += m_FoldableExprUn;
+        multiplier += max(4, m_FoldableExprUn);
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
                 multiplier);
     }
@@ -1582,7 +1582,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += m_BinaryExprWithCns * 0.3;
+        multiplier += m_BinaryExprWithCns * 0.5;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
                 m_BinaryExprWithCns, multiplier);
 

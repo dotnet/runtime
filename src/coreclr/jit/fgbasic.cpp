@@ -1206,13 +1206,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
 
-                //// TODO: investigate impact:
-                // if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()) &&
-                //    !FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
-                //{
-                //    // Assume that "call(arg)" returns something arg-dependent.
-                //    handled = true;
-                //}
+                if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
+                {
+                    // Optimistically assume that "call(arg)" returns something arg-dependent.
+                    // However, we don't know how many args it expects and its return type.
+                    handled = true;
+                }
             }
             break;
 
@@ -1459,22 +1458,24 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             {
                                 compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                             }
-                            else if ((FgStack::IsArgument(op1) && FgStack::IsArrayLen(op2)) ||
-                                     (FgStack::IsArgument(op2) && FgStack::IsArrayLen(op1)))
+
+                            if ((FgStack::IsArgument(op1) && FgStack::IsArrayLen(op2)) ||
+                                (FgStack::IsArgument(op2) && FgStack::IsArrayLen(op1)))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                             }
-                            else if (FgStack::IsArgument(op1) && FgStack::IsConstantOrConstArg(op2, impInlineInfo))
-                            {
-                                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
-                            }
-                            else if (FgStack::IsArgument(op2) && FgStack::IsConstantOrConstArg(op1, impInlineInfo))
+                            else if ((FgStack::IsArgument(op1) && FgStack::IsConstantOrConstArg(op2, impInlineInfo)) ||
+                                     (FgStack::IsArgument(op2) && FgStack::IsConstantOrConstArg(op1, impInlineInfo)))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                             }
                             else if (FgStack::IsArgument(op1) || FgStack::IsArgument(op2))
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_TEST);
+                            }
+                            else if (FgStack::IsConstant(op1) || FgStack::IsConstant(op2))
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                             }
                             break;
                         }
