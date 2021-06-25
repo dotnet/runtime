@@ -431,9 +431,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Decrypts data using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="ciphertext">The data to decrypt</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <returns>The decrypted plaintext data</returns>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The decrypted plaintext data.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="ciphertext" /> is <see langword="null" />.
         /// </exception>
@@ -458,8 +458,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Decrypts data using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="ciphertext">The data to decrypt</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
         /// <returns>The decrypted plaintext data.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
@@ -505,11 +505,11 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Decrypts data using ECB mode with the specified padding mode in to a buffer.
+        ///   Decrypts data into the specified buffer, using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="ciphertext">The data to decrypt</param>
-        /// <param name="destination">The buffer to receive the plaintext data</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
         /// <returns>The total number of bytes written to <paramref name="destination" /></returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
@@ -536,20 +536,18 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to decrypt data using ECB mode with the specified padding mode in to a buffer.
+        ///   Attempts to decrypt data into the specified buffer, using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="ciphertext">The data to decrypt</param>
-        /// <param name="destination">The buffer to receive the plaintext data</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" /></param>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryDecryptEcbCore" /> could not decrypt the ciphertext.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the plaintext data.
+        ///   The ciphertext could not be decrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
@@ -563,9 +561,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Encrypts data using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="plaintext">The data to encrypt</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <returns>The encrypted ciphertext data</returns>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="plaintext" /> is <see langword="null" />.
         /// </exception>
@@ -590,9 +588,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Encrypts data using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="plaintext">The data to encrypt</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <returns>The encrypted ciphertext data</returns>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
@@ -632,12 +630,12 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Encrypts data using ECB mode with the specified padding mode in to a buffer.
+        ///   Encrypts data into the specified buffer, using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="plaintext">The data to encrypt</param>
-        /// <param name="destination">The buffer to receive the ciphertext data</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <returns>The total number of bytes written to <paramref name="destination" /></returns>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
@@ -663,20 +661,18 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to encrypt data using ECB mode with the specified padding mode in to a buffer.
+        ///   Attempts to encrypt data into the specified buffer, using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="plaintext">The data to encrypt</param>
-        /// <param name="destination">The buffer to receive the ciphertext data</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" /></param>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the ciphertext data.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
@@ -688,18 +684,20 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, attempts to encrypt data using ECB
-        ///   mode with the specified padding mode in to a buffer.
+        ///   When overridden in a derived class, attempts to encrypt data into the specified
+        ///   buffer, using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="plaintext">The data to encrypt</param>
-        /// <param name="destination">The buffer to receive the ciphertext data</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" /></param>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="NotSupportedException">
         ///   A derived class has not provided an implementation.
         /// </exception>
         /// <remarks>
-        ///   Derived classes must override this and provide an implementation.
+        ///   <para>Derived classes must override this and provide an implementation.</para>
+        ///   <para>Implementations of this method must write precisely <c>GetCiphertextLengthEcb(plaintext.Length, paddingMode)</c> bytes to <paramref name="destination"/> and report that via <paramref name="bytesWritten"/>.</para>
         /// </remarks>
         protected virtual bool TryEncryptEcbCore(
             ReadOnlySpan<byte> plaintext,
@@ -711,13 +709,14 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, attempts to decrypt data using ECB
-        ///   mode with the specified padding mode in to a buffer.
+        ///   When overridden in a derived class, attempts to decrypt data
+        ///   into the specified buffer, using ECB mode with the specified padding mode.
         /// </summary>
-        /// <param name="ciphertext">The data to decrypt</param>
-        /// <param name="destination">The buffer to receive the plaintext data</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" /></param>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="NotSupportedException">
         ///   A derived class has not provided an implementation.
         /// </exception>
