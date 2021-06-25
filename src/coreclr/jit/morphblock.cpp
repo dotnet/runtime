@@ -250,7 +250,7 @@ void MorphInitBlockHelper::PrepareDst()
         if (m_dst->OperGet() == GT_IND)
         {
             assert(m_dst->TypeGet() != TYP_STRUCT);
-            m_blockSize        = genTypeSize(m_dst->TypeGet());
+            m_blockSize        = genTypeSize(m_dst);
             m_blockSizeIsConst = true;
         }
         else
@@ -258,7 +258,7 @@ void MorphInitBlockHelper::PrepareDst()
             assert(m_dst->OperIsBlk());
             GenTreeBlk* blk    = m_dst->AsBlk();
             m_blockSize        = blk->Size();
-            m_blockSizeIsConst = (blk->gtOper != GT_DYN_BLK);
+            m_blockSizeIsConst = !blk->OperIs(GT_DYN_BLK);
         }
 
         noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
