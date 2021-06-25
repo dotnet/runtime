@@ -154,15 +154,6 @@ namespace System.Net.Http.Functional.Tests
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
-        class StringBuilderOutput : ITestOutputHelper
-        {
-            private StringBuilder _bld = new StringBuilder();
-            public void WriteLine(string message) => _bld.AppendLine(message);
-            public void WriteLine(string format, params object[] args) => _bld.AppendLine(string.Format(format, args));
-
-            public string Output => _bld.ToString();
-        }
-
         [OuterLoop("Runs long")]
         [Fact]
         public void MaxStreamWindowSize_WhenMaximumReached_NoMoreRttPingsAreSent()
@@ -171,13 +162,11 @@ namespace System.Net.Http.Functional.Tests
 
             static async Task RunTest()
             {
-                StringBuilderOutput output = new StringBuilderOutput();
                 Stopwatch sw = Stopwatch.StartNew();
                 int maxCredit = await TestClientWindowScalingAsync(
                     TimeSpan.FromMilliseconds(300),
                     TimeSpan.FromMilliseconds(15),
                     4 * 1024 * 1024,
-                    output: output,
                     maxWindowForPingStopValidation: MaxWindow);
                 sw.Stop();
             }
