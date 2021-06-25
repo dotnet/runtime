@@ -961,7 +961,9 @@ namespace System.Net.Http.Functional.Tests
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                 if (PlatformDetection.IsBrowser)
                 {
+#if !NETFRAMEWORK
                     request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+#endif
                 }
 
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
