@@ -3101,19 +3101,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     if ((varTypeUsesFloatReg(lclStore) != varTypeUsesFloatReg(src)) && !lclStore->IsPhiDefn() &&
         (src->TypeGet() != TYP_STRUCT))
     {
-        if (m_lsra->isRegCandidate(varDsc))
-        {
-            GenTree* bitcast = comp->gtNewBitCastNode(lclStore->TypeGet(), src);
-            lclStore->gtOp1  = bitcast;
-            src              = lclStore->gtGetOp1();
-            BlockRange().InsertBefore(lclStore, bitcast);
-            ContainCheckBitCast(bitcast);
-        }
-        else
-        {
-            // This is an actual store, we'll just retype it.
-            lclStore->gtType = src->TypeGet();
-        }
+        GenTree* bitcast = comp->gtNewBitCastNode(lclStore->TypeGet(), src);
+        lclStore->gtOp1  = bitcast;
+        src              = lclStore->gtGetOp1();
+        BlockRange().InsertBefore(lclStore, bitcast);
+        ContainCheckBitCast(bitcast);
     }
 
     if (srcIsMultiReg || lclStore->IsMultiRegLclVar())
@@ -6571,8 +6563,10 @@ void Lowering::ContainCheckBitCast(GenTree* node)
         {
             op1->SetContained();
         }
-        LclVarDsc* varDsc = &comp->lvaTable[op1->AsLclVar()->GetLclNum()];
-        if (!m_lsra->isRegCandidate(varDsc))
+        const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
+        // TODO-Cleanup: we want to check if the local is already known not
+        // to be on reg, for example, because local enreg is disabled.
+        if (varDsc->lvDoNotEnregister)
         {
             op1->SetContained();
         }
