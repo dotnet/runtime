@@ -24,7 +24,12 @@ if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 endif (MSVC)
 
-set(CLR_CMAKE_ENABLE_ASAN ON)
+# Set up build flags for AddressSanitizer
+set (CLR_CMAKE_ENABLE_ASAN OFF)
+# ASan is only supported on x86 and x64 today.
+if (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_I386)
+    set(CLR_CMAKE_ENABLE_ASAN ON)
+endif()
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
