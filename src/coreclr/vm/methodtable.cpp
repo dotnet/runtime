@@ -5658,6 +5658,22 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             }
 
+            // Validate implementation of virtual static methods on all implemented interfaces unless:
+            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an 
+            //    R2R module with type checks disabled)
+            // 2) There are no virtual static methods defined on any of the interfaces implemented by this type;
+            // 3) The type is abstract in which case it's allowed to leave some virtual static methods unimplemented
+            //    akin to equivalent behavior of virtual instance method overriding in abstract classes;
+            // 4) The type is a not the typical type definition. (The typical type is always checked)
+
+            if (fNeedsSanityChecks &&
+                IsTypicalTypeDefinition() &&
+                !IsAbstract())
+            {
+                if (HasVirtualStaticMethods())
+                    VerifyThatAllVirtualStaticMethodsAreImplemented();
+            }
+
             if (locals.fBailed)
             {
                 // We couldn't complete security checks on some dependency because it is already being processed by one of our callers.
@@ -5671,22 +5687,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             }
             else
             {
-                // Validate implementation of virtual static methods on all implemented interfaces unless:
-                // 1) The type resides in the system module (System.Private.CoreLib); we own this module and ensure
-                //    its consistency by other means not requiring runtime checks;
-                // 2) There are no virtual static methods defined on any of the interfaces implemented by this type;
-                // 3) The method is abstract in which case it's allowed to leave some virtual static methods unimplemented
-                //    akin to equivalent behavior of virtual instance method overriding in abstract classes;
-                // 4) The type is a shared generic in which case we generally don't have enough information to perform
-                //    the validation.
-                if (!GetModule()->IsSystem() &&
-                    HasVirtualStaticMethods() &&
-                    !IsAbstract() &&
-                    !IsSharedByGenericInstantiations())
-                {
-                    VerifyThatAllVirtualStaticMethodsAreImplemented();
-                }
-                
                 // Finally, mark this method table as fully loaded
                 SetIsFullyLoaded();
             }
@@ -9201,7 +9201,7 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 //==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
 MethodDesc *
-MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL checkDuplicates, BOOL allowVariantMatches)
+MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented, BOOL allowVariantMatches)
 {
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
@@ -9231,7 +9231,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, checkDuplicates);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -9273,7 +9273,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(it.GetInterface(), pInterfaceMD, checkDuplicates);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(it.GetInterface(), pInterfaceMD, verifyImplemented);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -9295,7 +9295,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL checkDuplicates)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -9347,13 +9347,39 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             continue;
         }
-        MethodDesc *pMethodDecl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+        MethodDesc *pMethodDecl;
+        
+        if ((TypeFromToken(methodDecl) == mdtMethodDef) || pInterfaceMT->IsFullyLoaded())
+        {
+            pMethodDecl =  MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
             GetModule(),
             methodDecl,
             &sigTypeContext,
             /* strictMetadataChecks */ FALSE,
             /* allowInstParam */ FALSE,
             /* owningTypeLoadLevel */ CLASS_LOAD_EXACTPARENTS);
+        }
+        else if (TypeFromToken(methodDecl) == mdtMemberRef)
+        {
+            LPCUTF8     szMember;
+            PCCOR_SIGNATURE pSig;
+            DWORD       cSig;
+
+            IfFailThrow(pMDInternalImport->GetNameAndSigOfMemberRef(methodDecl, &pSig, &cSig, &szMember));
+
+            // Do a quick name check to avoid excess use of FindMethod
+            if (strcmp(szMember, pInterfaceMD->GetName()) != 0)
+            {
+                continue;
+            }
+
+            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSig, cSig, GetModule());
+        }
+        else
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+
         if (pMethodDecl == nullptr)
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
@@ -9369,13 +9395,11 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
         
-        MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+        MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMethodDef(
             GetModule(),
             methodBody,
-            &sigTypeContext,
-            /* strictMetadataChecks */ FALSE,
-            /* allowInstParam */ FALSE,
-            /* owningTypeLoadLevel */ CLASS_LOAD_EXACTPARENTS);
+            FALSE,
+            CLASS_LOAD_EXACTPARENTS);
         if (pMethodImpl == nullptr)
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
@@ -9388,7 +9412,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
-        if (pInterfaceMD->HasMethodInstantiation() || pMethodImpl->HasMethodInstantiation() || HasInstantiation())
+        if (!verifyImplemented)
         {
             pMethodImpl = pMethodImpl->FindOrCreateAssociatedMethodDesc(
                 pMethodImpl,
@@ -9398,11 +9422,11 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                /* level */ CLASS_LOAD_EXACTPARENTS);
+                /* level */ CLASS_LOADED);
         }
         if (pMethodImpl != nullptr)
         {
-            if (!checkDuplicates)
+            if (!verifyImplemented)
             {
                 return pMethodImpl;
             }
@@ -9432,7 +9456,7 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                 MethodDesc *pMD = it.GetMethodDesc();
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* checkDuplicates */ TRUE, /* allowVariantMatches */ FALSE))
+                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
