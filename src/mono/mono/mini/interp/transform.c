@@ -9719,7 +9719,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_runtime_print_stats ();
 	}
 
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (imethod->method);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
 	if (!g_hash_table_lookup (jit_mm->seq_points, imethod->method))
 		g_hash_table_insert (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
