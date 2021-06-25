@@ -91,7 +91,10 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
+
+                // TODO: use CloseAsync() with a cancellation token to prevent a DoS
                 await _stream.DisposeAsync().ConfigureAwait(false);
+
                 DisposeSyncHelper();
             }
         }
