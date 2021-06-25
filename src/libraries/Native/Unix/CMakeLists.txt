@@ -253,15 +253,6 @@ endif(CLR_CMAKE_TARGET_UNIX)
 
 include(configure.cmake)
 
-message("Binary dir: ${CMAKE_BINARY_DIR}")
-
-file(READ "${CMAKE_BINARY_DIR}/CMakeFiles/CMakeOutput.log" OUTPUT_LOG)
-file(READ "${CMAKE_BINARY_DIR}/CMakeFiles/CMakeError.log" ERROR_LOG)
-message("================================= CMakeOutput.log ===================================")
-message("${OUTPUT_LOG}")
-message("================================= CMakeError.log ===================================")
-message("${ERROR_LOG}")
-
 add_subdirectory(System.IO.Compression.Native)
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
