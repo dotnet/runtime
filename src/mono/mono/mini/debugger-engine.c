@@ -364,30 +364,6 @@ typedef struct {
 	GPtrArray *method_seq_points;
 } CollectDomainData;
 
-static void
-collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
-{
-	GHashTableIter iter;
-	MonoSeqPointInfo *seq_points;
-	MonoDomain *domain = (MonoDomain*)key;
-	CollectDomainData *ud = (CollectDomainData*)user_data;
-	MonoMethod *m;
-
-	// FIXME:
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-	jit_mm_lock (jit_mm);
-	g_hash_table_iter_init (&iter, jit_mm->seq_points);
-	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
-		if (bp_matches_method (ud->bp, m)) {
-			/* Save the info locally to simplify the code inside the domain lock */
-			g_ptr_array_add (ud->methods, m);
-			g_ptr_array_add (ud->method_domains, domain);
-			g_ptr_array_add (ud->method_seq_points, seq_points);
-		}
-	}
-	jit_mm_unlock (jit_mm);
-}
-
 /*
  * mono_de_set_breakpoint:
  *
@@ -432,14 +408,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	method_seq_points = g_ptr_array_new ();
 
 	mono_loader_lock ();
-
-	CollectDomainData user_data;
-	memset (&user_data, 0, sizeof (user_data));
-	user_data.bp = bp;
-	user_data.methods = methods;
-	user_data.method_domains = method_domains;
-	user_data.method_seq_points = method_seq_points;
-	mono_de_foreach_domain (collect_domain_bp, &user_data);
 
 	for (i = 0; i < methods->len; ++i) {
 		m = (MonoMethod *)g_ptr_array_index (methods, i);

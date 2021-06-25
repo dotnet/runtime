@@ -238,7 +238,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
 		// FIXME:
-		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+		MonoJitMemoryManager *jit_mm = jit_mm_for_method (cfg->method_to_register);
 		jit_mm_lock (jit_mm);
 		// FIXME: The lookup can fail if the method is JITted recursively though a type cctor
 		if (!g_hash_table_lookup (jit_mm->seq_points, cfg->method_to_register))
