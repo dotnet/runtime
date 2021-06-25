@@ -275,7 +275,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
         # diagnostic logging for testing only, should be removed before PR.
         ls $wasm_dotnet_path
         # --wasmEngine and --customRuntimePack are not used under wasm aot. The related info is found by looking under --runtimeSrcDir
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600" 
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --keepfiles" 
     else
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
     fi
