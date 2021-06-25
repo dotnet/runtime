@@ -393,7 +393,7 @@ if (CLR_CMAKE_HOST_UNIX)
       # replaced with a default value, and always gets expanded to an OS version.
       # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
       # We need to disable the warning that -tagret replaces -mmacosx-version-min
-      add_compile_options(-Wno-overriding-t-option)
+      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
       add_link_options(-Wno-overriding-t-option)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
         set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
@@ -405,6 +405,7 @@ if (CLR_CMAKE_HOST_UNIX)
         clr_unknown_arch()
       endif()
     else()
+      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
         # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
         set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
@@ -420,9 +421,9 @@ if (CLR_CMAKE_HOST_UNIX)
     # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
     # add_compile_options so that they take effect on the configuration functions
     # in various configure.cmake files.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS}")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 
 endif(CLR_CMAKE_HOST_UNIX)
