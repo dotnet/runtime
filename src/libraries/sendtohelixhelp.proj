@@ -107,7 +107,9 @@
   <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
+    <HelixPreCommand Include="echo dir %HELIX_CORRELATION_PAYLOAD%\chrome-win" />
     <HelixPreCommand Include="dir %HELIX_CORRELATION_PAYLOAD%\chrome-win" />
+    <HelixPreCommand Include="echo dir %HELIX_CORRELATION_PAYLOAD%\chromedriver_win32" />
     <HelixPreCommand Include="dir %HELIX_CORRELATION_PAYLOAD%\chromedriver_win32" />
   </ItemGroup>
 
