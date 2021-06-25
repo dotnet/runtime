@@ -792,7 +792,7 @@ namespace System.Text.Json.Serialization
     public enum JsonKnownNamingPolicy
     {
         Unspecified = 0,
-        BuiltInCamelCase = 1,
+        CamelCase = 1,
     }
     [System.FlagsAttribute]
     public enum JsonNumberHandling
@@ -828,21 +828,22 @@ namespace System.Text.Json.Serialization
         public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false)]
-    public partial class JsonSerializerOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
+    public partial class JsonSourceGenerationOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
     {
-        public JsonSerializerOptionsAttribute() { }
+        public JsonSourceGenerationOptionsAttribute() { }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IgnoreRuntimeCustomConverters { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
-        public System.Text.Json.Serialization.JsonKnownNamingPolicy NamingPolicy { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
+        public JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum JsonSourceGenerationMode
     {
-        MetadataAndSerialization = 0,
+        Default = 0,
         Metadata = 1,
         Serialization = 2,
     }
