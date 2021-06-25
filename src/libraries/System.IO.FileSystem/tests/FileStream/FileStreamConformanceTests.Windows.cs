@@ -264,8 +264,7 @@ namespace System.IO.Tests
                     }
                     catch (IOException)
                     {
-                        // device has been locked by another process
-                        continue;
+                        continue; // device has been locked by another process
                     }
                 }
             }
