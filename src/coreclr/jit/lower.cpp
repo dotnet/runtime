@@ -3097,9 +3097,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             varDsc = fldDsc;
         }
     }
-
-    if ((varTypeUsesFloatReg(lclStore) != varTypeUsesFloatReg(src)) && !lclStore->IsPhiDefn() &&
-        (src->TypeGet() != TYP_STRUCT))
+    if ((varTypeUsesFloatReg(lclStore) != varTypeUsesFloatReg(src)) && !src->TypeIs(TYP_STRUCT))
     {
         GenTree* bitcast = comp->gtNewBitCastNode(lclStore->TypeGet(), src);
         lclStore->gtOp1  = bitcast;
