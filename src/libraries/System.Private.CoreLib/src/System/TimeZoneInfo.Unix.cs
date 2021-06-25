@@ -11,6 +11,17 @@ namespace System
     {
         private const string ZoneTabFileName = "zone.tab";
 
+        private static void PopulateAllSystemTimeZones(CachedData cachedData)
+        {
+            Debug.Assert(Monitor.IsEntered(cachedData));
+
+            string timeZoneDirectory = GetTimeZoneDirectory();
+            foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
+            {
+                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
+            }
+        }
+
         /// <summary>
         /// Returns a collection of TimeZone Id values from the zone.tab file in the timeZoneDirectory.
         /// </summary>

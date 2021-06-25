@@ -7,12 +7,6 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        // Mitchell - Why isn't this just instantiated in TimeZoneInfo.cs?
-        // private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
-
-        private static List<string> GetTimeZoneIds(string timeZoneDirectory)
-        {
-            return new List<string>();
-        }
+        private static void PopulateAllSystemTimeZones(CachedData cachedData) {}
     }
 }

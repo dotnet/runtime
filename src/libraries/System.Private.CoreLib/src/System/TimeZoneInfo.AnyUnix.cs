@@ -225,17 +225,6 @@ namespace System
             return rulesList.ToArray();
         }
 
-        private static void PopulateAllSystemTimeZones(CachedData cachedData)
-        {
-            Debug.Assert(Monitor.IsEntered(cachedData));
-
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
-            {
-                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
-            }
-        }
-
         /// <summary>
         /// Helper function for retrieving the local system time zone.
         /// May throw COMException, TimeZoneNotFoundException, InvalidTimeZoneException.
