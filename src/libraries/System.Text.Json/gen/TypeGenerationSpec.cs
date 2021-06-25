@@ -11,8 +11,6 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
     internal class TypeGenerationSpec
     {
-        private JsonSourceGenerationMode _generationMode;
-
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
@@ -25,21 +23,11 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
 
-        private bool? _generateMetadata;
-        public bool GenerateMetadata
-        {
-            get => _generateMetadata ??= GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);
-            // Optionally set during type metadata computation.
-            set => _generateMetadata = value;
-        }
+        public JsonSourceGenerationMode GenerationMode { get; set; }
 
-        private bool? _generateSerializationLogic;
-        public bool GenerateSerializationLogic
-        {
-            get => _generateSerializationLogic ??= GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
-            // Optionally set during type metadata computation.
-            set => _generateSerializationLogic = value;
-        }
+        public bool GenerateMetadata => GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);
+
+        public bool GenerateSerializationLogic => GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
 
         public Type Type { get; private set; }
 
@@ -81,7 +69,7 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? converterInstantiationLogic)
         {
-            _generationMode = generationMode;
+            GenerationMode = generationMode;
             TypeRef = $"global::{typeRef}";
             TypeInfoPropertyName = typeInfoPropertyName;
             Type = type;
@@ -98,7 +86,7 @@ namespace System.Text.Json.SourceGeneration
             ConverterInstantiationLogic = converterInstantiationLogic;
         }
 
-        public bool FastPathIsSupported()
+        private bool FastPathIsSupported()
         {
             if (ClassType == ClassType.Object)
             {
@@ -118,6 +106,6 @@ namespace System.Text.Json.SourceGeneration
             return false;
         }
 
-        private bool GenerationModeIsSpecified(JsonSourceGenerationMode mode) => _generationMode == JsonSourceGenerationMode.Default || (mode & _generationMode) != 0;
+        private bool GenerationModeIsSpecified(JsonSourceGenerationMode mode) => GenerationMode == JsonSourceGenerationMode.Default || (mode & GenerationMode) != 0;
     }
 }

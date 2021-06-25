@@ -349,24 +349,9 @@ namespace System.Text.Json.SourceGeneration
                     typeGenerationSpec.TypeInfoPropertyName = typeInfoPropertyName;
                 }
 
-                switch (generationMode)
+                if (generationMode != default)
                 {
-                    case JsonSourceGenerationMode.Default:
-                        break;
-                    case JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization:
-                        typeGenerationSpec.GenerateSerializationLogic = typeGenerationSpec.FastPathIsSupported();
-                        typeGenerationSpec.GenerateMetadata = true;
-                        break;
-                    case JsonSourceGenerationMode.Metadata:
-                        typeGenerationSpec.GenerateMetadata = true;
-                        typeGenerationSpec.GenerateSerializationLogic = false;
-                        break;
-                    case JsonSourceGenerationMode.Serialization:
-                        typeGenerationSpec.GenerateSerializationLogic = typeGenerationSpec.FastPathIsSupported();
-                        typeGenerationSpec.GenerateMetadata = false;
-                        break;
-                    default:
-                        throw new InvalidOperationException();
+                    typeGenerationSpec.GenerationMode = generationMode;
                 }
 
                 return typeGenerationSpec;
