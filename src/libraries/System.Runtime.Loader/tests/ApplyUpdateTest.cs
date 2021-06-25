@@ -83,5 +83,51 @@ namespace System.Reflection.Metadata
                 Assert.Equal(attrType, cattrs[0].GetType());
             });
         }
+
+        class NonRuntimeAssembly : Assembly
+        {
+        }
+
+        [Fact]
+        public static void ApplyUpdateInvalidParameters()
+        {
+            // Dummy delta arrays
+            var metadataDelta = new byte[20];
+            var ilDelta = new byte[20];
+
+            // Assembly can't be null
+            Assert.Throws<ArgumentNullException>("assembly", () =>
+                MetadataUpdater.ApplyUpdate(null, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
+
+            // Tests fail on non-runtime assemblies
+            Assert.Throws<ArgumentException>(() =>
+                MetadataUpdater.ApplyUpdate(new NonRuntimeAssembly(), new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
+
+            // Tests that this assembly isn't not editable
+            Assert.Throws<InvalidOperationException>(() =>
+                MetadataUpdater.ApplyUpdate(typeof(AssemblyExtensions).Assembly, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
+        }
+
+        [Fact]
+        public static void GetCapabilities()
+        {
+            var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+
+            Assert.NotNull(mi);
+
+            var result = mi.Invoke(null, null);
+
+            Assert.NotNull(result);
+            Assert.Equal(typeof(string), result.GetType());
+        }
+
+        [Fact]
+        [ActiveIssue("Returns true on mono", TestRuntimes.Mono)]
+        public static void IsSupported()
+        {
+            bool result = MetadataUpdater.IsSupported;
+            Assert.False(result);
+        }
     }
 }
