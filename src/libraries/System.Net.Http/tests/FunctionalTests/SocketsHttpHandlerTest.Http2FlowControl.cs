@@ -117,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
         {
             static async Task RunTest()
             {
-                AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamic2WindowSizing", true);
+                AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamicWindowSizing", true);
 
                 int maxCredit = await TestClientWindowScalingAsync(
                     TimeSpan.FromMilliseconds(30),

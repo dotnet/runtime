@@ -1800,7 +1800,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 // We should refactor this test so it can react to RTT PINGs.
                 // For now, avoid interference by disabling them:
-                AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamic2WindowSizing", true);
+                AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamicWindowSizing", true);
 
                 bool expectRequestFail = bool.Parse(expectRequestFailString);
                 TimeSpan keepAlivePingDelay = TimeSpan.FromTicks(long.Parse(keepAlivePingDelayString));

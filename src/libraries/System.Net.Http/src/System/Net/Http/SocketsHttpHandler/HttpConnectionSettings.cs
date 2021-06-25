@@ -152,7 +152,7 @@ namespace System.Net.Http
 
         // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
         private static bool DisableDynamicHttp2WindowSizing => RuntimeSettingParser.QueryRuntimeSettingSwitch(
-            "System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamic2WindowSizing",
+            "System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamicWindowSizing",
             "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2FLOWCONTROL_DISABLEDYNAMICWINDOWSIZING",
             false);
 
