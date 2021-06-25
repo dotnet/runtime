@@ -295,28 +295,25 @@ namespace System.IO.Tests
             public nint Reserved;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         struct SP_DEVICE_INTERFACE_DETAIL_DATA
         {
             public int cbSize;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] // 256 should be always enough for device interface path
             public string DevicePath;
         }
 
         [DllImport("hid.dll", SetLastError = true)]
         static extern void HidD_GetHidGuid(out Guid Guid);
 
-        [DllImport("setupapi.dll", CharSet = CharSet.Auto)]
+        [DllImport("setupapi.dll", SetLastError = true)]
         static extern IntPtr SetupDiGetClassDevs(in Guid ClassGuid, IntPtr Enumerator, IntPtr hwndParent, int Flags);
 
         [DllImport("setupapi.dll", SetLastError = true)]
         static extern bool SetupDiEnumDeviceInfo(IntPtr DeviceInfoSet, uint MemberIndex, ref SP_DEVINFO_DATA DeviceInfoData);
 
-        [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("setupapi.dll", SetLastError = true)]
         static extern bool SetupDiEnumDeviceInterfaces(IntPtr hDevInfo, IntPtr devInfo, in Guid interfaceClassGuid, uint memberIndex, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData);
-
-        [DllImport("setupapi.dll", CharSet = CharSet.Auto)]
-        static extern IntPtr SetupDiGetClassDevs(IntPtr ClassGuid, [MarshalAs(UnmanagedType.LPTStr)] string Enumerator, IntPtr hwndParent, int Flags);
 
         [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr hDevInfo, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData, ref SP_DEVICE_INTERFACE_DETAIL_DATA deviceInterfaceDetailData, uint deviceInterfaceDetailDataSize, ref uint requiredSize, IntPtr deviceInfoData);
