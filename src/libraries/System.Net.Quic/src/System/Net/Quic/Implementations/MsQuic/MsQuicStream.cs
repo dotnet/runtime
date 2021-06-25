@@ -552,8 +552,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // TODO: there's a bug here where the safe handle is no longer valid.
-        // This shouldn't happen because the safe handle is effectively pinned
-        // until after disposal completes.
+        // This shouldn't happen because the safe handle *should be* rooted
+        // until after our disposal completes.
         ~MsQuicStream()
         {
             DisposeAsyncThrowaway(this);
