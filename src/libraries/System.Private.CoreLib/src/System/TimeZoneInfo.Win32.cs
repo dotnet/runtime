@@ -846,15 +846,15 @@ namespace System
         /// If a localized resource file exists, we LoadString resource ID "123" and
         /// return it to our caller.
         /// </summary>
-        private static string GetLocalizedNameByMuiNativeResource(string resource, CultureInfo? cultureInfo = null)
+        private static string GetLocalizedNameByMuiNativeResource(string resource)
         {
-            if (string.IsNullOrEmpty(resource))
+            if (string.IsNullOrEmpty(resource) || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
             {
                 return string.Empty;
             }
 
             // Use the current UI culture when culture not specified
-            cultureInfo ??= CultureInfo.CurrentUICulture;
+            CultureInfo cultureInfo = CultureInfo.CurrentUICulture;
 
             // parse "@tzres.dll, -100"
             //
