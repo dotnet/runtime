@@ -490,8 +490,8 @@ namespace System.Security.Cryptography
 
             // Array.Resize will no-op if the array does not need to be resized.
             Array.Resize(ref decryptBuffer, written);
-                return decryptBuffer;
-            }
+            return decryptBuffer;
+        }
 
         /// <summary>
         ///   Decrypts data into the specified buffer, using ECB mode with the specified padding mode.
@@ -598,21 +598,15 @@ namespace System.Security.Cryptography
             // We expect most if not all uses to encrypt to exactly the ciphertextLength
             byte[] buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
 
-            if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written))
+            if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written) ||
+                written != ciphertextLength)
             {
-                // This means a user-derived imiplementation added more padding than we expected.
-                throw new CryptographicException(SR.Argument_DestinationTooShort);
-            }
-
-            if (written != ciphertextLength)
-            {
-                // This should not happen, but could if a derived class's implementation of core
+                // This means a user-derived imiplementation added more padding than we expected or
                 // did something non-standard (encrypt to a partial block). This can't happen for
                 // multiple padding blocks since the buffer would have been too small in the first
                 // place. It doesn't make sense to try and support partial block encryption, likely
                 // something went very wrong. So throw.
-
-                throw new CryptographicException(SR.Cryptography_EncryptedIncorrectPadding);
+                throw new CryptographicException(SR.Format(SR.Cryptography_EncryptedIncorrectLength, nameof(TryEncryptEcbCore)));
             }
 
             return buffer;
