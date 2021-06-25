@@ -1360,18 +1360,11 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             else if (!m_IsForceInline)
             {
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
-                if (m_IsPrejitRoot)
-                {
-                    // We won't have any profile data and most likely will miss
-                    // some foldable branches in m_IsPrejitRoot
-                    bbLimit += 5;
-                }
-                if (m_ProfileFrequency > 0.5)
+                if (m_IsPrejitRoot || (m_ProfileFrequency > 0.5))
                 {
                     bbLimit += (unsigned)JitConfig.JitExtDefaultPolicyProfBB();
                 }
                 bbLimit += m_FoldableBranch;
-
                 if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
@@ -1424,19 +1417,19 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.5;
+        multiplier += 1.4;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.5;
+        multiplier += 1.4;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
             multiplier);
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += 1.2;
+        multiplier += 1.0;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
             m_FldAccessOverArgStruct, multiplier);
@@ -1485,7 +1478,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
-    else if (m_ArgIsConst > 0)
+    else if ((m_ArgIsConst > 0) && (m_FoldableExpr < 1))
     {
         // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
         // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
@@ -1493,25 +1486,27 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_FoldableBox > 0)
+    if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)
     {
         // We met some BOX+ISINST+BR or BOX+UNBOX patterns (see impBoxPatternMatch).
         // Especially useful with m_IsGenericFromNonGeneric
-        multiplier += 2.0;
+        multiplier += 3.0;
         JITDUMP("\nInline has %d foldable BOX ops.  Multiplier increased to %g.", m_FoldableBox, multiplier);
     }
 
+#ifdef FEATURE_SIMD
     if (m_HasSimd)
     {
         multiplier += JitConfig.JitInlineSIMDMultiplier();
         JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.",
             multiplier);
     }
+#endif
 
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.0 + m_Intrinsic;
+        multiplier += m_Intrinsic;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1612,37 +1607,16 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
-    switch (m_CallsiteFrequency)
-    {
-        case InlineCallsiteFrequency::RARE:
-            // Note this one is not additive, it uses '=' instead of '+='
-            multiplier = 1.3;
-            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::BORING:
-            multiplier += 1.3;
-            JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::WARM:
-            multiplier += 2.0;
-            JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::LOOP:
-            multiplier += 3.0;
-            JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
-            break;
-        case InlineCallsiteFrequency::HOT:
-            multiplier += 3.0;
-            JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
-            break;
-        default:
-            assert(!"Unexpected callsite frequency");
-            break;
-    }
-
     if (m_HasProfile)
     {
-        const double profileMaxValue = 1.2;
+        if (multiplier < 1.5)
+        {
+            // In case if none of the observations worked
+            // we need some initial multiplier to work with.
+            multiplier = 1.5;
+        }
+
+        const double profileMaxValue = 1.5;
         // m_ProfileFrequency values:
         //   > 1  -- the callsite is inside a hot loop
         //   1    -- the callsite is as hot as its method's first block
@@ -1659,17 +1633,38 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        double value = (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
-        if (JitConfig.JitExtDefaultPolicyProfStrategy() == 0)
-        {
-            multiplier *= value;
-        }
-        else
-        {
-            multiplier += value;
-        }
-        multiplier = max(0.0, multiplier);
+        multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, profileMaxValue) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
+    }
+    else
+    {
+        switch (m_CallsiteFrequency)
+        {
+            case InlineCallsiteFrequency::RARE:
+                // Note this one is not additive, it uses '=' instead of '+='
+                multiplier = 1.3;
+                JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::BORING:
+                multiplier += 1.3;
+                JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::WARM:
+                multiplier += 2.0;
+                JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::LOOP:
+                multiplier += 3.0;
+                JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+                break;
+            case InlineCallsiteFrequency::HOT:
+                multiplier += 3.0;
+                JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+                break;
+            default:
+                assert(!"Unexpected callsite frequency");
+                break;
+        }
     }
 
     if (m_BackwardJump)
