@@ -108,6 +108,10 @@ namespace HttpStress
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == new Version(3,0))
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
@@ -118,6 +122,15 @@ namespace HttpStress
                         }
                     }
                 });
+
+                if (configuration.HttpVersion == new Version(3,0))
+                {
+                    host = host.UseQuic(options =>
+                    {
+                        options.Alpn = "h3-29";
+                        options.IdleTimeout = TimeSpan.FromHours(1);
+                    });
+                }
             };
 
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
