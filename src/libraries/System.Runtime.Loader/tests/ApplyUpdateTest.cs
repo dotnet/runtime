@@ -122,12 +122,18 @@ namespace System.Reflection.Metadata
             Assert.Equal(typeof(string), result.GetType());
         }
 
-        [Fact]
-        [ActiveIssue("Returns true on mono", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingRemoteExecutor))]
         public static void IsSupported()
         {
             bool result = MetadataUpdater.IsSupported;
             Assert.False(result);
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingLaunchEnvironment))]
+        public static void IsSupported2()
+        {
+            bool result = MetadataUpdater.IsSupported;
+            Assert.True(result);
         }
     }
 }
