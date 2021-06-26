@@ -36,7 +36,13 @@ internal static partial class Interop
             symlinkFileName = PathInternal.EnsureExtendedPrefixIfNeeded(symlinkFileName);
             targetFileName = PathInternal.EnsureExtendedPrefixIfNeeded(targetFileName);
 
-            int flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+            int flags = 0;
+
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 14972))
+            {
+                flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+            }
+
             if (isDirectory)
             {
                 flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
