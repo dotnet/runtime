@@ -57,7 +57,6 @@ namespace System.Drawing
                         int count = Marshal.Release(lpPicture);
                         Debug.Assert(count == 0);
                     }
-
                 }
             }
         }
@@ -65,12 +64,8 @@ namespace System.Drawing
         private static void CheckSaveAsFileResult(int errorCode)
         {
             // Pass -1 for errorInfo to indicate that Windows' GetErrorInfo shouldn't be called, and only
-            // return the Exception corresponding to the specified errorCode.
-            Exception? ex = Marshal.GetExceptionForHR(errorCode, errorInfo: new IntPtr(-1));
-            if (ex != null)
-            {
-                throw ex;
-            }
+            // throw the Exception corresponding to the specified errorCode.
+            Marshal.ThrowExceptionForHR(errorCode, errorInfo: new IntPtr(-1));
         }
 
         [DllImport(Interop.Libraries.Oleaut32)]
