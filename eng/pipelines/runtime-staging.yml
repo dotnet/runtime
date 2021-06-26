@@ -107,7 +107,9 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - MacCatalyst_x64
-    - MacCatalyst_arm64
+    # don't run tests on MacCatalyst_arm64 PRs until we can get significantly more devices
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - MacCatalyst_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

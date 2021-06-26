@@ -11651,6 +11651,12 @@ namespace System.Threading
         PublicationOnly = 1,
         ExecutionAndPublication = 2,
     }
+    public sealed class PeriodicTimer : System.IDisposable
+    {
+        public PeriodicTimer(System.TimeSpan period) { }
+        public System.Threading.Tasks.ValueTask<bool> WaitForNextTickAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public void Dispose() { }
+    }
     public static partial class Timeout
     {
         public const int Infinite = -1;

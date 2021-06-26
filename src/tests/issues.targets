@@ -123,9 +123,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsvalidation/ThreadPool/*">
             <Issue>https://github.com/dotnet/runtime/issues/48727</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/54316</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -1018,6 +1015,9 @@
 
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/value_numbering_checked_casts_of_constants/*">
+            <Issue>https://github.com/dotnet/runtime/issues/51323</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/int64/misc/longmul/*">
             <Issue>https://github.com/dotnet/runtime/issues/51323</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">

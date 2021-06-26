@@ -307,7 +307,9 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                throw new InvalidOperationException("Should not get here.");
+                Assert.IsType<object>(value);
+                writer.WriteStartObject();
+                writer.WriteEndObject();
             }
         }
 
@@ -732,5 +734,23 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new SystemObjectNewtonsoftCompatibleConverter());
             Verify(options);
         }
+
+        [Fact]
+        public static void CanCustomizeSystemObjectSerialization()
+        {
+            var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
+
+            string expectedJson = "42";
+            string actualJson = JsonSerializer.Serialize(new object(), options);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        private class CustomSystemObjectConverter : JsonConverter<object>
+        {
+            public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+                => writer.WriteNumberValue(42);
+        }
     }
+
 }

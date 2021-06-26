@@ -939,7 +939,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
             }
         }
 
-        if(Classification & mdcMethodImpl)
+        if (Classification & mdcMethodImpl)
         {   // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -2807,7 +2807,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         // on this type so we can just compare the tok with the body token found
         // from the overrides.
         for(DWORD impls = 0; impls < bmtMethodImpl->dwNumberMethodImpls; impls++) {
-            if(bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) {
+            if ((bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) && !IsMdStatic(dwMemberAttrs)) {
                 Classification |= mdcMethodImpl;
                 break;
             }

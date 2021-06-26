@@ -1186,12 +1186,29 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
     CONSISTENCY_CHECK(m_pImplTable == NULL);
 
     SLOT_INDEX cSlots = (SLOT_INDEX)GetInterfaceType()->GetMethodTable()->GetNumVirtuals();
-    bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlots];
+    SLOT_INDEX cSlotsTotal = cSlots;
+
+    if (GetInterfaceType()->GetMethodTable()->HasVirtualStaticMethods())
+    {
+        MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc *pDeclMD = it.GetDeclMethodDesc();
+            if (pDeclMD->IsStatic() && pDeclMD->IsVirtual())
+            {
+                cSlotsTotal++;
+            }
+        }
+    }
+
+    bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlotsTotal];
+
 
     MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
     for (; it.IsValid(); it.Next())
     {
-        if (!it.IsVirtual())
+        MethodDesc *pDeclMD = it.GetDeclMethodDesc();
+        if (!pDeclMD->IsVirtual())
         {
             break;
         }
@@ -1199,8 +1216,15 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         bmtRTMethod * pCurMethod = new (pStackingAllocator)
             bmtRTMethod(GetInterfaceType(), it.GetDeclMethodDesc());
 
-        CONSISTENCY_CHECK(m_cImplTable == it.GetSlotNumber());
-        pST[m_cImplTable++] = bmtInterfaceSlotImpl(pCurMethod, INVALID_SLOT_INDEX);
+        if (pDeclMD->IsStatic())
+        {
+            pST[cSlots + m_cImplTableStatics++] = bmtInterfaceSlotImpl(pCurMethod, INVALID_SLOT_INDEX);
+        }
+        else
+        {
+            CONSISTENCY_CHECK(m_cImplTable == it.GetSlotNumber());
+            pST[m_cImplTable++] = bmtInterfaceSlotImpl(pCurMethod, INVALID_SLOT_INDEX);
+        }
     }
 
     m_pImplTable = pST;
@@ -2906,6 +2930,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 IDS_CLASSLOAD_BADSPECIALMETHOD,
                 tok);
         }
+
+        // Check for the presence of virtual static methods
+        if (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs))
+        {
+            bmtProp->fHasVirtualStaticMethods = TRUE;
+        }
+
         //
         // But first - minimal flags validity checks
         //
@@ -2972,11 +3003,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 if(IsMdStatic(dwMemberAttrs))
                 {
-                    if (fIsClassInterface)
-                    {
-                        bmtProp->fHasVirtualStaticMethods = TRUE;
-                    }
-                    else
+                    if (!fIsClassInterface)
                     {
                         // Static virtual methods are only allowed to exist in interfaces
                         BuildMethodTableThrowException(BFA_VIRTUAL_STATIC_METHOD);
@@ -4805,16 +4832,16 @@ VOID MethodTableBuilder::TestMethodImpl(
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NONVIRTUAL_DECL);
     }
-    if (!IsMdVirtual(dwImplAttrs))
+    if ((IsMdVirtual(dwImplAttrs) && IsMdStatic(dwImplAttrs)) || (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs)))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
     }
-    // Virtual methods cannot be static
-    if (IsMdStatic(dwDeclAttrs))
+    // Virtual methods on classes/valuetypes cannot be static
+    if (IsMdStatic(dwDeclAttrs) && !hDeclMethod.GetOwningType().IsInterface())
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL);
     }
-    if (IsMdStatic(dwImplAttrs))
+    if ((!!IsMdStatic(dwImplAttrs)) != (!!IsMdStatic(dwDeclAttrs)))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL);
     }
@@ -5418,14 +5445,14 @@ MethodTableBuilder::PlaceVirtualMethods()
 // that the name+signature corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
 // Always returns the first match that it finds. Affects the ambiguities in code:#ProcessInexactMethodImpls_Ambiguities
 MethodTableBuilder::bmtMethodHandle
-MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig)
+MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, bool searchForStaticMethods)
 {
     STANDARD_VM_CONTRACT;
 
     bmtMethodHandle declMethod;
 
     bmtInterfaceEntry::InterfaceSlotIterator slotIt =
-        pItfEntry->IterateInterfaceSlots(GetStackingAllocator());
+        pItfEntry->IterateInterfaceSlots(GetStackingAllocator(), searchForStaticMethods);
     // Check for exact match
     for (; !slotIt.AtEnd(); slotIt.Next())
     {
@@ -5653,7 +5680,7 @@ MethodTableBuilder::ProcessMethodImpls()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl())
+        if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && bmtProp->fNoSanityChecks)
         {
             // Non-virtual methods can only be classified as methodImpl when implementing
             // static virtual methods.
@@ -5836,7 +5863,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 }
 
                                 // 3. Find the matching method.
-                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig);
+                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, !IsMdVirtual(it.Attrs())); // Search for statics when the impl is non-virtual
                             }
                             else
                             {
@@ -5869,6 +5896,14 @@ MethodTableBuilder::ProcessMethodImpls()
                     if (!IsMdVirtual(declMethod.GetDeclAttrs()))
                     {   // Make sure the decl is virtual
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
+                    }
+
+                    if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && IsMdStatic(it.Attrs()))
+                    {
+                        // Non-virtual methods can only be classified as methodImpl when implementing
+                        // static virtual methods.
+                        ValidateStaticMethodImpl(declMethod, *it);//bmtMethodHandle(pCurImplMethod));
+                        continue;
                     }
 
                     if (bmtMetaData->rgMethodImplTokens[m].fRequiresCovariantReturnTypeChecking)
@@ -6740,6 +6775,30 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
     // increment the counter
     (*pSlotIndex)++;
 } // MethodTableBuilder::PlaceParentDeclarationOnClass
+
+VOID MethodTableBuilder::ValidateStaticMethodImpl(
+    bmtMethodHandle     hDecl,
+    bmtMethodHandle     hImpl)
+{
+    // While we don't want to place the static method impl declarations on the class/interface, we do 
+    // need to validate the method constraints and signature are compatible
+    if (!bmtProp->fNoSanityChecks)
+    {
+        ///////////////////////////////
+        // Verify the signatures match
+
+        MethodImplCompareSignatures(
+            hDecl,
+            hImpl,
+            FALSE /* allowCovariantReturn */,
+            IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
+
+        ///////////////////////////////
+        // Validate the method impl.
+
+        TestMethodImpl(hDecl, hImpl);
+    }
+}
 
 //*******************************************************************************
 // This will validate that all interface methods that were matched during

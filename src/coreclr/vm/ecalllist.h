@@ -438,7 +438,11 @@ FCFuncEnd()
 
 FCFuncStart(gAssemblyExtensionsFuncs)
     QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
+FCFuncEnd()
+
+FCFuncStart(gMetadataUpdaterFuncs)
     QCFuncElement("ApplyUpdate", AssemblyNative::ApplyUpdate)
+    QCFuncElement("IsApplyUpdateSupported", AssemblyNative::IsApplyUpdateSupported)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
@@ -1121,11 +1125,8 @@ FCClassElement("ArgIterator", "System", gVarArgFuncs)
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("Assembly", "System.Reflection", gAssemblyFuncs)
 FCClassElement("AssemblyBuilder", "System.Reflection.Emit", gAssemblyBuilderFuncs)
-
 FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExtensionsFuncs)
-
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
-
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
@@ -1168,6 +1169,7 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MdUtf8String", "System", gMdUtf8String)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
+FCClassElement("MetadataUpdater", "System.Reflection.Metadata", gMetadataUpdaterFuncs)
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
 FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
 FCClassElement("MngdNativeArrayMarshaler", "System.StubHelpers", gMngdNativeArrayMarshalerFuncs)
