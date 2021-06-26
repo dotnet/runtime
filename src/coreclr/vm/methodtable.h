@@ -2285,7 +2285,11 @@ public:
 
 
     // Resolve virtual static interface method pInterfaceMD on this type.
-    MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL checkDuplicates = FALSE, BOOL allowVariantMatches = TRUE);
+    //
+    // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
+    // Specify verifyImplemented to verify that there is a match, but do not actually return a final useable MethodDesc
+    // Specify allowVariantMatches to permit generic interface variance
+    MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented = FALSE, BOOL allowVariantMatches = TRUE);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2402,7 +2406,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL checkDuplicates);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);

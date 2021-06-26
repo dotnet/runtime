@@ -9,6 +9,7 @@ using System.Globalization;
 
 namespace System.Data.Common
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public class DataAdapter : Component, IDataAdapter
     {
         private static readonly object s_eventFillError = new object();
@@ -202,7 +203,7 @@ namespace System.Data.Common
         [Obsolete("CloneInternals() has been deprecated.  Use the DataAdapter(DataAdapter from) constructor.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual DataAdapter CloneInternals()
         {
-            DataAdapter clone = (DataAdapter)Activator.CreateInstance(GetType(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null)!;
+            DataAdapter clone = (DataAdapter)Activator.CreateInstance(GetType())!;
             clone.CloneFrom(this);
             return clone;
         }

@@ -730,13 +730,53 @@ OPTIMIZECAST:
             break;
 
             case GT_CAST:
-                /* Check for two consecutive casts into the same dstType */
+                // Check for two consecutive casts into the same dstType.
+                // Also check for consecutive casts to small types.
                 if (!tree->gtOverflow())
                 {
-                    var_types dstType2 = oper->CastToType();
-                    if (dstType == dstType2)
+                    var_types dstCastToType = dstType;
+                    var_types srcCastToType = oper->CastToType();
+                    if (dstCastToType == srcCastToType)
                     {
                         goto REMOVE_CAST;
+                    }
+                    // We can take advantage of the implicit zero/sign-extension for
+                    // small integer types and eliminate some casts.
+                    if (opts.OptimizationEnabled() && !oper->gtOverflow() && !gtIsActiveCSE_Candidate(oper) &&
+                        varTypeIsSmall(dstCastToType) && varTypeIsSmall(srcCastToType))
+                    {
+                        // Gather some facts about our casts.
+                        bool     srcZeroExtends = varTypeIsUnsigned(srcCastToType);
+                        bool     dstZeroExtends = varTypeIsUnsigned(dstCastToType);
+                        unsigned srcCastToSize  = genTypeSize(srcCastToType);
+                        unsigned dstCastToSize  = genTypeSize(dstCastToType);
+
+                        // If the previous cast to a smaller type was zero-extending,
+                        // this cast will also always be zero-extending. Example:
+                        // CAST(ubyte): 000X => CAST(short): Sign-extend(0X) => 000X.
+                        if (srcZeroExtends && (dstCastToSize > srcCastToSize))
+                        {
+                            dstZeroExtends = true;
+                        }
+
+                        // Case #1: cast to a smaller or equal in size type.
+                        // We can discard the intermediate cast. Examples:
+                        // CAST(short): --XX => CAST(ubyte): 000X.
+                        // CAST(ushort): 00XX => CAST(short): --XX.
+                        if (dstCastToSize <= srcCastToSize)
+                        {
+                            tree->AsCast()->CastOp() = oper->AsCast()->CastOp();
+                            DEBUG_DESTROY_NODE(oper);
+                        }
+                        // Case #2: cast to a larger type with the same effect.
+                        // Here we can eliminate the outer cast. Example:
+                        // CAST(byte): ---X => CAST(short): Sign-extend(-X) => ---X.
+                        // Example of a sequence where this does not hold:
+                        // CAST(byte): ---X => CAST(ushort): Zero-extend(-X) => 00-X.
+                        else if (srcZeroExtends == dstZeroExtends)
+                        {
+                            goto REMOVE_CAST;
+                        }
                     }
                 }
                 break;
@@ -5509,8 +5549,16 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             fgSetRngChkTarget(indexAddr);
         }
 
-        // Change `tree` into an indirection and return.
-        tree->ChangeOper(GT_IND);
+        if (!tree->TypeIs(TYP_STRUCT))
+        {
+            tree->ChangeOper(GT_IND);
+        }
+        else
+        {
+            DEBUG_DESTROY_NODE(tree);
+            tree = gtNewObjNode(elemStructType, indexAddr);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        }
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
         bool canCSE               = indir->CanCSE();
@@ -5520,9 +5568,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             indir->SetDoNotCSE();
         }
 
-#ifdef DEBUG
-        indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
+        INDEBUG(indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         return indir;
     }
@@ -6040,6 +6086,10 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
 #endif
 
+    // Create a default MorphAddrContext early so it doesn't go out of scope
+    // before it is used.
+    MorphAddrContext defMAC(MACK_Ind);
+
     /* Is this an instance data member? */
 
     if (objRef)
@@ -6130,7 +6180,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
         // NULL mac means we encounter the GT_FIELD first.  This denotes a dereference of the field,
         // and thus is equivalent to a MACK_Ind with zero offset.
-        MorphAddrContext defMAC(MACK_Ind);
         if (mac == nullptr)
         {
             mac = &defMAC;
@@ -12333,6 +12382,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphCast(tree);
 
         case GT_MUL:
+            noway_assert(op2 != nullptr);
+
             if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
             {
                 // MUL(NEG(a), C) => MUL(a, NEG(C))
@@ -12352,118 +12403,38 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
-                /* For (long)int1 * (long)int2, we dont actually do the
-                   casts, and just multiply the 32 bit values, which will
-                   give us the 64 bit result in edx:eax */
+                // For (long)int1 * (long)int2, we dont actually do the
+                // casts, and just multiply the 32 bit values, which will
+                // give us the 64 bit result in edx:eax.
 
-                noway_assert(op2);
-                if ((op1->gtOper == GT_CAST && op2->gtOper == GT_CAST &&
-                     genActualType(op1->CastFromType()) == TYP_INT && genActualType(op2->CastFromType()) == TYP_INT) &&
-                    !op1->gtOverflow() && !op2->gtOverflow())
+                if (tree->Is64RsltMul())
                 {
-                    // The casts have to be of the same signedness.
-                    if ((op1->gtFlags & GTF_UNSIGNED) != (op2->gtFlags & GTF_UNSIGNED))
-                    {
-                        // We see if we can force an int constant to change its signedness
-                        GenTree* constOp;
-                        if (op1->AsCast()->CastOp()->gtOper == GT_CNS_INT)
-                            constOp = op1;
-                        else if (op2->AsCast()->CastOp()->gtOper == GT_CNS_INT)
-                            constOp = op2;
-                        else
-                            goto NO_MUL_64RSLT;
-
-                        if (((unsigned)(constOp->AsCast()->CastOp()->AsIntCon()->gtIconVal) < (unsigned)(0x80000000)))
-                            constOp->gtFlags ^= GTF_UNSIGNED;
-                        else
-                            goto NO_MUL_64RSLT;
-                    }
-
-                    // The only combination that can overflow
-                    if (tree->gtOverflow() && (tree->gtFlags & GTF_UNSIGNED) && !(op1->gtFlags & GTF_UNSIGNED))
-                        goto NO_MUL_64RSLT;
-
-                    /* Remaining combinations can never overflow during long mul. */
-
-                    tree->gtFlags &= ~GTF_OVERFLOW;
-
-                    /* Do unsigned mul only if the casts were unsigned */
-
-                    tree->gtFlags &= ~GTF_UNSIGNED;
-                    tree->gtFlags |= op1->gtFlags & GTF_UNSIGNED;
-
-                    /* Since we are committing to GTF_MUL_64RSLT, we don't want
-                       the casts to be folded away. So morph the castees directly */
-
-                    op1->AsOp()->gtOp1 = fgMorphTree(op1->AsOp()->gtOp1);
-                    op2->AsOp()->gtOp1 = fgMorphTree(op2->AsOp()->gtOp1);
-
-                    // Propagate side effect flags up the tree
-                    op1->gtFlags &= ~GTF_ALL_EFFECT;
-                    op1->gtFlags |= (op1->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-                    op2->gtFlags &= ~GTF_ALL_EFFECT;
-                    op2->gtFlags |= (op2->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-
-                    // If the GT_MUL can be altogether folded away, we should do that.
-
-                    if ((op1->AsCast()->CastOp()->OperKind() & op2->AsCast()->CastOp()->OperKind() & GTK_CONST) &&
-                        opts.OptEnabled(CLFLG_CONSTANTFOLD))
-                    {
-                        tree->AsOp()->gtOp1 = op1 = gtFoldExprConst(op1);
-                        tree->AsOp()->gtOp2 = op2 = gtFoldExprConst(op2);
-                        noway_assert(op1->OperKind() & op2->OperKind() & GTK_CONST);
-                        tree = gtFoldExprConst(tree);
-                        noway_assert(tree->OperIsConst());
-                        return tree;
-                    }
-
-                    tree->gtFlags |= GTF_MUL_64RSLT;
-
-                    // If op1 and op2 are unsigned casts, we need to do an unsigned mult
-                    tree->gtFlags |= (op1->gtFlags & GTF_UNSIGNED);
-
-                    // Insert GT_NOP nodes for the cast operands so that they do not get folded
-                    // And propagate the new flags. We don't want to CSE the casts because
-                    // codegen expects GTF_MUL_64RSLT muls to have a certain layout.
-
-                    if (op1->AsCast()->CastOp()->OperGet() != GT_NOP)
-                    {
-                        op1->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op1->AsCast()->CastOp());
-                        op1->gtFlags &= ~GTF_ALL_EFFECT;
-                        op1->gtFlags |= (op1->AsCast()->CastOp()->gtFlags & GTF_ALL_EFFECT);
-                    }
-
-                    if (op2->AsCast()->CastOp()->OperGet() != GT_NOP)
-                    {
-                        op2->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op2->AsCast()->CastOp());
-                        op2->gtFlags &= ~GTF_ALL_EFFECT;
-                        op2->gtFlags |= (op2->AsCast()->CastOp()->gtFlags & GTF_ALL_EFFECT);
-                    }
-
-                    op1->gtFlags |= GTF_DONT_CSE;
-                    op2->gtFlags |= GTF_DONT_CSE;
-
-                    tree->gtFlags &= ~GTF_ALL_EFFECT;
-                    tree->gtFlags |= ((op1->gtFlags | op2->gtFlags) & GTF_ALL_EFFECT);
+                    // We are seeing this node again.
+                    // Morph only the children of casts,
+                    // so as to avoid losing them.
+                    assert(tree->gtIsValid64RsltMul());
+                    tree = fgMorphLongMul(tree->AsOp());
 
                     goto DONE_MORPHING_CHILDREN;
                 }
-                else if ((tree->gtFlags & GTF_MUL_64RSLT) == 0)
+
+                tree = fgRecognizeAndMorphLongMul(tree->AsOp());
+
+                if (tree->Is64RsltMul())
                 {
-                NO_MUL_64RSLT:
+                    op1 = tree->AsOp()->gtGetOp1();
+                    op2 = tree->AsOp()->gtGetOp2();
+
+                    goto DONE_MORPHING_CHILDREN;
+                }
+                else
+                {
                     if (tree->gtOverflow())
-                        helper = (tree->gtFlags & GTF_UNSIGNED) ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF;
+                        helper = tree->IsUnsigned() ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF;
                     else
                         helper = CORINFO_HELP_LMUL;
 
                     goto USE_HELPER_FOR_ARITH;
-                }
-                else
-                {
-                    /* We are seeing this node again. We have decided to use
-                       GTF_MUL_64RSLT, so leave it alone. */
-
-                    assert(tree->gtIsValid64RsltMul());
                 }
             }
 #endif // !TARGET_64BIT
@@ -15943,6 +15914,157 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     }
     return tree;
 }
+
+#if !defined(TARGET_64BIT)
+//------------------------------------------------------------------------------
+// fgRecognizeAndMorphLongMul : Check for and morph long multiplication with 32 bit operands.
+//
+// Recognizes the following tree: MUL(CAST(long <- int) or CONST, CAST(long <- int) or CONST),
+// where CONST must be an integer constant that fits in 32 bits. Note that if both operands are
+// constants, the original tree is returned unmodified, i. e. the caller is responsible for
+// folding or correct code generation (e. g. for overflow cases). May swap operands if the
+// first one is a constant and the second one is not.
+//
+// Arguments:
+//    mul  -  GT_MUL tree to check for a long multiplication opportunity
+//
+// Return Value:
+//    The original tree unmodified if it is not eligible for long multiplication.
+//    Tree with GTF_MUL_64RSLT set, side effect flags propagated, and children morphed if it is.
+//
+GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
+{
+    assert(mul->OperIs(GT_MUL));
+    assert(mul->TypeIs(TYP_LONG));
+
+    GenTree* op1 = mul->gtGetOp1();
+    GenTree* op2 = mul->gtGetOp2();
+
+    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
+
+    if (!(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp())) &&
+        !(op1->IsIntegralConst() && FitsIn<int32_t>(op1->AsIntConCommon()->IntegralValue())))
+    {
+        return mul;
+    }
+
+    if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
+        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
+    {
+        return mul;
+    }
+
+    // Let fgMorphSmpOp take care of folding.
+    if (op1->IsIntegralConst() && op2->IsIntegralConst())
+    {
+        return mul;
+    }
+
+    // We don't handle checked casts.
+    if (op1->gtOverflowEx() || op2->gtOverflowEx())
+    {
+        return mul;
+    }
+
+    // Move the constant operand to the right to make the logic below more straightfoward.
+    if (op2->OperIs(GT_CAST) && op1->IsIntegralConst())
+    {
+        std::swap(op1, op2);
+        mul->gtOp1 = op1;
+        mul->gtOp2 = op2;
+    }
+
+    // The operands must have the same extending behavior, since the instruction
+    // used to compute the result will sign/zero-extend both operands at once.
+    bool op1ZeroExtends = op1->IsUnsigned();
+    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
+    bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
+    if ((op1ZeroExtends != op2ZeroExtends) && !op2AnyExtensionIsSuitable)
+    {
+        return mul;
+    }
+
+    if (mul->gtOverflow())
+    {
+        auto getMaxValue = [mul](GenTree* op) -> int64_t {
+            if (op->OperIs(GT_CAST))
+            {
+                if (op->IsUnsigned())
+                {
+                    switch (op->AsCast()->CastOp()->TypeGet())
+                    {
+                        case TYP_UBYTE:
+                            return UINT8_MAX;
+                        case TYP_USHORT:
+                            return UINT16_MAX;
+                        default:
+                            return UINT32_MAX;
+                    }
+                }
+
+                return mul->IsUnsigned() ? static_cast<int64_t>(UINT64_MAX) : INT32_MIN;
+            }
+
+            return op->AsIntConCommon()->IntegralValue();
+        };
+
+        int64_t maxOp1 = getMaxValue(op1);
+        int64_t maxOp2 = getMaxValue(op2);
+
+        if (CheckedOps::MulOverflows(maxOp1, maxOp2, mul->IsUnsigned()))
+        {
+            return mul;
+        }
+
+        mul->ClearOverflow();
+    }
+
+    // MUL_LONG needs to do the work the casts would have done.
+    mul->ClearUnsigned();
+    if (op1->IsUnsigned())
+    {
+        mul->SetUnsigned();
+    }
+
+    mul->Set64RsltMul();
+
+    return fgMorphLongMul(mul);
+}
+
+//------------------------------------------------------------------------------
+// fgMorphLongMul : Morphs GT_MUL nodes marked with GTF_MUL_64RSLT.
+//
+// Morphs *only* the operands of casts that compose the long mul to
+// avoid them being folded aways.
+//
+// Arguments:
+//    mul  -  GT_MUL tree to morph operands of
+//
+// Return Value:
+//    The original tree, with operands morphed and flags propagated.
+//
+GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
+{
+    GenTree* op1 = mul->gtGetOp1();
+    GenTree* op2 = mul->gtGetOp2();
+
+    // Morph the operands. We cannot allow the casts to go away, so we morph their operands directly.
+    op1->AsCast()->CastOp() = fgMorphTree(op1->AsCast()->CastOp());
+    op1->SetAllEffectsFlags(op1->AsCast()->CastOp());
+
+    if (op2->OperIs(GT_CAST))
+    {
+        op2->AsCast()->CastOp() = fgMorphTree(op2->AsCast()->CastOp());
+        op2->SetAllEffectsFlags(op2->AsCast()->CastOp());
+    }
+
+    mul->SetAllEffectsFlags(op1, op2);
+    op1->SetDoNotCSE();
+    op2->SetDoNotCSE();
+
+    return mul;
+}
+#endif // !defined(TARGET_64BIT)
 
 /*****************************************************************************
  *

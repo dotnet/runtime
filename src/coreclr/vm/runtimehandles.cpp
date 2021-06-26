@@ -1190,7 +1190,7 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(QCall:
 
     if (pMD->IsStatic())
     {
-        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* checkDuplicates*/ FALSE, /*allowVariantMatches */ TRUE);
+        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* verifyImplemented*/ FALSE, /*allowVariantMatches */ TRUE);
     }
     else
     {
