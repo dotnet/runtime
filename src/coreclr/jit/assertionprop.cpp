@@ -1197,13 +1197,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     toType = op2->gtType;
                     goto SUBRANGE_COMMON;
 
-                case GT_ARR_ELEM:
-
-                    /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
-
-                    toType = op2->gtType;
-                    goto SUBRANGE_COMMON;
-
                 case GT_LCL_FLD:
 
                     /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
