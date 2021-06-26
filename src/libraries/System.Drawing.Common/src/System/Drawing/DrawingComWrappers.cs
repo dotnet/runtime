@@ -49,7 +49,7 @@ namespace System.Drawing
 
         protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
         {
-            Debug.Assert(flags == CreateObjectFlags.None);
+            Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
 
             Guid pictureIID = IPicture.IID;
             int hr = Marshal.QueryInterface(externalComObject, ref pictureIID, out IntPtr comObject);

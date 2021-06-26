@@ -35,12 +35,14 @@ namespace System.Drawing
                 IntPtr streamPtr = IntPtr.Zero;
                 try
                 {
-                    using DrawingComWrappers.IPicture picture = (DrawingComWrappers.IPicture)DrawingComWrappers.Instance.GetOrCreateObjectForComInstance(lpPicture, CreateObjectFlags.None);
+                    // Use UniqueInstance here because we never want to cache the wrapper. It only gets used once and then disposed.
+                    using DrawingComWrappers.IPicture picture = (DrawingComWrappers.IPicture)DrawingComWrappers.Instance
+                        .GetOrCreateObjectForComInstance(lpPicture, CreateObjectFlags.UniqueInstance);
 
                     var gpStream = new GPStream(outputStream, makeSeekable: false);
                     streamPtr = DrawingComWrappers.Instance.GetOrCreateComInterfaceForObject(gpStream, CreateComInterfaceFlags.None);
 
-                    Marshal.ThrowExceptionForHR(picture.SaveAsFile(streamPtr, -1, null));
+                    CheckSaveAsFileResult(picture.SaveAsFile(streamPtr, -1, null));
                 }
                 finally
                 {
@@ -52,10 +54,22 @@ namespace System.Drawing
 
                     if (lpPicture != IntPtr.Zero)
                     {
-                        // don't assert the count went to 0 here because some other thread could be using the same lpPicture
-                        Marshal.Release(lpPicture);
+                        int count = Marshal.Release(lpPicture);
+                        Debug.Assert(count == 0);
                     }
+
                 }
+            }
+        }
+
+        private static void CheckSaveAsFileResult(int errorCode)
+        {
+            // Pass -1 for errorInfo to indicate that Windows' GetErrorInfo shouldn't be called, and only
+            // return the Exception corresponding to the specified errorCode.
+            Exception? ex = Marshal.GetExceptionForHR(errorCode, errorInfo: new IntPtr(-1));
+            if (ex != null)
+            {
+                throw ex;
             }
         }
 
