@@ -55,6 +55,10 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
+#ifdef _DEBUG
+#include "minipal/asansupport.h"
+#endif
+
 #ifndef TARGET_UNIX
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
@@ -7927,6 +7931,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 #endif
+
+    if (dwCode == STATUS_ACCESS_VIOLATION && isAsanShadowAddress((void*)pExceptionInfo->ExceptionRecord->ExceptionInformation[1]))
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
     {

@@ -239,3 +239,6 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+target_sources(singlefilehost
+    PRIVATE "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/common/asansupport.cpp>")
