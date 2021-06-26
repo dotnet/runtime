@@ -4352,6 +4352,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
     m_pSharedPatchBypassBuffer = patch->GetOrCreateSharedPatchBypassBuffer();
     BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
+    LOG((LF_CORDB, LL_INFO10000, "DPS::DPS: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", patch->opcode, patch->address, m_pSharedPatchBypassBuffer));
 
     // Copy the instruction block over to the patch skip
     // WARNING: there used to be an issue here because CopyInstructionBlock copied the breakpoint from the
@@ -4901,11 +4902,14 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
             break;
 
         case 16:
-            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, 16);
+        case 32:
+            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
             break;
 
         default:
-            _ASSERTE(!"bad operand size");
+            _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
+                relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
+                and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
         }
     }
 #endif
