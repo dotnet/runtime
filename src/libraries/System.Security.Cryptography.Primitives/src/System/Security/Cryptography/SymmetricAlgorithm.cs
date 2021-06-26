@@ -441,7 +441,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryDecryptEcbCore" /> could not decrypt the ciphertext.
+        ///   The ciphertext could not be decrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
@@ -465,7 +465,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryDecryptEcbCore" /> could not decrypt the ciphertext.
+        ///   The ciphertext could not be decrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
@@ -504,7 +504,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryDecryptEcbCore" /> could not decrypt the ciphertext.
+        ///   The ciphertext could not be decrypted successfully.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   The buffer in <paramref name="destination"/> is too small to hold the plaintext data.
@@ -584,7 +584,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        ///   The plaintext could not be encrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
@@ -623,7 +623,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        ///   The plaintext could not be encrypted successfully.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   The buffer in <paramref name="destination"/> is too small to hold the ciphertext data.
@@ -655,7 +655,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        ///   The plaintext could not be encrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
@@ -680,7 +680,11 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>Derived classes must override this and provide an implementation.</para>
-        ///   <para>Implementations of this method must write precisely <c>GetCiphertextLengthEcb(plaintext.Length, paddingMode)</c> bytes to <paramref name="destination"/> and report that via <paramref name="bytesWritten"/>.</para>
+        ///   <para>
+        ///      Implementations of this method must write precisely
+        ///      <c>GetCiphertextLengthEcb(plaintext.Length, paddingMode)</c> bytes to <paramref name="destination"/>
+        ///      and report that via <paramref name="bytesWritten"/>.
+        ///   </para>
         /// </remarks>
         protected virtual bool TryEncryptEcbCore(
             ReadOnlySpan<byte> plaintext,
