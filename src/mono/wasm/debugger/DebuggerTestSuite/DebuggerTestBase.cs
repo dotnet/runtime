@@ -1025,7 +1025,7 @@ namespace DebuggerTests
 
             var load_assemblies = JObject.FromObject(new
             {
-                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssemblyInALC', asm_b64, pdb_b64); }}"
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTestALC:LoadLazyAssemblyInALC', asm_b64, pdb_b64); }}"
             });
 
             Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
@@ -1034,7 +1034,7 @@ namespace DebuggerTests
             Thread.Sleep(1000);
             var run_method = JObject.FromObject(new
             {
-                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] LoadDebuggerTest:RunMethodInALC', '" + type_name + "',  '" + method_name + "'); }, 1);"
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] LoadDebuggerTestALC:RunMethodInALC', '" + type_name + "',  '" + method_name + "'); }, 1);"
             });
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
