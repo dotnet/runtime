@@ -162,8 +162,9 @@ namespace System.Net.Http
             private long _pingCounter;
             private int _initialBurst;
             private volatile bool _terminating;
+            private long _minRtt;
 
-            public TimeSpan MinRtt;
+            public TimeSpan MinRtt => new TimeSpan(_minRtt);
 
             public RttEstimator(Http2Connection connection)
             {
@@ -172,7 +173,7 @@ namespace System.Net.Http
                 _pingCounter = 0;
                 _initialBurst = 4;
                 _pingSentTimestamp = default;
-                MinRtt = default;
+                _minRtt = 0;
                 _terminating = false;
             }
 
@@ -243,9 +244,12 @@ namespace System.Net.Http
             private void RefreshRtt()
             {
                 long elapsedTicks = Stopwatch.GetTimestamp() - _pingSentTimestamp;
-                TimeSpan prevRtt = MinRtt == TimeSpan.Zero ? TimeSpan.MaxValue : MinRtt;
+                long prevRtt = _minRtt == 0 ? long.MaxValue : _minRtt;
                 TimeSpan currentRtt = TimeSpan.FromSeconds(elapsedTicks / (double)Stopwatch.Frequency);
-                MinRtt = new TimeSpan(Math.Min(prevRtt.Ticks, currentRtt.Ticks));
+                long minRtt = Math.Min(prevRtt, currentRtt.Ticks);
+
+                Interlocked.Exchange(ref _minRtt, minRtt); // MinRtt is being queried from another thread
+
                 if (NetEventSource.Log.IsEnabled()) _connection.Trace($"[FlowControl] Updated MinRtt: {MinRtt.TotalMilliseconds} ms");
             }
         }
