@@ -404,26 +404,23 @@ if (CLR_CMAKE_HOST_UNIX)
       else()
         clr_unknown_arch()
       endif()
+      # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+      # add_compile_options so that they take effect on the configuration functions
+      # in various configure.cmake files.
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+      set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
     else()
-      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
-        # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
         add_compile_options(-arch arm64)
       elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
         add_compile_options(-arch x86_64)
       else()
         clr_unknown_arch()
       endif()
-      add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
     endif(CLR_CMAKE_TARGET_MACCATALYST)
-    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
-    # add_compile_options so that they take effect on the configuration functions
-    # in various configure.cmake files.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 
 endif(CLR_CMAKE_HOST_UNIX)
