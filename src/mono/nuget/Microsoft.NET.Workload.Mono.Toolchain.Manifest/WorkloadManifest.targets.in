@@ -1,4 +1,9 @@
 <Project>
+    <PropertyGroup>
+        <RuntimePackInWorkloadVersion>${PackageVersion}</RuntimePackInWorkloadVersion>
+        <UseMonoRuntime>true</UseMonoRuntime>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
         <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
         <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
@@ -43,4 +48,21 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />
     </ImportGroup>
+
+    <Target Name="UpdateFrameworkReferences" BeforeTargets="ProcessFrameworkReferences">
+      <ItemGroup>
+        <KnownRuntimePack
+            Include="Microsoft.NETCore.App"
+            TargetFramework="net6.0"
+            LatestRuntimeFrameworkVersion="${PackageVersion}"
+            RuntimePackRuntimeIdentifiers="linux-x64;osx-x64;browser-wasm"
+            RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
+            RuntimePackLabels="BrowserWorkload"
+            RuntimeFrameworkName="Microsoft.NETCore.App" />
+
+        <FrameworkReference Update="Microsoft.NETCore.App" RuntimePackLabels="BrowserWorkload" />
+
+        <AssetsFilePackageFolder Include="$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..', 'packs'))" />
+      </ItemGroup>
+    </Target>
 </Project>

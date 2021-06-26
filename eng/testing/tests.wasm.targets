@@ -60,6 +60,11 @@
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <WorkloadManifestForTesting Include="Microsoft.NET.Workload.Mono.ToolChain.Manifest-$(SdkBandVersion)" Version="$(PackageVersion)" VersionBand="$(SdkBandVersion)" />
+    <WorkloadIdForTesting Include="microsoft-net-sdk-blazorwebassembly-aot" Name="microsoft.net.workload.mono.toolchain" />
+  </ItemGroup>
+
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"

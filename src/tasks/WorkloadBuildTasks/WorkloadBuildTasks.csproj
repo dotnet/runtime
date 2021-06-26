@@ -6,6 +6,8 @@
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Common\Utils.cs" />
+
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />

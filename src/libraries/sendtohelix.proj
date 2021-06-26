@@ -66,10 +66,23 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_ProjectsToBuild Include="$(PerScenarioProjectFile)">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
-        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_ProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
-      </_ProjectsToBuild>
+        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
+      </_BaseProjectsToBuild>
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
+      <_TestValues Include="true;false" />
+
+      <_OtherProjectsToBuild Include="$(PerScenarioProjectFile)">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestValues.Identity)</AdditionalProperties>
+        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_OtherProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
+      </_OtherProjectsToBuild>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ProjectsToBuild Include="@(_BaseProjectsToBuild);@(_OtherProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>

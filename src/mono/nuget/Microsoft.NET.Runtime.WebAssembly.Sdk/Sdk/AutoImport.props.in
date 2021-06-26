@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <WasmNativeWorkload>true</WasmNativeWorkload>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <RuntimePackInWorkloadVersion>${PackageVersion}</RuntimePackInWorkloadVersion>
+    <WorkloadPacksDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..'))</WorkloadPacksDir>
+  </PropertyGroup>
+</Project>

@@ -352,9 +352,11 @@
                       Condition="'$(TestTrimming)' == 'true'"
                       AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
     <ProjectReference Include="@(TrimmingTestProjects)" />
+
+    <!-- wasm.build.tests are run on non-aot regular run -->
     <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' != 'true'"
+                      Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestAssemblies)' == 'true'"
                       BuildInParallel="false" />
   </ItemGroup>
 
@@ -381,10 +383,11 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
+  <!-- Don't build samples, and functional tests on EAT, and AOT lanes -->
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
+                      BuildInParallel="true" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />

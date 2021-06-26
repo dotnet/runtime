@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <PackageDescription>Provides the tasks+targets, for consumption by wasm based workloads</PackageDescription>
+    <AutoImportPropsPath>$(IntermediateOutputPath)AutoImport.props</AutoImportPropsPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,12 +11,23 @@
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" />
 
     <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
-    <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
+    <PackageFile Include="$(AutoImportPropsPath)" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.targets" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Native.*" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\EmSdkRepo.Defaults.props" TargetPath="Sdk" />
   </ItemGroup>
+
+  <Target Name="_WriteVersions" AfterTargets="CalculatePackageVersion">
+    <ItemGroup>
+      <_AutoImportValues Include="PackageVersion" Value="$(PackageVersion)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="Sdk\AutoImport.props.in"
+      Properties="@(_AutoImportValues)"
+      OutputPath="$(AutoImportPropsPath)" />
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -1,5 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <WasmNativeWorkload>true</WasmNativeWorkload>
-  </PropertyGroup>
-</Project>
