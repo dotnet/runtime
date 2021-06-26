@@ -8508,17 +8508,30 @@ retry:
 			} else if (opcode == MINT_LDOBJ_VT) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int ldsize = ins->data [0];
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + LDOBJ_VT with MOV_VT
-					ins->opcode = MINT_MOV_VT;
 					local_ref_count [sregs [0]]--;
-					sregs [0] = local;
 
+					if (ldsize == td->locals [local].size) {
+						// Replace LDLOCA + LDOBJ_VT with MOV_VT
+						ins->opcode = MINT_MOV_VT;
+						sregs [0] = local;
+						needs_retry = TRUE;
+					} else {
+						// This loads just a part of the local valuetype
+						ins = interp_insert_ins (td, ins, MINT_MOV_OFF);
+						interp_ins_set_dreg (ins, ins->prev->dreg);
+						interp_ins_set_sreg (ins, local);
+						ins->data [0] = 0;
+						ins->data [1] = MINT_TYPE_VT;
+						ins->data [2] = ldsize;
+
+						interp_clear_ins (ins->prev);
+					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins);
 					}
-					needs_retry = TRUE;
 				}
 			} else if (MINT_IS_STFLD (opcode) && ins->data [0] == 0) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
