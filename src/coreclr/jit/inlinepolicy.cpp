@@ -1429,7 +1429,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += 0.5;
+        multiplier += 1.0;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
                 m_FldAccessOverArgStruct, multiplier);
@@ -1552,7 +1552,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 1.0 + max(4, m_FoldableExpr);
+        multiplier += 1.0 + m_FoldableExpr;
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
                 multiplier);
     }
@@ -1560,7 +1560,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += max(4, m_FoldableExprUn);
+        multiplier += m_FoldableExprUn;
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
                 multiplier);
     }
@@ -1649,10 +1649,10 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
-    else if (m_RootCompiler->lvaTableCnt > 50)
+    else if (m_RootCompiler->lvaTableCnt > ((unsigned)(JitConfig.JitMaxLocalsToTrack() / 4)))
     {
         // Slow down inlining if we already have to many locals in the rootCompiler.
-        multiplier /= (m_RootCompiler->lvaTableCnt / 50.0);
+        multiplier /= ((double)m_RootCompiler->lvaTableCnt / ((double)JitConfig.JitMaxLocalsToTrack() / 4.0));
         JITDUMP("\nCaller %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
     }
 
