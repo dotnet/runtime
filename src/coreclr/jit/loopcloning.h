@@ -220,14 +220,8 @@ struct ArrIndex
     }
 
 #ifdef DEBUG
-    void Print(unsigned dim = -1)
-    {
-        printf("V%02d", arrLcl);
-        for (unsigned i = 0; i < ((dim == (unsigned)-1) ? rank : dim); ++i)
-        {
-            printf("[V%02d]", indLcls.GetRef(i));
-        }
-    }
+    void Print(unsigned dim = -1);
+    void PrintBoundsCheckNodes(unsigned dim = -1);
 #endif
 };
 
@@ -260,9 +254,8 @@ struct LcOptInfo
 #include "loopcloningopts.h"
     };
 
-    void*   optInfo;
     OptType optType;
-    LcOptInfo(void* optInfo, OptType optType) : optInfo(optInfo), optType(optType)
+    LcOptInfo(OptType optType) : optType(optType)
     {
     }
 
@@ -270,6 +263,7 @@ struct LcOptInfo
     {
         return optType;
     }
+
 #define LC_OPT(en)                                                                                                     \
     en##OptInfo* As##en##OptInfo()                                                                                     \
     {                                                                                                                  \
@@ -292,7 +286,7 @@ struct LcMdArrayOptInfo : public LcOptInfo
     ArrIndex* index;         // "index" cached computation in the form of an ArrIndex representation.
 
     LcMdArrayOptInfo(GenTreeArrElem* arrElem, unsigned dim)
-        : LcOptInfo(this, LcMdArray), arrElem(arrElem), dim(dim), index(nullptr)
+        : LcOptInfo(LcMdArray), arrElem(arrElem), dim(dim), index(nullptr)
     {
     }
 
@@ -325,7 +319,7 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
     Statement* stmt;     // "stmt" where the optimization opportunity occurs.
 
     LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, Statement* stmt)
-        : LcOptInfo(this, LcJaggedArray), dim(dim), arrIndex(arrIndex), stmt(stmt)
+        : LcOptInfo(LcJaggedArray), dim(dim), arrIndex(arrIndex), stmt(stmt)
     {
     }
 };

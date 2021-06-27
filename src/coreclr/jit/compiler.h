@@ -6209,9 +6209,9 @@ private:
 public:
     void optInit();
 
-    GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
-    GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
-    void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
+    GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
+    GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
+    void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
     bool optIsRangeCheckRemovable(GenTree* tree);
 
 protected:

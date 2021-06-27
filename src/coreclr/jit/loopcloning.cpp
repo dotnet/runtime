@@ -12,6 +12,40 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jitpch.h"
 
+#ifdef DEBUG
+
+//--------------------------------------------------------------------------------------------------
+// ArrIndex::Print - debug print an ArrIndex struct in form: `V01[V02][V03]`.
+//
+// Arguments:
+//      dim     (Optional) Print up to but not including this dimension. Default: print all dimensions.
+//
+void ArrIndex::Print(unsigned dim /* = -1 */)
+{
+    printf("V%02d", arrLcl);
+    for (unsigned i = 0; i < ((dim == (unsigned)-1) ? rank : dim); ++i)
+    {
+        printf("[V%02d]", indLcls.Get(i));
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// ArrIndex::PrintBoundsCheckNodes - debug print an ArrIndex struct bounds check node tree ids in
+// form: `[000125][000113]`.
+//
+// Arguments:
+//      dim     (Optional) Print up to but not including this dimension. Default: print all dimensions.
+//
+void ArrIndex::PrintBoundsCheckNodes(unsigned dim /* = -1 */)
+{
+    for (unsigned i = 0; i < ((dim == (unsigned)-1) ? rank : dim); ++i)
+    {
+        Compiler::printTreeID(bndsChks.Get(i));
+    }
+}
+
+#endif // DEBUG
+
 //--------------------------------------------------------------------------------------------------
 // ToGenTree - Convert an arrLen operation into a gentree node.
 //
@@ -976,7 +1010,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 
         for (unsigned i = 0; i < optInfos->Size(); ++i)
         {
-            LcOptInfo* optInfo = optInfos->GetRef(i);
+            LcOptInfo* optInfo = optInfos->Get(i);
             switch (optInfo->GetOptType())
             {
                 case LcOptInfo::LcJaggedArray:
@@ -985,7 +1019,6 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                     LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                     LC_Array arrLen(LC_Array::Jagged, &arrIndexInfo->arrIndex, arrIndexInfo->dim, LC_Array::ArrLen);
                     LC_Ident arrLenIdent = LC_Ident(arrLen);
-
                     LC_Condition cond(GT_LE, LC_Expr(ident), LC_Expr(arrLenIdent));
                     context->EnsureConditions(loopNum)->Push(cond);
 
@@ -1263,14 +1296,57 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
     for (unsigned i = 0; i < optInfos->Size(); ++i)
     {
-        LcOptInfo* optInfo = optInfos->GetRef(i);
+        LcOptInfo* optInfo = optInfos->Get(i);
         switch (optInfo->GetOptType())
         {
             case LcOptInfo::LcJaggedArray:
             {
                 LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                 compCurBB                          = arrIndexInfo->arrIndex.useBlock;
-                optRemoveCommaBasedRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
+
+                // Remove all bounds checks for this array up to (and including) `arrIndexInfo->dim`. So, if that is 1,
+                // Remove rank 0 and 1 bounds checks.
+
+                for (unsigned dim = 0; dim <= arrIndexInfo->dim; dim++)
+                {
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("Remove bounds check for stmt " FMT_STMT ", dim %d, ", arrIndexInfo->stmt->GetID(), dim);
+                        arrIndexInfo->arrIndex.Print();
+                        printf(", bounds check nodes: ");
+                        arrIndexInfo->arrIndex.PrintBoundsCheckNodes();
+                        printf("\n");
+                    }
+#endif // DEBUG
+
+                    GenTree* bndsChkNode = arrIndexInfo->arrIndex.bndsChks[dim];
+                    if (bndsChkNode->gtGetOp1()->OperIsBoundsCheck())
+                    {
+                        // This COMMA node will only represent a bounds check if we've haven't already removed this
+                        // bounds check in some other nesting cloned loop. For example, consider:
+                        //   for (i = 0; i < x; i++)
+                        //      for (j = 0; j < y; j++)
+                        //         a[i][j] = i + j;
+                        // If the outer loop is cloned first, it will remove the a[i] bounds check from the optimized
+                        // path. Later, when the inner loop is cloned, we want to remove the a[i][j] bounds check. If
+                        // we clone the inner loop, we know that the a[i] bounds check isn't required because we'll add
+                        // it to the loop cloning conditions. On the other hand, we can clone a loop where we get rid of
+                        // the nested bounds check but nobody has gotten rid of the outer bounds check. As before, we know
+                        // the outer bounds check is not needed because it's been added to the cloning conditions, so we
+                        // can get rid of the bounds check here.
+                        //
+                        optRemoveCommaBasedRangeCheck(bndsChkNode, arrIndexInfo->stmt);
+                    }
+                    else
+                    {
+                        JITDUMP("  Bounds check already removed\n");
+
+                        // If the bounds check node isn't there, it better have been converted to a GT_NOP.
+                        assert(bndsChkNode->gtGetOp1()->OperIs(GT_NOP));
+                    }
+                }
+
                 DBEXEC(dynamicPath, optDebugLogLoopCloning(arrIndexInfo->arrIndex.useBlock, arrIndexInfo->stmt));
             }
             break;
@@ -2241,6 +2317,8 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
             printTreeID(tree);
             printf(" which is equivalent to: ");
             arrIndex.Print();
+            printf(", bounds check nodes: ");
+            arrIndex.PrintBoundsCheckNodes();
             printf("\n");
         }
 #endif
