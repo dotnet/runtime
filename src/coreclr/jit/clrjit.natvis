@@ -190,6 +190,17 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
     </Expand>
   </Type>
 
+  <Type Name="jitstd::vector&lt;*&gt;">
+    <DisplayString Condition="m_nSize > 0">size={m_nSize,d} capacity={m_nCapacity,d}</DisplayString>
+    <DisplayString Condition="m_nSize == 0">Empty</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>m_nSize</Size>
+        <ValuePointer>m_pArray</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
   <Type Name="JitExpandArray&lt;*&gt;">
     <DisplayString Condition="m_size > 0">size={m_size,d}</DisplayString>
     <DisplayString Condition="m_size == 0">Empty</DisplayString>
