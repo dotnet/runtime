@@ -1052,7 +1052,7 @@ constexpr uint64_t EXPECTED_CHUNKSIZE=128;
 constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
 constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
 constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
-constexpr uint64_t BOOKMARK_CHUNK_MASK (1ull << (CHUNKS_PER_DEBUGGERHEAP - 1));
+constexpr uint64_t BOOKKEEPING_CHUNK_MASK (1ull << (CHUNKS_PER_DEBUGGERHEAP - 1));
 
 // Forward declaration
 struct DebuggerHeapExecutableMemoryPage;
@@ -1122,7 +1122,7 @@ struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
     inline void SetPageOccupancy(uint64_t newOccupancy)
     {
         // Can't unset the bookmark chunk!
-        ASSERT((newOccupancy & BOOKMARK_CHUNK_MASK) != 0);
+        ASSERT((newOccupancy & BOOKKEEPING_CHUNK_MASK) != 0);
         ASSERT(newOccupancy <= MAX_CHUNK_MASK);
         ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
         debuggerHeapPageWriterHolder.GetRW()->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
@@ -1138,7 +1138,7 @@ struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
     {
         ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
 
-        SetPageOccupancy(BOOKMARK_CHUNK_MASK); // only the first bit is set.
+        SetPageOccupancy(BOOKKEEPING_CHUNK_MASK); // only the first bit is set.
         for (uint8_t i = 1; i < CHUNKS_PER_DEBUGGERHEAP; i++)
         {
             ASSERT(i != 0);
