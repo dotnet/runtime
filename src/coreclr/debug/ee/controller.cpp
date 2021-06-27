@@ -1393,7 +1393,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)        
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
     }
 // TODO: : determine if this is needed for AMD64
 #if defined(TARGET_X86) //REVISIT_TODO what is this?!
@@ -1496,7 +1496,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)        
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
     }
     else
     {
@@ -4413,8 +4413,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         }
         else
         {
+            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, SharedPatchBypassBuffer::cbBufferBypass);
+            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
             if (m_instrAttrib.m_fIsWrite)
             {
