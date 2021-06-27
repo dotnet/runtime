@@ -70,7 +70,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleWriter = true,
             });
 
-            public void RemoveStream(MsQuicStream stream)
+            public void RemoveStream(MsQuicStream? stream)
             {
                 bool releaseHandles;
                 lock (this)
@@ -252,7 +252,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
 
             // Stop accepting new streams.
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
 
             // Stop notifying about available streams.
             TaskCompletionSource? unidirectionalTcs = null;
@@ -625,7 +625,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"Exception occurred during connection callback: {ex.Message}");
+                    NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] Exception occurred during handling {connectionEvent.Type} connection callback: {ex.Message}");
                 }
 
                 // TODO: trigger an exception on any outstanding async calls.
@@ -650,6 +650,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.AcceptQueue.Writer.TryComplete();
             await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
             {
+                if (item.CanRead)
+                {
+                    item.AbortRead(0xffffffff);
+                }
+                if (item.CanWrite)
+                {
+                    item.AbortWrite(0xffffffff);
+                }
                 item.Dispose();
             }
         }
@@ -681,8 +689,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
-                _state!.Handle?.Dispose();
-                if (_state.StateGCHandle.IsAllocated) _state.StateGCHandle.Free();
+                _state!.Handle.Dispose();
+                _state.StateGCHandle.Free();
             }
         }
 

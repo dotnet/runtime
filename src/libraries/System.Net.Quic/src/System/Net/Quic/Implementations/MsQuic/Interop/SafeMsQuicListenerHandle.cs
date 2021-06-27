@@ -16,6 +16,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         protected override bool ReleaseHandle()
         {
             MsQuicApi.Api.ListenerCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
     }

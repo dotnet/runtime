@@ -19,7 +19,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal static readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
 
         private readonly State _state = new State();
-        private GCHandle _stateHandle;
 
         // Backing for StreamId
         private long _streamId = -1;
@@ -28,15 +27,16 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _started;
 
         // Used by the class to indicate that the stream is m_Readable.
-        private readonly bool _canRead;
+        private bool _canRead;
 
         // Used by the class to indicate that the stream is writable.
-        private readonly bool _canWrite;
+        private bool _canWrite;
 
-        private volatile bool _disposed;
+        private int _disposed;
 
         private sealed class State
         {
+            public GCHandle StateHandle;
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
 
@@ -65,6 +65,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public ShutdownState ShutdownState;
+            public int ShutdownDone;
 
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -78,23 +79,23 @@ namespace System.Net.Quic.Implementations.MsQuic
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
 
-            _stateHandle = GCHandle.Alloc(_state);
+            _state.StateHandle = GCHandle.Alloc(_state);
             try
             {
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_streamDelegate,
-                    GCHandle.ToIntPtr(_stateHandle));
+                    GCHandle.ToIntPtr(_state.StateHandle));
             }
             catch
             {
-                _stateHandle.Free();
+                _state.StateHandle.Free();
                 throw;
             }
 
             if (!connectionState.TryAddStream(this))
             {
-                _stateHandle.Free();
+                _state.StateHandle.Free();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
@@ -116,14 +117,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
-            _stateHandle = GCHandle.Alloc(_state);
+            _state.StateHandle = GCHandle.Alloc(_state);
+
             try
             {
                 uint status = MsQuicApi.Api.StreamOpenDelegate(
                     connectionState.Handle,
                     flags,
                     s_streamDelegate,
-                    GCHandle.ToIntPtr(_stateHandle),
+                    GCHandle.ToIntPtr(_state.StateHandle),
                     out _state.Handle);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
@@ -134,14 +136,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             catch
             {
                 _state.Handle?.Dispose();
-                _stateHandle.Free();
+                _state.StateHandle.Free();
                 throw;
             }
 
             if (!connectionState.TryAddStream(this))
             {
                 _state.Handle?.Dispose();
-                _stateHandle.Free();
+                _state.StateHandle.Free();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
@@ -417,10 +419,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void AbortRead(long errorCode)
         {
             ThrowIfDisposed();
+            Debug.Assert(errorCode != 0);
 
             lock (_state)
             {
                 _state.ReadState = ReadState.Aborted;
+                _canRead = false;
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
@@ -429,16 +433,24 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void AbortWrite(long errorCode)
         {
             ThrowIfDisposed();
+            Debug.Assert(errorCode != 0);
 
             bool shouldComplete = false;
 
             lock (_state)
             {
+                if (!_canWrite)
+                {
+                    return;
+                }
+
                 if (_state.ShutdownWriteState == ShutdownWriteState.None)
                 {
                     _state.ShutdownWriteState = ShutdownWriteState.Canceled;
                     shouldComplete = true;
                 }
+
+                _canWrite = false;
             }
 
             if (shouldComplete)
@@ -454,6 +466,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
+            _canWrite = false;
         }
 
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
@@ -531,6 +544,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void Shutdown()
         {
             ThrowIfDisposed();
+            _canWrite = false;
 
             // it is ok to send shutdown several times, MsQuic will ignore it
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
@@ -596,17 +610,73 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void Dispose(bool disposing)
         {
-            if (_disposed)
+            int disposed = Interlocked.Exchange(ref _disposed, 1);
+            if (disposed != 0)
             {
                 return;
             }
 
-            _disposed = true;
-            _state.Handle.Dispose();
-            Marshal.FreeHGlobal(_state.SendQuicBuffers);
-            if (_stateHandle.IsAllocated) _stateHandle.Free();
-            CleanupSendState(_state);
-            _state.ConnectionState?.RemoveStream(this);
+            bool callShutdown = false;
+            bool abortRead = false;
+            bool releaseHandles = false;
+            lock (_state)
+            {
+                if (_canWrite && _state.ShutdownWriteState == ShutdownWriteState.None)
+                {
+                    callShutdown = true;
+                }
+
+                if (_canRead && _state.ReadState != ReadState.Aborted && _state.ReadState != ReadState.ReadsCompleted)
+                {
+                    abortRead = true;
+                    _state.ReadState = ReadState.Aborted;
+                }
+
+                if (_state.ShutdownState != ShutdownState.Finished)
+                {
+                    _state.ShutdownState = ShutdownState.Pending;
+                }
+                else if (!callShutdown && !abortRead)
+                {
+                    _state.ShutdownState = ShutdownState.Finished;
+                }
+
+                // We already got final event.
+                releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, 1) == 2;
+            }
+
+            _canRead = false;
+            _canWrite = false;
+
+            if (callShutdown)
+            {
+                try
+                {
+                    // Handle race condition when stream can be closed handling SHUTDOWN_COMPLETE.
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+                } catch (ObjectDisposedException) { };
+            }
+
+            if (abortRead)
+            {
+                try
+                {
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
+                } catch (ObjectDisposedException) { };
+            }
+
+            if (releaseHandles)
+            {
+                if (_state.StateHandle.IsAllocated)
+                {
+                    // may be freed/not allocated if we fail in constructor.
+                    _state.Handle.Dispose();
+                    _state.StateHandle.Free();
+                }
+                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                CleanupSendState(_state);
+                _state.ConnectionState?.RemoveStream(this);
+            }
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -671,8 +741,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return MsQuicStatusCodes.Success;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(state, $"[Stream#{state.GetHashCode()}] Exception occurred during handling {(QUIC_STREAM_EVENT_TYPE)evt.Type} event: {ex.Message}");
+                }
+
                 return MsQuicStatusCodes.InternalError;
             }
         }
@@ -822,6 +897,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldShutdownComplete)
             {
                 state.ShutdownCompletionSource.SetResult();
+            }
+
+            // Dispose was called before complete event.
+            bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, 2) == 1;
+            if (releaseHandles)
+            {
+                state.ShutdownState = ShutdownState.Finished;
+                state.Handle.Dispose();
+                Marshal.FreeHGlobal(state.SendQuicBuffers);
+                if (state.StateHandle.IsAllocated) state.StateHandle.Free();
+                CleanupSendState(state);
+                state.ConnectionState?.RemoveStream(null);
             }
 
             return MsQuicStatusCodes.Success;
@@ -1135,7 +1222,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(nameof(MsQuicStream));
             }
@@ -1252,6 +1339,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             None,
             Canceled,
+            Pending,
             Finished,
             ConnectionClosed
         }
