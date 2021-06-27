@@ -79,7 +79,7 @@ if (GEN_SHARED_LIB)
             COMMENT "Verifying System.Security.Cryptography.Native.Apple points against entrypoints.c "
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
                 $<TARGET_FILE:System.Security.Cryptography.Native.Apple>
-                ${CMAKE_CURRENT_SOURCE_DIR}/../../Unix/System.Security.Cryptography.Native.Apple/entrypoints.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
                 ${CMAKE_NM}
             VERBATIM
         )
