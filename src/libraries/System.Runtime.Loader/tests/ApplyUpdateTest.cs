@@ -14,10 +14,9 @@ namespace System.Reflection.Metadata
     /// testsuite runs each test in sequence, loading the corresponding
     /// assembly, applying an update to it and observing the results.
     [Collection(nameof(ApplyUpdateUtil.NoParallelTests))]
-    [ConditionalClass(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
     public class ApplyUpdateTest
     {
-        [Fact]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void StaticMethodBodyUpdate()
         {
@@ -40,7 +39,7 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         void ClassWithCustomAttributes()
         {
@@ -122,12 +121,18 @@ namespace System.Reflection.Metadata
             Assert.Equal(typeof(string), result.GetType());
         }
 
-        [Fact]
-        [ActiveIssue("Returns true on mono", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingRemoteExecutor))]
         public static void IsSupported()
         {
             bool result = MetadataUpdater.IsSupported;
             Assert.False(result);
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingLaunchEnvironment))]
+        public static void IsSupported2()
+        {
+            bool result = MetadataUpdater.IsSupported;
+            Assert.True(result);
         }
     }
 }
