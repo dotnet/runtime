@@ -365,10 +365,10 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     Thread * pThread;
     bool fIsCooperative;
-    
+
     pThread = g_pEEInterface->GetThread();
     fIsCooperative = (pThread != NULL) && (pThread->PreemptiveGCDisabled());
-    
+
     if (m_fShutdownMode && !fIsCooperative)
     {
         // The big fear is that some other random thread will take the debugger-lock and then block on something else,
@@ -16299,7 +16299,8 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numberOfBytes)
         }
     }
 
-    return ChangePageUsage(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
+    ASSERT(chunkToUse >= 1 && (uint)chunkToUse < CHUNKS_PER_DEBUGGERHEAP);
+    return GetPointerToChunkWithUsageUpdate(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
 }
 
 void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
@@ -16316,7 +16317,7 @@ void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
     // Sanity check: assert that the address really represents the start of a chunk.
     ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % EXPECTED_CHUNKSIZE == 0);
 
-    ChangePageUsage(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
+    GetPointerToChunkWithUsageUpdate(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
 }
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
@@ -16365,7 +16366,7 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
     return true;
 }
 
-void* DebuggerHeapExecutableMemoryAllocator::ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
+void* DebuggerHeapExecutableMemoryAllocator::GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
 {
     ASSERT(action == ChangePageUsageAction::ALLOCATE || action == ChangePageUsageAction::FREE);
     uint64_t mask = 1ull << (CHUNKS_PER_DEBUGGERHEAP - chunkNumber - 1);

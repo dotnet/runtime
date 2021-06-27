@@ -1130,7 +1130,7 @@ struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 
     inline void* GetPointerToChunk(int chunkNum) const
     {
-        ASSERT(chunkNum < CHUNKS_PER_DEBUGGERHEAP);
+        ASSERT(chunkNum >= 0 && (uint)chunkNum < CHUNKS_PER_DEBUGGERHEAP);
         return (char*)this + chunkNum * sizeof(DebuggerHeapExecutableMemoryChunk);
     }
 
@@ -1151,7 +1151,7 @@ private:
     DebuggerHeapExecutableMemoryChunk chunks[CHUNKS_PER_DEBUGGERHEAP];
     static_assert(sizeof(chunks) == DEBUGGERHEAP_PAGESIZE,
         "Expected DebuggerHeapExecutableMemoryPage to have DEBUGGERHEAP_PAGESIZE bytes worth of chunks.");
-    
+
 };
 static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
     "DebuggerHeapExecutableMemoryPage exceeded the expected size.");
@@ -1182,7 +1182,7 @@ private:
 
     DebuggerHeapExecutableMemoryPage* AddNewPage();
     bool CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse);
-    void* ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
+    void* GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
 
 private:
     // Linked list of pages that have been allocated
