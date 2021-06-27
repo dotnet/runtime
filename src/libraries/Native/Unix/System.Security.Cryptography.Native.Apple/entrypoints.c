@@ -21,6 +21,7 @@
 #include "pal_x509_macos.h"
 #include "pal_x509chain.h"
 #include "pal_keyderivation_macos.h"
+#include "pal_keyagree.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
