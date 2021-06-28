@@ -8504,10 +8504,7 @@ MethodTable::GetMethodDataHelper(
     MethodDataWrapper hDecl(GetMethodData(pMTDecl, FALSE));
     MethodDataWrapper hImpl(GetMethodData(pMTImpl, FALSE));
 
-    UINT32 cb = MethodDataInterfaceImpl::GetObjectSize(pMTDecl);
-    NewArrayHolder<BYTE> pb(new BYTE[cb]);
-    MethodDataInterfaceImpl * pData = new (pb.GetValue()) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
-    pb.SuppressRelease();
+    MethodDataInterfaceImpl * pData = new ({ pMTDecl }) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
     return pData;
 } // MethodTable::GetMethodDataHelper
@@ -8548,10 +8545,8 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
         }
         else {
             UINT32 cb = MethodDataObject::GetObjectSize(pMTDecl);
-            NewArrayHolder<BYTE> pb(new BYTE[cb]);
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new (pb.GetValue()) MethodDataObject(pMTDecl, h.GetValue());
-            pb.SuppressRelease();
+            pData = new ({ pMTDecl }) MethodDataObject(pMTDecl, h.GetValue());
         }
     }
     else {
