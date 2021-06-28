@@ -259,7 +259,7 @@ if [[ "$run_from_perf_repo" = true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
+    git clone --branch alicial/hikeMicro-benchmark --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
     
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
