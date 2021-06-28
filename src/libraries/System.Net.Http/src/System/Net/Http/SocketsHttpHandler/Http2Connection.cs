@@ -472,6 +472,15 @@ namespace System.Net.Http
             while (!frameHeader.EndHeadersFlag)
             {
                 frameHeader = await ReadFrameAsync().ConfigureAwait(false);
+
+                // We may receive ping frames beetween the HEADERS/CONTINUATION frames.
+                // These are typically a PING ACKs in response to RTT PINGs.
+                if (frameHeader.Type == FrameType.Ping)
+                {
+                    ProcessPingFrame(frameHeader);
+                    continue;
+                }
+
                 if (frameHeader.Type != FrameType.Continuation ||
                     frameHeader.StreamId != streamId)
                 {
