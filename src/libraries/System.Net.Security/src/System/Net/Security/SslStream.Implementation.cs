@@ -315,6 +315,11 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
             }
 
+            if (_decryptedBytesCount is not 0)
+            {
+                throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
+            }
+
             _sslAuthenticationOptions!.RemoteCertRequired = true;
 
             try
