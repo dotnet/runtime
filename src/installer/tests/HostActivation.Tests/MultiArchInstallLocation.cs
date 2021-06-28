@@ -86,13 +86,13 @@ namespace HostActivation.Tests
                 registeredInstallLocationOverride.SetInstallLocation((arch, "some/install/location"));
 
                 Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                .DotNetRoot(dotnet, arch)
-                .Execute()
-                .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(dotnet, fixture.CurrentRid, arch)
-                .And.NotHaveStdErrContaining("Using global install location");
+                    .EnableTracingAndCaptureOutputs()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .DotNetRoot(dotnet, arch)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveUsedDotNetRootInstallLocation(dotnet, fixture.CurrentRid, arch)
+                    .And.NotHaveStdErrContaining("Using global install location");
             }
         }
 
