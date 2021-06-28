@@ -7884,13 +7884,10 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
     // will widen the return value to 4 bytes, so we can allow implicit widening
     // in managed to managed tailcalls when dealing with <= 4 bytes.
     bool isManaged =
-        (callerCallConv == CorInfoCallConvExtension::Managed) &&
-        (calleeCallConv == CorInfoCallConvExtension::Managed);
+        (callerCallConv == CorInfoCallConvExtension::Managed) && (calleeCallConv == CorInfoCallConvExtension::Managed);
 
-    if (isManaged &&
-        varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
-        (genTypeSize(callerRetType) <= 4) &&
-        (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
+    if (isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
+        (genTypeSize(callerRetType) <= 4) && (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
     {
         return true;
     }
