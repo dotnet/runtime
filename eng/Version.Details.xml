@@ -4,6 +4,10 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>59588c1257a842089d0b7df3bad1cdd69ac720e1</Sha>
     </Dependency>
+    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21328.2">
+      <Uri>https://github.com/dotnet/msquic</Uri>
+      <Sha>d7db669b70f4dd67ec001c192f9809c218cab88b</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.21321.1">
