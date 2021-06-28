@@ -9147,8 +9147,9 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
                         // We allow a limited set of interface generic shapes with type variables. In particular, we require the 
-                        // instantiations to be exactly simple type variables
-                        if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()))
+                        // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
+                        // so that the fallback instantiating logic works efficiently
+                        if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()) && pItfPossiblyApprox->GetInstantiation().GetNumArgs() <= MethodTable::MaxGenericParametersForSpecialMarkerType)
                         {
                             pItfPossiblyApprox = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
                         }
