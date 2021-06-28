@@ -826,6 +826,29 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task PingBeforeContinuationFrame_Success()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+
+                await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+
+                await connection.RespondToPingFrameAsync(); // Respond to 1 RTT PING
+                await connection.PingPong();
+                
+                await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: true));
+                await connection.WriteFrameAsync(MakeSimpleDataFrame(streamId, endStream: true));
+
+                using HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
         // This test is based on RFC 7540 section 6.8:
         // "An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0 as a
         // connection error (Section 5.4.1) of type PROTOCOL_ERROR."
