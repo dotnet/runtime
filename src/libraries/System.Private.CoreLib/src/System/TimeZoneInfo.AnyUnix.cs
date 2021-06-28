@@ -18,7 +18,6 @@ namespace System
     {
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
         private const string TimeZoneEnvironmentVariable = "TZ";
-        private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
@@ -225,6 +224,17 @@ namespace System
             return rulesList.ToArray();
         }
 
+        private static void PopulateAllSystemTimeZones(CachedData cachedData)
+        {
+            Debug.Assert(Monitor.IsEntered(cachedData));
+
+            string timeZoneDirectory = GetTimeZoneDirectory();
+            foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
+            {
+                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
+            }
+        }
+
         /// <summary>
         /// Helper function for retrieving the local system time zone.
         /// May throw COMException, TimeZoneNotFoundException, InvalidTimeZoneException.
@@ -281,6 +291,62 @@ namespace System
             }
 
             return TimeZoneInfoResult.Success;
+        }
+
+        /// <summary>
+        /// Returns a collection of TimeZone Id values from the time zone file in the timeZoneDirectory.
+        /// </summary>
+        /// <remarks>
+        /// Lines that start with # are comments and are skipped.
+        /// </remarks>
+        private static List<string> GetTimeZoneIds(string timeZoneDirectory)
+        {
+            List<string> timeZoneIds = new List<string>();
+
+            try
+            {
+                using (StreamReader sr = new StreamReader(Path.Combine(timeZoneDirectory, TimeZoneFileName), Encoding.UTF8))
+                {
+                    string? zoneTabFileLine;
+                    while ((zoneTabFileLine = sr.ReadLine()) != null)
+                    {
+                        if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
+                        {
+                            // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
+
+                            int firstTabIndex = zoneTabFileLine.IndexOf('\t');
+                            if (firstTabIndex != -1)
+                            {
+                                int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
+                                if (secondTabIndex != -1)
+                                {
+                                    string timeZoneId;
+                                    int startIndex = secondTabIndex + 1;
+                                    int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
+                                    if (thirdTabIndex != -1)
+                                    {
+                                        int length = thirdTabIndex - startIndex;
+                                        timeZoneId = zoneTabFileLine.Substring(startIndex, length);
+                                    }
+                                    else
+                                    {
+                                        timeZoneId = zoneTabFileLine.Substring(startIndex);
+                                    }
+
+                                    if (!string.IsNullOrEmpty(timeZoneId))
+                                    {
+                                        timeZoneIds.Add(timeZoneId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+
+            return timeZoneIds;
         }
 
         /// <summary>
@@ -627,21 +693,6 @@ namespace System
             return null;
         }
 
-        private static string GetTimeZoneDirectory()
-        {
-            string? tzDirectory = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable);
-
-            if (tzDirectory == null)
-            {
-                tzDirectory = DefaultTimeZoneDirectory;
-            }
-            else if (!tzDirectory.EndsWith(Path.DirectorySeparatorChar))
-            {
-                tzDirectory += PathInternal.DirectorySeparatorCharAsString;
-            }
-
-            return tzDirectory;
-        }
 
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
