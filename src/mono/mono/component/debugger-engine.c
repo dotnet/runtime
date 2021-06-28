@@ -24,7 +24,6 @@
 static void mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args);
 static gboolean mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method);
 
-static void mono_de_init(DebuggerEngineCallbacks* cbs);
 static gpointer get_this_addr(DbgEngineStackFrame* the_frame);
 static MonoMethod* get_set_notification_method(MonoClass* async_builder_class);
 
@@ -884,13 +883,13 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	g_ptr_array_add (reqs, ss_req->req);
 
 	void *bp_events;
-	bp_events = rt_callbacks.create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
+	bp_events = mono_dbg_create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
 
 	g_ptr_array_free (reqs, TRUE);
 
 	mono_loader_unlock ();
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, il_offset);
+	mono_dbg_process_breakpoint_events (bp_events, method, ctx, il_offset);
 
  exit:
 	mono_de_ss_req_release (ss_req);
@@ -1115,7 +1114,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 				mono_debug_free_method_async_debug_info (asyncMethod);
 
 			//breakpoint was hit in parallelly executing async method, ignore it
-			if (ss_req->async_id != rt_callbacks.get_this_async_id (frames [0]))
+			if (ss_req->async_id != mono_get_this_async_id (frames [0]))
 				continue;
 		}
 
@@ -1146,14 +1145,14 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 		mono_de_ss_start (ss_req, &args);
 	}
 
-	void *bp_events = rt_callbacks.create_breakpoint_events (ss_reqs, bp_reqs, ji, kind);
+	void *bp_events = mono_dbg_create_breakpoint_events (ss_reqs, bp_reqs, ji, kind);
 
 	mono_loader_unlock ();
 
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
+	mono_dbg_process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
 }
 
 /*
@@ -1344,7 +1343,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			// of this await call and sets async_id so we can distinguish it from parallel executions
 			for (i = 0; i < asyncMethod->num_awaits; i++) {
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
-					ss_req->async_id = rt_callbacks.get_this_async_id (frames [0]);
+					ss_req->async_id = mono_get_this_async_id (frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
@@ -1360,9 +1359,9 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			}
 			if (ss_req->depth == STEP_DEPTH_OUT) {
 				//If we are inside `async void` method, do normal step-out
-				if (rt_callbacks.set_set_notification_for_wait_completion_flag (frames [0])) {
-					ss_req->async_id = rt_callbacks.get_this_async_id (frames [0]);
-					ss_req->async_stepout_method = rt_callbacks.get_notify_debugger_of_wait_completion_method ();
+				if (set_set_notification_for_wait_completion_flag (frames [0])) {
+					ss_req->async_id = mono_get_this_async_id (frames [0]);
+					ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
@@ -1491,7 +1490,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		mono_loader_unlock ();
 
 cleanup:
-	rt_callbacks.ss_args_destroy (ss_args);
+	mono_ss_args_destroy (ss_args);
 }
 
 
@@ -1534,7 +1533,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 	}
 
 	SingleStepArgs args;
-	err = rt_callbacks.ss_create_init_args (ss_req, &args);
+	err = mono_ss_create_init_args (ss_req, &args);
 	if (err)
 		return err;
 	g_ptr_array_add (the_ss_reqs, ss_req);
@@ -1561,7 +1560,7 @@ mono_de_set_log_level (int level, FILE *file)
  *
  * Inits the shared debugger engine. Not reentrant.
  */
-static void
+void
 mono_de_init (DebuggerEngineCallbacks *cbs)
 {
 	rt_callbacks = *cbs;
@@ -1764,19 +1763,9 @@ mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
 void
 debugger_engine_add_function_pointers(MonoComponentDebugger* fn_table)
 {
-	fn_table->mono_de_init = mono_de_init;
-	fn_table->mono_de_set_log_level = mono_de_set_log_level;
 	fn_table->mono_de_add_pending_breakpoints = mono_de_add_pending_breakpoints;
-	fn_table->mono_de_process_single_step = mono_de_process_single_step;
-	fn_table->mono_de_process_breakpoint = mono_de_process_breakpoint;
 	fn_table->mono_de_cancel_all_ss = mono_de_cancel_all_ss;
 	fn_table->mono_de_domain_add = mono_de_domain_add;
-	fn_table->set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag;
-	fn_table->get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
-	fn_table->get_async_method_builder = get_async_method_builder;
-	fn_table->mono_ss_create_init_args = mono_ss_create_init_args;
-	fn_table->mono_ss_args_destroy = mono_ss_args_destroy;
-	fn_table->mono_get_this_async_id = mono_get_this_async_id;
 }
 
 #endif

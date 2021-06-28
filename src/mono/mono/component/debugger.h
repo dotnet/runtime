@@ -120,17 +120,6 @@ typedef struct {
 	void (*ss_calculate_framecount) (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
 	gboolean (*ensure_jit) (DbgEngineStackFrame *frame);
 	int (*ensure_runtime_is_suspended) (void);
-
-	int (*get_this_async_id) (DbgEngineStackFrame *frame);
-
-	void* (*create_breakpoint_events) (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
-	void (*process_breakpoint_events) (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
-
-	gboolean (*set_set_notification_for_wait_completion_flag) (DbgEngineStackFrame *f);
-	MonoMethod* (*get_notify_debugger_of_wait_completion_method)(void);
-
-	int (*ss_create_init_args) (SingleStepReq *ss_req, SingleStepArgs *args);
-	void (*ss_args_destroy) (SingleStepArgs *ss_args);
 	int (*handle_multiple_ss_requests)(void);
 } DebuggerEngineCallbacks;
 
@@ -203,29 +192,14 @@ typedef struct MonoComponentDebugger {
 	gboolean (*mono_debugger_agent_transport_handshake) (void);
 	void (*mono_debugger_agent_parse_options) (char* options);
 
-	void (*mono_de_init) (DebuggerEngineCallbacks *cbs); 
-	void (*mono_de_set_log_level) (int level, FILE* file);
 	void (*mono_de_add_pending_breakpoints) (MonoMethod* method, MonoJitInfo* ji); 
-	void (*mono_de_process_single_step) (void* tls, gboolean from_signal);
-	void (*mono_de_process_breakpoint) (void* tls, gboolean from_signal);
 	void (*mono_de_cancel_all_ss) (void);
 	void (*mono_de_domain_add) (MonoDomain* domain);
-	gboolean (*set_set_notification_for_wait_completion_flag) (DbgEngineStackFrame* frame); 
-	MonoMethod* (*get_notify_debugger_of_wait_completion_method) (void);
-	gpointer (*get_async_method_builder) (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
-	int (*mono_ss_create_init_args) (SingleStepReq *ss_req, SingleStepArgs *args);
-	void (*mono_ss_args_destroy) (SingleStepArgs *ss_args);
-	int  (*mono_get_this_async_id) (DbgEngineStackFrame *frame);
 
-	MdbgProtErrorCode (*mono_process_dbg_packet) (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
-	void (*mono_init_debugger_agent_for_wasm) (int log_level);
-	void* (*mono_dbg_create_breakpoint_events) (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
-	void (*mono_dbg_process_breakpoint_events) (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
-	void (*mono_wasm_save_thread_context) (void);
-	DebuggerTlsData* (*mono_wasm_get_tls) (void);
-	MdbgProtErrorCode (*mono_do_invoke_method) (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
-	void (*mono_ss_discard_frame_context) (void *the_tls);
-	void (*mono_ss_calculate_framecount) (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
+	//wasm
+	void (*mono_wasm_debugger_init) (void);
+	void (*mono_wasm_breakpoint_hit) (void);
+	void (*mono_wasm_single_step_hit) (void);
 } MonoComponentDebugger;
 
 

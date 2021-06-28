@@ -478,16 +478,8 @@ static int ensure_runtime_is_suspended (void);
 static int handle_multiple_ss_requests (void);
 
 /* Callbacks used by wasm debugger */
-static MdbgProtErrorCode mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
-static void mono_init_debugger_agent_for_wasm (int log_level);
-static void* mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
-static void mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
 static void mono_dbg_debugger_agent_user_break (void);
-static void mono_wasm_save_thread_context (void);
-static DebuggerTlsData* mono_wasm_get_tls (void);
-static MdbgProtErrorCode mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
-static void mono_ss_discard_frame_context (void *the_tls);
-static void mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
+
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
 
@@ -715,16 +707,9 @@ debugger_agent_init (void)
 	cbs.ss_calculate_framecount = mono_ss_calculate_framecount;
 	cbs.ensure_jit = ensure_jit;
 	cbs.ensure_runtime_is_suspended = ensure_runtime_is_suspended;
-	cbs.get_this_async_id = mono_get_this_async_id;
-	cbs.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag;
-	cbs.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
-	cbs.create_breakpoint_events = mono_dbg_create_breakpoint_events;
-	cbs.process_breakpoint_events = mono_dbg_process_breakpoint_events;
-	cbs.ss_create_init_args = mono_ss_create_init_args;
-	cbs.ss_args_destroy = mono_ss_args_destroy;
 	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
-	mono_component_debugger ()->mono_de_init (&cbs);
+	mono_de_init (&cbs);
 
 	transport_init ();
 
@@ -1583,7 +1568,7 @@ static GHashTable *obj_to_objref;
 static MonoGHashTable *suspended_objs;
 
 #ifdef TARGET_WASM
-static void 
+void 
 mono_init_debugger_agent_for_wasm (int log_level_parm)
 {
 	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
@@ -2187,14 +2172,14 @@ save_thread_context (MonoContext *ctx)
 }
 
 #ifdef TARGET_WASM
-static void
+void
 mono_wasm_save_thread_context (void) 
 {
 	debugger_wasm_thread.really_suspended = TRUE;
 	mono_thread_state_init_from_current (&debugger_wasm_thread.context);
 }
 
-static DebuggerTlsData*
+DebuggerTlsData*
 mono_wasm_get_tls (void) 
 {
 	return &debugger_wasm_thread;
@@ -4069,7 +4054,7 @@ event_requests_cleanup (void)
  *
  * Ensure DebuggerTlsData fields are filled out.
  */
-static void
+void
 mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
 {
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
@@ -4092,7 +4077,7 @@ mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_us
  *
  * Discard frame data and invalidate any context
  */
-static void
+void
 mono_ss_discard_frame_context (void *the_tls)
 {
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
@@ -4208,7 +4193,7 @@ typedef struct {
 	int suspend_policy;
 } BreakPointEvents;
 
-static void*
+void*
 mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
 {
 	int suspend_policy = 0;
@@ -4225,7 +4210,7 @@ mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJ
 	return evts;
 }
 
-static void
+void
 mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset)
 {
 	BreakPointEvents *evts = (BreakPointEvents*)_evts;
@@ -5955,7 +5940,7 @@ add_thread (gpointer key, gpointer value, gpointer user_data)
 }
 
 
-static ErrorCode
+ErrorCode
 mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp)
 {
 	ERROR_DECL (error);
@@ -10016,7 +10001,7 @@ wait_for_attach (void)
 	return TRUE;
 }
 
-static ErrorCode
+ErrorCode
 mono_process_dbg_packet (int id, CommandSet command_set, int command, gboolean *no_reply, guint8 *buf, guint8 *end, Buffer *ret_buf)
 {
 	ErrorCode err;
@@ -10251,17 +10236,7 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->register_transport = register_transport;
 	fn_table->mono_debugger_agent_parse_options = mono_debugger_agent_parse_options;
 
-	//used externally by wasm debugger
 	fn_table->mono_debugger_agent_transport_handshake = mono_debugger_agent_transport_handshake;
-	fn_table->mono_process_dbg_packet = mono_process_dbg_packet;
-	fn_table->mono_init_debugger_agent_for_wasm = mono_init_debugger_agent_for_wasm;
-	fn_table->mono_dbg_create_breakpoint_events = mono_dbg_create_breakpoint_events;
-	fn_table->mono_dbg_process_breakpoint_events = mono_dbg_process_breakpoint_events;
-	fn_table->mono_wasm_save_thread_context = mono_wasm_save_thread_context;
-	fn_table->mono_wasm_get_tls = mono_wasm_get_tls;
-	fn_table->mono_do_invoke_method = mono_do_invoke_method;
-	fn_table->mono_ss_discard_frame_context = mono_ss_discard_frame_context;
-	fn_table->mono_ss_calculate_framecount = mono_ss_calculate_framecount;
 }
 
 

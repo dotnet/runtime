@@ -67,19 +67,7 @@ static void
 stub_mono_debugger_agent_parse_options (char *options);
 
 static void 
-stub_mono_de_init (DebuggerEngineCallbacks *cbs); //debugger-engine
-
-static void 
-stub_mono_de_set_log_level (int level, FILE *file); //debugger-engine removeAfterMergeWasmPR
-
-static void 
 stub_mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji); //debugger-engine removeAfterMergeWasmPR
-
-static void 
-stub_mono_de_process_single_step (void *tls, gboolean from_signal); //debugger-engine removeAfterMergeWasmPR
-
-static void 
-stub_mono_de_process_breakpoint (void *tls, gboolean from_signal); //debugger-engine removeAfterMergeWasmPR
 
 static void 
 stub_mono_de_cancel_all_ss (void); //debugger-engine removeAfterMergeWasmPR
@@ -87,51 +75,14 @@ stub_mono_de_cancel_all_ss (void); //debugger-engine removeAfterMergeWasmPR
 static void 
 stub_mono_de_domain_add (MonoDomain *domain); //debugger-engine removeAfterMergeWasmPR
 
-static gboolean 
-stub_set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
-
-static MonoMethod *
-stub_get_notify_debugger_of_wait_completion_method (void); //debugger-engine removeAfterMergeWasmPR
-
-static gpointer 
-stub_get_async_method_builder (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
-
-static MdbgProtErrorCode 
-stub_mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
-
-static void 
-stub_mono_init_debugger_agent_for_wasm (int log_level);
-
-static void* 
-stub_mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
-
-static void 
-stub_mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
-
-static void 
-stub_mono_wasm_save_thread_context (void);
-
-static DebuggerTlsData *
-stub_mono_wasm_get_tls (void);
-
-static MdbgProtErrorCode 
-stub_mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
-
-static void 
-stub_mono_ss_discard_frame_context (void *the_tls);
-
-static void 
-stub_mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
-
-static int 
-stub_mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
+static void
+stub_mono_wasm_debugger_init (void);
 
 static void
-stub_mono_ss_args_destroy (SingleStepArgs *ss_args);
+stub_mono_wasm_breakpoint_hit (void);
 
-static int 
-stub_mono_get_this_async_id (DbgEngineStackFrame *frame);
-
+static void
+stub_mono_wasm_single_step_hit (void);
 
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
@@ -154,29 +105,14 @@ static MonoComponentDebugger fn_table = {
 	&stub_mono_debugger_agent_transport_handshake,
 	&stub_mono_debugger_agent_parse_options,
 	
-	&stub_mono_de_init,
-	&stub_mono_de_set_log_level,
 	&stub_mono_de_add_pending_breakpoints,
-	&stub_mono_de_process_single_step,
-	&stub_mono_de_process_breakpoint,
 	&stub_mono_de_cancel_all_ss,
 	&stub_mono_de_domain_add,
-	&stub_set_set_notification_for_wait_completion_flag,
-	&stub_get_notify_debugger_of_wait_completion_method,
-	&stub_get_async_method_builder,
-	&stub_mono_ss_create_init_args,
-	&stub_mono_ss_args_destroy,
-	&stub_mono_get_this_async_id,
 	
-	&stub_mono_process_dbg_packet,
-	&stub_mono_init_debugger_agent_for_wasm,
-	&stub_mono_dbg_create_breakpoint_events,
-	&stub_mono_dbg_process_breakpoint_events,
-	&stub_mono_wasm_save_thread_context,
-	&stub_mono_wasm_get_tls,
-	&stub_mono_do_invoke_method,
-	&stub_mono_ss_discard_frame_context,
-	&stub_mono_ss_calculate_framecount
+	//wasm
+	&stub_mono_wasm_debugger_init,
+	&stub_mono_wasm_breakpoint_hit,
+	&stub_mono_wasm_single_step_hit
 };
 
 static bool
@@ -290,27 +226,7 @@ stub_mono_debugger_agent_parse_options (char *options)
 }
 
 static void 
-stub_mono_de_init (DebuggerEngineCallbacks *cbs)
-{
-}
-
-static void 
-stub_mono_de_set_log_level (int level, FILE *file)
-{
-}
-
-static void 
 stub_mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
-{
-}
-
-static void 
-stub_mono_de_process_single_step (void *tls, gboolean from_signal)
-{
-}
-
-static void
-stub_mono_de_process_breakpoint (void *tls, gboolean from_signal)
 {
 }
 
@@ -324,85 +240,17 @@ stub_mono_de_domain_add (MonoDomain *domain)
 {
 }
 
-static gboolean 
-stub_set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
+static void
+stub_mono_wasm_debugger_init (void)
 {
-	g_assert_not_reached();
-}
-
-static MonoMethod *
-stub_get_notify_debugger_of_wait_completion_method (void)
-{
-	g_assert_not_reached();
-}
-
-static gpointer stub_get_async_method_builder (DbgEngineStackFrame *frame)
-{
-	g_assert_not_reached();
-}
-
-static MdbgProtErrorCode 
-stub_mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf)
-{
-	g_assert_not_reached();
-}
-
-static void 
-stub_mono_init_debugger_agent_for_wasm (int log_level)
-{
-}
-
-static void* 
-stub_mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind)
-{
-	g_assert_not_reached();
-}
-
-static void 
-stub_mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset)
-{
-}
-
-static void 
-stub_mono_wasm_save_thread_context (void)
-{
-}
-
-static DebuggerTlsData *
-stub_mono_wasm_get_tls (void)
-{
-	g_assert_not_reached();
-}
-
-static MdbgProtErrorCode 
-stub_mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp)
-{
-	g_assert_not_reached();
-}
-
-static void 
-stub_mono_ss_discard_frame_context (void *the_tls)
-{
-}
-
-static void 
-stub_mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
-{
-}
-
-static int 
-stub_mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
-{
-	g_assert_not_reached();
 }
 
 static void
-stub_mono_ss_args_destroy (SingleStepArgs *ss_args)
+stub_mono_wasm_breakpoint_hit (void)
 {
 }
 
-static int 
-stub_mono_get_this_async_id (DbgEngineStackFrame *frame)
+static void
+stub_mono_wasm_single_step_hit (void)
 {
-	g_assert_not_reached();
 }

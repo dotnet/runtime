@@ -28,6 +28,7 @@ set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger-engine.h
   ${MONO_COMPONENT_PATH}/debugger-state-machine.h
   ${MONO_COMPONENT_PATH}/debugger-state-machine.c
+  ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
   )
 set(${MONO_DEBUGGER_COMPONENT_NAME}-stub-sources
   ${MONO_COMPONENT_PATH}/debugger-stub.c

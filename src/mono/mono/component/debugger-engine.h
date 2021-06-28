@@ -415,3 +415,6 @@ mono_ss_args_destroy (SingleStepArgs *ss_args);
 
 int 
 mono_get_this_async_id (DbgEngineStackFrame *frame);
+
+void 
+mono_de_init(DebuggerEngineCallbacks* cbs);

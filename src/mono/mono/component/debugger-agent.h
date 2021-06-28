@@ -12,4 +12,36 @@
 void
 debugger_agent_add_function_pointers (MonoComponentDebugger* fn_table);
 
+void 
+mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
+
+void
+mono_ss_discard_frame_context (void *the_tls);
+
+#ifdef TARGET_WASM
+DebuggerTlsData*
+mono_wasm_get_tls (void);
+
+void 
+mono_init_debugger_agent_for_wasm (int log_level);
+
+void 
+mono_wasm_save_thread_context (void);
+
+#endif
+
+void
+mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table);
+
+MdbgProtErrorCode 
+mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
+
+MdbgProtErrorCode 
+mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
+
+void
+mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
+
+void*
+mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
 #endif

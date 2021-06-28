@@ -1,6 +1,6 @@
 #include <glib.h>
-#include "mini.h"
-#include "mini-runtime.h"
+#include <mono/mini/mini.h>
+#include <mono/mini/mini-runtime.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
@@ -114,14 +114,14 @@ begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
 static void
 ss_discard_frame_context (void *the_tls)
 {
-	mono_component_debugger ()->mono_ss_discard_frame_context (mono_component_debugger ()->mono_wasm_get_tls ());
+	mono_ss_discard_frame_context (mono_wasm_get_tls ());
 }
 
 static void
 ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***out_frames, int *nframes)
 {
-	mono_component_debugger ()->mono_wasm_save_thread_context ();
-	mono_component_debugger ()->mono_ss_calculate_framecount (mono_component_debugger ()->mono_wasm_get_tls (), NULL, force_use_ctx, out_frames, nframes);
+	mono_wasm_save_thread_context ();
+	mono_ss_calculate_framecount (mono_wasm_get_tls (), NULL, force_use_ctx, out_frames, nframes);
 }
 
 static gboolean
@@ -159,18 +159,11 @@ mono_wasm_debugger_init (void)
 		.ss_calculate_framecount = ss_calculate_framecount,
 		.ensure_jit = ensure_jit,
 		.ensure_runtime_is_suspended = ensure_runtime_is_suspended,
-		.get_this_async_id = mono_component_debugger ()->mono_get_this_async_id,
-		.set_set_notification_for_wait_completion_flag = mono_component_debugger ()->set_set_notification_for_wait_completion_flag,
-		.get_notify_debugger_of_wait_completion_method = mono_component_debugger ()->get_notify_debugger_of_wait_completion_method,
-		.create_breakpoint_events = mono_component_debugger ()->mono_dbg_create_breakpoint_events,
-		.process_breakpoint_events = mono_component_debugger ()->mono_dbg_process_breakpoint_events,
-		.ss_create_init_args = mono_component_debugger ()->mono_ss_create_init_args,
-		.ss_args_destroy = mono_component_debugger ()->mono_ss_args_destroy,
 		.handle_multiple_ss_requests = handle_multiple_ss_requests,
 	};
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-	mono_component_debugger ()->mono_de_init (&cbs);
-	mono_component_debugger ()->mono_de_set_log_level (log_level, stdout);
+	mono_de_init (&cbs);
+	mono_de_set_log_level (log_level, stdout);
 
 	mini_debug_options.gen_sdb_seq_points = TRUE;
 	mini_debug_options.mdb_optimizations = TRUE;
@@ -189,7 +182,7 @@ mono_wasm_debugger_init (void)
 	trans.send = receive_debugger_agent_message;
 
 	mono_component_debugger ()->register_transport (&trans);
-	mono_component_debugger ()->mono_init_debugger_agent_for_wasm (log_level);
+	mono_init_debugger_agent_for_wasm (log_level);
 }
 
 MONO_API void
@@ -233,13 +226,13 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 void
 mono_wasm_single_step_hit (void)
 {
-	mono_component_debugger ()->mono_de_process_single_step (mono_component_debugger ()->mono_wasm_get_tls (), FALSE);
+	mono_de_process_single_step (mono_wasm_get_tls (), FALSE);
 }
 
 void
 mono_wasm_breakpoint_hit (void)
 {
-	mono_component_debugger ()->mono_de_process_breakpoint (mono_component_debugger ()->mono_wasm_get_tls (), FALSE);
+	mono_de_process_breakpoint (mono_wasm_get_tls (), FALSE);
 }
 
 static gboolean
@@ -399,14 +392,14 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	MdbgProtErrorCode error = 0;
 	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD ) 
 	{
-		DebuggerTlsData* tls = mono_component_debugger ()->mono_wasm_get_tls ();
+		DebuggerTlsData* tls = mono_wasm_get_tls ();
 		InvokeData invoke_data;
 		memset (&invoke_data, 0, sizeof (InvokeData));
 		invoke_data.endp = data + size;
-		error = mono_component_debugger ()->mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
+		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
 	else
-		error = mono_component_debugger ()->mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
+		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
 	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
@@ -421,7 +414,7 @@ receive_debugger_agent_message (void *data, int len)
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
 	}, data, len);
-	mono_component_debugger ()->mono_wasm_save_thread_context();
+	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message ();	
 	return FALSE;
 }
@@ -444,3 +437,11 @@ mono_wasm_debugger_init (void)
 }
 
 #endif // HOST_WASM
+
+void
+mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
+{
+	fn_table->mono_wasm_debugger_init = mono_wasm_debugger_init;
+	fn_table->mono_wasm_breakpoint_hit = mono_wasm_breakpoint_hit;
+	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
+}

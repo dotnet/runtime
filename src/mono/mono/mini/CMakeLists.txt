@@ -224,7 +224,6 @@ set(wasm_sources
     tramp-wasm.c
     exceptions-wasm.c
     aot-runtime-wasm.c
-    mini-wasm-debugger.c
     wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
