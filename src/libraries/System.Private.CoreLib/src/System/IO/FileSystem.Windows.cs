@@ -468,7 +468,7 @@ namespace System.IO
                 }
             }
 
-            byte[]? buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
             try
             {
                 bool success = Interop.Kernel32.DeviceIoControl(
@@ -503,21 +503,18 @@ namespace System.IO
                     return null;
                 }
 
-                int substituteNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.SubstituteNameOffset;
-                int substituteNameLength = rdb.ReparseBufferSymbolicLink.SubstituteNameLength;
+                // We use PrintName instead of SubstitutneName given that we don't want to return a NT path.
+                // Unlike SubstituteName and GetFinalPathNameByHandle(), PrintName doesn't start with a prefix.
+                // Another nuance is that SubstituteName does not contain redundant path segments while PrintName does.
+                int printNameNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.PrintNameOffset;
+                int printNameNameLength = rdb.ReparseBufferSymbolicLink.PrintNameLength;
 
-                Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(substituteNameOffset, substituteNameLength));
+                Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameNameOffset, printNameNameLength));
+                Debug.Assert(Path.IsPathFullyQualified(targetPath));
+                Debug.Assert((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 ||
+                    targetPath.Length >= 4 && !targetPath.StartsWith(PathInternal.ExtendedPathPrefix) && !targetPath.StartsWith(@"\??\"));
 
-                if ((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0)
-                {
-                    // Target path is absolute.
-                    // DeviceIoControl returns a DOS Device path (\??\) which many APIs don't tolerate.
-                    // We should instead return a Win32 path (\\?\).
-                    Debug.Assert(Path.IsPathFullyQualified(targetPath));
-                    Debug.Assert(targetPath[1] == '?');
-                    targetPath[1] = '\\';
-                }
-                else if (normalize)
+                if (normalize && (rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
                 {
                     // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
                     return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
@@ -527,10 +524,7 @@ namespace System.IO
             }
             finally
             {
-                if (buffer != null)
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 

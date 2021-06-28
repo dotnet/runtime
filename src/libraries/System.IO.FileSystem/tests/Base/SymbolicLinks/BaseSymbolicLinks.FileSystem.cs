@@ -22,31 +22,6 @@ namespace System.IO.Tests
         protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false);
 
         /// <summary>
-        /// Verifies that FileSystemInfo.LinkTarget matches the specified expected path.
-        /// If the current platform is Windows and <paramref name="actual"/> is absolute, this method asserts that <paramref name="actual"/> starts with \\?\.
-        /// </summary>
-        protected static void AssertLinkTargetEquals(string expected, string actual)
-        {
-#if WINDOWS
-            if (Path.IsPathFullyQualified(actual))
-            {
-                actual.StartsWith(ExtendedPrefix);
-                expected = Path.Join(ExtendedPrefix, expected);
-            }
-
-            // Windows syscalls remove the redundant segments in the link target path.
-            // We will remove them from the expected path when testing Windows but keep them when testing Unix, which doesn't remove them.
-            int rootLength = PathInternal.GetRootLength(expected);
-            if (rootLength > 0)
-            {
-                expected = PathInternal.RemoveRelativeSegments(expected, rootLength);
-            }
-#endif
-            Assert.Equal(expected, actual);
-        }
-
-
-        /// <summary>
         /// Asserts that the FullPath of the FileSystemInfo returned by ResolveLinkTarget() matches with the expected path of the file created.
         /// Trims the Windows device prefix, in case there's any, before comparing.
         /// </summary>
@@ -188,7 +163,7 @@ namespace System.IO.Tests
             FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, pathToTarget);
             AssertLinkExists(linkInfo);
             AssertIsCorrectTypeAndDirectoryAttribute(linkInfo);
-            AssertLinkTargetEquals(pathToTarget, linkInfo.LinkTarget);
+            Assert.Equal(pathToTarget, linkInfo.LinkTarget);
 
             FileSystemInfo targetInfo = ResolveLinkTarget(linkPath, returnFinalTarget);
             Assert.NotNull(targetInfo);
@@ -379,14 +354,14 @@ namespace System.IO.Tests
             Assert.True(link2Info.Exists);
             Assert.True(link2Info.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertIsCorrectTypeAndDirectoryAttribute(link2Info);
-            AssertLinkTargetEquals(link2Target, link2Info.LinkTarget);
+            Assert.Equal(link2Target, link2Info.LinkTarget);
 
             // link1 to link2
             FileSystemInfo link1Info = CreateSymbolicLink(link1Path, link1Target);
             Assert.True(link1Info.Exists);
             Assert.True(link1Info.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertIsCorrectTypeAndDirectoryAttribute(link1Info);
-            AssertLinkTargetEquals(link1Target, link1Info.LinkTarget);
+            Assert.Equal(link1Target, link1Info.LinkTarget);
 
             // link1: do not follow symlinks
             FileSystemInfo link1TargetInfo = ResolveLinkTarget(link1Path);
@@ -394,7 +369,7 @@ namespace System.IO.Tests
             AssertIsCorrectTypeAndDirectoryAttribute(link1TargetInfo);
             Assert.True(link1TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertFullNameEquals(link2Path, link1TargetInfo.FullName);
-            AssertLinkTargetEquals(link2Target, link1TargetInfo.LinkTarget);
+            Assert.Equal(link2Target, link1TargetInfo.LinkTarget);
 
             // link2: do not follow symlinks
             FileSystemInfo link2TargetInfo = ResolveLinkTarget(link2Path);

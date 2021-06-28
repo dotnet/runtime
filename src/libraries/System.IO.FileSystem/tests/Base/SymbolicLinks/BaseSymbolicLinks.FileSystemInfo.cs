@@ -48,7 +48,7 @@ namespace System.IO.Tests
             FileSystemInfo linkInfo = CreateSymbolicLink(GetRandomLinkPath(), pathToTarget);
 
             AssertLinkExists(linkInfo);
-            AssertLinkTargetEquals(pathToTarget, linkInfo.LinkTarget);
+            Assert.Equal(pathToTarget, linkInfo.LinkTarget);
         }
 
         public static IEnumerable<object[]> LinkTarget_PathToTarget_Data
