@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class TimeSpanConverter : JsonConverter<TimeSpan>
     {
-        private const int MinimumTimeSpanFormatLength = 7; // h:mm:ss
+        private const int MinimumTimeSpanFormatLength = 8; // hh:mm:ss
         private const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
         private const int MaximumEscapedTimeSpanFormatLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumTimeSpanFormatLength;
 
