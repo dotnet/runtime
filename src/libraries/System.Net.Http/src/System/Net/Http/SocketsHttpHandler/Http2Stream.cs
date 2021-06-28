@@ -1279,6 +1279,11 @@ namespace System.Net.Http
                 {
                     if (_resetException is Exception resetException)
                     {
+                        if (_canRetry)
+                        {
+                            ThrowRetry(SR.net_http_request_aborted, resetException);
+                        }
+
                         ThrowRequestAborted(resetException);
                     }
 
