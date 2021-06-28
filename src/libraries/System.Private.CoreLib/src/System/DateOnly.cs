@@ -842,7 +842,7 @@ namespace System
 
         [RequiresPreviewFeatures]
         static bool IParseable<DateOnly>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateOnly result)
-            => TryParse(s!, provider, DateTimeStyles.None, out result);
+            => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISpanParseable
