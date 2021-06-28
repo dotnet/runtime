@@ -641,6 +641,8 @@ typedef struct {
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
 	void (*get_exception_stats)(guint32 *exception_count);
+	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
+	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);

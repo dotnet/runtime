@@ -676,6 +676,7 @@ namespace System.Data
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataTableEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(false)]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataTableSchema")]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     public partial class DataTable : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
         protected internal bool fInitInProgress;
@@ -1743,6 +1744,7 @@ namespace System.Data.Common
         Start = 1,
         End = 2,
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class DataAdapter : System.ComponentModel.Component, System.Data.IDataAdapter
     {
         protected DataAdapter() { }
@@ -2095,6 +2097,7 @@ namespace System.Data.Common
         System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
         System.Data.IDbCommand System.Data.IDbConnection.CreateCommand() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
     public partial class DbConnectionStringBuilder : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ComponentModel.ICustomTypeDescriptor
     {
         public DbConnectionStringBuilder() { }
@@ -2130,6 +2133,7 @@ namespace System.Data.Common
         protected internal void ClearPropertyDescriptors() { }
         public virtual bool ContainsKey(string keyword) { throw null; }
         public virtual bool EquivalentTo(System.Data.Common.DbConnectionStringBuilder connectionStringBuilder) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(System.Collections.Hashtable propertyDescriptors) { }
         public virtual bool Remove(string keyword) { throw null; }
         public virtual bool ShouldSerialize(string keyword) { throw null; }

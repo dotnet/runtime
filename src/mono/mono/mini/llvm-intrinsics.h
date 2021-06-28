@@ -25,6 +25,7 @@
 #define Widen INTRIN_kind_widen
 #define WidenAcross INTRIN_kind_widen_across
 #define Across INTRIN_kind_across
+#define Arm64DotProd INTRIN_kind_arm64_dot_prod
 #if !defined(Generic)
 #define Generic
 #endif
@@ -255,15 +256,15 @@ INTRINS(AESNI_AESENCLAST, x86_aesni_aesenclast, X86)
 INTRINS(AESNI_AESIMC, x86_aesni_aesimc, X86)
 #if LLVM_API_VERSION >= 800
 	// these intrinsics were renamed in LLVM 8
-INTRINS_OVR(SSE_SADD_SATI8, sadd_sat, Generic, sse_i1_t)
-INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, sse_i1_t)
-INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, sse_i1_t)
-INTRINS_OVR(SSE_UADD_SATI16, uadd_sat, Generic, sse_i1_t)
+INTRINS_OVR(SSE_SADD_SATI8, sadd_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, v128_i2_t)
+INTRINS_OVR(SSE_UADD_SATI16, uadd_sat, Generic, v128_i2_t)
 
-INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, sse_i2_t)
-INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, sse_i2_t)
-INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, sse_i2_t)
-INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, sse_i2_t)
+INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, v128_i1_t)
+INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
+INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
 #else
 INTRINS(SSE_SADD_SATI8, x86_sse2_padds_b, X86)
 INTRINS(SSE_UADD_SATI8, x86_sse2_paddus_b, X86)
@@ -466,6 +467,10 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, Arm64, V64 | V128 | I1 
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX1, aarch64_neon_tbx1, Arm64, V64 | V128 | I1)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, Arm64, V64 | V128 | I1)
+
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SDOT, aarch64_neon_sdot, Arm64, Arm64DotProd, V64 | V128 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UDOT, aarch64_neon_udot, Arm64, Arm64DotProd, V64 | V128 | I4)
+
 #endif
 
 #undef INTRINS
@@ -486,6 +491,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, Arm64, V64 | V128 | I1
 #undef Ftoi
 #undef WidenAcross
 #undef Across
+#undef Arm64DotProd
 #undef Generic
 #undef X86
 #undef Arm64

@@ -13,12 +13,17 @@
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
+  <!-- Browser specific files -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
+             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -169,8 +174,6 @@
              Link="Common\System\Net\Http\RepeatedFlushContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ResponseStreamTest.cs"
              Link="Common\System\Net\Http\ResponseStreamTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
-             Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="SyncHttpHandlerTest.cs" />
     <Compile Include="TelemetryTest.cs" />
     <Compile Include="StreamContentTest.cs" />
@@ -254,6 +257,7 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

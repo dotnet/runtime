@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization
         /// Creates an instance of <see cref="JsonSerializerContext"/> and binds it with the indicated <see cref="JsonSerializerOptions"/>.
         /// </summary>
         /// <param name="instanceOptions">The run-time provided options for the context instance.</param>
-        /// <param name="defaultOptions">The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSerializerOptionsAttribute"/>.</param>
+        /// <param name="defaultOptions">The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.</param>
         /// <remarks>
         /// If no instance options are passed, then no options are set until the context is bound using <see cref="JsonSerializerOptions.AddContext{TContext}"/>,
         /// or until <see cref="Options"/> is called, where a new options instance is created and bound.

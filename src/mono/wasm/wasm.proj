@@ -7,9 +7,6 @@
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <ICULibDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -192,6 +189,8 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a" />
+      <MonoComponentLibs Include="$(MonoArtifactsPath)libmono-component-hot_reload-static.a;
+                                  $(MonoArtifactsPath)libmono-component-diagnostics_tracing-stub-static.a" />
       <MonoLibFiles Include="$(MonoArtifactsPath)libmono-ee-interp.a;
                              $(MonoArtifactsPath)libmonosgen-2.0.a;
                              $(MonoArtifactsPath)libmono-ilgen.a;
@@ -199,6 +198,7 @@
                              $(NativeBinDir)libSystem.Native.a;
                              $(NativeBinDir)libSystem.IO.Compression.Native.a" />
       <MonoLibFiles Include="@(ICULibNativeFiles)" />
+      <MonoLibFiles Include="@(MonoComponentLibs)" />
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>

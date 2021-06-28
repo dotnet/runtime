@@ -8,19 +8,19 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class StreamTests
+    public partial class StreamTests
     {
         [Fact]
-        public static async Task ReadNullArgumentFail()
+        public async Task ReadNullArgumentFail()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync<string>((Stream)null));
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync((Stream)null, (Type)null));
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync((Stream)null, typeof(string)));
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync(new MemoryStream(), (Type)null));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await Serializer.DeserializeWrapper<string>((Stream)null));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await Serializer.DeserializeWrapper((Stream)null, (Type)null));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await Serializer.DeserializeWrapper((Stream)null, typeof(string)));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await Serializer.DeserializeWrapper(new MemoryStream(), (Type)null));
         }
 
         [Fact]
-        public static async Task ReadSimpleObjectAsync()
+        public async Task ReadSimpleObjectAsync()
         {
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
@@ -29,13 +29,13 @@ namespace System.Text.Json.Serialization.Tests
                     DefaultBufferSize = 1
                 };
 
-                SimpleTestClass obj = await JsonSerializer.DeserializeAsync<SimpleTestClass>(stream, options);
+                SimpleTestClass obj = await Serializer.DeserializeWrapper<SimpleTestClass>(stream, options);
                 obj.Verify();
             }
         }
 
         [Fact]
-        public static async Task ReadSimpleObjectWithTrailingTriviaAsync()
+        public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_json + " /* Multi\r\nLine Comment */\t");
             using (MemoryStream stream = new MemoryStream(data))
@@ -46,13 +46,13 @@ namespace System.Text.Json.Serialization.Tests
                     ReadCommentHandling = JsonCommentHandling.Skip,
                 };
 
-                SimpleTestClass obj = await JsonSerializer.DeserializeAsync<SimpleTestClass>(stream, options);
+                SimpleTestClass obj = await Serializer.DeserializeWrapper<SimpleTestClass>(stream, options);
                 obj.Verify();
             }
         }
 
         [Fact]
-        public static async Task ReadPrimitivesAsync()
+        public async Task ReadPrimitivesAsync()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1")))
             {
@@ -61,13 +61,13 @@ namespace System.Text.Json.Serialization.Tests
                     DefaultBufferSize = 1
                 };
 
-                int i = await JsonSerializer.DeserializeAsync<int>(stream, options);
+                int i = await Serializer.DeserializeWrapper<int>(stream, options);
                 Assert.Equal(1, i);
             }
         }
 
         [Fact]
-        public static async Task ReadPrimitivesWithTrailingTriviaAsync()
+        public async Task ReadPrimitivesWithTrailingTriviaAsync()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(" 1\t// Comment\r\n/* Multi\r\nLine */")))
             {
@@ -77,27 +77,27 @@ namespace System.Text.Json.Serialization.Tests
                     ReadCommentHandling = JsonCommentHandling.Skip,
                 };
 
-                int i = await JsonSerializer.DeserializeAsync<int>(stream, options);
+                int i = await Serializer.DeserializeWrapper<int>(stream, options);
                 Assert.Equal(1, i);
             }
         }
 
         [Fact]
-        public static async Task ReadReferenceTypeCollectionPassingNullValueAsync()
+        public async Task ReadReferenceTypeCollectionPassingNullValueAsync()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
             {
-                IList<object> referenceTypeCollection = await JsonSerializer.DeserializeAsync<IList<object>>(stream);
+                IList<object> referenceTypeCollection = await Serializer.DeserializeWrapper<IList<object>>(stream);
                 Assert.Null(referenceTypeCollection);
             }
         }
 
         [Fact]
-        public static async Task ReadValueTypeCollectionPassingNullValueAsync()
+        public async Task ReadValueTypeCollectionPassingNullValueAsync()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
             {
-                IList<int> valueTypeCollection = await JsonSerializer.DeserializeAsync<IList<int>>(stream);
+                IList<int> valueTypeCollection = await Serializer.DeserializeWrapper<IList<int>>(stream);
                 Assert.Null(valueTypeCollection);
             }
         }
@@ -120,24 +120,24 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(BOMTestData))]
-        public static async Task TestBOMWithSingleJsonValue(byte[] utf8BomAndValueArray, JsonSerializerOptions options, ulong expected)
+        public async Task TestBOMWithSingleJsonValue(byte[] utf8BomAndValueArray, JsonSerializerOptions options, ulong expected)
         {
             ulong value;
             using (Stream stream = new MemoryStream(utf8BomAndValueArray))
             {
-                value = await JsonSerializer.DeserializeAsync<ulong>(stream, options);
+                value = await Serializer.DeserializeWrapper<ulong>(stream, options);
             }
             Assert.Equal(expected, value);
         }
 
         [Fact]
-        public static async Task TestBOMWithNoJsonValue()
+        public async Task TestBOMWithNoJsonValue()
         {
             byte[] utf8BomAndValueArray = new byte[] { 0xEF, 0xBB, 0xBF };
             using (Stream stream = new MemoryStream(utf8BomAndValueArray))
             {
                 await Assert.ThrowsAsync<JsonException>(
-                    async () => await JsonSerializer.DeserializeAsync<byte>(stream));
+                    async () => await Serializer.DeserializeWrapper<byte>(stream));
             }
         }
 
@@ -192,7 +192,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(BOMWithStreamTestData))]
-        public static async Task TestBOMWithShortAndLongBuffers(Stream stream, int count, int expectedStreamLength, int bufferSize)
+        public async Task TestBOMWithShortAndLongBuffers(Stream stream, int count, int expectedStreamLength, int bufferSize)
         {
             JsonElement[] value;
 
@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             stream.Position = 0;
-            value = await JsonSerializer.DeserializeAsync<JsonElement[]>(stream, options);
+            value = await Serializer.DeserializeWrapper<JsonElement[]>(stream, options);
 
             // Verify each element.
             for (int i = 0; i < count; i++)
@@ -236,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1)]
         [InlineData(16)]
         [InlineData(32000)]
-        public static async Task ReadPrimitiveWithWhitespace(int bufferSize)
+        public async Task ReadPrimitiveWithWhitespace(int bufferSize)
         {
             byte[] data = Encoding.UTF8.GetBytes("42" + new string(' ', 16 * 1024));
 
@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (MemoryStream stream = new MemoryStream(data))
             {
-                int i = await JsonSerializer.DeserializeAsync<int>(stream, options);
+                int i = await Serializer.DeserializeWrapper<int>(stream, options);
                 Assert.Equal(42, i);
                 Assert.Equal(16386, stream.Position);
             }
@@ -255,7 +255,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1)]
         [InlineData(16)]
         [InlineData(32000)]
-        public static async Task ReadObjectWithWhitespace(int bufferSize)
+        public async Task ReadObjectWithWhitespace(int bufferSize)
         {
             byte[] data = Encoding.UTF8.GetBytes("{}" + new string(' ', 16 * 1024));
 
@@ -264,7 +264,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (MemoryStream stream = new MemoryStream(data))
             {
-                SimpleTestClass obj = await JsonSerializer.DeserializeAsync<SimpleTestClass>(stream, options);
+                SimpleTestClass obj = await Serializer.DeserializeWrapper<SimpleTestClass>(stream, options);
                 Assert.Equal(16386, stream.Position);
             }
         }
@@ -273,7 +273,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1)]
         [InlineData(16)]
         [InlineData(32000)]
-        public static async Task ReadPrimitiveWithWhitespaceAndThenInvalid(int bufferSize)
+        public async Task ReadPrimitiveWithWhitespaceAndThenInvalid(int bufferSize)
         {
             byte[] data = Encoding.UTF8.GetBytes("42" + new string(' ', 16 * 1024) + "!");
 
@@ -282,7 +282,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (MemoryStream stream = new MemoryStream(data))
             {
-                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<int>(stream, options));
+                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<int>(stream, options));
                 Assert.Equal(16387, stream.Position);
 
                 // We should get an exception like: '!' is invalid after a single JSON value.
@@ -294,7 +294,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1)]
         [InlineData(16)]
         [InlineData(32000)]
-        public static async Task ReadObjectWithWhitespaceAndThenInvalid(int bufferSize)
+        public async Task ReadObjectWithWhitespaceAndThenInvalid(int bufferSize)
         {
             byte[] data = Encoding.UTF8.GetBytes("{}" + new string(' ', 16 * 1024) + "!");
 
@@ -303,7 +303,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (MemoryStream stream = new MemoryStream(data))
             {
-                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleTestClass>(stream, options));
+                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<SimpleTestClass>(stream, options));
                 Assert.Equal(16387, stream.Position);
 
                 // We should get an exception like: '!' is invalid after a single JSON value.

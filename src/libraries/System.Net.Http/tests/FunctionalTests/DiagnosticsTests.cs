@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
@@ -17,8 +18,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
@@ -163,14 +162,17 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1477", TestPlatforms.AnyUnix)]
-        [OuterLoop("Uses external servers")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
         {
-            RemoteExecutor.Invoke(async (useVersion, useSslString) =>
+            if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
+            {
+                return;
+            }
+
+            RemoteExecutor.Invoke(async (useVersion, useSsl, testAsync) =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose))
                 {
@@ -178,28 +180,10 @@ namespace System.Net.Http.Functional.Tests
                     await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Exercise various code paths to get coverage of tracing
-                        using (HttpClient client = CreateHttpClient(useVersion))
-                        {
-                            // Do a get to a loopback server
-                            await LoopbackServer.CreateServerAsync(async (server, url) =>
-                            {
-                                await TestHelper.WhenAllCompletedOrAnyFailed(
-                                    server.AcceptConnectionSendResponseAndCloseAsync(),
-                                    client.GetAsync(url));
-                            });
-
-                            // Do a post to a remote server
-                            byte[] expectedData = Enumerable.Range(0, 20000).Select(i => unchecked((byte)i)).ToArray();
-                            Uri remoteServer = bool.Parse(useSslString)
-                                ? Configuration.Http.SecureRemoteEchoServer
-                                : Configuration.Http.RemoteEchoServer;
-                            var content = new ByteArrayContent(expectedData);
-                            content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
-                            using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
-                            {
-                                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                            }
-                        }
+                        await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                            async uri => await GetAsync(useVersion, testAsync, uri),
+                            async server => await server.HandleRequestAsync(),
+                            options: new GenericLoopbackOptions { UseSsl = bool.Parse(useSsl) });
                     });
 
                     // We don't validate receiving specific events, but rather that we do at least
@@ -209,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
                         ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString(), TestAsync.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -273,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus status = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -361,7 +345,7 @@ namespace System.Net.Http.Functional.Tests
                         activityStopResponseLogged = GetProperty<HttpResponseMessage>(kvp.Value, "Response");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -426,7 +410,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -484,7 +468,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.False(request.Headers.TryGetValues("traceparent", out var _));
                         Assert.False(request.Headers.TryGetValues("tracestate", out var _));
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -536,7 +520,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
                     {
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -625,7 +609,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -664,7 +648,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -813,44 +797,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedActivityPropagationWithoutListener()
-        {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                Activity parent = new Activity("parent").Start();
-
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                    async uri =>
-                    {
-                        await GetAsync(useVersion, testAsync, uri);
-                    },
-                    async server =>
-                    {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
-                        AssertHeadersAreInjected(requestData, parent);
-                    });
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity()
-        {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                    async uri =>
-                    {
-                        await GetAsync(useVersion, testAsync, uri);
-                    },
-                    async server =>
-                    {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
-                        AssertNoHeadersAreInjected(requestData);
-                    });
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
-        }
-
         [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true")]
         [InlineData("1")]
@@ -916,6 +862,111 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).Dispose();
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true, true)]      // Activity was set and ActivitySource created an Activity
+        [InlineData(true, false, true)]     // Activity was set and ActivitySource created an Activity
+        [InlineData(true, null, true)]      // Activity was set and ActivitySource created an Activity
+        [InlineData(true, true, false)]     // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(true, false, false)]    // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(true, null, false)]     // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(true, true, null)]      // Activity was set, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(true, false, null)]     // Activity was set, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(true, null, null)]      // Activity was set, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(false, true, true)]     // DiagnosticListener requested an Activity and ActivitySource created an Activity
+        [InlineData(false, true, false)]    // DiagnosticListener requested an Activity, ActivitySource chose not to create an Activity, so one was manually created
+        [InlineData(false, true, null)]     // DiagnosticListener requested an Activity, ActivitySource had no listeners, so an Activity was manually created
+        [InlineData(false, false, true)]    // No Activity is set, DiagnosticListener does not want one, but ActivitySource created an Activity
+        [InlineData(false, false, false)]   // No Activity is set, DiagnosticListener does not want one and ActivitySource chose not to create an Activity
+        [InlineData(false, false, null)]    // No Activity is set, DiagnosticListener does not want one and ActivitySource has no listeners
+        [InlineData(false, null, true)]     // No Activity is set, there is no DiagnosticListener, but ActivitySource created an Activity
+        [InlineData(false, null, false)]    // No Activity is set, there is no DiagnosticListener and ActivitySource chose not to create an Activity
+        [InlineData(false, null, null)]     // No Activity is set, there is no DiagnosticListener and ActivitySource has no listeners
+        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
+        {
+            string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
+
+            RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            {
+                bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
+                bool currentActivitySet = parameters[0].Value;
+                bool? diagnosticListenerActivityEnabled = parameters[1];
+                bool? activitySourceCreatesActivity = parameters[2];
+
+                bool madeASamplingDecision = false;
+                if (activitySourceCreatesActivity.HasValue)
+                {
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                        {
+                            madeASamplingDecision = true;
+                            return activitySourceCreatesActivity.Value ? ActivitySamplingResult.AllData : ActivitySamplingResult.None;
+                        }
+                    });
+                }
+
+                bool listenerCallbackWasCalled = false;
+                IDisposable listenerSubscription = new MemoryStream(); // Dummy disposable
+                if (diagnosticListenerActivityEnabled.HasValue)
+                {
+                    var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(_ => listenerCallbackWasCalled = true);
+
+                    diagnosticListenerObserver.Enable(name => !name.Contains("HttpRequestOut") || diagnosticListenerActivityEnabled.Value);
+
+                    listenerSubscription = DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
+                }
+
+                Activity activity = currentActivitySet ? new Activity("parent").Start() : null;
+
+                if (!currentActivitySet)
+                {
+                    // Listen to new activity creations if an Activity was created without a parent
+                    // (when a DiagnosticListener forced one to be created)
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        ActivityStarted = created =>
+                        {
+                            Assert.Null(activity);
+                            activity = created;
+                        }
+                    });
+                }
+
+                using (listenerSubscription)
+                {
+                    await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            await GetAsync(useVersion, testAsync, uri);
+                        },
+                        async server =>
+                        {
+                            HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
+
+                            if (currentActivitySet || diagnosticListenerActivityEnabled == true || activitySourceCreatesActivity == true)
+                            {
+                                Assert.NotNull(activity);
+                                AssertHeadersAreInjected(requestData, activity);
+                            }
+                            else
+                            {
+                                AssertNoHeadersAreInjected(requestData);
+
+                                if (!currentActivitySet)
+                                {
+                                    Assert.Null(activity);
+                                }
+                            }
+                        });
+                }
+
+                Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
+                Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
+        }
+
         private static T GetProperty<T>(object obj, string propertyName)
         {
             Type t = obj.GetType();
@@ -979,11 +1030,10 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task<(HttpRequestMessage, HttpResponseMessage)> GetAsync(string useVersion, string testAsync, Uri uri, CancellationToken cancellationToken = default)
         {
-            using HttpClient client = CreateHttpClient(useVersion);
-            var request = new HttpRequestMessage(HttpMethod.Get, uri)
-            {
-                Version = Version.Parse(useVersion)
-            };
+            HttpClientHandler handler = CreateHttpClientHandler(useVersion);
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using var client = new HttpClient(handler);
+            var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);
             return (request, await client.SendAsync(bool.Parse(testAsync), request, cancellationToken));
         }
     }

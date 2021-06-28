@@ -16,10 +16,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             ArgumentNullException ex;
 
-            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1));
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(writer: null, 1));
             Assert.Contains("writer", ex.ToString());
 
-            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1, typeof(int)));
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(writer: null, 1, typeof(int)));
             Assert.Contains("writer", ex.ToString());
         }
 

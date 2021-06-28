@@ -2687,6 +2687,22 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 	return code;
 }
 
+/*
+ * get_ftnptr_for_method:
+ *
+ *   Return a function pointer for METHOD which is indirectly callable from managed code.
+ * On llvmonly, this returns a MonoFtnDesc, otherwise it returns a normal function pointer.
+ */
+static gpointer
+get_ftnptr_for_method (MonoMethod *method, MonoError *error)
+{
+	if (!mono_llvm_only) {
+		return mono_jit_compile_method (method, error);
+	} else {
+		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
+	}
+}
+
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
 static void
 invalidated_delegate_trampoline (char *desc)
@@ -2722,6 +2738,12 @@ mono_jit_free_method (MonoMethod *method)
 
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
+	
+	//seq_points are always on get_default_jit_mm
+	jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	g_hash_table_remove (jit_mm->seq_points, method);
+	jit_mm_unlock (jit_mm);
 
 	jit_mm = jit_mm_for_method (method);
 
@@ -4326,6 +4348,7 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
 	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
+	callbacks.get_ftnptr = get_ftnptr_for_method;
 #endif
 	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;

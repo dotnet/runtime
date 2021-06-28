@@ -43,7 +43,7 @@ namespace System.Net.Http
         }
 
         public HttpRequestHeaders DefaultRequestHeaders =>
-            _defaultRequestHeaders ??= new HttpRequestHeaders(forceHeaderStoreItems: true);
+            _defaultRequestHeaders ??= new HttpRequestHeaders();
 
         public Version DefaultRequestVersion
         {
