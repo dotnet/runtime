@@ -3,12 +3,6 @@
   <assembly fullname="System.Data.Odbc, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.Odbc.OdbcConnectionHandle.SetConnectionAttribute4(System.Data.Odbc.ODBC32.SQL_ATTR,System.Transactions.IDtcTransaction,System.Int32)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.ProviderBase.DbMetaDataFactory.#ctor(System.IO.Stream,System.String,System.String)</property>

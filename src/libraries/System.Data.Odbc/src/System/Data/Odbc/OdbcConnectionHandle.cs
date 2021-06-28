@@ -261,12 +261,5 @@ namespace System.Data.Odbc
             ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, buffer, length);
             return retcode;
         }
-
-        internal ODBC32.RetCode SetConnectionAttribute4(ODBC32.SQL_ATTR attribute, System.Transactions.IDtcTransaction transaction, int length)
-        {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, transaction, length);
-            ODBC.TraceODBC(3, "SQLSetConnectAttrW", retcode);
-            return retcode;
-        }
     }
 }
