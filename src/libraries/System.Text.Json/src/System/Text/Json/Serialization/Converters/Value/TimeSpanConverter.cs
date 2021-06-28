@@ -76,13 +76,6 @@ namespace System.Text.Json.Serialization.Converters
                 return tmpValue;
             }
 
-            result = Utf8Parser.TryParse(source, out tmpValue, out bytesConsumed, 'g');
-
-            if (result && source.Length == bytesConsumed)
-            {
-                return tmpValue;
-            }
-
             throw ThrowHelper.GetFormatException();
         }
 

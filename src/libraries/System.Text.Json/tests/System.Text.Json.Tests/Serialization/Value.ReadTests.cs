@@ -454,8 +454,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\\u0032\\u0033\\u003A\\u0035\\u0039\\u003A\\u0035\\u0039", "23:59:59")]
         [InlineData("23:59:59.9", "23:59:59.9000000")]
         [InlineData("23:59:59.9999999")]
-        [InlineData("1:00:00", "01:00:00")] // 'g' Format
-        [InlineData("1:2:00:00", "1.02:00:00")] // 'g' Format
+        [InlineData("1:00:00", "01:00:00")] // 'g' Format, allowed by Utf8Parser 'c' parser
         [InlineData("9999999.23:59:59.9999999")]
         [InlineData("-9999999.23:59:59.9999999")]
         [InlineData("10675199.02:48:05.4775807")] // TimeSpan.MaxValue
@@ -492,6 +491,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("00:00:60")]
         [InlineData("00:00:00.00000009")]
         [InlineData("900000000.00:00:00")]
+        [InlineData("1:2:00:00")] // 'g' Format, disallowed by Utf8Parser 'c' parser
         [InlineData("+00:00:00")]
         [InlineData("2021-06-18")]
         [InlineData("1$")]
