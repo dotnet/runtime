@@ -389,6 +389,7 @@ jobs:
         extraHelixArguments: /p:BrowserHost=windows
         scenarios:
         - normal
+        - buildwasmapps
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
