@@ -2,20 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
 {
     public static partial class Base64
     {
-        private static TVector ReadVector<TVector>(ReadOnlySpan<sbyte> data)
-        {
-            ref sbyte tmp = ref MemoryMarshal.GetReference(data);
-            return Unsafe.As<sbyte, TVector>(ref tmp);
-        }
-
         [Conditional("DEBUG")]
         private static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)
         {
