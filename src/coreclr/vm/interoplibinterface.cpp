@@ -6,7 +6,9 @@
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#endif
 #include "finalizerthread.h"
 
 // Interop library header
@@ -16,6 +18,17 @@
 
 using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
+
+void* GetCurrentCtxCookieWrapper()
+{
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        RETURN GetCurrentCtxCookie();
+#else
+        RETURN NULL;
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+}
 
 namespace
 {
@@ -837,7 +850,7 @@ namespace
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
                     identity,
-                    GetCurrentCtxCookie(),
+                    GetCurrentCtxCookieWrapper(),
                     gc.objRefMaybe->GetSyncBlockIndex(),
                     wrapperId,
                     eocFlags);
@@ -1056,7 +1069,7 @@ namespace InteropLibImports
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
             gc.objsEnumRef = cache->CreateManagedEnumerable(
                 ExternalObjectContext::Flags_ReferenceTracker,
-                GetCurrentCtxCookie());
+                GetCurrentCtxCookieWrapper());
 
             CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
 

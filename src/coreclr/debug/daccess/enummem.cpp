@@ -26,6 +26,20 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
+#if TARGET_UNIX
+#include "assemblyspec.hpp"
+#define TEAR_OFF_SLOT           1
+typedef struct _MINIDUMP_EXCEPTION  {
+    ULONG32 ExceptionCode;
+    ULONG32 ExceptionFlags;
+    ULONG64 ExceptionRecord;
+    ULONG64 ExceptionAddress;
+    ULONG32 NumberParameters;
+    ULONG32 __unusedAlignment;
+    ULONG64 ExceptionInformation [ EXCEPTION_MAXIMUM_PARAMETERS ];
+} MINIDUMP_EXCEPTION, *PMINIDUMP_EXCEPTION;
+#endif
+
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
@@ -1405,7 +1419,7 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         ReportMem(remoteStowedException, sizeof(STOWED_EXCEPTION_INFORMATION_HEADER));
 
         // check if this is a v2 stowed exception
-        STOWED_EXCEPTION_INFORMATION_V2 stowedException = { 0 };
+        STOWED_EXCEPTION_INFORMATION_V2 stowedException = { {0} };
         if (FAILED(m_pTarget->ReadVirtual(TO_CDADDR(remoteStowedException),
             (PBYTE)&stowedException, sizeof(STOWED_EXCEPTION_INFORMATION_HEADER), &bytesRead))
             || bytesRead != sizeof(STOWED_EXCEPTION_INFORMATION_HEADER)

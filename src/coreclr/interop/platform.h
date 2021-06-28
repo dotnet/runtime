@@ -22,6 +22,15 @@
 
 #endif // _WIN32
 
+#ifdef HOST_UNIX
+#include <objidl.h> // COM interfaces
+
+// Common macro for working in COM
+#define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
+#define RETURN_VOID_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return; } }
+
+#endif // HOST_UNIX
+
 #define ABI_ASSERT(abi_definition) static_assert((abi_definition), "ABI is being invalidated.")
 
 // Runtime headers
