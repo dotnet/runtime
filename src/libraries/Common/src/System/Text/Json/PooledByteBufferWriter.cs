@@ -116,10 +116,20 @@ namespace System.Text.Json
         {
             return destination.WriteAsync(WrittenMemory, cancellationToken);
         }
+
+        internal void WriteToStream(Stream destination)
+        {
+            destination.Write(WrittenMemory.Span);
+        }
 #else
         internal Task WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
         {
             return destination.WriteAsync(_rentedBuffer, 0, _index, cancellationToken);
+        }
+
+        internal void WriteToStream(Stream destination)
+        {
+            destination.Write(_rentedBuffer, 0, _index);
         }
 #endif
 

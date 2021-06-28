@@ -25,6 +25,7 @@
 #define Widen INTRIN_kind_widen
 #define WidenAcross INTRIN_kind_widen_across
 #define Across INTRIN_kind_across
+#define Arm64DotProd INTRIN_kind_arm64_dot_prod
 #if !defined(Generic)
 #define Generic
 #endif
@@ -466,6 +467,10 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, Arm64, V64 | V128 | I1 
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX1, aarch64_neon_tbx1, Arm64, V64 | V128 | I1)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, Arm64, V64 | V128 | I1)
+
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SDOT, aarch64_neon_sdot, Arm64, Arm64DotProd, V64 | V128 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UDOT, aarch64_neon_udot, Arm64, Arm64DotProd, V64 | V128 | I4)
+
 #endif
 
 #undef INTRINS
@@ -486,6 +491,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, Arm64, V64 | V128 | I1
 #undef Ftoi
 #undef WidenAcross
 #undef Across
+#undef Arm64DotProd
 #undef Generic
 #undef X86
 #undef Arm64

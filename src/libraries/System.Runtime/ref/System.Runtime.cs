@@ -12356,6 +12356,17 @@ namespace System.Runtime
         public AssemblyTargetedPatchBandAttribute(string targetedPatchBand) { }
         public string TargetedPatchBand { get { throw null; } }
     }
+    public partial struct DependentHandle : System.IDisposable
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public DependentHandle(object? target, object? dependent) { throw null; }
+        public object? Dependent { get { throw null; } set { } }
+        public bool IsAllocated { get { throw null; } }
+        public object? Target { get { throw null; } set { } }
+        public (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
+        public void Dispose() { }
+    }
     public enum GCLargeObjectHeapCompactionMode
     {
         Default = 1,
@@ -14413,6 +14424,12 @@ namespace System.Threading
         None = 0,
         PublicationOnly = 1,
         ExecutionAndPublication = 2,
+    }
+    public sealed class PeriodicTimer : System.IDisposable
+    {
+        public PeriodicTimer(System.TimeSpan period) { }
+        public System.Threading.Tasks.ValueTask<bool> WaitForNextTickAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public void Dispose() { }
     }
     public static partial class Timeout
     {
