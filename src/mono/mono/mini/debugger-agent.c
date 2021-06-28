@@ -6986,12 +6986,24 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 		g_free (lookup_name);
-		mono_assembly_name_free_internal (aname);		
 		if (!assembly) {
-			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-			buffer_add_int(buf, -1);
-			break;
+			GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+			for (int i = 0; i < assemblies->len; ++i) {
+				MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
+				if (!strcmp(assemblyOnALC->aname.name, aname->name)) {
+					assembly = assemblyOnALC;
+					break;
+				}
+			}
+			g_ptr_array_free (assemblies, TRUE);
+			if (!assembly) {
+				PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+				buffer_add_int(buf, -1);
+				mono_assembly_name_free_internal (aname);			
+				break;
+			}
 		}
+		mono_assembly_name_free_internal (aname);
 		buffer_add_assemblyid (buf, mono_get_root_domain (), assembly);
 		break;
 	}
