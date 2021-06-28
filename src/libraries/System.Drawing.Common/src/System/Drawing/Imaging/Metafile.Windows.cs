@@ -34,7 +34,7 @@ namespace System.Drawing.Imaging
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            Gdip.CheckStatus(Gdip.GdipCreateMetafileFromStream(new GPStream(stream), out IntPtr metafile));
+            IntPtr metafile = CreateGdipMetafileFromStream(new GPStream(stream));
             SetNativeImage(metafile);
         }
 
@@ -147,15 +147,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string? description)
         {
-            Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
-                new GPStream(stream),
-                referenceHdc,
-                type,
-                IntPtr.Zero,
-                MetafileFrameUnit.GdiCompatible,
-                description,
-                out IntPtr metafile));
-
+            IntPtr metafile = CreateGdipMetafileFromStream(new GPStream(stream), referenceHdc, type, description);
             SetNativeImage(metafile);
         }
 
@@ -164,15 +156,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
-            Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
-                new GPStream(stream),
-                referenceHdc,
-                type,
-                ref frameRect,
-                frameUnit,
-                description,
-                out IntPtr metafile));
-
+            IntPtr metafile = CreateGdipMetafileFromStream(new GPStream(stream), referenceHdc, frameRect, frameUnit, type, description);
             SetNativeImage(metafile);
         }
 
@@ -181,31 +165,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
-            IntPtr metafile = IntPtr.Zero;
-
-            if (frameRect.IsEmpty)
-            {
-                Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
-                    new GPStream(stream),
-                    referenceHdc,
-                    type,
-                    IntPtr.Zero,
-                    frameUnit,
-                    description,
-                    out metafile));
-            }
-            else
-            {
-                Gdip.CheckStatus(Gdip.GdipRecordMetafileStreamI(
-                    new GPStream(stream),
-                    referenceHdc,
-                    type,
-                    ref frameRect,
-                    frameUnit,
-                    description,
-                    out metafile));
-            }
-
+            IntPtr metafile = CreateGdipMetafileFromStream(new GPStream(stream), referenceHdc, frameRect, frameUnit, type, description);
             SetNativeImage(metafile);
         }
 
@@ -292,7 +252,7 @@ namespace System.Drawing.Imaging
 
             try
             {
-                Gdip.CheckStatus(Gdip.GdipGetMetafileHeaderFromStream(new GPStream(stream), memory));
+                GetGdipMetafileHeaderFromStream(new GPStream(stream), memory);
 
                 int[] type = new int[] { 0 };
 

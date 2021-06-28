@@ -66,6 +66,20 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
+        internal void GetIStreamInterfaces(Interop.Ole32.IStream stream, out IntPtr streamWrapperPtr, out IntPtr streamPtr)
+        {
+            streamWrapperPtr = GetOrCreateComInterfaceForObject(stream, CreateComInterfaceFlags.None);
+            Guid streamIID = IID_IStream;
+            ThrowExceptionForHR(Marshal.QueryInterface(streamWrapperPtr, ref streamIID, out streamPtr));
+        }
+
+        internal static void ThrowExceptionForHR(int errorCode)
+        {
+            // Pass -1 for errorInfo to indicate that Windows' GetErrorInfo shouldn't be called, and only
+            // throw the Exception corresponding to the specified errorCode.
+            Marshal.ThrowExceptionForHR(errorCode, errorInfo: new IntPtr(-1));
+        }
+
         internal static class IStreamVtbl
         {
             public static IntPtr Create(IntPtr fpQueryInteface, IntPtr fpAddRef, IntPtr fpRelease)
@@ -159,16 +173,13 @@ namespace System.Drawing
                 try
                 {
                     Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                    Interop.Ole32.IStream pstmStream = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)pstm);
 
-                    inst.CopyTo(pstmStream, cb, pcbRead, pcbWritten);
+                    return (int)inst.CopyTo(pstm, cb, pcbRead, pcbWritten);
                 }
                 catch (Exception e)
                 {
                     return e.HResult;
                 }
-
-                return S_OK;
             }
 
             [UnmanagedCallersOnly]
@@ -250,23 +261,16 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static int Clone(IntPtr thisPtr, IntPtr* ppstm)
             {
-                if (ppstm == null)
-                {
-                    return (int)Interop.HRESULT.STG_E_INVALIDPOINTER;
-                }
-
                 try
                 {
                     Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
 
-                    *ppstm = Instance.GetOrCreateComInterfaceForObject(inst.Clone(), CreateComInterfaceFlags.None);
+                    return (int)inst.Clone(ppstm);
                 }
                 catch (Exception e)
                 {
                     return e.HResult;
                 }
-
-                return S_OK;
             }
         }
 
@@ -297,7 +301,7 @@ namespace System.Drawing
             {
                 // Get the IStream implementation, since the ComWrappers runtime returns a pointer to the IUnknown interface implementation
                 Guid streamIID = IID_IStream;
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
+                ThrowExceptionForHR(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
 
                 try
                 {

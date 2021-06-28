@@ -16,18 +16,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            IntPtr bitmap = IntPtr.Zero;
-            int status;
-
-            if (useIcm)
-            {
-                status = Gdip.GdipCreateBitmapFromStreamICM(new GPStream(stream), out bitmap);
-            }
-            else
-            {
-                status = Gdip.GdipCreateBitmapFromStream(new GPStream(stream), out bitmap);
-            }
-            Gdip.CheckStatus(status);
+            IntPtr bitmap = CreateGdipBitmapFromStream(new GPStream(stream), useIcm);
 
             ValidateImage(bitmap);
 

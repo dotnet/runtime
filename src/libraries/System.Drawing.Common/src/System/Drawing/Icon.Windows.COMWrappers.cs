@@ -42,7 +42,7 @@ namespace System.Drawing
                     var gpStream = new GPStream(outputStream, makeSeekable: false);
                     streamPtr = DrawingComWrappers.Instance.GetOrCreateComInterfaceForObject(gpStream, CreateComInterfaceFlags.None);
 
-                    CheckSaveAsFileResult(picture.SaveAsFile(streamPtr, -1, null));
+                    DrawingComWrappers.ThrowExceptionForHR(picture.SaveAsFile(streamPtr, -1, null));
                 }
                 finally
                 {
@@ -59,13 +59,6 @@ namespace System.Drawing
                     }
                 }
             }
-        }
-
-        private static void CheckSaveAsFileResult(int errorCode)
-        {
-            // Pass -1 for errorInfo to indicate that Windows' GetErrorInfo shouldn't be called, and only
-            // throw the Exception corresponding to the specified errorCode.
-            Marshal.ThrowExceptionForHR(errorCode, errorInfo: new IntPtr(-1));
         }
 
         [DllImport(Interop.Libraries.Oleaut32)]

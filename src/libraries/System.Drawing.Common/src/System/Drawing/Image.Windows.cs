@@ -23,16 +23,7 @@ namespace System.Drawing
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            IntPtr image = IntPtr.Zero;
-
-            if (useEmbeddedColorManagement)
-            {
-                Gdip.CheckStatus(Gdip.GdipLoadImageFromStreamICM(new GPStream(stream), out image));
-            }
-            else
-            {
-                Gdip.CheckStatus(Gdip.GdipLoadImageFromStream(new GPStream(stream), out image));
-            }
+            IntPtr image = LoadGdipImageFromStream(new GPStream(stream), useEmbeddedColorManagement);
 
             if (validateImageData)
                 ValidateImage(image);
@@ -45,9 +36,7 @@ namespace System.Drawing
         // Used for serialization
         private IntPtr InitializeFromStream(Stream stream)
         {
-            IntPtr image = IntPtr.Zero;
-
-            Gdip.CheckStatus(Gdip.GdipLoadImageFromStream(new GPStream(stream), out image));
+            IntPtr image = LoadGdipImageFromStream(new GPStream(stream), useEmbeddedColorManagement: false);
             ValidateImage(image);
 
             nativeImage = image;
@@ -240,11 +229,11 @@ namespace System.Drawing
 
                 if (!saved)
                 {
-                    Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
-                        new HandleRef(this, nativeImage),
+                    Gdip.CheckStatus(SaveGdipImageToStream(
                         new GPStream(stream, makeSeekable: false),
-                        ref g,
-                        new HandleRef(encoderParams, encoderParamsMemory)));
+                        g,
+                        encoderParams,
+                        encoderParamsMemory));
                 }
             }
             finally

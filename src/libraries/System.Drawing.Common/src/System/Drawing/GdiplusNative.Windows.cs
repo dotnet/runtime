@@ -210,19 +210,10 @@ namespace System.Drawing
             internal static extern int GdipDeleteBrush(HandleRef brush);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipLoadImageFromStream(Interop.Ole32.IStream stream, out IntPtr image);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipLoadImageFromStreamICM(Interop.Ole32.IStream stream, out IntPtr image);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneImage(HandleRef image, out IntPtr cloneimage);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSaveImageToFile(HandleRef image, string filename, ref Guid classId, HandleRef encoderParams);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSaveImageToStream(HandleRef image, Interop.Ole32.IStream stream, ref Guid classId, HandleRef encoderParams);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSaveAdd(HandleRef image, HandleRef encoderParams);
@@ -327,37 +318,16 @@ namespace System.Drawing
             internal static extern int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromStream(Interop.Ole32.IStream stream, IntPtr header);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetMetafileHeaderFromMetafile(HandleRef metafile, IntPtr header);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetHemfFromMetafile(HandleRef metafile, out IntPtr hEnhMetafile);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMetafileFromStream(Interop.Ole32.IStream stream, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStreamI(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipComment(HandleRef graphics, int sizeData, byte[] data);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipCreateFontFromLogfontW(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr font);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateBitmapFromStream(Interop.Ole32.IStream stream, out IntPtr bitmap);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateBitmapFromStreamICM(Interop.Ole32.IStream stream, out IntPtr bitmap);
         }
     }
 }
