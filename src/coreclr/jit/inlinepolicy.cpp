@@ -94,8 +94,8 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool useEdp = (JitConfig.JitExtDefaultPolicy() != 0) &&
-                        compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
+    const bool useEdp =
+        (JitConfig.JitExtDefaultPolicy() != 0) && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
 
     // Use ExtendedDefaultPolicy when speed is preferred or for PrejitRoot analysis.
     if (useEdp || isPrejitRoot)
