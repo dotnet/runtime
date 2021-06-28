@@ -1418,6 +1418,18 @@ namespace System
         }
 
         //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Guid, Guid>.operator ==(Guid left, Guid right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Guid, Guid>.operator !=(Guid left, Guid right)
+            => left != right;
+
+        //
         // IParseable
         //
 

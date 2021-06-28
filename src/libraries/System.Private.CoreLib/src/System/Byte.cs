@@ -717,6 +717,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static byte INumber<byte>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static byte INumber<byte>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static byte INumber<byte>.Sign(byte value)
             => (byte)((value == 0) ? 0 : 1);
 
@@ -906,9 +914,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<byte>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out byte result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<byte>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out byte result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static byte IParseable<byte>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<byte>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out byte result)

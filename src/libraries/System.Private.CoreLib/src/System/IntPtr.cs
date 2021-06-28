@@ -430,6 +430,18 @@ namespace System
         //     => checked(left / right);
 
         //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<nint, nint>.operator ==(nint left, nint right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<nint, nint>.operator !=(nint left, nint right)
+            => left != right;
+
+        //
         // IIncrementOperators
         //
 
@@ -725,6 +737,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static nint INumber<nint>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static nint INumber<nint>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static nint INumber<nint>.Sign(nint value)
             => Math.Sign(value);
 
@@ -866,9 +886,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<nint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<nint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static nint IParseable<nint>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<nint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)

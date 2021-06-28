@@ -687,6 +687,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static ulong INumber<ulong>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static ulong INumber<ulong>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static ulong INumber<ulong>.Sign(ulong value)
             => (ulong)((value == 0) ? 0 : 1);
 
@@ -836,9 +844,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<ulong>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ulong result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<ulong>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ulong result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static ulong IParseable<ulong>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<ulong>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ulong result)

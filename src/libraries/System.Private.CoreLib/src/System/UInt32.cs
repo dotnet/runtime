@@ -692,6 +692,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static uint INumber<uint>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static uint INumber<uint>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static uint INumber<uint>.Sign(uint value)
             => (uint)((value == 0) ? 0 : 1);
 
@@ -857,9 +865,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<uint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out uint result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<uint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out uint result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static uint IParseable<uint>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<uint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out uint result)

@@ -708,6 +708,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static ushort INumber<ushort>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static ushort INumber<ushort>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static ushort INumber<ushort>.Sign(ushort value)
             => (ushort)((value == 0) ? 0 : 1);
 
@@ -881,9 +889,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<ushort>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<ushort>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static ushort IParseable<ushort>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<ushort>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ushort result)

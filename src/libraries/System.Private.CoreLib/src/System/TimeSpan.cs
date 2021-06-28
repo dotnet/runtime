@@ -37,9 +37,10 @@ namespace System
           IMinMaxValue<TimeSpan>,
           IMultiplyOperators<TimeSpan, double, TimeSpan>,
           IMultiplicativeIdentity<TimeSpan, double>,
+          ISpanParseable<TimeSpan>,
+          ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IUnaryNegationOperators<TimeSpan, TimeSpan>,
-          IUnaryPlusOperators<TimeSpan, TimeSpan>,
-          ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>
+          IUnaryPlusOperators<TimeSpan, TimeSpan>
 #pragma warning restore SA1001
 #endif // FEATURE_GENERIC_MATH
     {
@@ -525,6 +526,26 @@ namespace System
         static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <(TimeSpan left, TimeSpan right)
+            => left<right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <=(TimeSpan left, TimeSpan right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >(TimeSpan left, TimeSpan right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >=(TimeSpan left, TimeSpan right)
+            => left >= right;
+
+        //
         // IDivisionOperators
         //
 
@@ -543,6 +564,18 @@ namespace System
         // [RequiresPreviewFeatures]
         // static checked double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
         //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeSpan, TimeSpan>.operator ==(TimeSpan left, TimeSpan right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeSpan, TimeSpan>.operator !=(TimeSpan left, TimeSpan right)
+            => left != right;
 
         //
         // IMinMaxValue
@@ -572,6 +605,30 @@ namespace System
         // [RequiresPreviewFeatures]
         // static checked TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
         //     => checked(left * right);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IParseable<TimeSpan>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<TimeSpan>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeSpan result)
+            => TryParse(s, provider, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan ISpanParseable<TimeSpan>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<TimeSpan>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeSpan result)
+            => TryParse(s, provider, out result);
 
         //
         // ISubtractionOperators

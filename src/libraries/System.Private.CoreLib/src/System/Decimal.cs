@@ -1101,6 +1101,26 @@ namespace System
         static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => 0.0m;
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<decimal, decimal>.operator <(decimal left, decimal right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<decimal, decimal>.operator <=(decimal left, decimal right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<decimal, decimal>.operator >(decimal left, decimal right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<decimal, decimal>.operator >=(decimal left, decimal right)
+            => left >= right;
+
+        //
         // IDecrementOperators
         //
 
@@ -1123,6 +1143,18 @@ namespace System
         // [RequiresPreviewFeatures]
         // static checked decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
         //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<decimal, decimal>.operator ==(decimal left, decimal right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<decimal, decimal>.operator !=(decimal left, decimal right)
+            => left != right;
 
         //
         // IIncrementOperators
@@ -1409,6 +1441,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static decimal INumber<decimal>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static decimal INumber<decimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static decimal INumber<decimal>.Sign(decimal value)
             => Math.Sign(value);
 
@@ -1494,9 +1534,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<decimal>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<decimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static decimal IParseable<decimal>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<decimal>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result)

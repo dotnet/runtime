@@ -1538,6 +1538,38 @@ namespace System
             => default;
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator <(DateTime left, DateTime right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator <=(DateTime left, DateTime right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator >(DateTime left, DateTime right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator >=(DateTime left, DateTime right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateTime, DateTime>.operator ==(DateTime left, DateTime right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateTime, DateTime>.operator !=(DateTime left, DateTime right)
+            => left != right;
+
+        //
         // IMinMaxValue
         //
 
@@ -1550,6 +1582,10 @@ namespace System
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static DateTime IParseable<DateTime>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<DateTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTime result)

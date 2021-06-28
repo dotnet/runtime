@@ -517,6 +517,26 @@ namespace System
         }
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<float, float>.operator <(float left, float right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<float, float>.operator <=(float left, float right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<float, float>.operator >(float left, float right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<float, float>.operator >=(float left, float right)
+            => left >= right;
+
+        //
         // IDecrementOperators
         //
 
@@ -539,6 +559,18 @@ namespace System
         // [RequiresPreviewFeatures]
         // static checked float IDivisionOperators<float, float, float>.operator /(float left, float right)
         //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<float, float>.operator ==(float left, float right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<float, float>.operator !=(float left, float right)
+            => left != right;
 
         //
         // IFloatingPoint
@@ -1067,6 +1099,14 @@ namespace System
             => MathF.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static float INumber<float>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static float INumber<float>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static float INumber<float>.Sign(float value)
             => MathF.Sign(value);
 
@@ -1152,9 +1192,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<float>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<float>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static float IParseable<float>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<float>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out float result)

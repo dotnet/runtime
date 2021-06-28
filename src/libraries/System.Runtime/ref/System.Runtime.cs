@@ -843,10 +843,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static byte INumber<byte>.Min(byte x, byte y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static byte INumber<byte>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static byte INumber<byte>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static byte INumber<byte>.Sign(byte value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<byte>.TryCreate<TOther>(TOther value, out byte result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<byte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out byte result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<byte>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out byte result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static byte IParseable<byte>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<byte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out byte result) { throw null; }
 
@@ -1646,6 +1656,25 @@ namespace System
 
 #if FEATURE_GENERIC_MATH
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.DateOnly IMinMaxValue<System.DateOnly>.MinValue { get { throw null; } }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.DateOnly IMinMaxValue<System.DateOnly>.MaxValue { get { throw null; } }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator <(System.DateOnly left, System.DateOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator <=(System.DateOnly left, System.DateOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator >(System.DateOnly left, System.DateOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator >=(System.DateOnly left, System.DateOnly right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.DateOnly, System.DateOnly>.operator ==(System.DateOnly left, System.DateOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.DateOnly, System.DateOnly>.operator !=(System.DateOnly left, System.DateOnly right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.DateOnly IParseable<System.DateOnly>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<System.DateOnly>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.DateOnly result) { throw null; }
@@ -1802,6 +1831,22 @@ namespace System
         static System.DateTime IAdditionOperators<System.DateTime, System.TimeSpan, System.DateTime>.operator +(System.DateTime left, System.TimeSpan right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTime, System.DateTime>.operator <(System.DateTime left, System.DateTime right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTime, System.DateTime>.operator <=(System.DateTime left, System.DateTime right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTime, System.DateTime>.operator >(System.DateTime left, System.DateTime right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTime, System.DateTime>.operator >=(System.DateTime left, System.DateTime right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.DateTime, System.DateTime>.operator ==(System.DateTime left, System.DateTime right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.DateTime, System.DateTime>.operator !=(System.DateTime left, System.DateTime right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.DateTime IParseable<System.DateTime>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<System.DateTime>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.DateTime result) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -1937,6 +1982,22 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.DateTimeOffset IAdditionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>.operator +(System.DateTimeOffset left, System.TimeSpan right) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator <(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator >(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator >=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.DateTimeOffset, System.DateTimeOffset>.operator ==(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.DateTimeOffset, System.DateTimeOffset>.operator !=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.DateTimeOffset IParseable<System.DateTimeOffset>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<System.DateTimeOffset>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.DateTimeOffset result) { throw null; }
 
@@ -2152,11 +2213,25 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<decimal, decimal>.operator <(decimal left, decimal right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<decimal, decimal>.operator <=(decimal left, decimal right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<decimal, decimal>.operator >(decimal left, decimal right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<decimal, decimal>.operator >=(decimal left, decimal right) { throw null; }
+
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static decimal IDecrementOperators<decimal>.operator --(decimal value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<decimal, decimal>.operator ==(decimal left, decimal right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<decimal, decimal>.operator !=(decimal left, decimal right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static decimal IIncrementOperators<decimal>.operator ++(decimal value) { throw null; }
@@ -2184,10 +2259,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static decimal INumber<decimal>.Min(decimal x, decimal y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static decimal INumber<decimal>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static decimal INumber<decimal>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static decimal INumber<decimal>.Sign(decimal value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<decimal>.TryCreate<TOther>(TOther value, out decimal result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<decimal>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out decimal result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<decimal>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out decimal result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static decimal IParseable<decimal>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<decimal>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out decimal result) { throw null; }
 
@@ -2372,10 +2457,24 @@ namespace System
         static double IBitwiseOperators<double, double, double>.operator ~(double value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<double, double>.operator <(double left, double right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<double, double>.operator <=(double left, double right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<double, double>.operator >(double left, double right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<double, double>.operator >=(double left, double right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IDecrementOperators<double>.operator --(double value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IDivisionOperators<double, double, double>.operator /(double left, double right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<double, double>.operator ==(double left, double right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<double, double>.operator !=(double left, double right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IFloatingPoint<double>.Acos(double x) { throw null; }
@@ -2478,10 +2577,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double INumber<double>.Min(double x, double y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static double INumber<double>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static double INumber<double>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double INumber<double>.Sign(double value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<double>.TryCreate<TOther>(TOther value, out double result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<double>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out double result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<double>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out double result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static double IParseable<double>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<double>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out double result) { throw null; }
 
@@ -2945,14 +3054,19 @@ namespace System
         static bool IComparisonOperators<System.Guid, System.Guid>.operator >=(System.Guid left, System.Guid right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static System.Guid IParseable<Guid>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool IEqualityOperators<System.Guid, System.Guid>.operator ==(System.Guid left, System.Guid right) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IParseable<Guid>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Guid result) { throw null; }
+        static bool IEqualityOperators<System.Guid, System.Guid>.operator !=(System.Guid left, System.Guid right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static System.Guid ISpanParseable<Guid>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static System.Guid IParseable<System.Guid>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool ISpanParseable<Guid>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Guid result) { throw null; }
+        static bool IParseable<System.Guid>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Guid result) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.Guid ISpanParseable<System.Guid>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool ISpanParseable<System.Guid>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Guid result) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
     public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.ISpanFormattable
@@ -3060,10 +3174,24 @@ namespace System
         static System.Half IBitwiseOperators<System.Half, System.Half, System.Half>.operator ~(System.Half value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.Half, System.Half>.operator <(System.Half left, System.Half right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.Half, System.Half>.operator <=(System.Half left, System.Half right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.Half, System.Half>.operator >(System.Half left, System.Half right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.Half, System.Half>.operator >=(System.Half left, System.Half right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IDecrementOperators<System.Half>.operator --(System.Half value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IDivisionOperators<System.Half, System.Half, System.Half>.operator /(System.Half left, System.Half right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.Half, System.Half>.operator ==(System.Half left, System.Half right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.Half, System.Half>.operator !=(System.Half left, System.Half right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Acos(System.Half x) { throw null; }
@@ -3166,10 +3294,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half INumber<System.Half>.Min(System.Half x, System.Half y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.Half INumber<System.Half>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.Half INumber<System.Half>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half INumber<System.Half>.Sign(System.Half value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<System.Half>.TryCreate<TOther>(TOther value, out System.Half result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<System.Half>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<System.Half>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.Half IParseable<System.Half>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<System.Half>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Half result) { throw null; }
 
@@ -3688,10 +3826,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static short INumber<short>.Min(short x, short y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static short INumber<short>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static short INumber<short>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static short INumber<short>.Sign(short value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<short>.TryCreate<TOther>(TOther value, out short result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<short>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out short result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<short>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out short result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static short IParseable<short>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<short>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out short result) { throw null; }
 
@@ -3857,10 +4005,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static int INumber<int>.Min(int x, int y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static int INumber<int>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static int INumber<int>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static int INumber<int>.Sign(int value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<int>.TryCreate<TOther>(TOther value, out int result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<int>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out int result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<int>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out int result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static int IParseable<int>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<int>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out int result) { throw null; }
 
@@ -4026,10 +4184,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static long INumber<long>.Min(long x, long y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static long INumber<long>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static long INumber<long>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static long INumber<long>.Sign(long value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<long>.TryCreate<TOther>(TOther value, out long result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<long>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out long result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<long>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out long result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static long IParseable<long>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<long>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out long result) { throw null; }
 
@@ -4174,6 +4342,11 @@ namespace System
         static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<nint, nint>.operator ==(nint left, nint right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<nint, nint>.operator !=(nint left, nint right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nint IIncrementOperators<nint>.operator ++(nint value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -4199,10 +4372,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nint INumber<nint>.Min(nint x, nint y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static nint INumber<nint>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static nint INumber<nint>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nint INumber<nint>.Sign(nint value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<nint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nint result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<nint>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nint result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static nint IParseable<nint>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<nint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out nint result) { throw null; }
 
@@ -5152,10 +5335,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static sbyte INumber<sbyte>.Min(sbyte x, sbyte y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static sbyte INumber<sbyte>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static sbyte INumber<sbyte>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static sbyte INumber<sbyte>.Sign(sbyte value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<sbyte>.TryCreate<TOther>(TOther value, out sbyte result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<sbyte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out sbyte result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<sbyte>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out sbyte result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static sbyte IParseable<sbyte>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<sbyte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out sbyte result) { throw null; }
 
@@ -5304,10 +5497,24 @@ namespace System
         static float IBitwiseOperators<float, float, float>.operator ~(float value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<float, float>.operator <(float left, float right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<float, float>.operator <=(float left, float right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<float, float>.operator >(float left, float right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<float, float>.operator >=(float left, float right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IDecrementOperators<float>.operator --(float value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IDivisionOperators<float, float, float>.operator /(float left, float right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<float, float>.operator ==(float left, float right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<float, float>.operator !=(float left, float right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Acos(float x) { throw null; }
@@ -5410,10 +5617,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float INumber<float>.Min(float x, float y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static float INumber<float>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static float INumber<float>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float INumber<float>.Sign(float value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<float>.TryCreate<TOther>(TOther value, out float result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<float>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out float result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<float>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out float result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static float IParseable<float>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<float>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out float result) { throw null; }
 
@@ -5815,14 +6032,26 @@ namespace System
 
 #if FEATURE_GENERIC_MATH
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static System.TimeOnly IParseable<System.TimeOnly>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator <(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator <=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator >(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator >=(System.TimeOnly left, System.TimeOnly right) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.TimeOnly, System.TimeOnly>.operator ==(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.TimeOnly, System.TimeOnly>.operator !=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.TimeOnly IParseable<System.TimeOnly>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<System.TimeOnly>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.TimeOnly result) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.TimeOnly ISpanParseable<System.TimeOnly>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool ISpanParseable<System.TimeOnly>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.TimeOnly result) { throw null; }
 
@@ -5848,9 +6077,10 @@ namespace System
           System.IMinMaxValue<System.TimeSpan>,
           System.IMultiplyOperators<System.TimeSpan, double, System.TimeSpan>,
           System.IMultiplicativeIdentity<System.TimeSpan, double>,
+          System.ISpanParseable<System.TimeSpan>,
+          System.ISubtractionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>,
           System.IUnaryNegationOperators<System.TimeSpan, System.TimeSpan>,
-          System.IUnaryPlusOperators<System.TimeSpan, System.TimeSpan>,
-          System.ISubtractionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>
+          System.IUnaryPlusOperators<System.TimeSpan, System.TimeSpan>
 #pragma warning restore SA1001
 #endif // FEATURE_GENERIC_MATH
     {
@@ -5953,13 +6183,37 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.TimeSpan IAdditionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>.operator +(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator <(System.TimeSpan left, System.TimeSpan right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator <=(System.TimeSpan left, System.TimeSpan right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator >(System.TimeSpan left, System.TimeSpan right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator >=(System.TimeSpan left, System.TimeSpan right) { throw null; }
+
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.TimeSpan IDivisionOperators<System.TimeSpan, double, System.TimeSpan>.operator /(System.TimeSpan left, double right) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static double IDivisionOperators<System.TimeSpan, System.TimeSpan, double>.operator /(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.TimeSpan, System.TimeSpan>.operator ==(System.TimeSpan left, System.TimeSpan right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<System.TimeSpan, System.TimeSpan>.operator !=(System.TimeSpan left, System.TimeSpan right) { throw null; }
+
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.TimeSpan IMultiplyOperators<System.TimeSpan, double, System.TimeSpan>.operator *(System.TimeSpan left, double right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        static System.TimeSpan IParseable<System.TimeSpan>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        static bool IParseable<System.TimeSpan>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.TimeSpan result) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        static System.TimeSpan ISpanParseable<System.TimeSpan>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        static bool ISpanParseable<System.TimeSpan>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.TimeSpan result) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.TimeSpan ISubtractionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>.operator -(System.TimeSpan left, System.TimeSpan right) { throw null; }
@@ -6791,10 +7045,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ushort INumber<ushort>.Min(ushort x, ushort y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static ushort INumber<ushort>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static ushort INumber<ushort>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ushort INumber<ushort>.Sign(ushort value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<ushort>.TryCreate<TOther>(TOther value, out ushort result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<ushort>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ushort result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<ushort>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ushort result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static ushort IParseable<ushort>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<ushort>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out ushort result) { throw null; }
 
@@ -6958,10 +7222,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static uint INumber<uint>.Min(uint x, uint y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static uint INumber<uint>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static uint INumber<uint>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static uint INumber<uint>.Sign(uint value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<uint>.TryCreate<TOther>(TOther value, out uint result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<uint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out uint result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<uint>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out uint result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static uint IParseable<uint>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<uint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out uint result) { throw null; }
 
@@ -7125,10 +7399,20 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ulong INumber<ulong>.Min(ulong x, ulong y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static ulong INumber<ulong>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static ulong INumber<ulong>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ulong INumber<ulong>.Sign(ulong value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<ulong>.TryCreate<TOther>(TOther value, out ulong result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<ulong>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ulong result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<ulong>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ulong result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static ulong IParseable<ulong>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<ulong>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out ulong result) { throw null; }
 
@@ -7267,6 +7551,11 @@ namespace System
         static nuint IDivisionOperators<nuint, nuint, nuint>.operator /(nuint left, nuint right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<nuint, nuint>.operator ==(nuint left, nuint right) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IEqualityOperators<nuint, nuint>.operator !=(nuint left, nuint right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nuint IIncrementOperators<nuint>.operator ++(nuint value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -7290,12 +7579,21 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nuint INumber<nuint>.Max(nuint x, nuint y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static nuint INumber<nuint>.Min(nuint x, nuint y) { throw null; }
+        static nuint INumber<nuint>.Min(nuint x, nuint y) { throw null; }[System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static nuint INumber<nuint>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static nuint INumber<nuint>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nuint INumber<nuint>.Sign(nuint value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool INumber<nuint>.TryCreate<TOther>(TOther value, out nuint result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<nuint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nuint result) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool INumber<nuint>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nuint result) { throw null; }
 
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static nuint IParseable<nuint>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static bool IParseable<nuint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out nuint result) { throw null; }
 

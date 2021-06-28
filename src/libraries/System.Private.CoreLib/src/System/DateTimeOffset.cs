@@ -886,6 +886,38 @@ namespace System
         static TimeSpan IAdditiveIdentity<DateTimeOffset, TimeSpan>.AdditiveIdentity => default;
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <(DateTimeOffset left, DateTimeOffset right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <=(DateTimeOffset left, DateTimeOffset right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >(DateTimeOffset left, DateTimeOffset right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >=(DateTimeOffset left, DateTimeOffset right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator ==(DateTimeOffset left, DateTimeOffset right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator !=(DateTimeOffset left, DateTimeOffset right)
+            => left != right;
+
+        //
         // IMinMaxValue
         //
 
@@ -898,6 +930,10 @@ namespace System
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static DateTimeOffset IParseable<DateTimeOffset>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<DateTimeOffset>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result)

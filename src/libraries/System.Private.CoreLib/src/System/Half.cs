@@ -775,6 +775,26 @@ namespace System
         }
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator <(Half left, Half right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator <=(Half left, Half right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator >(Half left, Half right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Half, Half>.operator >=(Half left, Half right)
+            => left >= right;
+
+        //
         // IDecrementOperators
         //
 
@@ -793,6 +813,18 @@ namespace System
         //     tmp--;
         //     return (Half)tmp;
         // }
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Half, Half>.operator ==(Half left, Half right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Half, Half>.operator !=(Half left, Half right)
+            => left != right;
 
         //
         // IDivisionOperators
@@ -1385,6 +1417,14 @@ namespace System
             => (Half)MathF.Min((float)x, (float)y);
 
         [RequiresPreviewFeatures]
+        static Half INumber<Half>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static Half INumber<Half>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static Half INumber<Half>.Sign(Half value)
             => (Half)MathF.Sign((float)value);
 
@@ -1470,9 +1510,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<Half>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<Half>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static Half IParseable<Half>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<Half>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result)

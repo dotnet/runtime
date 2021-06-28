@@ -908,6 +908,38 @@ namespace System
 
 #if FEATURE_GENERIC_MATH
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <(TimeOnly left, TimeOnly right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <=(TimeOnly left, TimeOnly right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >(TimeOnly left, TimeOnly right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >=(TimeOnly left, TimeOnly right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeOnly, TimeOnly>.operator ==(TimeOnly left, TimeOnly right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeOnly, TimeOnly>.operator !=(TimeOnly left, TimeOnly right)
+            => left != right;
+
+        //
         // IParseable
         //
 

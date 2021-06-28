@@ -833,6 +833,48 @@ namespace System
 
 #if FEATURE_GENERIC_MATH
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateOnly, DateOnly>.operator <(DateOnly left, DateOnly right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateOnly, DateOnly>.operator <=(DateOnly left, DateOnly right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateOnly, DateOnly>.operator >(DateOnly left, DateOnly right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateOnly, DateOnly>.operator >=(DateOnly left, DateOnly right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateOnly, DateOnly>.operator ==(DateOnly left, DateOnly right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateOnly, DateOnly>.operator !=(DateOnly left, DateOnly right)
+            => left != right;
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures]
+        static DateOnly IMinMaxValue<DateOnly>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static DateOnly IMinMaxValue<DateOnly>.MaxValue => MaxValue;
+
+        //
         // IParseable
         //
 

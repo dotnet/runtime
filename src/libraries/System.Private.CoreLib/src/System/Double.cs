@@ -525,6 +525,26 @@ namespace System
         }
 
         //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<double, double>.operator <(double left, double right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<double, double>.operator <=(double left, double right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<double, double>.operator >(double left, double right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<double, double>.operator >=(double left, double right)
+            => left >= right;
+
+        //
         // IDecrementOperators
         //
 
@@ -547,6 +567,18 @@ namespace System
         // [RequiresPreviewFeatures]
         // static checked double IDivisionOperators<double, double, double>.operator /(double left, double right)
         //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<double, double>.operator ==(double left, double right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<double, double>.operator !=(double left, double right)
+            => left != right;
 
         //
         // IFloatingPoint
@@ -1075,6 +1107,14 @@ namespace System
             => Math.Min(x, y);
 
         [RequiresPreviewFeatures]
+        static double INumber<double>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static double INumber<double>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
         static double INumber<double>.Sign(double value)
             => Math.Sign(value);
 
@@ -1160,9 +1200,21 @@ namespace System
             }
         }
 
+        [RequiresPreviewFeatures]
+        static bool INumber<double>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<double>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out double result)
+            => TryParse(s, style, provider, out result);
+
         //
         // IParseable
         //
+
+        [RequiresPreviewFeatures]
+        static double IParseable<double>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
 
         [RequiresPreviewFeatures]
         static bool IParseable<double>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out double result)
