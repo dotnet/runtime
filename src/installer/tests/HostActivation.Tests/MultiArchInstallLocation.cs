@@ -72,6 +72,24 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void EnvironmentVariable_DotnetRootPathDoesNotExist()
+        {
+            var fixture = sharedTestState.PortableAppFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot("non_existent_path")
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
+                .And.HaveStdErrContaining("Using global installation location")
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ArchSpecificLocationIsPickedFirst()
         {
