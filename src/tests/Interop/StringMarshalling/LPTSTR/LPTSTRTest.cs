@@ -60,6 +60,7 @@ class LPTStrTest
         };
 
         ReverseByValStringUni(ref uniStr);
+        Assert.AreEqual(Helpers.Reverse(InitialString), uniStr.str);
 
         ReverseCopyByValStringAnsi(new ByValStringInStructAnsi { str = LongString }, out ByValStringInStructSplitAnsi ansiStrSplit);
 
