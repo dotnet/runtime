@@ -153,16 +153,22 @@
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
              Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
+             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
              Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
-             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetstvOS)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
