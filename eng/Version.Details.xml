@@ -206,9 +206,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>40b011713d66ebc86cc7b89233706c7f8a6197d7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64" Version="6.0.0-preview.7.21323.1">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64" Version="6.0.0-preview.7.21328.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>617928847d1e11458527b8bbafb5577982291847</Sha>
+      <Sha>d2873833db748a95140f507d639cbdfdf78d4fd7</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21321.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
