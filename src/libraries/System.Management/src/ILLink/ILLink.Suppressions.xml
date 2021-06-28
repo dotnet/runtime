@@ -31,29 +31,5 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Management.MTAHelper.WorkerThread</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:Interop.Ole32.CoMarshalInterface(System.Runtime.InteropServices.ComTypes.IStream,System.Guid,System.IntPtr,System.UInt32,System.IntPtr,System.UInt32)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:Interop.Ole32.CoUnmarshalInterface(System.Runtime.InteropServices.ComTypes.IStream,System.Guid)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:Interop.Ole32.CreateStreamOnHGlobal(System.IntPtr,System.Boolean)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:Interop.Ole32.GetHGlobalFromStream(System.Runtime.InteropServices.ComTypes.IStream)</property>
-    </attribute>
   </assembly>
 </linker>
