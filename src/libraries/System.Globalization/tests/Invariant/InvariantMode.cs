@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
 {
     public class InvariantModeTests
     {
-        private static bool PredefinedCulturesOnlyIsDisabled => !PredefinedCulturesOnly();
+        private static bool PredefinedCulturesOnlyIsDisabled { get; } = !PredefinedCulturesOnly();
         private static bool PredefinedCulturesOnly()
         {
             bool ret;
