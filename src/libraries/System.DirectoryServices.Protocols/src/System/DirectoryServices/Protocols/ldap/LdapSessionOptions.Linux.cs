@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
