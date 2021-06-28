@@ -53,6 +53,7 @@
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
+    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
