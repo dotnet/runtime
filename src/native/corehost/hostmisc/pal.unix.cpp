@@ -379,16 +379,16 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
     return false;
 }
 
-void pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
+pal::string_t pal::get_dotnet_self_registered_config_location()
 {
-    recv->assign(_X("/etc/dotnet/install_location"));
-
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
     if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
     {
-        recv->assign(environment_install_location_override);
+        return environment_install_location_override;
     }
+
+    return _X("/etc/dotnet/install_location");
 }
 
 namespace

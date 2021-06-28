@@ -322,14 +322,14 @@ namespace
     }
 }
 
-void pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
+pal::string_t pal::get_dotnet_self_registered_config_location()
 {
     HKEY key_hive;
     pal::string_t sub_key;
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
-    recv->assign((key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value);
+    return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
