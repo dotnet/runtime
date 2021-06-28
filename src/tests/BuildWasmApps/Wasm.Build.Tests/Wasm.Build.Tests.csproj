@@ -18,19 +18,25 @@
     <WasmBuildAppAfterThisTarget />
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">set WasmBuildSupportDir=%HELIX_CORRELATION_PAYLOAD%/build &amp;</_PreCommand>
-  </PropertyGroup>
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <_RunScriptEnvVars Condition="'$(OS)' != 'Windows_NT'" Include="WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build" />
+    <_RunScriptEnvVars Condition="'$(OS)' == 'Windows_NT'" Include="WasmBuildSupportDir=%HELIX_CORRELATION_PAYLOAD%/build" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_RunScriptEnvVars Condition="'$(OS)' != 'Windows_NT'" Include="TEST_LOG_PATH=%24{XHARNESS_OUT}/logs" />
+    <_RunScriptEnvVars Condition="'$(OS)' == 'Windows_NT'" Include="TEST_LOG_PATH=%XHARNESS_OUT%\logs" />
+
+    <_RunScriptEnvVars Condition="'$(OS)' != 'Windows_NT'" Include="HARNESS_RUNNER=%24{HARNESS_RUNNER}" />
+    <_RunScriptEnvVars Condition="'$(OS)' == 'Windows_NT'" Include="HARNESS_RUNNER=%HARNESS_RUNNER%" />
+
+    <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="@(_RunScriptEnvVars -> 'export %(Identity)')" />
+    <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="@(_RunScriptEnvVars -> 'set %(Identity)')" />
+  </ItemGroup>
 
   <PropertyGroup>
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) TEST_LOG_PATH=%24{XHARNESS_OUT}/logs</_PreCommand>
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) HARNESS_RUNNER=%24{HARNESS_RUNNER}</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) set TEST_LOG_PATH=%XHARNESS_OUT%\logs &amp;</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) set HARNESS_RUNNER=%HARNESS_RUNNER% &amp;</_PreCommand>
-
-    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
-    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
     <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
     <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
   </PropertyGroup>

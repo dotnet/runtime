@@ -53,9 +53,6 @@
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
-
-    <!-- FIXME: set this in the windows vm environment -->
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(OS)' == 'Windows_NT'">$(MonoProjectRoot)wasm\emsdk\</EMSDK_PATH>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
