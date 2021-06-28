@@ -94,13 +94,11 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool useEdp       = JitConfig.JitExtDefaultPolicy() != 0;
-    const bool useEdpPrejit = JitConfig.JitExtDefaultPolicyPrejit() != 0;
-    const bool isPrejit     = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool useEdp = (JitConfig.JitExtDefaultPolicy() != 0) &&
+                        compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
 
-    // Use the extended variant of default policy. However, DefaultPolicy is better for AOT
-    // in terms of binary size.
-    if (useEdp && (useEdpPrejit || !isPrejit || isPrejitRoot))
+    // Use ExtendedDefaultPolicy when speed is preferred or for PrejitRoot analysis.
+    if (useEdp || isPrejitRoot)
     {
         return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
     }
