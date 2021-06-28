@@ -34,10 +34,7 @@ namespace System.Net.Http.Tests
                 bool actual = RuntimeSettingParser.QueryRuntimeSettingSwitch("Foo.Bar", "FOO_BAR", true);
                 Assert.False(actual);
             }
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "true";
             
             RemoteExecutor.Invoke(RunTest, options).Dispose();
@@ -51,10 +48,7 @@ namespace System.Net.Http.Tests
                 bool actual = RuntimeSettingParser.QueryRuntimeSettingSwitch("Foo.Bar", "FOO_BAR", true);
                 Assert.False(actual);
             }
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "false";
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
@@ -68,10 +62,7 @@ namespace System.Net.Http.Tests
                 bool actual = RuntimeSettingParser.QueryRuntimeSettingSwitch("Foo.Bar", "FOO_BAR", true);
                 Assert.True(actual);
             }
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "cheese";
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
@@ -97,10 +88,7 @@ namespace System.Net.Http.Tests
                 Assert.Equal(84, actual);
             }
 
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "84";
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
@@ -115,10 +103,7 @@ namespace System.Net.Http.Tests
                 Assert.Equal(-42, actual);
             }
 
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "-~4!";
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
@@ -144,10 +129,7 @@ namespace System.Net.Http.Tests
                 Assert.Equal(0.84, actual);
             }
 
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "0.84";
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
@@ -162,10 +144,7 @@ namespace System.Net.Http.Tests
                 Assert.Equal(-0.42, actual);
             }
 
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                StartInfo = new Diagnostics.ProcessStartInfo()
-            };
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "-~4!";
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
