@@ -38,7 +38,8 @@ internal static partial class Interop
 
             int flags = 0;
 
-            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 14972))
+            if (Environment.OSVersion.Version.Major == 10 && Environment.OSVersion.Version.Build >= 14972 ||
+                Environment.OSVersion.Version.Major >= 11)
             {
                 flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
             }
