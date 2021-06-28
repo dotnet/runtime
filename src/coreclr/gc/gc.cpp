@@ -20543,23 +20543,23 @@ void gc_heap::allocate_for_no_gc_after_gc()
         {
 #ifdef USE_REGIONS
             size_t required = soh_allocation_no_gc;
-            heap_segment* seg = generation_allocation_segment (generation_of (0));
-            size_t available = heap_segment_reserved (seg) - heap_segment_allocated (seg);
+            heap_segment* region = generation_allocation_segment (generation_of (0));
+            size_t available = heap_segment_reserved (region) - heap_segment_allocated (region);
             size_t commit = min (available, required);
-            if (grow_heap_segment (seg, heap_segment_allocated (seg) + commit))
+            if (grow_heap_segment (region, heap_segment_allocated (region) + commit))
             {
                 required -= commit;
                 while (required > 0)
                 {
-                    heap_segment* seg = get_new_region (0);
-                    if (seg == nullptr)
+                    heap_segment* region = get_new_region (0);
+                    if (region == nullptr)
                     {
                         no_gc_oom_p = true;
                         break;
                     }
-                    size_t usable_size = heap_segment_reserved (seg) - heap_segment_allocated (seg);
+                    size_t usable_size = heap_segment_reserved (region) - heap_segment_allocated (region);
                     commit = min (required, usable_size);
-                    if (!grow_heap_segment (seg, heap_segment_allocated (seg) + commit))
+                    if (!grow_heap_segment (region, heap_segment_allocated (region) + commit))
                     {
                         no_gc_oom_p = true;
                         break;
@@ -20572,7 +20572,7 @@ void gc_heap::allocate_for_no_gc_after_gc()
                 no_gc_oom_p = true;
             }
             
-#else 
+#else
             if (((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) < soh_allocation_no_gc) ||
                 (!grow_heap_segment (ephemeral_heap_segment, (heap_segment_allocated (ephemeral_heap_segment) + soh_allocation_no_gc))))
             {
