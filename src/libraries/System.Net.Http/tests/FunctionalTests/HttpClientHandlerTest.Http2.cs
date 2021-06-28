@@ -921,6 +921,7 @@ namespace System.Net.Http.Functional.Tests
                 (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 await connection.SendDefaultResponseHeadersAsync(streamId);
 
+                Debugger.Launch();
                 await connection.SendGoAway(0, errorCode: ProtocolErrors.PROTOCOL_ERROR);
 
                 // Expect client to detect that server has disconnected and throw an exception
@@ -932,7 +933,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.IsType<IOException>(exception.InnerException);
                 Assert.NotNull(exception.InnerException.InnerException);
-                Assert.Contains("HTTP/2 error code 'PROTOCOL_ERROR'", exception.InnerException.InnerException.Message);
+                Assert.Contains("PROTOCOL_ERROR", exception.InnerException.InnerException.Message);
             }
         }
 

@@ -1275,7 +1275,7 @@ namespace System.Net.Http
                         await _connection.SendStreamDataAsync(StreamId, current, flush, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
                 }
-                catch (Exception)
+                catch (OperationCanceledException e) when (e.CancellationToken == _requestBodyCancellationSource.Token)
                 {
                     if (_resetException is Exception resetException)
                     {
