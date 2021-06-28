@@ -241,7 +241,6 @@ namespace System.Buffers.Text
             // l k j i h g f e d c b a 0 0 0 0
 
             // The JIT won't hoist these "constants", so help it
-#if NET6_0_OR_GREATER
             Vector256<sbyte> shuffleVec = Vector256.Create(
                 5, 4, 6, 5,
                 8, 7, 9, 8,
@@ -261,10 +260,7 @@ namespace System.Buffers.Text
                 -4, -4, -4, -4,
                 -4, -4, -4, -4,
                 -19, -16, 0, 0);
-#else
-            Vector256<sbyte> shuffleVec = ReadVector<Vector256<sbyte>>(s_avxEncodeShuffleVec);
-            Vector256<sbyte> lut = ReadVector<Vector256<sbyte>>(s_avxEncodeLut);
-#endif
+
             Vector256<sbyte> maskAC = Vector256.Create(0x0fc0fc00).AsSByte();
             Vector256<sbyte> maskBB = Vector256.Create(0x003f03f0).AsSByte();
             Vector256<ushort> shiftAC = Vector256.Create(0x04000040).AsUInt16();
@@ -280,7 +276,6 @@ namespace System.Buffers.Text
             Vector256<sbyte> str = Avx.LoadVector256(src).AsSByte();
 
             // shift by 4 bytes, as required by Reshuffle
-#if NET6_0_OR_GREATER
             str = Avx2.PermuteVar8x32(str.AsInt32(), Vector256.Create(
                 0, 0, 0, 0,
                 0, 0, 0, 0,
@@ -290,9 +285,6 @@ namespace System.Buffers.Text
                 4, 0, 0, 0,
                 5, 0, 0, 0,
                 6, 0, 0, 0).AsInt32()).AsSByte();
-#else
-            str = Avx2.PermuteVar8x32(str.AsInt32(), ReadVector<Vector256<sbyte>>(s_avxEncodePermuteVec).AsInt32()).AsSByte();
-#endif
 
             // Next loads are done at src-4, as required by Reshuffle, so shift it once
             src -= 4;
@@ -414,7 +406,6 @@ namespace System.Buffers.Text
             // 0 0 0 0 l k j i h g f e d c b a
 
             // The JIT won't hoist these "constants", so help it
-#if NET6_0_OR_GREATER
             Vector128<sbyte> shuffleVec = Vector128.Create(
                 1, 0, 2, 1,
                 4, 3, 5, 4,
@@ -426,10 +417,7 @@ namespace System.Buffers.Text
                 -4, -4, -4, -4,
                 -4, -4, -4, -4,
                 -19, -16, 0, 0);
-#else
-            Vector128<sbyte> shuffleVec = ReadVector<Vector128<sbyte>>(s_sseEncodeShuffleVec);
-            Vector128<sbyte> lut = ReadVector<Vector128<sbyte>>(s_sseEncodeLut);
-#endif
+
             Vector128<sbyte> maskAC = Vector128.Create(0x0fc0fc00).AsSByte();
             Vector128<sbyte> maskBB = Vector128.Create(0x003f03f0).AsSByte();
             Vector128<ushort> shiftAC = Vector128.Create(0x04000040).AsUInt16();
@@ -601,54 +589,5 @@ namespace System.Buffers.Text
             119, 120, 121, 122, 48, 49, 50, 51,     //w..z, 0..3
             52, 53, 54, 55, 56, 57, 43, 47          //4..9, +, /
         };
-
-#if !NET6_0_OR_GREATER
-        private static ReadOnlySpan<sbyte> s_sseEncodeShuffleVec => new sbyte[] {
-            1, 0, 2, 1,
-            4, 3, 5, 4,
-            7, 6, 8, 7,
-            10, 9, 11, 10
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseEncodeLut => new sbyte[] {
-            65, 71, -4, -4,
-            -4, -4, -4, -4,
-            -4, -4, -4, -4,
-            -19, -16, 0, 0
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxEncodePermuteVec => new sbyte[] {
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0,
-            2, 0, 0, 0,
-            3, 0, 0, 0,
-            4, 0, 0, 0,
-            5, 0, 0, 0,
-            6, 0, 0, 0
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxEncodeShuffleVec => new sbyte[] {
-            5, 4, 6, 5,
-            8, 7, 9, 8,
-            11, 10, 12, 11,
-            14, 13, 15, 14,
-            1, 0, 2, 1,
-            4, 3, 5, 4,
-            7, 6, 8, 7,
-            10, 9, 11, 10
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxEncodeLut => new sbyte[] {
-            65, 71, -4, -4,
-            -4, -4, -4, -4,
-            -4, -4, -4, -4,
-            -19, -16, 0, 0,
-            65, 71, -4, -4,
-            -4, -4, -4, -4,
-            -4, -4, -4, -4,
-            -19, -16, 0, 0
-        };
-#endif
     }
 }

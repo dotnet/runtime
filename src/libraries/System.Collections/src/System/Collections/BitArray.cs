@@ -120,12 +120,6 @@ namespace System.Collections
             _version = 0;
         }
 
-#if !NET6_0_OR_GREATER
-        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
-                                                Vector128.Create(0x80402010_08040201).AsByte() :
-                                                Vector128.Create(0x01020408_10204080).AsByte();
-#endif
-
         private const uint Vector128ByteCount = 16;
         private const uint Vector128IntCount = 4;
         private const uint Vector256ByteCount = 32;
@@ -192,14 +186,9 @@ namespace System.Collections
                 // However comparison against zero can be replaced to cmeq against zero (vceqzq_s8)
                 // See dotnet/runtime#33972 for details
                 Vector128<byte> zero = Vector128<byte>.Zero;
-
-#if NET6_0_OR_GREATER
                 Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
                                              Vector128.Create(0x80402010_08040201).AsByte() :
                                              Vector128.Create(0x01020408_10204080).AsByte();
-#else
-                Vector128<byte> bitMask128 = s_bitMask128;
-#endif
 
                 fixed (bool* ptr = values)
                 {
@@ -868,14 +857,6 @@ namespace System.Collections
             }
         }
 
-#if !NET6_0_OR_GREATER
-        // The mask used when shuffling a single int into Vector128/256.
-        // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
-        // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-        private static readonly Vector128<byte> s_lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-        private static readonly Vector128<byte> s_upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-#endif
-
         public unsafe void CopyTo(Array array, int index)
         {
             if (array == null)
@@ -966,16 +947,11 @@ namespace System.Collections
                 if (m_length < BitsPerInt32)
                     goto LessThan32;
 
-#if NET6_0_OR_GREATER
                 // The mask used when shuffling a single int into Vector128/256.
                 // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
                 // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-#else
-                Vector128<byte> lowerShuffleMask_CopyToBoolArray = s_lowerShuffleMask_CopyToBoolArray;
-                Vector128<byte> upperShuffleMask_CopyToBoolArray = s_upperShuffleMask_CopyToBoolArray;                
-#endif
 
                 if (Avx2.IsSupported)
                 {
@@ -1004,13 +980,9 @@ namespace System.Collections
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
                     Vector128<byte> ones = Vector128.Create((byte)1);
-#if NET6_0_OR_GREATER
                     Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
                                                  Vector128.Create(0x80402010_08040201).AsByte() :
                                                  Vector128.Create(0x01020408_10204080).AsByte();
-#else
-                    Vector128<byte> bitMask128 = s_bitMask128;
-#endif
 
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -1034,14 +1006,9 @@ namespace System.Collections
                 else if (AdvSimd.IsSupported)
                 {
                     Vector128<byte> ones = Vector128.Create((byte)1);
-
-#if NET6_0_OR_GREATER
                     Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
                                                  Vector128.Create(0x80402010_08040201).AsByte() :
                                                  Vector128.Create(0x01020408_10204080).AsByte();
-#else
-                    Vector128<byte> bitMask128 = s_bitMask128;
-#endif
 
                     fixed (bool* destination = &boolArray[index])
                     {

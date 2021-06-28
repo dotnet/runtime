@@ -362,7 +362,6 @@ namespace System.Buffers.Text
             // See SSSE3-version below for an explanation of how the code works.
 
             // The JIT won't hoist these "constants", so help it
-#if NET6_0_OR_GREATER
             Vector256<sbyte> lutHi = Vector256.Create(
                 0x10, 0x10, 0x01, 0x02,
                 0x04, 0x08, 0x04, 0x08,
@@ -392,6 +391,7 @@ namespace System.Buffers.Text
                 -65, -65, -71, -71,
                 0, 0, 0, 0,
                 0, 0, 0, 0);
+
             Vector256<sbyte> packBytesInLaneMask = Vector256.Create(
                 2, 1, 0, 6,
                 5, 4, 10, 9,
@@ -401,6 +401,7 @@ namespace System.Buffers.Text
                 5, 4, 10, 9,
                 8, 14, 13, 12,
                 -1, -1, -1, -1);
+
             Vector256<int> packLanesControl = Vector256.Create(
                  0, 0, 0, 0,
                 1, 0, 0, 0,
@@ -410,13 +411,7 @@ namespace System.Buffers.Text
                 6, 0, 0, 0,
                 -1, -1, -1, -1,
                 -1, -1, -1, -1).AsInt32();
-#else
-            Vector256<sbyte> lutHi = ReadVector<Vector256<sbyte>>(s_avxDecodeLutHi);
-            Vector256<sbyte> lutLo = ReadVector<Vector256<sbyte>>(s_avxDecodeLutLo);
-            Vector256<sbyte> lutShift = ReadVector<Vector256<sbyte>>(s_avxDecodeLutShift);
-            Vector256<sbyte> packBytesInLaneMask = ReadVector<Vector256<sbyte>>(s_avxDecodePackBytesInLaneMask);
-            Vector256<int> packLanesControl = ReadVector<Vector256<sbyte>>(s_avxDecodePackLanesControl).AsInt32();
-#endif
+
             Vector256<sbyte> mask2F = Vector256.Create((sbyte)'/');
             Vector256<sbyte> mergeConstant0 = Vector256.Create(0x01400140).AsSByte();
             Vector256<short> mergeConstant1 = Vector256.Create(0x00011000).AsInt16();
@@ -558,7 +553,6 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-#if NET6_0_OR_GREATER
             Vector128<sbyte> lutHi = Vector128.Create(
                 0x10, 0x10, 0x01, 0x02,
                 0x04, 0x08, 0x04, 0x08,
@@ -582,12 +576,7 @@ namespace System.Buffers.Text
                 5, 4, 10, 9,
                 8, 14, 13, 12,
                 -1, -1, -1, -1);
-#else
-            Vector128<sbyte> lutHi = ReadVector<Vector128<sbyte>>(s_sseDecodeLutHi);
-            Vector128<sbyte> lutLo = ReadVector<Vector128<sbyte>>(s_sseDecodeLutLo);
-            Vector128<sbyte> lutShift = ReadVector<Vector128<sbyte>>(s_sseDecodeLutShift);
-            Vector128<sbyte> packBytesMask = ReadVector<Vector128<sbyte>>(s_sseDecodePackBytesMask);
-#endif
+
             Vector128<sbyte> mask2F = Vector128.Create((sbyte)'/');
             Vector128<sbyte> mergeConstant0 = Vector128.Create(0x01400140).AsSByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
@@ -707,90 +696,5 @@ namespace System.Buffers.Text
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         };
-
-#if !NET6_0_OR_GREATER
-        private static ReadOnlySpan<sbyte> s_sseDecodePackBytesMask => new sbyte[] {
-            2, 1, 0, 6,
-            5, 4, 10, 9,
-            8, 14, 13, 12,
-            -1, -1, -1, -1
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodeLutLo => new sbyte[] {
-            0x15, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x13, 0x1A,
-            0x1B, 0x1B, 0x1B, 0x1A
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodeLutHi => new sbyte[] {
-            0x10, 0x10, 0x01, 0x02,
-            0x04, 0x08, 0x04, 0x08,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x10, 0x10
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodeLutShift => new sbyte[] {
-            0, 16, 19, 4,
-            -65, -65, -71, -71,
-            0, 0, 0, 0,
-            0, 0, 0, 0
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodePackBytesInLaneMask => new sbyte[] {
-            2, 1, 0, 6,
-            5, 4, 10, 9,
-            8, 14, 13, 12,
-            -1, -1, -1, -1,
-            2, 1, 0, 6,
-            5, 4, 10, 9,
-            8, 14, 13, 12,
-            -1, -1, -1, -1
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodePackLanesControl => new sbyte[] {
-            0, 0, 0, 0,
-            1, 0, 0, 0,
-            2, 0, 0, 0,
-            4, 0, 0, 0,
-            5, 0, 0, 0,
-            6, 0, 0, 0,
-            -1, -1, -1, -1,
-            -1, -1, -1, -1
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodeLutLo => new sbyte[] {
-            0x15, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x13, 0x1A,
-            0x1B, 0x1B, 0x1B, 0x1A,
-            0x15, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x13, 0x1A,
-            0x1B, 0x1B, 0x1B, 0x1A
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodeLutHi => new sbyte[] {
-            0x10, 0x10, 0x01, 0x02,
-            0x04, 0x08, 0x04, 0x08,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x01, 0x02,
-            0x04, 0x08, 0x04, 0x08,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x10, 0x10
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodeLutShift => new sbyte[] {
-            0, 16, 19, 4,
-            -65, -65, -71, -71,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 16, 19, 4,
-            -65, -65, -71, -71,
-            0, 0, 0, 0,
-            0, 0, 0, 0
-        };
-#endif
     }
 }
