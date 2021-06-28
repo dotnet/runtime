@@ -74,6 +74,7 @@ namespace System.Reflection
 
         public override bool ReflectionOnly => false;
 
+        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase
         {
             get
@@ -252,7 +253,9 @@ namespace System.Reflection
 
         public override AssemblyName GetName(bool copiedName)
         {
+#pragma warning disable IL3002 // Suppressing for now. See https://github.com/dotnet/runtime/issues/54835
             return AssemblyName.Create(_mono_assembly, CodeBase);
+#pragma warning restore IL3002
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
