@@ -1066,6 +1066,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             int? feedbackSize = default)
         {
             byte[] decryptedBytes;
+            byte[] oneShotDecryptedBytes = null;
 
             using (Aes aes = AesFactory.Create())
             {
@@ -1089,10 +1090,20 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     cryptoStream.CopyTo(output);
                     decryptedBytes = output.ToArray();
                 }
+
+                if (mode == CipherMode.ECB)
+                {
+                    oneShotDecryptedBytes = aes.DecryptEcb(encryptedBytes, aes.Padding);
+                }
             }
 
             Assert.NotEqual(encryptedBytes, decryptedBytes);
             Assert.Equal(expectedAnswer, decryptedBytes);
+
+            if (oneShotDecryptedBytes is not null)
+            {
+                Assert.Equal(expectedAnswer, oneShotDecryptedBytes);
+            }
         }
 
         private static void TestAesTransformDirectKey(
@@ -1106,6 +1117,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveOneShotDecryptBytes = null;
+            byte[] liveOneShotEncryptBytes = null;
 
             using (Aes aes = AesFactory.Create())
             {
@@ -1119,10 +1132,27 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 liveEncryptBytes = AesEncryptDirectKey(aes, key, iv, plainBytes);
                 liveDecryptBytes = AesDecryptDirectKey(aes, key, iv, cipherBytes);
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    aes.Key = key;
+                    liveOneShotDecryptBytes = aes.DecryptEcb(cipherBytes, paddingMode);
+                    liveOneShotEncryptBytes = aes.EncryptEcb(plainBytes, paddingMode);
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);
             Assert.Equal(plainBytes, liveDecryptBytes);
+
+            if (liveOneShotDecryptBytes is not null)
+            {
+                Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+            }
+
+            if (liveOneShotEncryptBytes is not null)
+            {
+                Assert.Equal(cipherBytes, liveOneShotEncryptBytes);
+            }
         }
 
         private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes)
