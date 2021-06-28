@@ -814,6 +814,7 @@ namespace System.Data.OleDb
             RowBinding? rowbinding = null;
             Bindings? bindings = ParameterBindings;
             bool mustRelease = false;
+
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
@@ -970,6 +971,7 @@ namespace System.Data.OleDb
 
             StringMemHandle? sptr = null;
             bool mustReleaseStringHandle = false;
+
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {

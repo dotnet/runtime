@@ -125,6 +125,7 @@ namespace System.Data.OleDb
             Debug.Assert(dbbindings.Length == BindingCount(), "count mismatch");
 
             bool mustRelease = false;
+
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
@@ -209,6 +210,7 @@ namespace System.Data.OleDb
                 DangerousAddRef(ref mustRelease);
 
                 buffer = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
@@ -247,6 +249,7 @@ namespace System.Data.OleDb
             try
             {
                 DangerousAddRef(ref mustRelease);
+
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
@@ -288,6 +291,7 @@ namespace System.Data.OleDb
             try
             {
                 DangerousAddRef(ref mustRelease);
+
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
@@ -543,6 +547,7 @@ namespace System.Data.OleDb
             IntPtr currentHandle = ADP.IntPtrOffset(buffer, valueOffset);
             IntPtr originalHandle = ADP.IntPtrOffset(buffer, valueOffset + ODB.SizeOf_Variant);
             bool different = NativeOledbWrapper.MemoryCompare(currentHandle, originalHandle, ODB.SizeOf_Variant);
+
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -573,6 +578,7 @@ namespace System.Data.OleDb
             IntPtr currentHandle = ADP.IntPtrOffset(buffer, valueOffset);
             IntPtr originalHandle = ADP.IntPtrOffset(buffer, valueOffset + sizeof(PROPVARIANT));
             bool different = NativeOledbWrapper.MemoryCompare(currentHandle, originalHandle, sizeof(PROPVARIANT));
+
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }

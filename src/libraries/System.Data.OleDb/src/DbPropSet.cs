@@ -229,6 +229,7 @@ namespace System.Data.OleDb
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr propsetPtr = ADP.IntPtrOffset(DangerousGetHandle(), index * ODB.SizeOf_tagDBPROPSET);
+
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }

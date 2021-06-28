@@ -240,6 +240,7 @@ namespace System.Data.ProviderBase
                 _poolSemaphore = new Semaphore(0, MAX_Q_SIZE);
                 _errorEvent = new ManualResetEvent(false);
                 _creationSemaphore = new Semaphore(1, 1);
+
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
@@ -950,6 +951,7 @@ namespace System.Data.ProviderBase
             do
             {
                 bool started = false;
+
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
@@ -986,6 +988,7 @@ namespace System.Data.ProviderBase
                         DbConnectionInternal? connection = null;
                         bool timeout = false;
                         Exception? caughtException = null;
+
                         RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
@@ -1446,6 +1449,7 @@ namespace System.Data.ProviderBase
                         bool mustRelease = false;
                         int waitResult = BOGUS_HANDLE;
                         uint timeout = (uint)CreationTimeout;
+
                         RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
