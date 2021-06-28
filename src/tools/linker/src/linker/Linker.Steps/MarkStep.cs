@@ -1982,6 +1982,8 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (typeDefinition.Methods, predicate, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 		}
 
+		static readonly Regex DebuggerDisplayAttributeValueRegex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
+
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
 			if (_context.KeepMembersForDebugger) {
@@ -1994,9 +1996,7 @@ namespace Mono.Linker.Steps
 				if (string.IsNullOrEmpty (displayString))
 					return;
 
-				Regex regex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
-
-				foreach (Match match in regex.Matches (displayString)) {
+				foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches (displayString)) {
 					// Remove '{' and '}'
 					string realMatch = match.Value.Substring (1, match.Value.Length - 2);
 
