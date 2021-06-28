@@ -814,7 +814,7 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
-                await connection.RespondToPingFrameAsync(); // Respond to 1 RTT PING
+                connection.SetupAutomaticPingResponse();
                 await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: false));
                 await connection.WriteFrameAsync(MakeSimpleDataFrame(streamId));
 
