@@ -934,10 +934,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [InlineData(null)]
-        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(null, false)]
+        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
@@ -961,9 +963,12 @@ namespace System.Net.Http.Functional.Tests
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                 if (PlatformDetection.IsBrowser)
                 {
+                    if (enableWasmStreaming)
+                    {
 #if !NETFRAMEWORK
-                    request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+                        request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
 #endif
+                    }
                 }
 
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
@@ -976,7 +981,7 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Assert.False(responseStream.CanSeek);
+                        Assert.Equal(PlatformDetection.IsBrowser && !enableWasmStreaming, responseStream.CanSeek);
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
