@@ -141,5 +141,22 @@ namespace Internal.TypeSystem.Interop
 
             return false;
         }
+
+        public static bool IsMarshallingNotSupported(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+
+            var marshallers = GetMarshallersForMethod(targetMethod);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].GetType() == typeof(NotSupportedMarshaller)
+                    // TODO: AnsiStringMarshaller can be allowed when it's logic is fixed,
+                    // currently it leads to free(): invalid pointer
+                    || marshallers[i].GetType() == typeof(AnsiStringMarshaller))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }
