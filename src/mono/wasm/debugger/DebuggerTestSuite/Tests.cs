@@ -753,7 +753,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb2()
+        public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
