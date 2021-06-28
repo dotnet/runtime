@@ -204,23 +204,14 @@ typedef struct MonoComponentDebugger {
 	void (*mono_debugger_agent_parse_options) (char* options);
 
 	void (*mono_de_init) (DebuggerEngineCallbacks *cbs); 
-	void (*mono_debugger_free_objref) (gpointer value); //debugger-engine removeAfterMergeWasmPR
 	void (*mono_de_set_log_level) (int level, FILE* file);
 	void (*mono_de_add_pending_breakpoints) (MonoMethod* method, MonoJitInfo* ji); 
-	void (*mono_de_clear_breakpoint) (MonoBreakpoint* bp); //debugger-engine removeAfterMergeWasmPR
 	void (*mono_de_process_single_step) (void* tls, gboolean from_signal);
 	void (*mono_de_process_breakpoint) (void* tls, gboolean from_signal);
-	MonoBreakpoint* (*mono_de_set_breakpoint) (MonoMethod* method, long il_offset, EventRequest* req, MonoError* error); //debugger-engine removeAfterMergeWasmPR
 	void (*mono_de_cancel_all_ss) (void);
-	DbgEngineErrorCode (*mono_de_ss_create) (MonoInternalThread* thread, MdbgProtStepSize size, MdbgProtStepDepth depth, MdbgProtStepFilter filter, EventRequest* req); //debugger-engine removeAfterMergeWasmPR
 	void (*mono_de_domain_add) (MonoDomain* domain);
-	void (*mono_de_collect_breakpoints_by_sp) (SeqPoint* sp, MonoJitInfo* ji, GPtrArray* ss_reqs, GPtrArray* bp_reqs); //debugger-engine removeAfterMergeWasmPR
-	MonoBreakpoint* (*mono_de_get_breakpoint_by_id) (int id); //debugger-engine removeAfterMergeWasmPR
-	DbgEngineErrorCode (*mono_de_set_interp_var) (MonoType* t, gpointer addr, guint8* val_buf); //debugger-engine removeAfterMergeWasmPR
 	gboolean (*set_set_notification_for_wait_completion_flag) (DbgEngineStackFrame* frame); 
 	MonoMethod* (*get_notify_debugger_of_wait_completion_method) (void);
-	MonoClass* (*get_class_to_get_builder_field) (DbgEngineStackFrame* frame); //debugger-engine removeAfterMergeWasmPR
-	MonoMethod* (*get_object_id_for_debugger_method) (MonoClass* async_builder_class); //debugger-engine removeAfterMergeWasmPR
 	gpointer (*get_async_method_builder) (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
 	int (*mono_ss_create_init_args) (SingleStepReq *ss_req, SingleStepArgs *args);
 	void (*mono_ss_args_destroy) (SingleStepArgs *ss_args);

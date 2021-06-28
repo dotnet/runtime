@@ -467,17 +467,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	return bp;
 }
 
-MonoBreakpoint *
-mono_de_get_breakpoint_by_id (int id)
-{
-	for (int i = 0; i < breakpoints->len; ++i) {
-		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
-		if (bp->req->id == id)
-			return bp;
-	}
-	return NULL;
-}
-
 void
 mono_de_clear_breakpoint (MonoBreakpoint *bp)
 {
@@ -1775,24 +1764,15 @@ mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
 void
 debugger_engine_add_function_pointers(MonoComponentDebugger* fn_table)
 {
-	fn_table->mono_debugger_free_objref = mono_debugger_free_objref;
 	fn_table->mono_de_init = mono_de_init;
 	fn_table->mono_de_set_log_level = mono_de_set_log_level;
 	fn_table->mono_de_add_pending_breakpoints = mono_de_add_pending_breakpoints;
-	fn_table->mono_de_clear_breakpoint = mono_de_clear_breakpoint;
 	fn_table->mono_de_process_single_step = mono_de_process_single_step;
 	fn_table->mono_de_process_breakpoint = mono_de_process_breakpoint;
-	fn_table->mono_de_set_breakpoint = mono_de_set_breakpoint;
 	fn_table->mono_de_cancel_all_ss = mono_de_cancel_all_ss;
-	fn_table->mono_de_ss_create = mono_de_ss_create;
 	fn_table->mono_de_domain_add = mono_de_domain_add;
-	fn_table->mono_de_collect_breakpoints_by_sp = mono_de_collect_breakpoints_by_sp;
-	fn_table->mono_de_get_breakpoint_by_id = mono_de_get_breakpoint_by_id;
-	fn_table->mono_de_set_interp_var = mono_de_set_interp_var;
 	fn_table->set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag;
 	fn_table->get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
-	fn_table->get_class_to_get_builder_field = get_class_to_get_builder_field;
-	fn_table->get_object_id_for_debugger_method = get_object_id_for_debugger_method;
 	fn_table->get_async_method_builder = get_async_method_builder;
 	fn_table->mono_ss_create_init_args = mono_ss_create_init_args;
 	fn_table->mono_ss_args_destroy = mono_ss_args_destroy;
