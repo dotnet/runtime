@@ -4112,7 +4112,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
         {
-            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
+            if ((tree->gtFlags & GTF_VAR_DEF) || (tree->gtFlags & GTF_VAR_CLONED)) // Is this is a def of our variable
             {
                 bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
