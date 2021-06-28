@@ -56,11 +56,11 @@ namespace System
 
         internal const ulong SignMask = 0x8000_0000_0000_0000;
         internal const int SignShift = 63;
-        internal const int ShiftedSignMask = (int)(SignMask >> SignShift);
+        internal const uint ShiftedSignMask = (uint)(SignMask >> SignShift);
 
         internal const ulong ExponentMask = 0x7FF0_0000_0000_0000;
         internal const int ExponentShift = 52;
-        internal const int ShiftedExponentMask = (int)(ExponentMask >> ExponentShift);
+        internal const uint ShiftedExponentMask = (uint)(ExponentMask >> ExponentShift);
 
         internal const ulong SignificandMask = 0x000F_FFFF_FFFF_FFFF;
 
@@ -150,7 +150,7 @@ namespace System
 
         internal static int ExtractExponentFromBits(ulong bits)
         {
-            return (int)(bits >> ExponentShift) & ShiftedExponentMask;
+            return (int)(bits >> ExponentShift) & (int)ShiftedExponentMask;
         }
 
         internal static ulong ExtractSignificandFromBits(ulong bits)
@@ -478,10 +478,10 @@ namespace System
         [RequiresPreviewFeatures]
         static bool IBinaryNumber<double>.IsPow2(double value)
         {
-            var bits = (ulong)BitConverter.DoubleToInt64Bits(value);
+            ulong bits = BitConverter.DoubleToUInt64Bits(value);
 
-            var exponent = (uint)(bits >> ExponentShift) & ShiftedExponentMask;
-            var significand = bits & SignificandMask;
+            uint exponent = (uint)(bits >> ExponentShift) & ShiftedExponentMask;
+            ulong significand = bits & SignificandMask;
 
             return (value > 0)
                 && (exponent != MinExponent) && (exponent != MaxExponent)
@@ -499,29 +499,29 @@ namespace System
         [RequiresPreviewFeatures]
         static double IBitwiseOperators<double, double, double>.operator &(double left, double right)
         {
-            var bits = BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right);
-            return BitConverter.Int64BitsToDouble(bits);
+            ulong bits = BitConverter.DoubleToUInt64Bits(left) & BitConverter.DoubleToUInt64Bits(right);
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         [RequiresPreviewFeatures]
         static double IBitwiseOperators<double, double, double>.operator |(double left, double right)
         {
-            var bits = BitConverter.DoubleToInt64Bits(left) | BitConverter.DoubleToInt64Bits(right);
-            return BitConverter.Int64BitsToDouble(bits);
+            ulong bits = BitConverter.DoubleToUInt64Bits(left) | BitConverter.DoubleToUInt64Bits(right);
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         [RequiresPreviewFeatures]
         static double IBitwiseOperators<double, double, double>.operator ^(double left, double right)
         {
-            var bits = BitConverter.DoubleToInt64Bits(left) ^ BitConverter.DoubleToInt64Bits(right);
-            return BitConverter.Int64BitsToDouble(bits);
+            ulong bits = BitConverter.DoubleToUInt64Bits(left) ^ BitConverter.DoubleToUInt64Bits(right);
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         [RequiresPreviewFeatures]
         static double IBitwiseOperators<double, double, double>.operator ~(double value)
         {
-            var bits = ~BitConverter.DoubleToInt64Bits(value);
-            return BitConverter.Int64BitsToDouble(bits);
+            ulong bits = ~BitConverter.DoubleToUInt64Bits(value);
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         //

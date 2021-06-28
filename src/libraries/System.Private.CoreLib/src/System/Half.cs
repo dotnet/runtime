@@ -728,10 +728,10 @@ namespace System
         [RequiresPreviewFeatures]
         static bool IBinaryNumber<Half>.IsPow2(Half value)
         {
-            var bits = (uint)BitConverter.HalfToInt16Bits(value);
+            uint bits = BitConverter.HalfToUInt16Bits(value);
 
-            var exponent = (ushort)(bits >> ExponentShift) & ShiftedExponentMask;
-            var significand = bits & SignificandMask;
+            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
+            uint significand = bits & SignificandMask;
 
             return (value > PositiveZero)
                 && (exponent != MinExponent) && (exponent != MaxExponent)
@@ -749,29 +749,29 @@ namespace System
         [RequiresPreviewFeatures]
         static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
         {
-            var bits = (short)(BitConverter.HalfToInt16Bits(left) & BitConverter.HalfToInt16Bits(right));
-            return BitConverter.Int16BitsToHalf(bits);
+            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
+            return BitConverter.UInt16BitsToHalf(bits);
         }
 
         [RequiresPreviewFeatures]
         static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
         {
-            var bits = (short)(BitConverter.HalfToInt16Bits(left) | BitConverter.HalfToInt16Bits(right));
-            return BitConverter.Int16BitsToHalf(bits);
+            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
+            return BitConverter.UInt16BitsToHalf(bits);
         }
 
         [RequiresPreviewFeatures]
         static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
         {
-            var bits = (short)(BitConverter.HalfToInt16Bits(left) ^ BitConverter.HalfToInt16Bits(right));
-            return BitConverter.Int16BitsToHalf(bits);
+            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
+            return BitConverter.UInt16BitsToHalf(bits);
         }
 
         [RequiresPreviewFeatures]
         static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
         {
-            var bits = (short)(~BitConverter.HalfToInt16Bits(value));
-            return BitConverter.Int16BitsToHalf(bits);
+            ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
+            return BitConverter.UInt16BitsToHalf(bits);
         }
 
         //
@@ -897,17 +897,17 @@ namespace System
         [RequiresPreviewFeatures]
         static Half IFloatingPoint<Half>.BitIncrement(Half x)
         {
-            short bits = BitConverter.HalfToInt16Bits(x);
+            ushort bits = BitConverter.HalfToUInt16Bits(x);
 
             if ((bits & ExponentMask) >= ExponentMask)
             {
                 // NaN returns NaN
                 // -Infinity returns float.MinValue
                 // +Infinity returns +Infinity
-                return (bits == unchecked((short)(ExponentMask | SignMask))) ? MinValue : x;
+                return (bits == (ExponentMask | SignMask)) ? MinValue : x;
             }
 
-            if (bits == unchecked((short)NegativeZeroBits))
+            if (bits == NegativeZeroBits)
             {
                 // -0.0 returns float.Epsilon
                 return Epsilon;
@@ -916,14 +916,14 @@ namespace System
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += (short)((bits < 0) ? -1 : +1);
-            return BitConverter.Int16BitsToHalf(bits);
+            bits += unchecked((ushort)((bits < 0) ? -1 : +1));
+            return BitConverter.UInt16BitsToHalf(bits);
         }
 
         [RequiresPreviewFeatures]
         static Half IFloatingPoint<Half>.BitDecrement(Half x)
         {
-            short bits = BitConverter.HalfToInt16Bits(x);
+            ushort bits = BitConverter.HalfToUInt16Bits(x);
 
             if ((bits & ExponentMask) >= ExponentMask)
             {
@@ -942,8 +942,8 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += (short)((bits < 0) ? +1 : -1);
-            return BitConverter.Int16BitsToHalf(bits);
+            bits += (ushort)((bits < 0) ? +1 : -1);
+            return BitConverter.UInt16BitsToHalf(bits);
         }
 
         [RequiresPreviewFeatures]

@@ -52,11 +52,11 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
-        internal const int ShiftedSignMask = (int)(SignMask >> SignShift);
+        internal const uint ShiftedSignMask = SignMask >> SignShift;
 
         internal const uint ExponentMask = 0x7F80_0000;
         internal const int ExponentShift = 23;
-        internal const int ShiftedExponentMask = (int)(ExponentMask >> ExponentShift);
+        internal const uint ShiftedExponentMask = ExponentMask >> ExponentShift;
 
         internal const uint SignificandMask = 0x007F_FFFF;
 
@@ -146,7 +146,7 @@ namespace System
 
         internal static int ExtractExponentFromBits(uint bits)
         {
-            return (int)(bits >> ExponentShift) & ShiftedExponentMask;
+            return (int)(bits >> ExponentShift) & (int)ShiftedExponentMask;
         }
 
         internal static uint ExtractSignificandFromBits(uint bits)
@@ -470,10 +470,10 @@ namespace System
         [RequiresPreviewFeatures]
         static bool IBinaryNumber<float>.IsPow2(float value)
         {
-            var bits = (uint)BitConverter.SingleToInt32Bits(value);
+            uint bits = BitConverter.SingleToUInt32Bits(value);
 
-            var exponent = (uint)(bits >> ExponentShift) & ShiftedExponentMask;
-            var significand = bits & SignificandMask;
+            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
+            uint significand = bits & SignificandMask;
 
             return (value > 0)
                 && (exponent != MinExponent) && (exponent != MaxExponent)
@@ -491,29 +491,29 @@ namespace System
         [RequiresPreviewFeatures]
         static float IBitwiseOperators<float, float, float>.operator &(float left, float right)
         {
-            var bits = BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right);
-            return BitConverter.Int32BitsToSingle(bits);
+            uint bits = BitConverter.SingleToUInt32Bits(left) & BitConverter.SingleToUInt32Bits(right);
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         [RequiresPreviewFeatures]
         static float IBitwiseOperators<float, float, float>.operator |(float left, float right)
         {
-            var bits = BitConverter.SingleToInt32Bits(left) | BitConverter.SingleToInt32Bits(right);
-            return BitConverter.Int32BitsToSingle(bits);
+            uint bits = BitConverter.SingleToUInt32Bits(left) | BitConverter.SingleToUInt32Bits(right);
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         [RequiresPreviewFeatures]
         static float IBitwiseOperators<float, float, float>.operator ^(float left, float right)
         {
-            var bits = BitConverter.SingleToInt32Bits(left) ^ BitConverter.SingleToInt32Bits(right);
-            return BitConverter.Int32BitsToSingle(bits);
+            uint bits = BitConverter.SingleToUInt32Bits(left) ^ BitConverter.SingleToUInt32Bits(right);
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         [RequiresPreviewFeatures]
         static float IBitwiseOperators<float, float, float>.operator ~(float value)
         {
-            var bits = ~BitConverter.SingleToInt32Bits(value);
-            return BitConverter.Int32BitsToSingle(bits);
+            uint bits = ~BitConverter.SingleToUInt32Bits(value);
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         //
