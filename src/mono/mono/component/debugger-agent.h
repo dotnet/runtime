@@ -9,8 +9,6 @@
 #include "debugger.h"
 #include <mono/utils/mono-stack-unwinding.h>
 
-typedef struct _DebuggerTlsData DebuggerTlsData;
-
 void
 debugger_agent_add_function_pointers (MonoComponentDebugger* fn_table);
 

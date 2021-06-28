@@ -4,11 +4,9 @@
 
 #include <glib.h>
 #include <mono/metadata/components.h>
+#include "debugger-agent-external.h"
 
 #ifndef DISABLE_SDB
-
-MONO_API void
-mono_debugger_agent_register_transport (DebuggerTransport *trans);
 
 void
 mono_debugger_agent_register_transport (DebuggerTransport *trans)

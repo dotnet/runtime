@@ -1793,8 +1793,10 @@ debugger_engine_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
 	fn_table->get_class_to_get_builder_field = get_class_to_get_builder_field;
 	fn_table->get_object_id_for_debugger_method = get_object_id_for_debugger_method;
-	fn_table->mono_de_clear_all_breakpoints = mono_de_clear_all_breakpoints;
 	fn_table->get_async_method_builder = get_async_method_builder;
+	fn_table->mono_ss_create_init_args = mono_ss_create_init_args;
+	fn_table->mono_ss_args_destroy = mono_ss_args_destroy;
+	fn_table->mono_get_this_async_id = mono_get_this_async_id;
 }
 
 #endif

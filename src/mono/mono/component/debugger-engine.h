@@ -360,7 +360,6 @@ MonoBreakpoint* mono_de_set_breakpoint (MonoMethod *method, long il_offset, Even
 void mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GPtrArray *bp_reqs);
 void mono_de_clear_breakpoints_for_domain (MonoDomain *domain);
 void mono_de_add_pending_breakpoints(MonoMethod* method, MonoJitInfo* ji);
-void mono_de_clear_all_breakpoints (void);
 MonoBreakpoint * mono_de_get_breakpoint_by_id (int id);
 
 //single stepping

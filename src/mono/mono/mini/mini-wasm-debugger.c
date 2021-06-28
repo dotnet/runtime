@@ -41,7 +41,6 @@ extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_dat
 
 G_END_DECLS
 
-static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 static gboolean receive_debugger_agent_message (void *data, int len);
 static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 
@@ -141,7 +140,7 @@ ensure_runtime_is_suspended (void)
 
 static int
 handle_multiple_ss_requests (void) {
-	mono_de_cancel_all_ss ();
+	mono_component_debugger ()->mono_de_cancel_all_ss ();
 	return 1;
 }
 
@@ -160,17 +159,16 @@ mono_wasm_debugger_init (void)
 		.ss_calculate_framecount = ss_calculate_framecount,
 		.ensure_jit = ensure_jit,
 		.ensure_runtime_is_suspended = ensure_runtime_is_suspended,
-		.get_this_async_id = mono_get_this_async_id,
-		.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag,
-		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
-		.create_breakpoint_events = mono_dbg_create_breakpoint_events,
-		.process_breakpoint_events = mono_dbg_process_breakpoint_events,
-		.ss_create_init_args = mono_ss_create_init_args,
-		.ss_args_destroy = mono_ss_args_destroy,
+		.get_this_async_id = mono_component_debugger ()->mono_get_this_async_id,
+		.set_set_notification_for_wait_completion_flag = mono_component_debugger ()->set_set_notification_for_wait_completion_flag,
+		.get_notify_debugger_of_wait_completion_method = mono_component_debugger ()->get_notify_debugger_of_wait_completion_method,
+		.create_breakpoint_events = mono_component_debugger ()->mono_dbg_create_breakpoint_events,
+		.process_breakpoint_events = mono_component_debugger ()->mono_dbg_process_breakpoint_events,
+		.ss_create_init_args = mono_component_debugger ()->mono_ss_create_init_args,
+		.ss_args_destroy = mono_component_debugger ()->mono_ss_args_destroy,
 		.handle_multiple_ss_requests = handle_multiple_ss_requests,
 	};
-
-	mono_component_debugger ()->mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mono_component_debugger ()->mono_de_init (&cbs);
 	mono_component_debugger ()->mono_de_set_log_level (log_level, stdout);
 
@@ -184,9 +182,6 @@ mono_wasm_debugger_init (void)
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
-
-	mini_get_dbg_callbacks ()->handle_exception = mono_component_debugger ()->mono_debugger_agent_handle_exception;
-	mini_get_dbg_callbacks ()->user_break = mono_component_debugger ()->mono_dbg_debugger_agent_user_break;
 
 //debugger-agent initialization	
 	DebuggerTransport trans;
@@ -408,7 +403,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		InvokeData invoke_data;
 		memset (&invoke_data, 0, sizeof (InvokeData));
 		invoke_data.endp = data + size;
-		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
+		error = mono_component_debugger ()->mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
 	else
 		error = mono_component_debugger ()->mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);

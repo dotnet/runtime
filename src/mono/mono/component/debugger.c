@@ -35,9 +35,7 @@ debugger_avaliable (void)
 MonoComponentDebugger *
 mono_component_debugger_init (void)
 {
-#ifndef DISABLE_SDB	
 	debugger_agent_add_function_pointers (&fn_table);
-#endif	
 	debugger_engine_add_function_pointers (&fn_table);
 	return &fn_table;
 }

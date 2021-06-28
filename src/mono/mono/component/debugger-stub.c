@@ -120,11 +120,44 @@ stub_get_class_to_get_builder_field (DbgEngineStackFrame *frame); //debugger-eng
 static MonoMethod *
 stub_get_object_id_for_debugger_method (MonoClass *async_builder_class); //debugger-engine removeAfterMergeWasmPR
 
-static void 
-stub_mono_de_clear_all_breakpoints (void); //debugger-engine removeAfterMergeWasmPR
-
 static gpointer 
 stub_get_async_method_builder (DbgEngineStackFrame *frame); //debugger-engine removeAfterMergeWasmPR
+
+static MdbgProtErrorCode 
+stub_mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
+
+static void 
+stub_mono_init_debugger_agent_for_wasm (int log_level);
+
+static void* 
+stub_mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
+
+static void 
+stub_mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
+
+static void 
+stub_mono_wasm_save_thread_context (void);
+
+static DebuggerTlsData *
+stub_mono_wasm_get_tls (void);
+
+static MdbgProtErrorCode 
+stub_mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
+
+static void 
+stub_mono_ss_discard_frame_context (void *the_tls);
+
+static void 
+stub_mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
+
+static int 
+stub_mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
+
+static void
+stub_mono_ss_args_destroy (SingleStepArgs *ss_args);
+
+static int 
+stub_mono_get_this_async_id (DbgEngineStackFrame *frame);
 
 
 static MonoComponentDebugger fn_table = {
@@ -147,6 +180,7 @@ static MonoComponentDebugger fn_table = {
 	&stub_register_transport,
 	&stub_mono_debugger_agent_transport_handshake,
 	&stub_mono_debugger_agent_parse_options,
+	
 	&stub_mono_de_init,
 	&stub_mono_debugger_free_objref,
 	&stub_mono_de_set_log_level,
@@ -165,8 +199,20 @@ static MonoComponentDebugger fn_table = {
 	&stub_get_notify_debugger_of_wait_completion_method,
 	&stub_get_class_to_get_builder_field,
 	&stub_get_object_id_for_debugger_method,
-	&stub_mono_de_clear_all_breakpoints,
-	&stub_get_async_method_builder
+	&stub_get_async_method_builder,
+	&stub_mono_ss_create_init_args,
+	&stub_mono_ss_args_destroy,
+	&stub_mono_get_this_async_id,
+	
+	&stub_mono_process_dbg_packet,
+	&stub_mono_init_debugger_agent_for_wasm,
+	&stub_mono_dbg_create_breakpoint_events,
+	&stub_mono_dbg_process_breakpoint_events,
+	&stub_mono_wasm_save_thread_context,
+	&stub_mono_wasm_get_tls,
+	&stub_mono_do_invoke_method,
+	&stub_mono_ss_discard_frame_context,
+	&stub_mono_ss_calculate_framecount
 };
 
 static bool
@@ -377,11 +423,73 @@ stub_get_object_id_for_debugger_method (MonoClass *async_builder_class)
 	g_assert_not_reached();
 }
 
-static void stub_mono_de_clear_all_breakpoints (void)
+static gpointer stub_get_async_method_builder (DbgEngineStackFrame *frame)
+{
+	g_assert_not_reached();
+}
+
+static MdbgProtErrorCode 
+stub_mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf)
+{
+	g_assert_not_reached();
+}
+
+static void 
+stub_mono_init_debugger_agent_for_wasm (int log_level)
 {
 }
 
-static gpointer stub_get_async_method_builder (DbgEngineStackFrame *frame)
+static void* 
+stub_mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind)
+{
+	g_assert_not_reached();
+}
+
+static void 
+stub_mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset)
+{
+}
+
+static void 
+stub_mono_wasm_save_thread_context (void)
+{
+}
+
+static DebuggerTlsData *
+stub_mono_wasm_get_tls (void)
+{
+	g_assert_not_reached();
+}
+
+static MdbgProtErrorCode 
+stub_mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp)
+{
+	g_assert_not_reached();
+}
+
+static void 
+stub_mono_ss_discard_frame_context (void *the_tls)
+{
+}
+
+static void 
+stub_mono_ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
+{
+}
+
+static int 
+stub_mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
+{
+	g_assert_not_reached();
+}
+
+static void
+stub_mono_ss_args_destroy (SingleStepArgs *ss_args)
+{
+}
+
+static int 
+stub_mono_get_this_async_id (DbgEngineStackFrame *frame)
 {
 	g_assert_not_reached();
 }
