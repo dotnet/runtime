@@ -11,6 +11,7 @@ using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -376,6 +377,7 @@ namespace System.Net.Http
             return WriteAsciiStringAsync(value.ToString("X", CultureInfo.InvariantCulture), async);
         }
 
+        [UnsupportedOSPlatform("tvos")]
         public async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
@@ -802,6 +804,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("tvos")]
         public sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken) =>
             SendAsyncCore(request, async, cancellationToken);
 

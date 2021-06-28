@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.NetworkInformation;
@@ -326,6 +327,7 @@ namespace System.Net.Http
             }
         }
 
+        [UnsupportedOSPlatform("tvos")]
         public ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool async, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
@@ -365,11 +367,13 @@ namespace System.Net.Http
             return pool.SendAsync(request, async, doRequestAuth, cancellationToken);
         }
 
+        [UnsupportedOSPlatform("tvos")]
         public ValueTask<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, bool async, CancellationToken cancellationToken)
         {
             return SendAsyncCore(request, proxyUri, async, doRequestAuth: false, isProxyConnect: true, cancellationToken);
         }
 
+        [UnsupportedOSPlatform("tvos")]
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (_proxy == null)
@@ -423,6 +427,7 @@ namespace System.Net.Http
         /// <param name="multiProxy">The set of proxies to use.</param>
         /// <param name="firstProxy">The first proxy try.</param>
         /// <param name="cancellationToken">The cancellation token to use for the operation.</param>
+        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool async, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
         {
             HttpRequestException rethrowException;
