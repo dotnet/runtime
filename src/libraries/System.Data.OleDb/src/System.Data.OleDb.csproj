@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -9,7 +9,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);CS0618</NoWarn>  
+    <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -90,6 +90,23 @@
     <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\WrappedIUnknown.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
+    <Compile Include="OleDbComWrappers.cs" />
+    <Compile Include="DbPropSet.COMWrappers.cs" />
+    <Compile Include="OleDb_Util.COMWrappers.cs" />
+    <Compile Include="OleDbConnection.COMWrappers.cs" />
+    <Compile Include="OleDbDataAdapter.COMWrappers.cs" />
+    <Compile Include="OleDbException.COMWrappers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="UnsafeNativeMethods.NoCOMWrappers.cs" />
+    <Compile Include="DbPropSet.NoCOMWrappers.cs" />
+    <Compile Include="OleDb_Util.NoCOMWrappers.cs" />
+    <Compile Include="OleDbConnection.NoCOMWrappers.cs" />
+    <Compile Include="OleDbDataAdapter.NoCOMWrappers.cs" />
+    <Compile Include="OleDbException.NoCOMWrappers.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\System.Data.OleDb.OleDbMetaData.xml">

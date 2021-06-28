@@ -8,16 +8,11 @@ using System.Security;
 
 namespace System.Data.Common
 {
-    internal static class UnsafeNativeMethods
+    internal static partial class UnsafeNativeMethods
     {
         //
         // Oleaut32
         //
-
-        [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
-            [In] int dwReserved,
-            [Out, MarshalAs(UnmanagedType.Interface)] out IErrorInfo ppIErrorInfo);
 
         [Guid("00000567-0000-0010-8000-00AA006D2EA4"), InterfaceType(ComInterfaceType.InterfaceIsDual), ComImport, SuppressUnmanagedCodeSecurity]
         internal interface ADORecordConstruction

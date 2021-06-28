@@ -10,7 +10,7 @@ using System.Text;
 
 namespace System.Data.OleDb
 {
-    internal static class ODB
+    internal static partial class ODB
     {
         // OleDbCommand
         internal static void CommandParameterStatus(StringBuilder builder, int index, DBStatus status)
@@ -330,20 +330,6 @@ namespace System.Data.OleDb
         internal static InvalidOperationException DBBindingGetVector()
         {
             return ADP.InvalidOperation(SR.Format(SR.OleDb_DBBindingGetVector));
-        }
-
-        internal static OleDbHResult GetErrorDescription(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult hresult, out string message)
-        {
-            OleDbHResult hr = errorInfo.GetDescription(out message);
-            if (((int)hr < 0) && ADP.IsEmpty(message))
-            {
-                message = FailedGetDescription(hr) + Environment.NewLine + ODB.ELookup(hresult);
-            }
-            if (ADP.IsEmpty(message))
-            {
-                message = ODB.ELookup(hresult);
-            }
-            return hr;
         }
 
         // OleDbEnumerator
