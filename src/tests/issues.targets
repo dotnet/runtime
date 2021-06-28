@@ -1065,12 +1065,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/InstructionCombining/DivToMul/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
-            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
-            <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/StructABI/StructABI/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
         </ExcludeList>
@@ -1300,19 +1294,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/newarr/newarr/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i8/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_il/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_dynamic/**">
