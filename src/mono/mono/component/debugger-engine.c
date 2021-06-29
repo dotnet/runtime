@@ -1759,13 +1759,4 @@ mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
 	return ERR_NONE;
 }
 
-
-void
-debugger_engine_add_function_pointers(MonoComponentDebugger* fn_table)
-{
-	fn_table->mono_de_add_pending_breakpoints = mono_de_add_pending_breakpoints;
-	fn_table->mono_de_cancel_all_ss = mono_de_cancel_all_ss;
-	fn_table->mono_de_domain_add = mono_de_domain_add;
-}
-
 #endif

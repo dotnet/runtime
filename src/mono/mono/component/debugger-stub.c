@@ -66,15 +66,6 @@ stub_mono_debugger_agent_transport_handshake (void);
 static void 
 stub_mono_debugger_agent_parse_options (char *options);
 
-static void 
-stub_mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji); //debugger-engine removeAfterMergeWasmPR
-
-static void 
-stub_mono_de_cancel_all_ss (void); //debugger-engine removeAfterMergeWasmPR
-
-static void 
-stub_mono_de_domain_add (MonoDomain *domain); //debugger-engine removeAfterMergeWasmPR
-
 static void
 stub_mono_wasm_debugger_init (void);
 
@@ -107,11 +98,7 @@ static MonoComponentDebugger fn_table = {
 	&stub_register_transport,
 	&stub_mono_debugger_agent_transport_handshake,
 	&stub_mono_debugger_agent_parse_options,
-	
-	&stub_mono_de_add_pending_breakpoints,
-	&stub_mono_de_cancel_all_ss,
-	&stub_mono_de_domain_add,
-	
+
 	//wasm
 	&stub_mono_wasm_debugger_init,
 	&stub_mono_wasm_breakpoint_hit,
@@ -226,21 +213,6 @@ stub_mono_debugger_agent_transport_handshake(void)
 
 static void 
 stub_mono_debugger_agent_parse_options (char *options) 
-{
-}
-
-static void 
-stub_mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
-{
-}
-
-static void 
-stub_mono_de_cancel_all_ss (void)
-{
-}
-
-static void 
-stub_mono_de_domain_add (MonoDomain *domain)
 {
 }
 

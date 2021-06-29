@@ -44,4 +44,13 @@ mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext
 
 void*
 mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
+
+int 
+mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
+
+void 
+mono_ss_args_destroy (SingleStepArgs *ss_args);
+
+int 
+mono_get_this_async_id (DbgEngineStackFrame *frame);
 #endif

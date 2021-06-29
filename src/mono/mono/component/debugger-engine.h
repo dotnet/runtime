@@ -319,9 +319,6 @@ typedef struct
 	gboolean has_ctx;
 } StackFrame;
 
-void
-debugger_engine_add_function_pointers(MonoComponentDebugger* fn_table);
-
 #define DE_ERR_NONE 0
 // WARNING WARNING WARNING
 // Error codes MUST match those of sdb for now
@@ -406,15 +403,6 @@ void win32_debugger_log(FILE *stream, const gchar *format, ...);
 #define PRINT_ERROR_MSG(...) g_printerr (__VA_ARGS__)
 #define PRINT_MSG(...) g_print (__VA_ARGS__)
 #endif
-
-int 
-mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
-
-void
-mono_ss_args_destroy (SingleStepArgs *ss_args);
-
-int 
-mono_get_this_async_id (DbgEngineStackFrame *frame);
 
 void 
 mono_de_init(DebuggerEngineCallbacks* cbs);

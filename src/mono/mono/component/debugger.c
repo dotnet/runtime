@@ -36,7 +36,6 @@ MonoComponentDebugger *
 mono_component_debugger_init (void)
 {
 	debugger_agent_add_function_pointers (&fn_table);
-	debugger_engine_add_function_pointers (&fn_table);
 	mini_wasm_debugger_add_function_pointers (&fn_table);
 	return &fn_table;
 }

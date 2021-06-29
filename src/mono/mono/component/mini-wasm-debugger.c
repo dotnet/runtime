@@ -79,13 +79,13 @@ void wasm_debugger_log (int level, const gchar *format, ...)
 static void
 jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
-	mono_component_debugger ()->mono_de_add_pending_breakpoints (method, jinfo);
+	mono_de_add_pending_breakpoints (method, jinfo);
 }
 
 static void
 appdomain_load (MonoProfiler *prof, MonoDomain *domain)
 {
-	mono_component_debugger ()->mono_de_domain_add (domain);
+	mono_de_domain_add (domain);
 }
 
 static MonoContext*
@@ -140,7 +140,7 @@ ensure_runtime_is_suspended (void)
 
 static int
 handle_multiple_ss_requests (void) {
-	mono_component_debugger ()->mono_de_cancel_all_ss ();
+	mono_de_cancel_all_ss ();
 	return 1;
 }
 

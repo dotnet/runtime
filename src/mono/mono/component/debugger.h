@@ -192,10 +192,6 @@ typedef struct MonoComponentDebugger {
 	gboolean (*mono_debugger_agent_transport_handshake) (void);
 	void (*mono_debugger_agent_parse_options) (char* options);
 
-	void (*mono_de_add_pending_breakpoints) (MonoMethod* method, MonoJitInfo* ji); 
-	void (*mono_de_cancel_all_ss) (void);
-	void (*mono_de_domain_add) (MonoDomain* domain);
-
 	//wasm
 	void (*mono_wasm_debugger_init) (void);
 	void (*mono_wasm_breakpoint_hit) (void);
