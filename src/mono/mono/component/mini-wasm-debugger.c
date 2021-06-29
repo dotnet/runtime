@@ -12,7 +12,7 @@
 #include <mono/mini/seq-points.h>
 #include <mono/component/debugger-engine.h>
 #include <mono/mini/debugger-protocol.h>
-#include <mono/component/debugger-agent.h>
+#include "debugger-agent.h"
 #include <mono/metadata/components.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle

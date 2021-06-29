@@ -4558,7 +4558,7 @@ register_icalls (void)
 
 #if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
 	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
-							mini_get_dbg_callbacks ()->unhandled_exception);
+							mono_component_debugger ()->unhandled_exception);
 #endif
 
 	/*
