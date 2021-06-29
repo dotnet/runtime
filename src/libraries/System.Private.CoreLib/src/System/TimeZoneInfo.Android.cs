@@ -3,22 +3,37 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        // TODO: Consider restructuring underlying AndroidTimeZones class.
+        // TODO: Consider restructuring underlying AndroidTimeZones class©.
         // Although it may be easier to work with this way.
-        private static TimeZone GetLocalTimeZoneCore()
+        private static TimeZoneInfo GetLocalTimeZoneCore()
         {
-            return AndroidTimeZones.Local;
+            return AndroidTimeZones.Local!;
         }
 
-        // TODO: Validate you still need these functions / fields.  We should try to isolate the android implementation 
+        //TODO: PopulateAllSystemTimeZones maps to GetSystemTimeZonesCore in mono/mono implementation
+        private static void PopulateAllSystemTimeZonesCore()
+        {
+
+        }
+
+        //TODO: Figure out if this maps to something in the other TimeZoneInfo files
+        private static TimeZoneInfo? ParseTZBuffer(string? id, byte[] buffer, int length)
+        {
+            throw new NotImplementedException("ParseTZBuffer has not been implemented yet");
+        }
+
+        // TODO: Validate you still need these functions / fields.  We should try to isolate the android implementation
         // as much as possible.
-        // In other words, mirroring how mono/mono did it is a good first step and then we can walk back what's 
+        // In other words, mirroring how mono/mono did it is a good first step and then we can walk back what's
         // common with TimeZoneInfo.cs and TimeZoneInfo.AnyUnix.cs
         private static string GetApexTimeDataRoot()
         {
@@ -44,7 +59,7 @@ namespace System
 
         internal static readonly string[] Paths = new string[] { GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
                                                                  GetApexRuntimeRoot() + "/etc/tz/",  // Android 10+, Fallback location if the above isn't found or corrupted
-                                                                 Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",};
+                                                                 Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", };
 
         private static string GetTimeZoneDirectory()
         {
@@ -59,16 +74,11 @@ namespace System
             return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
         }
 
-        static class AndroidTimeZones
+        private static class AndroidTimeZones
         {
-            private static IAndroidTimeZoneDB db;
+            private static IAndroidTimeZoneDB? db = GetDefaultTimeZoneDB();
 
-            static AndroidTimeZones()
-            {
-                db = GetDefaultTimeZoneDB();
-            }
-
-            private static IAndroidTimeZoneDB GetDefaultTimeZoneDB()
+            private static IAndroidTimeZoneDB? GetDefaultTimeZoneDB()
             {
                 foreach (var p in AndroidTzData.Paths)
                 {
@@ -77,21 +87,18 @@ namespace System
                         return new AndroidTzData(AndroidTzData.Paths);
                     }
                 }
-                if (Directory.Exists (ZoneInfoDB.ZoneDirectoryName))
-                {
-                    return new ZoneInfoDB();
-                }
+                //TODO: What should we throw here?
                 return null;
             }
 
             internal static IEnumerable<string> GetAvailableIds()
             {
                 return db == null
-                    ? new string[0]
+                    ? Array.Empty<string>()
                     : db.GetAvailableIds();
             }
 
-            private static TimeZoneInfo _GetTimeZone(string id, string name)
+            private static TimeZoneInfo? _GetTimeZone(string? id, string? name)
             {
                 if (db == null)
                     return null;
@@ -103,19 +110,19 @@ namespace System
                 return TimeZoneInfo.ParseTZBuffer(id, buffer, buffer.Length);
             }
 
-            internal static TimeZoneInfo GetTimeZone (string id, string name)
+            internal static TimeZoneInfo? GetTimeZone(string? id, string? name)
             {
                 if (name != null)
                 {
                     if (name == "GMT" || name == "UTC")
                     {
-                        return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
+                        return new TimeZoneInfo(id!, TimeSpan.FromSeconds(0), id!, name!, name!, null, disableDaylightSavingTime:true);
                     }
                     if (name.StartsWith ("GMT"))
                     {
-                        return new TimeZoneInfo (id,
-                                TimeSpan.FromSeconds(ParseNumericZone(name)),
-                                id, name, name, null, disableDaylightSavingTime:true);
+                        return new TimeZoneInfo (id!,
+                                TimeSpan.FromSeconds(ParseNumericZone(name!)),
+                                id!, name!, name!, null, disableDaylightSavingTime:true);
                     }
                 }
 
@@ -128,7 +135,7 @@ namespace System
                 }
             }
 
-            static int ParseNumericZone (string name)
+            private static int ParseNumericZone (string? name)
             {
                 if (name == null || !name.StartsWith ("GMT") || name.Length <= 3)
                     return 0;
@@ -180,7 +187,7 @@ namespace System
                     return sign * (hour * 60) * 60;
             }
 
-            internal static TimeZoneInfo Local
+            internal static TimeZoneInfo? Local
             {
                 get
                 {
@@ -198,12 +205,12 @@ namespace System
             //
             //[DllImport ("__Internal")]
             //static extern void monodroid_free (IntPtr ptr);
-            
-            static string GetDefaultTimeZoneName()
+
+            private static string? GetDefaultTimeZoneName()
             {
                 IntPtr value = IntPtr.Zero;
-                int n = 0;
-                string defaultTimeZone  = Environment.GetEnvironmentVariable("__XA_OVERRIDE_TIMEZONE_ID__");
+                //int n = 0;
+                string? defaultTimeZone  = Environment.GetEnvironmentVariable("__XA_OVERRIDE_TIMEZONE_ID__");
 
                 if (!string.IsNullOrEmpty(defaultTimeZone))
                     return defaultTimeZone;
@@ -212,18 +219,19 @@ namespace System
                 // Used by the tests
                 //if (Environment.GetEnvironmentVariable ("__XA_USE_JAVA_DEFAULT_TIMEZONE_ID__") == null)
                 //    n = monodroid_get_system_property ("persist.sys.timezone", ref value);
-                
-                if (n > 0 && value != IntPtr.Zero)
-                {
-                    defaultTimeZone = (Marshal.PtrToStringAnsi(value) ?? String.Empty).Trim();
-                    monodroid_free(value);
-                    if (!String.IsNullOrEmpty(defaultTimeZone))
-                        return defaultTimeZone;
-                }
-                
+
+//                if (n > 0 && value != IntPtr.Zero)
+//                {
+//                    defaultTimeZone = (Marshal.PtrToStringAnsi(value) ?? String.Empty).Trim();
+//                    monodroid_free(value);
+//                    if (!String.IsNullOrEmpty(defaultTimeZone))
+//                        return defaultTimeZone;
+//                }
+
                 // TODO: AndroidPlatform does not exist in runtime.  We need to add an interop call
-                defaultTimeZone = (AndroidPlatform.GetDefaultTimeZone() ?? String.Empty).Trim();
-                if (!String.IsNullOrEmpty(defaultTimeZone))
+                //defaultTimeZone = (AndroidPlatform.GetDefaultTimeZone() ?? String.Empty).Trim();
+                defaultTimeZone = string.Empty;
+                if (!string.IsNullOrEmpty(defaultTimeZone))
                     return defaultTimeZone;
 
                 return null;
@@ -231,14 +239,14 @@ namespace System
         }
     }
 
-    interface IAndroidTimeZoneDB
+    internal interface IAndroidTimeZoneDB
     {
         IEnumerable<string> GetAvailableIds();
-        byte[] GetTimeZoneData(string id);
+        byte[] GetTimeZoneData(string? id);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack=1)]
-    unsafe struct AndroidTzDataHeader
+    internal unsafe struct AndroidTzDataHeader
     {
         public fixed byte signature [12];
         public int indexOffset;
@@ -247,7 +255,7 @@ namespace System
     }
 
     [StructLayout(LayoutKind.Sequential, Pack=1)]
-    unsafe struct AndroidTzDataEntry
+    internal unsafe struct AndroidTzDataEntry
     {
         public fixed byte id [40];
         public int byteOffset;
@@ -268,7 +276,7 @@ namespace System
      * database location changed (https://source.android.com/devices/architecture/modular-system/runtime#time-zone-data-interactions)
      * The older locations still exist (at least the `/system/usr/share/zoneinfo` one) but they won't be updated.
      */
-    sealed class AndroidTzData : IAndroidTimeZoneDB
+    internal sealed class AndroidTzData : IAndroidTimeZoneDB
     {
 
         internal static readonly string[] Paths = new string[] {
@@ -278,18 +286,18 @@ namespace System
             Environment.GetEnvironmentVariable("ANDROID_ROOT") + "/usr/share/zoneinfo/tzdata",
         };
 
-        private string zdataPath;
-        private Stream data;
-        private string version;
-        private string zoneTab;
+        private string tzdataPath;
+        private Stream? data;
+        private string version = "";
+        private string zoneTab = "";
 
-        private string[] ids;
-        private int[] byteOffsets;
-        private int[] lengths;
+        private string[]? ids;
+        private int[]? byteOffsets;
+        private int[]? lengths;
 
         public AndroidTzData (params string[] paths)
         {
-            foreach(var path in paths)
+            foreach (var path in paths)
             {
                 if (LoadData(path))
                 {
@@ -308,41 +316,41 @@ namespace System
 
         public string ZoneTab => zoneTab;
 
-        static string GetApexTimeDataRoot ()
+        private static string GetApexTimeDataRoot()
         {
-            string ret = Environment.GetEnvironmentVariable ("ANDROID_TZDATA_ROOT");
-            if (!String.IsNullOrEmpty (ret)) {
-                return ret;
+            string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
+            if (!string.IsNullOrEmpty (ret!)) {
+                return ret!;
             }
 
             return "/apex/com.android.tzdata";
         }
 
-        static string GetApexRuntimeRoot()
+        private static string GetApexRuntimeRoot()
         {
-            string ret = Environment.GetEnvironmentVariable ("ANDROID_RUNTIME_ROOT");
-            if (!String.IsNullOrEmpty (ret))
+            string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
+            if (!string.IsNullOrEmpty (ret!))
             {
-                return ret;
+                return ret!;
             }
 
             return "/apex/com.android.runtime";
         }
 
-        bool LoadData(string path)
+        private bool LoadData(string path)
         {
             if (!File.Exists(path))
                 return false;
-            
+
             try
             {
                 data = File.OpenRead(path);
             }
-            catch (IOException) 
+            catch (IOException)
             {
                 return false;
             }
-            catch (UnauthorizedAccessException) 
+            catch (UnauthorizedAccessException)
             {
                 return false;
             }
@@ -352,7 +360,7 @@ namespace System
                 ReadHeader();
                 return true;
             }
-            catch (Exception e)
+            catch
             {
                 // log something here instead of the console.
                 //Console.Error.WriteLine ("tzdata file \"{0}\" was present but invalid: {1}", path, e);
@@ -360,7 +368,7 @@ namespace System
             return false;
         }
 
-        unsafe void ReadHeader()
+        private unsafe void ReadHeader()
         {
             int size   = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
             var buffer = new byte[size];
@@ -378,7 +386,7 @@ namespace System
                 var b = new StringBuilder ();
                 b.Append ("bad tzdata magic:");
                 for (int i = 0; i < 12; ++i) {
-                    b.Append(" ").Append(((byte)s[i]).ToString ("x2"));
+                    b.Append(' ').Append(((byte)s[i]).ToString ("x2"));
                 }
 
                 //TODO: Put strings in resource file
@@ -388,10 +396,12 @@ namespace System
             version = new string(s, 6, 5, Encoding.ASCII);
 
             ReadIndex(header.indexOffset, header.dataOffset, buffer);
-            ReadZoneTab(header.zoneTabOffset, checked((int)data.Length) - header.zoneTabOffset);
+            ReadZoneTab(header.zoneTabOffset, checked((int)data!.Length) - header.zoneTabOffset);
         }
 
-        unsafe T ReadAt<T> (long position, byte[] buffer)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Android TimeZone")]
+        private unsafe T ReadAt<T> (long position, byte[] buffer)
             where T : struct
         {
             int size = Marshal.SizeOf(typeof(T));
@@ -401,9 +411,9 @@ namespace System
                 throw new InvalidOperationException ("Internal error: buffer too small");
             }
 
-            data.Position = position;
+            data!.Position = position;
             int r;
-            if ((r = data.Read(buffer, 0, size)) < size)
+            if ((r = data!.Read(buffer, 0, size)) < size)
             {
                 //TODO: Put strings in resource file
                 throw new InvalidOperationException (
@@ -412,11 +422,11 @@ namespace System
 
             fixed (byte* b = buffer)
             {
-                return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T));
+                return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
             }
         }
 
-        static int NetworkToHostOrder(int value)
+        private static int NetworkToHostOrder(int value)
         {
             if (!BitConverter.IsLittleEndian)
                 return value;
@@ -428,26 +438,26 @@ namespace System
                     ((value << 24)));
         }
 
-        unsafe void ReadIndex(int indexOffset, int dataOffset, byte[] buffer)
+        private unsafe void ReadIndex(int indexOffset, int dataOffset, byte[] buffer)
         {
             int indexSize = dataOffset - indexOffset;
-            int entryCount = indexSize / Marshal.SizeOf(typeof (AndroidTzDataEntry));
-            int entrySize = Marshal.SizeOf(typeof (AndroidTzDataEntry));
+            int entryCount = indexSize / Marshal.SizeOf(typeof(AndroidTzDataEntry));
+            int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
 
-            byteOffsets = new int [entryCount];
-            ids = new string [entryCount];
-            lengths = new int [entryCount];
+            byteOffsets = new int[entryCount];
+            ids = new string[entryCount];
+            lengths = new int[entryCount];
 
             for (int i = 0; i < entryCount; ++i)
             {
                 var entry = ReadAt<AndroidTzDataEntry>(indexOffset + (entrySize*i), buffer);
                 var p = (sbyte*)entry.id;
 
-                byteOffsets[i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
-                ids[i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
-                lengths[i] = NetworkToHostOrder(entry.length);
+                byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
+                ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
+                lengths![i] = NetworkToHostOrder(entry.length);
 
-                if (lengths[i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
+                if (lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
                 {
                     //TODO: Put strings in resource file
                     throw new InvalidOperationException("Length in index file < sizeof(tzhead)");
@@ -455,7 +465,7 @@ namespace System
             }
         }
 
-        static unsafe int GetStringLength(sbyte* s, int maxLength)
+        private static unsafe int GetStringLength(sbyte* s, int maxLength)
         {
             int len;
             for (len = 0; len < maxLength; len++, s++)
@@ -466,14 +476,14 @@ namespace System
             return len;
         }
 
-        unsafe void ReadZoneTab(int zoneTabOffset, int zoneTabSize)
+        private unsafe void ReadZoneTab(int zoneTabOffset, int zoneTabSize)
         {
             byte[] ztab = new byte [zoneTabSize];
 
-            data.Position = zoneTabOffset;
+            data!.Position = zoneTabOffset;
 
             int r;
-            if ((r = data.Read(ztab, 0, ztab.Length)) < ztab.Length)
+            if ((r = data!.Read(ztab, 0, ztab.Length)) < ztab.Length)
             {
                 //TODO: Put strings in resource file
                 throw new InvalidOperationException(
@@ -485,24 +495,27 @@ namespace System
 
         public IEnumerable<string> GetAvailableIds()
         {
-            return ids;
+            return ids!;
         }
 
-        public byte[] GetTimeZoneData(string id)
+        public byte[] GetTimeZoneData(string? id)
         {
-            int i = Array.BinarySearch(ids, id, StringComparer.Ordinal);
+            int i = Array.BinarySearch(ids!, id!, StringComparer.Ordinal);
             if (i < 0)
-                return null;
+            {
+                //TODO: Put strings in resource file
+                throw new InvalidOperationException("Error finding the timezone id");
+            }
 
-            int offset = byteOffsets[i];
-            int length = lengths[i];
+            int offset = byteOffsets![i];
+            int length = lengths![i];
             var buffer = new byte[length];
 
-            lock (data) 
+            lock (data!)
             {
-                data.Position = offset;
+                data!.Position = offset;
                 int r;
-                if ((r = data.Read(buffer, 0, buffer.Length)) < buffer.Length)
+                if ((r = data!.Read(buffer, 0, buffer.Length)) < buffer.Length)
                 {
                     //TODO: Put strings in resource file
                     throw new InvalidOperationException(
@@ -512,198 +525,6 @@ namespace System
             }
 
             return buffer;
-        }
-    }
-
-    /*
-    * Android < v4.3 Timezone support infrastructure.
-    *
-    * This is a C# port of org.apache.harmony.luni.internal.util.ZoneInfoDB:
-    *
-    *    http://android.git.kernel.org/?p=platform/libcore.git;a=blob;f=luni/src/main/java/org/apache/harmony/luni/internal/util/ZoneInfoDB.java;h=3e7bdc3a952b24da535806d434a3a27690feae26;hb=HEAD
-    *
-    * From the ZoneInfoDB source:
-    *
-    *    However, to conserve disk space the data for all time zones are 
-    *    concatenated into a single file, and a second file is used to indicate 
-    *    the starting position of each time zone record.  A third file indicates
-    *    the version of the zoneinfo databse used to generate the data.
-    *
-    * which succinctly describes why we can't just use the LIBC implementation in
-    * TimeZoneInfo.cs -- the "standard Unixy" directory structure is NOT used.
-    */
-    sealed class ZoneInfoDB : IAndroidTimeZoneDB
-    {
-        private const int TimeZoneNameLength = 40;
-        private const int TimeZoneIntSize = 4;
-
-        internal static readonly string ZoneDirectoryName  = Environment.GetEnvironmentVariable ("ANDROID_ROOT") + "/usr/share/zoneinfo/";
-
-        private const string ZoneFileName = "zoneinfo.dat";
-        private const string IndexFileName = "zoneinfo.idx";
-        private const string DefaultVersion = "2007h";
-        private const string VersionFileName = "zoneinfo.version";
-
-        private readonly string zoneRoot;
-        private readonly string version;
-        private readonly string[] names;
-        private readonly int[] starts;
-        private readonly int[] lengths;
-        private readonly int[] offsets;
-
-        public ZoneInfoDB(string zoneInfoDB = null)
-        {
-            zoneRoot = zoneInfoDB ?? ZoneDirectoryName;
-            try
-            {
-                version = ReadVersion(Path.Combine(zoneRoot, VersionFileName));
-            }
-            catch
-            {
-                version = DefaultVersion;
-            }
-
-            try
-            {
-                ReadDatabase(Path.Combine(zoneRoot, IndexFileName), out names, out starts, out lengths, out offsets);
-            }
-            catch
-            {
-                names   = new string [0];
-                starts  = new int [0];
-                lengths = new int [0];
-                offsets = new int [0];
-            }
-        }
-
-        static string ReadVersion(string path)
-        {
-            using (var file = new StreamReader(path, Encoding.GetEncoding("iso-8859-1")))
-            {
-                return file.ReadToEnd().Trim();
-            }
-        }
-
-        void ReadDatabase(string path, out string[] names, out int[] starts, out int[] lengths, out int[] offsets)
-        {
-            using (var file = File.OpenRead (path))
-            {
-                var nbuf = new byte[TimeZoneNameLength];
-
-                int numEntries = (int)(file.Length / (TimeZoneNameLength + 3*TimeZoneIntSize));
-
-                char[] namebuf = new char[TimeZoneNameLength];
-
-                names = new string[numEntries];
-                starts = new int[numEntries];
-                lengths = new int[numEntries];
-                offsets = new int[numEntries];
-
-                for (int i = 0; i < numEntries; ++i)
-                {
-                    Fill(file, nbuf, nbuf.Length);
-                    int namelen;
-                    for (namelen = 0; namelen < nbuf.Length; ++namelen)
-                    {
-                        if (nbuf[namelen] == '\0')
-                            break;
-                        namebuf [namelen] = (char)(nbuf[namelen] & 0xFF);
-                    }
-
-                    names[i] = new string(namebuf, 0, namelen);
-                    starts[i] = ReadInt32(file, nbuf);
-                    lengths[i] = ReadInt32(file, nbuf);
-                    offsets[i] = ReadInt32(file, nbuf);
-                }
-            }
-        }
-
-        static void Fill (Stream stream, byte[] nbuf, int required)
-        {
-            int read = 0, offset = 0;
-            while (offset < required && (read = stream.Read(nbuf, offset, required - offset)) > 0)
-                offset += read;
-
-            if (read != required)
-            {
-                //TODO: Put strings in resource file
-                throw new EndOfStreamException("Needed to read " + required + " bytes; read " + read + " bytes");
-            }
-        }
-
-        // From java.io.RandomAccessFioe.readInt(), as we need to use the same
-        // byte ordering as Java uses.
-        static int ReadInt32(Stream stream, byte[] nbuf)
-        {
-            Fill(stream, nbuf, 4);
-            return ((nbuf[0] & 0xff) << 24) + ((nbuf[1] & 0xff) << 16) +
-                ((nbuf[2] & 0xff) << 8) + (nbuf[3] & 0xff);
-        }
-
-        internal string Version => version;
-
-        public IEnumerable<string> GetAvailableIds()
-        {
-            return GetAvailableIds(0, false);
-        }
-
-        IEnumerable<string> GetAvailableIds(int rawOffset)
-        {
-            return GetAvailableIds(rawOffset, true);
-        }
-
-        IEnumerable<string> GetAvailableIds(int rawOffset, bool checkOffset)
-        {
-            for (int i = 0; i < offsets.Length; ++i)
-            {
-                if (!checkOffset || offsets[i] == rawOffset)
-                    yield return names [i];
-            }
-        }
-
-        public byte[] GetTimeZoneData(string id)
-        {
-            int start, length;
-            using (var stream = GetTimeZoneData(id, out start, out length)) {
-                if (stream == null)
-                    return null;
-                byte[] buf = new byte[length];
-                Fill(stream, buf, buf.Length);
-                return buf;
-            }
-        }
-
-        FileStream GetTimeZoneData(string name, out int start, out int length)
-        {
-            // Just in case, to avoid NREX as in xambug #4902
-            if (name == null)
-            {
-                start = 0;
-                length = 0;
-                return null;
-            }
-            
-            var f = new FileInfo(Path.Combine(zoneRoot, name));
-            if (f.Exists)
-            {
-                start   = 0;
-                length  = (int)f.Length;
-                return f.OpenRead();
-            }
-
-            start = length = 0;
-
-            int i = Array.BinarySearch(names, name, StringComparer.Ordinal);
-            if (i < 0)
-                return null;
-
-            start = starts[i];
-            length = lengths[i];
-
-            var stream = File.OpenRead(Path.Combine(zoneRoot, ZoneFileName));
-            stream.Seek(start, SeekOrigin.Begin);
-
-            return stream;
         }
     }
 }
