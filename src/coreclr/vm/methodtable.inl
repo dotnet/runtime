@@ -1570,6 +1570,35 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     }
     while (--numInterfaces);
 
+    // Second scan, looking for the curiously recurring generic scenario
+    if (pInterface->HasInstantiation() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    {
+        numInterfaces = GetNumInterfaces();
+        pInfo = GetInterfaceMap();
+
+        do
+        {
+            if (pInfo->GetMethodTable()->HasSameTypeDefAs(pInterface) && pInfo->GetMethodTable()->IsSpecialMarkerTypeForGenericCasting())
+            {
+                // Extensible RCW's need to be handled specially because they can have interfaces
+                // in their map that are added at runtime. These interfaces will have a start offset
+                // of -1 to indicate this. We cannot take for granted that every instance of this
+                // COM object has this interface so FindInterface on these interfaces is made to fail.
+                //
+                // However, we are only considering the statically available slots here
+                // (m_wNumInterface doesn't contain the dynamic slots), so we can safely
+                // ignore this detail.
+#ifndef DACCESS_COMPILE
+                if (pInterface->IsFullyLoaded())
+                    pInfo->SetMethodTable(pInterface);
+#endif
+                return TRUE;
+            }
+            pInfo++;
+        }
+        while (--numInterfaces);
+    }
+
     return FALSE;
 }
 

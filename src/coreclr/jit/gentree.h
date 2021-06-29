@@ -1982,10 +1982,10 @@ public:
     // variable, or just a portion of it.
     bool DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire = nullptr);
 
-    // Returns true if "this" represents the address of a local, or a field of a local.  If returns true, sets
-    // "*pLclVarTree" to the node indicating the local variable.  If the address is that of a field of this node,
-    // sets "*pFldSeq" to the field sequence representing that field, else null.
-    bool IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq);
+    bool IsLocalAddrExpr(Compiler*             comp,
+                         GenTreeLclVarCommon** pLclVarTree,
+                         FieldSeqNode**        pFldSeq,
+                         ssize_t*              pOffset = nullptr);
 
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local

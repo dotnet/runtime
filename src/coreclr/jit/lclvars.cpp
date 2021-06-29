@@ -3779,6 +3779,7 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
     {
         if (lclVarType == TYP_STRUCT)
         {
+            assert(!tree->OperIsLocalField() && "do not expect struct local fields.");
             lclVarType = GetLayout()->GetRegisterType();
         }
         targetType = lclVarType;

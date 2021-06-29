@@ -2281,7 +2281,8 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                                                        LoadTypesFlag fLoadTypes/*=LoadTypes*/ ,
                                                        ClassLoadLevel level /* = CLASS_LOADED */,
                                                        BOOL dropGenericArgumentLevel /* = FALSE */,
-                                                       const Substitution *pSubst)
+                                                       const Substitution *pSubst,
+                                                       MethodTable *pMTInterfaceMapOwner)
 {
     CONTRACT(TypeHandle)
     {
@@ -2315,7 +2316,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
         }
         SigPointer sigptr(pSig, cSig);
         TypeHandle typeHnd = sigptr.GetTypeHandleThrowing(pModule, pTypeContext, fLoadTypes,
-                                                          level, dropGenericArgumentLevel, pSubst);
+                                                          level, dropGenericArgumentLevel, pSubst, (const ZapSig::Context *)0, pMTInterfaceMapOwner);
 #ifndef DACCESS_COMPILE
         if ((fNotFoundAction == ThrowIfNotFound) && typeHnd.IsNull())
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDefOrRefOrSpec,
@@ -5294,7 +5295,7 @@ BOOL ClassLoader::CanAccessFamily(
             while (it.Next())
             {
                 // We only loosely check if they are of the same generic type
-                if (it.GetInterface()->HasSameTypeDefAs(pTargetClass))
+                if (it.HasSameTypeDefAs(pTargetClass))
                     return TRUE;
             }
         }

@@ -6494,7 +6494,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     return node;
 }
 
-GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
+GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
     assert(type != TYP_VOID);
     // We need to ensure that all struct values are normalized.
@@ -6514,7 +6514,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
         assert((type == varDsc->lvType) || simd12ToSimd16Widening ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)));
     }
-    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
+    GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -6524,7 +6524,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
     return node;
 }
 
-GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
+GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -6538,7 +6538,7 @@ GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
     }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
-    GenTree* node =
+    GenTreeLclVar* node =
         new (this, LargeOpOpcode()) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs) DEBUGARG(/*largeNode*/ true));
     return node;
 }
@@ -7396,6 +7396,7 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {
     assert(arg != nullptr);
+    assert(type != TYP_STRUCT);
 
     GenTree* node = nullptr;
 #if defined(TARGET_ARM)
@@ -16611,7 +16612,27 @@ GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
     return nullptr;
 }
 
-bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq)
+//------------------------------------------------------------------------
+// IsLocalAddrExpr: finds if "this" is an address of a local var/fld.
+//
+// Arguments:
+//    comp - a compiler instance;
+//    pLclVarTree - [out] sets to the node indicating the local variable if found;
+//    pFldSeq - [out] sets to the field sequence representing the field, else null;
+//    pOffset - [out](optional) sets to the sum offset of the lcl/fld if found,
+//              note it does not include pLclVarTree->GetLclOffs().
+//
+// Returns:
+//    Returns true if "this" represents the address of a local, or a field of a local.
+//
+// Notes:
+//    It is mostly used for optimizations but assertion propogation depends on it for correctness.
+//    So if this function does not recognize a def of a LCL_VAR we can have an incorrect optimization.
+//
+bool GenTree::IsLocalAddrExpr(Compiler*             comp,
+                              GenTreeLclVarCommon** pLclVarTree,
+                              FieldSeqNode**        pFldSeq,
+                              ssize_t*              pOffset /* = nullptr */)
 {
     if (OperGet() == GT_ADDR)
     {
@@ -16645,23 +16666,33 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
     {
         if (AsOp()->gtOp1->OperGet() == GT_CNS_INT)
         {
-            if (AsOp()->gtOp1->AsIntCon()->gtFieldSeq == nullptr)
+            GenTreeIntCon* cnst = AsOp()->gtOp1->AsIntCon();
+            if (cnst->gtFieldSeq == nullptr)
             {
                 return false;
             }
             // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(AsOp()->gtOp1->AsIntCon()->gtFieldSeq, *pFldSeq);
-            return AsOp()->gtOp2->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq);
+            *pFldSeq = comp->GetFieldSeqStore()->Append(cnst->gtFieldSeq, *pFldSeq);
+            if (pOffset != nullptr)
+            {
+                *pOffset += cnst->IconValue();
+            }
+            return AsOp()->gtOp2->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq, pOffset);
         }
         else if (AsOp()->gtOp2->OperGet() == GT_CNS_INT)
         {
-            if (AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
+            GenTreeIntCon* cnst = AsOp()->gtOp2->AsIntCon();
+            if (cnst->gtFieldSeq == nullptr)
             {
                 return false;
             }
             // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(AsOp()->gtOp2->AsIntCon()->gtFieldSeq, *pFldSeq);
-            return AsOp()->gtOp1->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq);
+            *pFldSeq = comp->GetFieldSeqStore()->Append(cnst->gtFieldSeq, *pFldSeq);
+            if (pOffset != nullptr)
+            {
+                *pOffset += cnst->IconValue();
+            }
+            return AsOp()->gtOp1->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq, pOffset);
         }
     }
     // Otherwise...
