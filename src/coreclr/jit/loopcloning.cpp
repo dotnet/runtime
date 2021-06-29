@@ -74,14 +74,25 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
             arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i],
                                                                         comp->lvaTable[arrIndex->indLcls[i]].lvType));
 
-            // Clear the range check flag: we guarantee that all necessary range checking has already
-            // been done by the time this array index expression is invoked.
-            arr->gtFlags &= ~GTF_INX_RNGCHK;
+            // Clear the range check flag and mark the index as non-faulting: we guarantee that all necessary range
+            // checking has already been done by the time this array index expression is invoked.
+            arr->gtFlags &= ~(GTF_INX_RNGCHK | GTF_EXCEPT);
+            arr->gtFlags |= GTF_INX_NONFAULTING;
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
             GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length, bb);
+
+            // We already guaranteed (by a sequence of preceding checks) that the array length operator will not
+            // throw an exception because we null checked the base array.
+            // So, we should be able to do the following:
+            //     arrLen->gtFlags &= ~GTF_EXCEPT;
+            //     arrLen->gtFlags |= GTF_IND_NONFAULTING;
+            // However, we then end up with a mix of non-faulting array length operators as well as normal faulting
+            // array length operators in the slow-path of the cloned loops. CSE doesn't keep these separate, so bails
+            // out on creating CSEs on this very useful type of CSE, leading to CQ losses in the cloned loop fast path.
+            // TODO-CQ: fix this.
             return arrLen;
         }
         else
@@ -1017,8 +1028,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 {
                     // limit <= arrLen
                     LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
-                    LC_Array arrLen(LC_Array::Jagged, &arrIndexInfo->arrIndex, arrIndexInfo->dim, LC_Array::ArrLen);
-                    LC_Ident arrLenIdent = LC_Ident(arrLen);
+                    LC_Array     arrLen(LC_Array::Jagged, &arrIndexInfo->arrIndex, arrIndexInfo->dim, LC_Array::ArrLen);
+                    LC_Ident     arrLenIdent = LC_Ident(arrLen);
                     LC_Condition cond(GT_LE, LC_Expr(ident), LC_Expr(arrLenIdent));
                     context->EnsureConditions(loopNum)->Push(cond);
 
@@ -1332,9 +1343,9 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                         // path. Later, when the inner loop is cloned, we want to remove the a[i][j] bounds check. If
                         // we clone the inner loop, we know that the a[i] bounds check isn't required because we'll add
                         // it to the loop cloning conditions. On the other hand, we can clone a loop where we get rid of
-                        // the nested bounds check but nobody has gotten rid of the outer bounds check. As before, we know
-                        // the outer bounds check is not needed because it's been added to the cloning conditions, so we
-                        // can get rid of the bounds check here.
+                        // the nested bounds check but nobody has gotten rid of the outer bounds check. As before, we
+                        // know the outer bounds check is not needed because it's been added to the cloning conditions,
+                        // so we can get rid of the bounds check here.
                         //
                         optRemoveCommaBasedRangeCheck(bndsChkNode, arrIndexInfo->stmt);
                     }

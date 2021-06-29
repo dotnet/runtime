@@ -683,12 +683,8 @@ struct LoopCloneContext
     // The array of block levels of conditions for each loop. (loop x level x conditions)
     jitstd::vector<JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>*> blockConditions;
 
-    LoopCloneContext(unsigned loopCount, CompAllocator alloc) :
-        alloc(alloc),
-        optInfo(alloc),
-        conditions(alloc),
-        derefs(alloc),
-        blockConditions(alloc)
+    LoopCloneContext(unsigned loopCount, CompAllocator alloc)
+        : alloc(alloc), optInfo(alloc), conditions(alloc), derefs(alloc), blockConditions(alloc)
     {
         optInfo.resize(loopCount, nullptr);
         conditions.resize(loopCount, nullptr);
