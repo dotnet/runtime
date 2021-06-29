@@ -2552,7 +2552,7 @@ void     mono_walk_stack                        (MonoJitStackWalk func, MonoUnwi
 gboolean mono_thread_state_init_from_sigctx     (MonoThreadUnwindState *ctx, void *sigctx);
 void     mono_thread_state_init                 (MonoThreadUnwindState *ctx);
 gboolean mono_thread_state_init_from_current    (MonoThreadUnwindState *ctx);
-gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, MonoContext *mctx);
+MONO_COMPONENT_API gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, MonoContext *mctx);
 
 void     mono_setup_altstack                    (MonoJitTlsData *tls);
 void     mono_free_altstack                     (MonoJitTlsData *tls);

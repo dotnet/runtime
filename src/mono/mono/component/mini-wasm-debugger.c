@@ -11,7 +11,7 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/component/debugger-engine.h>
-#include <mono/mini/debugger-protocol.h>
+#include "debugger-protocol.h"
 #include "debugger-agent.h"
 #include <mono/metadata/components.h>
 

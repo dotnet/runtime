@@ -170,8 +170,6 @@ set(mini_common_sources
 set(debugger_sources
   debugger-agent-external.h
   debugger-agent-external.c
-  debugger-protocol.h
-  debugger-protocol.c
   )
 
 set(amd64_sources

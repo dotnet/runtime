@@ -7,10 +7,10 @@
 
 #include <mono/mini/mini.h>
 #include <mono/metadata/seq-points-data.h>
-#include <mono/component/debugger-state-machine.h>
+#include "debugger-state-machine.h"
 #include <mono/metadata/mono-debug.h>
 #include <mono/mini/interp/interp-internals.h>
-#include <mono/mini/debugger-protocol.h>
+#include "debugger-protocol.h"
 
 #define ModifierKind MdbgProtModifierKind
 #define StepDepth MdbgProtStepDepth

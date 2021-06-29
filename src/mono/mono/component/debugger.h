@@ -11,7 +11,7 @@
 #include "mono/utils/mono-context.h"
 #include "mono/utils/mono-stack-unwinding.h"
 #include "mono/component/component.h"
-#include "mono/mini/debugger-protocol.h"
+#include "debugger-protocol.h"
 #include "mono/metadata/seq-points-data.h"
 
 typedef struct {
