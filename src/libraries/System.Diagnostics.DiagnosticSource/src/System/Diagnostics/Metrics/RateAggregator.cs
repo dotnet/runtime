@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        public override AggregationStatistics? Collect()
+        public override IAggregationStatistics Collect()
         {
             lock (this)
             {
@@ -42,30 +42,29 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        public override AggregationStatistics? Collect()
+        public override IAggregationStatistics Collect()
         {
             lock (this)
             {
-                RateStatistics? stats = default;
+                double? delta = default;
                 if (_prevValue.HasValue)
                 {
-                    double delta = _value - _prevValue.Value;
-                    stats = new RateStatistics(delta);
+                    delta = _value - _prevValue.Value;
                 }
+                RateStatistics stats = new RateStatistics(delta);
                 _prevValue = _value;
                 return stats;
             }
         }
     }
 
-    internal class RateStatistics : AggregationStatistics
+    internal class RateStatistics : IAggregationStatistics
     {
-        public RateStatistics(double delta)
-            : base(MeasurementAggregations.Rate)
+        public RateStatistics(double? delta)
         {
             Delta = delta;
         }
 
-        public double Delta { get; }
+        public double? Delta { get; }
     }
 }

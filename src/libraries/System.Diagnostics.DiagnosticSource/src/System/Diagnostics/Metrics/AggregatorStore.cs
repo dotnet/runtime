@@ -13,10 +13,7 @@ namespace System.Diagnostics.Metrics
     /// </summary>
     /// <typeparam name="TAggregator">The type of Aggregator returned by the store</typeparam>
     //
-    // This is implemented as a two level Dictionary lookup with a number of optimizations applied. The first level dictionary
-    // is a FixedSizeLabelNameDictionary and it is keyed with the list of Keys from the label KeyValuePairs. The label
-    // name dictionaries store the 2nd level dictionaries which are ConcurrentDictionaries. The 2nd level lookup key is the list
-    // of values. So a conceptual lookup is:
+    // This is implemented as a two level Dictionary lookup with a number of optimizations applied. The conceptual lookup is:
     // 1. Sort ReadOnlySpan<KeyValuePair<string,object?>> by the key names
     // 2. Split ReadOnlySpan<KeyValuePair<string,object?>> into ReadOnlySpan<string> and ReadOnlySpan<object?>
     // 3. LabelNameDictionary.Lookup(ReadOnlySpan<string>) -> ConcurrentDictionary
@@ -47,6 +44,7 @@ namespace System.Diagnostics.Metrics
     //   instrument to have the same keys so this can be a sizable savings. We also use a union to store the 1st level dictionaries
     //   for different label set sizes because most instruments always specify labelsets with the same number of labels (most likely
     //   zero).
+    [System.Security.SecuritySafeCritical] // using SecurityCritical type ReadOnlySpan
     internal struct AggregatorStore<TAggregator> where TAggregator : Aggregator
     {
         // this union can be:
@@ -68,7 +66,6 @@ namespace System.Diagnostics.Metrics
             _createAggregatorFunc = createAggregator;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TAggregator GetAggregator(ReadOnlySpan<KeyValuePair<string, object?>> labels)
         {
             AggregatorLookupFunc<TAggregator>? lookupFunc = _cachedLookupFunc;
@@ -82,7 +79,7 @@ namespace System.Diagnostics.Metrics
             return GetAggregatorSlow(labels);
         }
 
-        public TAggregator GetAggregatorSlow(ReadOnlySpan<KeyValuePair<string, object?>> labels)
+        private TAggregator GetAggregatorSlow(ReadOnlySpan<KeyValuePair<string, object?>> labels)
         {
             AggregatorLookupFunc<TAggregator> lookupFunc = LabelInstructionCompiler.Create(ref this, _createAggregatorFunc, labels);
             _cachedLookupFunc = lookupFunc;
@@ -96,11 +93,8 @@ namespace System.Diagnostics.Metrics
             object? stateUnion = _stateUnion;
             if (stateUnion is TAggregator agg)
             {
-                AggregationStatistics? stats = agg.Collect();
-                if (stats != null)
-                {
-                    visitFunc(new LabeledAggregationStatistics(stats));
-                }
+                IAggregationStatistics stats = agg.Collect();
+                visitFunc(new LabeledAggregationStatistics(stats));
             }
             else if (stateUnion is FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator> aggs1)
             {
@@ -124,6 +118,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+
         public TAggregator GetAggregator()
         {
             while (true)
@@ -131,7 +126,7 @@ namespace System.Diagnostics.Metrics
                 object? state = _stateUnion;
                 if (state == null)
                 {
-                    var newState = _createAggregatorFunc();
+                    TAggregator newState = _createAggregatorFunc();
                     Interlocked.CompareExchange(ref _stateUnion, newState, null);
                     continue;
                 }
@@ -145,7 +140,7 @@ namespace System.Diagnostics.Metrics
                 }
                 else
                 {
-                    var newState = new MultiSizeLabelNameDictionary<TAggregator>(state);
+                    MultiSizeLabelNameDictionary<TAggregator> newState = new(state);
                     Interlocked.CompareExchange(ref _stateUnion, newState, state);
                     continue;
                 }
@@ -161,7 +156,7 @@ namespace System.Diagnostics.Metrics
                 object? state = _stateUnion;
                 if (state == null)
                 {
-                    var newState = new FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>();
+                    FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator> newState = new();
                     Interlocked.CompareExchange(ref _stateUnion, newState, null);
                     continue;
                 }
@@ -175,7 +170,7 @@ namespace System.Diagnostics.Metrics
                 }
                 else
                 {
-                    var newState = new MultiSizeLabelNameDictionary<TAggregator>(state);
+                    MultiSizeLabelNameDictionary<TAggregator> newState = new(state);
                     Interlocked.CompareExchange(ref _stateUnion, newState, state);
                     continue;
                 }
@@ -266,7 +261,7 @@ namespace System.Diagnostics.Metrics
                 }
                 return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)LabelMany;
             }
-            Debug.Assert(false);
+            // we should never get here unless this library has a bug
             throw new ArgumentException("Unexpected sequence type");
         }
 
@@ -274,11 +269,8 @@ namespace System.Diagnostics.Metrics
         {
             if (NoLabelAggregator != null)
             {
-                AggregationStatistics? stats = NoLabelAggregator.Collect();
-                if (stats != null)
-                {
-                    visitFunc(new LabeledAggregationStatistics(stats));
-                }
+                IAggregationStatistics stats = NoLabelAggregator.Collect();
+                visitFunc(new LabeledAggregationStatistics(stats));
             }
             Label1?.Collect(visitFunc);
             Label2?.Collect(visitFunc);
@@ -295,6 +287,7 @@ namespace System.Diagnostics.Metrics
 
     internal delegate bool AggregatorLookupFunc<TAggregator>(ReadOnlySpan<KeyValuePair<string, object?>> labels, out TAggregator? aggregator);
 
+    [System.Security.SecurityCritical] // using SecurityCritical type ReadOnlySpan
     internal static class LabelInstructionCompiler
     {
         public static AggregatorLookupFunc<TAggregator> Create<TAggregator>(
@@ -378,6 +371,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
+    [System.Security.SecurityCritical] // using SecurityCritical type ReadOnlySpan
     internal class LabelInstructionInterpretter<TObjectSequence, TAggregator>
         where TObjectSequence : struct, IObjectSequence, IEquatable<TObjectSequence>
         where TAggregator : Aggregator
@@ -400,7 +394,6 @@ namespace System.Diagnostics.Metrics
             _createAggregator = _ => createAggregator();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetAggregator(
             ReadOnlySpan<KeyValuePair<string, object?>> labels,
             out TAggregator? aggregator)
@@ -458,16 +451,13 @@ namespace System.Diagnostics.Metrics
 #else
                     TObjectSequence indexedValues = kvValue.Key;
 #endif
-                    var labels = new KeyValuePair<string, string>[indexedNames.Length];
+                    KeyValuePair<string, string>[] labels = new KeyValuePair<string, string>[indexedNames.Length];
                     for (int i = 0; i < labels.Length; i++)
                     {
                         labels[i] = new KeyValuePair<string, string>(indexedNames[i], indexedValues[i]?.ToString() ?? "");
                     }
-                    AggregationStatistics? stats = kvValue.Value.Collect();
-                    if (stats != null)
-                    {
-                        visitFunc(new LabeledAggregationStatistics(stats, labels));
-                    }
+                    IAggregationStatistics stats = kvValue.Value.Collect();
+                    visitFunc(new LabeledAggregationStatistics(stats, labels));
                 }
             }
         }

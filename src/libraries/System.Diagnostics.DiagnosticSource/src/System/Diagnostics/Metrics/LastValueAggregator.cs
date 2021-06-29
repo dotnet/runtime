@@ -12,29 +12,24 @@ namespace System.Diagnostics.Metrics
             _lastValue = value;
         }
 
-        public override AggregationStatistics? Collect()
+        public override IAggregationStatistics Collect()
         {
             lock (this)
             {
-                LastValueStatistics? stats = default;
-                if (_lastValue.HasValue)
-                {
-                    stats = new LastValueStatistics(_lastValue.Value);
-                }
+                LastValueStatistics stats = new LastValueStatistics(_lastValue);
                 _lastValue = null;
                 return stats;
             }
         }
     }
 
-    internal class LastValueStatistics : AggregationStatistics
+    internal class LastValueStatistics : IAggregationStatistics
     {
-        internal LastValueStatistics(double lastValue) :
-            base(MeasurementAggregations.LastValue)
+        internal LastValueStatistics(double? lastValue)
         {
             LastValue = lastValue;
         }
 
-        public double LastValue { get; }
+        public double? LastValue { get; }
     }
 }

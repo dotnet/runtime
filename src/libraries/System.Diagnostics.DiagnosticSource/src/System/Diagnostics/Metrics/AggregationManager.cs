@@ -3,21 +3,32 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
+#if OS_SUPPORT_ATTRTIBUTES
+    [UnsupportedOSPlatform("browser")]
+#endif
+    [SecuritySafeCritical]
     internal class AggregationManager
     {
+        public const double MinCollectionTime = 0.1;
+        private static readonly QuantileAggregation DefaultHistogramConfig = new QuantileAggregation(new double[] { 0.50, 0.95, 0.99 });
+
         // these fields are modified after construction and accessed on multiple threads, use lock(this) to ensure the data
         // is synchronized
         private List<Predicate<Instrument>> _instrumentConfigFuncs = new();
         private TimeSpan _collectionPeriod;
 
-        private ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new ConcurrentDictionary<Instrument, InstrumentState>();
+
+
+        private ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private CancellationTokenSource _cts = new();
-        private Task? _collectTask;
+        private Thread? _collectThread;
         private MeterListener _listener;
 
         private Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
@@ -27,6 +38,7 @@ namespace System.Diagnostics.Metrics
         private Action<Instrument> _endInstrumentMeasurements;
         private Action<Instrument> _instrumentPublished;
         private Action _initialInstrumentEnumerationComplete;
+        private Action<Exception> _collectionError;
 
         public AggregationManager(
             Action<Instrument, LabeledAggregationStatistics> collectMeasurement,
@@ -35,7 +47,8 @@ namespace System.Diagnostics.Metrics
             Action<Instrument> beginInstrumentMeasurements,
             Action<Instrument> endInstrumentMeasurements,
             Action<Instrument> instrumentPublished,
-            Action initialInstrumentEnumerationComplete)
+            Action initialInstrumentEnumerationComplete,
+            Action<Exception> collectionError)
         {
             _collectMeasurement = collectMeasurement;
             _beginCollection = beginCollection;
@@ -44,6 +57,7 @@ namespace System.Diagnostics.Metrics
             _endInstrumentMeasurements = endInstrumentMeasurements;
             _instrumentPublished = instrumentPublished;
             _initialInstrumentEnumerationComplete = initialInstrumentEnumerationComplete;
+            _collectionError = collectionError;
 
             _listener = new MeterListener()
             {
@@ -107,56 +121,79 @@ namespace System.Diagnostics.Metrics
         public void Start()
         {
             // if already started or already stopped we can't be started again
-            if (_collectTask != null || _cts.IsCancellationRequested)
+            if (_collectThread != null || _cts.IsCancellationRequested)
             {
                 // correct usage from internal code should never get here
-                Debug.Assert(false);
                 throw new InvalidOperationException("Start can only be called once");
             }
 
-            if (_collectionPeriod.TotalSeconds < 1)
+            if (_collectionPeriod.TotalSeconds < MinCollectionTime)
             {
-                throw new InvalidOperationException("CollectionPeriod must be >= 1 sec");
+                // correct usage from internal code should never get here
+                throw new InvalidOperationException($"CollectionPeriod must be >= {MinCollectionTime} sec");
             }
 
-            var token = _cts.Token;
-            _collectTask = Task.Run(async () =>
+            // This explicitly uses a Thread and not a Task so that metrics still work
+            // even when an app is experiencing thread-pool starvation. Although we
+            // can't make in-proc metrics robust to everything, this is a common enough
+            // problem in .NET apps that it feels worthwhile to take the precaution.
+            _collectThread = new Thread(() => CollectWorker(_cts.Token));
+            _collectThread.Start();
+
+            _listener.Start();
+            _initialInstrumentEnumerationComplete();
+        }
+
+        private void CollectWorker(CancellationToken cancelToken)
+        {
+            try
             {
                 double collectionIntervalSecs = -1;
                 lock (this)
                 {
                     collectionIntervalSecs = _collectionPeriod.TotalSeconds;
                 }
-                if (collectionIntervalSecs < 1)
+                if (collectionIntervalSecs < MinCollectionTime)
                 {
-                    Debug.Fail("_collectionPeriod must be >= 1 sec");
-                    return;
+                    // correct usage from internal code should never get here
+                    throw new InvalidOperationException($"_collectionPeriod must be >= {MinCollectionTime} sec");
                 }
 
                 DateTime startTime = DateTime.UtcNow;
                 DateTime intervalStartTime = startTime;
-                while (!token.IsCancellationRequested)
+                while (!cancelToken.IsCancellationRequested)
                 {
                     // intervals end at startTime + X*collectionIntervalSecs. Under normal
                     // circumstance X increases by 1 each interval, but if the time it
                     // takes to do collection is very large then we might need to skip
-                    // ahead multiple intervals to catch back up. Find the next interval
-                    // start time that is still in the future.
+                    // ahead multiple intervals to catch back up.
+                    //
                     DateTime now = DateTime.UtcNow;
                     double secsSinceStart = (now - startTime).TotalSeconds;
                     double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
                         collectionIntervalSecs;
                     DateTime nextIntervalStartTime = startTime.AddSeconds(alignUpSecsSinceStart);
 
-                    // pause until the interval is complete
-                    try
+                    // The delay timer precision isn't exact. We might have a situation
+                    // where in the previous loop iterations intervalStartTime=20.00,
+                    // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
+                    // it exited early so we looped around and DateTime.Now=20.99.
+                    // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
+                    // forward one time interval
+                    DateTime minNextInterval = intervalStartTime.AddSeconds(collectionIntervalSecs);
+                    if (nextIntervalStartTime <= minNextInterval)
                     {
-                        TimeSpan delayTime = nextIntervalStartTime - now;
-                        await Task.Delay(delayTime, token).ConfigureAwait(false);
+                        nextIntervalStartTime = minNextInterval;
                     }
-                    catch (TaskCanceledException)
+
+                    // pause until the interval is complete
+                    TimeSpan delayTime = nextIntervalStartTime - now;
+                    cancelToken.WaitHandle.WaitOne(delayTime);
+
+                    // don't do collection if timer may not have run to completion
+                    if (cancelToken.IsCancellationRequested)
                     {
-                        return;
+                        break;
                     }
 
                     // collect statistics for the completed interval
@@ -165,19 +202,20 @@ namespace System.Diagnostics.Metrics
                     _endCollection(intervalStartTime);
                     intervalStartTime = nextIntervalStartTime;
                 }
-            });
-
-            _listener.Start();
-            _initialInstrumentEnumerationComplete();
+            }
+            catch (Exception e)
+            {
+                _collectionError(e);
+            }
         }
 
         public void Dispose()
         {
             _cts.Cancel();
-            if (_collectTask != null)
+            if (_collectThread != null)
             {
-                _collectTask.Wait();
-                _collectTask = null;
+                _collectThread.Join();
+                _collectThread = null;
             }
             _listener.Dispose();
         }
@@ -250,7 +288,7 @@ namespace System.Diagnostics.Metrics
             }
             else if (genericDefType == typeof(Histogram<>))
             {
-                return () => new ExponentialHistogramAggregator(new PercentileAggregation(new double[] { 50, 95, 99 }));
+                return () => new ExponentialHistogramAggregator(DefaultHistogramConfig);
             }
             else
             {

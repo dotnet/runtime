@@ -22,6 +22,7 @@ namespace System.Diagnostics.Metrics
             return Value1 == other.Value1;
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is StringSequence1 && Equals((StringSequence1)obj);
@@ -44,6 +45,7 @@ namespace System.Diagnostics.Metrics
             return Value1 == other.Value1 && Value2 == other.Value2;
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is StringSequence2 && Equals((StringSequence2)obj);
@@ -68,6 +70,7 @@ namespace System.Diagnostics.Metrics
             return Value1 == other.Value1 && Value2 == other.Value2 && Value3 == other.Value3;
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is StringSequence3 && Equals((StringSequence3)obj);
@@ -104,6 +107,7 @@ namespace System.Diagnostics.Metrics
             return true;
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is StringSequenceMany && Equals((StringSequenceMany)obj);

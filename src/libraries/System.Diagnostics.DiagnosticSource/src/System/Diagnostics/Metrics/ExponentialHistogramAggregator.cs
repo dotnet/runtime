@@ -1,30 +1,62 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
+    internal class QuantileAggregation
+    {
+        public QuantileAggregation(params double[] quantiles)
+        {
+            Quantiles = quantiles;
+            Array.Sort(Quantiles);
+        }
+
+        public double[] Quantiles { get; set; }
+        public double MaxRelativeError { get; set; } = 0.001;
+    }
+
+    // PERF Note: This histogram has a fast Update() but the _counters array has a sizable of memory footprint (32KB+ on 64 bit)
+    // It is probably well suited for tracking 10s or maybe 100s of histograms but if we wanted to go higher
+    // we probably want to trade a little more CPU cost in Update() + code complexity for more precise array memory growth.
     internal class ExponentialHistogramAggregator : Aggregator
     {
-        private const int ExponentArraySize = 2048;
+        private const int ExponentArraySize = 4096;
         private const int ExponentShift = 52;
-        private const double MinRelativeError = 0.000001;
+        private const double MinRelativeError = 0.0001;
 
-        private PercentileAggregation _config;
+#if NO_ARRAY_EMPTY_SUPPORT
+        private static readonly QuantileValue[] EmptyQuantiles = new QuantileValue[0];
+#endif
+
+        private readonly QuantileAggregation _config;
         private int[][] _counters;
         private int _count;
-        private int _mantissaMax;
-        private int _mantissaMask;
-        private int _mantissaShift;
+        private readonly int _mantissaMax;
+        private readonly int _mantissaMask;
+        private readonly int _mantissaShift;
 
 
-        public ExponentialHistogramAggregator(PercentileAggregation config)
+        private struct Bucket
+        {
+            public Bucket(double value, int count)
+            {
+                Value = value;
+                Count = count;
+            }
+            public double Value;
+            public int Count;
+        }
+
+        public ExponentialHistogramAggregator(QuantileAggregation config)
         {
             _config = config;
             _counters = new int[ExponentArraySize][];
             if (_config.MaxRelativeError < MinRelativeError)
             {
+                // Ensure that we don't create enormous histograms trying to get overly high precision
                 throw new ArgumentException();
             }
             int mantissaBits = (int)Math.Ceiling(Math.Log(1 / _config.MaxRelativeError, 2)) - 1;
@@ -33,9 +65,7 @@ namespace System.Diagnostics.Metrics
             _mantissaMask = _mantissaMax - 1;
         }
 
-        public MeasurementAggregation MeasurementAggregation => _config;
-
-        public override AggregationStatistics? Collect()
+        public override IAggregationStatistics Collect()
         {
             int[][] counters;
             int count;
@@ -46,11 +76,94 @@ namespace System.Diagnostics.Metrics
                 _counters = new int[ExponentArraySize][];
                 _count = 0;
             }
-            QuantileValue[] quantiles = new QuantileValue[_config.Percentiles.Length];
-            int nextPercentileIdx = 0;
+            QuantileValue[] quantiles = new QuantileValue[_config.Quantiles.Length];
+            int nextQuantileIndex = 0;
+            if (nextQuantileIndex == _config.Quantiles.Length)
+            {
+                return new HistogramStatistics(quantiles);
+            }
+
+            // Reduce the count if there are any NaN or +/-Infinity values that were logged
+            count -= GetInvalidCount(counters);
+
+            // Consider each bucket to have N entries in it, and each entry has value GetBucketCanonicalValue().
+            // If all these entries were inserted in a sorted array, we are trying to find the value of the entry with
+            // index=target.
+            int target = QuantileToRank(_config.Quantiles[nextQuantileIndex], count);
+
+            // the total number of entries in all buckets iterated so far
             int cur = 0;
-            int target = Math.Max(1, (int)(_config.Percentiles[nextPercentileIdx] * count / 100.0));
-            for (int exponent = 0; exponent < ExponentArraySize; exponent++)
+            foreach (Bucket b in IterateBuckets(counters))
+            {
+                cur += b.Count;
+                while (cur > target)
+                {
+                    quantiles[nextQuantileIndex] = new QuantileValue(
+                        _config.Quantiles[nextQuantileIndex], b.Value);
+                    nextQuantileIndex++;
+                    if (nextQuantileIndex == _config.Quantiles.Length)
+                    {
+                        return new HistogramStatistics(quantiles);
+                    }
+                    target = QuantileToRank(_config.Quantiles[nextQuantileIndex], count);
+                }
+            }
+
+            Debug.Assert(count == 0);
+#if NO_ARRAY_EMPTY_SUPPORT
+            return new HistogramStatistics(EmptyQuantiles);
+#else
+            return new HistogramStatistics(Array.Empty<QuantileValue>());
+#endif
+        }
+
+        private int GetInvalidCount(int[][] counters)
+        {
+            int[] positiveInfAndNan = counters[ExponentArraySize / 2 - 1];
+            int[] negativeInfAndNan = counters[ExponentArraySize - 1];
+            int count = 0;
+            if (positiveInfAndNan != null)
+            {
+                foreach (int bucketCount in positiveInfAndNan)
+                {
+                    count += bucketCount;
+                }
+            }
+            if (negativeInfAndNan != null)
+            {
+                foreach (int bucketCount in negativeInfAndNan)
+                {
+                    count += bucketCount;
+                }
+            }
+            return count;
+        }
+
+        private IEnumerable<Bucket> IterateBuckets(int[][] counters)
+        {
+            // iterate over the negative exponent buckets
+            const int lowestNegativeOffset = ExponentArraySize / 2;
+            // exponent = ExponentArraySize-1 encodes infinity and NaN, which we want to ignore
+            for (int exponent = ExponentArraySize-2; exponent >= lowestNegativeOffset; exponent--)
+            {
+                int[] mantissaCounts = counters[exponent];
+                if (mantissaCounts == null)
+                {
+                    continue;
+                }
+                for (int mantissa = _mantissaMax-1; mantissa >= 0; mantissa--)
+                {
+                    int count = mantissaCounts[mantissa];
+                    if (count > 0)
+                    {
+                        yield return new Bucket(GetBucketCanonicalValue(exponent, mantissa), count);
+                    }
+                }
+            }
+
+            // iterate over the positive exponent buckets
+            // exponent = lowestNegativeOffset-1 encodes infinity and NaN, which we want to ignore
+            for (int exponent = 0; exponent < lowestNegativeOffset-1; exponent++)
             {
                 int[] mantissaCounts = counters[exponent];
                 if (mantissaCounts == null)
@@ -59,33 +172,25 @@ namespace System.Diagnostics.Metrics
                 }
                 for (int mantissa = 0; mantissa < _mantissaMax; mantissa++)
                 {
-                    cur += mantissaCounts[mantissa];
-                    while (cur >= target)
+                    int count = mantissaCounts[mantissa];
+                    if (count > 0)
                     {
-                        quantiles[nextPercentileIdx] = new QuantileValue(
-                            _config.Percentiles[nextPercentileIdx] / 100.0,
-                            GetBucketCanonicalValue(exponent, mantissa));
-                        nextPercentileIdx++;
-                        if (nextPercentileIdx == _config.Percentiles.Length)
-                        {
-                            return new HistogramStatistics(MeasurementAggregation, quantiles);
-                        }
-                        target = Math.Max(1, (int)(_config.Percentiles[nextPercentileIdx] * count / 100.0));
+                        yield return new Bucket(GetBucketCanonicalValue(exponent, mantissa), count);
                     }
                 }
             }
-
-            Debug.Assert(_count == 0);
-#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
-            return new HistogramStatistics(MeasurementAggregation, new QuantileValue[0]);
-#pragma warning restore CA1825
         }
 
         public override void Update(double measurement)
         {
             lock (this)
             {
-                ref long bits = ref Unsafe.As<double, long>(ref measurement);
+                // This is relying on the bit representation of IEEE 754 to decompose
+                // the double. The sign bit + exponent bits land in exponent, the
+                // remainder lands in mantissa.
+                // the bucketing precision comes entirely from how many significant
+                // bits of the mantissa are preserved.
+                ulong bits = (ulong)BitConverter.DoubleToInt64Bits(measurement);
                 int exponent = (int)(bits >> ExponentShift);
                 int mantissa = (int)(bits >> _mantissaShift) & _mantissaMask;
                 ref int[] mantissaCounts = ref _counters[exponent];
@@ -95,14 +200,17 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+        private int QuantileToRank(double quantile, int count)
+        {
+            return Math.Min(Math.Max(0, (int)(quantile * count)), count - 1);
+        }
+
         // This is the upper bound for negative valued buckets and the
         // lower bound for positive valued buckets
         private double GetBucketCanonicalValue(int exponent, int mantissa)
         {
-            double result = 0;
-            ref long bits = ref Unsafe.As<double, long>(ref result);
-            bits = ((long)exponent << ExponentShift) | ((long)mantissa << _mantissaShift);
-            return result;
+            long bits = ((long)exponent << ExponentShift) | ((long)mantissa << _mantissaShift);
+            return BitConverter.Int64BitsToDouble(bits);
         }
     }
 }

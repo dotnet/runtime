@@ -6,8 +6,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Metrics
 {
-
-
     internal partial struct ObjectSequence1 : IEquatable<ObjectSequence1>, IObjectSequence
     {
         public object? Value1;
@@ -24,6 +22,7 @@ namespace System.Diagnostics.Metrics
             return (Value1 == null && other.Value1 == null) || (Value1 != null && Value1.Equals(other.Value1));
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is ObjectSequence1 && Equals((ObjectSequence1)obj);
@@ -47,6 +46,7 @@ namespace System.Diagnostics.Metrics
                    ((Value2 == null && other.Value2 == null) || (Value2 != null && Value2.Equals(other.Value2)));
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is ObjectSequence2 && Equals((ObjectSequence2)obj);
@@ -73,6 +73,7 @@ namespace System.Diagnostics.Metrics
                    ((Value3 == null && other.Value3 == null) || (Value3 != null && Value3.Equals(other.Value3)));
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is ObjectSequence3 && Equals((ObjectSequence3)obj);
@@ -112,6 +113,7 @@ namespace System.Diagnostics.Metrics
             return true;
         }
 
+        //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
             return obj is ObjectSequenceMany && Equals((ObjectSequenceMany)obj);

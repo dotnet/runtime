@@ -6,24 +6,16 @@ using System.Diagnostics.Tracing;
 
 namespace System.Diagnostics.Metrics
 {
-
     internal abstract class Aggregator
     {
         // This can be called concurrently with Collect()
         public abstract void Update(double measurement);
 
         // This can be called concurrently with Update()
-        public abstract AggregationStatistics? Collect();
+        public abstract IAggregationStatistics Collect();
     }
 
-    internal abstract class AggregationStatistics
-    {
-        protected AggregationStatistics(MeasurementAggregation measurementAggregation)
-        {
-            MeasurementAggregation = measurementAggregation;
-        }
-        public MeasurementAggregation MeasurementAggregation { get; }
-    }
+    internal interface IAggregationStatistics { }
 
     internal struct QuantileValue
     {
@@ -36,10 +28,9 @@ namespace System.Diagnostics.Metrics
         public double Value { get; }
     }
 
-    internal class HistogramStatistics : AggregationStatistics
+    internal class HistogramStatistics : IAggregationStatistics
     {
-        internal HistogramStatistics(MeasurementAggregation measurementAggregation, QuantileValue[] quantiles) :
-            base(measurementAggregation)
+        internal HistogramStatistics(QuantileValue[] quantiles)
         {
             Quantiles = quantiles;
         }
@@ -49,16 +40,13 @@ namespace System.Diagnostics.Metrics
 
     internal class LabeledAggregationStatistics
     {
-        private AggregationStatistics _aggStats;
-        private KeyValuePair<string, string>[] _labels;
-
-        public LabeledAggregationStatistics(AggregationStatistics stats, params KeyValuePair<string, string>[] labels)
+        public LabeledAggregationStatistics(IAggregationStatistics stats, params KeyValuePair<string, string>[] labels)
         {
-            _aggStats = stats;
-            _labels = labels;
+            AggregationStatistics = stats;
+            Labels = labels;
         }
 
-        public KeyValuePair<string, string>[] Labels => _labels;
-        public AggregationStatistics AggregationStatistics => _aggStats;
+        public KeyValuePair<string, string>[] Labels { get; }
+        public IAggregationStatistics AggregationStatistics { get; }
     }
 }

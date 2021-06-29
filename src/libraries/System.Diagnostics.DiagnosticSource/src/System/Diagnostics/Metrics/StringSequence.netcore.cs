@@ -27,7 +27,7 @@ namespace System.Diagnostics.Metrics
             return MemoryMarshal.CreateSpan(ref Value1, 2);
         }
 
-        public override int GetHashCode() => HashCode.Combine(Value1.GetHashCode(), Value2.GetHashCode());
+        public override int GetHashCode() => HashCode.Combine(Value1, Value2);
     }
 
     internal partial struct StringSequence3 : IEquatable<StringSequence3>, IStringSequence
@@ -37,20 +37,19 @@ namespace System.Diagnostics.Metrics
             return MemoryMarshal.CreateSpan(ref Value1, 3);
         }
 
-        public override int GetHashCode() => HashCode.Combine(Value1.GetHashCode(), Value2.GetHashCode(), Value3.GetHashCode());
+        public override int GetHashCode() => HashCode.Combine(Value1, Value2, Value3);
     }
 
     internal partial struct StringSequenceMany : IEquatable<StringSequenceMany>, IStringSequence
     {
         public override int GetHashCode()
         {
-            int hash = 0;
+            HashCode h = default;
             for (int i = 0; i < _values.Length; i++)
             {
-                hash = (int)BitOperations.RotateLeft((uint)hash, 3);
-                hash ^= _values[i].GetHashCode();
+                h.Add(_values[i]);
             }
-            return hash;
+            return h.ToHashCode();
         }
     }
 }
