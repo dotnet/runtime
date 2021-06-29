@@ -47,6 +47,14 @@ static int GetSignalMax() // Returns the highest usable signal number.
 #endif
 }
 
+// For these signals, the default handler is expected to terminate the application.
+static bool IsSignalThatTerminates(int signalCode)
+{
+    return signalCode == SIGINT ||
+           signalCode == SIGQUIT ||
+           signalCode == SIGTERM;
+}
+
 static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
     assert(posixSignal != NULL);
@@ -175,9 +183,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
 
     // Signals that can be canceled through the PosixSignal API are handled later.
     // For other signals, we immediately invoke the original handler.
-    if (sig != SIGQUIT &&
-        sig != SIGTERM &&
-        sig != SIGINT)
+    if (!IsSignalThatTerminates(sig))
     {
         struct sigaction* origHandler = OrigActionFor(sig);
 #pragma clang diagnostic push
@@ -211,10 +217,7 @@ int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t ha
 {
     // Performs action the runtime performs on signal that is cancelable
     // using the PosixSignal API.
-
-    if (signalCode == SIGQUIT ||
-        signalCode == SIGTERM ||
-        signalCode == SIGINT)
+    if (IsSignalThatTerminates(signalCode))
     {
         // Terminate the process using the original handler.
 #ifdef HAS_CONSOLE_SIGNALS
