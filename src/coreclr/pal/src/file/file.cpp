@@ -325,34 +325,10 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             goto LExit;
         }
 
-        if (! RealPathHelper(pszCwdBuffer, lpBuffer))
+        if (!RealPathHelper(pszCwdBuffer, lpBuffer))
         {
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
-#if defined(HOST_AMD64)
-            // If we are here, then we tried to invoke realpath
-            // against a directory.
-            //
-            // On Mac64, realpath implementation differs from Mac32
-            // by *not* supporting invalid filenames in the path (while
-            // Mac32 implementation does).
-            //
-            // Thus, if we are here, and the error code we see is
-            // ERROR_FILE_NOT_FOUND, then we should map it to
-            // ERROR_PATH_NOT_FOUND since it was a directory that
-            // was not found (and not a file).
-            if (palError == ERROR_FILE_NOT_FOUND)
-            {
-                // Since lpBuffer can be modified by the realpath call,
-                // and can result in a truncated subset of the original buffer,
-                // we use strstr as a level of safety.
-                 if (strstr(pszCwdBuffer, lpBuffer) != 0)
-                 {
-                     palError = ERROR_PATH_NOT_FOUND;
-                 }
-            }
-#endif // defined(HOST_AMD64)
-
             goto LExit;
         }
         lpFilename = lpExistingPath;
@@ -390,32 +366,6 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         {
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
-
-#if defined(HOST_AMD64)
-            // If we are here, then we tried to invoke realpath
-            // against a directory after stripping out the filename
-            // from the original path.
-            //
-            // On Mac64, realpath implementation differs from Mac32
-            // by *not* supporting invalid filenames in the path (while
-            // Mac32 implementation does).
-            //
-            // Thus, if we are here, and the error code we see is
-            // ERROR_FILE_NOT_FOUND, then we should map it to
-            // ERROR_PATH_NOT_FOUND since it was a directory that
-            // was not found (and not a file).
-            if (palError == ERROR_FILE_NOT_FOUND)
-            {
-                // Since lpBuffer can be modified by the realpath call,
-                // and can result in a truncated subset of the original buffer,
-                // we use strstr as a level of safety.
-                if (strstr(lpExistingPath, lpBuffer) != 0)
-                 {
-                     palError = ERROR_PATH_NOT_FOUND;
-                 }
-            }
-#endif // defined(HOST_AMD64)
-
             goto LExit;
         }
 
