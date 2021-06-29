@@ -180,6 +180,7 @@ namespace System.Data.OleDb
             }
             return FillFromADODB((object)dataSet, ADODBRecordSet, srcTable, true);
         }
+
         private int FillFromADODB(object data, object adodb, string? srcTable, bool multipleResults)
         {
             Debug.Assert(null != data, "FillFromADODB: null data object");
@@ -365,25 +366,6 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private void FillClose(bool isrecordset, object value)
-        {
-            OleDbHResult hr;
-            if (isrecordset)
-            {
-                hr = ((UnsafeNativeMethods.Recordset15)value).Close();
-            }
-            else
-            {
-                hr = ((UnsafeNativeMethods._ADORecord)value).Close();
-            }
-            if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
-            {
-                SafeNativeMethods.Wrapper.ClearErrorInfo();
-                string message = string.Empty;
-                throw new COMException(message, (int)hr);
-            }
-        }
-
         private int FillFromRecord(object data, UnsafeNativeMethods.ADORecordConstruction record, string srcTable)
         {
             object? result = null;
@@ -432,6 +414,25 @@ namespace System.Data.OleDb
                 }
             }
             return 0;
+        }
+
+        private void FillClose(bool isrecordset, object value)
+        {
+            OleDbHResult hr;
+            if (isrecordset)
+            {
+                hr = ((UnsafeNativeMethods.Recordset15)value).Close();
+            }
+            else
+            {
+                hr = ((UnsafeNativeMethods._ADORecord)value).Close();
+            }
+            if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
+            {
+                SafeNativeMethods.Wrapper.ClearErrorInfo();
+                string message = string.Empty;
+                throw new COMException(message, (int)hr);
+            }
         }
 
         protected override void OnRowUpdated(RowUpdatedEventArgs value)
