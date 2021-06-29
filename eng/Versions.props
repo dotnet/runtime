@@ -58,8 +58,10 @@
     <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.21311.3</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21311.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21311.3</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21311.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksInstallersPackageVersion>6.0.0-beta.21311.3</MicrosoftDotNetBuildTasksInstallersPackageVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21311.3</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21311.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>6.0.0-beta.21311.3</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21311.3</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21311.3</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageTestingVersion>6.0.0-beta.21311.3</MicrosoftDotNetPackageTestingVersion>
@@ -178,5 +180,9 @@
     <!-- emscripten / Node -->
     <MicrosoftNETRuntimeEmscripten2021Nodewinx64Version>6.0.0-preview.6.21275.1</MicrosoftNETRuntimeEmscripten2021Nodewinx64Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2021Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
+    <!-- workloads -->
+    <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
+    <WixPackageVersion>3.14.0-dotnet</WixPackageVersion>
+    <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
   </PropertyGroup>
 </Project>
