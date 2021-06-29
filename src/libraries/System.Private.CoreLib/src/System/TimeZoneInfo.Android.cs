@@ -25,6 +25,12 @@ namespace System
 
         }
 
+        //TODO: TryGetTimeZoneFromLocalMachine maps to FindSystemTimeZoneByIdCore in mono/mono implementation
+        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
+        {
+            throw new NotImplementedException("TryGetTimeZoneFromLocalMachineCore is not implemented for Android");
+        }
+
         //TODO: Figure out if this maps to something in the other TimeZoneInfo files
         private static TimeZoneInfo? ParseTZBuffer(string? id, byte[] buffer, int length)
         {

@@ -246,46 +246,7 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            value = null;
-            e = null;
-
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
-            byte[] rawData;
-            try
-            {
-                rawData = File.ReadAllBytes(timeZoneFilePath);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                e = ex;
-                return TimeZoneInfoResult.SecurityException;
-            }
-            catch (FileNotFoundException ex)
-            {
-                e = ex;
-                return TimeZoneInfoResult.TimeZoneNotFoundException;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                e = ex;
-                return TimeZoneInfoResult.TimeZoneNotFoundException;
-            }
-            catch (IOException ex)
-            {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath), ex);
-                return TimeZoneInfoResult.InvalidTimeZoneException;
-            }
-
-            value = GetTimeZoneFromTzData(rawData, id);
-
-            if (value == null)
-            {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath));
-                return TimeZoneInfoResult.InvalidTimeZoneException;
-            }
-
-            return TimeZoneInfoResult.Success;
+            return TryGetTimeZoneFromLocalMachineCore(id, out value, out e);
         }
 
         /// <summary>
