@@ -296,7 +296,18 @@ use the `RuntimeIdentifier` metadata to filter out the details applicable for th
     runtime in the application bundle, or (for static components) that must be linked with the
     runtime to enable the components' functionality.  Each item in the list has metadata
     `ComponentName` (e.g. `'hot_reload'`), `IsStub` (`true` or `false`), `Linking` (`'static'` or
-    `'dynamic'`).  This output should be used by the workloads when linking the app and runtime.
+    `'dynamic'`).  This output should be used by the workloads when linking the app and runtime if
+    the workload uses an allow list of native libraries to link or bundle.
+  - output `@(_MonoRuntimeComponentDontLink)` a list of library names (relative to the `native/`
+    subdirectory of the rutnime pack) that should be excluded from the application bundle (for
+    dynamic linking) or that should not be passed to the native linker (for static linking).  This
+    output should be used by workloads that just link or bundle every native library from `native/`
+    in order to filter the contents of the subdirectory to exclude the disabled components (and to
+    exclude the static library stubs for the enabled components when static linking).
+
+Generally workloads should only use one of `@(_MonoRuntimeComponentLink)` or
+`@(_MonoRuntimeComponentDontLink)`, depending on whether they use an allow or block list for the
+contents of the `native/` subdirectory.
 
 Example fragment (assuming the mono workload has been imported):
 
@@ -311,6 +322,9 @@ Example fragment (assuming the mono workload has been imported):
       <Message Importance="High" Text="Selected : @(_MonoRuntimeSelectedComponents) %(ComponentLib)" />
       <Message Importance="High" Text="Stubbed out : @(_MonoRuntimeSelectedStubComponents) %(ComponentStubLib)" />
       <Message Importance="High" Text="Linking with lib @(_MonoRuntimeComponentLink) Stub: %(IsStub) Linking: %(Linking) Component: %(ComponentName)"/>
+
+      <Message Importance="High" Text="UnSelected : @(_MonoRuntimeUnSelectedComponents) %(ComponentLib)" />
+      <Message Importance="High" Text="Exclude these from linking: @(_MonoRuntimeComponentDontLink) Stub: %(IsStub) Linking: %(Linking) Component: %(ComponentName)" />
     </Target>
   </Project>
 ```

@@ -22,11 +22,29 @@
   </Target>
 
   <Target Name="_MonoSelectRuntimeComponents" DependsOnTargets="_MonoComputeAvailableComponentDefinitions">
-    <!-- Input: _MonoComponent item list of names of components that will be enabled (to be defined by the workload) -->
-    <!-- Output: _MonoRuntimeSelectedComponents  subset of _MonoRuntimeComponentName items that were in _MonoComponent -->
-    <!-- Output: _MonoRuntimeSelectedStubComponents (static linking only)  subset of _MonoRuntimeComponentName items that were not in _MonoComponent -->
-    <!-- Output: _MonoRuntimeComponentLink item list of the filenames to link (relative paths relative to the native/ directory of the runtime pack) -->
-    <!--         For dynamic linking, this is only the enabled components.  For static linking, it also includes stubs for the non-selected components -->
+    <!-- Input: _MonoComponent item list of names of components that will be enabled (to be defined
+         by the workload) -->
+    <!-- Output: _MonoRuntimeSelectedComponents subset of _MonoRuntimeComponentName items that were
+         in _MonoComponent -->
+    <!-- Output: _MonoRuntimeSelectedStubComponents (static linking only) subset of
+         _MonoRuntimeComponentName items that were not in _MonoComponent -->
+    <!-- Ouptut: _MonoRuntimeUnSelectedComponents subset of _MonoRuntimeComponentName items that were not in _MonoComponent. That is, the components that are available but that weren't selected. -->
+    <!-- Output: _MonoRuntimeUnSelectedStubComponents (static linking only) subset of _MonoRuntimeComponentName items that were in _MonoComponent.  That is, components that were selected - so their stubs should not be linked. -->
+    <!-- Output: _MonoRuntimeComponentLink item list of the filenames to link (relative paths
+         relative to the native/ directory of the runtime pack). For dynamic linking, this is only
+         the enabled components.  For static linking, it also includes stubs for the non-selected
+         components -->
+    <!-- Output: _MonoRuntimeComponentDontLink item list of the filename to exclude from linking
+         (relative paths relative to the native/ directory of the runtime pack). For static linking,
+         this is stubs or components that must not be passed to the native linker. For dynamic
+         linking, this is copmonent shared libraries that must not be bundled with the app
+         -->
+    <!-- Generally the workload should only use one of _MonoRuntimeComponentLink or
+         _MonoRuntimeComponentDontLink.  For example, a workload that doesn't understand the
+         contents of native/ in details will generally bundle every native library from native/.
+         Such a workload should then use DontLink to exclude the disabled components.  On the other
+         hand a workload that explicitly pics the native libraries from native/ should use
+         _MonoRuntimeComponentLink to pick just the needed runtime component artifacts. -->
    
     <!-- The target also depends on the following items that are provided by the component-manifest.props from the runtime pack -->
     <!-- _MonoRuntimeComponentLinking item list: either 'dynamic' or 'static' (defined by the runtime for each possible RuntimeIdentifier) -->
@@ -37,11 +55,17 @@
       <!-- n.b. copies the metadata from _MonoRuntimeComponentName to _MonoRuntimeSelectedComponents -->
       <_MonoRuntimeComponentNameForRid Include="@(_MonoRuntimeComponentName)" Condition="'%(RuntimeIdentifier)' == '$(RuntimeIdentifier)'" />
       <_MonoRuntimeSelectedComponents Include="@(_MonoRuntimeComponentNameForRid)" Condition="'@(_MonoRuntimeComponentNameForRid)' == '@(_MonoComponent)' and '%(Identity)' != ''" />
+      <_MonoRuntimeUnSelectedComponents Include="@(_MonoRuntimeComponentNameForRid)" Exclude="@(_MonoComponent)" />
       <_MonoRuntimeComponentLink Include="%(_MonoRuntimeSelectedComponents.ComponentLib)">
         <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
         <IsStub>false</IsStub>
         <ComponentName>%(_MonoRuntimeSelectedComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentLink>
+      <_MonoRuntimeComponentDontLink Include="%(_MonoRuntimeUnSelectedComponents.ComponentLib)">
+	<Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+	<IsStub>false</IsStub>
+	<ComponentName>%(_MonoRuntimeUnSelectedComponents.Identity)</ComponentName>
+      </_MonoRuntimeComponentDontLink>
       <!-- non-empty if any unknown components are specified -->
       <_MonoRuntimeSelectedMissingComponents Include="@(_MonoComponent)" Exclude="@(_MonoRuntimeComponentNameForRid)" />
     </ItemGroup>
@@ -49,11 +73,17 @@
     <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'static'">
       <!-- Take difference _MonoRuntimeComponentName - _MonoComponent.  The remaining components are stubbed out -->
       <_MonoRuntimeSelectedStubComponents Include="@(_MonoRuntimeComponentNameForRid)" Exclude="@(_MonoComponent)" />
+      <_MonoRuntimeUnSelectedStubComponents Include="@(_MonoRuntimeComponentNameForRid)" Condition="'@(_MonoRuntimeComponentNameForRid)' == '@(_MonoComponent)' and '%(Identity)' != ''" />
       <_MonoRuntimeComponentLink Include="%(_MonoRuntimeSelectedStubComponents.ComponentStubLib)">
         <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
         <IsStub>true</IsStub>
         <ComponentName>%(_MonoRuntimeSelectedStubComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentLink>
+      <_MonoRuntimeComponentDontLink Include="%(_MonoRuntimeUnSelectedStubComponents.ComponentStubLib)">
+	<Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+	<IsStub>true</IsStub>
+	<ComponentName>%(_MonoRuntimeUnSelectedStubComponents.Identity)</ComponentName>
+      </_MonoRuntimeComponentDontLink>
     </ItemGroup>
 
     <Error Condition="'$(_MonoRuntimeComponentCurrentLinking)' != 'dynamic' and '$(_MonoRuntimeComponentCurrentLinking)' != 'static'" Text="_MonoRuntimeComponentCurrentLinking is not dynamic or static.  It is '$(_MonoRuntimeComponentCurrentLinking)'.  RuntimeIdentifier is '$(RuntimeIdentifier)'." />
