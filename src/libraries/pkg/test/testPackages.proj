@@ -75,7 +75,7 @@
   </Target>
 
   <Target Name="GetSupportedPackages">
-    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)">
+    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)" SupportedTestFrameworks="@(SupportedTestFramework)">
       <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />
     </GetCompatiblePackageTargetFrameworks>
 

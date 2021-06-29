@@ -23,6 +23,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        private const string sPauseOnUncaught = "pause_on_uncaught";
+        private const string sPauseOnCaught = "pause_on_caught";
 
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
         {
@@ -122,8 +124,41 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return true;
                     }
 
+                case "Runtime.exceptionThrown":
+                    {
+                        if (!GetContext(sessionId).IsRuntimeReady)
+                        {
+                            string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
+                            if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
+                            {
+                                return true;
+                            }
+                        }
+                        break;
+                    }
+
                 case "Debugger.paused":
                     {
+                        if (!GetContext(sessionId).IsRuntimeReady)
+                        {
+                            string reason = args?["reason"]?.Value<string>();
+                            if (reason == "exception")
+                            {
+                                string exceptionError = args?["data"]?["value"]?.Value<string>();
+                                if (exceptionError == sPauseOnUncaught)
+                                {
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    GetContext(sessionId).PauseOnUncaught = true;
+                                    return true;
+                                }
+                                if (exceptionError == sPauseOnCaught)
+                                {
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    GetContext(sessionId).PauseOnCaught = true;
+                                    return true;
+                                }
+                            }
+                        }
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
                         switch (top_func) {
@@ -398,7 +433,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.setPauseOnExceptions":
                     {
                         string state = args["state"].Value<string>();
-                        await sdbHelper.EnableExceptions(id, state, token);
+                        if (!context.IsRuntimeReady)
+                        {
+                            context.PauseOnCaught = false;
+                            context.PauseOnUncaught = false;
+                            switch (state)
+                            {
+                                case "all":
+                                    context.PauseOnCaught = true;
+                                    context.PauseOnUncaught = true;
+                                    break;
+                                case "uncaught":
+                                    context.PauseOnUncaught = true;
+                                    break;
+                            }
+                        }
+                        else
+                            await sdbHelper.EnableExceptions(id, state, token);
                         // Pass this on to JS too
                         return false;
                     }
@@ -1152,6 +1203,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Log("verbose", $"Failed to clear breakpoints");
             }
 
+            if (context.PauseOnCaught && context.PauseOnUncaught)
+                await sdbHelper.EnableExceptions(sessionId, "all", token);
+            else if (context.PauseOnUncaught)
+                await sdbHelper.EnableExceptions(sessionId, "uncaught", token);
+
             await sdbHelper.SetProtocolVersion(sessionId, token);
             await sdbHelper.EnableReceiveUserBreakRequest(sessionId, token);
 
@@ -1289,10 +1345,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
             {
+                string checkUncaughtExceptions = $"throw \"{sPauseOnUncaught}\";";
+                string checkCaughtExceptions = $"try {{throw \"{sPauseOnCaught}\";}} catch {{}}";
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
-                    JObject.FromObject(new { source = "globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver" }),
+                    JObject.FromObject(new { source = $"globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver; {checkCaughtExceptions} {checkUncaughtExceptions}" }),
                     token);
 
                 if (sessionId != SessionId.Null && !res.IsOk)

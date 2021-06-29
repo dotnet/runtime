@@ -985,11 +985,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
-    {
-        public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-    }
-
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
@@ -3103,8 +3098,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    // TODO: Many Cookie tests are failing for HTTP3.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_MsQuic : HttpClientHandlerTest_Cookies
     {
@@ -3113,7 +3106,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_Mock : HttpClientHandlerTest_Cookies
     {
@@ -3138,8 +3130,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    // TODO: Many cancellation tests are failing for HTTP3.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : SocketsHttpHandler_Cancellation_Test
     {
@@ -3148,7 +3138,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : SocketsHttpHandler_Cancellation_Test
     {
