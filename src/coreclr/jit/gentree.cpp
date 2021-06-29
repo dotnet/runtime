@@ -19247,11 +19247,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
         {
             GenTree** broadcastOp = nullptr;
 
-            if (varTypeIsArithmetic(op1->TypeGet()))
+            if (varTypeIsArithmetic(op1))
             {
                 broadcastOp = &op1;
             }
-            else if (varTypeIsArithmetic(op2->TypeGet()))
+            else if (varTypeIsArithmetic(op2))
             {
                 broadcastOp = &op2;
             }
@@ -19516,13 +19516,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             assert(!varTypeIsLong(simdBaseType));
             GenTree** scalarOp = nullptr;
 
-            if (varTypeIsArithmetic(op1->TypeGet()))
+            if (varTypeIsArithmetic(op1))
             {
                 // MultiplyByScalar requires the scalar op to be op2
                 std::swap(op1, op2);
                 scalarOp = &op2;
             }
-            else if (varTypeIsArithmetic(op2->TypeGet()))
+            else if (varTypeIsArithmetic(op2))
             {
                 scalarOp = &op2;
             }
@@ -19639,7 +19639,7 @@ GenTree* Compiler::gtNewSimdCeilNode(
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsFloating(simdBaseType));
@@ -19688,10 +19688,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == type);
+    assert(op2->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -19747,7 +19747,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                     tmp = impCloneExpr(tmp, &op1, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone tmp for vector Equals"));
 
-                    op2 = gtNewSimdHWIntrinsicNode(type, tmp, gtNewIconNode(SHUFFLE_ZWXY, TYP_INT), NI_SSE2_Shuffle,
+                    op2 = gtNewSimdHWIntrinsicNode(type, tmp, gtNewIconNode(SHUFFLE_ZWXY), NI_SSE2_Shuffle,
                                                    CORINFO_TYPE_INT, simdSize, isSimdAsHWIntrinsic);
 
                     return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
@@ -19836,7 +19836,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                 {
                     case TYP_UBYTE:
                     {
-                        constVal        = gtNewIconNode(0x80808080, TYP_INT);
+                        constVal        = gtNewIconNode(0x80808080);
                         simdBaseJitType = CORINFO_TYPE_BYTE;
                         simdBaseType    = TYP_BYTE;
                         break;
@@ -19844,7 +19844,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
                     case TYP_USHORT:
                     {
-                        constVal        = gtNewIconNode(0x80008000, TYP_INT);
+                        constVal        = gtNewIconNode(0x80008000);
                         simdBaseJitType = CORINFO_TYPE_SHORT;
                         simdBaseType    = TYP_SHORT;
                         break;
@@ -19852,7 +19852,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
                     case TYP_UINT:
                     {
-                        constVal        = gtNewIconNode(0x80000000, TYP_INT);
+                        constVal        = gtNewIconNode(0x80000000);
                         simdBaseJitType = CORINFO_TYPE_INT;
                         simdBaseType    = TYP_INT;
                         break;
@@ -20062,7 +20062,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                 {
                     case TYP_UBYTE:
                     {
-                        constVal        = gtNewIconNode(0x80808080, TYP_INT);
+                        constVal        = gtNewIconNode(0x80808080);
                         simdBaseJitType = CORINFO_TYPE_BYTE;
                         simdBaseType    = TYP_BYTE;
                         break;
@@ -20070,7 +20070,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
                     case TYP_USHORT:
                     {
-                        constVal        = gtNewIconNode(0x80008000, TYP_INT);
+                        constVal        = gtNewIconNode(0x80008000);
                         simdBaseJitType = CORINFO_TYPE_SHORT;
                         simdBaseType    = TYP_SHORT;
                         break;
@@ -20078,7 +20078,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
 
                     case TYP_UINT:
                     {
-                        constVal        = gtNewIconNode(0x80000000, TYP_INT);
+                        constVal        = gtNewIconNode(0x80000000);
                         simdBaseJitType = CORINFO_TYPE_INT;
                         simdBaseType    = TYP_INT;
                         break;
@@ -20308,10 +20308,10 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
     assert(varTypeIsSIMD(simdType));
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == simdType);
+    assert(op1->TypeIs(simdType));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == simdType);
+    assert(op2->TypeIs(simdType));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -20370,10 +20370,10 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
     assert(varTypeIsSIMD(simdType));
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == simdType);
+    assert(op1->TypeIs(simdType));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == simdType);
+    assert(op2->TypeIs(simdType));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -20431,13 +20431,13 @@ GenTree* Compiler::gtNewSimdCndSelNode(var_types   type,
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == type);
+    assert(op2->TypeIs(type));
 
     assert(op3 != nullptr);
-    assert(op3->TypeGet() == type);
+    assert(op3->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -20520,10 +20520,10 @@ GenTree* Compiler::gtNewSimdDotProdNode(var_types   type,
     assert(varTypeIsSIMD(simdType));
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == simdType);
+    assert(op1->TypeIs(simdType));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == simdType);
+    assert(op2->TypeIs(simdType));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(genActualType(simdBaseType) == type);
@@ -20564,7 +20564,7 @@ GenTree* Compiler::gtNewSimdFloorNode(
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsFloating(simdBaseType));
@@ -20677,10 +20677,10 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == type);
+    assert(op2->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -20724,7 +20724,7 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
                 {
                     case TYP_BYTE:
                     {
-                        constVal        = gtNewIconNode(0x80808080, TYP_INT);
+                        constVal        = gtNewIconNode(0x80808080);
                         fixupOp1        = GT_SUB;
                         fixupOp2        = GT_ADD;
                         simdBaseJitType = CORINFO_TYPE_UBYTE;
@@ -20734,7 +20734,7 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
 
                     case TYP_USHORT:
                     {
-                        constVal        = gtNewIconNode(0x80008000, TYP_INT);
+                        constVal        = gtNewIconNode(0x80008000);
                         fixupOp1        = GT_ADD;
                         fixupOp2        = GT_SUB;
                         simdBaseJitType = CORINFO_TYPE_SHORT;
@@ -20861,10 +20861,10 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     assert(op2 != nullptr);
-    assert(op2->TypeGet() == type);
+    assert(op2->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -20908,7 +20908,7 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
                 {
                     case TYP_BYTE:
                     {
-                        constVal        = gtNewIconNode(0x80808080, TYP_INT);
+                        constVal        = gtNewIconNode(0x80808080);
                         fixupOp1        = GT_SUB;
                         fixupOp2        = GT_ADD;
                         simdBaseJitType = CORINFO_TYPE_UBYTE;
@@ -20918,7 +20918,7 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
 
                     case TYP_USHORT:
                     {
-                        constVal        = gtNewIconNode(0x80008000, TYP_INT);
+                        constVal        = gtNewIconNode(0x80008000);
                         fixupOp1        = GT_ADD;
                         fixupOp2        = GT_SUB;
                         simdBaseJitType = CORINFO_TYPE_SHORT;
@@ -21041,7 +21041,7 @@ GenTree* Compiler::gtNewSimdSqrtNode(
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsFloating(simdBaseType));
@@ -21092,7 +21092,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-    assert(op1->TypeGet() == type);
+    assert(op1->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -21181,12 +21181,12 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
     var_types      simdBaseType  = JitType2PreciseVarType(simdBaseJitType);
 
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(op2->OperIsConst());
+    assert(op2->IsCnsIntOrI());
 
     ssize_t imm8  = op2->AsIntCon()->IconValue();
     ssize_t count = simdSize / genTypeSize(simdBaseType);
 
-    assert(0 <= imm8 && imm8 < count);
+    assert((0 <= imm8) && (imm8 < count));
 
 #if defined(TARGET_XARCH)
     switch (simdBaseType)

@@ -472,7 +472,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -586,7 +586,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_EqualsAny:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -665,7 +665,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_GreaterThanAll:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -673,7 +673,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_GreaterThanAny:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -694,7 +694,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_GreaterThanOrEqualAll:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -702,7 +702,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_GreaterThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -723,7 +723,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_LessThanAll:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -731,7 +731,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_LessThanAny:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -752,7 +752,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_LessThanOrEqualAll:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -760,7 +760,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_LessThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
@@ -797,7 +797,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                // TODO-AARCH-CQ: We should support long/ulong multiplication
+                // TODO-ARM64-CQ: We should support long/ulong multiplication.
                 break;
             }
 
@@ -821,7 +821,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Narrow:
         {
             assert(sig->numArgs == 2);
-            // TODO-AARCH-CQ: These intrinsics should be accelerated
+            // TODO-ARM64-CQ: These intrinsics should be accelerated.
             break;
         }
 
