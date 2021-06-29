@@ -4112,12 +4112,13 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
         {
-            if ((tree->gtFlags & GTF_VAR_DEF) || (tree->gtFlags & GTF_VAR_CLONED)) // Is this is a def of our variable
+            varDsc->lvSpillAtSingleDef = false;
+
+            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
                 bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
-                varDsc->lvSpillAtSingleDef = false;
 
                 if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
                 {
@@ -7425,7 +7426,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("%c", varDsc->lvDisqualifySingleDefRegCandidate);
+            printf("%c", varDsc->lvSingleDefDisqualifyReason);
         }
         if (varDsc->lvLclFieldExpr)
         {
