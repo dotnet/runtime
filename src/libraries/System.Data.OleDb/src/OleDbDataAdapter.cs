@@ -10,7 +10,7 @@ namespace System.Data.OleDb
 {
     [Designer("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [ToolboxItem("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    public sealed partial class OleDbDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
+    public sealed class OleDbDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
         private static readonly object EventRowUpdated = new object();
         private static readonly object EventRowUpdating = new object();
@@ -304,25 +304,6 @@ namespace System.Data.OleDb
         //    return base.Fill(dataTable, dataReader);
         //}
 
-        private void FillClose(bool isrecordset, object value)
-        {
-            OleDbHResult hr;
-            if (isrecordset)
-            {
-                hr = ((UnsafeNativeMethods.Recordset15)value).Close();
-            }
-            else
-            {
-                hr = ((UnsafeNativeMethods._ADORecord)value).Close();
-            }
-            if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
-            {
-                SafeNativeMethods.Wrapper.ClearErrorInfo();
-                string message = string.Empty;
-                throw new COMException(message, (int)hr);
-            }
-        }
-
         private int FillFromRecordset(object data, UnsafeNativeMethods.ADORecordsetConstruction recordset, string? srcTable, out bool incrementResultCount)
         {
             incrementResultCount = false;
@@ -382,6 +363,25 @@ namespace System.Data.OleDb
                 }
             }
             return 0;
+        }
+
+        private void FillClose(bool isrecordset, object value)
+        {
+            OleDbHResult hr;
+            if (isrecordset)
+            {
+                hr = ((UnsafeNativeMethods.Recordset15)value).Close();
+            }
+            else
+            {
+                hr = ((UnsafeNativeMethods._ADORecord)value).Close();
+            }
+            if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
+            {
+                SafeNativeMethods.Wrapper.ClearErrorInfo();
+                string message = string.Empty;
+                throw new COMException(message, (int)hr);
+            }
         }
 
         private int FillFromRecord(object data, UnsafeNativeMethods.ADORecordConstruction record, string srcTable)
