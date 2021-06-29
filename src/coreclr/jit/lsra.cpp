@@ -3279,9 +3279,15 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
     // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
     // singleDefSpill because they will always get spilled at firstRefPosition.
     // This helps in spilling the singleDef at definition
+    //
+    // Note: Only mark "singleDefSpill" for those intervals who ever get spilled. The intervals that are never spilled
+    // will not be marked as "singleDefSpill" and hence won't get spilled at the first definition.
     if (interval->isSingleDef && RefTypeIsDef(interval->firstRefPosition->refType) &&
         !interval->firstRefPosition->spillAfter)
     {
+        //TODO: Check if it is beneficial to spill at def, meaning, is it in hot block and if yes, don't worry about
+        // doing the spill....
+        // Also check how many uses are present for this variable. If USE > 3, then only do this optimization.
         interval->firstRefPosition->singleDefSpill = true;
     }
 
@@ -6006,7 +6012,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                 }
             }
-            assert(interval->isSpilled || interval->isSingleDef);
+            assert(interval->isSpilled);
             interval->physReg = REG_NA;
             varDsc->SetRegNum(REG_STK);
         }

@@ -2616,12 +2616,12 @@ void LinearScan::buildIntervals()
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// validateIntervals: A DEBUG-only method that checks that the lclVar RefPositions
-//                    do not reflect uses of undefined values
+// validateIntervals: A DEBUG-only method that checks that:
+//      - the lclVar RefPositions do not reflect uses of undefined values
+//      - A singleDef interval should have just first RefPosition as RefTypeDef.
 //
-// Notes: If an undefined use is encountered, it merely prints a message.
-//
-// TODO-Cleanup: This should probably assert.
+// TODO-Cleanup: If an undefined use is encountered, it merely prints a message
+// but probably assert.
 //
 void LinearScan::validateIntervals()
 {
@@ -2636,7 +2636,6 @@ void LinearScan::validateIntervals()
             Interval* interval = getIntervalForLocalVar(i);
 
             bool defined = false;
-            bool singleDefined = false;
             JITDUMP("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {

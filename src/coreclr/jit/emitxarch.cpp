@@ -2166,7 +2166,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     // Register passed args could have a stack offset of 0.
                     noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI
-                    bool isSingleDefSpill = varDsc->lvSingleDefRegCandidate;
+                    bool isSingleDefSpill = varDsc->lvSpillAtSingleDef;
                     // OSR transitioning to RBP frame currently can have mid-frame FP
                     noway_assert(((int)offs < 0) || isSingleDefSpill || emitComp->opts.IsOSR());
 #endif // !UNIX_AMD64_ABI

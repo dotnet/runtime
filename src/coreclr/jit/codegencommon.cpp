@@ -3704,7 +3704,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
 
             regArgTab[regArgNum + i].processed = false;
-            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && (varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef));
+            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && (varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef)); // TODO: double check if lvSpillAtSingleDef is needed here?
 
             /* mark stack arguments since we will take care of those first */
             regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;

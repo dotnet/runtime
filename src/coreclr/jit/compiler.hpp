@@ -2017,7 +2017,7 @@ inline
 #ifdef TARGET_AMD64
 #ifndef UNIX_AMD64_ABI
             // On amd64, every param has a stack location, except on Unix-like systems.
-            assert(varDsc->lvIsParam || varDsc->lvSingleDefRegCandidate);
+            assert(varDsc->lvIsParam || varDsc->lvSingleDefRegCandidate || varDsc->lvSpillAtSingleDef);
 #endif // UNIX_AMD64_ABI
 #else  // !TARGET_AMD64
             // For other targets, a stack parameter that is enregistered or prespilled
