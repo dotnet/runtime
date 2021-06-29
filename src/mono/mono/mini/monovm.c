@@ -11,6 +11,8 @@
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
 
+#include <mono/metadata/components.h>
+
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
 static MonoCoreLookupPaths *app_paths;
@@ -208,6 +210,8 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 		return 0x80004005; /* E_FAIL */
 
 	finish_initialization ();
+		
+	mono_components_init ();
 
 	return 0;
 }

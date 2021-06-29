@@ -84,6 +84,9 @@ stub_mono_wasm_breakpoint_hit (void);
 static void
 stub_mono_wasm_single_step_hit (void);
 
+static void 
+stub_mono_wasm_enable_debugging (int log_level);
+
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
 	&stub_debugger_init,
@@ -112,7 +115,8 @@ static MonoComponentDebugger fn_table = {
 	//wasm
 	&stub_mono_wasm_debugger_init,
 	&stub_mono_wasm_breakpoint_hit,
-	&stub_mono_wasm_single_step_hit
+	&stub_mono_wasm_single_step_hit,
+	&stub_mono_wasm_enable_debugging,
 };
 
 static bool
@@ -252,5 +256,10 @@ stub_mono_wasm_breakpoint_hit (void)
 
 static void
 stub_mono_wasm_single_step_hit (void)
+{
+}
+
+static void 
+stub_mono_wasm_enable_debugging (int log_level)
 {
 }

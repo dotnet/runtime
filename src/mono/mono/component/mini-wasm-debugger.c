@@ -25,6 +25,8 @@
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/debug-mono-ppdb.h"
 
+static void
+mono_wasm_enable_debugging_internal (int debug_level);
 static int log_level = 1;
 
 //functions exported to be used by JS
@@ -185,8 +187,8 @@ mono_wasm_debugger_init (void)
 	mono_init_debugger_agent_for_wasm (log_level);
 }
 
-MONO_API void
-mono_wasm_enable_debugging (int debug_level)
+static void
+mono_wasm_enable_debugging_internal (int debug_level)
 {
 	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
@@ -444,4 +446,5 @@ mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_debugger_init = mono_wasm_debugger_init;
 	fn_table->mono_wasm_breakpoint_hit = mono_wasm_breakpoint_hit;
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
+	fn_table->mono_wasm_enable_debugging = mono_wasm_enable_debugging_internal;
 }

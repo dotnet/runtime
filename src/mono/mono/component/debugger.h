@@ -200,10 +200,10 @@ typedef struct MonoComponentDebugger {
 	void (*mono_wasm_debugger_init) (void);
 	void (*mono_wasm_breakpoint_hit) (void);
 	void (*mono_wasm_single_step_hit) (void);
+	void (*mono_wasm_enable_debugging) (int log_level);
 } MonoComponentDebugger;
 
 
-typedef int DbgEngineErrorCodeTHAYS;
 #define DE_ERR_NONE 0
 // WARNING WARNING WARNING
 // Error codes MUST match those of sdb for now
