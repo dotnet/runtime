@@ -95,5 +95,8 @@ namespace System
 
         internal const string X509CertificatePrivateKeyMessage = "X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key.";
         internal const string X509CertificatePrivateKeyDiagId = "SYSLIB0028";
+
+        internal const string ProduceLegacyHmacValuesMessage = "ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported.";
+        internal const string ProduceLegacyHmacValuesDiagId = "SYSLIB0029";
     }
 }
