@@ -3,6 +3,7 @@
 
 using System.Data.Common;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -308,6 +309,7 @@ namespace System.Data
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetProviderSpecificFieldType(int ordinal)
         {
             ValidateOpen(nameof(GetProviderSpecificFieldType));
@@ -525,6 +527,7 @@ namespace System.Data
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetFieldType(int ordinal)
         {
             ValidateOpen(nameof(GetFieldType));

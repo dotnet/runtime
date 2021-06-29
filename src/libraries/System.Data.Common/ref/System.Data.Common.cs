@@ -572,8 +572,11 @@ namespace System.Data
         public void InferXmlSchema(System.Xml.XmlReader? reader, string[]? nsArray) { }
         protected virtual void InitializeDerivedDataSet() { }
         protected bool IsBinarySerialized(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params string[] tables) { }
         public void Merge(System.Data.DataRow[] rows) { }
         public void Merge(System.Data.DataRow[] rows, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
@@ -762,8 +765,11 @@ namespace System.Data
         protected virtual System.Type GetRowType() { throw null; }
         protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow? row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler) { }
         public System.Data.DataRow LoadDataRow(object?[] values, bool fAcceptChanges) { throw null; }
         public System.Data.DataRow LoadDataRow(object?[] values, System.Data.LoadOption loadOption) { throw null; }
@@ -1756,7 +1762,7 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ContinueUpdateOnError { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public System.Data.LoadOption FillLoadOption { get { throw null; } set { } }
+        public System.Data.LoadOption FillLoadOption { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingMappingAction.Passthrough)]
         public System.Data.MissingMappingAction MissingMappingAction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingSchemaAction.Add)]

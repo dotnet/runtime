@@ -1516,7 +1516,7 @@ namespace System.Data.Common
 
                         if (getData && (0 != dataReader.RecordsAffected))
                         {
-                            SchemaMapping mapping = new SchemaMapping(this, null, rowUpdatedEvent.Row.Table, readerHandler, false, SchemaType.Mapped, rowUpdatedEvent.TableMapping.SourceTable, true, null, null);
+                            SchemaMapping mapping = new SchemaMapping(this, null, rowUpdatedEvent.Row.Table, readerHandler, false, SchemaType.Mapped, rowUpdatedEvent.TableMapping.SourceTable, true);
 
                             if ((null != mapping.DataTable) && (null != mapping.DataValues))
                             {

@@ -73,23 +73,5 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.DataView.System.ComponentModel.IBindingListView.set_Filter(System.String)</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2072</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.ProviderBase.SchemaMapping.SetupSchemaWithKeyInfo(System.Data.MissingMappingAction,System.Data.MissingSchemaAction,System.Boolean,System.Data.DataColumn,System.Object)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.ProviderBase.SchemaMapping.SetupSchemaWithKeyInfo(System.Data.MissingMappingAction,System.Data.MissingSchemaAction,System.Boolean,System.Data.DataColumn,System.Object)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2072</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.ProviderBase.SchemaMapping.SetupSchemaWithoutKeyInfo(System.Data.MissingMappingAction,System.Data.MissingSchemaAction,System.Boolean,System.Data.DataColumn,System.Object)</property>
-    </attribute>
   </assembly>
 </linker>

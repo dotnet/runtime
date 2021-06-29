@@ -89,6 +89,7 @@ namespace System.Data.Common
                 LoadOption fillLoadOption = _fillLoadOption;
                 return ((0 != fillLoadOption) ? _fillLoadOption : LoadOption.OverwriteChanges);
             }
+            [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")] // See SchemaMapping.AddAdditionalPropertiesIfLoadOptionsSet
             set
             {
                 switch (value)
@@ -332,7 +333,7 @@ namespace System.Data.Common
                     schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
                 }
 
-                SchemaMapping mapping = new SchemaMapping(this, dataset, datatable, readerHandler, true, schemaType, tmp, false, null, null);
+                SchemaMapping mapping = new SchemaMapping(this, dataset, datatable, readerHandler, true, schemaType, tmp, false);
 
                 if (null != datatable)
                 {
@@ -396,7 +397,7 @@ namespace System.Data.Common
                 }
                 // user must Close/Dispose of the dataReader
                 DataReaderContainer readerHandler = DataReaderContainer.Create(dataReader, ReturnProviderSpecificTypes);
-                return FillFromReader(dataSet, null, srcTable, readerHandler, startRecord, maxRecords, null, null);
+                return FillFromReader(dataSet, null, srcTable, readerHandler, startRecord, maxRecords);
             }
             finally
             {
@@ -475,7 +476,7 @@ namespace System.Data.Common
                         }
                         // user must Close/Dispose of the dataReader
                         // user will have to call NextResult to access remaining results
-                        int count = FillFromReader(null, dataTables[i], null, readerHandler, startRecord, maxRecords, null, null);
+                        int count = FillFromReader(null, dataTables[i], null, readerHandler, startRecord, maxRecords);
                         if (0 == i)
                         {
                             result = count;
@@ -502,6 +503,14 @@ namespace System.Data.Common
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "chapterValue is not used here")]
+        internal int FillFromReader(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords)
+        {
+            return FillFromReader(dataset, datatable, srcTable, dataReader, startRecord, maxRecords, null, null);
+        }
+
+        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
         internal int FillFromReader(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             int rowsAddedToDataSet = 0;
@@ -562,6 +571,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
         private int FillLoadDataRowChunk(SchemaMapping mapping, int startRecord, int maxRecords)
         {
             DataReaderContainer dataReader = mapping.DataReader;
@@ -609,6 +619,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
         private int FillLoadDataRow(SchemaMapping mapping)
         {
             int rowsAddedToDataSet = 0;
@@ -643,6 +654,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
         private SchemaMapping FillMappingInternal(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             bool withKeyInfo = (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction);
@@ -654,6 +666,7 @@ namespace System.Data.Common
             return new SchemaMapping(this, dataset, datatable, dataReader, withKeyInfo, SchemaType.Mapped, tmp, true, parentChapterColumn, parentChapterValue);
         }
 
+        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
         private SchemaMapping? FillMapping(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             SchemaMapping? mapping = null;

@@ -41,6 +41,7 @@ namespace System.Data.Common
 
         public abstract double GetDouble(int i);
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract Type GetFieldType(int i);
 
         public abstract float GetFloat(int i);
