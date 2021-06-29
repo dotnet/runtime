@@ -483,6 +483,7 @@ namespace System.Security.Cryptography
         public HMACSHA1() { }
         public HMACSHA1(byte[] key) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("HMACSHA1 always uses the algorithm implementation provided by the platform. Use the constructor without the useManagedSha1 parameter.", DiagnosticId = "SYSLIB0030", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public HMACSHA1(byte[] key, bool useManagedSha1) { }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }

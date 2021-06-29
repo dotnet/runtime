@@ -98,5 +98,8 @@ namespace System
 
         internal const string ProduceLegacyHmacValuesMessage = "ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported.";
         internal const string ProduceLegacyHmacValuesDiagId = "SYSLIB0029";
+
+        internal const string UseManagedSha1Message = "HMACSHA1 always uses the algorithm implementation provided by the platform. Use the constructor without the useManagedSha1 parameter.";
+        internal const string UseManagedSha1DiagId = "SYSLIB0030";
     }
 }
