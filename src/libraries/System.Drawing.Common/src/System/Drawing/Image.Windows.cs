@@ -48,6 +48,22 @@ namespace System.Drawing
             return image;
         }
 
+        private static unsafe IntPtr LoadGdipImageFromStream(GPStream stream, bool useEmbeddedColorManagement)
+        {
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(stream);
+
+            IntPtr image = IntPtr.Zero;
+            if (useEmbeddedColorManagement)
+            {
+                Gdip.CheckStatus(Gdip.GdipLoadImageFromStreamICM(streamWrapper.Ptr, &image));
+            }
+            else
+            {
+                Gdip.CheckStatus(Gdip.GdipLoadImageFromStream(streamWrapper.Ptr, &image));
+            }
+            return image;
+        }
+
         internal Image(IntPtr nativeImage) => SetNativeImage(nativeImage);
 
         /// <summary>
@@ -229,11 +245,15 @@ namespace System.Drawing
 
                 if (!saved)
                 {
-                    Gdip.CheckStatus(SaveGdipImageToStream(
-                        new GPStream(stream, makeSeekable: false),
-                        g,
-                        encoderParams,
-                        encoderParamsMemory));
+                    using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream, makeSeekable: false));
+                    unsafe
+                    {
+                        Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
+                            new HandleRef(this, nativeImage),
+                            streamWrapper.Ptr,
+                            &g,
+                            new HandleRef(encoderParams, encoderParamsMemory)));
+                    }
                 }
             }
             finally

@@ -21,7 +21,7 @@ namespace System.Drawing.Internal
                 _virtualPosition = _virtualPosition
             };
 
-            *ppstm = DrawingComWrappers.Instance.GetOrCreateComInterfaceForObject(clone, CreateComInterfaceFlags.None);
+            *ppstm = DrawingCom.Instance.GetOrCreateComInterfaceForObject(clone, CreateComInterfaceFlags.None);
 
             return Interop.HRESULT.S_OK;
         }

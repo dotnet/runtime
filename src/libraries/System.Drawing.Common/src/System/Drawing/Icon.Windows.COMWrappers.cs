@@ -28,7 +28,7 @@ namespace System.Drawing
                 // But, in the interest of simplicity, we just call to
                 // OLE to do it for us.
                 PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
-                Guid iid = DrawingComWrappers.IPicture.IID;
+                Guid iid = DrawingCom.IPicture.IID;
                 IntPtr lpPicture;
                 Marshal.ThrowExceptionForHR(OleCreatePictureIndirect(&pictdesc, &iid, fOwn: 0, &lpPicture));
 
@@ -36,13 +36,13 @@ namespace System.Drawing
                 try
                 {
                     // Use UniqueInstance here because we never want to cache the wrapper. It only gets used once and then disposed.
-                    using DrawingComWrappers.IPicture picture = (DrawingComWrappers.IPicture)DrawingComWrappers.Instance
+                    using DrawingCom.IPicture picture = (DrawingCom.IPicture)DrawingCom.Instance
                         .GetOrCreateObjectForComInstance(lpPicture, CreateObjectFlags.UniqueInstance);
 
                     var gpStream = new GPStream(outputStream, makeSeekable: false);
-                    streamPtr = DrawingComWrappers.Instance.GetOrCreateComInterfaceForObject(gpStream, CreateComInterfaceFlags.None);
+                    streamPtr = DrawingCom.Instance.GetOrCreateComInterfaceForObject(gpStream, CreateComInterfaceFlags.None);
 
-                    DrawingComWrappers.ThrowExceptionForHR(picture.SaveAsFile(streamPtr, -1, null));
+                    DrawingCom.ThrowExceptionForHR(picture.SaveAsFile(streamPtr, -1, null));
                 }
                 finally
                 {

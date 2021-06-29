@@ -14,16 +14,16 @@ namespace System.Drawing
     ///
     /// Supports IStream and IPicture COM interfaces.
     /// </summary>
-    internal unsafe class DrawingComWrappers : ComWrappers
+    internal unsafe partial class DrawingCom : ComWrappers
     {
         private const int S_OK = (int)Interop.HRESULT.S_OK;
         private static readonly Guid IID_IStream = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
         private static readonly ComInterfaceEntry* s_wrapperEntry = InitializeComInterfaceEntry();
 
-        internal static DrawingComWrappers Instance { get; } = new DrawingComWrappers();
+        internal static DrawingCom Instance { get; } = new DrawingCom();
 
-        private DrawingComWrappers() { }
+        private DrawingCom() { }
 
         private static ComInterfaceEntry* InitializeComInterfaceEntry()
         {
@@ -31,7 +31,7 @@ namespace System.Drawing
 
             IntPtr iStreamVtbl = IStreamVtbl.Create(fpQueryInteface, fpAddRef, fpRelease);
 
-            ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingComWrappers), sizeof(ComInterfaceEntry));
+            ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingCom), sizeof(ComInterfaceEntry));
             wrapperEntry->IID = IID_IStream;
             wrapperEntry->Vtable = iStreamVtbl;
             return wrapperEntry;
@@ -66,11 +66,18 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
-        internal void GetIStreamInterfaces(Interop.Ole32.IStream stream, out IntPtr streamWrapperPtr, out IntPtr streamPtr)
+        internal static IStreamWrapper GetComWrapper(Interop.Ole32.IStream stream)
         {
-            streamWrapperPtr = GetOrCreateComInterfaceForObject(stream, CreateComInterfaceFlags.None);
+            IntPtr streamWrapperPtr = Instance.GetOrCreateComInterfaceForObject(stream, CreateComInterfaceFlags.None);
+
             Guid streamIID = IID_IStream;
-            ThrowExceptionForHR(Marshal.QueryInterface(streamWrapperPtr, ref streamIID, out streamPtr));
+            int result = Marshal.QueryInterface(streamWrapperPtr, ref streamIID, out IntPtr streamPtr);
+
+            Marshal.Release(streamWrapperPtr);
+
+            ThrowExceptionForHR(result);
+
+            return new IStreamWrapper(streamPtr);
         }
 
         internal static void ThrowExceptionForHR(int errorCode)
