@@ -133,9 +133,9 @@ previous dispatcher.
 
 The mechanism uses some data structures to describe the dispatchers that are
 currently live on the stack and to facilitate detection of previous
-dispatchers.  The dispatchers themselves are described by a series of
-`PortableTailCallFrame` entries. These entries are stored on the stack in a by
-each live instance of the dispatcher.  This structure looks like the following:
+dispatchers. The dispatchers themselves are described by a series of
+`PortableTailCallFrame` entries. These entries are stored on the stack in each
+live instance of the dispatcher. This structure looks like the following:
 
 ```csharp
 struct PortableTailCallFrame
@@ -149,7 +149,7 @@ Here the `TailCallAwareReturnAddress` is an address that can be used to detect
 whether a return would go to that particular dispatcher. `NextCall` is what the
 dispatcher uses to perform the next tailcall of a sequence.
 
-The current frame is stored in TLS, along with information about the currently
+The current frame is stored in TLS along with information about the currently
 allocated argument buffer that can be used by GC:
 
 ```csharp
@@ -217,7 +217,7 @@ correct return address.
 
 In the case a return would go back to a dispatcher we simply record the next
 call by saving the `callTarget` parameter, a function pointer to a
-`CallTailCallTarget` stub.  Otherwise the new dispatcher is recorded and a loop
+`CallTailCallTarget` stub. Otherwise the new dispatcher is recorded and a loop
 is entered that starts dispatching tailcalls.
 
 This loop calls into the `CallTailCallTarget` stubs so it is from these stubs
