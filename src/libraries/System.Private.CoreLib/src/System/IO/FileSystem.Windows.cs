@@ -413,8 +413,9 @@ namespace System.IO
                 Path.Join(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
 
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: false);
-            if (data.dwFileAttributes != -1 &&
+            int errorCode = FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: true);
+            if (errorCode == Interop.Errors.ERROR_SUCCESS &&
+                data.dwFileAttributes != -1 &&
                 isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
             {
                 throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
@@ -430,20 +431,20 @@ namespace System.IO
         {
             string? targetPath = returnFinalTarget ?
                 GetFinalLinkTarget(linkPath, isDirectory) :
-                GetImmediateLinkTarget(linkPath, isDirectory, throwOnNotFound: true, normalize: true);
+                GetImmediateLinkTarget(linkPath, isDirectory, throwOnUnreachable: true, normalize: true);
 
             return targetPath == null ? null :
                 isDirectory ? new DirectoryInfo(targetPath) : new FileInfo(targetPath);
         }
 
         internal static string? GetLinkTarget(string linkPath, bool isDirectory)
-            => GetImmediateLinkTarget(linkPath, isDirectory, throwOnNotFound: false, normalize: false);
+            => GetImmediateLinkTarget(linkPath, isDirectory, throwOnUnreachable: false, normalize: false);
 
         /// <summary>
         /// Gets reparse point information associated to <paramref name="linkPath"/>.
         /// </summary>
         /// <returns>The immediate link target, absolute or relative or null if the file is not a supported link.</returns>
-        internal static unsafe string? GetImmediateLinkTarget(string linkPath, bool isDirectory, bool throwOnNotFound, bool normalize)
+        internal static unsafe string? GetImmediateLinkTarget(string linkPath, bool isDirectory, bool throwOnUnreachable, bool normalize)
         {
             using SafeFileHandle handle = OpenSafeFileHandle(linkPath,
                     Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS |
@@ -452,20 +453,19 @@ namespace System.IO
             if (handle.IsInvalid)
             {
                 int error = Marshal.GetLastWin32Error();
-                switch (error)
+
+                if (!throwOnUnreachable && IsPathUnreachableError(error))
                 {
-                    case Interop.Errors.ERROR_FILE_NOT_FOUND:
-                    case Interop.Errors.ERROR_PATH_NOT_FOUND:
-                        if (throwOnNotFound)
-                        {
-                            throw Win32Marshal.GetExceptionForWin32Error(
-                                // File not found doesn't make much sense coming from a directory.
-                                isDirectory ? Interop.Errors.ERROR_PATH_NOT_FOUND : error, linkPath);
-                        }
-                        return null;
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(error, linkPath);
+                    return null;
                 }
+
+                // File not found doesn't make much sense coming from a directory.
+                if (isDirectory && error == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                {
+                    error = Interop.Errors.ERROR_PATH_NOT_FOUND;
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(error, linkPath);
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
@@ -503,9 +503,10 @@ namespace System.IO
                     return null;
                 }
 
-                // We use PrintName instead of SubstitutneName given that we don't want to return a NT path.
+                // We use PrintName instead of SubstitutneName given that we don't want to return a NT path when the link wasn't created with such NT path.
                 // Unlike SubstituteName and GetFinalPathNameByHandle(), PrintName doesn't start with a prefix.
                 // Another nuance is that SubstituteName does not contain redundant path segments while PrintName does.
+                // PrintName can ONLY return a NT path if the link was created explicitly targeting a file/folder in such way. e.g: mklink /D linkName \??\C:\path\to\target.
                 int printNameNameOffset = sizeof(Interop.Kernel32.REPARSE_DATA_BUFFER) + rdb.ReparseBufferSymbolicLink.PrintNameOffset;
                 int printNameNameLength = rdb.ReparseBufferSymbolicLink.PrintNameLength;
 
@@ -548,11 +549,10 @@ namespace System.IO
 
             if (handle.IsInvalid)
             {
-                // If the handle fails with "not found", is becuse the link was broken.
-                // We need to fallback to manually traverse the link targets and return the target of the last resolved link.
+                // If the handle fails because it is unreachable, is becuse the link was broken.
+                // We need to fallback to manually traverse the links and return the target of the last resolved link.
                 int error = Marshal.GetLastWin32Error();
-                if (error == Interop.Errors.ERROR_FILE_NOT_FOUND ||
-                    error == Interop.Errors.ERROR_PATH_NOT_FOUND)
+                if (IsPathUnreachableError(error))
                 {
                     return GetFinalLinkTargetSlow(linkPath);
                 }
@@ -607,13 +607,13 @@ namespace System.IO
             {
                 // Since all these paths will be passed to CreateFile, which takes a string anyway, it is pointless to use span.
                 // I am not sure if it's possible to change CreateFile's param to ROS<char> and avoid all these allocations.
-                string? current = GetImmediateLinkTarget(linkPath, isDirectory, throwOnNotFound: false, normalize: true);
+                string? current = GetImmediateLinkTarget(linkPath, isDirectory, throwOnUnreachable: false, normalize: true);
                 string? prev = null;
 
                 while (current != null)
                 {
                     prev = current;
-                    current = GetImmediateLinkTarget(current, isDirectory, throwOnNotFound: false, normalize: true);
+                    current = GetImmediateLinkTarget(current, isDirectory, throwOnUnreachable: false, normalize: true);
                 }
 
                 return prev;

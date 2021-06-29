@@ -424,14 +424,26 @@ namespace System.IO.Tests
 
         internal static string[] PathToTargetData => new[]
         {
-            // Non-rooted relative
+            //Non-rooted relative
             "foo", ".\\foo", "..\\foo",
             // Rooted relative
             "\\foo",
             // Rooted absolute
             Path.Combine(Path.GetTempPath(), "foo"),
-            //Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
-            //@"\\server\share\path", @"\\.\pipe\foo",
+            Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
+            @"\\SERVER\share\path", @"\\.\pipe\foo",
         };
+
+        [Fact]
+        public void quicktest()
+        {
+            //Debugger.Launch();
+            var info = new DirectoryInfo(@"C:\\linktests\\0628.f");
+            Assert.True(info.Exists);
+            Assert.Equal(@"\\LOCALHOST\\Users\david\share", info.LinkTarget);
+
+            var targetInfo = info.ResolveLinkTarget();
+            Assert.True(targetInfo.Exists);
+        }
     }
 }
