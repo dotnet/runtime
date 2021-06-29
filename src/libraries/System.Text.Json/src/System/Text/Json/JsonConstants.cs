@@ -67,6 +67,8 @@ namespace System.Text.Json
         // When transcoding from UTF8 -> UTF16, the byte count threshold where we rent from the array pool before performing a normal alloc.
         public const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 
+        public const int MaxRawValueLength = int.MaxValue / MaxExpansionFactorWhileTranscoding;
+
         public const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         public const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
         public const int MaxBase64ValueTokenSize = (MaxEscapedTokenSize >> 2) * 3 / MaxExpansionFactorWhileEscaping;  // 125_000_000 bytes

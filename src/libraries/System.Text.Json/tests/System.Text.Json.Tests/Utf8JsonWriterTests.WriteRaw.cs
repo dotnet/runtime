@@ -12,7 +12,6 @@ namespace System.Text.Json.Tests
     {
         private const string TestGuidAsStr = "eb97fadd-3ebf-4781-8722-f4773989160e";
         private readonly static Guid s_guid = Guid.Parse(TestGuidAsStr);
-        private static byte[] s_guidAsJson = WrapInQuotes(TestGuidAsStr);
 
         private static byte[] s_oneAsJson = new byte[] { (byte)'1' };
 
@@ -67,7 +66,8 @@ namespace System.Text.Json.Tests
             yield return new object[] { Encoding.UTF8.GetBytes(@"""Hello"""), validate };
 
             validate = (data) => Assert.Equal(s_guid, JsonSerializer.Deserialize<Guid>(data));
-            yield return new object[] { s_guidAsJson, validate };
+            byte[] guidAsJson = WrapInQuotes(Encoding.UTF8.GetBytes(TestGuidAsStr));
+            yield return new object[] { guidAsJson, validate };
         }
 
         public static IEnumerable<object[]> GetArrays()
@@ -105,13 +105,13 @@ namespace System.Text.Json.Tests
             yield return new object[] { json, validate };
         }
 
-        private static byte[] WrapInQuotes(string json)
+        private static byte[] WrapInQuotes(ReadOnlySpan<byte> buffer)
         {
-            byte[] buffer = new byte[json.Length + 2];
-            buffer[0] = (byte)'"';
-            Encoding.UTF8.GetBytes(json).CopyTo(buffer, 1);
-            buffer[json.Length + 1] = (byte)'"';
-            return buffer;
+            byte[] quotedBuffer = new byte[buffer.Length + 2];
+            quotedBuffer[0] = (byte)'"';
+            buffer.CopyTo(quotedBuffer.AsSpan().Slice(1));
+            quotedBuffer[buffer.Length + 1] = (byte)'"';
+            return quotedBuffer;
         }
 
         [Theory]
@@ -169,6 +169,11 @@ namespace System.Text.Json.Tests
         [InlineData("[}")]
         [InlineData("xxx")]
         [InlineData("{hello:")]
+        [InlineData("\\u007Bhello:")]
+        [InlineData(@"{""hello:""""")]
+        [InlineData(" ")]
+        [InlineData("// This is a single line comment")]
+        [InlineData("/* This is a multi-\nline comment*/")]
         public static void WriteRawInvalidJson(string json)
         {
             RunTest(true);
@@ -181,11 +186,52 @@ namespace System.Text.Json.Tests
 
                 if (!skipValidation)
                 {
-                    Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json));
+                    Assert.ThrowsAny<JsonException>(() => writer.WriteRawValue(json));
                 }
                 else
                 {
                     writer.WriteRawValue(json, true);
+                    writer.Flush();
+                    Assert.True(Encoding.UTF8.GetBytes(json).SequenceEqual(ms.ToArray()));
+                }
+            }
+        }
+
+        [Fact]
+        public static void WriteRawNullOrEmptyTokenInvalid()
+        {
+            using MemoryStream ms = new();
+            using Utf8JsonWriter writer = new(ms);
+            Assert.Throws<ArgumentNullException>(() => writer.WriteRawValue(json: default(string)));
+            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json: ""));
+            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json: default(ReadOnlySpan<char>)));
+            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(utf8Json: default));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void WriteRawHonorSkipValidation(bool skipValidation)
+        {
+            RunTest(true);
+            RunTest(false);
+
+            void RunTest(bool skipInputValidation)
+            {
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms, new JsonWriterOptions { SkipValidation = skipValidation });
+
+                writer.WriteStartObject();
+
+                if (skipValidation)
+                {
+                    writer.WriteRawValue(@"{}", skipInputValidation);
+                    writer.Flush();
+                    Assert.True(ms.ToArray().SequenceEqual(new byte[] { (byte)'{',  (byte)'{', (byte)'}' }));
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.WriteRawValue(@"{}", skipInputValidation));
                 }
             }
         }
@@ -195,12 +241,12 @@ namespace System.Text.Json.Tests
         /// problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         /// succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         /// time the memory is accessed which triggers the full memory allocation.
-        /// Also see <see cref="Utf8JsonWriterTests.WriteLargeJsonToStreamWithoutFlushing"/>
+        /// Also see <see cref="WriteLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(nameof(IsX64))]
         [OuterLoop]
-        public void WriteLargeRawJsonToStreamWithoutFlushing()
+        public void WriteRawLargeJsonToStreamWithoutFlushing()
         {
             var largeArray = new char[150_000_000];
             largeArray.AsSpan().Fill('a');
@@ -214,46 +260,110 @@ namespace System.Text.Json.Tests
             using (var writer = new Utf8JsonWriter(output))
             {
                 writer.WriteStartArray();
-                writer.WriteRawValue(text1.EncodedUtf8Bytes);
+                writer.WriteRawValue(WrapInQuotes(text1.EncodedUtf8Bytes));
                 Assert.Equal(7_503, writer.BytesPending);
 
                 for (int i = 0; i < 30_000; i++)
                 {
-                    writer.WriteRawValue(text2.EncodedUtf8Bytes);
+                    writer.WriteRawValue(WrapInQuotes(text2.EncodedUtf8Bytes));
                 }
                 Assert.Equal(150_097_503, writer.BytesPending);
 
                 for (int i = 0; i < 13; i++)
                 {
-                    writer.WriteRawValue(text3.EncodedUtf8Bytes);
+                    writer.WriteRawValue(WrapInQuotes(text3.EncodedUtf8Bytes));
                 }
                 Assert.Equal(2_100_097_542, writer.BytesPending);
 
                 // Next write forces a grow beyond max array length
 
-                Assert.Throws<OutOfMemoryException>(() => writer.WriteRawValue(text3.EncodedUtf8Bytes));
+                Assert.Throws<OutOfMemoryException>(() => writer.WriteRawValue(WrapInQuotes(text3.EncodedUtf8Bytes)));
 
                 Assert.Equal(2_100_097_542, writer.BytesPending);
 
                 var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
                 for (int i = 0; i < 10_000_000; i++)
                 {
-                    writer.WriteRawValue(text4.EncodedUtf8Bytes);
+                    writer.WriteRawValue(WrapInQuotes(text4.EncodedUtf8Bytes));
                 }
 
                 Assert.Equal(2_100_097_542 + (4 * 10_000_000), writer.BytesPending);
             }
         }
 
-        [Fact]
-        public static void WriteRawNullOrEmptyTokenInvalid()
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalTheory(nameof(IsX64))]
+        [InlineData(JsonTokenType.String)]
+        [InlineData(JsonTokenType.StartArray)]
+        [InlineData(JsonTokenType.StartObject)]
+        public static void WriteRawMaxInputLength(JsonTokenType tokenType)
         {
+            // Max raw payload length supported by the writer.
+            int maxLength = int.MaxValue / 3;
+
+            byte[] payload = new byte[maxLength];
+            payload[0] = (byte)'"';
+            payload[maxLength - 1] = (byte)'"';
+
+            for (int i = 1; i < maxLength - 1; i++)
+            {
+                payload[i] = (byte)'a';
+            }
+
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
-            Assert.Throws<ArgumentNullException>(() => writer.WriteRawValue(json: default(string)));
-            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json: ""));
-            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json: default(ReadOnlySpan<char>)));
-            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(utf8Json: default));
+
+            switch(tokenType)
+            {
+                case JsonTokenType.String:
+                    writer.WriteRawValue(payload);
+                    writer.Flush();
+                    Assert.Equal(payload.Length, writer.BytesCommitted);
+                    break;
+                case JsonTokenType.StartArray:
+                    writer.WriteStartArray();
+                    writer.WriteRawValue(payload);
+                    writer.WriteRawValue(payload);
+                    writer.WriteEndArray();
+                    writer.Flush();
+                    // Start/EndArray + comma, 2 array elements
+                    Assert.Equal(3 + (payload.Length * 2), writer.BytesCommitted);
+                    break;
+                case JsonTokenType.StartObject:
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("1");
+                    writer.WriteRawValue(payload);
+                    writer.WritePropertyName("2");
+                    writer.WriteRawValue(payload);
+                    writer.WriteEndObject();
+                    writer.Flush();
+                    // Start/EndToken + comma, 2 property names, 2 property values
+                    Assert.Equal(3 + (4 * 2) + (payload.Length * 2), writer.BytesCommitted);
+                    break;
+                default:
+                    Assert.True(false, "Unexpected test configuration");
+                    break;
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalTheory(nameof(IsX64))]
+        [InlineData((int.MaxValue / 3) + 1)]
+        [InlineData(int.MaxValue / 3 + 2)]
+        public static void WriteRawLengthGreaterThanMax(int len)
+        {
+            byte[] payload = new byte[len];
+            payload[0] = (byte)'"';
+            payload[len - 1] = (byte)'"';
+
+            for (int i = 1; i < len - 1; i++)
+            {
+                payload[i] = (byte)'a';
+            }
+
+            using MemoryStream ms = new();
+            using Utf8JsonWriter writer = new(ms);
+            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(payload));
         }
     }
 }

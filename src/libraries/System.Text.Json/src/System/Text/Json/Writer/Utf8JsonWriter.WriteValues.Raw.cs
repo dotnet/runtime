@@ -8,26 +8,93 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
-        /// Writes the input as JSON content.
+        /// Writes the input as JSON content. It is expected that the input content is a single complete JSON value.
         /// </summary>
         /// <param name="json">The raw JSON content to write.</param>
-        /// <param name="skipInputValidation">Whether to skip validation of the input JSON content.</param>
+        /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
+        /// <exception cref="JsonException">Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input is not  RFC 8259-compliant.</exception>
+        /// <remarks>
+        /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
+        /// being written, and/or the overall payload being written to the writer instance being invalid.
+        ///
+        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails.
+        ///
+        /// The <see cref="JsonWriterOptions.SkipValidation"/> value for the writer instance is honored when using this method.
+        ///
+        /// The <see cref="JsonWriterOptions.Indented"/> and <see cref="JsonWriterOptions.Encoder"/> values for the writer instance are not applied when using this method.
+        /// </remarks>
         public void WriteRawValue(string json, bool skipInputValidation = false)
         {
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
-            WriteRawValue(json.AsSpan(), skipInputValidation);
+            TranscodeAndWriteRawValue(json.AsSpan(), skipInputValidation);
         }
 
         /// <summary>
-        /// Writes the input as JSON content.
+        /// Writes the input as JSON content. It is expected that the input content is a single complete JSON value.
         /// </summary>
         /// <param name="json">The raw JSON content to write.</param>
-        /// <param name="skipInputValidation">Whether to skip validation of the input JSON content.</param>
+        /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
+        /// <exception cref="JsonException">Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input is not  RFC 8259-compliant.</exception>
+        /// <remarks>
+        /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
+        /// being written, and/or the overall payload being written to the writer instance being invalid.
+        ///
+        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails.
+        ///
+        /// The <see cref="JsonWriterOptions.SkipValidation"/> value for the writer instance is honored when using this method.
+        ///
+        /// The <see cref="JsonWriterOptions.Indented"/> and <see cref="JsonWriterOptions.Encoder"/> values for the writer instance are not applied when using this method.
+        /// </remarks>
         public void WriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation = false)
+        {
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
+            TranscodeAndWriteRawValue(json, skipInputValidation);
+        }
+
+        /// <summary>
+        /// Writes the input as JSON content. It is expected that the input content is a single complete JSON value.
+        /// </summary>
+        /// <param name="utf8Json">The raw JSON content to write.</param>
+        /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
+        /// <exception cref="JsonException">Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input is not  RFC 8259-compliant.</exception>
+        /// <remarks>
+        /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
+        /// being written, and/or the overall payload being written to the writer instance being invalid.
+        ///
+        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails.
+        ///
+        /// The <see cref="JsonWriterOptions.SkipValidation"/> value for the writer instance is honored when using this method.
+        ///
+        /// The <see cref="JsonWriterOptions.Indented"/> and <see cref="JsonWriterOptions.Encoder"/> values for the writer instance are not applied when using this method.
+        /// </remarks>
+        public void WriteRawValue(ReadOnlySpan<byte> utf8Json, bool skipInputValidation = false)
+        {
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
+            WriteRawValueInternal(utf8Json, skipInputValidation);
+        }
+
+        private void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
         {
             byte[]? tempArray = null;
 
@@ -55,33 +122,40 @@ namespace System.Text.Json
             }
         }
 
-        /// <summary>
-        /// Writes the input as JSON content.
-        /// </summary>
-        /// <param name="utf8Json">The raw JSON content to write.</param>
-        /// <param name="skipInputValidation">Whether to skip validation of the input JSON content.</param>
-        public void WriteRawValue(ReadOnlySpan<byte> utf8Json, bool skipInputValidation = false)
+        private void WriteRawValueInternal(ReadOnlySpan<byte> utf8Json, bool skipInputValidation)
         {
-            if (utf8Json.Length == 0)
+            int len = utf8Json.Length;
+
+            if (len == 0)
             {
                 ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
             }
-
-            if (!skipInputValidation)
+            else if (len > JsonConstants.MaxRawValueLength)
             {
-                Utf8JsonReader reader = new Utf8JsonReader(utf8Json);
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(len);
+            }
 
-                try
+            if (skipInputValidation)
+            {
+                // Treat all unvalidated raw JSON value writes as string. If the payload is valid, this approach does
+                // not affect structural validation since a string token is equivalent to a complete object, array,
+                // or other complete JSON tokens when considering structural validation on subsequent writer calls.
+                // If the payload is not valid, then we make no guarantees about the structural validation of the final payload.
+                _tokenType = JsonTokenType.String;
+            }
+            else
+            {
+                // Utilize reader validation.
+                Utf8JsonReader reader = new(utf8Json);
+                while (reader.Read())
                 {
-                    while (reader.Read());
-                }
-                catch (JsonReaderException ex)
-                {
-                    ThrowHelper.ThrowArgumentException(ex.Message);
+                    _tokenType = reader.TokenType;
                 }
             }
 
-            int maxRequired = utf8Json.Length + 1; // Optionally, 1 list separator
+            // TODO (https://github.com/dotnet/runtime/issues/29293):
+            // investigate writing this in chunks, rather than requesting one potentially long, contiguous buffer.
+            int maxRequired = len + 1; // Optionally, 1 list separator
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -96,12 +170,10 @@ namespace System.Text.Json
             }
 
             utf8Json.CopyTo(output.Slice(BytesPending));
-            BytesPending += utf8Json.Length;
+            BytesPending += len;
+
 
             SetFlagToAddListSeparatorBeforeNextItem();
-
-            // Treat all raw JSON value writes as string.
-            _tokenType = JsonTokenType.String;
         }
     }
 }

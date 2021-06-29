@@ -739,7 +739,7 @@ namespace System.Text.Json.Tests
         /// problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         /// succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         /// time the memory is accessed which triggers the full memory allocation.
-        /// Also see <see cref="Utf8JsonWriterTests.WriteLargeRawJsonToStreamWithoutFlushing"/>
+        /// Also see <see cref="WriteRawLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(nameof(IsX64))]
