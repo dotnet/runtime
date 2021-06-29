@@ -82,11 +82,36 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot("non_existent_path")
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .EnvironmentVariable(
+                    Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                    sharedTestState.InstallLocation)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
+                // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
                 .And.HaveStdErrContaining("Using global installation location")
                 .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void EnvironmentVariable_DotnetRooPathExistsButHasNoHost()
+        {
+            var fixture = sharedTestState.PortableAppFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(fixture.TestProject.ProjectDirectory)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .EnvironmentVariable(
+                    Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                    sharedTestState.InstallLocation)
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT=[{fixture.TestProject.ProjectDirectory}] as runtime location.")
+                // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
+                .And.HaveStdErrContaining("A fatal error occurred. The required library hostfxr.dll could not be found.");
         }
 
         [Fact]
@@ -191,6 +216,7 @@ namespace HostActivation.Tests
 
                 PortableAppFixture = fixture;
                 BaseDirectory = Path.GetDirectoryName(PortableAppFixture.SdkDotnet.GreatestVersionHostFxrFilePath);
+                InstallLocation = fixture.BuiltDotnet.BinPath;
             }
 
             public void Dispose()
