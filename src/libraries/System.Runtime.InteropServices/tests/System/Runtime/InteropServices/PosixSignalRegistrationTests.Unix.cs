@@ -158,8 +158,7 @@ namespace System.Tests
         public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
         {
             // Mono doesn't restore and call SIG_DFL on SIGQUIT.
-            bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
-            if (isMono && signal ==  PosixSignal.SIGQUIT && cancel == false)
+            if (PlatformDetection.IsMonoRuntime && signal ==  PosixSignal.SIGQUIT && cancel == false)
             {
                 expectedExitCode = 0;
             }
