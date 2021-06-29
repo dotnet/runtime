@@ -43,7 +43,7 @@
 
   <Target Name="RestorePackage">
     <PropertyGroup>
-      <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration)</_ConfigurationProperties>
+      <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">"$(DotNetTool)" restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
