@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -21,6 +22,8 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 			B.SameContext ();
 			B.Broken ();
 			B.Conditional ();
+
+			TestRequiresInPreserveDependency ();
 		}
 
 		[KeptMember (".ctor()")]
@@ -95,6 +98,20 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 			{
 				Name = name;
 			}
+		}
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeInPreserveDependency--")]
+		static void RequiresUnreferencedCodeInPreserveDependency ()
+		{
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeInPreserveDependency--")]
+		[PreserveDependency ("RequiresUnreferencedCodeInPreserveDependency")]
+		static void TestRequiresInPreserveDependency ()
+		{
 		}
 	}
 

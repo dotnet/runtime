@@ -89,7 +89,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 			void MethodInBaseInterface ();
 		}
 
-		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--")]
 		public interface IDerivedInterface : IBaseInterface
 		{
 			[RequiresUnreferencedCode ("Message for --IDerivedInterface.MethodInDerivedInterface--")]

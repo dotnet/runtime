@@ -309,6 +309,10 @@ namespace Mono.Linker.Steps
 
 		internal void MarkEntireType (TypeDefinition type, bool includeBaseAndInterfaceTypes, in DependencyInfo reason)
 		{
+			// Prevent cases where there's nothing on the stack (can happen when marking entire assemblies)
+			// In which case we would generate warnings with no source (hard to debug)
+			using var _ = _scopeStack.CurrentScope.Origin.MemberDefinition == null ? _scopeStack.PushScope (new MessageOrigin (type)) : null;
+
 			MarkEntireTypeInternal (type, includeBaseAndInterfaceTypes, reason);
 		}
 
@@ -325,17 +329,19 @@ namespace Mono.Linker.Steps
 
 			_entireTypesMarked[type] = includeBaseAndInterfaceTypes;
 
+			bool isDynamicDependencyReason = reason.Kind == DependencyKind.DynamicallyAccessedMember || reason.Kind == DependencyKind.DynamicDependency;
+
 			if (type.HasNestedTypes) {
 				foreach (TypeDefinition nested in type.NestedTypes)
-					MarkEntireTypeInternal (nested, includeBaseAndInterfaceTypes, new DependencyInfo (DependencyKind.NestedType, type));
+					MarkEntireTypeInternal (nested, includeBaseAndInterfaceTypes, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.NestedType, type));
 			}
 
 			Annotations.Mark (type, reason);
 			var baseTypeDefinition = _context.Resolve (type.BaseType);
 			if (includeBaseAndInterfaceTypes && baseTypeDefinition != null) {
-				MarkEntireTypeInternal (baseTypeDefinition, true, new DependencyInfo (DependencyKind.BaseType, type));
+				MarkEntireTypeInternal (baseTypeDefinition, true, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.BaseType, type));
 			}
-			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
+			MarkCustomAttributes (type, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.CustomAttribute, type));
 			MarkTypeSpecialCustomAttributes (type);
 
 			if (type.HasInterfaces) {
@@ -352,27 +358,26 @@ namespace Mono.Linker.Steps
 
 			if (type.HasFields) {
 				foreach (FieldDefinition field in type.Fields) {
-					MarkField (field, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkField (field, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
 				}
 			}
 
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
 					Annotations.SetAction (method, MethodAction.ForceParse);
-					DependencyKind dependencyKind = (reason.Kind == DependencyKind.DynamicallyAccessedMember || reason.Kind == DependencyKind.DynamicDependency) ? reason.Kind : DependencyKind.MemberOfType;
-					MarkMethod (method, new DependencyInfo (dependencyKind, type));
+					MarkMethod (method, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
 				}
 			}
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
-					MarkProperty (property, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkProperty (property, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
 				}
 			}
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEvent (ev, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkEvent (ev, new DependencyInfo (isDynamicDependencyReason ? reason.Kind : DependencyKind.MemberOfType, type));
 				}
 			}
 		}
@@ -938,21 +943,21 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			MarkMembers (type, members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute));
+			MarkMembersVisibleToReflection (type, members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute));
 		}
 
-		void MarkMembers (TypeDefinition typeDefinition, IEnumerable<IMetadataTokenProvider> members, in DependencyInfo reason)
+		void MarkMembersVisibleToReflection (TypeDefinition typeDefinition, IEnumerable<IMetadataTokenProvider> members, in DependencyInfo reason)
 		{
 			foreach (var member in members) {
 				switch (member) {
 				case TypeDefinition type:
-					MarkType (type, reason);
+					MarkTypeVisibleToReflection (type, type, reason);
 					break;
 				case MethodDefinition method:
-					MarkMethod (method, reason);
+					MarkMethodVisibleToReflection (method, reason);
 					break;
 				case FieldDefinition field:
-					MarkField (field, reason);
+					MarkFieldVisibleToReflection (field, reason);
 					break;
 				case PropertyDefinition property:
 					MarkPropertyVisibleToReflection (property, reason);
@@ -969,7 +974,6 @@ namespace Mono.Linker.Steps
 				}
 			}
 		}
-
 
 		protected virtual bool IsUserDependencyMarker (TypeReference type)
 		{
@@ -2657,6 +2661,7 @@ namespace Mono.Linker.Steps
 
 		protected virtual MethodDefinition MarkMethod (MethodReference reference, DependencyInfo reason)
 		{
+			DependencyKind originalReasonKind = reason.Kind;
 			(reference, reason) = GetOriginalMethod (reference, reason);
 
 			if (reference.DeclaringType is ArrayType arrayType) {
@@ -2685,11 +2690,9 @@ namespace Mono.Linker.Steps
 
 			EnqueueMethod (method, reason, _scopeStack.CurrentScope);
 
-			// All override methods should have the same annotations as their base methods (else we will produce warning IL2046.)
-			// When marking override methods with RequiresUnreferencedCode on a type annotated with DynamicallyAccessedMembers,
-			// we should only issue a warning for the base method.
-			if (reason.Kind != DependencyKind.DynamicallyAccessedMember || !method.IsVirtual || Annotations.GetBaseMethods (method) == null)
-				ProcessRequiresUnreferencedCode (method, reason.Kind);
+			// Use the original reason as it's important to correctly generate warnings
+			// the updated reason is only useful for better tracking of dependencies.
+			ProcessRequiresUnreferencedCode (method, originalReasonKind);
 
 			return method;
 		}
@@ -2697,28 +2700,74 @@ namespace Mono.Linker.Steps
 		void ProcessRequiresUnreferencedCode (MethodDefinition method, DependencyKind dependencyKind)
 		{
 			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.CctorForType:
-			case DependencyKind.DynamicallyAccessedMember:
-			case DependencyKind.DynamicDependency:
-			case DependencyKind.ElementMethod:
-			case DependencyKind.Ldftn:
-			case DependencyKind.Ldvirtftn:
-			case DependencyKind.TriggersCctorForCalledMethod:
-			case DependencyKind.AttributeConstructor:
-				break;
-
 			// DirectCall, VirtualCall and NewObj are handled by ReflectionMethodBodyScanner
 			// This is necessary since the ReflectionMethodBodyScanner has intrinsic handling for some
-			// of the methods annotated with the attribute (for example Type.GetType)
-			// and it know when it's OK and when it needs a warning. In this place we don't know
+			// of the annotated methods annotated (for example Type.GetType)
+			// and it knows when it's OK and when it needs a warning. In this place we don't know
 			// and would have to warn every time.
+			case DependencyKind.DirectCall:
+			case DependencyKind.VirtualCall:
+			case DependencyKind.Newobj:
+
+			// Special case (like object.Equals or similar) - avoid checking anything
+			case DependencyKind.MethodForSpecialType:
+
+			// Marked through things like descriptor - don't want to warn as it's intentional choice
+			case DependencyKind.AlreadyMarked:
+			case DependencyKind.TypePreserve:
+			case DependencyKind.PreservedMethod:
+
+			// Marking the base method only because it's a base method should not produce a warning
+			// we should produce warning only if there's some other reference. This is because all methods
+			// in the hierarchy should have the RUC (if base as it), and so something must have
+			// started it.
+			// Similarly for overrides.
+			case DependencyKind.BaseMethod:
+			case DependencyKind.MethodImplOverride:
+			case DependencyKind.Override:
+			case DependencyKind.OverrideOnInstantiatedType:
+
+			// These are used for virtual methods which are kept because the base method is in an assembly
+			// which is "copy" (or "skip"). We don't want to report warnings for methods which were kept
+			// only because of "copy" action (or similar), so ignore it here. If the method is referenced
+			// directly somewhere else (either the derived or base) the warning would be reported.
+			case DependencyKind.MethodForInstantiatedType:
+			case DependencyKind.VirtualNeededDueToPreservedScope:
+
+			// Used when marked because the member must be kept for the type to function (for example explicit layout,
+			// or because the type is included as a whole for some other reasons). This alone should not act as a base
+			// for raising a warning.
+			// Note that "include whole type" due to dynamic access is handled specifically in MarkEntireType
+			// and the DependencyKind in that case will be one of the dynamic acccess kinds and not MemberOfType
+			// since in those cases the warnings are desirable (potential access through reflection).
+			case DependencyKind.MemberOfType:
+
+			// We should not be generating code which would produce warnings
+			case DependencyKind.UnreachableBodyRequirement:
+
+			case DependencyKind.Custom:
+			case DependencyKind.Unspecified:
+				return;
 
 			default:
-				return;
+				// DirectCall, VirtualCall and NewObj are handled by ReflectionMethodBodyScanner
+				// This is necessary since the ReflectionMethodBodyScanner has intrinsic handling for some
+				// of the annotated methods annotated (for example Type.GetType)
+				// and it knows when it's OK and when it needs a warning. In this place we don't know
+				// and would have to warn every time
+
+				// All other cases have the potential of us missing a warning if we don't report it
+				// It is possible that in some cases we may report the same warning twice, but that's better than not reporting it.
+				break;
 			}
 
-			CheckAndReportRequiresUnreferencedCode (method);
+			// All override methods should have the same annotations as their base methods (else we will produce warning IL2046.)
+			// When marking override methods with RequiresUnreferencedCode on a type annotated with DynamicallyAccessedMembers,
+			// we should only issue a warning for the base method.
+			if (dependencyKind != DependencyKind.DynamicallyAccessedMember ||
+				!method.IsVirtual ||
+				Annotations.GetBaseMethods (method) == null)
+				CheckAndReportRequiresUnreferencedCode (method);
 		}
 
 		internal bool ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ()
