@@ -15,22 +15,14 @@ class Program
         // Ensure the internal GlobalizationMode class is trimmed correctly
         Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
         const BindingFlags allStatics = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
-        bool predefinedCulturesOnly = (bool) globalizationMode.GetProperty("PredefinedCulturesOnly", allStatics).GetValue(null);
 
         try
         {
             CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
-            if (predefinedCulturesOnly)
-            {
-                return -1; // we expect new CultureInfo("tr-TR") to throw.
-            }
+            return -1; // we expect new CultureInfo("tr-TR") to throw.
         }
         catch (CultureNotFoundException)
         {
-            if (!predefinedCulturesOnly)
-            {
-                return -2; // It is not expected to have new CultureInfo("tr-TR") to throw.
-            }
         }
 
         if ("i".ToUpper() != "I")
