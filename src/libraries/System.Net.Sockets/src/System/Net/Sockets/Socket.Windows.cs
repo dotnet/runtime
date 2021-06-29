@@ -14,6 +14,7 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        private static readonly bool s_osSupportsReuseUnicastPort = IsReuseUnicastPortSupported();
         private static CachedSerializedEndPoint? s_cachedAnyEndPoint;
         private static CachedSerializedEndPoint? s_cachedAnyV6EndPoint;
         private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
@@ -235,6 +236,13 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, csep.IPEndPoint);
 
+            // By enabling SO_REUSE_UNICASTPORT, we defer actual port allocation until the ConnectEx call,
+            // enabling to bind to ports from the Windows auto-reuse port range, if configured by an admin.
+            if (_socketType == SocketType.Stream && _protocolType == ProtocolType.Tcp && s_osSupportsReuseUnicastPort)
+            {
+                SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, true);
+            }
+
             DoBind(csep.IPEndPoint, csep.SocketAddress);
         }
 
@@ -411,6 +419,30 @@ namespace System.Net.Sockets
             // So, don't try to enable skipping the completion port on success in this case.
             bool trySkipCompletionPortOnSuccess = !(CompletionPortHelper.PlatformHasUdpIssue && _protocolType == ProtocolType.Udp);
             return _handle.GetOrAllocateThreadPoolBoundHandle(trySkipCompletionPortOnSuccess);
+        }
+
+        private static bool IsReuseUnicastPortSupported()
+        {
+            Interop.Winsock.EnsureInitialized();
+
+            try
+            {
+                IntPtr socket = Interop.Winsock.WSASocketW(AddressFamily.InterNetwork, SocketType.Stream, 0, IntPtr.Zero, 0, (int)Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
+                using var handle = new SafeSocketHandle(socket, ownsHandle: true);
+                if (handle.IsInvalid)
+                    return false;
+
+                int optionValue = 1;
+                SocketError error = Interop.Winsock.setsockopt(
+                    handle,
+                    SocketOptionLevel.Socket,
+                    SocketOptionName.ReuseUnicastPort,
+                    ref optionValue,
+                    sizeof(int));
+                return error == SocketError.Success;
+            }
+            catch { }
+            return false;
         }
     }
 }
