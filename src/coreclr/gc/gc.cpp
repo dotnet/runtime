@@ -5674,9 +5674,17 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
         heap_segment_heap (res) = hp;
 #endif //MULTIPLE_HEAPS
-        res->flags |= (gen_number == poh_generation) ?
-                                        heap_segment_flags_poh :
-                                        heap_segment_flags_loh;
+
+        size_t flags = (gen_number == poh_generation) ?
+            heap_segment_flags_poh :
+            heap_segment_flags_loh;
+
+#ifdef USE_REGIONS
+        // in the regions case, flags are set by get_new_region
+        assert ((res->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == flags);
+#else //USE_REGIONS
+        res->flags |= flags;
+#endif //USE_REGIONS
 
         FIRE_EVENT(GCCreateSegment_V1,
             heap_segment_mem(res),
@@ -28284,6 +28292,21 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
 
     if (new_region)
     {
+        switch (gen_number)
+        {
+        default:
+            assert ((new_region->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == 0);
+            break;
+
+        case    loh_generation:
+            new_region->flags |= heap_segment_flags_loh;
+            break;
+
+        case    poh_generation:
+            new_region->flags |= heap_segment_flags_poh;
+            break;
+        }
+
         generation* gen = generation_of (gen_number);
         heap_segment_next (generation_tail_region (gen)) = new_region;
         generation_tail_region (gen) = new_region;

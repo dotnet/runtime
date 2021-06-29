@@ -166,6 +166,8 @@
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.7.21321.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <!-- MsQuic -->
+    <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21328.2</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21321.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21321.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>

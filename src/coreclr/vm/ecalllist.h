@@ -61,12 +61,13 @@
 
 
 FCFuncStart(gDependentHandleFuncs)
-    FCFuncElement("nInitialize",             DependentHandle::nInitialize)
-    FCFuncElement("nGetPrimary",             DependentHandle::nGetPrimary)
-    FCFuncElement("nGetPrimaryAndSecondary", DependentHandle::nGetPrimaryAndSecondary)
-    FCFuncElement("nFree",                   DependentHandle::nFree)
-    FCFuncElement("nSetPrimary",             DependentHandle::nSetPrimary)
-    FCFuncElement("nSetSecondary",           DependentHandle::nSetSecondary)
+    FCFuncElement("InternalInitialize",            DependentHandle::InternalInitialize)
+    FCFuncElement("InternalGetTarget",             DependentHandle::InternalGetTarget)
+    FCFuncElement("InternalGetDependent",          DependentHandle::InternalGetDependent)
+    FCFuncElement("InternalGetTargetAndDependent", DependentHandle::InternalGetTargetAndDependent)
+    FCFuncElement("InternalSetTargetToNull",       DependentHandle::InternalSetTargetToNull)
+    FCFuncElement("InternalSetDependent",          DependentHandle::InternalSetDependent)
+    FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
 FCFuncEnd()
 
 
@@ -1139,7 +1140,7 @@ FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
 FCClassElement("Delegate", "System", gDelegateFuncs)
-FCClassElement("DependentHandle", "System.Runtime.CompilerServices", gDependentHandleFuncs)
+FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
 FCClassElement("Enum", "System", gEnumFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)
 #if defined(FEATURE_PERFTRACING)

@@ -5787,9 +5787,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	mono_error_set_pending_exception (error);
 }
 
-gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
+gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check)
 {
-	return mono_metadata_update_available () && mono_metadata_update_enabled (NULL);
+	// if just_component_check is true, we only care whether the hot_reload component is enabled,
+	// not whether the environment is appropriately setup to apply updates.
+	return mono_metadata_update_available () && (just_component_check || mono_metadata_update_enabled (NULL));
 }
 
 MonoBoolean

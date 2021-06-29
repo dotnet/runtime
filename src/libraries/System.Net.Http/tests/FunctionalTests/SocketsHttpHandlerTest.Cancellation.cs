@@ -48,6 +48,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_ConnectCallbackTimesOut_Throws()
         {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var handler = CreateHttpClientHandler())

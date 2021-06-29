@@ -49,17 +49,17 @@ namespace System.Reflection.Metadata
 
         internal static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
-        public static bool IsSupported { get; } = ApplyUpdateEnabled() != 0;
+        public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
         private static Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(() => InitializeApplyUpdateCapabilities());
 
         private static string InitializeApplyUpdateCapabilities()
         {
-            return ApplyUpdateEnabled() != 0 ? "Baseline" : string.Empty ;
+            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? "Baseline" : string.Empty ;
         }
 
         [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern int ApplyUpdateEnabled ();
+        private static extern int ApplyUpdateEnabled (int justComponentCheck);
 
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static unsafe extern void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);

@@ -3062,6 +3062,23 @@ is_simd_supported (MonoCompile *cfg)
 	return TRUE;
 }
 
+/* Determine how an rgctx is passed to a method */
+MonoRgctxAccess
+mini_get_rgctx_access_for_method (MonoMethod *method)
+{
+	/* gshared dim methods use an mrgctx */
+	if (mini_method_is_default_method (method))
+		return MONO_RGCTX_ACCESS_MRGCTX;
+
+	if (mono_method_get_context (method)->method_inst)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+
+	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
+		return MONO_RGCTX_ACCESS_VTABLE;
+
+	return MONO_RGCTX_ACCESS_THIS;
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3207,6 +3224,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->interp_entry_only = interp_entry_only;
 	if (try_generic_shared)
 		cfg->gshared = TRUE;
+	if (cfg->gshared)
+		cfg->rgctx_access = mini_get_rgctx_access_for_method (cfg->method);
 	cfg->compile_llvm = try_llvm;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	if (cfg->compile_aot)
@@ -3308,7 +3327,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (COMPILE_LLVM (cfg)) {
 			mono_llvm_check_method_supported (cfg);
 			if (cfg->disable_llvm) {
-				if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
+				if (cfg->verbose_level > 0) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
 					printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 					//g_free (nm);
