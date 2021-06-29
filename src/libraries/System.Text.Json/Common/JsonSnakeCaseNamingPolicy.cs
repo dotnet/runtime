@@ -19,7 +19,7 @@ namespace System.Text.Json
 
             var result = new ValueStringBuilder(2 * name.Length);
 
-            bool underlinedAtEndOfWord = false;
+            bool wroteUnderscorePreviously = false;
             for (int x = 0; x < name.Length; x++)
             {
                 var current = name[x];
@@ -45,7 +45,7 @@ namespace System.Text.Json
                             {
                                 // same word
                                 result.Append(char.ToLowerInvariant(current));
-                                underlinedAtEndOfWord = false;
+                                wroteUnderscorePreviously = false;
                                 break;
                             }
 
@@ -55,7 +55,7 @@ namespace System.Text.Json
                                 // end of word
                                 result.Append(char.ToLowerInvariant(current));
                                 result.Append('_');
-                                underlinedAtEndOfWord = true;
+                                wroteUnderscorePreviously = true;
                                 break;
                             }
 
@@ -64,12 +64,12 @@ namespace System.Text.Json
                             case (false,  true, false): // aAa
                             {
                                 // beginning of word
-                                if (!underlinedAtEndOfWord)
+                                if (!wroteUnderscorePreviously)
                                 {
                                     result.Append('_');
                                 }
                                 result.Append(char.ToLowerInvariant(current));
-                                underlinedAtEndOfWord = false;
+                                wroteUnderscorePreviously = false;
                                 break;
                             }
                         }
@@ -78,33 +78,37 @@ namespace System.Text.Json
                     {
                         // beginning or end of text
                         result.Append(char.ToLowerInvariant(current));
-                        underlinedAtEndOfWord = false;
+                        wroteUnderscorePreviously = false;
                     }
                 }
                 else if (char.IsLetter(current))
                 {
                     // text at the beginning or the end of the string
                     result.Append(char.ToLowerInvariant(current));
+                    wroteUnderscorePreviously = false;
                 }
                 else if (char.IsNumber(current))
                 {
                     // a number at any point in the string
-                    if (x > 0)
+                    if (x > 0 && !wroteUnderscorePreviously)
                     {
                         result.Append('_');
                     }
 
                     result.Append(current);
+                    wroteUnderscorePreviously = false;
 
                     if (x < name.Length - 1)
                     {
                         result.Append('_');
+                        wroteUnderscorePreviously = true;
                     }
                 }
-                else
+                else if (!wroteUnderscorePreviously)
                 {
                     // any punctuation at any point in the string
                     result.Append('_');
+                    wroteUnderscorePreviously = true;
                 }
             }
 
