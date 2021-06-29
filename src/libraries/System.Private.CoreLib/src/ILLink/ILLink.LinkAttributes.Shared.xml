@@ -93,9 +93,6 @@
     <type fullname="System.Runtime.InteropServices.ClassInterfaceAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.InteropServices.CoClassAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Runtime.InteropServices.ComDefaultInterfaceAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -115,9 +112,6 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.InteropServices.ProgIdAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.InteropServices.TypeIdentifierAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>
