@@ -237,7 +237,8 @@ mono_wasm_breakpoint_hit (void)
 static gboolean
 write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* variableValue)
 {
-	char* endptr;
+	char* endptr = NULL;
+	const char *variableValueEnd = variableValue + strlen(variableValue);
 	errno = 0;
 	buffer_add_byte (buf, type);
 	switch (type) {
@@ -256,7 +257,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 			break;
 		case MONO_TYPE_I1: {
 			intmax_t val = strtoimax (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			if (val >= -128 && val <= 127)
 				buffer_add_int (buf, val);
@@ -266,7 +267,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 		}
 		case MONO_TYPE_U1: {
 			intmax_t val = strtoimax (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			if (val >= 0 && val <= 255)
 				buffer_add_int (buf, val);
@@ -276,7 +277,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 		}
 		case MONO_TYPE_I2: {
 			intmax_t val = strtoimax (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			if (val >= -32768 && val <= 32767)
 				buffer_add_int (buf, val);
@@ -286,7 +287,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 		}
 		case MONO_TYPE_U2: {
 			intmax_t val = strtoimax (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			if (val >= 0 && val <= 65535)
 				buffer_add_int (buf, val);
@@ -296,7 +297,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 		}
 		case MONO_TYPE_I4: {
 			intmax_t val = strtoimax (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			if (val >= -2147483648 && val <= 2147483647)
 				buffer_add_int (buf, val);
@@ -306,7 +307,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 		}
 		case MONO_TYPE_U4: {
 			intmax_t val = strtoimax (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			if (val >= 0 && val <= 4294967295)
 				buffer_add_int (buf, val);
@@ -316,28 +317,28 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 		}
 		case MONO_TYPE_I8: {
 			long long val = strtoll (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			buffer_add_long (buf, val);
 			break;
 		}
 		case MONO_TYPE_U8: {
 			long long val = strtoll (variableValue, &endptr, 10);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			buffer_add_long (buf, val);
 			break;
 		}
 		case MONO_TYPE_R4: {
 			gfloat val = strtof (variableValue, &endptr);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			buffer_add_int (buf, *((gint32*)(&val)));
 			break;
 		}
 		case MONO_TYPE_R8: {
 			gdouble val = strtof (variableValue, &endptr);
-			if (errno != 0)
+			if (errno != 0 || variableValue == endptr || endptr != variableValueEnd)
 				return FALSE;
 			buffer_add_long (buf, *((guint64*)(&val)));
 			break;

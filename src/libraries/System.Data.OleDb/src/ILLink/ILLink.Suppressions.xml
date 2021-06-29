@@ -5,7 +5,25 @@
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Data.Common.UnsafeNativeMethods.GetErrorInfo(System.Int32,System.Data.Common.UnsafeNativeMethods.IErrorInfo@)</property>
+      <property name="Target">M:System.Data.OleDb.DBPropSet.SetLastErrorInfo(System.Data.OleDb.OleDbHResult)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.OleDb.OleDbConnection.ProcessResults(System.Data.OleDb.OleDbHResult,System.Data.OleDb.OleDbConnection,System.Object)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.OleDb.OleDbDataAdapter.FillClose(System.Boolean,System.Object)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.OleDb.OleDbDataAdapter.FillFromADODB(System.Object,System.Object,System.String,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

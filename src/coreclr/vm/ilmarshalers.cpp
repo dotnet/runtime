@@ -1906,11 +1906,8 @@ void ILFixedWSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmi
     STANDARD_VM_CONTRACT;
 
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitDUP();
-    pslILEmit->EmitCALL(METHOD__STRING__WCSLEN, 1, 1);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
-
-    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR, 1);
+    pslILEmit->EmitLDC(m_pargs->fs.fixedStringLength);
+    pslILEmit->EmitCALL(METHOD__FIXEDWSTRMARSHALER__CONVERT_TO_MANAGED, 2, 1);
     EmitStoreManagedValue(pslILEmit);
 }
 

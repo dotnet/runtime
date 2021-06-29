@@ -1226,7 +1226,7 @@ namespace System.Net.Http.Functional.Tests
                         Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
                             await connection2.ReadRequestDataAsync();
-                            await connection2.SendResponseAsync(HttpStatusCode.OK, content: null, isFinal : false);
+                            await connection2.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
                             await unblockServers.Task;
                         });
 

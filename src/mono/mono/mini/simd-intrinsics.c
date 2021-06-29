@@ -1428,13 +1428,31 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_get_IsSupported},
 };
 
+static const SimdIntrinsic rdm_methods [] = {
+	{SN_MultiplyRoundedDoublingAndAddSaturateHigh, OP_ARM64_SQRDMLAH},
+	{SN_MultiplyRoundedDoublingAndAddSaturateHighScalar, OP_ARM64_SQRDMLAH_SCALAR},
+	{SN_MultiplyRoundedDoublingAndSubtractSaturateHigh, OP_ARM64_SQRDMLSH},
+	{SN_MultiplyRoundedDoublingAndSubtractSaturateHighScalar, OP_ARM64_SQRDMLSH_SCALAR},
+	{SN_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh},
+	{SN_MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh},
+	{SN_MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh},
+	{SN_MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh},
+	{SN_get_IsSupported},
+};
+
+static const SimdIntrinsic dp_methods [] = {
+	{SN_DotProduct, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_SDOT, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_UDOT},
+	{SN_DotProductBySelectedQuadruplet},
+	{SN_get_IsSupported},
+};
+
 static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
 	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods) },
 	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
-	{ "Dp", MONO_CPU_ARM64_DP, unsupported, sizeof (unsupported) },
-	{ "Rdm", MONO_CPU_ARM64_RDM, unsupported, sizeof (unsupported) },
+	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods) },
+	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
 };
@@ -1735,6 +1753,51 @@ emit_arm64_intrinsics (
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_AARCH64_PMULL64, 0, fsig, args);
 		case SN_PolynomialMultiplyWideningUpper:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_AARCH64_PMULL64, 1, fsig, args);
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	if (feature == MONO_CPU_ARM64_RDM) {
+		switch (id) {
+		case SN_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh:
+		case SN_MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh:
+		case SN_MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh:
+		case SN_MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
+			int opcode = 0;
+			switch (id) {
+			case SN_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh: opcode = OP_ARM64_SQRDMLAH_BYSCALAR; break;
+			case SN_MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh: opcode = OP_ARM64_SQRDMLSH_BYSCALAR; break;
+			case SN_MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh: opcode = OP_ARM64_SQRDMLAH_SCALAR; break;
+			case SN_MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh: opcode = OP_ARM64_SQRDMLSH_SCALAR; break;
+			}
+			MonoInst *scalar = emit_simd_ins (cfg, ret_klass, OP_ARM64_SELECT_SCALAR, args [2]->dreg, args [3]->dreg);
+			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, args [1]->dreg);
+			ret->inst_c1 = arg0_type;
+			ret->sreg3 = scalar->dreg;
+			return ret;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	if (feature == MONO_CPU_ARM64_DP) {
+		switch (id) {
+		case SN_DotProductBySelectedQuadruplet: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
+			MonoClass *arg_klass = mono_class_from_mono_type_internal (fsig->params [1]);
+			MonoClass *quad_klass = mono_class_from_mono_type_internal (fsig->params [2]);
+			gboolean is_unsigned = type_is_unsigned (fsig->ret);
+			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UDOT : INTRINS_AARCH64_ADV_SIMD_SDOT;
+			MonoInst *quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
+			quad->data.op [1].klass = quad_klass;
+			MonoInst *ret = emit_simd_ins (cfg, ret_klass, OP_XOP_OVR_X_X_X_X, args [0]->dreg, args [1]->dreg);
+			ret->sreg3 = quad->dreg;
+			ret->inst_c0 = iid;
+			return ret;
+		}
 		default:
 			g_assert_not_reached ();
 		}

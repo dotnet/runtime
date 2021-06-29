@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics;
-using System.Threading;
 
 namespace System.Text.Json.Serialization
 {
-    internal struct ReadAsyncBufferState : IDisposable
+    internal struct ReadBufferState : IDisposable
     {
         public byte[] Buffer;
         public int BytesInBuffer;
@@ -15,7 +13,7 @@ namespace System.Text.Json.Serialization
         public bool IsFirstIteration;
         public bool IsFinalBlock;
 
-        public ReadAsyncBufferState(int defaultBufferSize)
+        public ReadBufferState(int defaultBufferSize)
         {
             Buffer = ArrayPool<byte>.Shared.Rent(Math.Max(defaultBufferSize, JsonConstants.Utf8Bom.Length));
             BytesInBuffer = ClearMax = 0;
