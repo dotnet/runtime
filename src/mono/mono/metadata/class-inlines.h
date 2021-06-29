@@ -218,6 +218,18 @@ m_method_is_virtual (MonoMethod *method)
 }
 
 static inline gboolean
+m_method_is_abstract (MonoMethod *method)
+{
+        return (method->flags & METHOD_ATTRIBUTE_ABSTRACT) != 0;
+}
+
+static inline gboolean
+m_method_is_final (MonoMethod *method)
+{
+        return (method->flags & METHOD_ATTRIBUTE_FINAL) != 0;
+}
+
+static inline gboolean
 m_method_is_icall (MonoMethod *method)
 {
 	return (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) != 0;

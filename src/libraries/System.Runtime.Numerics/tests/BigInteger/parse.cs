@@ -105,6 +105,19 @@ namespace System.Numerics.Tests
             Assert.Equal(0, result);
         }
 
+        [Fact]
+        public void Parse_Hex32Bits()
+        {
+            // Regression test for: https://github.com/dotnet/runtime/issues/54251
+            BigInteger result;
+
+            Assert.True(BigInteger.TryParse("80000000", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(int.MinValue, result);
+
+            Assert.True(BigInteger.TryParse("080000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0x80000001u, result);
+        }
+
         private static void RunFormatProviderParseStrings()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();

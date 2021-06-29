@@ -173,6 +173,7 @@ mono_error_set_type_load_class (MonoError *error, MonoClass *klass, const char *
 void
 mono_error_vset_type_load_class (MonoError *error, MonoClass *klass, const char *msg_format, va_list args);
 
+MONO_COMPONENT_API
 void
 mono_error_set_type_load_name (MonoError *error, const char *type_name, const char *assembly_name, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(4,5);
 
@@ -209,6 +210,7 @@ mono_error_set_not_supported (MonoError *error, const char *msg_format, ...) MON
 void 
 mono_error_set_ambiguous_implementation (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
+MONO_COMPONENT_API
 void
 mono_error_set_invalid_operation (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 

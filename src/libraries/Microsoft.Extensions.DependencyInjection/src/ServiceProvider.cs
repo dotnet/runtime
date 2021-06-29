@@ -36,10 +36,13 @@ namespace Microsoft.Extensions.DependencyInjection
             _createServiceAccessor = CreateServiceAccessor;
             _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
 
-            Root = new ServiceProviderEngineScope(this);
+            Root = new ServiceProviderEngineScope(this, isRootScope: true);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
+            // The list of built in services that aren't part of the list of service descriptors
+            // keep this in sync with CallSiteFactory.IsService
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
-            CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(Root));
+            CallSiteFactory.Add(typeof(IServiceScopeFactory), new ConstantCallSite(typeof(IServiceScopeFactory), Root));
+            CallSiteFactory.Add(typeof(IServiceProviderIsService), new ConstantCallSite(typeof(IServiceProviderIsService), CallSiteFactory));
 
             if (options.ValidateScopes)
             {
@@ -111,7 +114,9 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
-            return realizedService.Invoke(serviceProviderEngineScope);
+            var result = realizedService.Invoke(serviceProviderEngineScope);
+            System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
+            return result;
         }
 
         private void ValidateService(ServiceDescriptor descriptor)
@@ -168,7 +173,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return new ServiceProviderEngineScope(this);
+            return new ServiceProviderEngineScope(this, isRootScope: false);
         }
 
         private ServiceProviderEngine GetEngine()

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -23,12 +24,14 @@ namespace ILCompiler
         private readonly bool _isInputBubble;
         private readonly ConcurrentDictionary<TypeDesc, CompilationUnitSet> _layoutCompilationUnits = new ConcurrentDictionary<TypeDesc, CompilationUnitSet>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeReferenceCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
         private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
+        private ModuleTokenResolver _tokenResolver = null;
 
         public ReadyToRunCompilationModuleGroupBase(
-            TypeSystemContext context,
+            CompilerTypeSystemContext context,
             bool isCompositeBuildMode,
             bool isInputBubble,
             IEnumerable<EcmaModule> compilationModuleSet,
@@ -45,6 +48,16 @@ namespace ILCompiler
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
+
+            _tokenResolver = new ModuleTokenResolver(this, context);
+        }
+
+        public ModuleTokenResolver Resolver => _tokenResolver;
+
+        public void AssociateTokenResolver(ModuleTokenResolver tokenResolver)
+        {
+            Debug.Assert(_tokenResolver == null);
+            _tokenResolver = tokenResolver;
         }
 
         public sealed override bool ContainsType(TypeDesc type)
@@ -292,6 +305,11 @@ namespace ILCompiler
                 _versionsWithTypeCache.GetOrAdd(typeDesc, ComputeTypeVersionsWithCode);
         }
 
+        public sealed override bool VersionsWithTypeReference(TypeDesc typeDesc)
+        {
+            return _versionsWithTypeReferenceCache.GetOrAdd(typeDesc, ComputeTypeReferenceVersionsWithCode);
+        }
+
 
         public sealed override bool VersionsWithMethodBody(MethodDesc method)
         {
@@ -353,22 +371,29 @@ namespace ILCompiler
 
             if (_typeRefsInCompilationModuleSet == null)
             {
-                _typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
-
-                foreach (var module in _compilationModuleSet)
+                lock(_compilationModuleSet)
                 {
-                    EcmaModule ecmaModule = (EcmaModule)module;
-                    foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
+                    if (_typeRefsInCompilationModuleSet == null)
                     {
-                        try
+                        var typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
+
+                        foreach (var module in _compilationModuleSet)
                         {
-                            TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
-                            if (!_typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                            EcmaModule ecmaModule = (EcmaModule)module;
+                            foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
                             {
-                                _typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                                try
+                                {
+                                    TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
+                                    if (!typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                                    {
+                                        typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                                    }
+                                }
+                                catch (TypeSystemException) { }
                             }
                         }
-                        catch (TypeSystemException) { }
+                        Volatile.Write(ref _typeRefsInCompilationModuleSet, typeRefsInCompilationModuleSet);
                     }
                 }
             }
@@ -399,6 +424,74 @@ namespace ILCompiler
             return ComputeInstantiationVersionsWithCode(type.Instantiation, type);
         }
 
+        private bool ComputeTypeReferenceVersionsWithCode(TypeDesc type)
+        {
+            // Type represented by simple element type
+            if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString)
+                return true;
+
+            if (VersionsWithType(type))
+                return true;
+
+            if (type.IsParameterizedType)
+            {
+                return VersionsWithTypeReference(type.GetParameterType());
+            }
+
+            if (type.IsFunctionPointer)
+            {
+                MethodSignature ptrSignature = ((FunctionPointerType)type).Signature;
+
+                if (!VersionsWithTypeReference(ptrSignature.ReturnType))
+                    return false;
+
+                for (int i = 0; i < ptrSignature.Length; i++)
+                {
+                    if (!VersionsWithTypeReference(ptrSignature[i]))
+                        return false;
+                }
+                if (ptrSignature.HasEmbeddedSignatureData)
+                {
+                    foreach (var embeddedSigData in ptrSignature.GetEmbeddedSignatureData())
+                    {
+                        if (embeddedSigData.type != null)
+                        {
+                            if (!VersionsWithTypeReference(embeddedSigData.type))
+                                return false;
+                        }
+                    }
+                }
+            }
+
+            if (type is EcmaType ecmaType)
+            {
+                return !_tokenResolver.GetModuleTokenForType(ecmaType, false).IsNull;
+            }
+
+            if (type.GetTypeDefinition() == type)
+            {
+                // Must not be an ECMA type, which are the only form of simple type which cannot reach here
+                return false;
+            }
+
+            if (type.HasInstantiation)
+            {
+                if (!VersionsWithTypeReference(type.GetTypeDefinition()))
+                    return false;
+
+                foreach (TypeDesc instParam in type.Instantiation)
+                {
+                    if (!VersionsWithTypeReference(instParam))
+                        return false;
+                }
+
+                return true;
+            }
+
+            Debug.Assert(false, "Unhandled form of type in VersionsWithTypeReference");
+            return false;
+        }
+
         private bool ComputeInstantiationVersionsWithCode(Instantiation inst, TypeSystemEntity entityWithInstantiation)
         {
             for (int iInstantiation = 0; iInstantiation < inst.Length; iInstantiation++)
@@ -407,7 +500,7 @@ namespace ILCompiler
 
                 if (!ComputeInstantiationTypeVersionsWithCode(this, instType))
                 {
-                    if (instType.IsPrimitive)
+                    if (instType.IsPrimitive || instType.IsObject || instType.IsString)
                     {
                         // Primitive type instantiations are only instantiated in the module of the generic defining type
                         // if the generic does not apply interface constraints to that type parameter, or if System.Private.CoreLib is part of the version bubble
@@ -423,8 +516,20 @@ namespace ILCompiler
                         }
 
                         GenericParameterDesc genericParam = (GenericParameterDesc)entityDefinitionInstantiation[iInstantiation];
-                        if (genericParam.HasReferenceTypeConstraint)
-                            return false;
+                        if (instType.IsPrimitive)
+                        {
+                            if (genericParam.HasReferenceTypeConstraint)
+                                return false;
+                        }
+                        else
+                        {
+                            Debug.Assert(instType.IsString || instType.IsObject);
+                            if (genericParam.HasNotNullableValueTypeConstraint)
+                                return false;
+
+                            if (instType.IsString && genericParam.HasDefaultConstructorConstraint)
+                                return false;
+                        }
 
                         // This checks to see if the type constraints list is empty
                         if (genericParam.TypeConstraints.GetEnumerator().MoveNext())

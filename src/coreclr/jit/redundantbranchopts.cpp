@@ -21,7 +21,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     bool madeChanges = false;
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Skip over any removed blocks.
         //
@@ -40,7 +40,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     // Reset visited flags, in case we set any.
     //
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
     }
@@ -311,7 +311,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     Statement* const lastStmt = block->lastStmt();
 
-    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    for (Statement* const stmt : block->NonPhiStatements())
     {
         GenTree* const tree = stmt->GetRootNode();
 
@@ -389,9 +389,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     BasicBlock* const trueTarget        = block->bbJumpDest;
     BasicBlock* const falseTarget       = block->bbNext;
 
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* const predBlock = pred->getBlock();
         numPreds++;
 
         // Treat switch preds as ambiguous for now.
@@ -510,10 +509,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // flow directly by changing their jump targets to the appropriate successor,
     // provided it's a permissable flow in our EH model.
     //
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BasicBlock* const predBlock = pred->getBlock();
-
         if (predBlock->bbJumpKind == BBJ_SWITCH)
         {
             // Skip over switch preds, they will continue to flow to block.
@@ -633,7 +630,7 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
         return true;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
     }

@@ -21,5 +21,8 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.NETCore.App" />
+    <FrameworkReference Update="Microsoft.NETCore.App"
+                        RuntimePackLabels="Mono"
+                        Condition="'$(UseMonoRuntime)' == 'true'" />
   </ItemGroup>
 </Project>

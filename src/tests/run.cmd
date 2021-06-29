@@ -26,8 +26,6 @@ set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
-set __DoCrossgen=
-set __CrossgenAltJit=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
 
@@ -50,13 +48,8 @@ if /i "%1" == "debug"                                   (set __BuildType=Debug&s
 if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "checked"                                 (set __BuildType=Checked&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
-if /i "%1" == "vs2019"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
-
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
-if /i "%1" == "crossgen"                                (set __DoCrossgen=1&shift&goto Arg_Loop)
-if /i "%1" == "crossgenaltjit"                          (set __DoCrossgen=1&set __CrossgenAltJit=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 if /i "%1" == "jitstress"                               (set COMPlus_JitStress=%2&shift&shift&goto Arg_Loop)
@@ -66,10 +59,8 @@ if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
-if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
 REM This test feature is currently intentionally undocumented
-if /i "%1" == "runlargeversionbubblecrossgentests"      (set RunCrossGen=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
@@ -138,16 +129,8 @@ if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
 )
 
-if defined RunCrossGen (
-    set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen_tests
-)
-
 if defined RunCrossGen2 (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen2_tests
-)
-
-if defined __DoCrossgen (
-    set __RuntestPyArgs=%__RuntestPyArgs% --precompile_core_root
 )
 
 if defined CrossgenLargeVersionBubble (
@@ -242,14 +225,6 @@ call :SetTestEnvironment
 call :ResolveDependencies
 if errorlevel 1 exit /b 1
 
-if defined __DoCrossgen (
-    echo %__MsgPrefix%Running crossgen on framework assemblies
-    call :PrecompileFX
-)
-
-REM Delete the unecessary mscorlib.ni file.
-if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
-
 ::Check if the test Binaries are built
 if not exist %XunitTestBinBase% (
     echo %__MsgPrefix%Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%.
@@ -284,52 +259,6 @@ REM ============================================================================
 echo %__MsgPrefix%Test run successful. Finished at %TIME%. Refer to the log files for details:
 echo     %__TestRunHtmlLog%
 echo     %__TestRunXmlLog%
-exit /b 0
-
-REM =========================================================================================
-REM ===
-REM === Compile the managed assemblies in Core_ROOT before running the tests
-REM ===
-REM =========================================================================================
-
-:PrecompileAssembly
-
-REM Skip mscorlib since it is already precompiled.
-if /I "%3" == "mscorlib.dll" exit /b 0
-if /I "%3" == "mscorlib.ni.dll" exit /b 0
-
-"%1\crossgen.exe" /nologo /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
-set /a __exitCode = %errorlevel%
-if "%__exitCode%" == "-2146230517" (
-    echo %2 is not a managed assembly.
-    exit /b 0
-)
-
-if %__exitCode% neq 0 (
-    echo Unable to precompile %2
-    exit /b 0
-)
-
-echo %__MsgPrefix%Successfully precompiled %2
-exit /b 0
-
-:PrecompileFX
-setlocal
-
-if defined __CrossgenAltJit (
-    REM Set altjit flags for the crossgen run. Note that this entire crossgen section is within a setlocal/endlocal scope,
-    REM so we don't need to save or unset these afterwards.
-    echo %__MsgPrefix%Setting altjit environment variables for %__CrossgenAltJit%.
-    set COMPlus_AltJit=*
-    set COMPlus_AltJitNgen=*
-    set COMPlus_AltJitName=%__CrossgenAltJit%
-    set COMPlus_AltJitAssertOnNYI=1
-    set COMPlus_NoGuiOnAssert=1
-    set COMPlus_ContinueOnAssert=0
-)
-
-for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nF%%~xF
-endlocal
 exit /b 0
 
 REM =========================================================================================
@@ -447,12 +376,8 @@ echo.
 echo./? -? /h -h /help -help   - View this message.
 echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
-echo VSVersion ^<vs_version^>    - VS2017 or VS2019 ^(default: VS2019^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo sequential                - Run tests sequentially (no parallelism).
-echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
-echo crossgenaltjit ^<altjit^>   - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests, using the given altjit.
-echo RunCrossgenTests          - Runs ReadytoRun tests
 echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
 echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n

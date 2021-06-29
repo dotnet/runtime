@@ -157,14 +157,6 @@ namespace System.Reflection
             }
         }
 
-        private RuntimeType? ReflectedTypeInternal
-        {
-            get
-            {
-                return (RuntimeType?)ReflectedType;
-            }
-        }
-
         private string FormatNameAndSig()
         {
             // Serialization uses ToString to resolve MethodInfo overloads.
@@ -786,14 +778,6 @@ namespace System.Reflection
         internal RuntimeModule GetRuntimeModule()
         {
             return RuntimeTypeHandle.GetModule((RuntimeType)DeclaringType);
-        }
-
-        private RuntimeType? ReflectedTypeInternal
-        {
-            get
-            {
-                return (RuntimeType?)ReflectedType;
-            }
         }
 
         public override MethodImplAttributes GetMethodImplementationFlags()
