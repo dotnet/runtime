@@ -36,8 +36,8 @@ pushd %EXECUTION_DIR%
 @echo on
 [[RunCommands]]
 set EXIT_CODE=%ERRORLEVEL%
-dir %HELIX_WORKITEM_UPLOAD_ROOT%\chrome-win
-type %HELIX_WORKITEM_UPLOAD_ROOT%\chrome-win\*.log
+dir %HELIX_CORRELATION_PAYLOAD%\chrome-win
+type %HELIX_CORRELATION_PAYLOAD%\chrome-win\*.log
 dir %HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output
 type %HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output\chromedriver*.log
 @echo off
