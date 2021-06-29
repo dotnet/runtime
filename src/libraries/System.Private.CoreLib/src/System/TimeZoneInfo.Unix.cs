@@ -12,7 +12,7 @@ namespace System
         private const string TimeZoneFileName = "zone.tab";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
 
-        private static TimeZone GetLocalTimeZoneCore()
+        private static TimeZoneInfo GetLocalTimeZoneCore()
         {
             // Without Registry support, create the TimeZoneInfo from a TZ file
             return GetLocalTimeZoneFromTzFile();
