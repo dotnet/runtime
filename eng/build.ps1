@@ -223,6 +223,11 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
+if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "Browser") {
+  # make sure it is capitalized
+  $PSBoundParameters['os'] = "Browser"
+}
+
 foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
