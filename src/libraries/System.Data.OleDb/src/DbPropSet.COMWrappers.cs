@@ -17,7 +17,7 @@ namespace System.Data.OleDb
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
             string message = string.Empty;
             IntPtr pErrorInfo;
-            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, &pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (pErrorInfo != IntPtr.Zero))
             {
                 using OleDbComWrappers.IErrorInfo errorInfo = (OleDbComWrappers.IErrorInfo)OleDbComWrappers.Instance

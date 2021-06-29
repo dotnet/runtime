@@ -27,7 +27,7 @@ namespace System.Data.OleDb
             // ErrorInfo object is to be checked regardless the hresult returned by the function called
             Exception? e = null;
             IntPtr pErrorInfo;
-            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, &pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
             {
                 using OleDbComWrappers.IErrorInfo errorInfo = (OleDbComWrappers.IErrorInfo)OleDbComWrappers.Instance
