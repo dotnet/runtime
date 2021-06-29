@@ -11,15 +11,14 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        /// <summary>Counter used to produce a unique handle value.</summary>
-        private static long s_counter;
-
         /// <summary>
         /// The underlying FileStream.  May be null.  We hold onto the stream rather than just
         /// onto the underlying handle to ensure that logic associated with disposing the stream
         /// (e.g. deleting the file for DeleteOnClose) happens at the appropriate time.
         /// </summary>
-        internal readonly FileStream? _fileStream;
+        private readonly FileStream? _fileStream;
+        /// <summary>The FileStream's handle, cached to avoid repeated accesses to FileStream.SafeFileHandle that could, in theory, change.</summary>
+        internal SafeFileHandle? _fileStreamHandle;
 
         /// <summary>Whether this SafeHandle owns the _fileStream and should Dispose it when disposed.</summary>
         internal readonly bool _ownsFileStream;
@@ -59,9 +58,22 @@ namespace Microsoft.Win32.SafeHandles
             _options = options;
             _capacity = capacity;
 
-            // Fake a unique int handle value > 0.
-            int nextHandleValue = (int)((Interlocked.Increment(ref s_counter) % (int.MaxValue - 1)) + 1);
-            SetHandle(new IntPtr(nextHandleValue));
+            IntPtr handlePtr;
+
+            if (fileStream != null)
+            {
+                bool ignored = false;
+                SafeFileHandle handle = fileStream.SafeFileHandle;
+                handle.DangerousAddRef(ref ignored);
+                _fileStreamHandle = handle;
+                handlePtr = handle.DangerousGetHandle();
+            }
+            else
+            {
+                handlePtr = IntPtr.MaxValue;
+            }
+
+            SetHandle(handlePtr);
         }
 
         protected override void Dispose(bool disposing)
@@ -74,7 +86,17 @@ namespace Microsoft.Win32.SafeHandles
             base.Dispose(disposing);
         }
 
-        protected override bool ReleaseHandle() => true; // Nothing to clean up.  We unlinked immediately after creating the backing store.
+        protected override bool ReleaseHandle()
+        {
+            if (_fileStreamHandle != null)
+            {
+                SetHandle((IntPtr) (-1));
+                _fileStreamHandle.DangerousRelease();
+                _fileStreamHandle = null;
+            }
+
+            return true;
+        }
 
         public override bool IsInvalid => (long)handle <= 0;
     }

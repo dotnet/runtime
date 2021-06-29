@@ -642,43 +642,6 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task InvalidValueTypeData()
-        {
-            await CheckInspectLocalsAtBreakpointSite(
-                "dotnet://debugger-test.dll/debugger-test.cs", 85, 8,
-                "OuterMethod",
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:OuterMethod'); })",
-                wait_for_event_fn: async (pause_location) =>
-               {
-                   var new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 4 }});");
-                   await _invoke_getter(new_id, "NonExistant", expect_ok: false);
-
-                   new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3 }});");
-                   await _invoke_getter(new_id, "NonExistant", expect_ok: false);
-
-                   new_id = await CreateNewId(@"MONO._new_or_add_id_props ({ scheme: 'valuetype', idArgs: { containerId: 1 }, props: { klass: 3, value64: 'AA' }});");
-                   await _invoke_getter(new_id, "NonExistant", expect_ok: false);
-               });
-
-            async Task<string> CreateNewId(string expr)
-            {
-                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
-                Assert.True(res.IsOk, "Expected Runtime.evaluate to succeed");
-                AssertEqual("string", res.Value["result"]?["type"]?.Value<string>(), "Expected Runtime.evaluate to return a string type result");
-                return res.Value["result"]?["value"]?.Value<string>();
-            }
-
-            async Task<Result> _invoke_getter(string obj_id, string property_name, bool expect_ok)
-            {
-                var expr = $"MONO._invoke_getter ('{obj_id}', '{property_name}')";
-                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
-                AssertEqual(expect_ok, res.IsOk, "Runtime.evaluate result not as expected for {expr}");
-
-                return res;
-            }
-        }
-
-        [Fact]
         public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
             "MulticastDelegateTestClass", "Test", 5, "Test",
             "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
@@ -746,7 +709,7 @@ namespace DebuggerTests
 
                  await CheckProps(frame_locals, new
                  {
-                     mi = TObject("System.Reflection.MethodInfo"),
+                     mi = TObject("System.Reflection.RuntimeMethodInfo"), //this is what is returned when debugging desktop apps using VS
                      dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
                      i = TNumber(4),
                      strings = TArray("string[]", 1),
@@ -779,7 +742,7 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
-
+            System.Threading.Thread.Sleep(1000);
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
@@ -805,6 +768,23 @@ namespace DebuggerTests
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
                "IntAdd");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 5);
+            CheckNumber(locals, "b", 10);
+        }
+
+        [Fact]
+        public async Task DebugLazyLoadedAssemblyWithEmbeddedPdbALC()
+        {
+            int line = 9;
+            await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
+            var pause_location = await LoadAssemblyDynamicallyALCAndRunMethod(
+                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test-embedded.dll"),
+                    null, "LazyMath", "IntAdd");
+
+            var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
+            Assert.Contains(source_location, scripts.Values);
+
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 5);
             CheckNumber(locals, "b", 10);

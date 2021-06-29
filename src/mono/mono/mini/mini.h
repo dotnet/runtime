@@ -1070,6 +1070,17 @@ typedef enum {
 	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34
 } MonoRgctxInfoType;
 
+/* How an rgctx is passed to a method */
+typedef enum {
+	MONO_RGCTX_ACCESS_NONE = 0,
+	/* Loaded from this->vtable->rgctx */
+	MONO_RGCTX_ACCESS_THIS = 1,
+	/* Loaded from an additional mrgctx argument */
+	MONO_RGCTX_ACCESS_MRGCTX = 2,
+	/* Loaded from an additional vtable argument */
+	MONO_RGCTX_ACCESS_VTABLE = 3
+} MonoRgctxAccess;
+
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
 	MonoRgctxInfoType info_type;
 	gpointer data;
@@ -1353,6 +1364,7 @@ typedef struct {
 	/* The current virtual register number */
 	guint32 next_vreg;
 
+	MonoRgctxAccess rgctx_access;
 	MonoGenericSharingContext gsctx;
 	MonoGenericContext *gsctx_context;
 
@@ -2301,7 +2313,7 @@ void              mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest,
 void              mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag);
 void              mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag);
 MonoInst*         mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks);
-MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized);
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
@@ -2309,6 +2321,7 @@ MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass,
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
+MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
 CompRelation mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);

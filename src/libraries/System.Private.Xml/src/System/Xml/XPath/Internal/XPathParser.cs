@@ -9,35 +9,34 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal sealed class XPathParser
+    internal struct XPathParser
     {
-        private readonly XPathScanner _scanner;
+        private XPathScanner _scanner;
 
-        private XPathParser(XPathScanner scanner)
+        private XPathParser(string xpathExpr)
         {
-            _scanner = scanner;
+            _scanner = new XPathScanner(xpathExpr);
+            _parseDepth = 0;
         }
 
         public static AstNode ParseXPathExpression(string xpathExpression)
         {
-            XPathScanner scanner = new XPathScanner(xpathExpression);
-            XPathParser parser = new XPathParser(scanner);
+            XPathParser parser = new XPathParser(xpathExpression);
             AstNode result = parser.ParseExpression(null);
-            if (scanner.Kind != XPathScanner.LexKind.Eof)
+            if (parser._scanner.Kind != XPathScanner.LexKind.Eof)
             {
-                throw XPathException.Create(SR.Xp_InvalidToken, scanner.SourceText);
+                throw XPathException.Create(SR.Xp_InvalidToken, parser._scanner.SourceText);
             }
             return result;
         }
 
         public static AstNode ParseXPathPattern(string xpathPattern)
         {
-            XPathScanner scanner = new XPathScanner(xpathPattern);
-            XPathParser parser = new XPathParser(scanner);
+            XPathParser parser = new XPathParser(xpathPattern);
             AstNode result = parser.ParsePattern();
-            if (scanner.Kind != XPathScanner.LexKind.Eof)
+            if (parser._scanner.Kind != XPathScanner.LexKind.Eof)
             {
-                throw XPathException.Create(SR.Xp_InvalidToken, scanner.SourceText);
+                throw XPathException.Create(SR.Xp_InvalidToken, parser._scanner.SourceText);
             }
             return result;
         }
@@ -224,17 +223,12 @@ namespace MS.Internal.Xml.XPath
             } while (true);
         }
 
-        private static bool IsNodeType(XPathScanner scaner)
-        {
-            return (
-                scaner.Prefix.Length == 0 && (
-                    scaner.Name == "node" ||
-                    scaner.Name == "text" ||
-                    scaner.Name == "processing-instruction" ||
-                    scaner.Name == "comment"
-                )
-            );
-        }
+        private bool IsNodeType =>
+            _scanner.Prefix.Length == 0 &&
+            (_scanner.Name == "node" ||
+             _scanner.Name == "text" ||
+             _scanner.Name == "processing-instruction" ||
+             _scanner.Name == "comment");
 
         //>> PathOp   ::= '/' | '//'
         //>> PathExpr ::= LocationPath |
@@ -242,7 +236,7 @@ namespace MS.Internal.Xml.XPath
         private AstNode ParsePathExpr(AstNode? qyInput)
         {
             AstNode opnd;
-            if (IsPrimaryExpr(_scanner))
+            if (IsPrimaryExpr)
             { // in this moment we should distinct LocationPas vs FilterExpr (which starts from is PrimaryExpr)
                 opnd = ParseFilterExpr(qyInput);
                 if (_scanner.Kind == XPathScanner.LexKind.Slash)
@@ -407,7 +401,7 @@ namespace MS.Internal.Xml.XPath
             switch (_scanner.Kind)
             {
                 case XPathScanner.LexKind.Name:
-                    if (_scanner.CanBeFunction && IsNodeType(_scanner))
+                    if (_scanner.CanBeFunction && IsNodeType)
                     {
                         nodePrefix = string.Empty;
                         nodeName = string.Empty;
@@ -457,21 +451,17 @@ namespace MS.Internal.Xml.XPath
             return new Axis(axisType, qyInput, nodePrefix, nodeName, nodeType);
         }
 
-        private static bool IsPrimaryExpr(XPathScanner scanner)
-        {
-            return (
-                scanner.Kind == XPathScanner.LexKind.String ||
-                scanner.Kind == XPathScanner.LexKind.Number ||
-                scanner.Kind == XPathScanner.LexKind.Dollar ||
-                scanner.Kind == XPathScanner.LexKind.LParens ||
-                scanner.Kind == XPathScanner.LexKind.Name && scanner.CanBeFunction && !IsNodeType(scanner)
-            );
-        }
+        private bool IsPrimaryExpr =>
+            _scanner.Kind == XPathScanner.LexKind.String ||
+            _scanner.Kind == XPathScanner.LexKind.Number ||
+            _scanner.Kind == XPathScanner.LexKind.Dollar ||
+            _scanner.Kind == XPathScanner.LexKind.LParens ||
+            _scanner.Kind == XPathScanner.LexKind.Name && _scanner.CanBeFunction && !IsNodeType;
 
         //>> PrimaryExpr ::= Literal | Number | VariableReference | '(' Expr ')' | FunctionCall
         private AstNode ParsePrimaryExpr(AstNode? qyInput)
         {
-            Debug.Assert(IsPrimaryExpr(_scanner));
+            Debug.Assert(IsPrimaryExpr);
             AstNode? opnd = null;
             switch (_scanner.Kind)
             {
@@ -499,7 +489,7 @@ namespace MS.Internal.Xml.XPath
                     PassToken(XPathScanner.LexKind.RParens);
                     break;
                 case XPathScanner.LexKind.Name:
-                    if (_scanner.CanBeFunction && !IsNodeType(_scanner))
+                    if (_scanner.CanBeFunction && !IsNodeType)
                     {
                         opnd = ParseMethod(null);
                     }

@@ -74,7 +74,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             _state.Handle = streamHandle;
-            _state.ConnectionState = connectionState;
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
@@ -99,6 +98,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
+            _state.ConnectionState = connectionState;
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
@@ -113,10 +114,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(connectionState.Handle != null);
 
-            _state.ConnectionState = connectionState;
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
-
             _stateHandle = GCHandle.Alloc(_state);
             try
             {
@@ -145,6 +144,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
+
+            _state.ConnectionState = connectionState;
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -214,6 +215,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
@@ -226,6 +228,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (!_canWrite)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (_state)
+                {
+                    if (_state.SendState == SendState.None || _state.SendState == SendState.Pending)
+                    {
+                        _state.SendState = SendState.Aborted;
+                    }
+                }
+
+                throw new System.OperationCanceledException(cancellationToken);
             }
 
             // Make sure start has completed
@@ -301,6 +316,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (!_canRead)
             {
                 throw new InvalidOperationException(SR.net_quic_reading_notallowed);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (_state)
+                {
+                    if (_state.ReadState == ReadState.None)
+                    {
+                        _state.ReadState = ReadState.Aborted;
+                    }
+                }
+
+                throw new System.OperationCanceledException(cancellationToken);
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -512,8 +540,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
-
-            return ReadAsync(buffer.ToArray()).AsTask().GetAwaiter().GetResult();
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            try
+            {
+                int readLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
+                rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
+                return readLength;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
 
         internal override void Write(ReadOnlySpan<byte> buffer)
@@ -569,7 +606,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             Marshal.FreeHGlobal(_state.SendQuicBuffers);
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
-            Debug.Assert(_state.ConnectionState != null);
             _state.ConnectionState?.RemoveStream(this);
 
             if (NetEventSource.Log.IsEnabled())

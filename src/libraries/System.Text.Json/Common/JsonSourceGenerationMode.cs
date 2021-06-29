@@ -15,13 +15,11 @@ namespace System.Text.Json.Serialization
     enum JsonSourceGenerationMode
     {
         /// <summary>
-        /// Instructs the JSON source generator to generate serialization logic and type metadata to fallback to
-        /// when the run-time options are not compatible with the indicated <see cref="JsonSerializerOptionsAttribute"/>.
+        /// When specified on <see cref="JsonSourceGenerationOptionsAttribute.GenerationMode"/>, indicates that both type-metadata initialization logic
+        /// and optimized serialization logic should be generated for all types. When specified on <see cref="JsonSerializableAttribute.GenerationMode"/>,
+        /// indicates that the setting on <see cref="JsonSourceGenerationOptionsAttribute.GenerationMode"/> should be used.
         /// </summary>
-        /// <remarks>
-        /// This mode supports all <see cref="JsonSerializer"/> features.
-        /// </remarks>
-        MetadataAndSerialization = 0,
+        Default = 0,
 
         /// <summary>
         /// Instructs the JSON source generator to generate type-metadata initialization logic.
@@ -32,7 +30,7 @@ namespace System.Text.Json.Serialization
         Metadata = 1,
 
         /// <summary>
-        /// Instructs the JSON source generator to generate serialization logic.
+        /// Instructs the JSON source generator to generate optimized serialization logic.
         /// </summary>
         /// <remarks>
         /// This mode supports only a subset of <see cref="JsonSerializer"/> features.

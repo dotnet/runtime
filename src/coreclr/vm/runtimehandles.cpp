@@ -906,7 +906,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
             MethodTable::InterfaceMapIterator it = typeHandle.GetMethodTable()->IterateInterfaceMap();
             while (it.Next())
             {
-                OBJECTREF refInterface = it.GetInterface()->GetManagedClassObject();
+                OBJECTREF refInterface = it.GetInterface(typeHandle.GetMethodTable())->GetManagedClassObject();
                 refRetVal->SetAt(i, refInterface);
                 _ASSERTE(refRetVal->GetAt(i) != NULL);
                 i++;
@@ -1032,34 +1032,6 @@ RuntimeTypeHandle::IsVisible(
 
     return fIsExternallyVisible;
 } // RuntimeTypeHandle::IsVisible
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL isGenericCOM) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    BOOL ret = FALSE;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    {
-        if (isGenericCOM)
-            ret = IsComObjectClass(typeHandle);
-        else
-            ret = IsComWrapperClass(typeHandle);
-    }
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
 
 FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUNSAFE) {
     CONTRACTL {
@@ -1218,7 +1190,7 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(QCall:
 
     if (pMD->IsStatic())
     {
-        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* checkDuplicates*/ FALSE, /*allowVariantMatches */ TRUE);
+        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* verifyImplemented*/ FALSE, /*allowVariantMatches */ TRUE);
     }
     else
     {

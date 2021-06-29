@@ -705,7 +705,11 @@ BOOL RecursionGraph::CheckForIllegalRecursion()
     MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
     while (it.Next())
     {
-        AddDependency(it.GetInterface());
+        MethodTable *pItfApprox = it.GetInterfaceApprox();
+        if (!pItfApprox->IsTypicalTypeDefinition())
+        {
+            AddDependency(pItfApprox);
+        }
     }
 
     // Check all owned nodes for expanding cycles. The edges recorded above must all

@@ -312,7 +312,9 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (!jsonPropertyInfo.GetMemberAndWriteJson(objectValue!, ref state, writer))
                         {
-                            Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value);
+                            Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value ||
+                                         jsonPropertyInfo.ConverterBase.TypeToConvert == JsonTypeInfo.ObjectType);
+
                             return false;
                         }
 

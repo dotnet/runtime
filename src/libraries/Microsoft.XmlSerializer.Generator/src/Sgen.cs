@@ -38,7 +38,7 @@ namespace Microsoft.XmlSerializer.Generator
             bool noLogo = false;
             bool parsableErrors = false;
             bool silent = false;
-            bool warnings = false;
+            bool verbose = false;
 
             AppDomain.CurrentDomain.AssemblyResolve += SgenAssemblyResolver;
 
@@ -134,7 +134,7 @@ namespace Microsoft.XmlSerializer.Generator
                     }
                     else if (ArgumentMatch(arg, "verbose"))
                     {
-                        warnings = true;
+                        verbose = true;
                     }
                     else if (ArgumentMatch(arg, "reference"))
                     {
@@ -203,7 +203,7 @@ namespace Microsoft.XmlSerializer.Generator
                     ParseReferences();
                 }
 
-                GenerateFile(types, defaultNamespace, assembly, proxyOnly, silent, warnings, force, codePath, parsableErrors);
+                GenerateFile(types, defaultNamespace, assembly, proxyOnly, silent, verbose, force, codePath, parsableErrors);
             }
             catch (Exception e)
             {
@@ -219,7 +219,7 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
-        private void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool warnings, bool force, string outputDirectory, bool parsableerrors)
+        private void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);
             Type[] types;
@@ -272,6 +272,11 @@ namespace Microsoft.XmlSerializer.Generator
                 {
                     if (type != null)
                     {
+                        if (verbose)
+                        {
+                            Console.WriteLine(SR.Format(SR.ImportInfo, type.Name, i + 1, types.Length));
+                        }
+
                         bool isObsolete = false;
                         object[] obsoleteAttributes = type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
                         foreach (object attribute in obsoleteAttributes)
@@ -292,7 +297,7 @@ namespace Microsoft.XmlSerializer.Generator
                 //Ignore the FileNotFoundException when call GetCustomAttributes e.g. if the type uses the attributes defined in a different assembly
                 catch (FileNotFoundException e)
                 {
-                    if (warnings)
+                    if (verbose)
                     {
                         Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
                         WriteWarning(e, parsableerrors);
@@ -303,7 +308,7 @@ namespace Microsoft.XmlSerializer.Generator
 
                 if (!proxyOnly)
                 {
-                    ImportType(type, defaultNamespace, mappings, importedTypes, warnings, importer, parsableerrors);
+                    ImportType(type, defaultNamespace, mappings, importedTypes, verbose, importer, parsableerrors);
                 }
             }
 

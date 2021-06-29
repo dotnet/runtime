@@ -55,19 +55,22 @@ namespace System.Linq
                 TSource[] chunk = new TSource[size];
                 chunk[0] = e.Current;
 
-                for (int i = 1; i < size; i++)
+                int i = 1;
+                for (; i < chunk.Length && e.MoveNext(); i++)
                 {
-                    if (!e.MoveNext())
-                    {
-                        Array.Resize(ref chunk, i);
-                        yield return chunk;
-                        yield break;
-                    }
-
                     chunk[i] = e.Current;
                 }
 
-                yield return chunk;
+                if (i == chunk.Length)
+                {
+                    yield return chunk;
+                }
+                else
+                {
+                    Array.Resize(ref chunk, i);
+                    yield return chunk;
+                    yield break;
+                }
             }
         }
     }

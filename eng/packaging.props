@@ -16,10 +16,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <!-- Don't build referenced projects -->
-    <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
-    <!-- Omit any files that were not built -->
-    <AllowPartialPackages>true</AllowPartialPackages>
     <!-- Don't permit harvesting since this requires pre-builts -->
     <HarvestStablePackage>false</HarvestStablePackage>
     <!-- Validation will fail in case we were relying on harvested assets or assets not built to satisfy stated support -->
