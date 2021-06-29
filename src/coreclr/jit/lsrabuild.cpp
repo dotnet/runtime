@@ -620,6 +620,12 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     associateRefPosWithInterval(newRP);
 
+    if (RefTypeIsDef(newRP->refType))
+    {
+        assert(theInterval != nullptr);
+        theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
+    }
+
     DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
@@ -2651,10 +2657,7 @@ void LinearScan::validateIntervals()
                 // For single-def intervals, the only the first refposition should be a RefTypeDef
                 if (interval->isSingleDef && RefTypeIsDef(refType))
                 {
-                    if (ref != interval->firstRefPosition)
-                    {
-                        printf("here");
-                    }
+                    assert(ref == interval->firstRefPosition);
                 }
 
                 // Note that there can be multiple last uses if they are on disjoint paths,

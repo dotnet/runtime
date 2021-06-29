@@ -1792,11 +1792,6 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
-            if (varDsc->lvSingleDefRegCandidate)
-            {
-                newInt->isSingleDef = true;
-            }
-
             if (varDsc->lvLiveInOutOfHndlr)
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
