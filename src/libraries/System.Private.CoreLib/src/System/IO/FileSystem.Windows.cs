@@ -510,9 +510,7 @@ namespace System.IO
                 int printNameNameLength = rdb.ReparseBufferSymbolicLink.PrintNameLength;
 
                 Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameNameOffset, printNameNameLength));
-                Debug.Assert(Path.IsPathFullyQualified(targetPath));
-                Debug.Assert((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 ||
-                    targetPath.Length >= 4 && !targetPath.StartsWith(PathInternal.ExtendedPathPrefix.AsSpan()) && !targetPath.StartsWith(@"\??\".AsSpan()));
+                Debug.Assert((rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPath));
 
                 if (normalize && (rdb.ReparseBufferSymbolicLink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
                 {

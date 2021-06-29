@@ -42,7 +42,7 @@ namespace System.IO.Tests
                     uint result = GetFinalPathNameByHandle(handle, buffer);
 
                     // Remove extended prefix
-                    int skip = (result > 3 && buffer[0] == '\\' && buffer[3] == '\\' && (buffer[2] == '.' || buffer[2] == '?')) ? 4 : 0;
+                    int skip = PathInternal.IsExtended(buffer) ? 4 : 0;
 
                     return new string(
                         buffer,
