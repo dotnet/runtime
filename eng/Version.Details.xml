@@ -214,9 +214,9 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>d2873833db748a95140f507d639cbdfdf78d4fd7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21321.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21328.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>0451564eb2f0ec1e1b614a21ee3836d24baf2572</Sha>
+      <Sha>2b1536142083d6270dc40c5cba74fbb0a612beab</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.21323.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
