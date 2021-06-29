@@ -385,7 +385,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl)
     if (!pending)
     {
 
-        // SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_callback);
+        SSL_set_verify(ssl, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_callback);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
             return ret;
