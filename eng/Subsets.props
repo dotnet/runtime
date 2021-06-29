@@ -64,6 +64,7 @@
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
+    <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(TargetOS)' == 'Browser'">$(DefaultPacksSubsets)+packs.workloads</DefaultPacksSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -109,7 +110,7 @@
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
-
+    
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
@@ -118,19 +119,20 @@
     <SubsetName Include="Libs.PreTest" Description="Test assets which are necessary to run tests." />
     <SubsetName Include="Libs.Packages" Description="The projects that produce NuGet packages from libraries." />
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
-
+    
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests." />
     <SubsetName Include="Host.Native" Description="The .NET hosts." />
     <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
     <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
     <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
-
+    
     <!-- Packs -->
     <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests." />
     <SubsetName Include="Packs.Product" Description="Builds the shared framework packs, archives, bundles, and installers." />
     <SubsetName Include="Packs.Installers" Description="Builds the shared framework bundles and installers." />
     <SubsetName Include="Packs.Tests" Description="The framework pack tests." />
+    <SubsetName Include="Packs.Workloads" Description="Builds the installers and the insertion metadata for optional workloads." />
 
     <!-- Utility -->
     <SubsetName Include="publish" OnDemand="true" Description="Generate asset manifests and prepare to publish to BAR." />
@@ -336,6 +338,10 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
   </ItemGroup>
+  
+    <ItemGroup Condition="$(_subset.Contains('+packs.workloads+'))">
+      <ProjectToBuild Include="$(WorkloadsProjectRoot)\workloads.csproj" Category="packs" />
+    </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+publish+'))">
     <ProjectToBuild Include="$(InstallerProjectRoot)prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
