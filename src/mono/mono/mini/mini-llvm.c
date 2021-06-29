@@ -259,6 +259,11 @@ enum {
 	ARM64_MAX_VECTOR_ELEMS = 16,
 };
 
+const int mask_0_incr_1 [] = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+};
+
 static LLVMIntPredicate cond_to_llvm_cond [] = {
 	LLVMIntEQ,
 	LLVMIntNE,
@@ -7625,13 +7630,49 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		case OP_XCAST: {
 			LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
-
 			values [ins->dreg] = LLVMBuildBitCast (builder, lhs, t, "");
 			break;
 		}
 		case OP_XCONCAT: {
 			values [ins->dreg] = concatenate_vectors (ctx, lhs, rhs);
 			break;
+		}
+		case OP_XINSERT_LOWER:
+		case OP_XINSERT_UPPER: {
+			const char *oname = ins->opcode == OP_XINSERT_LOWER ? "xinsert_lower" : "xinsert_upper";
+			int ix = ins->opcode == OP_XINSERT_LOWER ? 0 : 1;
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			unsigned int width = mono_llvm_get_prim_size_bits (src_t);
+			LLVMTypeRef int_t = LLVMIntType (width / 2);
+			LLVMTypeRef intvec_t = LLVMVectorType (int_t, 2);
+			LLVMValueRef insval = LLVMBuildBitCast (builder, rhs, int_t, oname);
+			LLVMValueRef val = LLVMBuildBitCast (builder, lhs, intvec_t, oname);
+			val = LLVMBuildInsertElement (builder, val, insval, const_int32 (ix), oname);
+			val = LLVMBuildBitCast (builder, val, src_t, oname);
+			values [ins->dreg] = val;
+		}
+		case OP_XLOWER:
+		case OP_XUPPER: {
+			const char *oname = ins->opcode == OP_XLOWER ? "xlower" : "xupper";
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			unsigned int elems = LLVMGetVectorSize (src_t);
+			g_assert (elems >= 2 && elems <= MAX_VECTOR_ELEMS);
+			unsigned int ret_elems = elems / 2;
+			int startix = ins->opcode == OP_XLOWER ? 0 : ret_elems;
+			LLVMValueRef val = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (src_t), create_const_vector_i32 (&mask_0_incr_1 [startix], ret_elems), oname);
+			values [ins->dreg] = val;
+			break;
+		}
+		case OP_XWIDEN:
+		case OP_XWIDEN_UNSAFE: {
+			const char *oname = ins->opcode == OP_XWIDEN ? "xwiden" : "xwiden_unsafe";
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			unsigned int elems = LLVMGetVectorSize (src_t);
+			g_assert (elems <= MAX_VECTOR_ELEMS / 2);
+			unsigned int ret_elems = elems * 2;
+			LLVMValueRef upper = ins->opcode == OP_XWIDEN ? LLVMConstNull (src_t) : LLVMGetUndef (src_t);
+			LLVMValueRef val = LLVMBuildShuffleVector (builder, lhs, upper, create_const_vector_i32 (mask_0_incr_1, ret_elems), oname);
+			values [ins->dreg] = val;
 		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
