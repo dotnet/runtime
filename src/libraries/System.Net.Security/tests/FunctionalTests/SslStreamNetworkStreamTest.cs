@@ -397,10 +397,12 @@ namespace System.Net.Security.Tests
 
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, SslProtocols.Tls12)]
+        [InlineData(false, SslProtocols.Tls12)]
+        [InlineData(true, SslProtocols.Tls13)]
+        [InlineData(false, SslProtocols.Tls13)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
+        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate, SslProtocols protocol)
         {
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -415,7 +417,7 @@ namespace System.Net.Security.Tests
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
                     TargetHost = Guid.NewGuid().ToString("N"),
-                    EnabledSslProtocols = SslProtocols.Tls13,
+                    EnabledSslProtocols = protocol,
                 };
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>

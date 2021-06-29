@@ -19,6 +19,7 @@ namespace System.Net.Security
         private SslAuthenticationOptions? _sslAuthenticationOptions;
 
         private int _nestedAuth;
+        private bool _isRenego;
 
         private enum Framing
         {
@@ -321,14 +322,15 @@ namespace System.Net.Security
             }
 
             _sslAuthenticationOptions!.RemoteCertRequired = true;
+            _isRenego = true;
 
             try
             {
                 SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
 
-                if (nextmsg!.Length > 0)
+                if (nextmsg is {} && nextmsg.Length > 0)
                 {
-                    await adapter.WriteAsync(nextmsg, 0, nextmsg!.Length).ConfigureAwait(false);
+                    await adapter.WriteAsync(nextmsg, 0, nextmsg.Length).ConfigureAwait(false);
                     await adapter.FlushAsync().ConfigureAwait(false);
                 }
 
@@ -352,7 +354,6 @@ namespace System.Net.Security
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
                         await adapter.FlushAsync().ConfigureAwait(false);
                     }
-                    Debug.Assert(!(message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded && message.Size == 0));
                 } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
                 CompleteHandshake(_sslAuthenticationOptions!);
@@ -477,6 +478,7 @@ namespace System.Net.Security
                 if (reAuthenticationData == null)
                 {
                     _nestedAuth = 0;
+                    _isRenego = false;
                 }
             }
 
@@ -582,7 +584,13 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.AppData:
-                    throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
+                    // TLS1.3 it is not possible to distinguish between late Handshake and Application Data
+                    if (_isRenego && SslProtocol != SslProtocols.Tls13)
+                    {
+                        throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
+                    }
+                    break;
+
             }
 
             return ProcessBlob(frameSize);
