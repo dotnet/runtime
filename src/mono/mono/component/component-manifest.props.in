@@ -5,6 +5,6 @@
     <_MonoRuntimeComponentStaticLibExt Include="${TemplateMonoRuntimeComponentStaticLibExt}" RuntimeIdentifier="${TemplateRuntimeIdentifier}" />
   </ItemGroup>
   <ItemGroup>
-    <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" RuntimeIdentifier="${TemplateRuntimeIdenfifier}" />
+    <_MonoRuntimeAvailableComponents Include="${TemplateMonoRuntimeAvailableComponents}" RuntimeIdentifier="${TemplateRuntimeIdentifier}" />
   </ItemGroup>
 </Project>
