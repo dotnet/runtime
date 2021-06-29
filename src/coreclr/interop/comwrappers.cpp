@@ -5,7 +5,10 @@
 #include <interoplibimports.h>
 #include <corerror.h>
 
-//#include <new> // placement new
+#ifdef _WIN32
+#include <new> // placement new
+#endif // _WIN32
+
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using AllocScenario = InteropLibImports::AllocScenario;
@@ -344,9 +347,9 @@ void ManagedObjectWrapper::GetIUnknownImpl(
             && fpAddRef != nullptr
             && fpRelease != nullptr);
 
-    *fpQueryInterface = (void*) ManagedObjectWrapper_IUnknownImpl.QueryInterface;
-    *fpAddRef = (void*) ManagedObjectWrapper_IUnknownImpl.AddRef;
-    *fpRelease = (void*) ManagedObjectWrapper_IUnknownImpl.Release;
+    *fpQueryInterface = (void*)ManagedObjectWrapper_IUnknownImpl.QueryInterface;
+    *fpAddRef = (void*)ManagedObjectWrapper_IUnknownImpl.AddRef;
+    *fpRelease = (void*)ManagedObjectWrapper_IUnknownImpl.Release;
 }
 
 // The logic here should match code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW in daccess/request.cpp
@@ -396,8 +399,8 @@ HRESULT ManagedObjectWrapper::Create(
         curr.IID = IID_IReferenceTrackerTarget;
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
-
-    _ASSERTE(runtimeDefinedCount <= sizeof(runtimeDefinedLocal)/sizeof(runtimeDefinedLocal[0]));
+    
+    _ASSERTE(runtimeDefinedCount <= ARRAYSIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
@@ -664,6 +667,9 @@ HRESULT ManagedObjectWrapper::QueryInterface(
                     _ASSERTE(*ppvObject == nullptr);
                     return E_NOINTERFACE;
 
+                default:
+                    _ASSERTE(false && "Unknown result value");
+                    [[fallthrough]];
                 case TryInvokeICustomQueryInterfaceResult::FailedToInvoke:
                     // Set the 'lacks' flag since our attempt to use ICustomQueryInterface
                     // indicated the object lacks an implementation.
@@ -677,10 +683,7 @@ HRESULT ManagedObjectWrapper::QueryInterface(
                     // Instead of returning immediately, we handle the case
                     // the same way that would occur if the managed object lacked
                     // an ICustomQueryInterface implementation.
-                    break;
-
-                default:
-                    _ASSERTE(false && "Unknown result value");                    
+                    break;                  
             }
         }
 
@@ -745,7 +748,7 @@ HRESULT NativeObjectWrapperContext::Create(
     ComHolder<IReferenceTracker> trackerObject;
     if (flags & InteropLib::Com::CreateObjectFlags_TrackerObject)
     {
-        hr = external->QueryInterface(IID_IReferenceTracker,(void**) &trackerObject);
+        hr = external->QueryInterface(IID_IReferenceTracker, (void**)&trackerObject);
         if (SUCCEEDED(hr))
             RETURN_IF_FAILED(TrackerObjectManager::OnIReferenceTrackerFound(trackerObject));
     }

@@ -26,20 +26,6 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
-#if TARGET_UNIX
-#include "assemblyspec.hpp"
-#define TEAR_OFF_SLOT           1
-typedef struct _MINIDUMP_EXCEPTION  {
-    ULONG32 ExceptionCode;
-    ULONG32 ExceptionFlags;
-    ULONG64 ExceptionRecord;
-    ULONG64 ExceptionAddress;
-    ULONG32 NumberParameters;
-    ULONG32 __unusedAlignment;
-    ULONG64 ExceptionInformation [ EXCEPTION_MAXIMUM_PARAMETERS ];
-} MINIDUMP_EXCEPTION, *PMINIDUMP_EXCEPTION;
-#endif
-
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
@@ -1079,7 +1065,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
     // Dump the exception object stored in the WinRT stowed exception
     EnumMemStowedException(flags);
 #endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
@@ -1312,7 +1298,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 }
 
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // WinRT stowed exception holds the (CCW)pointer to a managed exception object.

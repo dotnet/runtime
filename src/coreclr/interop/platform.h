@@ -12,24 +12,21 @@
 #define _ASSERTE(x) assert((x))
 #endif
 
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
+#endif // !ARRAYSIZE
+
 #ifdef _WIN32
 #include <Windows.h>
-#include <objidl.h> // COM interfaces
-
-// Common macro for working in COM
-#define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
-#define RETURN_VOID_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return; } }
-
 #endif // _WIN32
 
-#ifdef HOST_UNIX
+#if defined(_WIN32) || defined(HOST_UNIX)
 #include <objidl.h> // COM interfaces
 
 // Common macro for working in COM
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
 #define RETURN_VOID_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return; } }
-
-#endif // HOST_UNIX
+#endif // defined(_WIN32) || defined(HOST_UNIX)
 
 #define ABI_ASSERT(abi_definition) static_assert((abi_definition), "ABI is being invalidated.")
 

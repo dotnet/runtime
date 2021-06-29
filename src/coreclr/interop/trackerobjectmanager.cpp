@@ -10,7 +10,7 @@ using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 namespace
 {
 
-    //29a71c6a-3c42-4416-a39d-e2825a07a773"
+    //29a71c6a-3c42-4416-a39d-e2825a07a773
     const GUID IID_IReferenceTrackerHost = { 0x29a71c6a, 0x3c42, 0x4416, { 0xa3, 0x9d, 0xe2, 0x82, 0x5a, 0x7, 0xa7, 0x73} };
 
     //3cf184b4-7ccb-4dda-8455-7e6ce99a3298

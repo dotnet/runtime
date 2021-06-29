@@ -19,19 +19,23 @@
 using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 
-void* GetCurrentCtxCookieWrapper()
-{
 
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        RETURN GetCurrentCtxCookie();
-#else
-        RETURN NULL;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-}
 
 namespace
 {
+
+    void* GetCurrentCtxCookieWrapper()
+    {
+        STATIC_CONTRACT_WRAPPER;
+
+    #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        return GetCurrentCtxCookie();
+    #else
+        return NULL;
+    #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    }
+
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext : public InteropLibInterface::ExternalObjectContextBase
     {
