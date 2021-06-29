@@ -8,6 +8,9 @@ using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// Handles a <see cref="PosixSignal"/>.
+    /// </summary>
     public sealed class PosixSignalRegistration : IDisposable
     {
         private readonly Action<PosixSignalContext> _handler;
@@ -23,6 +26,22 @@ namespace System.Runtime.InteropServices
             _handler = handler;
         }
 
+        /// <summary>
+        /// Registers a <paramref name="handler"/> that is invoked when the <paramref name="signal"/> occurs.
+        /// </summary>
+        /// <param name="signal">The signal to register for.</param>
+        /// <param name="handler">The handler that gets invoked.</param>
+        /// <returns>A <see cref="PosixSignalRegistration"/> instance that can be disposed to unregister.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="handler"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="signal"/> is out the range of expected values for the platform.</exception>
+        /// <exception cref="System.IO.IOException">An error occurred while setting up the signal handling or while installing the handler for the specified signal.</exception>
+        /// <remarks>
+        /// Raw values can be provided for <paramref name="signal"/> by casting them to <see cref="PosixSignal"/>.
+        ///
+        /// Default handling of the signal can be canceled through <see cref="PosixSignalContext.Cancel"/>.
+        /// For <c>SIGTERM</c>, <c>SIGINT</c>, and <c>SIGQUIT</c> process termination can be canceled.
+        /// For <c>SIGCHLD</c>, and <c>SIGCONT</c> terminal configuration can be canceled.
+        /// </remarks>
         public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
         {
             if (handler == null)
@@ -37,6 +56,15 @@ namespace System.Runtime.InteropServices
             PosixSignalRegistration registration = new PosixSignalRegistration(signal, signo, handler);
             registration.Register();
             return registration;
+        }
+
+        /// <summary>
+        /// Unregister the handler.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         private unsafe void Register()
@@ -199,12 +227,6 @@ namespace System.Runtime.InteropServices
 
         ~PosixSignalRegistration()
             => Dispose(false);
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
 
         private void Dispose(bool disposing)
         {

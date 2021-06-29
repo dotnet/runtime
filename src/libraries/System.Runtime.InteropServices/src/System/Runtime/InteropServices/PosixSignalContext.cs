@@ -11,6 +11,9 @@ namespace System.Runtime.InteropServices
             internal set;
         }
 
+        /// <summary>
+        /// Cancels default handling of the signal.
+        /// </summary>
         public bool Cancel
         {
             get;
