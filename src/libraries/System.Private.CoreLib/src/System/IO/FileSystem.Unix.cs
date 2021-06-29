@@ -551,8 +551,7 @@ namespace System.IO
         /// <param name="isDirectory">True if the pathToTarget represents a directory or a symlink to a directory.</param>
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.IsPartiallyQualified(pathToTarget.AsSpan()) ?
-                Path.Join(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
+            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
 
             // Fail if the target exists but is not consistent with the expected filesystem entry type
             if (Interop.Sys.LStat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)

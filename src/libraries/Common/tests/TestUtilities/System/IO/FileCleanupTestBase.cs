@@ -181,13 +181,8 @@ namespace System.IO
             symLinkProcess.StartInfo.RedirectStandardOutput = true;
             symLinkProcess.Start();
 
-            if (symLinkProcess != null)
-            {
-                symLinkProcess.WaitForExit();
-                return (0 == symLinkProcess.ExitCode);
-            }
-
-            return false;
+            symLinkProcess.WaitForExit();
+            return (0 == symLinkProcess.ExitCode);
         }
 
     }

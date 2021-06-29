@@ -409,8 +409,7 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.IsPartiallyQualified(pathToTarget.AsSpan()) ?
-                Path.Join(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
+            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
 
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: true);
@@ -427,7 +426,7 @@ namespace System.IO
             }
         }
 
-        internal static unsafe FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
+        internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             string? targetPath = returnFinalTarget ?
                 GetFinalLinkTarget(linkPath, isDirectory) :
@@ -561,7 +560,7 @@ namespace System.IO
             }
 
             const int InitialBufferSize = 4096;
-            char[]? buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
+            char[] buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
             try
             {
                 uint result = GetFinalPathNameByHandle(handle, buffer);
@@ -571,7 +570,6 @@ namespace System.IO
                 if (result > InitialBufferSize)
                 {
                     ArrayPool<char>.Shared.Return(buffer);
-                    buffer = null;
                     buffer = ArrayPool<char>.Shared.Rent((int)result);
 
                     result = GetFinalPathNameByHandle(handle, buffer);
@@ -589,10 +587,7 @@ namespace System.IO
             }
             finally
             {
-                if (buffer != null)
-                {
-                    ArrayPool<char>.Shared.Return(buffer);
-                }
+                ArrayPool<char>.Shared.Return(buffer);
             }
 
             uint GetFinalPathNameByHandle(SafeFileHandle handle, char[] buffer)

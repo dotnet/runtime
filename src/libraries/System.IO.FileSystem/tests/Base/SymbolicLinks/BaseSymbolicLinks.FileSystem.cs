@@ -14,10 +14,14 @@ namespace System.IO.Tests
         /// If createOpposite is true, creates a directory if the implementing class is for File or FileInfo, or
         /// creates a file if the implementing class is for Directory or DirectoryInfo.</summary>
         protected abstract void CreateFileOrDirectory(string path, bool createOpposite = false);
+
         protected abstract void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo linkInfo);
+
         protected abstract void AssertLinkExists(FileSystemInfo linkInfo);
+
         /// <summary>Calls the actual public API for creating a symbolic link.</summary>
         protected abstract FileSystemInfo CreateSymbolicLink(string path, string pathToTarget);
+
         /// <summary>Calls the actual public API for resolving the symbolic link target.</summary>
         protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false);
 
@@ -265,9 +269,7 @@ namespace System.IO.Tests
         [Fact]
         public void DetectSymbolicLinkCycle()
         {
-            // link1 -> link2
-            //   ^        /
-            //    \______/
+            // link1 -> link2 -> link1 (cycle)
 
             string link2Path = GetRandomFilePath();
             string link1Path = GetRandomFilePath();
@@ -287,9 +289,7 @@ namespace System.IO.Tests
         [Fact]
         public void DetectLinkReferenceToSelf()
         {
-            // link
-            //  ^    \
-            //   \___/
+            // link -> link (reference to itself)
 
             string linkPath = GetRandomFilePath();
             FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, linkPath);
@@ -433,17 +433,5 @@ namespace System.IO.Tests
             Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
             @"\\SERVER\share\path", @"\\.\pipe\foo",
         };
-
-        [Fact]
-        public void quicktest()
-        {
-            //Debugger.Launch();
-            var info = new DirectoryInfo(@"C:\\linktests\\0628.f");
-            Assert.True(info.Exists);
-            Assert.Equal(@"\\LOCALHOST\\Users\david\share", info.LinkTarget);
-
-            var targetInfo = info.ResolveLinkTarget();
-            Assert.True(targetInfo.Exists);
-        }
     }
 }

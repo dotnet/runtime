@@ -13,7 +13,7 @@ internal static partial class Interop
         internal const int FSCTL_GET_REPARSE_POINT = 0x000900a8;
 
         [DllImport(Libraries.Kernel32, EntryPoint = "DeviceIoControl", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern bool DeviceIoControl(
+        internal static extern bool DeviceIoControl(
             SafeHandle hDevice,
             uint dwIoControlCode,
             IntPtr lpInBuffer,
