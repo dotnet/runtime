@@ -567,7 +567,7 @@ namespace System.IO
 
                 // If the function fails because lpszFilePath is too small to hold the string plus the terminating null character,
                 // the return value is the required buffer size, in TCHARs. This value includes the size of the terminating null character.
-                if (result > InitialBufferSize)
+                if (result > buffer.Length)
                 {
                     ArrayPool<char>.Shared.Return(buffer);
                     buffer = ArrayPool<char>.Shared.Rent((int)result);
