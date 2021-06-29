@@ -353,7 +353,7 @@ var Module = {
 
 globalThis.Module = Module; // needed so that dotnet.js can access the module
 
-const App = {
+var App = {
 	/** Runs the tests (runtime is now loaded and running)
 	 * @type {() => void}
 	 */
@@ -456,6 +456,8 @@ const App = {
 		}
 	}
 };
+
+globalThis.App = App; // needed so that dotnet.js can access the App
 
 // load the config and runtime files which will start the runtime init and subsiquently the tests
 // uses promise chain as loading is async but we can't use await here
