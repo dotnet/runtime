@@ -144,7 +144,7 @@ handle_multiple_ss_requests (void) {
 	return 1;
 }
 
-void
+static void
 mono_wasm_debugger_init (void)
 {
 	if (!debugger_enabled)
@@ -185,7 +185,7 @@ mono_wasm_debugger_init (void)
 	mono_init_debugger_agent_for_wasm (log_level);
 }
 
-void
+static void
 mono_wasm_enable_debugging_internal (int debug_level)
 {
 	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
@@ -222,14 +222,13 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	}
 }
 
-
-void
+static void
 mono_wasm_single_step_hit (void)
 {
 	mono_de_process_single_step (mono_wasm_get_tls (), FALSE);
 }
 
-void
+static void
 mono_wasm_breakpoint_hit (void)
 {
 	mono_de_process_breakpoint (mono_wasm_get_tls (), FALSE);
@@ -421,22 +420,22 @@ receive_debugger_agent_message (void *data, int len)
 
 #else // HOST_WASM
 
-void
+static void
 mono_wasm_single_step_hit (void)
 {
 }
 
-void
+static void
 mono_wasm_breakpoint_hit (void)
 {
 }
 
-void
+static void
 mono_wasm_debugger_init (void)
 {
 }
 
-void
+static void
 mono_wasm_enable_debugging_internal (int debug_level)
 {
 }
