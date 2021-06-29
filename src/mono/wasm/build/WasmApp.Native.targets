@@ -118,7 +118,7 @@
       -->
       <EmscriptenEnvVars Include="PYTHONUTF8=1" />
 
-      <EmscriptenEnvVars Include="PYTHONPATH=$(_EmscriptenPython)$(_PathSeparator)$([MSBuild]::Escape($(PYTHONPATH)))" />
+      <!--<EmscriptenEnvVars Include="PYTHONPATH=$(_EmscriptenPython)$(_PathSeparator)$([MSBuild]::Escape($(PYTHONPATH)))" />-->
     </ItemGroup>
   </Target>
 
