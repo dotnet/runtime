@@ -921,7 +921,6 @@ namespace System.Net.Http.Functional.Tests
                 (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 await connection.SendDefaultResponseHeadersAsync(streamId);
 
-                Debugger.Launch();
                 await connection.SendGoAway(0, errorCode: ProtocolErrors.PROTOCOL_ERROR);
 
                 // Expect client to detect that server has disconnected and throw an exception
