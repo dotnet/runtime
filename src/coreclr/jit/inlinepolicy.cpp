@@ -94,13 +94,15 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool useEdp =
-        (JitConfig.JitExtDefaultPolicy() != 0) && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
+    const bool isPrejit   = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool isSpeedOpt = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
 
-    // Use ExtendedDefaultPolicy when speed is preferred or for PrejitRoot analysis.
-    if (useEdp || isPrejitRoot)
+    if ((JitConfig.JitExtDefaultPolicy() != 0))
     {
-        return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
+        if (isPrejitRoot || !isPrejit || (isPrejit && isSpeedOpt))
+        {
+            return new (compiler, CMK_Inlining) ExtendedDefaultPolicy(compiler, isPrejitRoot);
+        }
     }
 
     return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
