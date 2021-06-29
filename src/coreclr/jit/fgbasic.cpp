@@ -1215,6 +1215,25 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
             break;
 
+            case CEE_LDIND_I1:
+            case CEE_LDIND_U1:
+            case CEE_LDIND_I2:
+            case CEE_LDIND_U2:
+            case CEE_LDIND_I4:
+            case CEE_LDIND_U4:
+            case CEE_LDIND_I8:
+            case CEE_LDIND_I:
+            case CEE_LDIND_R4:
+            case CEE_LDIND_R8:
+            case CEE_LDIND_REF:
+            {
+                if (FgStack::IsArgument(pushedStack.Top()))
+                {
+                    handled = true;
+                }
+                break;
+            }
+
             // Unary operators:
             case CEE_CONV_I:
             case CEE_CONV_U:

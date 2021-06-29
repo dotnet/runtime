@@ -1360,9 +1360,11 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             else if (!m_IsForceInline)
             {
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
-                if (m_IsPrejitRoot || (m_ProfileFrequency > 0.5))
+                if (m_IsPrejitRoot)
                 {
-                    bbLimit += (unsigned)JitConfig.JitExtDefaultPolicyProfBB();
+                    // We're not able to recognize arg-specific foldable branches
+                    // in prejit-root mode.
+                    bbLimit += 3;
                 }
                 bbLimit += m_FoldableBranch;
                 if ((unsigned)value > bbLimit)
@@ -1505,7 +1507,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.0;
+        multiplier += 1.5;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1649,7 +1651,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
-    else if (m_RootCompiler->lvaTableCnt > ((unsigned)(JitConfig.JitMaxLocalsToTrack() / 4)))
+
+    if (m_RootCompiler->lvaTableCnt > ((unsigned)(JitConfig.JitMaxLocalsToTrack() / 4)))
     {
         // Slow down inlining if we already have to many locals in the rootCompiler.
         multiplier /= ((double)m_RootCompiler->lvaTableCnt / ((double)JitConfig.JitMaxLocalsToTrack() / 4.0));
