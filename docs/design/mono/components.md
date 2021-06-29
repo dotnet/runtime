@@ -284,7 +284,7 @@ workload will provide a single `@(_MonoRuntimeAvailableComponent)` item list for
 use the `RuntimeIdentifier` metadata to filter out the details applicable for the current platform.
 
 - The target `_MonoSelectRuntimeComponents` that has the following inputs and outputs:
-  - input `@(_MonoComponent)` : a list of components that a workload wants to use for the current
+  - input `@(_MonoComponent)` (to be set by the workload) : a list of components that a workload wants to use for the current
     app.  It is an error if this specifies any unknown component name.
   - output `@(_MonoRuntimeSelectedComponents)` and `@(_MonoRuntimeSelectedStubComponents)` The names
     of the components that were (resp, were not) selected.  For example `'hot_reload;
@@ -298,4 +298,19 @@ use the `RuntimeIdentifier` metadata to filter out the details applicable for th
     `ComponentName` (e.g. `'hot_reload'`), `IsStub` (`true` or `false`), `Linking` (`'static'` or
     `'dynamic'`).  This output should be used by the workloads when linking the app and runtime.
 
+Example fragment (assuming the mono workload has been imported):
 
+```xml
+  <Project>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'>
+      <_MonoComponent Include="hot_reload;diagnostics_tracing" />
+    </ItemGroup>
+
+    <Target Name="PrintComponents" DependsOnTargets="_MonoSelectRuntimeComponents">
+      <Message Importance="High" Text="Runtime identifier: $(RuntimeIdentifier)" />
+      <Message Importance="High" Text="Selected : @(_MonoRuntimeSelectedComponents) %(ComponentLib)" />
+      <Message Importance="High" Text="Stubbed out : @(_MonoRuntimeSelectedStubComponents) %(ComponentStubLib)" />
+      <Message Importance="High" Text="Linking with lib @(_MonoRuntimeComponentLink) Stub: %(IsStub) Linking: %(Linking) Component: %(ComponentName)"/>
+    </Target>
+  </Project>
+```

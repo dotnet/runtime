@@ -22,14 +22,16 @@
   </Target>
 
   <Target Name="_MonoSelectRuntimeComponents" DependsOnTargets="_MonoComputeAvailableComponentDefinitions">
-    <!-- Input: _MonoRuntimeComponentLinking property: either 'dynamic' or 'static' (defined by the runtime) -->
-    <!-- Input: _MonoRuntimeComponentName item list of the input components (defined by _MonoComputeAvailableComponentDefinitions above) -->
     <!-- Input: _MonoComponent item list of names of components that will be enabled (to be defined by the workload) -->
     <!-- Output: _MonoRuntimeSelectedComponents  subset of _MonoRuntimeComponentName items that were in _MonoComponent -->
     <!-- Output: _MonoRuntimeSelectedStubComponents (static linking only)  subset of _MonoRuntimeComponentName items that were not in _MonoComponent -->
     <!-- Output: _MonoRuntimeComponentLink item list of the filenames to link (relative paths relative to the native/ directory of the runtime pack) -->
     <!--         For dynamic linking, this is only the enabled components.  For static linking, it also includes stubs for the non-selected components -->
    
+    <!-- The target also depends on the following items that are provided by the component-manifest.props from the runtime pack -->
+    <!-- _MonoRuntimeComponentLinking item list: either 'dynamic' or 'static' (defined by the runtime for each possible RuntimeIdentifier) -->
+    <!-- _MonoRuntimeComponentName item list: the components for the current RuntimeIdentifier (defined by _MonoComputeAvailableComponentDefinitions above ) -->
+
     <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'dynamic' or '$(_MonoRuntimeComponentCurrentLinking)' == 'static'">
       <!-- take the intersection of the two item lists. -->
       <!-- n.b. copies the metadata from _MonoRuntimeComponentName to _MonoRuntimeSelectedComponents -->
