@@ -94,7 +94,7 @@ jobs:
       value: $(Build.SourcesDirectory)/artifacts/workloadPackages
 
     - name: workloadArtifactsPath
-      value: $(Build.SourcesDirectory)/artifacts/VSSetup
+      value: $(Build.SourcesDirectory)/artifacts/workloads
 
     - name: liveRuntimeBuildConfigUpper
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
