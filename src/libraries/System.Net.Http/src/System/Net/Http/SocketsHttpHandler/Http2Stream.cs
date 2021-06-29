@@ -387,7 +387,6 @@ namespace System.Net.Http
                 // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
                 requestBodyCancellationSource?.Cancel();
 
-                // SendReset must be called under a lock and after a cancellation of requestBodyCancellationSource.
                 lock (SyncObject)
                 {
                     if (sendReset)
