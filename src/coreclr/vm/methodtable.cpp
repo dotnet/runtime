@@ -9820,8 +9820,12 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     MethodTable *pResult = m_pMap->GetMethodTable();
     if (pResult->IsSpecialMarkerTypeForGenericCasting())
     {
-        TypeHandle ownerAsInst(pMTOwner);
-        Instantiation inst(&ownerAsInst, 1);
+        TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
+        for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
+            ownerAsInst[i] = pMTOwner;
+
+        _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
+        Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());
         pResult = ClassLoader::LoadGenericInstantiationThrowing(pResult->GetModule(), pResult->GetCl(), inst, ClassLoader::LoadTypes, loadLevel).AsMethodTable();
         if (pResult->IsFullyLoaded())
             SetInterface(pResult);
