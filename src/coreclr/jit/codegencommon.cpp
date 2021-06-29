@@ -4842,7 +4842,7 @@ void CodeGen::genCheckUseBlockInit()
         }
     }
 
-    // Record number of stack slots that need zeroing.
+    // Record number of 4 byte slots that need zeroing.
     genInitStkLclCnt = initStkLclCnt;
 
     // Decide if we will do block initialization in the prolog, or use
@@ -12576,7 +12576,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         for (int offs = addr; offs < end;)
         {
 #ifdef TARGET_64BIT
-            if ((offs & 7) == 0 && end - offs >= 8)
+            if ((offs % 8) == 0 && end - offs >= 8)
             {
                 GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
                 offs += 8;
@@ -12584,7 +12584,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             }
 #endif
 
-            assert((offs & 3) == 0 && end - offs >= 4);
+            assert((offs % 4) == 0 && end - offs >= 4);
             GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
             offs += 4;
         }
