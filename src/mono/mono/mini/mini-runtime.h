@@ -450,9 +450,9 @@ extern MonoMethod *mono_current_single_method;
 extern GSList *mono_single_method_list;
 extern GHashTable *mono_single_method_hash;
 extern GList* mono_aot_paths;
-extern MonoDebugOptions mini_debug_options;
+MONO_COMPONENT_API extern MonoDebugOptions mini_debug_options;
 extern GSList *mono_interp_only_classes;
-extern char *sdb_options;
+MONO_COMPONENT_API extern char *sdb_options;
 extern MonoMethodDesc *mono_stats_method_desc;
 
 /*
@@ -505,7 +505,7 @@ void                   mono_runtime_print_stats      (void);
 void                   mono_interp_stub_init         (void);
 void                   mini_install_interp_callbacks (const MonoEECallbacks *cbs);
 
-extern const
+MONO_COMPONENT_API extern const
 MonoEECallbacks*       mono_interp_callbacks_pointer;
 
 #define mini_get_interp_callbacks() (mono_interp_callbacks_pointer)
@@ -525,10 +525,10 @@ void      mono_precompile_assemblies        (void);
 MONO_API int       mono_parse_default_optimizations  (const char* p);
 gboolean          mono_running_on_valgrind (void);
 
-MonoLMF * mono_get_lmf                      (void);
+MONO_COMPONENT_API MonoLMF * mono_get_lmf                      (void);
 void      mono_set_lmf                      (MonoLMF *lmf);
-void      mono_push_lmf                     (MonoLMFExt *ext);
-void      mono_pop_lmf                      (MonoLMF *lmf);
+MONO_COMPONENT_API void      mono_push_lmf                     (MonoLMFExt *ext);
+MONO_COMPONENT_API void      mono_pop_lmf                      (MonoLMF *lmf);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_jit_set_domain      (MonoDomain *domain);
@@ -550,7 +550,7 @@ gpointer  mono_resolve_patch_target_ext     (MonoMemoryManager *mem_manager, Mon
 void mini_register_jump_site                (MonoMethod *method, gpointer ip);
 void mini_patch_jump_sites                  (MonoMethod *method, gpointer addr);
 void mini_patch_llvm_jit_callees            (MonoMethod *method, gpointer addr);
-gpointer  mono_jit_search_all_backends_for_jit_info (MonoMethod *method, MonoJitInfo **ji);
+MONO_COMPONENT_API gpointer  mono_jit_search_all_backends_for_jit_info (MonoMethod *method, MonoJitInfo **ji);
 gpointer  mono_jit_find_compiled_method_with_jit_info (MonoMethod *method, MonoJitInfo **ji);
 gpointer  mono_jit_find_compiled_method     (MonoMethod *method);
 gpointer mono_jit_compile_method (MonoMethod *method, MonoError *error);

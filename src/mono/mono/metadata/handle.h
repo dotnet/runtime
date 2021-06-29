@@ -124,9 +124,9 @@ typedef void (*GcScanFunc) (gpointer*, gpointer);
 #endif
 
 #ifndef MONO_HANDLE_TRACK_OWNER
-MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info);
+MONO_COMPONENT_API MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info);
 #else
-MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info, const char* owner);
+MONO_COMPONENT_API MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info, const char* owner);
 #endif
 
 void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check);
@@ -171,7 +171,7 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 }
 
 // There are deliberately locals and a constant NULL global with this same name.
-extern MonoThreadInfo * const mono_thread_info_current_var;
+MONO_COMPONENT_API extern MonoThreadInfo * const mono_thread_info_current_var;
 
 /*
 Icall macros
