@@ -71,7 +71,7 @@ namespace System.Data.OleDb
 
             public unsafe System.Data.OleDb.OleDbHResult GetSource(out string source)
             {
-                IntPtr pSource;
+                IntPtr pSource = IntPtr.Zero;
                 int errorCode = ((delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)_wrappedInstance + 4 /* IErrorInfo.GetSource slot */)))
                     (_wrappedInstance, &pSource);
                 if (pSource == IntPtr.Zero)
