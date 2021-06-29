@@ -59,7 +59,7 @@ namespace System.Data.OleDb
         {
             private readonly IntPtr _wrappedInstance;
 
-            public PictureWrapper(IntPtr wrappedInstance)
+            public ErrorInfoWrapper(IntPtr wrappedInstance)
             {
                 _wrappedInstance = wrappedInstance;
             }
