@@ -558,7 +558,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 }
 
 #ifdef DEBUG
-void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex assertionIndex /* =0 */)
+void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex assertionIndex /* = 0 */)
 {
     if (curAssertion->op1.kind == O1K_EXACT_TYPE)
     {
@@ -778,12 +778,67 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
     if (assertionIndex > 0)
     {
-        printf(" index=#%02u, mask=", assertionIndex);
-        printf("%s", BitVecOps::ToString(apTraits, BitVecOps::MakeSingleton(apTraits, assertionIndex - 1)));
+        printf(", index = ");
+        optPrintAssertionIndex(assertionIndex);
     }
     printf("\n");
 }
+
+void Compiler::optPrintAssertionIndex(AssertionIndex index)
+{
+    if (index == NO_ASSERTION_INDEX)
+    {
+        printf("#NA");
+        return;
+    }
+
+    printf("#%02u", index);
+}
+
+void Compiler::optPrintAssertionIndices(ASSERT_TP assertions)
+{
+    if (BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        optPrintAssertionIndex(NO_ASSERTION_INDEX);
+        return;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bitIndex = 0;
+    if (iter.NextElem(&bitIndex))
+    {
+        optPrintAssertionIndex(static_cast<AssertionIndex>(bitIndex + 1));
+        while (iter.NextElem(&bitIndex))
+        {
+            printf(" ");
+            optPrintAssertionIndex(static_cast<AssertionIndex>(bitIndex + 1));
+        }
+    }
+}
 #endif // DEBUG
+
+/* static */
+void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer /* = nullptr */ )
+{
+#ifdef DEBUG
+    Compiler* compiler = JitTls::GetCompiler();
+    if (compiler->verbose)
+    {
+        printf(header);
+        compiler->optPrintAssertionIndices(assertions);
+        if (footer != nullptr)
+        {
+            printf(footer);
+        }
+    }
+#endif // DEBUG
+}
+
+/* static */
+void Compiler::optDumpAssertionIndices(ASSERT_TP assertions, const char* footer /* = nullptr */ )
+{
+    optDumpAssertionIndices("", assertions, footer);
+}
 
 /******************************************************************************
  *
