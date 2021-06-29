@@ -33,20 +33,122 @@ namespace SlowPathELTTests
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct FloatingPointStruct
+    public struct Fp32x2Struct
     {
-        public double d1;
-        public double d2;
+        public float x;
+        public float y;
 
-        public FloatingPointStruct(double d1, double d2)
+        public Fp32x2Struct(float x, float y)
         {
-            this.d1 = d1;
-            this.d2 = d2;
+            this.x = x;
+            this.y = y;
         }
 
         public override String ToString()
         {
-            return $"d1={d1} d2={d2}";
+            return $"x={x} y={y}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Fp32x3Struct
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public Fp32x3Struct(float x, float y, float z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Fp32x4Struct
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
+
+        public Fp32x4Struct(float x, float y, float z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z} w={w}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Fp64x2Struct
+    {
+        public double x;
+        public double y;
+
+        public Fp64x2Struct(double x, double y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Fp64x3Struct
+    {
+        public double x;
+        public double y;
+        public double z;
+
+        public Fp64x3Struct(double x, double y, double z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Fp64x4Struct
+    {
+        public double x;
+        public double y;
+        public double z;
+        public double w;
+
+        public Fp64x4Struct(double x, double y, double z, double w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z} w={w}";
         }
     }
 
@@ -117,7 +219,17 @@ namespace SlowPathELTTests
 
             Console.WriteLine($"IntegerStructFunc returned {IntegerStructFunc(new IntegerStruct(14, 256))}");
 
-            Console.WriteLine($"FloatingPointStructFunc returned {FloatingPointStructFunc(new FloatingPointStruct(13.0, 145.2))}");
+            Console.WriteLine($"Fp32x2StructFunc returned {Fp32x2StructFunc(new Fp32x2Struct(13.0f, 145.2f))}");
+
+            Console.WriteLine($"Fp32x3StructFunc returned {Fp32x3StructFunc(new Fp32x3Struct(13.0f, 145.2f, 321.98f))}");
+
+            Console.WriteLine($"Fp32x4StructFunc returned {Fp32x4StructFunc(new Fp32x4Struct(13.0f, 145.2f, 321.98f, 27.03f))}");
+
+            Console.WriteLine($"Fp64x2StructFunc returned {Fp64x2StructFunc(new Fp64x2Struct(13.0, 145.2))}");
+
+            Console.WriteLine($"Fp64x3StructFunc returned {Fp64x3StructFunc(new Fp64x3Struct(13.0, 145.2, 321.98))}");
+
+            Console.WriteLine($"Fp64x4StructFunc returned {Fp64x4StructFunc(new Fp64x4Struct(13.0, 145.2, 321.98, 27.03))}");
 
             Console.WriteLine($"DoubleRetFunc returned {DoubleRetFunc()}");
 
@@ -154,9 +266,44 @@ namespace SlowPathELTTests
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static FloatingPointStruct FloatingPointStructFunc(FloatingPointStruct fps)
+        public static Fp32x2Struct Fp32x2StructFunc(Fp32x2Struct fps)
         {
-            fps.d2 = 256.8;
+            fps.y = 256.8f;
+            return fps;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static Fp32x3Struct Fp32x3StructFunc(Fp32x3Struct fps)
+        {
+            fps.z = 256.8f;
+            return fps;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static Fp32x4Struct Fp32x4StructFunc(Fp32x4Struct fps)
+        {
+            fps.w = 256.8f;
+            return fps;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static Fp64x2Struct Fp64x2StructFunc(Fp64x2Struct fps)
+        {
+            fps.y = 256.8;
+            return fps;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static Fp64x3Struct Fp64x3StructFunc(Fp64x3Struct fps)
+        {
+            fps.z = 256.8;
+            return fps;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static Fp64x4Struct Fp64x4StructFunc(Fp64x4Struct fps)
+        {
+            fps.w = 256.8;
             return fps;
         }
 
