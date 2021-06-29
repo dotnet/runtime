@@ -31,7 +31,7 @@ namespace ILCompiler.PEWriter
 
         public void SavePerfMap(string perfMapPath, string dllFileName, TargetOS targetOS, TargetArchitecture targetArch)
         {
-            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.map");
+            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.r2rmap");
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
             PerfMapWriter.Write(perfMapFileName, _outputInfoBuilder.EnumerateMethods(), _outputInfoBuilder.EnumerateInputAssemblies(), targetOS, targetArch);
         }

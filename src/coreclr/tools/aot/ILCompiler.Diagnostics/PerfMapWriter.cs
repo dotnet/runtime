@@ -13,13 +13,14 @@ namespace ILCompiler.Diagnostics
 {
     public class PerfMapWriter
     {
+        public const int CurrentFormatVersion = 1;
+        
         public enum PseudoRVA : uint
         {
             OutputGuid         = 0xFFFFFFFF,
             TargetOS           = 0xFFFFFFFE,
             TargetArchitecture = 0xFFFFFFFD,
-            InputAssemblyName  = 0xFFFFFFFC,
-            InputAssemblyMvid  = 0xFFFFFFFB,
+            FormatVersion      = 0xFFFFFFFC,
         }
 
         private TextWriter _writer;
@@ -48,14 +49,7 @@ namespace ILCompiler.Diagnostics
                 perfMapWriter.WriteLine(outputGuid.ToString(), (uint)PseudoRVA.OutputGuid, 0);
                 perfMapWriter.WriteLine(targetOS.ToString(), (uint)PseudoRVA.TargetOS, 0);
                 perfMapWriter.WriteLine(targetArch.ToString(), (uint)PseudoRVA.TargetArchitecture, 0);
-
-                uint inputAssemblyIndex = 0;
-                foreach (AssemblyInfo inputAssembly in orderedInputs)
-                {
-                    perfMapWriter.WriteLine(inputAssembly.Name, (uint)PseudoRVA.InputAssemblyName, inputAssemblyIndex);
-                    perfMapWriter.WriteLine(inputAssembly.Mvid.ToString(), (uint)PseudoRVA.InputAssemblyMvid, inputAssemblyIndex);
-                    inputAssemblyIndex++;
-                }
+                perfMapWriter.WriteLine(CurrentFormatVersion.ToString(), (uint)PseudoRVA.FormatVersion, 0);
 
                 foreach (MethodInfo methodInfo in methods)
                 {
