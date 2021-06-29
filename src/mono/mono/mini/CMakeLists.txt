@@ -402,7 +402,7 @@ if(NOT DISABLE_SHARED_LIBS)
       set_property(TARGET Mono APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
     endif ()
     set_property(TARGET Mono APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
-    target_sources(Mono PRIVATE "${mono-components-objects}")
+    target_sources(Mono PRIVATE "${mono-components-stub-objects}")
     set_target_properties(Mono PROPERTIES
       FRAMEWORK TRUE
       FRAMEWORK_VERSION C
