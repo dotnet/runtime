@@ -379,7 +379,7 @@ stages:
       jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
       buildConfig: release
       platforms:
-      - Windows_NT_x64
+      - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         dependsOn:
