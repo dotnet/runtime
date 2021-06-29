@@ -22,13 +22,11 @@ namespace System.Reflection.Context.Delegation
             UnderlyingAssembly = assembly;
         }
 
-#pragma warning disable IL3003 // netstandard2.1 didn't have RequiresAssemblyFiles attributes applied on Assembly
         [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
         public override string Location
         {
             get { return UnderlyingAssembly.Location; }
         }
-#pragma warning restore IL3003
 
         public override Module ManifestModule
         {
@@ -72,6 +70,10 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.SecurityRuleSet; }
         }
 
+#if NETCOREAPP
+        [Obsolete]
+        [RequiresAssemblyFiles]
+#endif
         public override string CodeBase
         {
             get { return UnderlyingAssembly.CodeBase; }
@@ -87,6 +89,10 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.EntryPoint; }
         }
 
+#if NETCOREAPP
+        [Obsolete]
+        [RequiresAssemblyFiles]
+#endif
         public override string EscapedCodeBase
         {
             get { return UnderlyingAssembly.EscapedCodeBase; }
@@ -102,7 +108,6 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetExportedTypes();
         }
 
-#pragma warning disable IL3003 // netstandard2.1 didn't have RequiresAssemblyFiles attributes applied on Assembly
         [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.GetFile(string)' will throw for assemblies embedded in a single-file app", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3001")]
         public override FileStream GetFile(string name)
         {
@@ -120,7 +125,6 @@ namespace System.Reflection.Context.Delegation
         {
             return UnderlyingAssembly.GetFiles(getResourceModules);
         }
-#pragma warning restore IL3003
 
         public override Module[] GetLoadedModules(bool getResourceModules)
         {
@@ -192,6 +196,9 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetTypes();
         }
 
+#if NETCOREAPP
+        [Obsolete]
+#endif
         public override bool GlobalAssemblyCache
         {
             get { return UnderlyingAssembly.GlobalAssemblyCache; }

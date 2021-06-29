@@ -83,7 +83,6 @@ namespace System.Reflection
             return null;
         }
 
-        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase
         {
             get
