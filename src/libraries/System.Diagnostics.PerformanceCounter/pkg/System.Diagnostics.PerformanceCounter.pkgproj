@@ -6,7 +6,7 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.PerformanceCounter.csproj" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
