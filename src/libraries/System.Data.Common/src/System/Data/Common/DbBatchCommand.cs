@@ -12,8 +12,6 @@ namespace System.Data.Common
 
         public abstract CommandType CommandType { get; set; }
 
-        public abstract CommandBehavior CommandBehavior { get; set; }
-
         public abstract int RecordsAffected { get; set; }
 
         public DbParameterCollection Parameters => DbParameterCollection;

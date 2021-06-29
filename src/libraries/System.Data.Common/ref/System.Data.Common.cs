@@ -1928,10 +1928,11 @@ namespace System.Data.Common
         protected abstract System.Data.Common.DbConnection? DbConnection { get; set; }
         public System.Data.Common.DbTransaction? Transaction { get; set; }
         protected abstract System.Data.Common.DbTransaction? DbTransaction { get; set; }
-        public System.Data.Common.DbDataReader ExecuteReader() { throw null; }
-        protected abstract System.Data.Common.DbDataReader ExecuteDbDataReader();
+        public System.Data.Common.DbDataReader ExecuteReader(System.Data.CommandBehavior behavior = System.Data.CommandBehavior.Default) { throw null; }
+        protected abstract System.Data.Common.DbDataReader ExecuteDbDataReader(System.Data.CommandBehavior behavior);
         public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        protected abstract System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(System.Threading.CancellationToken cancellationToken);
+        public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        protected abstract System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken);
         public abstract int ExecuteNonQuery();
         public abstract System.Threading.Tasks.Task<int> ExecuteNonQueryAsync(System.Threading.CancellationToken cancellationToken = default);
         public abstract object? ExecuteScalar();
@@ -1948,7 +1949,6 @@ namespace System.Data.Common
     {
         public abstract string CommandText { get; set; }
         public abstract CommandType CommandType { get; set; }
-        public abstract CommandBehavior CommandBehavior { get; set; }
         public abstract int RecordsAffected { get; set; }
         public DbParameterCollection Parameters { get { throw null; } }
         protected abstract DbParameterCollection DbParameterCollection { get; }

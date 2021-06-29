@@ -30,15 +30,22 @@ namespace System.Data.Common
 
         protected abstract DbTransaction? DbTransaction { get; set; }
 
-        public DbDataReader ExecuteReader()
-            => ExecuteDbDataReader();
+        public DbDataReader ExecuteReader(CommandBehavior behavior = CommandBehavior.Default)
+            => ExecuteDbDataReader(behavior);
 
-        protected abstract DbDataReader ExecuteDbDataReader();
+        protected abstract DbDataReader ExecuteDbDataReader(CommandBehavior behavior);
 
         public Task<DbDataReader> ExecuteReaderAsync(CancellationToken cancellationToken = default)
-            => ExecuteDbDataReaderAsync(cancellationToken);
+            => ExecuteDbDataReaderAsync(CommandBehavior.Default, cancellationToken);
 
-        protected abstract Task<DbDataReader> ExecuteDbDataReaderAsync(CancellationToken cancellationToken);
+        public Task<DbDataReader> ExecuteReaderAsync(
+            CommandBehavior behavior,
+            CancellationToken cancellationToken = default)
+            => ExecuteDbDataReaderAsync(behavior, cancellationToken);
+
+        protected abstract Task<DbDataReader> ExecuteDbDataReaderAsync(
+            CommandBehavior behavior,
+            CancellationToken cancellationToken);
 
         public abstract int ExecuteNonQuery();
 
