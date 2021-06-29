@@ -15,5 +15,13 @@
     <namespace fullname="Xunit" />
     <namespace fullname="Xunit.Sdk" />
   </assembly>
+  <assembly fullname="xunit.assert">
+    <type fullname="Xunit.Sdk.AssertEqualityComparer`1">
+      <method signature="System.Boolean CompareTypedSets(System.Collections.IEnumerable,System.Collections.IEnumerable)" />
+    </type>
+  </assembly>
+  <assembly fullname="System.Runtime.InteropServices">
+    <type fullname="System.Runtime.InteropServices.IDispatchImplAttribute" />
+  </assembly>
   <assembly fullname="xunit.runner.utility.netcoreapp10" />
 </linker>
