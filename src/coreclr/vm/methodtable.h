@@ -1254,6 +1254,8 @@ public:
         return IsGenericTypeDefinition();
     }
 
+    static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
+
     static BOOL ComputeContainsGenericVariables(Instantiation inst);
 
     inline void SetContainsGenericVariables()
