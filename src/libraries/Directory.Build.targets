@@ -42,6 +42,13 @@
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == '' and
                                 '$(IsReferenceAssembly)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
+
+    <AnalyzerForAssembly Condition="'$(AnalyzerForAssembly)' == '' AND ('$(IsGeneratorProject)' == 'true' or '$(IsAnalyzerProject)' == 'true')">$(AssemblyName.Substring(0, $(AssemblyName.LastIndexOf('.'))))</AnalyzerForAssembly>
+    <IsNETCoreAppAnalyzer Condition="'$(IsNETCoreAppAnalyzer)' == '' and
+                                     '$(AnalyzerForAssembly)' != '' and
+                                     $(NetCoreAppLibrary.Contains('$(AnalyzerForAssembly);'))">true</IsNETCoreAppAnalyzer>
+    <IsAspNetCoreAppAnalyzer Condition="'$(IsAspNetCoreApp)' == 'true' AND ('$(IsGeneratorProject)' == 'true' or '$(IsAnalyzerProject)' == 'true')">true</IsAspNetCoreAppAnalyzer>
+
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -64,6 +71,7 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+    <EnableBinplacing Condition="'$(IsAspNetCoreAppAnalyzer)' == 'true' or '$(IsNetCoreAppAnalyzer)' == 'true'">true</EnableBinplacing>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
     <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>
@@ -97,6 +105,10 @@
       <RuntimePath>$(ASPNETCoreAppPackageRuntimePath)</RuntimePath>
       <RefPath>$(ASPNETCoreAppPackageRefPath)</RefPath>
     </BinPlaceTargetFrameworks>
+    <BinPlaceDir Include="$(ASPNETCoreAppPackageRootPath)\analyzers\dotnet\$(AnalyzerLanguage)"
+                 Condition="'$(IsAspNetCoreAppAnalyzer)' == 'true'" />
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
+                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true'" />
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"

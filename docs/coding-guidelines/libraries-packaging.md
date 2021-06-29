@@ -14,6 +14,8 @@ In some occasions we may want to include a library in the shared framework, but 
 
 Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework. This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 
+Source generators and analyzers can be included with the shared framework.  These projects are identified by the `gen` folder, or the project may specify `IsGeneratorProject` or `IsAnalyzerProject` as true. These are identified as part of the shared framework through the convention `libraryName.suffix` (where suffix can be anything such as `Generators` or `Analyzers`), if `libraryName` is part of the shared framework the analyzer will be included.  These projects should specify `AnalyzerLanguage` as mentioned below.
+
 Removing a library from the shared framework is a breaking change and should be avoided.
 
 ## Transport package
