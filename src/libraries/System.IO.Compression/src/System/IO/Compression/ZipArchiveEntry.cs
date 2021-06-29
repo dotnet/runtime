@@ -4,7 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
@@ -1222,12 +1225,52 @@ namespace System.IO.Compression
                 _position += source.Length;
             }
 
+            public override void WriteByte(byte value) =>
+                Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArguments(buffer, offset, count);
+                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ThrowIfDisposed();
+                Debug.Assert(CanWrite);
+
+                return !buffer.IsEmpty ?
+                    Core(buffer, cancellationToken) :
+                    default;
+
+                async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+                {
+                    if (!_everWritten)
+                    {
+                        _everWritten = true;
+                        // write local header, we are good to go
+                        _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false);
+                    }
+
+                    await _crcSizeStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    _position += buffer.Length;
+                }
+            }
+
             public override void Flush()
             {
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);
 
                 _crcSizeStream.Flush();
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                ThrowIfDisposed();
+                Debug.Assert(CanWrite);
+
+                return _crcSizeStream.FlushAsync(cancellationToken);
             }
 
             protected override void Dispose(bool disposing)

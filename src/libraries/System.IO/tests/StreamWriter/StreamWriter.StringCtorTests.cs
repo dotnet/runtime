@@ -47,6 +47,15 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public static void LackOfWriteAccess_ThrowsArgumentException()
+        {
+            var readOptions = new FileStreamOptions { Access = FileAccess.Read };
+
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamWriter("path", readOptions));
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamWriter("path", Encoding.UTF8, readOptions));
+        }
+
+        [Fact]
         public static void CreateStreamWriter()
         {
             string testfile = Path.GetTempFileName();

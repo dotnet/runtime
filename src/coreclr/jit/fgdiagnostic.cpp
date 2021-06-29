@@ -2992,6 +2992,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
 
+            case GT_ASG:
+            {
+                // Can't CSE dst.
+                assert((tree->gtGetOp1()->gtFlags & GTF_DONT_CSE) != 0);
+                break;
+            }
             default:
                 break;
         }
