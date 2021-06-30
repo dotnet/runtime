@@ -317,6 +317,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/pull/54692")]
         public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
         {
             using CancellationTokenSource cts = new CancellationTokenSource();
