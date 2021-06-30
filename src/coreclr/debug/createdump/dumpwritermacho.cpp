@@ -178,12 +178,10 @@ DumpWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
 // Write the core dump file
 //
 bool
-DumpWriter::WriteDump(std::string& dumpFileName)
+DumpWriter::WriteDump()
 {
-    if (!OpenDump(dumpFileName.c_str())) {
-        return false;
-    }
     BuildSegmentLoadCommands();
+
     BuildThreadLoadCommands();
 
     uint64_t fileOffset = 0;

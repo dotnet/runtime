@@ -38,18 +38,21 @@ DumpWriter::WriteCrashReport(std::string& dumpFileName)
     std::string crashReportFile(dumpFileName);
     crashReportFile.append(".crashreport.json");
     printf("Writing crash report to file %s\n", crashReportFile.c_str());
-
-    JsonWriter writer;
-    if (!writer.OpenWriter(crashReportFile.c_str())) {
-        return;
-    }
     try
     {
+        JsonWriter writer;
+        if (!writer.OpenWriter(crashReportFile.c_str())) {
+            return;
+        }
         WriteCrashReport(writer);
         writer.CloseWriter();
     }
     catch (const std::exception& e)
     {
+        fprintf(stderr, "Writing the crash reprot file FAILED\n");
+
+        // Delete the partial json file on error
+        remove(crashReportFile.c_str());
     }
 }
 

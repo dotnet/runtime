@@ -3,6 +3,22 @@
 
 #include "createdump.h"
 
+JsonWriter::JsonWriter()
+{
+    m_fd = -1;
+    m_indent = JSON_INDENT_VALUE;
+    m_comma = false;
+}
+
+JsonWriter::~JsonWriter()
+{
+    if (m_fd != -1)
+    {
+        close(m_fd);
+        m_fd = -1;
+    }
+}
+
 void JsonWriter::Write(std::string& text)
 {
     if (!DumpWriter::WriteData(m_fd, (void*)text.c_str(), text.length()))
@@ -62,13 +78,6 @@ void JsonWriter::CloseBlock(char marker)
     Write(text);
 }
 
-JsonWriter::JsonWriter()
-{
-    m_fd = -1;
-    m_indent = JSON_INDENT_VALUE;
-    m_comma = false;
-}
-
 bool JsonWriter::OpenWriter(const char* fileName)
 {
     m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
@@ -84,12 +93,7 @@ bool JsonWriter::OpenWriter(const char* fileName)
 void JsonWriter::CloseWriter()
 {
     assert(m_indent == JSON_INDENT_VALUE);
-    if (m_fd != -1)
-    {
-        Write("\n}\n");
-        close(m_fd);
-        m_fd = -1;
-    }
+    Write("\n}\n");
 }
 
 void JsonWriter::WriteValue(const char* key, const char* value)

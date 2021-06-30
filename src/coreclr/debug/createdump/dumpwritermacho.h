@@ -33,12 +33,12 @@ private:
 public:
     DumpWriter(CrashInfo& crashInfo);
     virtual ~DumpWriter();
-    bool WriteDump(std::string& dumpFileName);
+    bool OpenDump(const char* dumpFileName);
+    bool WriteDump();
     void WriteCrashReport(std::string& dumpFileName);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
-    bool OpenDump(const char* dumpFileName);
     void WriteCrashReport(JsonWriter& writer);
     void WriteStackFrame(JsonWriter& writer, const StackFrame& frame);
     void BuildSegmentLoadCommands();

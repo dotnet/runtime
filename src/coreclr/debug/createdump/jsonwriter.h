@@ -21,6 +21,7 @@ private:
 
 public:
     JsonWriter();
+    ~JsonWriter();
     bool OpenWriter(const char* fileName);
     void CloseWriter();
     void WriteValue(const char* key, const char* value);

@@ -23,11 +23,8 @@ DumpWriter::WriteCrashReport(JsonWriter& writer)
 //      alignment
 //   memory blocks
 bool
-DumpWriter::WriteDump(std::string& dumpFileName)
+DumpWriter::WriteDump()
 {
-    if (!OpenDump(dumpFileName.c_str())) {
-        return false;
-    }
     // Write the ELF header
     Ehdr ehdr;
     memset(&ehdr, 0, sizeof(Ehdr));
