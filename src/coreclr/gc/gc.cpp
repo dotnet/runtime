@@ -3687,9 +3687,9 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
             if (current_num_units >= num_units)
             {
                 dprintf (REGIONS_LOG, ("found %Id contiguous free units(%d->%d), sufficient",
-                    (size_t)current_val,
+                    (size_t)current_num_units,
                     (int)(current_index - region_map_left_start),
-                    (int)(current_index - region_map_left_start + current_val)));
+                    (int)(current_index - region_map_left_start + current_num_units)));
 
                 uint32_t* busy_block;
                 uint32_t* free_block;
@@ -3849,6 +3849,39 @@ void region_allocator::delete_region (uint8_t* region_start)
     print_map ("after delete");
 
     leave_spin_lock();
+}
+
+bool region_allocator::should_delete_region (uint8_t* start, int num_free_regions, int num_free_large_regions)
+{
+    size_t address_space_available = global_region_end - global_region_start;
+#ifdef MULTIPLE_HEAPS
+    size_t address_space_available_per_heap = address_space_available / gc_heap::n_heaps;
+#else //MULTIPLE_HEAPS
+    size_t address_space_available_per_heap = address_space_available;
+#endif //MULTIPLE_HEAPS
+
+    size_t address_space_in_free_regions = (num_free_regions       * region_alignment      ) +
+                                           (num_free_large_regions * large_region_alignment);
+
+    // don't keep more than a quarter of the address space in the per-heap free lists
+    if (address_space_in_free_regions >= address_space_available_per_heap / 4)
+    {
+        return true;
+    }
+
+    // get stingy if the load exceeds 50%
+    if (get_va_memory_load() > 50)
+    {
+        return true;
+    }
+
+    // get back regions in the upper half
+    if (start >= global_region_start + address_space_available / 2)
+    {
+        return true;
+    }
+
+    return false;
 }
 #endif //USE_REGIONS
 
@@ -10796,6 +10829,25 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     clear_region_info (region);
 
+    bool should_delete_region_p = global_region_allocator.should_delete_region (get_region_start (region),
+                                                                                num_free_regions,
+                                                                                num_free_large_regions);
+
+    if (should_delete_region_p)
+    {
+        // we need to either decommit or clear the committed space before
+        // giving it back to the region allocator - choice for now is to preferably decommit
+        uint8_t* page_start = align_lower_page (heap_segment_mem (region));
+        size_t size = heap_segment_committed (region) - page_start;
+        bool decommit_succeeded = virtual_decommit (page_start, size, heap_segment_oh (region), heap_number);
+        if (!decommit_succeeded)
+        {
+            memclr (page_start, size);
+        }
+        global_region_allocator.delete_region (get_region_start (region));
+        return;
+    }
+
     if (heap_segment_uoh_p (region))
     {
         num_free_large_regions++;
@@ -10851,8 +10903,8 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
             num_free_regions--;
             num_free_regions_removed++;
             region = free_regions;
-            dprintf (REGIONS_LOG, ("%d free regions left, get %Ix-%Ix-%Ix",
-                num_free_regions, heap_segment_mem (region),
+            dprintf (REGIONS_LOG, ("h%d %d free regions left, get %Ix-%Ix-%Ix",
+                heap_number, num_free_regions, heap_segment_mem (region),
                 heap_segment_committed (region), heap_segment_used (region)));
             free_regions = heap_segment_next (free_regions);
             committed_in_free -= heap_segment_committed (region) - get_region_start (region);
@@ -10879,8 +10931,8 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         {
             num_free_large_regions--;
             num_free_large_regions_removed++;
-            dprintf (REGIONS_LOG, ("%d large free regions left, get %Ix-%Ix-%Ix",
-                num_free_large_regions, heap_segment_mem (region),
+            dprintf (REGIONS_LOG, ("h%d %d large free regions left, get %Ix-%Ix-%Ix",
+                heap_number, num_free_large_regions, heap_segment_mem (region),
                 heap_segment_committed (region), heap_segment_used (region)));
             *link = heap_segment_next (region);
             committed_in_free -= heap_segment_committed (region) - get_region_start (region);
@@ -26943,7 +26995,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 new_address = plug_start;
 
                 dprintf (3, (ThreadStressLog::gcPlanPinnedPlugMsg(),
-                            (size_t)(node_gap_size (plug_start)), (size_t)plug_start,
+                            (merge_with_last_pin_p ? 0 : (size_t)(node_gap_size (plug_start))),
+                            (size_t)plug_start,
                             (size_t)plug_end, ps,
                             (merge_with_last_pin_p ? 1 : 0)));
 

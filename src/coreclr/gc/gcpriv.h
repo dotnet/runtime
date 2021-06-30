@@ -5526,6 +5526,7 @@ public:
     bool allocate_basic_region (uint8_t** start, uint8_t** end);
     bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size = 0);
     void delete_region (uint8_t* start);
+    bool should_delete_region (uint8_t* start, int num_free_regions, int num_free_large_regions);
     uint32_t get_va_memory_load()
     {
         return (uint32_t)(((global_region_left_used - global_region_start) + ((global_region_end - global_region_right_used)))* 100.0
