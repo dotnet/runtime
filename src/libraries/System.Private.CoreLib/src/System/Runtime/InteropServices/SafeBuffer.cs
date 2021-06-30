@@ -227,7 +227,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Reads value types from memory starting at the offset, and writes them into a span.</summary>
+        /// Reads value types from memory starting at the offset, and writes them into a span. The number of value types that will be read is determined by the length of the span.</summary>
         /// <typeparam name="T">The value type to read.</typeparam>
         /// <param name="byteOffset">The location from which to start reading.</param>
         /// <param name="buffer">The output span to write to.</param>
