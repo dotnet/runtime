@@ -100,10 +100,10 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static extern uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            uint ipAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+            uint ipAddress, [In] SafeNativeMemoryHandle data, ushort dataSize, ref IPOptions options, SafeNativeMemoryHandle replyBuffer, uint replySize, uint timeout);
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static extern uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            byte[] sourceSocketAddress, byte[] destSocketAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+            byte[] sourceSocketAddress, byte[] destSocketAddress, [In] SafeNativeMemoryHandle data, ushort dataSize, ref IPOptions options, SafeNativeMemoryHandle replyBuffer, uint replySize, uint timeout);
     }
 }

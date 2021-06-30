@@ -22,8 +22,8 @@ namespace System.Net.NetworkInformation
         private bool _ipv6;
         private ManualResetEvent? _pingEvent;
         private RegisteredWaitHandle? _registeredWait;
-        private SafeLocalAllocHandle? _requestBuffer;
-        private SafeLocalAllocHandle? _replyBuffer;
+        private SafeNativeMemoryHandle? _requestBuffer;
+        private SafeNativeMemoryHandle? _replyBuffer;
         private Interop.IpHlpApi.SafeCloseIcmpHandle? _handlePingV4;
         private Interop.IpHlpApi.SafeCloseIcmpHandle? _handlePingV6;
         private TaskCompletionSource<PingReply>? _taskCompletionSource;
@@ -59,7 +59,7 @@ namespace System.Net.NetworkInformation
 
             if (_replyBuffer == null)
             {
-                _replyBuffer = SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
+                _replyBuffer = SafeNativeMemoryHandle.Alloc(MaxUdpPacket);
             }
 
             int error;
@@ -205,7 +205,7 @@ namespace System.Net.NetworkInformation
 
         private PingReply CreatePingReply()
         {
-            SafeLocalAllocHandle buffer = _replyBuffer!;
+            SafeNativeMemoryHandle buffer = _replyBuffer!;
 
             // Marshals and constructs new reply.
             if (_ipv6)
@@ -306,7 +306,7 @@ namespace System.Net.NetworkInformation
         // Copies _requestBuffer into unmanaged memory for async icmpsendecho APIs.
         private unsafe void SetUnmanagedStructures(byte[] buffer)
         {
-            _requestBuffer = SafeLocalAllocHandle.LocalAlloc(buffer.Length);
+            _requestBuffer = SafeNativeMemoryHandle.Alloc(buffer.Length);
             byte* dst = (byte*)_requestBuffer.DangerousGetHandle();
             for (int i = 0; i < buffer.Length; ++i)
             {

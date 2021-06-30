@@ -118,8 +118,8 @@
              Link="Common\Interop\Windows\SspiCli\Interop.TokenSource.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.AllocateLocallyUniqueId.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeNativeMemoryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeNativeMemoryHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs"

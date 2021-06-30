@@ -1657,7 +1657,7 @@ namespace System.Net
                                 &httpResponse,
                                 null,
                                 &DataWritten,
-                                SafeLocalAllocHandle.Zero,
+                                SafeNativeMemoryHandle.Zero,
                                 0,
                                 null,
                                 null);
@@ -1745,7 +1745,7 @@ namespace System.Net
                         int tokenSize = GetTokenSizeFromBlob((IntPtr)blobPtr);
                         Debug.Assert(tokenSize < int.MaxValue);
 
-                        token = Interop.HttpApi.SafeLocalFreeChannelBinding.LocalAlloc(tokenSize);
+                        token = Interop.HttpApi.SafeLocalFreeChannelBinding.Alloc(tokenSize);
                         if (token.IsInvalid)
                         {
                             throw new OutOfMemoryException();

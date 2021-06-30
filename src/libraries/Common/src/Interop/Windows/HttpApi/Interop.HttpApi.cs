@@ -484,7 +484,7 @@ internal static partial class Interop
         internal static extern unsafe uint HttpReceiveHttpRequest(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_REQUEST* pRequestBuffer, uint requestBufferLength, uint* pBytesReturned, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+        internal static extern unsafe uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeNativeMemoryHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern unsafe uint HttpWaitForDisconnect(SafeHandle requestQueueHandle, ulong connectionId, NativeOverlapped* pOverlapped);
@@ -493,7 +493,7 @@ internal static partial class Interop
         internal static extern unsafe uint HttpReceiveRequestEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, void* pEntityBuffer, uint entityBufferLength, out uint bytesReturned, NativeOverlapped* pOverlapped);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+        internal static extern unsafe uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeNativeMemoryHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
@@ -515,7 +515,7 @@ internal static partial class Interop
                 get { return _size; }
             }
 
-            public static unsafe SafeLocalFreeChannelBinding LocalAlloc(int cb)
+            public static unsafe SafeLocalFreeChannelBinding Alloc(int cb)
             {
                 SafeLocalFreeChannelBinding result = new SafeLocalFreeChannelBinding();
                 result.SetHandle((nint)NativeMemory.Alloc((uint)cb));
