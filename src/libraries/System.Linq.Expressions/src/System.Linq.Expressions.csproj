@@ -3,7 +3,7 @@
     <FeatureInterpret>true</FeatureInterpret>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-iOS</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <IsInterpreting Condition="'$(TargetsiOS)' != 'true'">false</IsInterpreting>
+    <IsInterpreting>false</IsInterpreting>
     <IsInterpreting Condition="'$(TargetsiOS)' == 'true'">true</IsInterpreting>
     <DefineConstants> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
