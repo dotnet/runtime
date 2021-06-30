@@ -660,9 +660,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
 	case SN_GetElement: {
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
+		int size = mono_class_value_size (arg_class, NULL);
+		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+		int elems = size / esize;
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 		int extract_op = type_to_xextract_op (arg0_type);
 		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
 	}
@@ -690,9 +696,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_WithElement: {
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
+		int size = mono_class_value_size (arg_class, NULL);
+		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+		int elems = size / esize;
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 		int insert_op = type_to_xinsert_op (arg0_type);
 		MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
 		ins->sreg3 = args [1]->dreg;
@@ -706,6 +718,81 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		int op = id == SN_GetLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+	}
+	default:
+		break;
+	}
+
+	return NULL;
+}
+
+static guint16 vector64_vector128_t_methods [] = {
+	SN_Equals,
+	SN_get_AllBitsSet,
+	SN_get_Count,
+	SN_get_IsSupported,
+	SN_get_Zero,
+};
+
+static MonoInst*
+emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	int id = lookup_intrins (vector64_vector128_t_methods, sizeof (vector64_vector128_t_methods), cmethod);
+	if (id == -1)
+		return NULL;
+
+	MonoClass *klass = cmethod->klass;
+	MonoType *type = m_class_get_byval_arg (klass);
+	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	int size = mono_class_value_size (klass, NULL);
+	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+	g_assert (size > 0);
+	g_assert (esize > 0);
+	int len = size / esize;
+
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+		return NULL;
+
+	if (cfg->verbose_level > 1) {
+		char *name = mono_method_full_name (cmethod, TRUE);
+		printf ("  SIMD intrinsic %s\n", name);
+		g_free (name);
+	}
+
+	switch (id) {
+	case SN_get_IsSupported: {
+		MonoInst *ins = NULL;
+		EMIT_NEW_ICONST (cfg, ins, 1);
+		return ins;
+	}
+	default:
+		break;
+	}
+
+	if (!COMPILE_LLVM (cfg))
+		return NULL;
+
+	switch (id) {
+	case SN_get_Count: {
+		MonoInst *ins = NULL;
+		if (!(fsig->param_count == 0 && fsig->ret->type == MONO_TYPE_I4))
+			break;
+		EMIT_NEW_ICONST (cfg, ins, len);
+		return ins;
+	}
+	case SN_get_Zero: {
+		return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+	}
+	case SN_get_AllBitsSet: {
+		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+		return emit_xcompare (cfg, klass, etype->type, ins, ins);
+	}
+	case SN_Equals: {
+		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
+			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
+			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+		}
+		break;
 	}
 	default:
 		break;
@@ -2843,55 +2930,6 @@ emit_x86_intrinsics (
 	return NULL;
 }
 
-static guint16 vector_128_t_methods [] = {
-	SN_get_Count,
-	SN_get_Zero,
-};
-
-static MonoInst*
-emit_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	MonoInst *ins;
-	MonoType *type, *etype;
-	MonoClass *klass;
-	int size, len, id;
-
-	id = lookup_intrins (vector_128_t_methods, sizeof (vector_128_t_methods), cmethod);
-	if (id == -1)
-		return NULL;
-
-	klass = cmethod->klass;
-	type = m_class_get_byval_arg (klass);
-	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-	g_assert (size);
-	len = 16 / size;
-
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN || etype->type == MONO_TYPE_I || etype->type == MONO_TYPE_U)
-		return NULL;
-
-	if (cfg->verbose_level > 1) {
-		char *name = mono_method_full_name (cmethod, TRUE);
-		printf ("  SIMD intrinsic %s\n", name);
-		g_free (name);
-	}
-
-	switch (id) {
-	case SN_get_Count:
-		if (!(fsig->param_count == 0 && fsig->ret->type == MONO_TYPE_I4))
-			break;
-		EMIT_NEW_ICONST (cfg, ins, len);
-		return ins;
-	case SN_get_Zero: {
-		return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
-	}
-	default:
-		break;
-	}
-
-	return NULL;
-}
-
 static guint16 vector_256_t_methods [] = {
 	SN_get_Count,
 };
@@ -2948,8 +2986,6 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector128`1"))
-			return emit_vector128_t (cfg, cmethod, fsig, args);
 		if (!strcmp (class_name, "Vector256`1"))
 			return emit_vector256_t (cfg, cmethod, fsig, args);
 	}
@@ -3020,6 +3056,11 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
 			return emit_sri_vector (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1"))
+			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
 	}
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 

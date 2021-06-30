@@ -7650,6 +7650,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			val = LLVMBuildInsertElement (builder, val, insval, const_int32 (ix), oname);
 			val = LLVMBuildBitCast (builder, val, src_t, oname);
 			values [ins->dreg] = val;
+			break;
 		}
 		case OP_XLOWER:
 		case OP_XUPPER: {
@@ -7673,6 +7674,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef upper = ins->opcode == OP_XWIDEN ? LLVMConstNull (src_t) : LLVMGetUndef (src_t);
 			LLVMValueRef val = LLVMBuildShuffleVector (builder, lhs, upper, create_const_vector_i32 (mask_0_incr_1, ret_elems), oname);
 			values [ins->dreg] = val;
+			break;
 		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
