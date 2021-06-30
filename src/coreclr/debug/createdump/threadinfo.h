@@ -96,7 +96,7 @@ public:
 #elif defined(__aarch64__)
     inline const arm_thread_state64_t* GPRegisters() const { return &m_gpRegisters; }
     inline const arm_neon_state64_t* FPRegisters() const { return &m_fpRegisters; }
-    inline const uint64_t GetInstructionPointer() const { return arm_thread_state64_get_ip(m_gpRegisters); }
+    inline const uint64_t GetInstructionPointer() const { return arm_thread_state64_get_pc(m_gpRegisters); }
     inline const uint64_t GetFramePointer() const { return arm_thread_state64_get_fp(m_gpRegisters); }
     inline const uint64_t GetStackPointer() const { return arm_thread_state64_get_sp(m_gpRegisters); }
 #endif

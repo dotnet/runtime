@@ -122,19 +122,6 @@ DumpWriter::WriteCrashReport(JsonWriter& writer)
             WriteStackFrame(writer, frame);
         }
         writer.CloseArray();        // unmanaged_frames
-
-        if (thread->IsManaged())
-        {
-            writer.OpenArray("managed_frames");
-            for (const StackFrame& frame : thread->StackFrames())
-            {
-                if (frame.IsManaged())
-                {
-                    WriteStackFrame(writer, frame);
-                }
-            }
-            writer.CloseArray();        // managed_frames
-        }
         writer.CloseArrayEntry();
     }
     writer.CloseArray();            // threads
