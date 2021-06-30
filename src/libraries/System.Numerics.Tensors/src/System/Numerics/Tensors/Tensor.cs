@@ -705,7 +705,7 @@ namespace System.Numerics.Tensors
 
                 _tensor = tensor;
                 _index = 0;
-                Current = default;
+                Current = default!;
             }
 
             public T Current { get; private set; }
@@ -722,7 +722,7 @@ namespace System.Numerics.Tensors
                 }
                 else
                 {
-                    Current = default;
+                    Current = default!;
                     return false;
                 }
             }
@@ -733,7 +733,7 @@ namespace System.Numerics.Tensors
             public void Reset()
             {
                 _index = 0;
-                Current = default;
+                Current = default!;
             }
 
             /// <summary>

@@ -51,7 +51,7 @@ namespace System.Collections
 
             if (defaultValue)
             {
-                m_array.AsSpan().Fill(-1);
+                Array.Fill(m_array, -1);
 
                 // clear high bit values in the last int
                 Div32Rem(length, out int extraBits);

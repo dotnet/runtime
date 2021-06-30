@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\Convention\AttributedModelProvider.cs" />
     <Compile Include="System\Composition\ExportAttribute.cs" />
@@ -16,5 +17,9 @@
     <Compile Include="System\Composition\PartNotDiscoverableAttribute.cs" />
     <Compile Include="System\Composition\SharedAttribute.cs" />
     <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

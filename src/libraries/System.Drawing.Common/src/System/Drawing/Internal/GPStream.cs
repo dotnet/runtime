@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace System.Drawing.Internal
 {
@@ -177,9 +176,14 @@ namespace System.Drawing.Internal
             _dataStream.SetLength(checked((long)value));
         }
 
-        public void Stat(out Interop.Ole32.STATSTG pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
+        public unsafe void Stat(Interop.Ole32.STATSTG* pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
         {
-            pstatstg = new Interop.Ole32.STATSTG
+            if (pstatstg == null)
+            {
+                throw new ArgumentNullException(nameof(pstatstg));
+            }
+
+            *pstatstg = new Interop.Ole32.STATSTG
             {
                 cbSize = (ulong)_dataStream.Length,
                 type = Interop.Ole32.STGTY.STGTY_STREAM,
@@ -195,7 +199,7 @@ namespace System.Drawing.Internal
             if (grfStatFlag == Interop.Ole32.STATFLAG.STATFLAG_DEFAULT)
             {
                 // Caller wants a name
-                pstatstg.AllocName(_dataStream is FileStream fs ? fs.Name : _dataStream.ToString());
+                pstatstg->AllocName(_dataStream is FileStream fs ? fs.Name : _dataStream.ToString());
             }
         }
 
