@@ -575,7 +575,7 @@ fi
 
 if [[ "$__CrossBuild" == 1 ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
-+fi
+fi
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/log"
