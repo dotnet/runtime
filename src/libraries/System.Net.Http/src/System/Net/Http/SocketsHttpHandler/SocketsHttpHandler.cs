@@ -290,7 +290,7 @@ namespace System.Net.Http
         /// </summary>
         /// <remarks>
         /// Larger the values may lead to faster download speed, but potentially higher memory footprint.
-        /// The property must be set to a value 65535 and the configured maximum window size, which is 16777216 by default.
+        /// The property must be set to a value between 65535 and the configured maximum window size, which is 16777216 by default.
         /// </remarks>
         public int InitialHttp2StreamWindowSize
         {
