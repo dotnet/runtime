@@ -9,11 +9,6 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include "pal_runtimeinformation.h"
-#include "pal_types.h"
-#include <stdio.h>
-#include <string.h>
-#include <sys/utsname.h>
 #if defined(TARGET_ANDROID)
 #include <sys/system_properties.h>
 #endif
