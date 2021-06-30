@@ -71,9 +71,15 @@
       </RuntimeFiles>
 
       <RuntimeFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'"
-        Include="@(FrameworkFiles)"
+        Include="@(FrameworkReleaseFiles)"
         ExcludeFromDataFiles="true">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native/mono-framework.framework/%(RecursiveDir)</TargetPath>
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.release.framework/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'"
+        Include="@(FrameworkDebugFiles)"
+        ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.debug.framework/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
       <CoreCLRCrossTargetFiles PackOnly="true" />

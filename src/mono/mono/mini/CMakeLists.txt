@@ -391,26 +391,36 @@ if(NOT DISABLE_SHARED_LIBS)
 
 
   if(TARGET_DARWIN)
-    add_library(Mono SHARED $<TARGET_OBJECTS:monosgen-objects>)
-    target_compile_definitions(Mono PRIVATE -DMONO_DLL_EXPORT)
-    target_sources(Mono PRIVATE $<TARGET_OBJECTS:eglib_objects>)
-    target_link_libraries(Mono PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
-    if(ICU_LDFLAGS)
-      set_property(TARGET Mono APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
-    endif()
-    if(STATIC_ICU)
-      set_property(TARGET Mono APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
-    endif ()
-    set_property(TARGET Mono APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
-    target_sources(Mono PRIVATE "${mono-components-stub-objects}")
-    set_target_properties(Mono PROPERTIES
-      FRAMEWORK TRUE
-      FRAMEWORK_VERSION C
-      MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
-    )
-    install(TARGETS Mono
-      FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
+    string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
+    string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
+    list(APPEND FrameworkConfig Mono.release Mono.debug)
+    list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
+    foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
+      if("${componentsobjects}" STREQUAL "")
+        continue()
+      endif()
+      add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
+      target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
+      target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+      target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+      if(ICU_LDFLAGS)
+        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
+      endif()
+      if(STATIC_ICU)
+        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+      endif ()
+      set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
+      string(REPLACE "*" ";" componentsobjects-whitespace "${componentsobjects}")
+      target_sources(${frameworkconfig} PRIVATE "${componentsobjects-whitespace}")
+      set_target_properties(${frameworkconfig} PROPERTIES
+        FRAMEWORK TRUE
+        FRAMEWORK_VERSION C
+        MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
+      )
+      install(TARGETS ${frameworkconfig}
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      )
+    endforeach()
   endif()
 endif()
 

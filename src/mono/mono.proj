@@ -770,11 +770,17 @@
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\opt$(ExeExt)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
-      <_MonoRuntimeArtifacts Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoObjDir)out\lib\Mono.framework\Mono">
-        <Destination>$(RuntimeBinDir)\Mono.framework\Mono</Destination>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoObjDir)out\lib\Mono.framework\Info.plist">
-        <Destination>$(RuntimeBinDir)\Mono.framework\Info.plist</Destination>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Info.plist">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Info.plist</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Info.plist">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Info.plist</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
         <Destination>$(RuntimeBinDir)libmono-ee-interp.a</Destination>
