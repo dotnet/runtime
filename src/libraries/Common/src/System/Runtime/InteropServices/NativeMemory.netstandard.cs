@@ -15,6 +15,18 @@ namespace System.Runtime.InteropServices
         {
             return (void*)(nint)Marshal.AllocHGlobal((nint)byteCount);
         }
+        public static void* AllocZeroed(nuint byteCount)
+        {
+            var ptr = (byte*)Alloc(byteCount);
+
+            for (nuint i = 0; i < byteCount; i++)
+            {
+                ptr[i] = 0;
+            }
+
+            return ptr;
+        }
+
 
         public static void* Realloc(void* ptr, nuint byteCount)
         {

@@ -63,7 +63,7 @@ internal static partial class Interop
 {
     public const string LDAP_SASL_SIMPLE = null;
 
-    internal static partial class Ldap
+    internal static unsafe partial class Ldap
     {
         static Ldap()
         {
@@ -149,7 +149,7 @@ internal static partial class Interop
         internal static extern int ldap_sasl_bind([In] ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
-        internal static extern int ldap_sasl_interactive_bind([In] ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, [MarshalAs(UnmanagedType.FunctionPtr)] LDAP_SASL_INTERACT_PROC proc, IntPtr defaults);
+        internal static extern int ldap_sasl_interactive_bind([In] ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, [MarshalAs(UnmanagedType.FunctionPtr)] LDAP_SASL_INTERACT_PROC proc, void* defaults);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string", CharSet = CharSet.Ansi)]
         public static extern IntPtr ldap_err2string(int err);
@@ -167,7 +167,7 @@ internal static partial class Interop
         public static extern IntPtr ldap_first_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_create_sort_control", CharSet = CharSet.Ansi)]
-        public static extern int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
+        public static extern int ldap_create_sort_control(ConnectionHandle handle, void** keys, byte critical, ref IntPtr control);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free", CharSet = CharSet.Ansi)]
         public static extern int ldap_control_free(IntPtr control);
@@ -206,10 +206,10 @@ internal static partial class Interop
         public static extern int ldap_add([In] ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_delete_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_delete_ext([In] ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_delete_ext([In] ConnectionHandle ldapHandle, string dn, void** servercontrol, void** clientcontrol, ref int messageNumber);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_rename", CharSet = CharSet.Ansi)]
-        public static extern int ldap_rename([In] ConnectionHandle ldapHandle, string dn, string newRdn, string newParentDn, int deleteOldRdn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_rename([In] ConnectionHandle ldapHandle, string dn, string newRdn, string newParentDn, int deleteOldRdn, void** servercontrol, void** clientcontrol, ref int messageNumber);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_compare_ext", CharSet = CharSet.Ansi)]
         public static extern int ldap_compare([In] ConnectionHandle ldapHandle, string dn, string attributeName, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);

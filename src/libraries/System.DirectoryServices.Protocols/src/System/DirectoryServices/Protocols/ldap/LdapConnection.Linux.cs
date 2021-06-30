@@ -94,7 +94,7 @@ namespace System.DirectoryServices.Protocols
         private int BindSasl()
         {
             SaslDefaultCredentials defaults = GetSaslDefaults();
-            IntPtr ptrToDefaults = NativeMemoryHelper.Alloc(Marshal.SizeOf(defaults));
+            IntPtr ptrToDefaults = Marshal.AllocHGlobal(Marshal.SizeOf(defaults));
             Marshal.StructureToPtr(defaults, ptrToDefaults, false);
             try
             {
@@ -103,7 +103,7 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 GC.KeepAlive(defaults); //Making sure we keep it in scope as we will still use ptrToDefaults
-                NativeMemoryHelper.Free(ptrToDefaults);
+                Marshal.FreeHGlobal(ptrToDefaults);
             }
         }
 

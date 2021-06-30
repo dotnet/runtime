@@ -711,7 +711,7 @@ namespace System.DirectoryServices.Protocols
             IntPtr control = IntPtr.Zero;
             int structSize = Marshal.SizeOf(typeof(SortKey));
             int keyCount = _keys.Length;
-            IntPtr memHandle = Utility.AllocIntPtrArray(keyCount + 1);
+            IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
 
             try
             {
@@ -720,7 +720,7 @@ namespace System.DirectoryServices.Protocols
                 int i = 0;
                 for (i = 0; i < keyCount; i++)
                 {
-                    sortPtr = NativeMemoryHelper.Alloc(structSize);
+                    sortPtr = Marshal.AllocHGlobal(structSize);
                     Marshal.StructureToPtr(_keys[i], sortPtr, false);
                     tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, sortPtr);
@@ -774,19 +774,19 @@ namespace System.DirectoryServices.Protocols
                             IntPtr ptr = Marshal.ReadIntPtr(tempPtr);
                             if (ptr != IntPtr.Zero)
                             {
-                                NativeMemoryHelper.Free(ptr);
+                                Marshal.FreeHGlobal(ptr);
                             }
                             // free the marshalled rule
                             ptr = Marshal.ReadIntPtr(tempPtr, IntPtr.Size);
                             if (ptr != IntPtr.Zero)
                             {
-                                NativeMemoryHelper.Free(ptr);
+                                Marshal.FreeHGlobal(ptr);
                             }
 
-                            NativeMemoryHelper.Free(tempPtr);
+                            Marshal.FreeHGlobal(tempPtr);
                         }
                     }
-                    NativeMemoryHelper.Free(memHandle);
+                    Marshal.FreeHGlobal(memHandle);
                 }
             }
 

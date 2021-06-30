@@ -324,7 +324,7 @@ namespace System.DirectoryServices.Protocols
             else
             {
                 berValue.bv_len = value.Length;
-                berValue.bv_val = NativeMemoryHelper.Alloc(value.Length);
+                berValue.bv_val = Marshal.AllocHGlobal(value.Length);
                 Marshal.Copy(value, 0, berValue.bv_val, value.Length);
             }
 
@@ -335,7 +335,7 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (berValue.bv_val != IntPtr.Zero)
-                    NativeMemoryHelper.Free(berValue.bv_val);
+                    Marshal.FreeHGlobal(berValue.bv_val);
             }
 
             int error = 0;
@@ -470,14 +470,14 @@ namespace System.DirectoryServices.Protocols
             // one byte array, one int arguments
             if (tempValue != null)
             {
-                IntPtr tmp = NativeMemoryHelper.Alloc(tempValue.Length);
+                IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
-                NativeMemoryHandle memHandle = new NativeMemoryHandle(tmp);
+                HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
                 error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, (uint)tempValue.Length, tag);
             }
             else
             {
-                NativeMemoryHandle memHandle = new NativeMemoryHandle(NativeMemoryHandle._dummyPointer);
+                HGlobalMemHandle memHandle = new HGlobalMemHandle(HGlobalMemHandle._dummyPointer);
                 error = BerPal.PrintByteArray(berElement, new string(fmt, 1), memHandle, 0, tag);
             }
 
@@ -531,7 +531,7 @@ namespace System.DirectoryServices.Protocols
                 if (tempValue != null)
                 {
                     int i = 0;
-                    berValArray = Utility.AllocIntPtrArray(tempValue.Length + 1);
+                    berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
                     int structSize = Marshal.SizeOf(typeof(berval));
                     managedBervalArray = new berval[tempValue.Length];
 
@@ -545,12 +545,12 @@ namespace System.DirectoryServices.Protocols
                         if (byteArray != null)
                         {
                             managedBervalArray[i].bv_len = byteArray.Length;
-                            managedBervalArray[i].bv_val = NativeMemoryHelper.Alloc(byteArray.Length);
+                            managedBervalArray[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
                             Marshal.Copy(byteArray, 0, managedBervalArray[i].bv_val, byteArray.Length);
                         }
 
                         // allocate memory for the unmanaged structure
-                        IntPtr valPtr = NativeMemoryHelper.Alloc(structSize);
+                        IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
                         tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
@@ -571,9 +571,9 @@ namespace System.DirectoryServices.Protocols
                     {
                         IntPtr ptr = Marshal.ReadIntPtr(berValArray, IntPtr.Size * i);
                         if (ptr != IntPtr.Zero)
-                            NativeMemoryHelper.Free(ptr);
+                            Marshal.FreeHGlobal(ptr);
                     }
-                    NativeMemoryHelper.Free(berValArray);
+                    Marshal.FreeHGlobal(berValArray);
                 }
                 if (managedBervalArray != null)
                 {
@@ -581,7 +581,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         if (managedBerval.bv_val != IntPtr.Zero)
                         {
-                            NativeMemoryHelper.Free(managedBerval.bv_val);
+                            Marshal.FreeHGlobal(managedBerval.bv_val);
                         }
                     }
                 }

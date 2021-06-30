@@ -17,7 +17,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static int PrintBerArray(SafeBerHandle berElement, string format, IntPtr value, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist(value));
 
-        internal static int PrintByteArray(SafeBerHandle berElement, string format, NativeMemoryHandle value, uint length, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist(value, length));
+        internal static int PrintByteArray(SafeBerHandle berElement, string format, HGlobalMemHandle value, uint length, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist(value, length));
 
         internal static int PrintEmptyArgument(SafeBerHandle berElement, string format, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist());
 
