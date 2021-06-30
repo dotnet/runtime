@@ -42,7 +42,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static async Task<Compilation> GetCompilation (string source, IEnumerable<MetadataReference>? additionalReferences = null)
 			=> (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.CreateCompilation (source, additionalReferences: additionalReferences ?? Array.Empty<MetadataReference> ())).Compilation.Compilation;
 
-
 		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
 			SyntaxTree src,
 			(string, string)[]? globalAnalyzerOptions = null,
@@ -53,7 +52,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var comp = CSharpCompilation.Create (
 				assemblyName: Guid.NewGuid ().ToString ("N"),
 				syntaxTrees: new SyntaxTree[] { src },
-				references: (await ReferenceAssemblies.Net.Net50.ResolveAsync (null, default)).Add (mdRef).AddRange (additionalReferences),
+				references: (await TestCaseUtils.GetNet6References ()).Add (mdRef).AddRange (additionalReferences),
 				new CSharpCompilationOptions (OutputKind.DynamicallyLinkedLibrary));
 
 			var analyzerOptions = new AnalyzerOptions (
