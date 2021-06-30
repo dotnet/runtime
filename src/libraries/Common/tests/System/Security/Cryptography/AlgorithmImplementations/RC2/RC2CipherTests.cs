@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     [ConditionalClass(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-    public static class RC2CipherTests
+    public static partial class RC2CipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(

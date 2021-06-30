@@ -25,14 +25,16 @@
       <TestConsoleAppSourceFiles>
         <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
         <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
+        <TestTargetFramework>$(NetCoreAppCurrent)</TestTargetFramework>
+        <TestTargetFramework Condition="'%(TestConsoleAppSourceFiles.TargetOS)' != ''">$(NetCoreAppCurrent)-%(TestConsoleAppSourceFiles.TargetOS)</TestTargetFramework>
       </TestConsoleAppSourceFiles>
-      <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
+      <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier below -->
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
-        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'AppBundle', 'run-v8.sh'))</TestCommand>
-        <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
-        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'AppBundle'))</TestExecutionDirectory>
+        <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TestTargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TestTargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle', 'run-v8.sh'))</TestCommand>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TestTargetFramework)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TestTargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle'))</TestExecutionDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
@@ -70,7 +72,7 @@
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
                                                  .Replace('{MicrosoftNETCoreAppVersion}', '$(MicrosoftNETCoreAppVersion)')
-                                                 .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
+                                                 .Replace('{TestTargetFramework}', '%(TestConsoleApps.TestTargetFramework)')
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')

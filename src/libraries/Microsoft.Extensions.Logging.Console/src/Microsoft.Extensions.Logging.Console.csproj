@@ -57,7 +57,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 
 </Project>

@@ -245,9 +245,10 @@ namespace System.Net.Http
 
                         _requestCompletionState = StreamCompletionState.Failed;
                         Complete();
+
+                        SendReset();
                     }
 
-                    SendReset();
                     if (signalWaiter)
                     {
                         _waitSource.SetResult(true);
@@ -275,17 +276,17 @@ namespace System.Net.Http
                             sendReset = _responseCompletionState == StreamCompletionState.Failed;
                             Complete();
                         }
-                    }
 
-                    if (sendReset)
-                    {
-                        SendReset();
-                    }
-                    else
-                    {
-                        // Send EndStream asynchronously and without cancellation.
-                        // If this fails, it means that the connection is aborting and we will be reset.
-                        _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
+                        if (sendReset)
+                        {
+                            SendReset();
+                        }
+                        else
+                        {
+                            // Send EndStream asynchronously and without cancellation.
+                            // If this fails, it means that the connection is aborting and we will be reset.
+                            _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
+                        }
                     }
                 }
             }
@@ -325,7 +326,7 @@ namespace System.Net.Http
 
             private void SendReset()
             {
-                Debug.Assert(!Monitor.IsEntered(SyncObject));
+                Debug.Assert(Monitor.IsEntered(SyncObject));
                 Debug.Assert(_requestCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_responseCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed,
@@ -336,6 +337,8 @@ namespace System.Net.Http
                 // Don't send a RST_STREAM if we've already received one from the server.
                 if (_resetException == null)
                 {
+                    // If execution reached this line, it's guaranteed that
+                    // _requestCompletionState == StreamCompletionState.Failed or _responseCompletionState == StreamCompletionState.Failed
                     _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                 }
             }
@@ -384,9 +387,12 @@ namespace System.Net.Http
                 // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
                 requestBodyCancellationSource?.Cancel();
 
-                if (sendReset)
+                lock (SyncObject)
                 {
-                    SendReset();
+                    if (sendReset)
+                    {
+                        SendReset();
+                    }
                 }
 
                 if (signalWaiter)

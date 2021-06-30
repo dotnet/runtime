@@ -866,7 +866,7 @@ namespace System.Net.Test.Common
                 return buffer;
             }
 
-            public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null, bool isFinal = true, int requestId = 0)
+            public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
             {
                 MemoryStream headerBytes = new MemoryStream();
                 int contentLength = -1;
@@ -909,25 +909,18 @@ namespace System.Net.Test.Common
                     headerBytes.Write(corsBytes, 0, corsBytes.Length);
                 }
 
-                bool endHeaders = content != null || isFinal;
-                if (statusCode != null)
-                {
-                    byte[] temp = headerBytes.ToArray();
+                byte[] temp = headerBytes.ToArray();
 
-                    headerBytes.SetLength(0);
+                headerBytes.SetLength(0);
 
-                    byte[] headerStartBytes = Encoding.ASCII.GetBytes(
-                        $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
-                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
+                byte[] headerStartBytes = Encoding.ASCII.GetBytes(
+                    $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+                    (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
 
-                    headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
-                    headerBytes.Write(temp, 0, temp.Length);
+                headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
+                headerBytes.Write(temp, 0, temp.Length);
 
-                    if (endHeaders)
-                    {
-                        headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
-                    }
-                }
+                headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
 
                 headerBytes.Position = 0;
                 await headerBytes.CopyToAsync(_stream).ConfigureAwait(false);
@@ -938,7 +931,7 @@ namespace System.Net.Test.Common
                 }
             }
 
-            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+            private string GetResponseHeaderString(HttpStatusCode statusCode, IList<HttpHeaderData> headers)
             {
                 string headerString = null;
 
@@ -953,12 +946,28 @@ namespace System.Net.Test.Common
 
                 headerString = GetHttpResponseHeaders(statusCode, headerString, 0, connectionClose: true);
 
+                return headerString;
+            }
+
+            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+            {
+                string headerString = GetResponseHeaderString(statusCode, headers);
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
-            public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
+            public override async Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
             {
-                await SendResponseAsync(body).ConfigureAwait(false);
+                string headerString = GetResponseHeaderString(statusCode, headers);
+
+                // Lop off the final \r\n so the headers are not complete.
+                headerString = headerString.Substring(0, headerString.Length - 2);
+
+                await SendResponseAsync(headerString).ConfigureAwait(false);
+            }
+
+            public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+            {
+                await SendResponseAsync(content).ConfigureAwait(false);
             }
 
             public async Task<HttpRequestData> HandleCORSPreFlight(HttpRequestData requestData)

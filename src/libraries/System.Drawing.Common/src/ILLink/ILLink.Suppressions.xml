@@ -11,12 +11,6 @@
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.Icon.Save(System.IO.Stream)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2050</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Drawing.Image.FromStream(System.IO.Stream,System.Boolean,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
