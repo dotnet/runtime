@@ -1174,6 +1174,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	if (mono_class_has_failure (klass))
 		return NULL;
 
+	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
+		return NULL;
+
 	int num_fields = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
 

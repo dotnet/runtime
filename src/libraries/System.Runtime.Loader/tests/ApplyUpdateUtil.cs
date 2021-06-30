@@ -19,10 +19,19 @@ namespace System.Reflection.Metadata
         ///
         /// We need:
         /// 1. Either DOTNET_MODIFIABLE_ASSEMBLIES=debug is set, or we can use the RemoteExecutor to run a child process with that environment; and,
-        /// 2. Either Mono in a supported configuration (interpreter as the execution engine, and the hot reload feature enabled), or CoreCLR; and,
+        /// 2. Either Mono in a supported configuration (interpreter as the execution engine, and the hot reload component enabled), or CoreCLR; and,
         /// 3. The test assemblies are compiled with Debug information (this is configured by setting EmitDebugInformation in ApplyUpdate\Directory.Build.props)
         public static bool IsSupported => (IsModifiableAssembliesSet || IsRemoteExecutorSupported) &&
             (!IsMonoRuntime || IsSupportedMonoConfiguration);
+
+        /// true if the current runtime was not launched with the apropriate settings for applying
+        /// updates (DOTNET_MODIFIABLE_ASSEMBLIES unset), but we can use the remote executor to
+        /// launch a child process that has the right setting.
+        public static bool TestUsingRemoteExecutor => IsRemoteExecutorSupported && !IsModifiableAssembliesSet;
+
+        /// true if the current runtime was launched with the appropriate settings for applying
+        /// updates (DOTNET_MODIFIABLE_ASSEMBLIES set, and if Mono, the interpreter is enabled).
+        public static bool TestUsingLaunchEnvironment => (!IsMonoRuntime || IsSupportedMonoConfiguration) && IsModifiableAssembliesSet;
 
         public static bool IsModifiableAssembliesSet =>
             String.Equals(DotNetModifiableAssembliesValue, Environment.GetEnvironmentVariable(DotNetModifiableAssembliesSwitch), StringComparison.InvariantCultureIgnoreCase);
@@ -30,9 +39,7 @@ namespace System.Reflection.Metadata
         // static cctor for RemoteExecutor throws on wasm.
         public static bool IsRemoteExecutorSupported => !RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) && RemoteExecutor.IsSupported;
 
-        // copied from https://github.com/dotnet/arcade/blob/6cc4c1e9e23d5e65e88a8a57216b3d91e9b3d8db/src/Microsoft.DotNet.XUnitExtensions/src/DiscovererHelpers.cs#L16-L17
-        private static readonly Lazy<bool> s_isMonoRuntime = new Lazy<bool>(() => Type.GetType("Mono.RuntimeStructs") != null);
-        public static bool IsMonoRuntime => s_isMonoRuntime.Value;
+        public static bool IsMonoRuntime => PlatformDetection.IsMonoRuntime;
 
         private static readonly Lazy<bool> s_isSupportedMonoConfiguration = new Lazy<bool>(CheckSupportedMonoConfiguration);
 
@@ -41,15 +48,15 @@ namespace System.Reflection.Metadata
         // Not every build of Mono supports ApplyUpdate
         internal static bool CheckSupportedMonoConfiguration()
         {
-        // check that interpreter is enabled, and the build has hot reload capabilities enabled.
+            // check that interpreter is enabled, and the build has hot reload capabilities enabled.
             var isInterp = RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
             return isInterp && HasApplyUpdateCapabilities();
         }
 
         internal static bool HasApplyUpdateCapabilities()
         {
-            var ty = typeof(AssemblyExtensions);
-            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+            var ty = typeof(MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
 
             if (mi == null)
                 return false;
@@ -75,7 +82,7 @@ namespace System.Reflection.Metadata
             string basename = assm.Location;
             if (basename == "")
                 basename = assm.GetName().Name + ".dll";
-            Console.Error.WriteLine($"Apply Delta Update for {basename}, revision {count}");
+            Console.Error.WriteLine($"Applying metadata update for {basename}, revision {count}");
 
             string dmeta_name = $"{basename}.{count}.dmeta";
             string dil_name = $"{basename}.{count}.dil";
@@ -83,15 +90,13 @@ namespace System.Reflection.Metadata
             byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
             byte[] dpdb_data = null; // TODO also use the dpdb data
 
-            AssemblyExtensions.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
+            MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
         }
-
-        internal static bool UseRemoteExecutor => !IsModifiableAssembliesSet;
 
         internal static void AddRemoteInvokeOptions (ref RemoteInvokeOptions options)
         {
-                options = options ?? new RemoteInvokeOptions();
-                options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
+            options = options ?? new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
         }
 
         /// Run the given test case, which applies updates to the given assembly.
@@ -101,7 +106,7 @@ namespace System.Reflection.Metadata
         public static void TestCase(Action testBody,
                                     RemoteInvokeOptions options = null)
         {
-            if (UseRemoteExecutor)
+            if (TestUsingRemoteExecutor)
             {
                 Console.Error.WriteLine ($"Running test using RemoteExecutor");
                 AddRemoteInvokeOptions(ref options);
@@ -123,7 +128,7 @@ namespace System.Reflection.Metadata
                                     string arg1,
                                     RemoteInvokeOptions options = null)
         {
-            if (UseRemoteExecutor)
+            if (TestUsingRemoteExecutor)
             {
                 AddRemoteInvokeOptions(ref options);
                 RemoteExecutor.Invoke(testBody, arg1, options).Dispose();

@@ -393,30 +393,33 @@ if (CLR_CMAKE_HOST_UNIX)
       # replaced with a default value, and always gets expanded to an OS version.
       # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
       # We need to disable the warning that -tagret replaces -mmacosx-version-min
-      add_compile_options(-Wno-overriding-t-option)
+      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
       add_link_options(-Wno-overriding-t-option)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
-        add_compile_options(-target arm64-apple-ios14.2-macabi)
+        set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
         add_link_options(-target arm64-apple-ios14.2-macabi)
       elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        add_compile_options(-target x86_64-apple-ios13.5-macabi)
+        set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
         add_link_options(-target x86_64-apple-ios13.5-macabi)
       else()
         clr_unknown_arch()
       endif()
+      # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+      # add_compile_options so that they take effect on the configuration functions
+      # in various configure.cmake files.
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+      set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
     else()
       if(CLR_CMAKE_HOST_ARCH_ARM64)
-        # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
         add_compile_options(-arch arm64)
       elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
         add_compile_options(-arch x86_64)
       else()
         clr_unknown_arch()
       endif()
-      add_compile_options(${MACOS_VERSION_MIN_FLAGS})
-      add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
     endif(CLR_CMAKE_TARGET_MACCATALYST)
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 
