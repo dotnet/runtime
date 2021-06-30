@@ -3704,7 +3704,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
 
             regArgTab[regArgNum + i].processed = false;
-            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && (varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef)); // TODO: double check if lvSpillAtSingleDef is needed here?
+            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
 
             /* mark stack arguments since we will take care of those first */
             regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
@@ -4762,7 +4762,7 @@ void CodeGen::genCheckUseBlockInit()
                     {
                         if (!varDsc->lvRegister)
                         {
-                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef)
+                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr)
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
@@ -7125,7 +7125,7 @@ void CodeGen::genFnProlog()
         }
 
         bool isInReg    = varDsc->lvIsInReg();
-        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef;
+        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
 
         // Note that 'lvIsInReg()' will only be accurate for variables that are actually live-in to
         // the first block. This will include all possibly-uninitialized locals, whose liveness
