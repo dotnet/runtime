@@ -311,7 +311,7 @@
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
     </ItemGroup>
