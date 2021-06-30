@@ -253,7 +253,7 @@ namespace System.Reflection
 
         public override AssemblyName GetName(bool copiedName)
         {
-            return AssemblyName.Create(_mono_assembly, get_code_base (this, false));
+            return AssemblyName.Create(_mono_assembly, get_code_base (this));
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
