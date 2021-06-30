@@ -57,6 +57,7 @@ int SSL_CTX_config(SSL_CTX* ctx, const char* name);
 unsigned long SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
 int32_t SSL_is_init_finished(SSL* ssl);
+unsigned long SSL_set_options(SSL* ctx, unsigned long options);
 int SSL_session_reused(SSL* ssl);
 const SSL_METHOD* TLS_method(void);
 const ASN1_TIME* X509_CRL_get0_nextUpdate(const X509_CRL* crl);
