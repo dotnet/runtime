@@ -9,9 +9,9 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
+        // Maintains a dynamically-sized stream receive window, and sends WINDOW_UPDATE frames to the server.
         private struct Http2StreamWindowManager
         {
-            public const int StreamWindowUpdateRatio = 8;
             private static readonly double StopWatchToTimesSpan = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
             private static double WindowScaleThresholdMultiplier => GlobalHttpSettings.SocketsHttpHandler.Http2StreamWindowScaleThresholdMultiplier;
             private static int MaxStreamWindowSize => GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize;
@@ -31,9 +31,13 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) stream.Trace($"[FlowControl] InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {WindowScaleThresholdMultiplier}");
             }
 
-            internal int StreamWindowSize => _streamWindowSize;
-
+            // We hold off on sending WINDOW_UPDATE until we hit the minimum threshold.
+            // This value is somewhat arbitrary; the intent is to ensure it is much smaller than
+            // the window size itself, or we risk stalling the server because it runs out of window space.
+            public const int StreamWindowUpdateRatio = 8;
             internal int StreamWindowThreshold => _streamWindowSize / StreamWindowUpdateRatio;
+
+            internal int StreamWindowSize => _streamWindowSize;
 
             public void AdjustWindow(int bytesConsumed, Http2Stream stream)
             {
@@ -131,6 +135,22 @@ namespace System.Net.Http
             }
         }
 
+        // Estimates Round Trip Time between the client and the server by sending PING frames, and measuring the time interval until a PING ACK is received.
+        // Assuming that the network characteristics of a connection wouldn't change much within it's lifetime, we are maintaining a running minimum value.
+        // The more PINGs we send, the more accurate is the estimation of MinRtt, however we should be careful not to send too many of them,
+        // to avoid triggering the server's PING flood protection which may result in an unexpected GOAWAY.
+        // With most servers wee are fine to send PINGs, as long as we are reading their data, this is rule is well formalized for gRPC:
+        // https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md
+        // As a rule of thumb, we can send send a PING whenever we receive DATA or HEADERS, however, there are some servers which allow receiving only
+        // a limited amount of PINGs within a given timeframe.
+        // To deal with the conflicting requirements:
+        // - We send an initial burst of 'InitialBurstCount' PINGs, to get a relatively good estimation fast
+        // - Afterwards, we send PINGs with the maximum frequency of 'PingIntervalInSeconds' PINGs per second
+        //
+        // Threading:
+        // OnInitialSettingsSent() is called during initialization, all other methods are triggered by HttpConnection.ProcessIncomingFramesAsync(),
+        // therefore the assumption is that the invocation of RttEstimator's methods is sequential, and there is no race beetween them.
+        // Http2StreamWindowManager is reading MinRtt from another concurrent thread, therefore it's value has to be changed atomically.
         private struct RttEstimator
         {
             private enum State
