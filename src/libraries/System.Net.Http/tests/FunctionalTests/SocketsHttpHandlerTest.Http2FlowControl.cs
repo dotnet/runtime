@@ -1,20 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net.Quic;
-using System.Net.Quic.Implementations;
-using System.Net.Security;
-using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;

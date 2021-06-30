@@ -1841,22 +1841,22 @@ namespace System.Net.Http.Functional.Tests
                         using HttpClient client = new HttpClient(handler);
                         client.DefaultRequestVersion = HttpVersion.Version20;
 
-                    // Warmup request to create connection.
-                    await client.GetStringAsync(uri);
-                    // Request under the test scope.
-                    if (expectRequestFail)
+                        // Warmup request to create connection.
+                        await client.GetStringAsync(uri);
+                        // Request under the test scope.
+                        if (expectRequestFail)
                         {
                             await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
-                        // As stream is closed we don't want to continue with sending data.
-                        return;
+                            // As stream is closed we don't want to continue with sending data.
+                            return;
                         }
                         else
                         {
                             await client.GetStringAsync(uri);
                         }
 
-                    // Let connection live until server finishes.
-                    try
+                        // Let connection live until server finishes.
+                        try
                         {
                             await serverFinished.Task.WaitAsync(pingTimeout * 3);
                         }
@@ -1868,15 +1868,15 @@ namespace System.Net.Http.Functional.Tests
 
                         Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
 
-                    // Warmup the connection.
-                    int streamId1 = await connection.ReadRequestHeaderAsync();
+                        // Warmup the connection.
+                        int streamId1 = await connection.ReadRequestHeaderAsync();
                         await connection.SendDefaultResponseAsync(streamId1);
 
-                    // Request under the test scope.
-                    int streamId2 = await connection.ReadRequestHeaderAsync();
+                        // Request under the test scope.
+                        int streamId2 = await connection.ReadRequestHeaderAsync();
 
-                    // Test ping with active stream.
-                    if (!expectStreamPing)
+                        // Test ping with active stream.
+                        if (!expectStreamPing)
                         {
                             await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
                         }
@@ -1899,32 +1899,32 @@ namespace System.Net.Http.Functional.Tests
                             await connection.SendPingAckAsync(ping.Data);
                         }
 
-                    // Send response and close the stream.
-                    if (expectRequestFail)
+                        // Send response and close the stream.
+                        if (expectRequestFail)
                         {
                             await Assert.ThrowsAsync<IOException>(() => connection.SendDefaultResponseAsync(streamId2));
-                        // As stream is closed we don't want to continue with sending data.
-                        return;
+                            // As stream is closed we don't want to continue with sending data.
+                            return;
                         }
                         await connection.SendDefaultResponseAsync(streamId2);
-                    // Test ping with no active stream.
-                    if (expectPingWithoutStream)
+                        // Test ping with no active stream.
+                        if (expectPingWithoutStream)
                         {
                             PingFrame ping = await connection.ReadPingAsync(pingTimeout);
                             await connection.SendPingAckAsync(ping.Data);
                         }
                         else
                         {
-                        // If the pings were recently coming, just give the connection time to clear up streams
-                        // and still accept one stray ping.
-                        if (expectStreamPing)
+                            // If the pings were recently coming, just give the connection time to clear up streams
+                            // and still accept one stray ping.
+                            if (expectStreamPing)
                             {
                                 try
                                 {
                                     await connection.ReadPingAsync(pingTimeout);
                                 }
                                 catch (OperationCanceledException) { } // if it failed once, it will fail again
-                        }
+                            }
                             await Assert.ThrowsAsync<OperationCanceledException>(() => connection.ReadPingAsync(pingTimeout));
                         }
                         serverFinished.SetResult();
