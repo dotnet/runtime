@@ -28,6 +28,8 @@ MonoComponentDebugger *
 mono_component_debugger_init (void)
 {
 	debugger_agent_add_function_pointers (&fn_table);
+#ifdef TARGET_WASM	
 	mini_wasm_debugger_add_function_pointers (&fn_table);
+#endif	
 	return &fn_table;
 }
