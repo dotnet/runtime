@@ -113,7 +113,7 @@ namespace System.IO
             {
                 if (overlapped != null)
                 {
-                    resetEvent.FreeNativeOverlappedIfItIsSafe(overlapped);
+                    resetEvent.FreeNativeOverlapped(overlapped);
                 }
 
                 resetEvent.Dispose();
@@ -201,7 +201,7 @@ namespace System.IO
             {
                 if (overlapped != null)
                 {
-                    resetEvent.FreeNativeOverlappedIfItIsSafe(overlapped);
+                    resetEvent.FreeNativeOverlapped(overlapped);
                 }
 
                 resetEvent.Dispose();
@@ -637,8 +637,6 @@ namespace System.IO
         {
             // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
             // to allocate a native overlapped and provide a valid callback.
-            // Since we really don't care about the callback (because this is sync IO for async handle)
-            // and we are going to wait on WaitHandle anyway, we pass null as a state.
             NativeOverlapped* result = threadPoolBinding.AllocateNativeOverlapped(s_callback, resetEvent, null);
 
             // For pipes the offsets are ignored by the OS
@@ -674,7 +672,7 @@ namespace System.IO
             static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 CallbackResetEvent state = (CallbackResetEvent)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
-                state.FreeNativeOverlappedIfItIsSafe(pOverlapped);
+                state.FreeNativeOverlapped(pOverlapped);
             }
         }
 
@@ -683,7 +681,7 @@ namespace System.IO
         // It's basically ManualResetEvent with reference count.
         private sealed class CallbackResetEvent : EventWaitHandle
         {
-            private int _freeWhenZero = 2; // one for the callback and another for GetOverlappedResult
+            private int _freeWhenZero = 2; // one for the callback and another for the method that calls GetOverlappedResult
             private ThreadPoolBoundHandle _threadPoolBoundHandle;
 
             internal CallbackResetEvent(bool initialState, ThreadPoolBoundHandle threadPoolBoundHandle) : base(initialState, EventResetMode.ManualReset)
@@ -691,11 +689,11 @@ namespace System.IO
                 _threadPoolBoundHandle = threadPoolBoundHandle;
             }
 
-            internal unsafe void FreeNativeOverlappedIfItIsSafe(NativeOverlapped* pOverlapped)
+            internal unsafe void FreeNativeOverlapped(NativeOverlapped* pOverlapped)
             {
                 // Each SafeFileHandle opened for async IO is bound to ThreadPool.
-                // It requires us to provide a callback even if we want to observe the result by using GetOverlappedResult.
-                // There can be a race condition between GetOverlappedResult and the callback invocation,
+                // It requires us to provide a callback even if we want to use EventHandle and use GetOverlappedResult to obtain the result.
+                // There can be a race condition between the call to GetOverlappedResult and the callback invocation,
                 // so we need to track the number of references, and when it drops to zero, then free the native overlapped.
                 if (Interlocked.Decrement(ref _freeWhenZero) == 0)
                 {
