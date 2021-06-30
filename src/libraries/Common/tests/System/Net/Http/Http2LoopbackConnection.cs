@@ -766,6 +766,8 @@ namespace System.Net.Test.Common
 
         public async Task SendGoAway(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)
         {
+            // Do not send anymore PING ACKs:
+            _transparentPingResponse = false;
             GoAwayFrame frame = new GoAwayFrame(lastStreamId, (int)errorCode, new byte[] { }, 0);
             await WriteFrameAsync(frame).ConfigureAwait(false);
         }

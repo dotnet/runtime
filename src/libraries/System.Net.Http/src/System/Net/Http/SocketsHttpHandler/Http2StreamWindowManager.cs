@@ -136,7 +136,7 @@ namespace System.Net.Http
         }
 
         // Estimates Round Trip Time between the client and the server by sending PING frames, and measuring the time interval until a PING ACK is received.
-        // Assuming that the network characteristics of a connection wouldn't change much within it's lifetime, we are maintaining a running minimum value.
+        // Assuming that the network characteristics of the connection wouldn't change much within it's lifetime, we are maintaining a running minimum value.
         // The more PINGs we send, the more accurate is the estimation of MinRtt, however we should be careful not to send too many of them,
         // to avoid triggering the server's PING flood protection which may result in an unexpected GOAWAY.
         // With most servers wee are fine to send PINGs, as long as we are reading their data, this is rule is well formalized for gRPC:
@@ -158,7 +158,8 @@ namespace System.Net.Http
                 Disabled,
                 Init,
                 Waiting,
-                PingSent
+                PingSent,
+                TerminatingMayReceivePingAck
             }
 
             private const double PingIntervalInSeconds = 2;
@@ -214,9 +215,15 @@ namespace System.Net.Http
 
             internal void OnPingAckReceived(long payload, Http2Connection connection)
             {
-                if (_state != State.PingSent)
+                if (_state != State.PingSent && _state != State.TerminatingMayReceivePingAck)
                 {
                     ThrowProtocolError();
+                }
+
+                if (_state == State.TerminatingMayReceivePingAck)
+                {
+                    _state = State.Disabled;
+                    return;
                 }
 
                 //RTT PINGs always carry negavie payload, positive values indicate a response to KeepAlive PING.
@@ -231,7 +238,15 @@ namespace System.Net.Http
 
             internal void OnGoAwayReceived()
             {
-                _state = State.Disabled;
+                if (_state == State.PingSent)
+                {
+                    // We may still receive a PING ACK, but we should not send anymore PING:
+                    _state = State.TerminatingMayReceivePingAck;
+                }
+                else
+                {
+                    _state = State.Disabled;
+                }
             }
 
             private void RefreshRtt(Http2Connection connection)
