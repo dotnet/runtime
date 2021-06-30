@@ -12,7 +12,7 @@ namespace System.Reflection.Context
             return Array.Empty<T>();
         }
 
-        public static bool CompareArrays<T>(T[] left, T[] right)
+        public static bool CompareArrays<T>(T[] left, T[] right) where T : notnull
         {
             if (left.Length != right.Length)
                 return false;
@@ -26,7 +26,7 @@ namespace System.Reflection.Context
             return true;
         }
 
-        public static int GetArrayHashCode<T>(T[] array)
+        public static int GetArrayHashCode<T>(T[] array) where T : notnull
         {
             int hashcode = 0;
             foreach (T t in array)

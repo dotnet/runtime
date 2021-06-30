@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Projection
@@ -20,7 +21,7 @@ namespace System.Reflection.Context.Projection
 
         public Projector Projector { get; }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return Projector.ProjectType(base.DeclaringType); }
         }
@@ -35,7 +36,7 @@ namespace System.Reflection.Context.Projection
             get { return Projector.ProjectType(base.PropertyType); }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return Projector.ProjectType(base.ReflectedType); }
         }
@@ -45,7 +46,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetAccessors(nonPublic), Projector.ProjectMethod);
         }
 
-        public override MethodInfo GetGetMethod(bool nonPublic)
+        public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             return Projector.ProjectMethod(base.GetGetMethod(nonPublic));
         }
@@ -55,7 +56,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetIndexParameters(), Projector.ProjectParameter);
         }
 
-        public override MethodInfo GetSetMethod(bool nonPublic)
+        public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             return Projector.ProjectMethod(base.GetSetMethod(nonPublic));
         }
@@ -89,7 +90,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetRequiredCustomModifiers(), Projector.ProjectType);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingPropertyInfo other &&
                 Projector == other.Projector &&

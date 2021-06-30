@@ -3,12 +3,14 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Context.Projection
 {
     internal abstract class Projector
     {
-        public IList<T> Project<T>(IList<T> values, Func<T, T> project)
+        [return: NotNullIfNotNull("values")]
+        public IList<T>? Project<T>(IList<T>? values, Func<T, T> project)
         {
             if (values == null || values.Count == 0)
                 return values;
@@ -18,7 +20,8 @@ namespace System.Reflection.Context.Projection
             return Array.AsReadOnly(projected);
         }
 
-        public T[] Project<T>(T[] values, Func<T, T> project)
+        [return: NotNullIfNotNull("values")]
+        public T[]? Project<T>(T[]? values, Func<T, T> project)
         {
             if (values == null || values.Length == 0)
                 return values;
@@ -39,27 +42,44 @@ namespace System.Reflection.Context.Projection
             return value;
         }
 
-        public abstract TypeInfo ProjectType(Type value);
-        public abstract Assembly ProjectAssembly(Assembly value);
-        public abstract Module ProjectModule(Module value);
-        public abstract FieldInfo ProjectField(FieldInfo value);
-        public abstract EventInfo ProjectEvent(EventInfo value);
-        public abstract ConstructorInfo ProjectConstructor(ConstructorInfo value);
-        public abstract MethodInfo ProjectMethod(MethodInfo value);
-        public abstract MethodBase ProjectMethodBase(MethodBase value);
-        public abstract PropertyInfo ProjectProperty(PropertyInfo value);
-        public abstract ParameterInfo ProjectParameter(ParameterInfo value);
-        public abstract MethodBody ProjectMethodBody(MethodBody value);
-        public abstract LocalVariableInfo ProjectLocalVariable(LocalVariableInfo value);
-        public abstract ExceptionHandlingClause ProjectExceptionHandlingClause(ExceptionHandlingClause value);
-        public abstract CustomAttributeData ProjectCustomAttributeData(CustomAttributeData value);
-        public abstract ManifestResourceInfo ProjectManifestResource(ManifestResourceInfo value);
+        [return: NotNullIfNotNull("value")]
+        public abstract TypeInfo? ProjectType(Type? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract Assembly? ProjectAssembly(Assembly? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract Module? ProjectModule(Module? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract FieldInfo? ProjectField(FieldInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract EventInfo? ProjectEvent(EventInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract ConstructorInfo? ProjectConstructor(ConstructorInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract MethodInfo? ProjectMethod(MethodInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract MethodBase? ProjectMethodBase(MethodBase? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract PropertyInfo? ProjectProperty(PropertyInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract ParameterInfo? ProjectParameter(ParameterInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract MethodBody? ProjectMethodBody(MethodBody? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract LocalVariableInfo? ProjectLocalVariable(LocalVariableInfo? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract ExceptionHandlingClause? ProjectExceptionHandlingClause(ExceptionHandlingClause? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract CustomAttributeData? ProjectCustomAttributeData(CustomAttributeData? value);
+        [return: NotNullIfNotNull("value")]
+        public abstract ManifestResourceInfo? ProjectManifestResource(ManifestResourceInfo? value);
         public abstract CustomAttributeTypedArgument ProjectTypedArgument(CustomAttributeTypedArgument value);
         public abstract CustomAttributeNamedArgument ProjectNamedArgument(CustomAttributeNamedArgument value);
         public abstract InterfaceMapping ProjectInterfaceMapping(InterfaceMapping value);
-        public abstract MemberInfo ProjectMember(MemberInfo value);
+        [return: NotNullIfNotNull("value")]
+        public abstract MemberInfo? ProjectMember(MemberInfo? value);
 
-        public Type[] Unproject(Type[] values)
+        [return: NotNullIfNotNull("values")]
+        public Type[]? Unproject(Type[]? values)
         {
             if (values == null)
                 return null;
@@ -73,7 +93,8 @@ namespace System.Reflection.Context.Projection
             return newTypes;
         }
 
-        public Type Unproject(Type value)
+        [return: NotNullIfNotNull("value")]
+        public Type? Unproject(Type? value)
         {
             if (value is ProjectingType projectingType)
                 return projectingType.UnderlyingType;
@@ -81,7 +102,7 @@ namespace System.Reflection.Context.Projection
                 return value;
         }
 
-        public bool NeedsProjection(object value)
+        public bool NeedsProjection([NotNullWhen(true)] object? value)
         {
             Debug.Assert(value != null);
 

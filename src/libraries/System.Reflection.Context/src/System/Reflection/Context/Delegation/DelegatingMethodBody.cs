@@ -42,12 +42,12 @@ namespace System.Reflection.Context.Delegation
             get { return _body.MaxStackSize; }
         }
 
-        public override byte[] GetILAsByteArray()
+        public override byte[]? GetILAsByteArray()
         {
             return _body.GetILAsByteArray();
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return _body.ToString();
         }

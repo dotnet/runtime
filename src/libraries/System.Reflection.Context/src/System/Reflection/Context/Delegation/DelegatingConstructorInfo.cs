@@ -31,7 +31,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingConstructor.ContainsGenericParameters; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return UnderlyingConstructor.DeclaringType; }
         }
@@ -81,7 +81,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingConstructor.Name; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return UnderlyingConstructor.ReflectedType; }
         }
@@ -108,7 +108,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingConstructor.GetGenericArguments();
         }
 
-        public override MethodBody GetMethodBody()
+        public override MethodBody? GetMethodBody()
         {
             return UnderlyingConstructor.GetMethodBody();
         }
@@ -123,12 +123,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingConstructor.GetParameters();
         }
 
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             return UnderlyingConstructor.Invoke(invokeAttr, binder, parameters, culture);
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             return UnderlyingConstructor.Invoke(obj, invokeAttr, binder, parameters, culture);
         }
@@ -138,7 +138,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingConstructor.IsDefined(attributeType, inherit);
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return UnderlyingConstructor.ToString();
         }

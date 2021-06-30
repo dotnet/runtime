@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -28,12 +29,12 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.Assembly; }
         }
 
-        public override string AssemblyQualifiedName
+        public override string? AssemblyQualifiedName
         {
             get { return _typeInfo.AssemblyQualifiedName; }
         }
 
-        public override Type BaseType
+        public override Type? BaseType
         {
             get { return _typeInfo.BaseType; }
         }
@@ -48,17 +49,17 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.GenericParameterPosition; }
         }
 
-        public override MethodBase DeclaringMethod
+        public override MethodBase? DeclaringMethod
         {
             get { return _typeInfo.DeclaringMethod; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return _typeInfo.DeclaringType; }
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get { return _typeInfo.FullName; }
         }
@@ -128,17 +129,17 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.Name; }
         }
 
-        public override string Namespace
+        public override string? Namespace
         {
             get { return _typeInfo.Namespace; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return _typeInfo.ReflectedType; }
         }
 
-        public override StructLayoutAttribute StructLayoutAttribute
+        public override StructLayoutAttribute? StructLayoutAttribute
         {
             get { return _typeInfo.StructLayoutAttribute; }
         }
@@ -173,7 +174,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetDefaultMembers();
         }
 
-        public override string GetEnumName(object value)
+        public override string? GetEnumName(object value)
         {
             return _typeInfo.GetEnumName(value);
         }
@@ -243,7 +244,7 @@ namespace System.Reflection.Context.Delegation
             return Type.GetTypeCode(_typeInfo);
         }
 
-        public override bool IsAssignableFrom(Type c)
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             return _typeInfo.IsAssignableFrom(c);
         }
@@ -263,12 +264,12 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.IsEnumDefined(value);
         }
 
-        public override bool IsEquivalentTo(Type other)
+        public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
             return _typeInfo.IsEquivalentTo(other);
         }
 
-        public override bool IsInstanceOfType(object o)
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
         {
             return _typeInfo.IsInstanceOfType(o);
         }
@@ -296,7 +297,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.Attributes;
         }
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             return _typeInfo.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -306,12 +307,12 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetConstructors(bindingAttr);
         }
 
-        public override Type GetElementType()
+        public override Type? GetElementType()
         {
             return _typeInfo.GetElementType();
         }
 
-        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             return _typeInfo.GetEvent(name, bindingAttr);
         }
@@ -321,7 +322,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetEvents(bindingAttr);
         }
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _typeInfo.GetField(name, bindingAttr);
         }
@@ -331,7 +332,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetFields(bindingAttr);
         }
 
-        public override Type GetInterface(string name, bool ignoreCase)
+        public override Type? GetInterface(string name, bool ignoreCase)
         {
             return _typeInfo.GetInterface(name, ignoreCase);
         }
@@ -346,7 +347,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetMembers(bindingAttr);
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             // Unfortunately we cannot directly call the protected GetMethodImpl on _typeInfo.
             return (types == null) ?
@@ -359,7 +360,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetMethods(bindingAttr);
         }
 
-        public override Type GetNestedType(string name, BindingFlags bindingAttr)
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             return _typeInfo.GetNestedType(name, bindingAttr);
         }
@@ -374,10 +375,10 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetProperties(bindingAttr);
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             // Unfortunately we cannot directly call the protected GetPropertyImpl on _typeInfo.
-            PropertyInfo property;
+            PropertyInfo? property;
 
             if (types == null)
             {
@@ -409,7 +410,7 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.HasElementType;
         }
 
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             return _typeInfo.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
         }
