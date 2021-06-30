@@ -2956,4 +2956,7 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx);
 
 MonoMemoryManager* mini_get_default_mem_manager (void);
 
+MONO_COMPONENT_API int
+mono_wasm_get_debug_level (void);
+
 #endif /* __MONO_MINI_H__ */

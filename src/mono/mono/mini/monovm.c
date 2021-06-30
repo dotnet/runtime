@@ -210,8 +210,6 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 		return 0x80004005; /* E_FAIL */
 
 	finish_initialization ();
-		
-	mono_components_init ();
 
 	return 0;
 }

@@ -90,6 +90,7 @@
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/components.h>
+#include <mono/mini/debugger-agent-external.h>
 
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
@@ -439,7 +440,6 @@ MonoDefaults *mdbg_mono_defaults;
 static void transport_init (void);
 static void transport_connect (const char *address);
 static gboolean transport_handshake (void);
-static void register_transport (DebuggerTransport *trans);
 
 static gsize WINAPI debugger_thread (void *arg);
 
@@ -1264,7 +1264,7 @@ register_socket_transport (void)
 	trans.send = socket_transport_send;
 	trans.recv = socket_transport_recv;
 
-	register_transport (&trans);
+	mono_debugger_agent_register_transport (&trans);
 }
 
 /*
@@ -1305,7 +1305,7 @@ register_socket_fd_transport (void)
 	trans.send = socket_transport_send;
 	trans.recv = socket_transport_recv;
 
-	register_transport (&trans);
+	mono_debugger_agent_register_transport (&trans);
 }
 
 #endif /* DISABLE_SOCKET_TRANSPORT */
@@ -1314,21 +1314,9 @@ register_socket_fd_transport (void)
  * TRANSPORT CODE
  */
 
-#define MAX_TRANSPORTS 16
+
 
 static DebuggerTransport *transport;
-
-static DebuggerTransport transports [MAX_TRANSPORTS];
-static int ntransports = 0;
-
-static void
-register_transport (DebuggerTransport *trans)
-{
-	g_assert (ntransports < MAX_TRANSPORTS);
-
-	memcpy (&transports [ntransports], trans, sizeof (DebuggerTransport));
-	ntransports ++;
-}
 
 static void
 transport_init (void)
@@ -1339,6 +1327,8 @@ transport_init (void)
 	register_socket_transport ();
 	register_socket_fd_transport ();
 #endif
+	int ntransports = 0;
+	DebuggerTransport *transports = mono_debugger_agent_get_transports (&ntransports);
 
 	for (i = 0; i < ntransports; ++i) {
 		if (!strcmp (agent_config.transport, transports [i].name))
@@ -1399,7 +1389,7 @@ transport_recv (void *buf, int len)
 }
 
 static gboolean
-mono_debugger_agent_transport_handshake (void)
+debugger_agent_transport_handshake (void)
 {
 	gboolean result;
 	MONO_ENTER_GC_UNSAFE;
@@ -1622,11 +1612,14 @@ mono_init_debugger_agent_for_wasm (int log_level_parm)
 	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
 		return;
 
+	int ntransports = 0;
+	DebuggerTransport *transports = mono_debugger_agent_get_transports (&ntransports);
+
 	ids_init();
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 
-	log_level = log_level;
+	log_level = log_level_parm;
 	event_requests = g_ptr_array_new ();
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
@@ -10293,10 +10286,9 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	fn_table->send_crash = mono_debugger_agent_send_crash;
 	
-	fn_table->register_transport = register_transport;
 	fn_table->set_sdb_options = set_sdb_options;
 
-	fn_table->mono_debugger_agent_transport_handshake = mono_debugger_agent_transport_handshake;
+	fn_table->mono_debugger_agent_transport_handshake = debugger_agent_transport_handshake;
 }
 
 

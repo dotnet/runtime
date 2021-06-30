@@ -8,10 +8,24 @@
 
 #ifndef DISABLE_SDB
 
+#define MAX_TRANSPORTS 16
+static DebuggerTransport transports [MAX_TRANSPORTS];
+static int ntransports = 0;
+
+static void
+register_transport (DebuggerTransport *trans)
+{
+	g_assert (ntransports < MAX_TRANSPORTS);
+
+	memcpy (&transports [ntransports], trans, sizeof (DebuggerTransport));
+	ntransports ++;
+}
+
 void
+
 mono_debugger_agent_register_transport (DebuggerTransport *trans)
 {
-	mono_component_debugger ()->register_transport (trans);
+	register_transport (trans);
 }
 
 gboolean
@@ -32,4 +46,9 @@ mono_debugger_agent_parse_options (char *options)
 	mono_component_debugger ()->set_sdb_options (options);
 }
 
+DebuggerTransport *mono_debugger_agent_get_transports (int *ntrans) 
+{
+	*ntrans = ntransports;
+	return transports;
+}
 #endif /* DISABLE_SDB */

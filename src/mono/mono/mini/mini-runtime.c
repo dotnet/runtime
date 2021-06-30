@@ -4269,7 +4269,8 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
-
+	mono_components_init ();
+	
 	mono_component_debugger ()->parse_options ();
 
 	mono_os_mutex_init_recursive (&jit_mutex);

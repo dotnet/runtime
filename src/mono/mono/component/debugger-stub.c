@@ -57,9 +57,6 @@ stub_debugger_breakpoint_from_context (MonoContext *ctx);
 static void
 stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause);
 
-static void 
-stub_register_transport (DebuggerTransport *trans); //debugger-agent
-
 static gboolean 
 stub_mono_debugger_agent_transport_handshake (void);
 
@@ -71,9 +68,6 @@ stub_mono_wasm_breakpoint_hit (void);
 
 static void
 stub_mono_wasm_single_step_hit (void);
-
-static void 
-stub_mono_wasm_enable_debugging (int log_level);
 
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
@@ -92,14 +86,12 @@ static MonoComponentDebugger fn_table = {
 	&stub_debugger_debug_log,
 	&stub_debugger_debug_log_is_enabled,
 	&stub_debugger_send_crash,
-	&stub_register_transport,
 	&stub_mono_debugger_agent_transport_handshake,
 	&stub_mono_debugger_agent_parse_options,
 
 	//wasm
 	&stub_mono_wasm_breakpoint_hit,
-	&stub_mono_wasm_single_step_hit,
-	&stub_mono_wasm_enable_debugging,
+	&stub_mono_wasm_single_step_hit
 };
 
 static bool
@@ -196,11 +188,6 @@ stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
 {
 }
 
-static void 
-stub_register_transport(DebuggerTransport *trans) //debugger-agent
-{
-}
-
 static gboolean 
 stub_mono_debugger_agent_transport_handshake(void)
 {
@@ -219,10 +206,5 @@ stub_mono_wasm_breakpoint_hit (void)
 
 static void
 stub_mono_wasm_single_step_hit (void)
-{
-}
-
-static void 
-stub_mono_wasm_enable_debugging (int log_level)
 {
 }

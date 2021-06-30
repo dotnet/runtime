@@ -20,4 +20,7 @@ mono_debugger_agent_transport_handshake (void);
 MONO_API void
 mono_debugger_agent_register_transport (DebuggerTransport *trans);
 
+MONO_COMPONENT_API DebuggerTransport *
+mono_debugger_agent_get_transports (int *ntrans);
+
 #endif
