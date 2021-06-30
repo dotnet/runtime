@@ -251,7 +251,7 @@ namespace System.Net.Test.Common
         {
             _expectPingFrame.SetResult(pingFrame);
             bool shutdownOccured = false;
-            if (_respondToPing && !pingFrame.AckFlag)
+            if (_respondToPing)
             {
                 try
                 {

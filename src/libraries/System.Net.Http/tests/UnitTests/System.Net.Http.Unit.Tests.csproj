@@ -237,7 +237,7 @@
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs"
              Link="ProductionCode\System\Net\Http\StringContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs"
-            Link="ProductionCode\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
+             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"

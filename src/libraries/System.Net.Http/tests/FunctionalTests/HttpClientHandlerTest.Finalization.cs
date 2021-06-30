@@ -53,11 +53,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         HttpRequestData data = await connection.ReadRequestDataAsync(readBody: false);
                         await connection.SendResponseHeadersAsync(headers: new HttpHeaderData[] { new HttpHeaderData("SomeHeaderName", "AndValue") });
-                        if (connection is Http2LoopbackConnection http2Connection)
-                        {
-                            // We may receive an RTT PING in response to HEADERS
-                            _ = http2Connection.ExpectPingFrameAsync(true);
-                        }
                         await connection.WaitForCancellationAsync();
                     }
                     finally

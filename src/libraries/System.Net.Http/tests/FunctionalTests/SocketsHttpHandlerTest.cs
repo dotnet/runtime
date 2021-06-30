@@ -1927,14 +1927,17 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData(HttpClientHandlerTestBase.DefaultInitialWindowSize)]
-        [InlineData(1048576)]
-        public void InitialHttp2StreamWindowSize_Roundtrips(int value)
+        [Fact]
+        public void InitialHttp2StreamWindowSize_GetSet_Roundtrips()
         {
             using var handler = new SocketsHttpHandler();
-            handler.InitialHttp2StreamWindowSize = value;
-            Assert.Equal(value, handler.InitialHttp2StreamWindowSize);
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize); // default value
+
+            handler.InitialHttp2StreamWindowSize = 1048576;
+            Assert.Equal(1048576, handler.InitialHttp2StreamWindowSize);
+
+            handler.InitialHttp2StreamWindowSize = HttpClientHandlerTestBase.DefaultInitialWindowSize;
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
         }
 
         [Theory]

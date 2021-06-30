@@ -1027,7 +1027,6 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendGoAway(streamId);
 
                     // Make sure client received GOAWAY
-                    _ = connection.ExpectPingFrameAsync();
                     await connection.PingPong();
 
                     await connection.SendResponseBodyAsync(streamId, new byte[4] { 15, 14, 13, 12 }, isFinal: false);
@@ -1075,9 +1074,6 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendDefaultResponseHeadersAsync(streamId);
                 DataFrame dataFrame = new DataFrame(new byte[10], FrameFlags.EndStream, 0, streamId);
                 await connection.WriteFrameAsync(dataFrame);
-
-                // We may receive an RTT PING in response to the DATA:
-                _ = connection.ExpectPingFrameAsync(respond: true);
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
