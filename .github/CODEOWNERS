@@ -19,17 +19,17 @@
 /src/mono/llvm @vargaz @SamMonoRT @imhameed @EgorBo
 
 /src/mono/mono/arch @vargaz
-/src/mono/mono/eglib @vargaz @lambdageek @CoffeeFlux
+/src/mono/mono/eglib @vargaz @lambdageek
 
-/src/mono/mono/metadata @vargaz @lambdageek @thaystg @CoffeeFlux
-/src/mono/mono/metadata/*-win* @lateralusX @lambdageek @CoffeeFlux
+/src/mono/mono/metadata @vargaz @lambdageek @thaystg
+/src/mono/mono/metadata/*-win* @lateralusX @lambdageek
 /src/mono/mono/metadata/handle* @lambdageek @vargaz
 /src/mono/mono/metadata/monitor* @brzvlad @vargaz
 /src/mono/mono/metadata/sgen* @brzvlad @vargaz @naricc
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
-/src/mono/mono/metadata/w32* @lateralusX @lambdageek @CoffeeFlux
+/src/mono/mono/metadata/w32* @lateralusX @lambdageek
 
-/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @CoffeeFlux @imhameed
+/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @imhameed
 /src/mono/mono/mini/*cfgdump* @vargaz
 /src/mono/mono/mini/*exceptions* @vargaz @BrzVlad @imhameed
 /src/mono/mono/mini/*llvm* @vargaz @imhameed @EgorBo
@@ -43,8 +43,8 @@
 /src/mono/mono/profiler @BrzVlad @lambdageek
 /src/mono/mono/sgen @BrzVlad @lambdageek @naricc
 
-/src/mono/mono/utils @vargaz @lambdageek @CoffeeFlux
-/src/mono/mono/utils/*-win* @lateralusX @lambdageek @CoffeeFlux
+/src/mono/mono/utils @vargaz @lambdageek
+/src/mono/mono/utils/*-win* @lateralusX @lambdageek
 /src/mono/mono/utils/atomic* @vargaz
 /src/mono/mono/utils/mono-hwcap* @vargaz
 /src/mono/mono/utils/mono-mem* @vargaz
@@ -53,5 +53,3 @@
 /src/mono/mono/utils/mono-threads* @lambdageek @vargaz
 
 /src/mono/dlls @thaystg @lambdageek
-
-/src/mono/netcore @marek-safar @akoeplinger @vargaz @steveisok

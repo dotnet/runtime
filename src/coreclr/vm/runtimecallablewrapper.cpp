@@ -2548,7 +2548,11 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                     MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
                     while (it.Next())
                     {
-                        bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
+                        MethodTable *pItf = it.GetInterfaceApprox();
+                        if (pItf->HasInstantiation() || pItf->IsGenericTypeDefinition())
+                            continue;
+
+                        bSupportsItf = Object::SupportsInterface(oref, pItf);
                         if (!bSupportsItf)
                             break;
                     }

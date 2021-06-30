@@ -167,8 +167,15 @@ namespace System.IO
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
             ValidateArgs(path, encoding);
-            if (options == null)
+
+            if (options is null)
+            {
                 throw new ArgumentNullException(nameof(options));
+            }
+            if ((options.Access & FileAccess.Write) == 0)
+            {
+                throw new ArgumentException(SR.Argument_StreamNotWritable, nameof(options));
+            }
 
             return new FileStream(path, options);
         }

@@ -137,6 +137,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(methodName, method.Name);
             Assert.Equal(callingConvention, method.CallingConvention);
             Assert.Equal(returnType, method.ReturnType);
+            Assert.NotEqual(0, method.MetadataToken);
         }
     }
 }

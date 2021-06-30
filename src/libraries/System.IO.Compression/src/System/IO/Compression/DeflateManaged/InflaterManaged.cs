@@ -95,7 +95,7 @@ namespace System.IO.Compression
 
         public int AvailableOutput => _output.AvailableBytes;
 
-        public int Inflate(Memory<byte> bytes)
+        public int Inflate(Span<byte> bytes)
         {
             // copy bytes from output to outputbytes if we have available bytes
             // if buffer is not filled up. keep decoding until no input are available
@@ -139,7 +139,7 @@ namespace System.IO.Compression
             return count;
         }
 
-        public int Inflate(byte[] bytes, int offset, int length) => Inflate(bytes.AsMemory(offset, length));
+        public int Inflate(byte[] bytes, int offset, int length) => Inflate(bytes.AsSpan(offset, length));
 
         //Each block of compressed data begins with 3 header bits
         // containing the following data:

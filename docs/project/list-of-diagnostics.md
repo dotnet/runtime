@@ -81,6 +81,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0024`__ | Creating and unloading AppDomains is not supported and throws an exception. |
 |  __`SYSLIB0025`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |
 |  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
+|  __`SYSLIB0027`__ | PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey. |
+|  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
 
 ## Analyzer Warnings
 

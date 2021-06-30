@@ -18,12 +18,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected internal JsonConverter()
         {
-            // Today only typeof(object) can have polymorphic writes.
-            // In the future, this will be check for !IsSealed (and excluding value types).
-            CanBePolymorphic = TypeToConvert == JsonTypeInfo.ObjectType;
+            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
+            // Today only the internal JsonConverter<object> can have polymorphic writes.
+            CanBePolymorphic = IsInternalConverter && TypeToConvert == JsonTypeInfo.ObjectType;
             IsValueType = TypeToConvert.IsValueType;
             CanBeNull = default(T) is null;
-            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
 
             if (HandleNull)
             {
@@ -332,7 +331,7 @@ namespace System.Text.Json.Serialization
             bool ignoreCyclesPopReference = false;
 
             if (
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
 #else
                 !IsValueType &&
@@ -368,15 +367,11 @@ namespace System.Text.Json.Serialization
 
                 if (CanBePolymorphic)
                 {
-                    Type type = value.GetType();
-                    if (type == JsonTypeInfo.ObjectType)
-                    {
-                        writer.WriteStartObject();
-                        writer.WriteEndObject();
-                        return true;
-                    }
+                    Debug.Assert(IsInternalConverter);
 
-                    if (type != TypeToConvert && IsInternalConverter)
+                    Type type = value.GetType();
+
+                    if (type != TypeToConvert)
                     {
                         // For internal converter only: Handle polymorphic case and get the new converter.
                         // Custom converter, even though polymorphic converter, get called for reading AND writing.
@@ -420,6 +415,19 @@ namespace System.Text.Json.Serialization
                 }
 
                 VerifyWrite(originalPropertyDepth, writer);
+
+                if (
+#if NET5_0_OR_GREATER
+                    !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+#endif
+                    ignoreCyclesPopReference)
+                {
+                    // should only be entered if we're serializing instances
+                    // of type object using the internal object converter.
+                    Debug.Assert(value?.GetType() == typeof(object) && IsInternalConverter);
+                    state.ReferenceResolver.PopReferenceForCycleDetection();
+                }
+
                 return true;
             }
 

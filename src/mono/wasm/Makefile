@@ -48,11 +48,19 @@ provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 	@echo "----------------------------------------------------------"
 	@echo "Installed emsdk into EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk"
 
+# FIXME: When https://github.com/dotnet/runtime/issues/54565 is fixed, and the WasmApp targets are updated to use mono runtime components, remove this
+MONO_COMPONENT_LIBS= \
+	$(MONO_BIN_DIR)/libmono-component-hot_reload-static.a \
+	$(MONO_BIN_DIR)/libmono-component-diagnostics_tracing-stub-static.a
+
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
+# libmonosgen-2.0 is in MONO_LIBS twice because the components and the runtime are depend on each other
 MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmono-ee-interp.a \
+	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
+	$(MONO_COMPONENT_LIBS) \
 	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
 	$(MONO_BIN_DIR)/libmono-ilgen.a \
 	$(MONO_BIN_DIR)/libmono-icall-table.a \

@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
         /// <param name="elementInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
-        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSerializerOptionsAttribute"/> defaults.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TElement[]> CreateArrayInfo<TElement>(
             JsonSerializerOptions options,
@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
         /// <param name="elementInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
-        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSerializerOptionsAttribute"/> defaults.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateListInfo<TCollection, TElement>(
             JsonSerializerOptions options,
@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="keyInfo">A <see cref="JsonTypeInfo"/> instance representing the key type.</param>
         /// <param name="valueInfo">A <see cref="JsonTypeInfo"/> instance representing the value type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
-        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSerializerOptionsAttribute"/> defaults.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,

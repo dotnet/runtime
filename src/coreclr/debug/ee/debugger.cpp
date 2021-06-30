@@ -365,10 +365,10 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     Thread * pThread;
     bool fIsCooperative;
-    
+
     pThread = g_pEEInterface->GetThread();
     fIsCooperative = (pThread != NULL) && (pThread->PreemptiveGCDisabled());
-    
+
     if (m_fShutdownMode && !fIsCooperative)
     {
         // The big fear is that some other random thread will take the debugger-lock and then block on something else,
@@ -16299,7 +16299,8 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numberOfBytes)
         }
     }
 
-    return ChangePageUsage(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
+    ASSERT(chunkToUse >= 1 && (uint)chunkToUse < CHUNKS_PER_DEBUGGERHEAP);
+    return GetPointerToChunkWithUsageUpdate(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
 }
 
 void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
@@ -16314,9 +16315,9 @@ void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
     int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.chunkNumber;
 
     // Sanity check: assert that the address really represents the start of a chunk.
-    ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % 64 == 0);
+    ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % EXPECTED_CHUNKSIZE == 0);
 
-    ChangePageUsage(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
+    GetPointerToChunkWithUsageUpdate(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
 }
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
@@ -16324,6 +16325,7 @@ DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewP
     void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
     newPage->SetNextPage(m_pages);
 
     // Add the new page to the linked list of pages
@@ -16333,8 +16335,9 @@ DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewP
 
 bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse)
 {
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
     uint64_t occupancy = page->GetPageOccupancy();
-    bool available = occupancy != UINT64_MAX;
+    bool available = occupancy != MAX_CHUNK_MASK;
 
     if (!available)
     {
@@ -16348,13 +16351,13 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
 
     if (chunkToUse)
     {
-        // Start i at 62 because first chunk is reserved
-        for (int i = 62; i >= 0; i--)
+        // skip the first bit, as that's used by the booking chunk.
+        for (int i = CHUNKS_PER_DEBUGGERHEAP - 2; i >= 0; i--)
         {
-            uint64_t mask = ((uint64_t)1 << i);
+            uint64_t mask = (1ull << i);
             if ((mask & occupancy) == 0)
             {
-                *chunkToUse = 64 - i - 1;
+                *chunkToUse = CHUNKS_PER_DEBUGGERHEAP - i - 1;
                 break;
             }
         }
@@ -16363,12 +16366,12 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
     return true;
 }
 
-void* DebuggerHeapExecutableMemoryAllocator::ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
+void* DebuggerHeapExecutableMemoryAllocator::GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
 {
     ASSERT(action == ChangePageUsageAction::ALLOCATE || action == ChangePageUsageAction::FREE);
+    uint64_t mask = 1ull << (CHUNKS_PER_DEBUGGERHEAP - chunkNumber - 1);
 
-    uint64_t mask = (uint64_t)0x1 << (64 - chunkNumber - 1);
-
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
     uint64_t prevOccupancy = page->GetPageOccupancy();
     uint64_t newOccupancy = (action == ChangePageUsageAction::ALLOCATE) ? (prevOccupancy | mask) : (prevOccupancy ^ mask);
     page->SetPageOccupancy(newOccupancy);
@@ -16459,11 +16462,15 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 #endif
 
 #ifndef HOST_WINDOWS
-    m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
-    ASSERT(m_execMemAllocator != NULL);
-    if (m_execMemAllocator == NULL)
+    m_execMemAllocator = NULL;
+    if (m_fExecutable)
     {
-        return E_OUTOFMEMORY;
+        m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
+        ASSERT(m_execMemAllocator != NULL);
+        if (m_execMemAllocator == NULL)
+        {
+            return E_OUTOFMEMORY;
+        }
     }
 #endif
 

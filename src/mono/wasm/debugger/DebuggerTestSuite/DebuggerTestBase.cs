@@ -706,7 +706,6 @@ namespace DebuggerTests
 
                     var exp_val_str = jp.Value.Value<string>();
                     bool null_or_empty_exp_val = String.IsNullOrEmpty(exp_val_str);
-
                     var actual_field_val = actual_val?.Values<JProperty>()?.FirstOrDefault(a_jp => a_jp.Name == jp.Name);
                     var actual_field_val_str = actual_field_val?.Value?.Value<string>();
                     if (null_or_empty_exp_val && String.IsNullOrEmpty(actual_field_val_str))
@@ -1011,6 +1010,36 @@ namespace DebuggerTests
             Assert.True(load_assemblies_res.IsOk);
         }
 
+        internal async Task<JObject> LoadAssemblyDynamicallyALCAndRunMethod(string asm_file, string pdb_file, string type_name, string method_name)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+
+            string pdb_base64 = null;
+            if (pdb_file != null)
+            {
+                bytes = File.ReadAllBytes(pdb_file);
+                pdb_base64 = Convert.ToBase64String(bytes);
+            }
+
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTestALC:LoadLazyAssemblyInALC', asm_b64, pdb_b64); }}"
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+
+            Assert.True(load_assemblies_res.IsOk);
+            Thread.Sleep(1000);
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] LoadDebuggerTestALC:RunMethodInALC', '" + type_name + "',  '" + method_name + "'); }, 1);"
+            });
+
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            return await insp.WaitFor(Inspector.PAUSE);
+        }
     }
 
     class DotnetObjectId

@@ -40,8 +40,6 @@ namespace System.Net.Quic.Tests
 
         // TODO: new additions, find out the actual reason for hanging
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException() => base.ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public override Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode) => base.Read_DataStoredAtDesiredOffset(mode);
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public override Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported() => base.ReadAsync_DuringReadAsync_ThrowsIfUnsupported();

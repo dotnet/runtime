@@ -9,6 +9,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal unsafe sealed class MsQuicApi
     {
+        private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
+
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         // This is workaround for a bug in ILTrimmer.
@@ -123,6 +125,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         static MsQuicApi()
         {
+            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            {
+                IsQuicSupported = false;
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                }
+
+                return;
+            }
+
             if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
             {
                 try
@@ -148,6 +162,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
             }
         }
+
+        private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
+            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }

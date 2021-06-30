@@ -399,7 +399,6 @@ namespace Internal.Cryptography.Pal
                 return;
 
             Debug.Assert(!_certHandle.IsInvalid);
-            string? subjectSummary = Interop.AppleCrypto.X509GetSubjectSummary(_certHandle);
 
             try
             {
@@ -407,6 +406,7 @@ namespace Internal.Cryptography.Pal
             }
             catch (CryptographicException e)
             {
+                string? subjectSummary = Interop.AppleCrypto.X509GetSubjectSummary(_certHandle);
                 if (subjectSummary is null)
                 {
                     throw;

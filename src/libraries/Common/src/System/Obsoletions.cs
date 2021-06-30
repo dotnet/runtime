@@ -89,5 +89,11 @@ namespace System
 
         internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.";
         internal const string X509CertificateImmutableDiagId = "SYSLIB0026";
+
+        internal const string PublicKeyPropertyMessage = "PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.";
+        internal const string PublicKeyPropertyDiagId = "SYSLIB0027";
+
+        internal const string X509CertificatePrivateKeyMessage = "X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key.";
+        internal const string X509CertificatePrivateKeyDiagId = "SYSLIB0028";
     }
 }

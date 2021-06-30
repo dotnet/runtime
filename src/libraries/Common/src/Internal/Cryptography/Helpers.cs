@@ -30,11 +30,11 @@ namespace Internal.Cryptography
             return (byte[])(src.Clone());
         }
 
-        public static int GetPaddingSize(this SymmetricAlgorithm algorithm)
+        public static int GetPaddingSize(this SymmetricAlgorithm algorithm, CipherMode mode, int feedbackSizeBits)
         {
             // CFB8 does not require any padding at all
             // otherwise, it is always required to pad for block size
-            if (algorithm.Mode == CipherMode.CFB && algorithm.FeedbackSize == 8)
+            if (mode == CipherMode.CFB && feedbackSizeBits == 8)
                 return 1;
 
             return algorithm.BlockSize / 8;

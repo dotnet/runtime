@@ -2738,6 +2738,12 @@ mono_jit_free_method (MonoMethod *method)
 
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
+	
+	//seq_points are always on get_default_jit_mm
+	jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	g_hash_table_remove (jit_mm->seq_points, method);
+	jit_mm_unlock (jit_mm);
 
 	jit_mm = jit_mm_for_method (method);
 

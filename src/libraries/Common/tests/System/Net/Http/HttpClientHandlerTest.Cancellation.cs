@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
-                        await connection.SendResponseAsync(HttpStatusCode.OK, content: null, isFinal: false);
+                        await connection.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
 
                         partialResponseHeadersSent.TrySetResult(true);
                         await clientFinished.Task;

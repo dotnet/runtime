@@ -428,6 +428,303 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Decrypts data using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The decrypted plaintext data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="ciphertext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
+        /// </remarks>
+        public byte[] DecryptEcb(byte[] ciphertext, PaddingMode paddingMode)
+        {
+            // Padding mode is validated by callee.
+            if (ciphertext is null)
+                throw new ArgumentNullException(nameof(ciphertext));
+
+            return DecryptEcb(new ReadOnlySpan<byte>(ciphertext), paddingMode);
+        }
+
+        /// <summary>
+        ///   Decrypts data using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The decrypted plaintext data.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
+        /// </remarks>
+        public byte[] DecryptEcb(ReadOnlySpan<byte> ciphertext, PaddingMode paddingMode)
+        {
+            CheckPaddingMode(paddingMode);
+
+            // This could get returned directly to the caller if we there was no padding
+            // that needed to get removed, so don't rent from a pool.
+            byte[] decryptBuffer = GC.AllocateUninitializedArray<byte>(ciphertext.Length);
+
+            if (!TryDecryptEcbCore(ciphertext, decryptBuffer, paddingMode, out int written)
+                || (uint)written > decryptBuffer.Length)
+            {
+                // This means decrypting the ciphertext grew in to a larger plaintext or overflowed.
+                // A user-derived class could do this, but it is not expected in any of the
+                // implementations that we ship.
+
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            // Array.Resize will no-op if the array does not need to be resized.
+            Array.Resize(ref decryptBuffer, written);
+            return decryptBuffer;
+        }
+
+        /// <summary>
+        ///   Decrypts data into the specified buffer, using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" /></returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the plaintext data.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
+        /// </remarks>
+        public int DecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode)
+        {
+            CheckPaddingMode(paddingMode);
+
+            if (!TryDecryptEcbCore(ciphertext, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
+        /// <summary>
+        ///   Attempts to decrypt data into the specified buffer, using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
+        /// </remarks>
+        public bool TryDecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+        {
+            CheckPaddingMode(paddingMode);
+            return TryDecryptEcbCore(ciphertext, destination, paddingMode, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Encrypts data using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
+        /// </remarks>
+        public byte[] EncryptEcb(byte[] plaintext, PaddingMode paddingMode)
+        {
+            // paddingMode is validated by callee
+            if (plaintext is null)
+                throw new ArgumentNullException(nameof(plaintext));
+
+            return EncryptEcb(new ReadOnlySpan<byte>(plaintext), paddingMode);
+        }
+
+        /// <summary>
+        ///   Encrypts data using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The plaintext could not be encrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
+        /// </remarks>
+        public byte[] EncryptEcb(ReadOnlySpan<byte> plaintext, PaddingMode paddingMode)
+        {
+            CheckPaddingMode(paddingMode);
+
+            int ciphertextLength = GetCiphertextLengthEcb(plaintext.Length, paddingMode);
+
+            // We expect most if not all uses to encrypt to exactly the ciphertextLength
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
+
+            if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written) ||
+                written != ciphertextLength)
+            {
+                // This means a user-derived imiplementation added more padding than we expected or
+                // did something non-standard (encrypt to a partial block). This can't happen for
+                // multiple padding blocks since the buffer would have been too small in the first
+                // place. It doesn't make sense to try and support partial block encryption, likely
+                // something went very wrong. So throw.
+                throw new CryptographicException(SR.Format(SR.Cryptography_EncryptedIncorrectLength, nameof(TryEncryptEcbCore)));
+            }
+
+            return buffer;
+        }
+
+        /// <summary>
+        ///   Encrypts data into the specified buffer, using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The plaintext could not be encrypted successfully.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the ciphertext data.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
+        /// </remarks>
+        public int EncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode)
+        {
+            CheckPaddingMode(paddingMode);
+
+            if (!TryEncryptEcbCore(plaintext, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
+        /// <summary>
+        ///   Attempts to encrypt data into the specified buffer, using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The plaintext could not be encrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
+        /// </remarks>
+        public bool TryEncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+        {
+            CheckPaddingMode(paddingMode);
+            return TryEncryptEcbCore(plaintext, destination, paddingMode, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, attempts to encrypt data into the specified
+        ///   buffer, using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   <para>Derived classes must override this and provide an implementation.</para>
+        ///   <para>
+        ///      Implementations of this method must write precisely
+        ///      <c>GetCiphertextLengthEcb(plaintext.Length, paddingMode)</c> bytes to <paramref name="destination"/>
+        ///      and report that via <paramref name="bytesWritten"/>.
+        ///   </para>
+        /// </remarks>
+        protected virtual bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, attempts to decrypt data
+        ///   into the specified buffer, using ECB mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   Derived classes must override this and provide an implementation.
+        /// </remarks>
+        protected virtual bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        private static void CheckPaddingMode(PaddingMode paddingMode)
+        {
+            if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
+                throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
+        }
+
         protected CipherMode ModeValue;
         protected PaddingMode PaddingValue;
         protected byte[]? KeyValue;

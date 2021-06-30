@@ -206,7 +206,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestData requestData = await connection.ReadRequestDataAsync();                
                 string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
                 Assert.Equal(clientContent, requestContent);
-                await connection.SendResponseAsync(HttpStatusCode.OK, body: serverContent);
+                await connection.SendResponseAsync(HttpStatusCode.OK, content: serverContent);
             }, new Http2Options() { UseSsl = false });
         }
 

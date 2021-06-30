@@ -113,7 +113,7 @@ namespace System.Net.Sockets
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
-                AcceptStart(address.ToString());
+                AcceptStart(address.Serialize().ToString());
             }
         }
 

@@ -23,14 +23,11 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
 
-        public bool GenerateMetadata { get; set; } = true;
+        public JsonSourceGenerationMode GenerationMode { get; set; }
 
-        private bool? _generateSerializationLogic;
-        public bool GenerateSerializationLogic
-        {
-            get => _generateSerializationLogic ??= FastPathIsSupported();
-            set => _generateSerializationLogic = value;
-        }
+        public bool GenerateMetadata => GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);
+
+        public bool GenerateSerializationLogic => GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
 
         public Type Type { get; private set; }
 
@@ -57,6 +54,7 @@ namespace System.Text.Json.SourceGeneration
         public string? ConverterInstantiationLogic { get; private set; }
 
         public void Initialize(
+            JsonSourceGenerationMode generationMode,
             string typeRef,
             string typeInfoPropertyName,
             Type type,
@@ -71,6 +69,7 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? converterInstantiationLogic)
         {
+            GenerationMode = generationMode;
             TypeRef = $"global::{typeRef}";
             TypeInfoPropertyName = typeInfoPropertyName;
             Type = type;
@@ -87,7 +86,7 @@ namespace System.Text.Json.SourceGeneration
             ConverterInstantiationLogic = converterInstantiationLogic;
         }
 
-        public bool FastPathIsSupported()
+        private bool FastPathIsSupported()
         {
             if (ClassType == ClassType.Object)
             {
@@ -106,5 +105,7 @@ namespace System.Text.Json.SourceGeneration
 
             return false;
         }
+
+        private bool GenerationModeIsSpecified(JsonSourceGenerationMode mode) => GenerationMode == JsonSourceGenerationMode.Default || (mode & GenerationMode) != 0;
     }
 }

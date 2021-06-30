@@ -77,7 +77,11 @@ fi
 
 if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
-    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+    else
+        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
+    fi
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     if [[ -z "$ANDROID_NDK_ROOT" ]]; then
         echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."

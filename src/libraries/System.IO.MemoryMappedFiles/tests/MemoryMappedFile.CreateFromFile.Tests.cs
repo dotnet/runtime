@@ -951,5 +951,22 @@ namespace System.IO.MemoryMappedFiles.Tests
             // ENODEV Operation not supported by device.
             catch (IOException ex) when (ex.HResult == 19) { };
         }
+
+        /// <summary>
+        /// Test to verify that the MemoryMappedFile has the same underlying handle as the FileStream it's created from
+        /// </summary>
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void MapHandleMatchesFileStreamHandle()
+        {
+            using (FileStream fs = File.OpenWrite(GetTestFilePath()))
+            {
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                {
+                    SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
+                    Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
+                }
+            }
+        }
     }
 }

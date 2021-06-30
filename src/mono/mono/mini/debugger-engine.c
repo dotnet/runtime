@@ -388,13 +388,6 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	jit_mm_unlock (jit_mm);
 }
 
-void
-mono_de_clear_all_breakpoints (void)
-{
-	while (breakpoints->len)
-		mono_de_clear_breakpoint ((MonoBreakpoint*)g_ptr_array_index (breakpoints, 0));
-}
-
 /*
  * mono_de_set_breakpoint:
  *

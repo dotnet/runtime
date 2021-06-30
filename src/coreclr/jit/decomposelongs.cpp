@@ -114,7 +114,7 @@ void DecomposeLongs::DecomposeRangeHelper()
 // DecomposeNode: Decompose long-type trees into lower and upper halves.
 //
 // Arguments:
-//    use - the LIR::Use object for the def that needs to be decomposed.
+//    tree - the tree that will, if needed, be decomposed.
 //
 // Return Value:
 //    The next node to process.
@@ -278,6 +278,13 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         m_compiler->gtDispTreeRange(Range(), use.Def());
     }
 #endif
+
+    // When casting from a decomposed long to a smaller integer we can discard the high part.
+    if (m_compiler->opts.OptimizationEnabled() && !use.IsDummyUse() && use.User()->OperIs(GT_CAST) &&
+        use.User()->TypeIs(TYP_INT) && use.Def()->OperIs(GT_LONG))
+    {
+        nextNode = OptimizeCastFromDecomposedLong(use.User()->AsCast(), nextNode);
+    }
 
     return nextNode;
 }
@@ -601,12 +608,12 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             {
                 //
                 // This int->long cast is used by a GT_MUL that will be transformed by DecomposeMul into a
-                // GT_LONG_MUL and as a result the high operand produced by the cast will become dead.
+                // GT_MUL_LONG and as a result the high operand produced by the cast will become dead.
                 // Skip cast decomposition so DecomposeMul doesn't need to bother with dead code removal,
                 // especially in the case of sign extending casts that also introduce new lclvars.
                 //
 
-                assert((use.User()->gtFlags & GTF_MUL_64RSLT) != 0);
+                assert(use.User()->Is64RsltMul());
 
                 skipDecomposition = true;
             }
@@ -1534,19 +1541,29 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
 {
     assert(use.IsInitialized());
 
-    GenTree*   tree = use.Def();
-    genTreeOps oper = tree->OperGet();
+    GenTree* tree = use.Def();
 
-    assert(oper == GT_MUL);
-    assert((tree->gtFlags & GTF_MUL_64RSLT) != 0);
+    assert(tree->OperIs(GT_MUL));
+    assert(tree->Is64RsltMul());
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    // We expect both operands to be int->long casts. DecomposeCast specifically
-    // ignores such casts when they are used by GT_MULs.
-    assert((op1->OperGet() == GT_CAST) && (op1->TypeGet() == TYP_LONG));
-    assert((op2->OperGet() == GT_CAST) && (op2->TypeGet() == TYP_LONG));
+    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
+
+    // We expect the first operand to be an int->long cast.
+    // DecomposeCast specifically ignores such casts when they are used by GT_MULs.
+    assert(op1->OperIs(GT_CAST));
+
+    // The second operand can be a cast or a constant.
+    if (!op2->OperIs(GT_CAST))
+    {
+        assert(op2->OperIs(GT_LONG));
+        assert(op2->gtGetOp1()->IsIntegralConst());
+        assert(op2->gtGetOp2()->IsIntegralConst());
+
+        Range().Remove(op2->gtGetOp2());
+    }
 
     Range().Remove(op1);
     Range().Remove(op2);
@@ -1783,6 +1800,100 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 }
 
 #endif // FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
+// OptimizeCastFromDecomposedLong: optimizes a cast from GT_LONG by discarding
+// the high part of the source and, if the cast is to INT, the cast node itself.
+// Accounts for side effects and marks nodes unused as neccessary.
+//
+// Only accepts casts to integer types that are not long.
+// Does not optimize checked casts.
+//
+// Arguments:
+//    cast     - the cast tree that has a GT_LONG node as its operand.
+//    nextNode - the next candidate for decomposition.
+//
+// Return Value:
+//    The next node to process in DecomposeRange: "nextNode->gtNext" if
+//    "cast == nextNode", simply "nextNode" otherwise.
+//
+// Notes:
+//    Because "nextNode" usually is "cast", and this method may remove "cast"
+//    from the linear order, it needs to return the updated "nextNode". Instead
+//    of receiving it as an argument, it could assume that "nextNode" is always
+//    "cast->CastOp()->gtNext", but not making that assumption seems better.
+//
+GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTree* nextNode)
+{
+    GenTreeOp* src     = cast->CastOp()->AsOp();
+    var_types  dstType = cast->CastToType();
+
+    assert(src->OperIs(GT_LONG));
+    assert(genActualType(dstType) == TYP_INT);
+
+    if (cast->gtOverflow())
+    {
+        return nextNode;
+    }
+
+    GenTree* loSrc = src->gtGetOp1();
+    GenTree* hiSrc = src->gtGetOp2();
+
+    JITDUMP("Optimizing a truncating cast [%06u] from decomposed LONG [%06u]\n", cast->gtTreeID, src->gtTreeID);
+    INDEBUG(GenTree* treeToDisplay = cast);
+
+    // TODO-CQ: we could go perform this removal transitively.
+    // See also identical code in shift decomposition.
+    if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+    {
+        JITDUMP("Removing the HI part of [%06u] and marking its operands unused:\n", src->gtTreeID);
+        DISPNODE(hiSrc);
+        Range().Remove(hiSrc, /* markOperandsUnused */ true);
+    }
+    else
+    {
+        JITDUMP("The HI part of [%06u] has side effects, marking it unused\n", src->gtTreeID);
+        hiSrc->SetUnusedValue();
+    }
+
+    JITDUMP("Removing the LONG source:\n");
+    DISPNODE(src);
+    Range().Remove(src);
+
+    if (varTypeIsSmall(dstType))
+    {
+        JITDUMP("Cast is to a small type, keeping it, the new source is [%06u]\n", loSrc->gtTreeID);
+        cast->CastOp() = loSrc;
+    }
+    else
+    {
+        LIR::Use useOfCast;
+        if (Range().TryGetUse(cast, &useOfCast))
+        {
+            useOfCast.ReplaceWith(m_compiler, loSrc);
+        }
+        else
+        {
+            loSrc->SetUnusedValue();
+        }
+
+        if (nextNode == cast)
+        {
+            nextNode = nextNode->gtNext;
+        }
+
+        INDEBUG(treeToDisplay = loSrc);
+        JITDUMP("Removing the cast:\n");
+        DISPNODE(cast);
+
+        Range().Remove(cast);
+    }
+
+    JITDUMP("Final result:\n")
+    DISPTREERANGE(Range(), treeToDisplay);
+
+    return nextNode;
+}
 
 //------------------------------------------------------------------------
 // StoreNodeToVar: Check if the user is a STORE_LCL_VAR, and if it isn't,

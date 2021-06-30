@@ -467,8 +467,8 @@ namespace System.Numerics
 
                     if ((!isNegative && sign < 0) || sign == int.MinValue)
                     {
-                        sign = isNegative ? -1 : 1;
                         bits = new[] { (uint)sign };
+                        sign = isNegative ? -1 : 1;
                     }
                 }
                 else

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);net461</TargetFrameworks>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
@@ -10,7 +10,7 @@
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>

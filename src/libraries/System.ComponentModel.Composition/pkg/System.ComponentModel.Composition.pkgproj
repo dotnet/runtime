@@ -10,7 +10,7 @@
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="uap10.0.16299" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -56,6 +56,9 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- Project references -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <PackageReference Include="System.Net.MsQuic.Transport" PrivateAssets="all" Version="$(SystemNetMsQuicTransportVersion)" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

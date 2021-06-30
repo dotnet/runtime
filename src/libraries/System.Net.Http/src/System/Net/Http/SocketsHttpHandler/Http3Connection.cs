@@ -568,7 +568,7 @@ namespace System.Net.Http
                     switch (frameType)
                     {
                         case Http3FrameType.GoAway:
-                            await ProcessGoAwayFameAsync(payloadLength).ConfigureAwait(false);
+                            await ProcessGoAwayFrameAsync(payloadLength).ConfigureAwait(false);
                             break;
                         case Http3FrameType.Settings:
                             // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
@@ -685,12 +685,12 @@ namespace System.Net.Http
                 }
             }
 
-            async ValueTask ProcessGoAwayFameAsync(long goawayPayloadLength)
+            async ValueTask ProcessGoAwayFrameAsync(long goawayPayloadLength)
             {
                 long lastStreamId;
                 int bytesRead;
 
-                while (!VariableLengthIntegerHelper.TryRead(buffer.AvailableSpan, out lastStreamId, out bytesRead))
+                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out lastStreamId, out bytesRead))
                 {
                     buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);

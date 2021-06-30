@@ -33,7 +33,8 @@ namespace System.Resources.Extensions
             return false;
         }
 
-        // Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
             if (_formatter == null)
@@ -46,7 +47,7 @@ namespace System.Resources.Extensions
 
             return _formatter.Deserialize(_store.BaseStream);
         }
-
+#pragma warning restore SYSLIB0011
 
         internal sealed class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
         {

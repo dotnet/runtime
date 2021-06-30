@@ -1070,6 +1070,17 @@ typedef enum {
 	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34
 } MonoRgctxInfoType;
 
+/* How an rgctx is passed to a method */
+typedef enum {
+	MONO_RGCTX_ACCESS_NONE = 0,
+	/* Loaded from this->vtable->rgctx */
+	MONO_RGCTX_ACCESS_THIS = 1,
+	/* Loaded from an additional mrgctx argument */
+	MONO_RGCTX_ACCESS_MRGCTX = 2,
+	/* Loaded from an additional vtable argument */
+	MONO_RGCTX_ACCESS_VTABLE = 3
+} MonoRgctxAccess;
+
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
 	MonoRgctxInfoType info_type;
 	gpointer data;
@@ -1353,6 +1364,7 @@ typedef struct {
 	/* The current virtual register number */
 	guint32 next_vreg;
 
+	MonoRgctxAccess rgctx_access;
 	MonoGenericSharingContext gsctx;
 	MonoGenericContext *gsctx_context;
 
@@ -2309,6 +2321,7 @@ MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass,
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
+MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
 CompRelation mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);

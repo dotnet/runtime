@@ -20,17 +20,17 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly HttpHandlerType _underlyingHandler;
-        private readonly DiagnosticsHandler? _diagnosticsHandler;
+        private readonly HttpMessageHandler _handler;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
 
         public HttpClientHandler()
         {
-            _underlyingHandler = new HttpHandlerType();
-            if (DiagnosticsHandler.IsGloballyEnabled())
+            _handler = _underlyingHandler = new HttpHandlerType();
+            if (DiagnosticsHandler.IsGloballyEnabled)
             {
-                _diagnosticsHandler = new DiagnosticsHandler(_underlyingHandler);
+                _handler = new DiagnosticsHandler(_handler);
             }
             ClientCertificateOptions = ClientCertificateOption.Manual;
         }
@@ -288,21 +288,11 @@ namespace System.Net.Http
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
         [UnsupportedOSPlatform("browser")]
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
-                _diagnosticsHandler.Send(request, cancellationToken) :
-                _underlyingHandler.Send(request, cancellationToken);
-        }
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            _handler.Send(request, cancellationToken);
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
-                _diagnosticsHandler.SendAsync(request, cancellationToken) :
-                _underlyingHandler.SendAsync(request, cancellationToken);
-        }
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            _handler.SendAsync(request, cancellationToken);
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;

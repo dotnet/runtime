@@ -6,7 +6,7 @@ internal static partial class Interop
     internal static partial class Ole32
     {
         /// <summary>
-        /// Stat flags for <see cref="IStream.Stat(out STATSTG, STATFLAG)"/>.
+        /// Stat flags for <see cref="IStream.Stat(STATSTG*, STATFLAG)"/>.
         /// <see href="https://docs.microsoft.com/en-us/windows/desktop/api/wtypes/ne-wtypes-tagstatflag"/>
         /// </summary>
         internal enum STATFLAG : uint

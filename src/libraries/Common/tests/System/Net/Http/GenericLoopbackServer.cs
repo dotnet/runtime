@@ -120,10 +120,13 @@ namespace System.Net.Test.Common
         /// <summary>Read complete request body if not done by ReadRequestData.</summary>
         public abstract Task<Byte[]> ReadRequestBodyAsync();
 
-        /// <summary>Sends Response back with provided statusCode, headers and content. Can be called multiple times on same response if isFinal was set to false before.</summary>
-        public abstract Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
+        /// <summary>Sends Response back with provided statusCode, headers and content.
+        /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
+        public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
         /// <summary>Sends response headers.</summary>
         public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
+        /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>
+        public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
         public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0);
 
@@ -184,7 +187,7 @@ namespace System.Net.Test.Common
         public string Path;
         public Version Version;
         public List<HttpHeaderData> Headers { get; }
-        public int RequestId;       // Generic request ID. Currently only used for HTTP/2 to hold StreamId.
+        public int RequestId;       // HTTP/2 StreamId.
 
         public HttpRequestData()
         {
@@ -246,5 +249,7 @@ namespace System.Net.Test.Common
         {
             return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase)).Count();
         }
+
+        public override string ToString() => $"{Method} {Path} HTTP/{Version}\r\n{string.Join("\r\n", Headers)}\r\n\r\n";
     }
 }

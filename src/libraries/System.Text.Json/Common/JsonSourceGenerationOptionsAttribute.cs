@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
 #else
     public
 #endif
-    class JsonSerializerOptionsAttribute : JsonAttribute
+    class JsonSourceGenerationOptionsAttribute : JsonAttribute
     {
         /// <summary>
         /// Specifies the default ignore condition.
@@ -43,11 +43,16 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Specifies a built-in naming polices to convert JSON property names with.
         /// </summary>
-        public JsonKnownNamingPolicy NamingPolicy { get; set; }
+        public JsonKnownNamingPolicy PropertyNamingPolicy { get; set; }
 
         /// <summary>
         /// Specifies whether JSON output should be pretty-printed.
         /// </summary>
         public bool WriteIndented { get; set; }
+
+        /// <summary>
+        /// Specifies the source generation mode for types that don't explicitly set the mode with <see cref="JsonSerializableAttribute.GenerationMode"/>.
+        /// </summary>
+        public JsonSourceGenerationMode GenerationMode { get; set; }
     }
 }
