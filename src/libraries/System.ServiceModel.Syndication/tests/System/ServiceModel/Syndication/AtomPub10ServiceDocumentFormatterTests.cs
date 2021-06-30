@@ -241,7 +241,7 @@ namespace System.ServiceModel.Syndication.Tests
         };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(WriteTo_TestData))]
         public void WriteTo_HasDocument_SerializesExpected(ServiceDocument document, string expected)
         {
@@ -328,7 +328,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("reader", () => formatter.CanRead(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadFrom_FullDocument_ReturnsExpected()
         {
             string xmlString = @"<app:service xmlns:a10=""http://www.w3.org/2005/Atom"" xml:lang=""document_language"" xml:base=""http://document_url.com/"" document_name1="""" d1p1:document_name2="""" d1p1:document_name3=""document_value"" d1p2:document_name4="""" xmlns:d1p2=""xmlns"" xmlns:d1p1=""document_namespace"" xmlns:app=""http://www.w3.org/2007/app"">

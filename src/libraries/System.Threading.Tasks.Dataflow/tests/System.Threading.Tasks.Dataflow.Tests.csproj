@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Android'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dataflow\ActionBlockTests.cs" />

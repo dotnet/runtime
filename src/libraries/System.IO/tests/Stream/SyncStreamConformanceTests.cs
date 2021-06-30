@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53679", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
     public class SyncStreamConformanceTests : StandaloneStreamConformanceTests
     {
         protected override bool NopFlushCompletesSynchronously => false;

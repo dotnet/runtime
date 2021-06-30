@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetFunctionPointerForDelegateTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_NormalDelegateNonGeneric_ReturnsExpected()
         {
@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_MarshalledDelegateNonGeneric_ReturnsExpected()
         {
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_NormalDelegateGeneric_ReturnsExpected()
         {
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_MarshalledDelegateGeneric_ReturnsExpected()
         {

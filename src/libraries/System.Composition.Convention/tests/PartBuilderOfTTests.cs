@@ -468,7 +468,7 @@ namespace System.Composition.Convention.Tests
             return reply;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfied_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -484,7 +484,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -500,7 +500,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedAttributeAppliedToBaseClass_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -516,7 +516,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedAttributeAppliedToDerivedClassExportBase_ShouldSucceed()
         {
             var builder = new ConventionBuilder();
@@ -533,7 +533,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(0, test.OnImportsSatisfiedInvoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void NotifyImportsSatisfiedTwice_ShouldSucceed()
         {
             var builder = new ConventionBuilder();

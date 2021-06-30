@@ -158,7 +158,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("url", () => SyndicationContent.CreateUrlContent(null, "mediaType"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateXmlContent_Reader_NoAttributes()
         {
             XmlSyndicationContent content = SyndicationContent.CreateXmlContent(
@@ -178,7 +178,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(10, content.ReadContent<ExtensionObject>((XmlSerializer)null).Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateXmlContent_Reader_Attributes()
         {
             XmlSyndicationContent content = SyndicationContent.CreateXmlContent(

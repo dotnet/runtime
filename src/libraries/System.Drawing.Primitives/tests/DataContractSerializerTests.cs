@@ -12,6 +12,7 @@ using System.Drawing;
 
 namespace System.Drawing.Primitives.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class DataContractSerializerTests
     {
         [Fact]

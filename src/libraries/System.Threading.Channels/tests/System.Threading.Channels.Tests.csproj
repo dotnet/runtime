@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android')">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BoundedChannelTests.cs" />

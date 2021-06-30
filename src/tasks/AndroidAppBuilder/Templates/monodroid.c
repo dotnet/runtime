@@ -272,6 +272,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 #elif FORCE_AOT
     register_aot_modules();
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
+    setenv("MONO_AOT_MODE", "aot", true);
 #endif
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");

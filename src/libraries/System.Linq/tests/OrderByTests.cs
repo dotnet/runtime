@@ -428,7 +428,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, covariantOrdered);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CanObtainFromCovariantIOrderedQueryable()
         {
             // If an ordered queryable is cast covariantly and then has ThenBy() called on it,

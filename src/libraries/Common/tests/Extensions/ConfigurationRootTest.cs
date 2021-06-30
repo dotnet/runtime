@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider5.IsDisposed);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void RootDisposesChangeTokenRegistrations()
         {
             var changeToken = new ChangeToken();

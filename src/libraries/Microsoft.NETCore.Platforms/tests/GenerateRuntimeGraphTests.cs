@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Build.Evaluation;
@@ -12,6 +13,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53999", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
     public class GenerateRuntimeGraphTests
     {
         private Log _log;
@@ -192,7 +194,6 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions);
         }
 
-
         [Fact]
         public void CanAddArchitectureAndVersionToExistingGroups()
         {
@@ -236,6 +237,5 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions, "linux-musl");
         }
-
     }
 }

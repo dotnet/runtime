@@ -9,7 +9,7 @@ namespace System.Reflection.Emit.Tests
 
     public class ILGeneratorEmit3
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest1()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -87,7 +87,7 @@ namespace System.Reflection.Emit.Tests
             Assert.True((bool)createdMethod.Invoke(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest2()
         {
             TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit.Tests
             Assert.True((bool)createdMethod.Invoke(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest3()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -132,7 +132,7 @@ namespace System.Reflection.Emit.Tests
             Assert.True((bool)createdMethod.Invoke(null, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void PosTest4()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

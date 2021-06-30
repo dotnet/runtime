@@ -213,7 +213,7 @@ namespace System.Net.Http.Json.Functional.Tests
             };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadAsyncInputLatin), "utf-32")]
         [MemberData(nameof(ReadAsyncInputUnicode), "utf-32")]
         public Task ReadAsync_Works_WhenInputIs_UTF32(string message)
@@ -222,7 +222,7 @@ namespace System.Net.Http.Json.Functional.Tests
             return ReadAsyncTest(sourceEncoding, message);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadAsyncInputLatin), "utf-16")]
         [MemberData(nameof(ReadAsyncInputUnicode), "utf-16")]
         public Task ReadAsync_Works_WhenInputIs_Unicode(string message)
@@ -231,7 +231,7 @@ namespace System.Net.Http.Json.Functional.Tests
             return ReadAsyncTest(sourceEncoding, message);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadAsyncInputLatin), "iso-8859-1")]
         public Task ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(string message)
         {
@@ -240,7 +240,7 @@ namespace System.Net.Http.Json.Functional.Tests
             return ReadAsyncTest(sourceEncoding, message);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadAsyncInputLatin), "us-ascii")]
         public Task ReadAsync_Works_WhenInputIs_ASCII(string message)
         {

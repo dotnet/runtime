@@ -13,7 +13,7 @@ namespace System.ServiceModel.Syndication.Tests
 {
     public class XmlSyndicationContentTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Ctor_Reader_NoAttributes()
         {
             var content = new XmlSyndicationContent(
@@ -33,7 +33,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(10, content.ReadContent<ExtensionObject>((XmlSerializer)null).Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Ctor_Reader_Attributes()
         {
             var content = new XmlSyndicationContent(
@@ -219,7 +219,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WriteTo_ObjectWithXmlObjectSerializer_ReturnsExpected()
         {
             var extensionObject = new ExtensionObject() { Value = 10 };
@@ -232,7 +232,7 @@ namespace System.ServiceModel.Syndication.Tests
 </OuterElementName>", writer => content.WriteTo(writer, "OuterElementName", "OuterElementNamespace"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WriteTo_ObjectWithXmlSerializer_ReturnsExpected()
         {
@@ -268,7 +268,7 @@ namespace System.ServiceModel.Syndication.Tests
             CompareHelper.AssertEqualLongString(@"<ParentObject><ExtensionObject><Value>10</Value></ExtensionObject></ParentObject>", reader.ReadOuterXml());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetReaderAtContent_ObjectWithXmlObjectSerializer_ReturnsExpected()
         {
             var extensionObject = new ExtensionObject() { Value = 10 };
@@ -279,7 +279,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void GetReaderAtContent_ObjectWithXmlSerializer_ReturnsExpected()
         {

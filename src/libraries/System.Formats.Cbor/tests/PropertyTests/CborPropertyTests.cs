@@ -9,6 +9,11 @@ using Xunit;
 
 namespace System.Formats.Cbor.Tests
 {
+    // TODO Find out the way to skip individual tests failing with "Attempting to JIT compile method ... while running in aot-only mode.":
+    // - CborDocument_SkipValue
+    // - CborDocument_SkipToParent
+    // - CborDocument_Roundtrip
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static class CborPropertyTests
     {
         private const string? ReplaySeed = "(42,42)"; // set a seed for deterministic runs, null for randomized runs

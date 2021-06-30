@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Http
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Build_NoAdditionalHandlers_ReturnsPrimaryHandler()
         {
             // Arrange
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(builder.PrimaryHandler, handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Build_SomeAdditionalHandlers_PutsTogetherDelegatingHandlers()
         {
             // Arrange

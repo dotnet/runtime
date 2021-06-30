@@ -262,6 +262,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53681", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();

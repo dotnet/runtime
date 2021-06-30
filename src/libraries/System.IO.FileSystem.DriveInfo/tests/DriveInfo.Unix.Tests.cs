@@ -22,7 +22,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             Assert.Equal("/", new DriveInfo("/").Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void TestGetDrives()
         {

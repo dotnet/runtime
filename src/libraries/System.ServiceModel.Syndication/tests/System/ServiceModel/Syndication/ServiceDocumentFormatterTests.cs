@@ -142,7 +142,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("document", () => Formatter.CreateWorkspaceEntryPoint(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void LoadElementExtensions_Categories_Success()
         {
             var settings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
@@ -169,7 +169,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("categories", () => Formatter.LoadElementExtensionsEntryPoint(reader, (CategoriesDocument)null, int.MaxValue));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void LoadElementExtensions_Collection_Success()
         {
             var settings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
@@ -196,7 +196,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("collection", () => Formatter.LoadElementExtensionsEntryPoint(reader, (ResourceCollectionInfo)null, int.MaxValue));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void LoadElementExtensions_Workspace_Success()
         {
             var settings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
@@ -223,7 +223,7 @@ namespace System.ServiceModel.Syndication.Tests
             AssertExtensions.Throws<ArgumentNullException>("workspace", () => Formatter.LoadElementExtensionsEntryPoint(reader, (Workspace)null, int.MaxValue));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void LoadElementExtensions_ServiceDocument_Success()
         {
             var settings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
@@ -412,7 +412,7 @@ namespace System.ServiceModel.Syndication.Tests
             yield return new object[] { "version" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(Version_TestData))]
         public void WriteElementExtensions_Categories_Success(string version)
         {
@@ -440,7 +440,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(Version_TestData))]
         public void WriteElementExtensions_Collection_Success(string version)
         {
@@ -468,7 +468,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(Version_TestData))]
         public void WriteElementExtensions_Workspace_Success(string version)
         {
@@ -496,7 +496,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(Version_TestData))]
         public void WriteElementExtensions_ServiceDocument_Success(string version)
         {

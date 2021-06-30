@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class ILGeneratorEmitWriteLine
     {
         [Fact]

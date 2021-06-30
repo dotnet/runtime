@@ -69,7 +69,7 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Same(mediaType, content.Headers.ContentType);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task SendQuotedCharsetAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -103,7 +103,7 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.NotSame(jsonContent1.Headers.ContentType, jsonContent2.Headers.ContentType);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task JsonContentMediaTypeValidateOnServerAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -161,7 +161,7 @@ namespace System.Net.Http.Json.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task ValidateUtf16IsTranscodedAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -184,7 +184,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task EnsureDefaultJsonSerializerOptionsAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
@@ -202,7 +202,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task TestJsonContentNullContentTypeAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(

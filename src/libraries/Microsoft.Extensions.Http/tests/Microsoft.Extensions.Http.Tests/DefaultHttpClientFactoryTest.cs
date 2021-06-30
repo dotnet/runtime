@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(client1, client2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Factory_DisposeClient_DoesNotDisposeHandler()
         {
             // Arrange
@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.Http
             // Assert (does not throw)
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Factory_DisposeHandler_DoesNotDisposeInnerHandler()
         {
             // Arrange
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(1, count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Factory_CreateClient_FiltersCanDecorateBuilder()
         {
             // Arrange

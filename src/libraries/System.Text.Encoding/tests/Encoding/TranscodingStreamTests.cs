@@ -39,7 +39,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void AsyncMethods_ReturnCanceledTaskIfCancellationTokenTripped()
         {
             // Arrange
@@ -77,7 +77,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("outerStreamEncoding", () => Encoding.CreateTranscodingStream(Stream.Null, Encoding.UTF8, null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanRead_DelegatesToInnerStream(bool expectedCanRead)
@@ -100,7 +100,7 @@ namespace System.Text.Tests
             Assert.False(actualCanReadAfterDispose);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanWrite_DelegatesToInnerStream(bool expectedCanWrite)
@@ -198,7 +198,7 @@ namespace System.Text.Tests
             innerStream.Read(Span<byte>.Empty); // shouldn't throw
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Flush_FlushesInnerStreamButNotDecodedState()
         {
             // Arrange
@@ -391,7 +391,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public Task ReadApm()
         {
             // Tests TranscodingStream.BeginRead / EndRead
@@ -432,7 +432,7 @@ namespace System.Text.Tests
             suppressExpectedCancellationTokenAsserts: true); // APM pattern doesn't allow flowing CancellationToken
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public Task ReadAsync_ByteArray(int bufferLength)
         {
@@ -451,7 +451,7 @@ namespace System.Text.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public async Task ReadAsync_Memory(int bufferLength)
         {
@@ -631,7 +631,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void ReadTimeout_WriteTimeout_NotSupported()
         {
             // Arrange - allow inner stream to support ReadTimeout + WriteTimeout
@@ -765,7 +765,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => transcodingStream.Write(new byte[5], 6, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task WriteAsync_WithFullData()
         {
             MemoryStream sink = new MemoryStream();
@@ -824,7 +824,7 @@ namespace System.Text.Tests
             Assert.Equal(0, sink.Position);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public async Task WriteAsync_WithPartialData()
         {
             MemoryStream sink = new MemoryStream();
@@ -879,7 +879,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => (object)transcodingStream.WriteAsync(new byte[5], 6, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WriteApm()
         {
             // Arrange

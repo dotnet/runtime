@@ -13,7 +13,7 @@ namespace System.ServiceModel.Syndication.Tests
 {
     public class SyndicationElementExtensionCollectionTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void Add_Invoke_ReturnsExpected()
         {
             SyndicationElementExtensionCollection elementExtensions = new SyndicationCategory().ElementExtensions;

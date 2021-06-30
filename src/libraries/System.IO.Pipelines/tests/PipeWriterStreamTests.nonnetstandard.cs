@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO.Pipelines.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53679", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
     public class PipeWriterStreamTests
     {
         public delegate Task WriteAsyncDelegate(Stream stream, byte[] data);

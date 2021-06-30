@@ -1502,6 +1502,7 @@ namespace System.Net.Http.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         [Fact]
         public void NonValidated_ValidAndInvalidValues_DictionaryMembersWork()
         {
@@ -1540,6 +1541,7 @@ namespace System.Net.Http.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         [Fact]
         public void NonValidated_ValidInvalidAndRaw_AllReturned()
         {

@@ -61,7 +61,7 @@ namespace System.Composition.Hosting.Tests
             AssertExtensions.Throws<ArgumentNullException>("exportDescriptorProvider", () => configuration.WithProvider(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithDefaultConventions_PartWithNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -75,7 +75,7 @@ namespace System.Composition.Hosting.Tests
             Assert.Equal("A", container.GetExport<string>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithDefaultConventions_IEnumerablePartsWithNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -89,7 +89,7 @@ namespace System.Composition.Hosting.Tests
             Assert.Equal("A", container.GetExport<string>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithDefaultConventions_PartsArrayWithNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -103,7 +103,7 @@ namespace System.Composition.Hosting.Tests
             Assert.Equal("A", container.GetExport<string>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithDefaultConventions_PartTNoMatchingConvention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -138,7 +138,7 @@ namespace System.Composition.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => configuration.WithDefaultConventions(new ConventionBuilder()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithPartT_Convention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -151,7 +151,7 @@ namespace System.Composition.Hosting.Tests
             Assert.Equal("A", container.GetExport<string>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithPart_Convention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -172,7 +172,7 @@ namespace System.Composition.Hosting.Tests
             AssertExtensions.Throws<ArgumentNullException>("partType", () => configuration.WithPart(null, new ConventionBuilder()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void WithParts_Convention_Success()
         {
             var conventions = new ConventionBuilder();
@@ -254,7 +254,7 @@ namespace System.Composition.Hosting.Tests
             Assert.Throws<NullReferenceException>(() => configuration.CreateContainer());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContainer_ExportedSubClass_Success()
         {
             CompositionHost container = new ContainerConfiguration()
@@ -274,7 +274,7 @@ namespace System.Composition.Hosting.Tests
             public object Prop { get; set; } = "Derived";
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContainer_OpenGenericTypes_Success()
         {
             var conventions = new ConventionBuilder();
@@ -303,7 +303,7 @@ namespace System.Composition.Hosting.Tests
             public T Fetch() => default(T);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContainer_ImportConventionsWithInheritedProperties_Success()
         {
             var conventions = new ConventionBuilder();
@@ -330,7 +330,7 @@ namespace System.Composition.Hosting.Tests
 
         public class DerivedFromBaseWithImport : BaseWithImport { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContainer_ExportConventionsWithInheritedProperties_Success()
         {
             var conventions = new ConventionBuilder();
@@ -351,7 +351,7 @@ namespace System.Composition.Hosting.Tests
 
         public class DerivedFromBaseWithExport : BaseWithExport { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContainer_ExportsToInheritedProperties_DontInterfereWithBase()
         {
             var conventions = new ConventionBuilder();
@@ -419,7 +419,7 @@ namespace System.Composition.Hosting.Tests
 
         public class DerivedFromBaseWithCustomExport : BaseWithCustomExport { }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContainer_OpenGenericTypePart_Success()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithParts(typeof(GenericExportedType<>));
@@ -593,7 +593,7 @@ namespace System.Composition.Hosting.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void CreateContiner_GenericExportWithDependencyConstructorHasConvention_Success()
         {
             var conventions = new ConventionBuilder();

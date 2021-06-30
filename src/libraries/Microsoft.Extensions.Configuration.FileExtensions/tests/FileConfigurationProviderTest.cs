@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class FileConfigurationProviderTest
     {
         [Fact]

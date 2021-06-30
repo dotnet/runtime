@@ -339,7 +339,8 @@ namespace System.Resources.Extensions.Tests
                 }
             }
         }
-        [Fact]
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidAOT))] // System.NotSupportedException : ResourceManager_ReflectionNotAllowed
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void TypeConverterByteArrayResources()
         {
@@ -372,7 +373,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidAOT))] // System.NotSupportedException : ResourceManager_ReflectionNotAllowed
         public static void TypeConverterStringResources()
         {
             var values = TestData.StringConverter;
@@ -402,7 +403,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidAOT))] // System.NotSupportedException : ResourceManager_ReflectionNotAllowed
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void StreamResources()
@@ -468,7 +469,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidAOT))] // System.NotSupportedException : ResourceManager_ReflectionNotAllowed
         public static void ResourceManagerLoadsCorrectReader()
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));

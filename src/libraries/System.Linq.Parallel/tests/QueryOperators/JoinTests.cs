@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public static class JoinTests
     {
         private const int KeyFactor = 8;

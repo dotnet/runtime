@@ -11,6 +11,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
     public class FooImplementation1 : IFoo { }
     public class FooImplementation2 : IFoo { }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
     public class RegistrationBuilderUnitTests
     {
         [Fact]

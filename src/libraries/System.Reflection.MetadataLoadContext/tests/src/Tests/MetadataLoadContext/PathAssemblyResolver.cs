@@ -324,6 +324,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53680", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
         public static void RelocatableAssembly()
         {
             string coreAssemblyPath = TestUtils.GetPathToCoreAssembly();

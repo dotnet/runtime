@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             [Import(AllowDefault=true)] public BareClass    BareClass;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void StandardExportInterfacesShouldWork()
         {
             var builder = new RegistrationBuilder();

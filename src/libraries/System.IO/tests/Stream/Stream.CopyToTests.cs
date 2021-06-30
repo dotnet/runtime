@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53679", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidAOT))]
     public class StreamCopyToTests
     {
         [Fact]

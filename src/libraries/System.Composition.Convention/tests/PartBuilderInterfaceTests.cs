@@ -59,7 +59,7 @@ namespace System.Composition.Convention.Tests
             public BareClass BareClass { get; set; }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void StandardExportInterfacesShouldWork()
         {
             // Export all interfaces except IDisposable, Export contracts on types without interfaces. except for disposable types
@@ -97,7 +97,7 @@ namespace System.Composition.Convention.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void StandardExportInterfacesInterfaceFilterDefaultContractShouldWork()
         {
             //Same test as above only using default export builder
@@ -134,7 +134,7 @@ namespace System.Composition.Convention.Tests
             Assert.NotNull(importer.BareClass);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void StandardExportInterfacesInterfaceFilterConfiguredContractShouldWork()
         {
             //Same test as above only using default export builder

@@ -483,7 +483,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             Assert.Equal(info.Root.Name, infoFromIO.Root.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void GetDriveInfo_Drive()
         {
             var Drives = System.IO.DriveInfo.GetDrives();

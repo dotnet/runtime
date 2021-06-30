@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestPlatforms.Browser)]
     public class ILGeneratorEmit4
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void TestEmitCalliBlittable()
         {
             int a = 1, b = 1, result = 2;
@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(result, resultValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void TestEmitCalliManagedBlittable()
         {
             int a = 1, b = 1, result = 2;
@@ -78,7 +78,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(result, resultValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void TestDynamicMethodEmitCalliBlittable()
         {
             int a = 1, b = 1, result = 2;
@@ -141,7 +141,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(result, resultValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotDeviceAOT))]
         public void TestDynamicMethodEmitCalliNonBlittable()
         {
             string input = "Test string!", result = "!gnirts tseT";
