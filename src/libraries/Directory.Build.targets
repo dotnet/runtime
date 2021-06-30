@@ -90,15 +90,8 @@
       <RuntimePath>$(NetCoreAppCurrentRuntimePath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
-    <!-- binplace to directories for packages -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
                               Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-      <PackageFileNativePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileNativePath>
-      <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
-      <PackageFileRuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <NativePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NativePath>
-      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(Configuration)</RefPath>
-      <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(IsNETCoreAppSrc)' == 'true' and
                                 '$(BinPlaceRuntime)' == 'true' and

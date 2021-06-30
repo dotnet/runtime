@@ -50,7 +50,8 @@ test_create_delete_session (void)
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
@@ -91,7 +92,8 @@ test_add_session_providers (void)
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 
 		ep_raise_error_if_nok_holding_lock (test_session != NULL, section1);
 
@@ -173,7 +175,8 @@ test_session_special_get_set (void)
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
