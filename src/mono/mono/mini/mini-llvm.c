@@ -9144,18 +9144,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				value = LLVMBuildBitCast (ctx->builder, lhs, vec_type, "");
 			}
 
-			const int mask_values [] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 			LLVMValueRef mask_vec;
 			LLVMTypeRef dst_type;
 			if (ins->inst_c0 == MONO_TYPE_I2) {
-				mask_vec = create_const_vector_i32 (mask_values, 8);
+				mask_vec = create_const_vector_i32 (mask_0_incr_1, 8);
 				dst_type = sse_i2_t;
 			} else if (ins->inst_c0 == MONO_TYPE_I4) {
-				mask_vec = create_const_vector_i32 (mask_values, 4);
+				mask_vec = create_const_vector_i32 (mask_0_incr_1, 4);
 				dst_type = sse_i4_t;
 			} else {
 				g_assert (ins->inst_c0 == MONO_TYPE_I8);
-				mask_vec = create_const_vector_i32 (mask_values, 2);
+				mask_vec = create_const_vector_i32 (mask_0_incr_1, 2);
 				dst_type = sse_i8_t;
 			}
 
@@ -9544,18 +9543,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_EXT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			unsigned int elems = LLVMGetVectorSize (ret_t);
-			const int unrolled_mask [MAX_VECTOR_ELEMS] = {
-				0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-				16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-			};
-			enum { ARM64_EXT_MAX_INDEX = MAX_VECTOR_ELEMS / 2 };
-			int max_index = elems;
+			g_assert (elems <= ARM64_MAX_VECTOR_ELEMS);
 			LLVMValueRef index = arg3;
 			LLVMValueRef default_value = lhs;
-			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, index, ret_t, "arm64_ext");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, elems, index, ret_t, "arm64_ext");
 			int i = 0;
 			while (immediate_unroll_next (&ictx, &i)) {
-				LLVMValueRef mask = create_const_vector_i32 (&unrolled_mask [i], elems);
+				LLVMValueRef mask = create_const_vector_i32 (&mask_0_incr_1 [i], elems);
 				LLVMValueRef result = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "arm64_ext");
 				immediate_unroll_commit (&ictx, i, result);
 			}
