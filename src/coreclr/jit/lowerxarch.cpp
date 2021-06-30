@@ -1291,7 +1291,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         if (op2 != nullptr)
         {
             // Some zero vectors are Create/Initialization nodes with a constant zero operand
-            // We should also remove this to avoid unused value assertions
+            // We should also remove this to avoid dead code
             BlockRange().Remove(op2);
         }
 
