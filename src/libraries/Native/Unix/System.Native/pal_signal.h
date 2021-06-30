@@ -34,6 +34,7 @@ PALEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationC
 
 typedef enum
 {
+    PosixSignalInvalid = 0,
     PosixSignalSIGHUP = -1,
     PosixSignalSIGINT = -2,
     PosixSignalSIGQUIT = -3,

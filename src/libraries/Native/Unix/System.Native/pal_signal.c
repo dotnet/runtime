@@ -154,6 +154,9 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
 
         case PosixSignalSIGTSTP:
             return SIGTSTP;
+
+        case PosixSignalInvalid:
+            break;
     }
 
     if (signal > 0 && signal <= GetSignalMax())
@@ -179,8 +182,7 @@ static struct sigaction* OrigActionFor(int sig)
 
 static void RestoreSignalHandler(int sig)
 {
-    bool* isInstalled = &g_handlerIsInstalled[sig - 1];
-    *isInstalled = false;
+    g_handlerIsInstalled[sig - 1] = false;
     sigaction(sig, OrigActionFor(sig), NULL);
 }
 
@@ -363,7 +365,7 @@ static void* SignalHandlerLoop(void* arg)
             PosixSignal signal;
             if (!TryConvertSignalCodeToPosixSignal(signalCode, &signal))
             {
-                signal = (PosixSignal)0;
+                signal = PosixSignalInvalid;
             }
             usePosixSignalHandler = g_posixSignalHandler(signalCode, signal) != 0;
         }
