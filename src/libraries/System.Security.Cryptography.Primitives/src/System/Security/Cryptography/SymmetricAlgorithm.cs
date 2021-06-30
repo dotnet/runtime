@@ -666,6 +666,70 @@ namespace System.Security.Cryptography
             return TryEncryptEcbCore(plaintext, destination, paddingMode, out bytesWritten);
         }
 
+        public byte[] EncryptCbc(byte[] plaintext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            if (plaintext is null)
+                throw new ArgumentNullException(nameof(plaintext));
+            if (iv is null)
+                throw new ArgumentNullException(nameof(iv));
+
+            return EncryptCbc(new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(iv), paddingMode);
+        }
+
+        public byte[] EncryptCbc(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+
+            int ciphertextLength = GetCiphertextLengthCbc(plaintext.Length, paddingMode);
+
+            // We expect most if not all uses to encrypt to exactly the ciphertextLength
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
+
+            if (!TryEncryptCbcCore(plaintext, iv, buffer, paddingMode, out int written) ||
+                written != ciphertextLength)
+            {
+                // This means a user-derived imiplementation added more padding than we expected or
+                // did something non-standard (encrypt to a partial block). This can't happen for
+                // multiple padding blocks since the buffer would have been too small in the first
+                // place. It doesn't make sense to try and support partial block encryption, likely
+                // something went very wrong. So throw.
+                throw new CryptographicException(SR.Format(SR.Cryptography_EncryptedIncorrectLength, nameof(TryEncryptCbcCore)));
+            }
+
+            return buffer;
+        }
+
+        public int EncryptCbc(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+
+            if (!TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
+        public bool TryEncryptCbc(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            out int bytesWritten,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+
+            return TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out bytesWritten);
+        }
+
         /// <summary>
         ///   When overridden in a derived class, attempts to encrypt data into the specified
         ///   buffer, using ECB mode with the specified padding mode.
@@ -712,6 +776,37 @@ namespace System.Security.Cryptography
         /// </remarks>
         protected virtual bool TryDecryptEcbCore(
             ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, attempts to encrypt data into the specified
+        ///   buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   <para>Derived classes must override this and provide an implementation.</para>
+        ///   <para>
+        ///      Implementations of this method must write precisely
+        ///      <c>GetCiphertextLengthCbc(plaintext.Length, paddingMode)</c> bytes to <paramref name="destination"/>
+        ///      and report that via <paramref name="bytesWritten"/>.
+        ///   </para>
+        /// </remarks>
+        protected virtual bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
             Span<byte> destination,
             PaddingMode paddingMode,
             out int bytesWritten)
