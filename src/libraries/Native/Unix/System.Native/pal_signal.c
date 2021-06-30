@@ -47,6 +47,20 @@ static int GetSignalMax() // Returns the highest usable signal number.
 #endif
 }
 
+static bool IsSigIgn(struct sigaction* action)
+{
+    assert(action);
+    return (action->sa_flags & SA_SIGINFO) == 0 &&
+           action->sa_handler == SIG_IGN;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    assert(action);
+    return (action->sa_flags & SA_SIGINFO) == 0 &&
+           action->sa_handler == SIG_DFL;
+}
+
 // For these signals, the default handler is expected to terminate the application.
 static bool IsSignalThatTerminates(int signalCode)
 {
@@ -257,7 +271,7 @@ int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t ha
             }
             // Disposition changed back to SIG_DFL.
             resendSignal = !g_handlerIsInstalled[signalCode - 1] &&
-                            OrigActionFor(signalCode)->sa_handler == SIG_DFL;
+                           IsSigDfl(OrigActionFor(signalCode));
         }
         if (resendSignal)
         {
@@ -311,7 +325,7 @@ static void* SignalHandlerLoop(void* arg)
         {
             // When the original disposition is SIG_IGN, children that terminated did not become zombies.
             // Since we overwrote the disposition, we have become responsible for reaping those processes.
-            bool reapAll = (void*)OrigActionFor(signalCode)->sa_sigaction == (void*)SIG_IGN;
+            bool reapAll = IsSigIgn(OrigActionFor(signalCode));
             SigChldCallback callback = g_sigChldCallback;
 
             // double-checked locking
@@ -392,19 +406,27 @@ static bool InstallSignalHandler(int sig, int flags)
     {
         return false;
     }
-    if ((void*)orig->sa_sigaction == (void*)SIG_IGN)
+    if (IsSigIgn(orig))
     {
         *isInstalled = true;
         return true;
     }
 
-    struct sigaction newAction;
-    memset(&newAction, 0, sizeof(struct sigaction));
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
-    newAction.sa_flags = flags | SA_SIGINFO;
+    struct sigaction newAction;
+    if (!IsSigDfl(orig))
+    {
+        // Maintain flags and mask of original handler.
+        newAction = *orig;
+        newAction.sa_flags = orig->sa_flags & ~(SA_RESTART | SA_RESETHAND);
+    }
+    else
+    {
+        memset(&newAction, 0, sizeof(struct sigaction));
+    }
+    newAction.sa_flags |= flags | SA_SIGINFO;
 #pragma clang diagnostic pop
-    sigemptyset(&newAction.sa_mask);
     newAction.sa_sigaction = &SignalHandler;
 
     rv = sigaction(sig, &newAction, orig);
