@@ -189,9 +189,9 @@ if(NOT MONO_CROSS_COMPILE)
       set(TemplateMonoRuntimeComponentLinking "dynamic")
     endif()
   endif()
-  # Write a component-manifest.props file in the artifacts/obj/mono/<host>/ directory
+  # Write a component-manifest.props file in the artifacts/obj/mono/<host>/build/ directory
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
-  configure_file( "${MONO_COMPONENT_PATH}/component-manifest.props.in" "../../component-manifest.props")
+  configure_file( "${MONO_COMPONENT_PATH}/component-manifest.props.in" "../../build/component-manifest.props")
 endif()
 
 # component tests

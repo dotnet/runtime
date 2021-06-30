@@ -16,11 +16,9 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
-    <MonoComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(MonoConfiguration)'))</MonoComponentManifestDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeRuntimeAsset Include="$(MonoComponentManifestDir)component-manifest.props" TargetPath="Sdk/component-manifest.props" />
     <NativeRuntimeAsset Include="Microsoft.NETCore.App.Mono.Props.Sdk.Sdk.props" TargetPath="Sdk/Sdk.props" />
   </ItemGroup>
 </Project>
