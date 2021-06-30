@@ -7130,7 +7130,7 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
     int align_const = get_alignment_constant (TRUE);
 
 #ifdef USE_REGIONS
-    heap_segment* region = find_segment(acontext->alloc_limit, FALSE);
+    heap_segment* region = find_segment(acontext->alloc_ptr, FALSE);
     bool is_ephemeral_heap_segment = region == ephemeral_heap_segment;
     uint8_t* allocated = is_ephemeral_heap_segment ? alloc_allocated : heap_segment_allocated (region);
 #else // USE_REGIONS
@@ -7163,7 +7163,9 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
 #ifdef USE_REGIONS
         if (is_ephemeral_heap_segment)
 #endif // USE_REGIONS
+        {
             alloc_allocated = acontext->alloc_ptr;
+        }
         assert (heap_segment_allocated (ephemeral_heap_segment) <=
                 heap_segment_committed (ephemeral_heap_segment));
         if (record_ac_p)
