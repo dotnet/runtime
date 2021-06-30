@@ -193,7 +193,6 @@ typedef struct MonoComponentDebugger {
 	void (*set_sdb_options) (char* options);
 
 	//wasm
-	void (*mono_wasm_debugger_init) (void);
 	void (*mono_wasm_breakpoint_hit) (void);
 	void (*mono_wasm_single_step_hit) (void);
 	void (*mono_wasm_enable_debugging) (int log_level);

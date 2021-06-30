@@ -13,16 +13,8 @@
 static bool
 debugger_avaliable (void);
 
-static void
-debugger_init (void);
-
-static void
-debugger_user_break (void);
-
 static MonoComponentDebugger fn_table = {
-	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
-	&debugger_init,
-	&debugger_user_break,
+	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable }
 };
 
 static bool
@@ -38,16 +30,4 @@ mono_component_debugger_init (void)
 	debugger_agent_add_function_pointers (&fn_table);
 	mini_wasm_debugger_add_function_pointers (&fn_table);
 	return &fn_table;
-}
-
-static void
-debugger_init (void)
-{
-
-}
-
-static void
-debugger_user_break (void)
-{
-
 }

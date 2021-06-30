@@ -4407,10 +4407,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_component_debugger ()->init (&mono_defaults);
 
-#ifdef TARGET_WASM
-	mono_component_debugger ()->mono_wasm_debugger_init ();
-#endif
-
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	mono_set_generic_sharing_supported (TRUE);
 #endif

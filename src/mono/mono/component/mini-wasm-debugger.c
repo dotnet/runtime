@@ -145,10 +145,12 @@ handle_multiple_ss_requests (void) {
 }
 
 static void
-mono_wasm_debugger_init (void)
+mono_wasm_debugger_init (MonoDefaults *mono_defaults)
 {
 	if (!debugger_enabled)
 		return;
+
+	mdbg_mono_defaults = mono_defaults;
 
 	DebuggerEngineCallbacks cbs = {
 		.tls_get_restore_state = tls_get_restore_state,
@@ -432,7 +434,7 @@ mono_wasm_breakpoint_hit (void)
 }
 
 static void
-mono_wasm_debugger_init (void)
+mono_wasm_debugger_init (MonoDefaults *mono_defaults)
 {
 }
 
@@ -446,7 +448,7 @@ mono_wasm_enable_debugging_internal (int debug_level)
 void
 mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 {
-	fn_table->mono_wasm_debugger_init = mono_wasm_debugger_init;
+	fn_table->init = mono_wasm_debugger_init;
 	fn_table->mono_wasm_breakpoint_hit = mono_wasm_breakpoint_hit;
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
 	fn_table->mono_wasm_enable_debugging = mono_wasm_enable_debugging_internal;

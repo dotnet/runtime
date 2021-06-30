@@ -67,9 +67,6 @@ static void
 stub_mono_debugger_agent_parse_options (char *options);
 
 static void
-stub_mono_wasm_debugger_init (void);
-
-static void
 stub_mono_wasm_breakpoint_hit (void);
 
 static void
@@ -100,7 +97,6 @@ static MonoComponentDebugger fn_table = {
 	&stub_mono_debugger_agent_parse_options,
 
 	//wasm
-	&stub_mono_wasm_debugger_init,
 	&stub_mono_wasm_breakpoint_hit,
 	&stub_mono_wasm_single_step_hit,
 	&stub_mono_wasm_enable_debugging,
@@ -213,11 +209,6 @@ stub_mono_debugger_agent_transport_handshake(void)
 
 static void 
 stub_mono_debugger_agent_parse_options (char *options) 
-{
-}
-
-static void
-stub_mono_wasm_debugger_init (void)
 {
 }
 

@@ -740,11 +740,11 @@ mono_debugger_is_disconnected (void)
 static void
 debugger_agent_init (MonoDefaults *mono_defaults)
 {
-	mdbg_mono_defaults = mono_defaults;
-	
 	if (!agent_config.enabled)
 		return;
 
+	mdbg_mono_defaults = mono_defaults;
+	
 	DebuggerEngineCallbacks cbs;
 	memset (&cbs, 0, sizeof (cbs));
 	cbs.tls_get_restore_state = tls_get_restore_state;
