@@ -525,8 +525,6 @@ static void mono_dbg_debugger_agent_user_break (void);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE_DBG (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
 
-static char *sdb_options = NULL;
-
 #ifndef DISABLE_SOCKET_TRANSPORT
 static void
 register_socket_transport (void);
@@ -599,9 +597,9 @@ parse_flag (const char *option, char *flag)
 static void
 debugger_agent_parse_options (void)
 {
-	if (!sdb_options)
+	char *options = mono_debugger_agent_get_sdb_options ();
+	if (!options)
 		return;
-	char *options = sdb_options;
 	char **args, **ptr;
 	char *host;
 	int port;
@@ -10261,11 +10259,6 @@ debugger_thread (void *arg)
 	return 0;
 }
 
-static void
-set_sdb_options (char *options)
-{
-	sdb_options = options;
-}
 
 void
 debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
@@ -10285,9 +10278,6 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->debug_log = debugger_agent_debug_log;
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	fn_table->send_crash = mono_debugger_agent_send_crash;
-	
-	fn_table->set_sdb_options = set_sdb_options;
-
 	fn_table->mono_debugger_agent_transport_handshake = debugger_agent_transport_handshake;
 }
 

@@ -57,6 +57,7 @@
 #include <mono/utils/w32subset.h>
 
 #include <mono/metadata/components.h>
+#include <mono/mini/debugger-agent-external.h>
 
 #include "mini.h"
 #include "jit.h"
@@ -1808,7 +1809,7 @@ mono_jit_parse_options (int argc, char * argv[])
 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			mono_component_debugger ()->set_sdb_options (g_strdup (argv [i] + 17));
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
@@ -2383,7 +2384,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			mono_component_debugger ()->set_sdb_options (g_strdup (argv [i] + 17));
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {

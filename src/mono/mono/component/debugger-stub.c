@@ -60,9 +60,6 @@ stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause);
 static gboolean 
 stub_mono_debugger_agent_transport_handshake (void);
 
-static void 
-stub_mono_debugger_agent_parse_options (char *options);
-
 static void
 stub_mono_wasm_breakpoint_hit (void);
 
@@ -87,7 +84,6 @@ static MonoComponentDebugger fn_table = {
 	&stub_debugger_debug_log_is_enabled,
 	&stub_debugger_send_crash,
 	&stub_mono_debugger_agent_transport_handshake,
-	&stub_mono_debugger_agent_parse_options,
 
 	//wasm
 	&stub_mono_wasm_breakpoint_hit,
@@ -192,11 +188,6 @@ static gboolean
 stub_mono_debugger_agent_transport_handshake(void)
 {
 	g_assert_not_reached();
-}
-
-static void 
-stub_mono_debugger_agent_parse_options (char *options) 
-{
 }
 
 static void

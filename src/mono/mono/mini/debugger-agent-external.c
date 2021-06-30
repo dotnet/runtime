@@ -8,6 +8,8 @@
 
 #ifndef DISABLE_SDB
 
+static char *sdb_options = NULL;
+
 #define MAX_TRANSPORTS 16
 static DebuggerTransport transports [MAX_TRANSPORTS];
 static int ntransports = 0;
@@ -22,7 +24,6 @@ register_transport (DebuggerTransport *trans)
 }
 
 void
-
 mono_debugger_agent_register_transport (DebuggerTransport *trans)
 {
 	register_transport (trans);
@@ -43,12 +44,19 @@ mono_debugger_agent_init (void)
 void
 mono_debugger_agent_parse_options (char *options)
 {
-	mono_component_debugger ()->set_sdb_options (options);
+	sdb_options = options;
 }
 
-DebuggerTransport *mono_debugger_agent_get_transports (int *ntrans) 
+DebuggerTransport *
+mono_debugger_agent_get_transports (int *ntrans) 
 {
 	*ntrans = ntransports;
 	return transports;
+}
+
+char *
+mono_debugger_agent_get_sdb_options (void)
+{
+	return sdb_options;
 }
 #endif /* DISABLE_SDB */

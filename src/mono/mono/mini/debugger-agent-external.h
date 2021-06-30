@@ -23,4 +23,7 @@ mono_debugger_agent_register_transport (DebuggerTransport *trans);
 MONO_COMPONENT_API DebuggerTransport *
 mono_debugger_agent_get_transports (int *ntrans);
 
+MONO_COMPONENT_API char *
+mono_debugger_agent_get_sdb_options (void);
+
 #endif
