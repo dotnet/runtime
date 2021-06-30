@@ -39,7 +39,7 @@
     <EmscriptenPrependPATH Include="$(EmscriptenPythonToolsPath)"    Condition="$([MSBuild]::IsOSPlatform('windows'))" />
     <EmscriptenPrependPATH Include="$(EmscriptenPythonToolsPath)bin" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
 
-    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)lib\python3.9%3B$(EmscriptenPythonToolsPath)lib\python3.9\site-packages%3B$(EmscriptenPythonToolsPath)lib%3B$([MSBuild]::Escape($(PYTHONPATH)))" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
-    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)lib\python3.9:$([MSBuild]::Escape($(PYTHONPATH)))"   Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)\bin%3B$([MSBuild]::Escape($(PYTHONPATH)))" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
+    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath):$([MSBuild]::Escape($(PYTHONPATH)))"       Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
   </ItemGroup>
 </Project>

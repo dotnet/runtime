@@ -184,8 +184,8 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         extraHelixArguments: /p:BrowserHost=windows
         scenarios:
-        - normal
         - buildwasmapps
+        - normal
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
