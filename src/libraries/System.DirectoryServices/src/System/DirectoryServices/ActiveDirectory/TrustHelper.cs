@@ -78,7 +78,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(targetName);
+                    target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     int result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
@@ -143,7 +143,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (target != (IntPtr)0)
-                        NativeMemoryHelper.Free(target);
+                        Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
                         UnsafeNativeMethods.LsaFreeMemory(buffer);
@@ -175,7 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(targetName);
+                    target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // get the trusted domain information
@@ -253,7 +253,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // reconstruct the unmanaged structure to set it back
-                    newInfo = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_INFORMATION_EX)));
+                    newInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_INFORMATION_EX)));
                     Marshal.StructureToPtr(domainInfo, newInfo, false);
 
                     result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);
@@ -270,13 +270,13 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (target != (IntPtr)0)
-                        NativeMemoryHelper.Free(target);
+                        Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
                         UnsafeNativeMethods.LsaFreeMemory(buffer);
 
                     if (newInfo != (IntPtr)0)
-                        NativeMemoryHelper.Free(newInfo);
+                        Marshal.FreeHGlobal(newInfo);
                 }
             }
             catch { throw; }
@@ -305,7 +305,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(targetName);
+                    target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // get trust information
@@ -355,7 +355,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (target != (IntPtr)0)
-                        NativeMemoryHelper.Free(target);
+                        Marshal.FreeHGlobal(target);
                 }
             }
             catch { throw; }
@@ -387,18 +387,18 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(targetName);
+                    target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // validate the trust existence
                     ValidateTrust(policyHandle, trustedDomainName, sourceName, targetName, isForest, (int)direction, policyServerName);  // need to verify direction
 
                     if (preferredTargetServer == null)
-                        data = NativeMemoryHelper.AllocStringUnicode(targetName);
+                        data = Marshal.StringToHGlobalUni(targetName);
                     else
                         // this is the case that we need to specifically go to a particular server. This is the way to tell netlogon to do that.
-                        data = NativeMemoryHelper.AllocStringUnicode(targetName + "\\" + preferredTargetServer);
-                    ptr = NativeMemoryHelper.Alloc(IntPtr.Size);
+                        data = Marshal.StringToHGlobalUni(targetName + "\\" + preferredTargetServer);
+                    ptr = Marshal.AllocHGlobal(IntPtr.Size);
                     Marshal.WriteIntPtr(ptr, data);
 
                     if (!forceSecureChannelReset)
@@ -458,13 +458,13 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (target != (IntPtr)0)
-                        NativeMemoryHelper.Free(target);
+                        Marshal.FreeHGlobal(target);
 
                     if (ptr != (IntPtr)0)
-                        NativeMemoryHelper.Free(ptr);
+                        Marshal.FreeHGlobal(ptr);
 
                     if (data != (IntPtr)0)
-                        NativeMemoryHelper.Free(data);
+                        Marshal.FreeHGlobal(data);
 
                     if (buffer1 != (IntPtr)0)
                         UnsafeNativeMethods.NetApiBufferFree(buffer1);
@@ -501,7 +501,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     Marshal.PtrToStructure(info, domainInfo);
 
                     AuthData = new LSA_AUTH_INFORMATION();
-                    fileTime = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
                     UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -512,11 +512,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.LastUpdateTime.highPart = tmp.higher;
 
                     AuthData.AuthType = TRUST_AUTH_TYPE_CLEAR;
-                    unmanagedPassword = NativeMemoryHelper.AllocStringUnicode(password);
+                    unmanagedPassword = Marshal.StringToHGlobalUni(password);
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;          // sizeof(WCHAR)
 
-                    unmanagedAuthData = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
+                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
                     AuthInfoEx = new TRUSTED_DOMAIN_AUTH_INFORMATION();
@@ -577,7 +577,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (fileTime != (IntPtr)0)
-                        NativeMemoryHelper.Free(fileTime);
+                        Marshal.FreeHGlobal(fileTime);
 
                     if (domainHandle != (IntPtr)0)
                         UnsafeNativeMethods.LsaClose(domainHandle);
@@ -586,10 +586,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         UnsafeNativeMethods.LsaFreeMemory(info);
 
                     if (unmanagedPassword != (IntPtr)0)
-                        NativeMemoryHelper.Free(unmanagedPassword);
+                        Marshal.FreeHGlobal(unmanagedPassword);
 
                     if (unmanagedAuthData != (IntPtr)0)
-                        NativeMemoryHelper.Free(unmanagedAuthData);
+                        Marshal.FreeHGlobal(unmanagedAuthData);
                 }
             }
             catch { throw; }
@@ -624,7 +624,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(targetName);
+                    target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // get the trusted domain information
@@ -656,7 +656,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
-                    fileTime = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
                     UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -667,11 +667,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.LastUpdateTime.highPart = tmp.higher;
 
                     AuthData.AuthType = TRUST_AUTH_TYPE_CLEAR;
-                    unmanagedPassword = NativeMemoryHelper.AllocStringUnicode(password);
+                    unmanagedPassword = Marshal.StringToHGlobalUni(password);
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;
 
-                    unmanagedAuthData = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
+                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
                     AuthInfoEx = new TRUSTED_DOMAIN_AUTH_INFORMATION();
@@ -691,7 +691,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // reconstruct the unmanaged structure to set it back
                     domainInfo.AuthInformation = AuthInfoEx;
-                    newBuffer = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
+                    newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
 
                     result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
@@ -708,22 +708,22 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (target != (IntPtr)0)
-                        NativeMemoryHelper.Free(target);
+                        Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
                         UnsafeNativeMethods.LsaFreeMemory(buffer);
 
                     if (newBuffer != (IntPtr)0)
-                        NativeMemoryHelper.Free(newBuffer);
+                        Marshal.FreeHGlobal(newBuffer);
 
                     if (fileTime != (IntPtr)0)
-                        NativeMemoryHelper.Free(fileTime);
+                        Marshal.FreeHGlobal(fileTime);
 
                     if (unmanagedPassword != (IntPtr)0)
-                        NativeMemoryHelper.Free(unmanagedPassword);
+                        Marshal.FreeHGlobal(unmanagedPassword);
 
                     if (unmanagedAuthData != (IntPtr)0)
-                        NativeMemoryHelper.Free(unmanagedAuthData);
+                        Marshal.FreeHGlobal(unmanagedAuthData);
                 }
             }
             catch { throw; }
@@ -757,7 +757,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(targetName);
+                    target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // get the trusted domain information
@@ -786,7 +786,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
-                    fileTime = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
                     UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -797,11 +797,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.LastUpdateTime.highPart = tmp.higher;
 
                     AuthData.AuthType = TRUST_AUTH_TYPE_CLEAR;
-                    unmanagedPassword = NativeMemoryHelper.AllocStringUnicode(password);
+                    unmanagedPassword = Marshal.StringToHGlobalUni(password);
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;
 
-                    unmanagedAuthData = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
+                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
                     AuthInfoEx = new TRUSTED_DOMAIN_AUTH_INFORMATION();
@@ -836,7 +836,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // reset the trust direction
                     domainInfo.Information!.TrustDirection = (int)newTrustDirection;
 
-                    newBuffer = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
+                    newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
 
                     result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
@@ -853,22 +853,22 @@ namespace System.DirectoryServices.ActiveDirectory
                         Utils.Revert();
 
                     if (target != (IntPtr)0)
-                        NativeMemoryHelper.Free(target);
+                        Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
                         UnsafeNativeMethods.LsaFreeMemory(buffer);
 
                     if (newBuffer != (IntPtr)0)
-                        NativeMemoryHelper.Free(newBuffer);
+                        Marshal.FreeHGlobal(newBuffer);
 
                     if (fileTime != (IntPtr)0)
-                        NativeMemoryHelper.Free(fileTime);
+                        Marshal.FreeHGlobal(fileTime);
 
                     if (unmanagedPassword != (IntPtr)0)
-                        NativeMemoryHelper.Free(unmanagedPassword);
+                        Marshal.FreeHGlobal(unmanagedPassword);
 
                     if (unmanagedAuthData != (IntPtr)0)
-                        NativeMemoryHelper.Free(unmanagedAuthData);
+                        Marshal.FreeHGlobal(unmanagedAuthData);
                 }
             }
             catch { throw; }

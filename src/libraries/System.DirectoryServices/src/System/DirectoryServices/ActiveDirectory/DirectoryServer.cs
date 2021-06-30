@@ -701,7 +701,7 @@ namespace System.DirectoryServices.ActiveDirectory
             AdamInstance? adamServer = null;
             DomainController? dcServer = null;
 
-            unmanagedGuid = NativeMemoryHelper.Alloc(structSize);
+            unmanagedGuid = Marshal.AllocHGlobal(structSize);
             try
             {
                 if (sourceServer != null)
@@ -750,8 +750,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if ((nint)unmanagedGuid != 0)
-                    NativeMemoryHelper.Free(unmanagedGuid);
+                if (unmanagedGuid != (IntPtr)0)
+                    Marshal.FreeHGlobal(unmanagedGuid);
 
                 if (adamServer != null)
                     adamServer.Dispose();

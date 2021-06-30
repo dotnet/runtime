@@ -81,7 +81,7 @@ namespace System.DirectoryServices.Interop
             private void Advance()
             {
                 _currentValue = s_noMoreValues;
-                IntPtr addr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(Variant)));
+                IntPtr addr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(Variant)));
                 try
                 {
                     int[] numRead = new int[] { 0 };
@@ -92,7 +92,9 @@ namespace System.DirectoryServices.Interop
                     {
                         if (numRead[0] > 0)
                         {
+#pragma warning disable 612, 618
                             _currentValue = Marshal.GetObjectForNativeVariant(addr)!;
+#pragma warning restore 612, 618
                         }
                     }
                     finally
@@ -102,7 +104,7 @@ namespace System.DirectoryServices.Interop
                 }
                 finally
                 {
-                    NativeMemoryHelper.Free(addr);
+                    Marshal.FreeCoTaskMem(addr);
                 }
             }
         }

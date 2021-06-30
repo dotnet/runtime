@@ -112,7 +112,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // allocate the memory for all the records
-                records = NativeMemoryHelper.Alloc(count * IntPtr.Size);
+                records = Marshal.AllocHGlobal(count * IntPtr.Size);
             }
 
             try
@@ -120,7 +120,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     IntPtr ptr = (IntPtr)0;
-                    fileTime = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
                     UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -136,11 +136,11 @@ namespace System.DirectoryServices.ActiveDirectory
                         TopLevelName TLN = _topLevelNames[i];
                         record.Time = TLN.time;
                         record.TopLevelName = new LSA_UNICODE_STRING();
-                        ptr = NativeMemoryHelper.AllocStringUnicode(TLN.Name);
+                        ptr = Marshal.StringToHGlobalUni(TLN.Name);
                         ptrList.Add(ptr);
                         UnsafeNativeMethods.RtlInitUnicodeString(record.TopLevelName, ptr);
 
-                        tmpPtr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -166,10 +166,10 @@ namespace System.DirectoryServices.ActiveDirectory
                             record.Time.highPart = currentTime.higher;
                         }
                         record.TopLevelName = new LSA_UNICODE_STRING();
-                        ptr = NativeMemoryHelper.AllocStringUnicode(_excludedNames[i]);
+                        ptr = Marshal.StringToHGlobalUni(_excludedNames[i]);
                         ptrList.Add(ptr);
                         UnsafeNativeMethods.RtlInitUnicodeString(record.TopLevelName, ptr);
-                        tmpPtr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -188,7 +188,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.Time = tmp.time;
                         IntPtr pSid = (IntPtr)0;
                         IntPtr stringSid = (IntPtr)0;
-                        stringSid = NativeMemoryHelper.AllocStringUnicode(tmp.DomainSid);
+                        stringSid = Marshal.StringToHGlobalUni(tmp.DomainSid);
                         ptrList.Add(stringSid);
                         int result = UnsafeNativeMethods.ConvertStringSidToSidW(stringSid, ref pSid);
                         if (result == 0)
@@ -198,15 +198,15 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.DomainInfo = new LSA_FOREST_TRUST_DOMAIN_INFO();
                         record.DomainInfo.sid = pSid;
                         sidList.Add(pSid);
-                        record.DomainInfo.DNSNameBuffer = NativeMemoryHelper.AllocStringUnicode(tmp.DnsName);
+                        record.DomainInfo.DNSNameBuffer = Marshal.StringToHGlobalUni(tmp.DnsName);
                         ptrList.Add(record.DomainInfo.DNSNameBuffer);
                         record.DomainInfo.DNSNameLength = (short)(tmp.DnsName == null ? 0 : tmp.DnsName.Length * 2);             // sizeof(WCHAR)
                         record.DomainInfo.DNSNameMaximumLength = (short)(tmp.DnsName == null ? 0 : tmp.DnsName.Length * 2);
-                        record.DomainInfo.NetBIOSNameBuffer = NativeMemoryHelper.AllocStringUnicode(tmp.NetBiosName);
+                        record.DomainInfo.NetBIOSNameBuffer = Marshal.StringToHGlobalUni(tmp.NetBiosName);
                         ptrList.Add(record.DomainInfo.NetBIOSNameBuffer);
                         record.DomainInfo.NetBIOSNameLength = (short)(tmp.NetBiosName == null ? 0 : tmp.NetBiosName.Length * 2);
                         record.DomainInfo.NetBIOSNameMaximumLength = (short)(tmp.NetBiosName == null ? 0 : tmp.NetBiosName.Length * 2);
-                        tmpPtr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -221,7 +221,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         LSA_FOREST_TRUST_RECORD lastRecord = new LSA_FOREST_TRUST_RECORD();
                         lastRecord.Flags = 0;
                         lastRecord.ForestTrustType = LSA_FOREST_TRUST_RECORD_TYPE.ForestTrustRecordTypeLast;
-                        tmpPtr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(lastRecord, tmpPtr, false);
                         Marshal.WriteIntPtr(records, IntPtr.Size * currentCount, tmpPtr);
@@ -240,11 +240,11 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                record.Data.Buffer = NativeMemoryHelper.Alloc(record.Data.Length);
+                                record.Data.Buffer = Marshal.AllocHGlobal(record.Data.Length);
                                 ptrList.Add(record.Data.Buffer);
                                 Marshal.Copy((byte[])_binaryData[i]!, 0, record.Data.Buffer, record.Data.Length);
                             }
-                            tmpPtr = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                            tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                             ptrList.Add(tmpPtr);
                             Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -258,7 +258,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     LSA_FOREST_TRUST_INFORMATION trustInformation = new LSA_FOREST_TRUST_INFORMATION();
                     trustInformation.RecordCount = count;
                     trustInformation.Entries = records;
-                    forestInfo = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_INFORMATION)));
+                    forestInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_INFORMATION)));
                     Marshal.StructureToPtr(trustInformation, forestInfo, false);
 
                     // get policy server name
@@ -272,7 +272,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the target name
                     trustedDomainName = new LSA_UNICODE_STRING();
-                    target = NativeMemoryHelper.AllocStringUnicode(TargetName);
+                    target = Marshal.StringToHGlobalUni(TargetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
 
                     // call the unmanaged function
@@ -283,7 +283,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // there is collision, throw proper exception so user can deal with it
-                    if ((nint)collisionInfo != 0)
+                    if (collisionInfo != (IntPtr)0)
                     {
                         throw ExceptionHelper.CreateForestTrustCollisionException(collisionInfo);
                     }
@@ -306,7 +306,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // release the memory
                     for (int i = 0; i < ptrList.Count; i++)
                     {
-                        NativeMemoryHelper.Free((IntPtr)ptrList[i]!);
+                        Marshal.FreeHGlobal((IntPtr)ptrList[i]!);
                     }
 
                     for (int i = 0; i < sidList.Count; i++)
@@ -314,24 +314,24 @@ namespace System.DirectoryServices.ActiveDirectory
                         UnsafeNativeMethods.LocalFree((IntPtr)sidList[i]!);
                     }
 
-                    if ((nint)records != 0)
+                    if (records != (IntPtr)0)
                     {
-                        NativeMemoryHelper.Free(records);
+                        Marshal.FreeHGlobal(records);
                     }
 
-                    if ((nint)forestInfo != 0)
+                    if (forestInfo != (IntPtr)0)
                     {
-                        NativeMemoryHelper.Free(forestInfo);
+                        Marshal.FreeHGlobal(forestInfo);
                     }
 
-                    if ((nint)collisionInfo != 0)
+                    if (collisionInfo != (IntPtr)0)
                         UnsafeNativeMethods.LsaFreeMemory(collisionInfo);
 
-                    if ((nint)target != 0)
-                        NativeMemoryHelper.Free(target);
+                    if (target != (IntPtr)0)
+                        Marshal.FreeHGlobal(target);
 
-                    if ((nint)fileTime != 0)
-                        NativeMemoryHelper.Free(fileTime);
+                    if (fileTime != (IntPtr)0)
+                        Marshal.FreeHGlobal(fileTime);
                 }
             }
             catch { throw; }
@@ -361,7 +361,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // get the target name
                     tmpName = new LSA_UNICODE_STRING();
-                    targetPtr = NativeMemoryHelper.AllocStringUnicode(TargetName);
+                    targetPtr = Marshal.StringToHGlobalUni(TargetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(tmpName, targetPtr);
 
                     serverName = Utils.GetPolicyServerName(context, true, false, source);
@@ -385,7 +385,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     try
                     {
-                        if ((nint)forestTrustInfo != 0)
+                        if (forestTrustInfo != (IntPtr)0)
                         {
                             LSA_FOREST_TRUST_INFORMATION trustInfo = new LSA_FOREST_TRUST_INFORMATION();
                             Marshal.PtrToStructure(forestTrustInfo, trustInfo);
@@ -459,9 +459,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (impersonated)
                         Utils.Revert();
 
-                    if ((nint)targetPtr != 0)
+                    if (targetPtr != (IntPtr)0)
                     {
-                        NativeMemoryHelper.Free(targetPtr);
+                        Marshal.FreeHGlobal(targetPtr);
                     }
                 }
             }

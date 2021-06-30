@@ -218,13 +218,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryContext currentContext = Utils.GetNewDirectoryContext(forestName, DirectoryContextType.Forest, null);
 
                     // existing site
-                    ActiveDirectorySite site = FindByName(currentContext, siteName);
+                    ActiveDirectorySite site = ActiveDirectorySite.FindByName(currentContext, siteName);
                     return site;
                 }
                 finally
                 {
-                    if ((nint)ptr != 0)
-                        NativeMemoryHelper.Free(ptr);
+                    if (ptr != (IntPtr)0)
+                        Marshal.FreeHGlobal(ptr);
                 }
             }
         }
