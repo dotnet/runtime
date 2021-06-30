@@ -2444,9 +2444,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await requestStream.WriteAsync(data);
             await requestStream.FlushAsync();
-
             DataFrame dataFrame = (DataFrame)await connection.ReadFrameAsync(TimeSpan.FromSeconds(30));
-
             Assert.True(data.Span.SequenceEqual(dataFrame.Data.Span));
         }
 
@@ -2804,7 +2802,6 @@ namespace System.Net.Http.Functional.Tests
 
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
-
 
                     // Attempting to write on the request body should now fail with OperationCanceledException.
                     Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
