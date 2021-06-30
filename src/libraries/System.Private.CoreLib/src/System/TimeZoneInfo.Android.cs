@@ -21,14 +21,9 @@ namespace System
             return AndroidTimeZones.Local!;
         }
 
-        private static void PopulateAllSystemTimeZonesCore(CachedData cachedData)
+        private static List<string> GetTimeZoneIds()
         {
-            foreach (string timeZoneId in AndroidTimeZones.GetAvailableIds())
-            {
-                // cachedData is not in this current context, I think we can push PopulateAllSystemTimeZonesCore back to AllUnix
-                // and instead implement how the time zone IDs are obtained in Unix/Android
-                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true); // populate the cache
-            }
+            return AndroidTimeZones.GetAvailableIds();
         }
 
         //TODO: TryGetTimeZoneFromLocalMachine maps to FindSystemTimeZoneByIdCore in mono/mono implementation

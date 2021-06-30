@@ -18,15 +18,6 @@ namespace System
             return GetLocalTimeZoneFromTzFile();
         }
 
-        private static void PopulateAllSystemTimeZonesCore(CachedData cachedData)
-        {
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
-            {
-                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
-            }
-        }
-
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
             value = null;
@@ -77,13 +68,13 @@ namespace System
         /// <remarks>
         /// Lines that start with # are comments and are skipped.
         /// </remarks>
-        private static List<string> GetTimeZoneIds(string timeZoneDirectory)
+        private static List<string> GetTimeZoneIds()
         {
             List<string> timeZoneIds = new List<string>();
 
             try
             {
-                using (StreamReader sr = new StreamReader(Path.Combine(timeZoneDirectory, TimeZoneFileName), Encoding.UTF8))
+                using (StreamReader sr = new StreamReader(Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName), Encoding.UTF8))
                 {
                     string? zoneTabFileLine;
                     while ((zoneTabFileLine = sr.ReadLine()) != null)

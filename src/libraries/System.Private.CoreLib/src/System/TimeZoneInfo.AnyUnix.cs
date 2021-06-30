@@ -228,7 +228,10 @@ namespace System
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            PopulateAllSystemTimeZonesCore(cachedData);
+            foreach (string timeZoneId in GetTimeZoneIds())
+            {
+                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
+            }
         }
 
         /// <summary>
