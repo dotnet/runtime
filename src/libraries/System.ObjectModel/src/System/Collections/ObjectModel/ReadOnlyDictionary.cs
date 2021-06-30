@@ -175,26 +175,7 @@ namespace System.Collections.ObjectModel
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-            if (array.Rank != 1)
-            {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            }
-            if (array.GetLowerBound(0) != 0)
-            {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
-            }
-            if (index < 0 || index > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (array.Length - index < Count)
-            {
-                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
-            }
+            CollectionHelpers.ValidateCopyToArguments(Count, array, index);
 
             if (array is KeyValuePair<TKey, TValue>[] pairs)
             {
@@ -313,7 +294,7 @@ namespace System.Collections.ObjectModel
 
             void ICollection.CopyTo(Array array, int index)
             {
-                ReadOnlyDictionaryHelpers.CopyToNonGenericICollectionHelper<TKey>(_collection, array, index);
+                CollectionHelpers.CopyTo(_collection, array, index);
             }
 
             bool ICollection.IsSynchronized => false;
@@ -363,75 +344,12 @@ namespace System.Collections.ObjectModel
 
             void ICollection.CopyTo(Array array, int index)
             {
-                ReadOnlyDictionaryHelpers.CopyToNonGenericICollectionHelper<TValue>(_collection, array, index);
+                CollectionHelpers.CopyTo(_collection, array, index);
             }
 
             bool ICollection.IsSynchronized => false;
 
             object ICollection.SyncRoot => (_collection is ICollection coll) ? coll.SyncRoot : this;
-        }
-    }
-
-    // To share code when possible, use a non-generic class to get rid of irrelevant type parameters.
-    internal static class ReadOnlyDictionaryHelpers
-    {
-        // Abstracted away to avoid redundant implementations.
-        internal static void CopyToNonGenericICollectionHelper<T>(ICollection<T> collection, Array array, int index)
-        {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-            if (array.Rank != 1)
-            {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            }
-            if (array.GetLowerBound(0) != 0)
-            {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (array.Length - index < collection.Count)
-            {
-                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
-            }
-
-            // Easy out if the ICollection<T> implements the non-generic ICollection
-            if (collection is ICollection nonGenericCollection)
-            {
-                nonGenericCollection.CopyTo(array, index);
-                return;
-            }
-
-            if (array is T[] items)
-            {
-                collection.CopyTo(items, index);
-            }
-            else
-            {
-                // We can't cast array of value type to object[], so we don't support
-                // widening of primitive types here.
-                object?[]? objects = array as object?[];
-                if (objects == null)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
-                }
-
-                try
-                {
-                    foreach (var item in collection)
-                    {
-                        objects[index++] = item;
-                    }
-                }
-                catch (ArrayTypeMismatchException)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
-                }
-            }
         }
     }
 }

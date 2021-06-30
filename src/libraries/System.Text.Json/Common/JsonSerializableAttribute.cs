@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !BUILDING_SOURCE_GENERATOR
 using System.Text.Json.Serialization.Metadata;
+#endif
 
 namespace System.Text.Json.Serialization
 {
@@ -10,7 +12,13 @@ namespace System.Text.Json.Serialization
     /// when serializing and deserializing instances of the specified type and types in its object graph.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public sealed class JsonSerializableAttribute : JsonAttribute
+
+#if BUILDING_SOURCE_GENERATOR
+    internal
+#else
+    public
+#endif
+    sealed class JsonSerializableAttribute : JsonAttribute
     {
         /// <summary>
         /// Initializes a new instance of <see cref="JsonSerializableAttribute"/> with the specified type.
@@ -28,7 +36,8 @@ namespace System.Text.Json.Serialization
         public string? TypeInfoPropertyName { get; set; }
 
         /// <summary>
-        /// Determines what the source generator should generate for the type.
+        /// Determines what the source generator should generate for the type. If the value is <see cref="JsonSourceGenerationMode.Default"/>,
+        /// then the setting specified on <see cref="JsonSourceGenerationOptionsAttribute.GenerationMode"/> will be used.
         /// </summary>
         public JsonSourceGenerationMode GenerationMode { get; set; }
     }

@@ -133,6 +133,138 @@ namespace System.Security.Cryptography.Primitives.Tests
                 alg.GetCiphertextLengthCfb(17, PaddingMode.None, feedbackSizeInBits: 128));
         }
 
+        [Fact]
+        public static void EncryptEcb_NotSupportedInDerived()
+        {
+            AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 128 };
+
+            Assert.Throws<NotSupportedException>(() =>
+                alg.EncryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void DecryptEcb_NotSupportedInDerived()
+        {
+            AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 128 };
+
+            Assert.Throws<NotSupportedException>(() =>
+                alg.DecryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void EncryptEcb_EncryptProducesIncorrectlyPaddedValue()
+        {
+            static bool EncryptImpl(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = destination.Length + 1;
+                return true;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptEcbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void DecryptEcb_DecryptBytesWrittenLies()
+        {
+            static bool DecryptImpl(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = destination.Length + 1;
+                return true;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptEcbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptEcb(new byte[128 / 8], PaddingMode.None));
+        }
+
+        [Fact]
+        public static void EncryptEcb_EncryptCoreFails()
+        {
+            static bool EncryptImpl(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptEcbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void EncryptEcb_EncryptCoreOverflowWritten()
+        {
+            static bool EncryptImpl(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = -1;
+                return true;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptEcbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void DecryptEcb_DecryptCoreFails()
+        {
+            static bool DecryptImpl(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptEcbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
+        [Fact]
+        public static void DecryptEcb_DecryptCoreOverflowWritten()
+        {
+            static bool DecryptImpl(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+            {
+                bytesWritten = -1;
+                return true;
+            }
+
+            EcbSymmetricAlgorithm alg = new EcbSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptEcbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptEcb(Array.Empty<byte>(), PaddingMode.None));
+        }
+
         public static IEnumerable<object[]> CiphertextLengthTheories
         {
             get
@@ -230,6 +362,36 @@ namespace System.Security.Cryptography.Primitives.Tests
                 throw new NotImplementedException();
             public override void GenerateIV() => throw new NotImplementedException();
             public override void GenerateKey() => throw new NotImplementedException();
+        }
+
+        private class EcbSymmetricAlgorithm : AnySizeAlgorithm
+        {
+            public delegate bool TryEncryptEcbCoreFunc(
+                ReadOnlySpan<byte> plaintext,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                out int bytesWritten);
+
+            public delegate bool TryDecryptEcbCoreFunc(
+                ReadOnlySpan<byte> ciphertext,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                out int bytesWritten);
+
+            public TryEncryptEcbCoreFunc TryEncryptEcbCoreImpl { get; set; }
+            public TryDecryptEcbCoreFunc TryDecryptEcbCoreImpl { get; set; }
+
+            protected override bool TryEncryptEcbCore(
+                ReadOnlySpan<byte> plaintext,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                out int bytesWritten) => TryEncryptEcbCoreImpl(plaintext, destination, paddingMode, out bytesWritten);
+
+            protected override bool TryDecryptEcbCore(
+                ReadOnlySpan<byte> ciphertext,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                out int bytesWritten) => TryDecryptEcbCoreImpl(ciphertext, destination, paddingMode, out bytesWritten);
         }
     }
 }

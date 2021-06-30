@@ -89,7 +89,7 @@ typedef struct {
 	MonoAotFileInfo aot_info;
 	const char *eh_frame_symbol;
 	LLVMValueRef get_method, get_unbox_tramp, init_aotconst_func;
-	LLVMValueRef init_method, init_method_gshared_mrgctx, init_method_gshared_this, init_method_gshared_vtable;
+	LLVMValueRef init_methods [AOT_INIT_METHOD_NUM];
 	LLVMValueRef code_start, code_end;
 	LLVMValueRef inited_var;
 	LLVMValueRef unbox_tramp_indexes;
@@ -3393,27 +3393,14 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoJitI
 static void
 emit_init_funcs (MonoLLVMModule *module)
 {
-	module->init_method = emit_init_func (module, AOT_INIT_METHOD);
-	module->init_method_gshared_mrgctx = emit_init_func (module, AOT_INIT_METHOD_GSHARED_MRGCTX);
-	module->init_method_gshared_this = emit_init_func (module, AOT_INIT_METHOD_GSHARED_THIS);
-	module->init_method_gshared_vtable = emit_init_func (module, AOT_INIT_METHOD_GSHARED_VTABLE);
+	for (int i = 0; i < AOT_INIT_METHOD_NUM; ++i)
+		module->init_methods [i] = emit_init_func (module, i);
 }
 
 static LLVMValueRef
 get_init_func (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 {
-	switch (subtype) {
-	case AOT_INIT_METHOD:
-		return module->init_method;
-	case AOT_INIT_METHOD_GSHARED_MRGCTX:
-		return module->init_method_gshared_mrgctx;
-	case AOT_INIT_METHOD_GSHARED_THIS:
-		return module->init_method_gshared_this;
-	case AOT_INIT_METHOD_GSHARED_VTABLE:
-		return module->init_method_gshared_vtable;
-	default:
-		g_assert_not_reached ();
-	}
+	return module->init_methods [subtype];
 }
 
 static void
@@ -3576,11 +3563,12 @@ emit_div_check (EmitContext *ctx, LLVMBuilderRef builder, MonoBasicBlock *bb, Mo
 static void
 emit_method_init (EmitContext *ctx)
 {
-	LLVMValueRef indexes [16], args [16], callee;
+	LLVMValueRef indexes [16], args [16];
 	LLVMValueRef inited_var, cmp, call;
 	LLVMBasicBlockRef inited_bb, notinited_bb;
 	LLVMBuilderRef builder = ctx->builder;
 	MonoCompile *cfg = ctx->cfg;
+	MonoAotInitSubtype subtype;
 
 	ctx->module->max_inited_idx = MAX (ctx->module->max_inited_idx, cfg->method_index);
 
@@ -3608,27 +3596,35 @@ emit_method_init (EmitContext *ctx)
 	g_free (symbol);
 	cfg->llvm_dummy_info_var = info_var;
 
-	args [0] = convert (ctx, info_var, ctx->module->ptr_type);
+	int nargs = 0;
+	args [nargs ++] = convert (ctx, info_var, ctx->module->ptr_type);
 
-	// FIXME: Cache
-	if (ctx->rgctx_arg && ((cfg->method->is_inflated && mono_method_get_context (cfg->method)->method_inst) ||
-						   mini_method_is_default_method (cfg->method))) {
-		args [1] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
-		callee = ctx->module->init_method_gshared_mrgctx;
-		call = LLVMBuildCall (builder, callee, args, 2, "");
-	} else if (ctx->rgctx_arg) {
-		/* A vtable is passed as the rgctx argument */
-		args [1] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
-		callee = ctx->module->init_method_gshared_vtable;
-		call = LLVMBuildCall (builder, callee, args, 2, "");
-	} else if (cfg->gshared) {
-		args [1] = convert (ctx, ctx->this_arg, ObjRefType ());
-		callee = ctx->module->init_method_gshared_this;
-		call = LLVMBuildCall (builder, callee, args, 2, "");
-	} else {
-		callee = ctx->module->init_method;
-		call = LLVMBuildCall (builder, callee, args, 1, "");
+	switch (cfg->rgctx_access) {
+	case MONO_RGCTX_ACCESS_MRGCTX:
+		if (ctx->rgctx_arg) {
+			args [nargs ++] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
+			subtype = AOT_INIT_METHOD_GSHARED_MRGCTX;
+		} else {
+			g_assert (ctx->this_arg);
+			args [nargs ++] = convert (ctx, ctx->this_arg, ObjRefType ());
+			subtype = AOT_INIT_METHOD_GSHARED_THIS;
+		}
+		break;
+	case MONO_RGCTX_ACCESS_VTABLE:
+		args [nargs ++] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
+		subtype = AOT_INIT_METHOD_GSHARED_VTABLE;
+		break;
+	case MONO_RGCTX_ACCESS_THIS:
+		args [nargs ++] = convert (ctx, ctx->this_arg, ObjRefType ());
+		subtype = AOT_INIT_METHOD_GSHARED_THIS;
+		break;
+	case MONO_RGCTX_ACCESS_NONE:
+		subtype = AOT_INIT_METHOD;
+		break;
+	default:
+		g_assert_not_reached ();
 	}
+	call = LLVMBuildCall (builder, ctx->module->init_methods [subtype], args, nargs, "");
 
 	/*
 	 * This enables llvm to keep arguments in their original registers/

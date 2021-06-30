@@ -740,7 +740,7 @@ TypeHandle TypeHandle::MergeClassWithInterface(TypeHandle tClass, TypeHandle tIn
     MethodTable::InterfaceMapIterator intIt = pMTInterface->IterateInterfaceMap();
     while (intIt.Next())
     {
-        MethodTable *pMT = intIt.GetInterface();
+        MethodTable *pMT = intIt.GetInterface(pMTInterface);
         if (pMTClass->ImplementsEquivalentInterface(pMT))
         {
             // Found a common interface.  If there are multiple common interfaces, then
