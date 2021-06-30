@@ -11,7 +11,7 @@ namespace System.Data.Common
         // Oleaut32
         //
 
-        [DllImport(Interop.Libraries.OleAut32, PreserveSig = true)]
+        [DllImport(Interop.Libraries.OleAut32)]
         internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
             int dwReserved,
             System.IntPtr* ppIErrorInfo);

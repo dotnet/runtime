@@ -30,7 +30,7 @@ namespace System.Data.OleDb
             OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, &pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
             {
-                using OleDbComWrappers.IErrorInfo errorInfo = (OleDbComWrappers.IErrorInfo)OleDbComWrappers.Instance
+                using UnsafeNativeMethods.IErrorInfo errorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
                     .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);;
                 if (hresult < 0)
                 {
@@ -72,7 +72,7 @@ namespace System.Data.OleDb
             return e;
         }
 
-        internal void OnInfoMessage(OleDbComWrappers.IErrorInfo errorInfo, OleDbHResult errorCode)
+        internal void OnInfoMessage(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode)
         {
             OleDbInfoMessageEventHandler? handler = (OleDbInfoMessageEventHandler?)Events[EventInfoMessage];
             if (null != handler)

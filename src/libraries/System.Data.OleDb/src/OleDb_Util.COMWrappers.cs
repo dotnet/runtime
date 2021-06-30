@@ -12,7 +12,7 @@ namespace System.Data.OleDb
 {
     internal static partial class ODB
     {
-        internal static OleDbHResult GetErrorDescription(OleDbComWrappers.IErrorInfo errorInfo, OleDbHResult hresult, out string message)
+        internal static OleDbHResult GetErrorDescription(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult hresult, out string message)
         {
             OleDbHResult hr = errorInfo.GetDescription(out message);
             if (((int)hr < 0) && ADP.IsEmpty(message))

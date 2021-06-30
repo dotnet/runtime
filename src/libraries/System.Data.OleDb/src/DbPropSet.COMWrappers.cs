@@ -20,7 +20,7 @@ namespace System.Data.OleDb
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, &pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (pErrorInfo != IntPtr.Zero))
             {
-                using OleDbComWrappers.IErrorInfo errorInfo = (OleDbComWrappers.IErrorInfo)OleDbComWrappers.Instance
+                using UnsafeNativeMethods.IErrorInfo errorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
                     .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);;
                 ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
                 // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message

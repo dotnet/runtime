@@ -513,11 +513,11 @@ namespace System.Data.Common
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetSource(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pBstrSource);
+                [Out, MarshalAs(UnmanagedType.BStr)] out string? pBstrSource);
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetDescription(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pBstrDescription);
+                [Out, MarshalAs(UnmanagedType.BStr)] out string? pBstrDescription);
 
             //[ Obsolete("not used", true)] void GetHelpFile(/*deleted parameter signature*/);
 

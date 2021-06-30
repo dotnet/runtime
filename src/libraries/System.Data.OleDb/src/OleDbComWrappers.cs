@@ -17,6 +17,7 @@ namespace System.Data.OleDb
     internal unsafe class OleDbComWrappers : ComWrappers
     {
         private const int S_OK = (int)Interop.HRESULT.S_OK;
+        private static readonly Guid IID_IErrorInfo = new Guid(0x1CF2B120, 0x547D, 0x101B, 0x8E, 0xBB, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
 
         internal static OleDbComWrappers Instance { get; } = new OleDbComWrappers();
 
@@ -31,7 +32,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
 
-            Guid errorInfoIID = IErrorInfo.IID;
+            Guid errorInfoIID = IID_IErrorInfo;
             int hr = Marshal.QueryInterface(externalComObject, ref errorInfoIID, out IntPtr comObject);
             if (hr == S_OK)
             {
@@ -46,16 +47,7 @@ namespace System.Data.OleDb
             throw new NotImplementedException();
         }
 
-        internal interface IErrorInfo
-        {
-            static readonly Guid IID = new Guid(0x1CF2B120, 0x547D, 0x101B, 0x8E, 0xBB, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
-
-            System.Data.OleDb.OleDbHResult GetSource(out string source);
-
-            System.Data.OleDb.OleDbHResult GetDescription(out string description);
-        }
-
-        private class ErrorInfoWrapper : IErrorInfo
+        private class ErrorInfoWrapper : UnsafeNativeMethods.IErrorInfo
         {
             private readonly IntPtr _wrappedInstance;
 
@@ -69,7 +61,13 @@ namespace System.Data.OleDb
                 Marshal.Release(_wrappedInstance);
             }
 
-            public unsafe System.Data.OleDb.OleDbHResult GetSource(out string source)
+            [Obsolete("not used", true)]
+            void UnsafeNativeMethods.IErrorInfo.GetGUID(/*deleted parameter signature*/)
+            {
+                throw new NotImplementedException();
+            }
+
+            public unsafe System.Data.OleDb.OleDbHResult GetSource(out string? source)
             {
                 IntPtr pSource = IntPtr.Zero;
                 int errorCode = ((delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)_wrappedInstance + 4 /* IErrorInfo.GetSource slot */)))
@@ -86,7 +84,7 @@ namespace System.Data.OleDb
                 return (System.Data.OleDb.OleDbHResult)errorCode;
             }
 
-            public unsafe System.Data.OleDb.OleDbHResult GetDescription(out string description)
+            public unsafe System.Data.OleDb.OleDbHResult GetDescription(out string? description)
             {
                 IntPtr pDescription;
                 int errorCode = ((delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)_wrappedInstance + 5 /* IErrorInfo.GetDescription slot */)))
