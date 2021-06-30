@@ -119,13 +119,17 @@ namespace System.Diagnostics.Metrics
             // if already started or already stopped we can't be started again
             if (_collectThread != null || _cts.IsCancellationRequested)
             {
-                // correct usage from internal code should never get here
+                // this is purely for defensive programming and it should be impossible
+                // for a developer to observe this exception unless this library has a
+                // bug in it. Because of that we didn't bother to localize the error message.
                 throw new InvalidOperationException("Start can only be called once");
             }
 
             if (_collectionPeriod.TotalSeconds < MinCollectionTimeSecs)
             {
-                // correct usage from internal code should never get here
+                // this is purely for defensive programming and it should be impossible
+                // for a developer to observe this exception unless this library has a
+                // bug in it. Because of that we didn't bother to localize the error message.
                 throw new InvalidOperationException($"CollectionPeriod must be >= {MinCollectionTimeSecs} sec");
             }
 
@@ -151,7 +155,9 @@ namespace System.Diagnostics.Metrics
                 }
                 if (collectionIntervalSecs < MinCollectionTimeSecs)
                 {
-                    // correct usage from internal code should never get here
+                    // this is purely for defensive programming and it should be impossible
+                    // for a developer to observe this exception unless this library has a
+                    // bug in it. Because of that we didn't bother to localize the error message.
                     throw new InvalidOperationException($"_collectionPeriod must be >= {MinCollectionTimeSecs} sec");
                 }
 
