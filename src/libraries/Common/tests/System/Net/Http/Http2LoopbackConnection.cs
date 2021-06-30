@@ -26,7 +26,6 @@ namespace System.Net.Test.Common
         private bool _ignoreWindowUpdates;
         private TaskCompletionSource<PingFrame> _expectPingFrame;
         private bool _transparentPingResponse;
-        private bool _respondToPing;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
         private bool _expectClientDisconnect;
@@ -251,7 +250,7 @@ namespace System.Net.Test.Common
         {
             _expectPingFrame.SetResult(pingFrame);
             bool shutdownOccured = false;
-            if (_respondToPing)
+            if (_transparentPingResponse)
             {
                 try
                 {
@@ -265,11 +264,11 @@ namespace System.Net.Test.Common
             }
 
             _expectPingFrame = null;
-            _respondToPing = false;
+            _transparentPingResponse = !shutdownOccured;
 
-            if (_transparentPingResponse && !shutdownOccured)
+            if (_transparentPingResponse)
             {
-                _ = ExpectPingFrameAsync(true);
+                _ = ExpectPingFrameAsync();
             }
         }
 
@@ -310,10 +309,9 @@ namespace System.Net.Test.Common
         // Set up loopback server to expect a (non-ACK) PING frame among other frames.
         // Once PING frame is read in ReadFrameAsync, the returned task is completed.
         // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
-        public Task<PingFrame> ExpectPingFrameAsync(bool respond = false)
+        public Task<PingFrame> ExpectPingFrameAsync()
         {
             _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
-            _respondToPing = respond;
 
             return _expectPingFrame.Task;
         }
@@ -324,7 +322,7 @@ namespace System.Net.Test.Common
         {
             if (_transparentPingResponse) return;
             _transparentPingResponse = true;
-            _ = ExpectPingFrameAsync(true);
+            _ = ExpectPingFrameAsync();
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -794,7 +792,6 @@ namespace System.Net.Test.Common
         {
             _expectPingFrame?.TrySetCanceled();
             _expectPingFrame = null;
-            _respondToPing = false;
 
             Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
             Assert.NotNull(frame);
