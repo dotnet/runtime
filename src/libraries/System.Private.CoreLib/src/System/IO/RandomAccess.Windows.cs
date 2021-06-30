@@ -71,7 +71,7 @@ namespace System.IO
                 Debug.Assert(readFileResult == 0, "ReadFile should always return 0 for async or failed operations");
 
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                if (errorCode == Interop.Errors.ERROR_IO_PENDING || errorCode == Interop.Errors.ERROR_SUCCESS)
                 {
                     mres.WaitOne();
 
@@ -138,7 +138,7 @@ namespace System.IO
                 Debug.Assert(writeFileResult == 0, "WriteFile should always return 0 for async or failed operations");
 
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                if (errorCode == Interop.Errors.ERROR_IO_PENDING)
+                if (errorCode == Interop.Errors.ERROR_IO_PENDING || errorCode == Interop.Errors.ERROR_SUCCESS)
                 {
                     mres.WaitOne();
 
