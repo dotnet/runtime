@@ -1580,7 +1580,6 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync(readBody: false);
-
                     // Send multiple 100-Continue responses.
                     for (int count = 0 ; count < 4; count++)
                     {

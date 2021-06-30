@@ -1888,7 +1888,8 @@ namespace System.Net.Http.Functional.Tests
                         }
                         serverFinished.SetResult();
                         await connection.WaitForClientDisconnectAsync(true);
-                    });
+                    },
+                    new Http2Options() { EnableTransparentPingResponse = false });
             }
             
         }
