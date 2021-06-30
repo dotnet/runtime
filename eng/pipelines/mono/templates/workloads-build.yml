@@ -44,13 +44,12 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
-    - task: DownloadBuildArtifacts@0
-      displayName: Download package artifacts
+
+    - task: DownloadPipelineArtifact@2
       inputs:
-        artifactName: 'IntermediateArtifacts'
-        itemPattern: '*/Shipping/*.nupkg'
-        downloadPath: $(workloadPackagesPath)
-        checkDownloadedFiles: true
+        artifact: 'IntermediateArtifacts'
+        path: $(workloadPackagesPath)
+        patterns: '*/Shipping/*.nupkg'
 
     - task: CopyFiles@2
       displayName: Flatten packages
