@@ -689,7 +689,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class AccessThroughSpecialAttribute
 		{
-			[ExpectedWarning ("IL2026", "--DebuggerProxyType.Method--")]
+			// https://github.com/mono/linker/issues/1873
+			// [ExpectedWarning ("IL2026", "--DebuggerProxyType.Method--")]
 			[DebuggerDisplay ("Some{*}value")]
 			class TypeWithDebuggerDisplay
 			{
