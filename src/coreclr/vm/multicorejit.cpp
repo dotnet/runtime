@@ -144,6 +144,11 @@ HRESULT MulticoreJitRecorder::WriteOutput()
 
     HRESULT hr = E_FAIL;
 
+    if (m_JitInfoArray == nullptr || m_ModuleList == nullptr)
+    {
+        return S_OK;
+    }
+
     // Go into preemptive mode for file operations
     GCX_PREEMP();
 
@@ -386,6 +391,9 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
     HRESULT hr = S_OK;
 
+    _ASSERTE(m_JitInfoArray != nullptr);
+    _ASSERTE(m_ModuleList != nullptr);
+
     // Preprocessing Methods
     LONG skipped = 0;
 
@@ -567,6 +575,8 @@ unsigned MulticoreJitRecorder::FindModule(Module * pModule)
 {
     LIMITED_METHOD_CONTRACT;
 
+    _ASSERTE(m_ModuleList != nullptr);
+
     for (unsigned i = 0 ; i < m_ModuleCount; i ++)
     {
         if (m_ModuleList[i].pModule == pModule)
@@ -584,6 +594,8 @@ unsigned MulticoreJitRecorder::FindModule(Module * pModule)
 unsigned MulticoreJitRecorder::GetOrAddModuleIndex(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
+
+    _ASSERTE(m_ModuleList != nullptr);
 
     unsigned slot = FindModule(pModule);
 
@@ -604,7 +616,10 @@ void MulticoreJitRecorder::RecordMethodInfo(unsigned moduleIndex, MethodDesc * p
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_JitInfoArray != nullptr && m_JitInfoCount < (LONG) MAX_METHODS)
+    _ASSERTE(m_JitInfoArray != nullptr);
+    _ASSERTE(m_ModuleList != nullptr);
+
+    if (m_JitInfoCount < (LONG) MAX_METHODS)
     {
         m_ModuleList[moduleIndex].methodCount++;
         m_JitInfoArray[m_JitInfoCount++].PackMethod(moduleIndex, pMethod, application);
@@ -614,6 +629,8 @@ void MulticoreJitRecorder::RecordMethodInfo(unsigned moduleIndex, MethodDesc * p
 unsigned MulticoreJitRecorder::RecordModuleInfo(Module * pModule)
 {
     LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_ModuleList != nullptr);
 
     // pModule could be unknown at this point (modules not enumerated, no event received yet)
     unsigned moduleIndex = GetOrAddModuleIndex(pModule);
@@ -710,6 +727,8 @@ void MulticoreJitRecorder::AddModuleDependency(Module * pModule, FileLoadLevel l
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(m_ModuleList != nullptr);
+
     MulticoreJitTrace(("AddModuleDependency(%s, %d)", pModule->GetSimpleName(), loadLevel));
 
     _FireEtwMulticoreJitA(W("ADDMODULEDEPENDENCY"), pModule->GetSimpleName(), loadLevel, 0, 0);
@@ -733,6 +752,8 @@ void MulticoreJitRecorder::AddModuleDependency(Module * pModule, FileLoadLevel l
 DWORD MulticoreJitRecorder::EncodeModule(Module * pReferencedModule)
 {
     STANDARD_VM_CONTRACT;
+
+    _ASSERTE(m_ModuleList != nullptr);
 
     unsigned slot = GetOrAddModuleIndex(pReferencedModule);
     FileLoadLevel loadLevel = MulticoreJitManager::GetModuleFileLoadLevel(pReferencedModule);
@@ -1185,10 +1206,13 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
 
     if ((pProfile != NULL) && (pProfile[0] != 0)) // Ignore empty file name, just same as StopProfile
     {
+        bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
+
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
             pBinderContext,
-            m_fAppxMode);
+            m_fAppxMode,
+            gatherProfile);
 
         if (pRecorder != NULL)
         {
@@ -1204,12 +1228,12 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
             {
                 if (hr == COR_E_BADIMAGEFORMAT)
                 {
-                    m_fRecorderActive = true;
+                    m_fRecorderActive = gatherProfile;
                 }
             }
-            else if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Otherwise, ignore COR_E_BADIMAGEFORMAT, alway record new profile
+            else if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Otherwise, ignore COR_E_BADIMAGEFORMAT, always record new profile
             {
-                m_fRecorderActive = true;
+                m_fRecorderActive = gatherProfile;
             }
 
             _FireEtwMulticoreJit(W("STARTPROFILE"), W("Recorder"), m_fRecorderActive, hr, 0);
@@ -1531,7 +1555,7 @@ void MulticoreJitManager::DisableMulticoreJit()
 // static
 DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pReferencedModule)
 {
-    STANDARD_VM_CONTRACT
+    STANDARD_VM_CONTRACT;
 
     if (pModuleContext == NULL || pReferencedModule == NULL)
     {
