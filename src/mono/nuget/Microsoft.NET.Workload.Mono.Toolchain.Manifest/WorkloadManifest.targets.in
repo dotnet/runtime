@@ -49,20 +49,24 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />
     </ImportGroup>
 
-    <Target Name="UpdateFrameworkReferences" BeforeTargets="ProcessFrameworkReferences">
-      <ItemGroup>
-        <KnownRuntimePack
-            Include="Microsoft.NETCore.App"
-            TargetFramework="net6.0"
-            LatestRuntimeFrameworkVersion="${PackageVersion}"
-            RuntimePackRuntimeIdentifiers="linux-x64;osx-x64;browser-wasm"
-            RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
-            RuntimePackLabels="BrowserWorkload"
-            RuntimeFrameworkName="Microsoft.NETCore.App" />
+    <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true')">
+      <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
+      <_MonoWorkloadRuntimePackPackageVersion>${PackageVersion}</_MonoWorkloadRuntimePackPackageVersion>
+    </PropertyGroup>
 
-        <FrameworkReference Update="Microsoft.NETCore.App" RuntimePackLabels="BrowserWorkload" />
+    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
+      <MonoRuntimePackRids Include="linux-x64" />
+      <MonoRuntimePackRids Include="osx-x64" />
+      <MonoRuntimePackRids Include="browser-wasm" />
 
-        <AssetsFilePackageFolder Include="$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..', 'packs'))" />
-      </ItemGroup>
-    </Target>
+      <KnownRuntimePack Remove="Microsoft.NETCore.App" />
+      <KnownRuntimePack Include="Microsoft.NETCore.App"
+                        TargetFramework="net6.0"
+                        RuntimeFrameworkName="Microsoft.NETCore.App"
+                        LatestRuntimeFrameworkVersion="$(_MonoWorkloadRuntimePackPackageVersion)"
+                        RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
+                        RuntimePackRuntimeIdentifiers="@(MonoRuntimePackRids, '%3B')"
+                        RuntimePackLabels="Mono"
+                        />
+    </ItemGroup>
 </Project>

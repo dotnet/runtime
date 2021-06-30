@@ -435,6 +435,6 @@
 
     <WriteLinesToFile File="$(WorkloadStampFile)" Lines="" Overwrite="true" />
 
-    <Exec Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Command="chmod -R u-w $(SdkPathForWorkloadTesting)" />
+    <!--<Exec Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Command="chmod -R u-w $(SdkPathForWorkloadTesting)" />-->
   </Target>
 </Project>
