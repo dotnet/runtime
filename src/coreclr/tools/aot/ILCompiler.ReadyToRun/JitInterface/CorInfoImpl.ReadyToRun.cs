@@ -943,7 +943,8 @@ namespace Internal.JitInterface
                 || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod) 
                 || methodDesc.IsPInvoke))
             {
-                if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
+                CorTokenType corTokenType = (CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u);
+                if ((corTokenType == CorTokenType.mdtMethodDef || corTokenType == CorTokenType.mdtMemberRef) &&
                     methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
                     mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
@@ -1490,14 +1491,7 @@ namespace Internal.JitInterface
                 MethodDesc directMethod;
                 if (originalMethod.Signature.IsStatic)
                 {
-                    if (_compilation.AllowCompileTimeStaticVirtualMethodResolution(constrainedType, originalMethod))
-                    {
-                        directMethod = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(originalMethod);
-                    }
-                    else
-                    {
-                        directMethod = null;
-                    }
+                    directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod, _compilation.CompilationModuleGroup.VersionsWithType);
                     forceUseRuntimeLookup = (directMethod == null);
                 }
                 else
