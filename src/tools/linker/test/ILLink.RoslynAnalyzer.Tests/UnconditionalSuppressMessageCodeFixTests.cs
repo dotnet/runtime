@@ -32,7 +32,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var test = new VerifyCSUSMwithRUC.Test {
 				TestCode = source,
 				FixedCode = fixedSource,
-				ReferenceAssemblies = ReferenceAssemblies.Net.Net50,
+				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -69,7 +69,7 @@ namespace System.Diagnostics.CodeAnalysis
 			var test = new VerifyCSUSMwithRAF.Test {
 				TestCode = source + attributeDefinition,
 				FixedCode = fixedSource + attributeDefinition,
-				ReferenceAssemblies = ReferenceAssemblies.Net.Net50,
+				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (

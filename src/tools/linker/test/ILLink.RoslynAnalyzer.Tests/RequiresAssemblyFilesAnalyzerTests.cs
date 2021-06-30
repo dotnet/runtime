@@ -15,20 +15,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
 	public class RequiresAssemblyFilesAnalyzerTests
 	{
-		private readonly static MetadataReference _rafReference = CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (rafSourceDefinition).Result.EmitToImageReference ();
-
-		private const string rafSourceDefinition = @"
-#nullable enable
-namespace System.Diagnostics.CodeAnalysis
-{
-	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-	public sealed class RequiresAssemblyFilesAttribute : Attribute
-	{
-		public RequiresAssemblyFilesAttribute () { }
-		public string? Message { get; set; }
-		public string? Url { get; set; }
-	}
-}";
 		static Task VerifyRequiresAssemblyFilesAnalyzer (string source, params DiagnosticResult[] expected)
 		{
 			return VerifyRequiresAssemblyFilesAnalyzer (source, null, expected);
@@ -39,7 +25,7 @@ namespace System.Diagnostics.CodeAnalysis
 
 			await VerifyCS.VerifyAnalyzerAsync (source,
 				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer),
-				new[] { _rafReference }.Concat (additionalReferences ?? Array.Empty<MetadataReference> ()),
+				additionalReferences ?? Array.Empty<MetadataReference> (),
 				expected);
 		}
 
@@ -51,8 +37,9 @@ namespace System.Diagnostics.CodeAnalysis
 			int? numberOfIterations = null)
 		{
 			var test = new VerifyCS.Test {
-				TestCode = source + rafSourceDefinition,
-				FixedCode = fixedSource + rafSourceDefinition,
+				TestCode = source,
+				FixedCode = fixedSource,
+				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -148,14 +135,14 @@ class C
 	bool field;
 
 	[RequiresAssemblyFiles]
-	bool P { 
+	bool P {
 		get {
 			return field;
 		}
 		set {
 			CallDangerousMethod ();
 			field = value;
-		} 
+		}
 	}
 
 	[RequiresAssemblyFiles]
@@ -1165,7 +1152,7 @@ class AnotherImplementation : IRAF
 	}
 }
 ";
-			var compilation = (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (references, additionalReferences: new[] { _rafReference })).EmitToImageReference ();
+			var compilation = (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (references)).EmitToImageReference ();
 
 			await VerifyRequiresAssemblyFilesAnalyzer (src, additionalReferences: new[] { compilation },
 				// (4,14): warning IL3003: Interface member 'IRAF.Method()' with 'RequiresAssemblyFilesAttribute' has an implementation member 'Implementation.Method()' without 'RequiresAssemblyFilesAttribute'. Attributes must match across all interface implementations or overrides.
@@ -1237,7 +1224,7 @@ class AnotherImplementation : IRAF
 	}
 }
 ";
-			var compilation = (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (references, additionalReferences: new[] { _rafReference })).EmitToImageReference ();
+			var compilation = (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (references)).EmitToImageReference ();
 
 			await VerifyRequiresAssemblyFilesAnalyzer (src, additionalReferences: new[] { compilation },
 				// (7,14): warning IL3003: Member 'Implementation.Method()' with 'RequiresAssemblyFilesAttribute' implements interface member 'IRAF.Method()' without 'RequiresAssemblyFilesAttribute'. Attributes must match across all interface implementations or overrides.
