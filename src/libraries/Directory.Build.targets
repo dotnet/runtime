@@ -65,8 +65,6 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
-    <!-- remove when picking up https://github.com/dotnet/arcade/pull/7578 -->
-    <EnableBinplacing Condition="'$(IsAspNetCoreAppAnalyzer)' == 'true' or '$(IsNetCoreAppAnalyzer)' == 'true'">true</EnableBinplacing>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
     <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>

@@ -54,9 +54,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>36b148348ee8312f6369c0c56b0d0fe07deec603</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="6.0.0-beta.21321.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="6.0.0-beta.21330.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>36b148348ee8312f6369c0c56b0d0fe07deec603</Sha>
+      <Sha>ff3e7d23139c30feefe36d3d4e8d41a06160f254</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="6.0.0-beta.21321.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -70,9 +70,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>36b148348ee8312f6369c0c56b0d0fe07deec603</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.21329.8">
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.21330.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>6b9d24236d8d1906284e6cb6c28e3fe93a69b7d2</Sha>
+      <Sha>ff3e7d23139c30feefe36d3d4e8d41a06160f254</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.9.0-preview-20201201-01">
       <Uri>https://github.com/microsoft/vstest</Uri>
