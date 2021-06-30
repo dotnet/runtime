@@ -12,6 +12,8 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+        private const string TimeZoneFileName = "tzdata";
+
         // TODO: Consider restructuring underlying AndroidTimeZones class©.
         // Although it may be easier to work with this way.
         private static TimeZoneInfo GetLocalTimeZoneCore()
@@ -30,8 +32,10 @@ namespace System
             //
             // That seems to be covered by mono/mono `AndroidTzData.GetAvailableIds` and works as long as ReadIndex is called
             // db is first called -> GetDefaultTimeZoneDB -> AndroidTzData(paths) -> LoadData -> ReadHeader -> ReadIndex
-            foreach (string timeZoneId in AndroidTzData.GetAvailableIds())
+            foreach (string timeZoneId in AndroidTimeZones.GetAvailableIds())
             {
+                // cachedData is not in this current context, I think we can push PopulateAllSystemTimeZonesCore back to AllUnix
+                // and instead implement how the time zone IDs are obtained in Unix/Android
                 TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true); // populate the cache
             }
         }
@@ -44,7 +48,7 @@ namespace System
 
             try
             {
-                value = GetTimeZone(id, id);
+                value = AndroidTimeZones.GetTimeZone(id, id);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -63,13 +67,13 @@ namespace System
             }
             catch (IOException ex)
             {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath), ex);
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + TimeZoneFileName), ex);
                 return TimeZoneInfoResult.InvalidTimeZoneException;
             }
 
             if (value == null)
             {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath));
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + TimeZoneFileName));
                 return TimeZoneInfoResult.TimeZoneNotFoundException; // Mono/mono throws TimeZoneNotFoundException, runtime throws InvalidTimeZoneException
             }
 
@@ -116,7 +120,7 @@ namespace System
         {
             foreach (var filePath in Paths)
             {
-                if (File.Exists(Path.Combine(filePath, "TimeZoneFileName")))
+                if (File.Exists(Path.Combine(filePath, TimeZoneFileName)))
                 {
                     return filePath;
                 }
