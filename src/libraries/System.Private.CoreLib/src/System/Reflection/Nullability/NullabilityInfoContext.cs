@@ -45,7 +45,6 @@ namespace System.Reflection
                 }
 
                 memberInfo = memberInfo.DeclaringType;
-
             }
 
             return NullabilityState.Unknown;
@@ -72,7 +71,6 @@ namespace System.Reflection
             }
 
             CheckNullabilityAttributes(nullability, attributes);
-
             return nullability;
         }
 
@@ -103,32 +101,7 @@ namespace System.Reflection
 
                 if (metaParameter != null)
                 {
-                    if (metaParameter.ParameterType.IsGenericParameter)
-                    {
-                        NullabilityState state = nullability.ReadState;
-
-                        if (!ParseNullableState(metaParameter.ParameterType.GetCustomAttributesData(), 0, ref state))
-                        {
-                            state = GetNullableContext(metaParameter.ParameterType);
-                        }
-
-                        nullability.ReadState = state;
-                        nullability.WriteState = state;
-                    }
-                    else if (metaParameter.ParameterType.ContainsGenericParameters && nullability.TypeArguments.Length > 0)
-                    {
-                        var genericArguments = metaParameter.ParameterType.GetGenericArguments();
-
-                        for (int i = 0; i < genericArguments.Length; i++)
-                        {
-                            if (genericArguments[i].IsGenericParameter)
-                            {
-                                var n = GetNullabilityInfo(metaMethod, genericArguments[i], genericArguments[i].GetCustomAttributesData(), i + 1);
-                                nullability.TypeArguments[i].ReadState = n.ReadState;
-                                nullability.TypeArguments[i].WriteState = n.WriteState;
-                            }
-                        }
-                    }
+                    CheckGenericParameters(nullability, metaMethod, metaParameter.ParameterType);
                 }
             }
         }
@@ -192,10 +165,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
-        public NullabilityInfo Create(EventInfo eventInfo)
-        {
-            return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
-        }
+        public NullabilityInfo Create(EventInfo eventInfo) =>
+            GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
         public NullabilityInfo Create(FieldInfo fieldInfo)
@@ -211,7 +182,6 @@ namespace System.Reflection
             var attributes = fieldInfo.GetCustomAttributesData();
             var nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, attributes);
             CheckNullabilityAttributes(nullability, attributes);
-
             return nullability;
         }
 
@@ -260,10 +230,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
-        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes)
-        {
-            return GetNullabilityInfo(memberInfo, type, customAttributes, 0);
-        }
+        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes) =>
+            GetNullabilityInfo(memberInfo, type, customAttributes, 0);
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, int index)
@@ -282,6 +250,8 @@ namespace System.Reflection
                 {
                     state = NullabilityState.NotNull;
                 }
+
+                return new NullabilityInfo(type, state, state, null, s_emptyArray);
             }
             else
             {
@@ -290,36 +260,32 @@ namespace System.Reflection
                     state = GetNullableContext(memberInfo);
                 }
 
+                NullabilityInfo? elementState = null;
+                NullabilityInfo[]? genericArgumentsState = null;
+
+                if (type.IsArray)
+                {
+                    elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, customAttributes, index + 1);
+                }
+                else if (type.IsGenericType)
+                {
+                    var genericArguments = type.GetGenericArguments();
+                    genericArgumentsState = new NullabilityInfo[genericArguments.Length];
+
+                    for (int i = 0; i < genericArguments.Length; i++)
+                    {
+                        genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, i + 1);
+                    }
+                }
+
+                var nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState ?? s_emptyArray);
                 if (state != NullabilityState.Unknown)
                 {
-                    TryLoadGenericMetaTypeNullability(memberInfo, ref state);
+                    TryLoadGenericMetaTypeNullability(memberInfo, nullability);
                 }
+
+                return nullability;
             }
-
-            NullabilityInfo? elementState = null;
-            NullabilityInfo[]? genericArgumentsState = null;
-
-            if (type.IsArray)
-            {
-                var elementType = type.GetElementType();
-                if (elementType != null)
-                {
-                    elementState = GetNullabilityInfo(memberInfo, elementType, customAttributes, index + 1);
-                }
-            }
-            else if (type.IsGenericType)
-            {
-                var genericArguments = type.GetGenericArguments();
-                genericArgumentsState = new NullabilityInfo[genericArguments.Length];
-
-                for (int i = 0; i < genericArguments.Length; i++)
-                {
-                    var info = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, i + 1);
-                    genericArgumentsState[i] = info;
-                }
-            }
-
-            return new NullabilityInfo(type, state, state, elementState, genericArgumentsState ?? s_emptyArray);
         }
 
         private static bool ParseNullableState(IList<CustomAttributeData> customAttributes, int index, ref NullabilityState state)
@@ -337,9 +303,9 @@ namespace System.Reflection
                         state = TranslateByte(b);
                         return true;
                     }
-                    else if (o is ReadOnlyCollection<CustomAttributeTypedArgument> args)
-                        if (index < args.Count &&
-                             args[index].Value is byte elementB)
+                    else if (o is ReadOnlyCollection<CustomAttributeTypedArgument> args &&
+                            index < args.Count &&
+                            args[index].Value is byte elementB)
                         {
                             state = TranslateByte(elementB);
                             return true;
@@ -353,36 +319,99 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
-        private bool TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, ref NullabilityState state)
+        private bool TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)
         {
-
-            var type = memberInfo switch
+            MemberInfo? metaMember = null;
+            Type? metaType = null;
+            if (memberInfo is FieldInfo field)
             {
-                FieldInfo field => field.Module.ResolveField(field.MetadataToken)!.FieldType,
-                PropertyInfo property => GetPropertyMetadataType(property),
-                _ => null
-            };
-
-            if (type != null && type.IsGenericParameter)
+                metaType = GetFieldMetaData(field, metaMember);
+            }
+            else if (memberInfo is PropertyInfo property)
             {
-                if (!ParseNullableState(type.GetCustomAttributesData(), 0, ref state))
-                {
-                    state = GetNullableContext(type);
-                }
+                metaType = GetPropertyMetadata(property, metaMember);
+            }
+
+            if (metaType != null)
+            {
+                CheckGenericParameters(nullability, metaMember!, metaType);
             }
 
             return false;
         }
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
-        private static Type GetPropertyMetadataType(PropertyInfo property)
+        private Type GetFieldMetaData(FieldInfo field, MemberInfo? metaMember)
+        {
+            var member = field.Module.ResolveField(field.MetadataToken)!;
+            metaMember = member;
+            return member.FieldType;
+        }
+
+        [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
+        private static Type GetPropertyMetadata(PropertyInfo property, MemberInfo? metaMember)
         {
             if (property.GetGetMethod(true) is MethodInfo method)
             {
-                return ((MethodInfo)property.Module.ResolveMethod(method.MetadataToken)!).ReturnType;
+                metaMember = property.Module.ResolveMethod(method.MetadataToken)!;
+                return ((MethodInfo)metaMember).ReturnType;
             }
 
-            return property.Module.ResolveMethod(property.GetSetMethod(true)!.MetadataToken)!.GetParameters()[0].ParameterType;
+            metaMember = property.Module.ResolveMethod(property.GetSetMethod(true)!.MetadataToken);
+            return ((MethodInfo)metaMember!).GetParameters()[0].ParameterType;
+        }
+
+        [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
+        private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType)
+        {
+            if (metaType.IsGenericParameter)
+            {
+                NullabilityState state = nullability.ReadState;
+
+                if (!ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
+                {
+                    state = GetNullableContext(metaType);
+                }
+
+                nullability.ReadState = state;
+                nullability.WriteState = state;
+            }
+            else if (metaType.ContainsGenericParameters)
+            {
+                if (nullability.TypeArguments.Length > 0)
+                {
+                    var genericArguments = metaType.GetGenericArguments();
+
+                    for (int i = 0; i < genericArguments.Length; i++)
+                    {
+                        if (genericArguments[i].IsGenericParameter)
+                        {
+                            var n = GetNullabilityInfo(metaMember, genericArguments[i], genericArguments[i].GetCustomAttributesData(), i + 1);
+                            nullability.TypeArguments[i].ReadState = n.ReadState;
+                            nullability.TypeArguments[i].WriteState = n.WriteState;
+                        }
+                        else
+                        {
+                            UpdateGenericArrayElements(nullability.TypeArguments[i].ElementType!, metaMember, genericArguments[i]);
+                        }
+                    }
+                }
+
+                UpdateGenericArrayElements(nullability.ElementType, metaMember, metaType);
+            }
+        }
+
+        [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
+        private void UpdateGenericArrayElements(NullabilityInfo? element, MemberInfo metaMember, Type metaType)
+        {
+            if (metaType.IsArray && element != null
+                && metaType.GetElementType()!.IsGenericParameter)
+            {
+                var elementType = metaType.GetElementType()!;
+                var n = GetNullabilityInfo(metaMember, elementType, elementType.GetCustomAttributesData(), 0);
+                element.ReadState = n.ReadState;
+                element.WriteState = n.WriteState;
+            }
         }
 
         private static NullabilityState TranslateByte(object? value)

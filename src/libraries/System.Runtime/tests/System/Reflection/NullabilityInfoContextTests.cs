@@ -127,8 +127,17 @@ namespace System.Reflection.Tests
             Assert.Empty(nullability.TypeArguments);
         }
 
+        public static IEnumerable<object[]> GenericArrayPropertyTestData()
+        {
+            yield return new object[] { "PropertyArrayUnknown", NullabilityState.Unknown, NullabilityState.Unknown };
+            yield return new object[] { "PropertyArrayNullNull", NullabilityState.Nullable, NullabilityState.Nullable }; // T?[]? PropertyArrayNullNull { get; set; }
+            yield return new object[] { "PropertyArrayNullNon", NullabilityState.Nullable, NullabilityState.NotNull };   // T?[] PropertyArrayNullNon { get; set; } 
+            yield return new object[] { "PropertyArrayNonNull", NullabilityState.Nullable, NullabilityState.Nullable };   // T[]? PropertyArrayNonNull { get; set; }
+            yield return new object[] { "PropertyArrayNonNon", NullabilityState.Nullable, NullabilityState.NotNull };     // T[] PropertyArrayNonNon { get; set; }
+        }
+
         [Theory]
-        [MemberData(nameof(ArrayPropertyTestData))]
+        [MemberData(nameof(GenericArrayPropertyTestData))]
         public void GenericArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
             var property = genericType.GetProperty(propertyName, flags);
@@ -188,9 +197,19 @@ namespace System.Reflection.Tests
             Assert.Null(nullability.ElementType );
         }
 
+        public static IEnumerable<object[]> GenericTuplePropertyTestData()
+        {
+            yield return new object[] { "PropertyTupleUnknown", NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown };
+            yield return new object[] { "PropertyTupleNullNullNullNull", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.Nullable }; // Tuple<T?, string?, string?>?
+            yield return new object[] { "PropertyTupleNonNullNonNon", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.NotNull };      // Tuple<T, T?, string>
+            yield return new object[] { "PropertyTupleNullNonNullNull", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.Nullable };  // Tuple<string?, T, T?>?
+            yield return new object[] { "PropertyTupleNonNullNonNull", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };    // Tuple<T, string?, string>?
+            yield return new object[] { "PropertyTupleNonNonNonNon", NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };        // Tuple<string, string, T>
+        }
+
         [Theory]
-        [MemberData(nameof(TuplePropertyTestData))]
-        public void TupleGenericPropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
+        [MemberData(nameof(GenericTuplePropertyTestData))]
+        public void GenericTuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
             var property = genericType.GetProperty(propertyName, flags);
             var nullability = nullabilityContext.Create(property);
@@ -227,8 +246,19 @@ namespace System.Reflection.Tests
             Assert.Null(nullability.ElementType );
         }
 
+        public static IEnumerable<object[]> GenericDictionaryPropertyTestData()
+        {
+            yield return new object[] { "PropertyDictionaryUnknown", NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown };
+            yield return new object[] { "PropertyDictionaryNullNullNullNon", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull }; // IDictionary<T?, string?[]?> PropertyDictionaryNullNullNullNon { get; set; }
+            yield return new object[] { "PropertyDictionaryNonNullNonNull", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable }; // IDictionary<Type, T?[]>? PropertyDictionaryNonNullNonNull
+            yield return new object[] { "PropertyDictionaryNullNonNonNull", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable }; // IDictionary<T?, T[]>? PropertyDictionaryNullNonNonNull
+            yield return new object[] { "PropertyDictionaryNonNullNonNon", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.NotNull }; // IDictionary<Type, T?[]> PropertyDictionaryNonNullNonNon
+            yield return new object[] { "PropertyDictionaryNonNonNonNull", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable }; // IDictionary<T, T[]>? PropertyDictionaryNonNonNonNull
+            yield return new object[] { "PropertyDictionaryNonNonNonNon", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.NotNull }; // IDictionary<T, string[]> PropertyDictionaryNonNonNonNon
+        }
+
         [Theory]
-        [MemberData(nameof(DictionaryPropertyTestData))]
+        [MemberData(nameof(GenericDictionaryPropertyTestData))]
         public void GenericDictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
             var property = genericType.GetProperty(propertyName, flags);
@@ -412,45 +442,44 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
         }
 
-        /*[Fact] // TODO fix this and uncomment
+        [Fact]
         public void GenericListAndDictionaryFieldTest()
         {
             var typeNullable = typeof(GenericTest<string?>);
-            var listOfTNullable = typeNullable.GetField("FieldListOfT");
+            var listOfTNullable = typeNullable.GetField("FieldListOfT")!;
             var listNullability = nullabilityContext.Create(listOfTNullable);
             Assert.Equal(NullabilityState.Nullable, listNullability.TypeArguments[0].ReadState);
             Assert.Equal(typeof(string), listNullability.TypeArguments[0].Type);
 
-            var dictStringToTNullable = typeNullable.GetField("FieldDictionaryStringToT");
+            var dictStringToTNullable = typeNullable.GetField("FieldDictionaryStringToT")!;
             var dictNullability = nullabilityContext.Create(dictStringToTNullable);
             Assert.Equal(NullabilityState.NotNull, dictNullability.TypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, dictNullability.TypeArguments[1].ReadState);
             Assert.Equal(typeof(string), dictNullability.TypeArguments[1].Type);
 
             var typeNonNull = typeof(GenericTest<string>);
-            var listOfTNotNull = typeNonNull.GetField("FieldListOfT");
+            var listOfTNotNull = typeNonNull.GetField("FieldListOfT")!;
             listNullability = nullabilityContext.Create(listOfTNotNull);
             Assert.Equal(NullabilityState.Nullable, listNullability.TypeArguments[0].ReadState);
             Assert.Equal(typeof(string), listNullability.TypeArguments[0].Type);
 
-            var dictStringToTNotNull = typeNonNull.GetField("FieldDictionaryStringToT");
+            var dictStringToTNotNull = typeNonNull.GetField("FieldDictionaryStringToT")!;
             dictNullability = nullabilityContext.Create(dictStringToTNotNull);
             Assert.Equal(NullabilityState.NotNull, dictNullability.TypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, dictNullability.TypeArguments[1].ReadState);
             Assert.Equal(typeof(string), dictNullability.TypeArguments[1].Type);
 
             var typeOpen = typeof(GenericTest<>);
-            var listOfTOpen = typeOpen.GetField("FieldListOfT");
+            var listOfTOpen = typeOpen.GetField("FieldListOfT")!;
             listNullability = nullabilityContext.Create(listOfTOpen);
             Assert.Equal(NullabilityState.Nullable, listNullability.TypeArguments[0].ReadState);
-            Assert.Equal(typeof(string), listNullability.TypeArguments[0].Type);
+            // Assert.Equal(typeof(T), listNullability.TypeArguments[0].Type);
 
-            var dictStringToTOpen = typeOpen.GetField("FieldDictionaryStringToT");
+            var dictStringToTOpen = typeOpen.GetField("FieldDictionaryStringToT")!;
             dictNullability = nullabilityContext.Create(dictStringToTOpen);
             Assert.Equal(NullabilityState.NotNull, dictNullability.TypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, dictNullability.TypeArguments[1].ReadState);
-            Assert.Equal(typeof(string), dictNullability.TypeArguments[1].Type);
-        }*/
+        }
 
         public static IEnumerable<object[]> MethodReturnParameterTestData()
         {
@@ -807,9 +836,9 @@ namespace System.Reflection.Tests
         public Tuple<string, string, T> PropertyTupleNonNonNonNon { get; set; } = null!;
         private IDictionary<T?, string?[]?> PropertyDictionaryNullNullNullNon { get; set; } = null!;
         static IDictionary<Type, T?[]>? PropertyDictionaryNonNullNonNull { get; set; }
-        public static IDictionary<Tuple<T, T>?, T[]>? PropertyDictionaryNullNonNonNull { get; set; }
+        public static IDictionary<T?, T[]>? PropertyDictionaryNullNonNonNull { get; set; }
         public IDictionary<Type, T?[]> PropertyDictionaryNonNullNonNon { get; set; } = null!;
-        protected IDictionary<Tuple<string, T>, T[]>? PropertyDictionaryNonNonNonNull { get; set; }
+        protected IDictionary<T, T[]>? PropertyDictionaryNonNonNonNull { get; set; }
         public IDictionary<T, string[]> PropertyDictionaryNonNonNonNon { get; set; } = null!;
 
         static T? FieldNullable = default;
