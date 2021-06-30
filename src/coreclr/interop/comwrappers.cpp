@@ -439,7 +439,7 @@ HRESULT ManagedObjectWrapper::Create(
         { userDefined, userDefinedCount }
     };
 
-    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, sizeof(AllEntries)/sizeof(AllEntries[0]), AllEntries);
+    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAYSIZE(AllEntries), AllEntries);
 
     ManagedObjectWrapper* wrapper = new (wrapperMem) ManagedObjectWrapper
         {
@@ -683,7 +683,7 @@ HRESULT ManagedObjectWrapper::QueryInterface(
                     // Instead of returning immediately, we handle the case
                     // the same way that would occur if the managed object lacked
                     // an ICustomQueryInterface implementation.
-                    break;                  
+                    break;
             }
         }
 

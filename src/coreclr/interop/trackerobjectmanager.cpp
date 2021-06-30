@@ -124,7 +124,7 @@ namespace
 
         // QI for IUnknown to get the identity unknown
         ComHolder<IUnknown> identity;
-        RETURN_IF_FAILED(obj->QueryInterface(IID_IUnknown, (void**) &identity));
+        RETURN_IF_FAILED(obj->QueryInterface(IID_IUnknown, (void**)&identity));
 
         // Get or create an existing implementation for this external.
         ComHolder<IUnknown> target;
