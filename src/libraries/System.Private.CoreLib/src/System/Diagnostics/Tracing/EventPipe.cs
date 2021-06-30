@@ -100,22 +100,16 @@ namespace System.Diagnostics.Tracing
 
             internal static void MarshalToNative(EventPipeProviderConfiguration managed, ref EventPipeProviderConfigurationNative native)
             {
-                native.m_pProviderName = (char*)(nint)NativeMemoryHelper.AllocStringUnicode(managed.ProviderName);
+                native.m_pProviderName = (char*)(nint)Marshal.StringToCoTaskMemUni(managed.ProviderName);
                 native.m_keywords = managed.Keywords;
                 native.m_loggingLevel = managed.LoggingLevel;
-                native.m_pFilterData = (char*)(nint)NativeMemoryHelper.AllocStringUnicode(managed.FilterData);
+                native.m_pFilterData = (char*)(nint)Marshal.StringToCoTaskMemUni(managed.FilterData);
             }
 
             internal void Release()
             {
-                if (m_pProviderName != null)
-                {
-                    NativeMemoryHelper.Free((nint)m_pProviderName);
-                }
-                if (m_pFilterData != null)
-                {
-                    NativeMemoryHelper.Free((nint)m_pFilterData);
-                }
+                Marshal.FreeCoTaskMem((nint)m_pProviderName);
+                Marshal.FreeCoTaskMem((nint)m_pFilterData);
             }
         }
 
