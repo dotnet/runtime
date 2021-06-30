@@ -148,29 +148,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        public void MaxStreamWindowSize_WhenMaximumReached_NoMoreRttPingsAreSent()
-        {
-            const int MaxWindow = 65535 * 2;
-
-            static async Task RunTest()
-            {
-                Stopwatch sw = Stopwatch.StartNew();
-                int maxCredit = await TestClientWindowScalingAsync(
-                    TimeSpan.FromMilliseconds(300),
-                    TimeSpan.FromMilliseconds(15),
-                    4 * 1024 * 1024,
-                    maxWindowForPingStopValidation: MaxWindow);
-                sw.Stop();
-            }
-
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE"] = MaxWindow.ToString();
-
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
-        }
-
-        [OuterLoop("Runs long")]
-        [Fact]
         public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
         {
             static async Task RunTest()

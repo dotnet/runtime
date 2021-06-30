@@ -13,13 +13,12 @@ namespace System.Net.Http
         {
             public const int StreamWindowUpdateRatio = 8;
             private static readonly double StopWatchToTimesSpan = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
+            private static double WindowScaleThresholdMultiplier => GlobalHttpSettings.SocketsHttpHandler.Http2StreamWindowScaleThresholdMultiplier;
+            private static int MaxStreamWindowSize => GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize;
+            private static bool WindowScalingEnabled => !GlobalHttpSettings.SocketsHttpHandler.DisableDynamicHttp2WindowSizing;
 
             private readonly Http2Connection _connection;
             private readonly Http2Stream _stream;
-
-            private readonly double _windowScaleThresholdMultiplier;
-            private readonly int _maxStreamWindowSize;
-            private bool _windowScalingEnabled;
 
             private int _deliveredBytes;
             private int _streamWindowSize;
@@ -31,13 +30,10 @@ namespace System.Net.Http
                 _stream = stream;
                 HttpConnectionSettings settings = connection._pool.Settings;
                 _streamWindowSize = settings._initialHttp2StreamWindowSize;
-                _windowScalingEnabled = !settings._disableDynamicHttp2WindowSizing;
-                _maxStreamWindowSize = settings._maxHttp2StreamWindowSize;
-                _windowScaleThresholdMultiplier = settings._http2StreamWindowScaleThresholdMultiplier;
                 _lastWindowUpdate = Stopwatch.GetTimestamp();
                 _deliveredBytes = 0;
 
-                if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {_windowScaleThresholdMultiplier}");
+                if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {WindowScaleThresholdMultiplier}");
             }
 
             internal int StreamWindowSize => _streamWindowSize;
@@ -56,7 +52,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                if (_windowScalingEnabled)
+                if (WindowScalingEnabled)
                 {
                     AdjustWindowDynamic(bytesConsumed);
                 }
@@ -107,22 +103,18 @@ namespace System.Net.Http
                     // (_deliveredBytes / dt) * rtt > _streamWindowSize * _windowScaleThresholdMultiplier
                     //
                     // Which is reordered into the form below, to avoid the division:
-                    if (_deliveredBytes * rtt.Ticks > _streamWindowSize * dt.Ticks * _windowScaleThresholdMultiplier)
+                    if (_deliveredBytes * (double)rtt.Ticks > _streamWindowSize * dt.Ticks * WindowScaleThresholdMultiplier)
                     {
-                        int extendedWindowSize = Math.Min(_maxStreamWindowSize, _streamWindowSize * 2);
+                        int extendedWindowSize = Math.Min(MaxStreamWindowSize, _streamWindowSize * 2);
                         windowUpdateIncrement += extendedWindowSize - _streamWindowSize;
                         _streamWindowSize = extendedWindowSize;
 
                         if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] Updated Stream Window. StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
 
-                        Debug.Assert(_streamWindowSize <= _maxStreamWindowSize);
-                        if (_streamWindowSize == _maxStreamWindowSize)
+                        Debug.Assert(_streamWindowSize <= MaxStreamWindowSize);
+                        if (_streamWindowSize == MaxStreamWindowSize)
                         {
-                            if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] StreamWindowSize reached the configured maximum of {_maxStreamWindowSize}.");
-
-                            // We are at maximum configured window, stop further scaling:
-                            _windowScalingEnabled = false;
-                            _connection._rttEstimator.MaximumWindowReached();
+                            if (NetEventSource.Log.IsEnabled()) _stream.Trace($"[FlowControl] StreamWindowSize reached the configured maximum of {MaxStreamWindowSize}.");
                         }
                     }
                 }
@@ -161,7 +153,6 @@ namespace System.Net.Http
             private long _pingSentTimestamp;
             private long _pingCounter;
             private int _initialBurst;
-            private volatile bool _terminating;
             private long _minRtt;
 
             public TimeSpan MinRtt => new TimeSpan(_minRtt);
@@ -169,12 +160,11 @@ namespace System.Net.Http
             public RttEstimator(Http2Connection connection)
             {
                 _connection = connection;
-                _state = connection._pool.Settings._disableDynamicHttp2WindowSizing ? State.Disabled : State.Init;
+                _state = GlobalHttpSettings.SocketsHttpHandler.DisableDynamicHttp2WindowSizing ? State.Disabled : State.Init;
                 _pingCounter = 0;
                 _initialBurst = 4;
                 _pingSentTimestamp = default;
                 _minRtt = 0;
-                _terminating = false;
             }
 
             internal void OnInitialSettingsSent()
@@ -193,12 +183,6 @@ namespace System.Net.Http
             internal void OnDataOrHeadersReceived()
             {
                 if (_state != State.Waiting) return;
-
-                if (_terminating)
-                {
-                    _state = State.Disabled;
-                    return;
-                }
 
                 long now = Stopwatch.GetTimestamp();
                 bool initial = _initialBurst > 0;
@@ -220,6 +204,8 @@ namespace System.Net.Http
                 {
                     ThrowProtocolError();
                 }
+
+                //RTT PINGs always carry negavie payload, positive values indicate a response to KeepAlive PING.
                 Debug.Assert(payload < 0);
 
                 if (_pingCounter != payload)
@@ -232,13 +218,6 @@ namespace System.Net.Http
             internal void OnGoAwayReceived()
             {
                 _state = State.Disabled;
-            }
-
-            internal void MaximumWindowReached()
-            {
-                // This method is being called from a thread other than the rest of the methods, so do not mess with _state.
-                // OnDataOrHeadersReceived will eventually flip it to State.Disabled.
-                _terminating = true;
             }
 
             private void RefreshRtt()

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.IO;
-using System.Net.Quic;
 using System.Net.Quic.Implementations;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -63,16 +62,14 @@ namespace System.Net.Http
         internal IDictionary<string, object?>? _properties;
 
         // Http2 flow control settings:
-        internal bool _disableDynamicHttp2WindowSizing = DisableDynamicHttp2WindowSizing;
-        internal int _maxHttp2StreamWindowSize = MaxHttp2StreamWindowSize;
-        internal double _http2StreamWindowScaleThresholdMultiplier = Http2StreamWindowScaleThresholdMultiplier;
         internal int _initialHttp2StreamWindowSize = Http2Connection.DefaultInitialWindowSize;
 
         public HttpConnectionSettings()
         {
-            bool allowHttp2 = AllowHttp2;
+            bool allowHttp2 = GlobalHttpSettings.SocketsHttpHandler.AllowHttp2;
+            bool allowHttp3 = GlobalHttpSettings.SocketsHttpHandler.AllowDraftHttp3;
             _maxHttpVersion =
-                AllowDraftHttp3 && allowHttp2 ? HttpVersion.Version30 :
+                allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
             _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials);
@@ -121,9 +118,6 @@ namespace System.Net.Http
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
-                _disableDynamicHttp2WindowSizing = _disableDynamicHttp2WindowSizing,
-                _maxHttp2StreamWindowSize = _maxHttp2StreamWindowSize,
-                _http2StreamWindowScaleThresholdMultiplier = _http2StreamWindowScaleThresholdMultiplier,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
             };
 
@@ -134,62 +128,6 @@ namespace System.Net.Http
             }
 
             return settings;
-        }
-
-        // Default to allowing HTTP/2, but enable that to be overridden by an
-        // AppContext switch, or by an environment variable being set to false/0.
-        private static bool AllowHttp2 => RuntimeSettingParser.QueryRuntimeSettingSwitch(
-            "System.Net.Http.SocketsHttpHandler.Http2Support",
-            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
-            true);
-
-        // Default to allowing draft HTTP/3, but enable that to be overridden
-        // by an AppContext switch, or by an environment variable being set to false/0.
-        private static bool AllowDraftHttp3 => RuntimeSettingParser.QueryRuntimeSettingSwitch(
-            "System.Net.SocketsHttpHandler.Http3DraftSupport",
-            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT",
-            true);
-
-        // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
-        private static bool DisableDynamicHttp2WindowSizing => RuntimeSettingParser.QueryRuntimeSettingSwitch(
-            "System.Net.SocketsHttpHandler.Http2FlowControl.DisableDynamicWindowSizing",
-            "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2FLOWCONTROL_DISABLEDYNAMICWINDOWSIZING",
-            false);
-
-        // The maximum size of the HTTP/2 stream receive window. Defaults to 16 MB.
-        private static int MaxHttp2StreamWindowSize
-        {
-            get
-            {
-                int value = RuntimeSettingParser.ParseInt32EnvironmentVariableValue(
-                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE",
-                    HttpHandlerDefaults.DefaultHttp2MaxStreamWindowSize);
-
-                // Disallow small values:
-                if (value < Http2Connection.DefaultInitialWindowSize)
-                {
-                    value = Http2Connection.DefaultInitialWindowSize;
-                }
-                return value;
-            }
-        }
-
-        // Defaults to 1.0. Higher values result in shorter window, but slower downloads.
-        private static double Http2StreamWindowScaleThresholdMultiplier
-        {
-            get
-            {
-                double value = RuntimeSettingParser.ParseDoubleEnvironmentVariableValue(
-                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER",
-                    HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier);
-
-                // Disallow negative values:
-                if (value < 0)
-                {
-                    value = HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier;
-                }
-                return value;
-            }
         }
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
