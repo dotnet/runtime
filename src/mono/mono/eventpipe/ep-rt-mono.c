@@ -1000,7 +1000,6 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
 
-	gboolean result = false;
 	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
 
 	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR) {
