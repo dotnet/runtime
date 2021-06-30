@@ -73,14 +73,17 @@ namespace System.IO
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    int readFileResult = Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    Debug.Assert(readFileResult == 0, $"ReadFile returned {readFileResult}, last error was {errorCode}");
+                    Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
 
-                    if (errorCode == Interop.Errors.ERROR_IO_PENDING || errorCode == Interop.Errors.ERROR_SUCCESS)
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
                         resetEvent.WaitOne();
+                        errorCode = Interop.Errors.ERROR_SUCCESS;
+                    }
 
+                    if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                    {
                         int result = 0;
                         if (Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref result, bWait: false))
                         {
@@ -156,14 +159,17 @@ namespace System.IO
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    int writeFileResult = Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    Debug.Assert(writeFileResult == 0, $"WriteFile returned {writeFileResult}, last error was {errorCode}");
+                    Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
 
-                    if (errorCode == Interop.Errors.ERROR_IO_PENDING || errorCode == Interop.Errors.ERROR_SUCCESS)
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
                         resetEvent.WaitOne();
+                        errorCode = Interop.Errors.ERROR_SUCCESS;
+                    }
 
+                    if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                    {
                         int result = 0;
                         if (Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref result, bWait: false))
                         {
