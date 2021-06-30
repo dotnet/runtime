@@ -107,7 +107,7 @@
     <Compile Include="OleDbConnection.COMWrappers.cs" />
     <Compile Include="OleDbException.COMWrappers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <Compile Include="UnsafeNativeMethods.NoCOMWrappers.cs" />
     <Compile Include="DbPropSet.NoCOMWrappers.cs" />
     <Compile Include="OleDb_Util.NoCOMWrappers.cs" />
