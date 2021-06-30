@@ -602,10 +602,7 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         bool IListSource.ContainsListCollection => true;
-#nullable enable
 
         /// <summary>
         /// Gets a custom view of the data contained by the <see cref='System.Data.DataSet'/> , one
@@ -949,19 +946,17 @@ namespace System.Data
             return _cultureUserSet;
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public override ISite Site
+        public override ISite? Site
         {
             get { return base.Site; }
             set
             {
-                ISite oldSite = Site;
+                ISite? oldSite = Site;
                 if (value == null && oldSite != null)
                 {
-                    IContainer cont = oldSite.Container;
+                    IContainer? cont = oldSite.Container;
 
                     if (cont != null)
                     {
@@ -977,7 +972,6 @@ namespace System.Data
                 base.Site = value;
             }
         }
-#nullable enable
 
         /// <summary>
         /// Get the collection of relations that link tables and
@@ -1411,10 +1405,7 @@ namespace System.Data
             }
         }
 
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         IList IListSource.GetList() => DefaultViewManager;
-#nullable enable
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal string GetRemotingDiffGram(DataTable table)

@@ -25,6 +25,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the instance of the collection with the change.
         /// </summary>
-        public virtual object? Element { get; }
+        public virtual object? Element { get; } // TODO-NULLABLE: System.Data.Common doesn't seem to expect this to be null but we do not guard against it
     }
 }

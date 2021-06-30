@@ -162,7 +162,7 @@ namespace System.Data
                 return;
             }
 
-            object propInst = pd.GetValue(instance);
+            object? propInst = pd.GetValue(instance);
 
             if (propInst is InternalDataCollectionBase)
                 return;
@@ -217,7 +217,7 @@ namespace System.Data
                 }
             }
 
-            string textValue = pd.Converter.ConvertToString(propInst);
+            string? textValue = pd.Converter.ConvertToString(propInst);
             root.SetAttribute(pd.Name, Keywords.MSDNS, textValue);
             return;
         }

@@ -306,14 +306,12 @@ namespace System.Data.Common
             return new AttributeCollection(null);
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
-        string ICustomTypeDescriptor.GetClassName()
+        string? ICustomTypeDescriptor.GetClassName()
         {
             return null;
         }
 
-        string ICustomTypeDescriptor.GetComponentName()
+        string? ICustomTypeDescriptor.GetComponentName()
         {
             return null;
         }
@@ -321,27 +319,26 @@ namespace System.Data.Common
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
-            return null;
+            return null!;
         }
 
         [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
-        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+        EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
         {
             return null;
         }
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
-        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+        PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
             return null;
         }
 
         [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
-        object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return null;
         }
-#nullable enable
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
@@ -349,7 +346,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
         {
             return new EventDescriptorCollection(null);
         }
@@ -361,7 +358,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
         {
             if (_propertyDescriptors == null)
             {

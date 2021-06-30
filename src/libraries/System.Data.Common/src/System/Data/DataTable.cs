@@ -2683,18 +2683,16 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public override ISite Site
+        public override ISite? Site
         {
             get { return base.Site; }
             set
             {
-                ISite oldSite = Site;
+                ISite? oldSite = Site;
                 if (value == null && oldSite != null)
                 {
-                    IContainer cont = oldSite.Container;
+                    IContainer? cont = oldSite.Container;
 
                     if (cont != null)
                     {
@@ -2710,7 +2708,6 @@ namespace System.Data
                 base.Site = value;
             }
         }
-#nullable enable
 
         internal DataRow AddRecords(int oldRecord, int newRecord)
         {
@@ -3197,12 +3194,9 @@ namespace System.Data
             return ndx;
         }
 
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         IList IListSource.GetList() => DefaultView;
 
         internal List<DataViewListener> GetListeners() => _dataViewListeners;
-#nullable enable
 
         // We need a HashCodeProvider for Case, Kana and Width insensitive
         internal int GetSpecialHashCode(string name)
@@ -6705,8 +6699,6 @@ namespace System.Data
             return XmlSchema.Read(new XmlTextReader(stream), null);
         }
 
-        // TODO: Enable after System.Private.Xml is annotated
-#nullable disable
 #pragma warning disable 8632
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
@@ -6730,7 +6722,6 @@ namespace System.Data
             WriteXmlCore(writer);
         }
 #pragma warning restore 8632
-#nullable enable
 
         // This method exists so that suppression can be placed on `IXmlSerializable.WriteXml(XmlWriter writer)`
         private void WriteXmlCore(XmlWriter writer)
@@ -6738,6 +6729,7 @@ namespace System.Data
             WriteXmlSchema(writer, false);
             WriteXml(writer, XmlWriteMode.DiffGram, false);
         }
+#pragma warning restore 8632
 
         protected virtual void ReadXmlSerializable(XmlReader? reader) => ReadXml(reader, XmlReadMode.DiffGram, true);
 

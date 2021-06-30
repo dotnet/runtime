@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable nullability as part of annotation System.Data.{Odbc,OleDb}
+// TODO-NULLABLE: Enable nullability as part of annotation System.Data.{Odbc,OleDb}
 #nullable disable
 
 using System.Collections;

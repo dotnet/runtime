@@ -1027,7 +1027,7 @@ namespace System.ComponentModel
                 return new EventDescriptorCollection(null, true);
             }
 
-            // TODO-NULLABLE: Investigate if this can actually happen and if we should handle it
+            // TODO-NULLABLE: Investigate if NRE can actually happen and if we should handle it
             return GetDescriptor(componentType, nameof(componentType))!.GetEvents();
         }
 
@@ -1046,7 +1046,7 @@ namespace System.ComponentModel
                 return new EventDescriptorCollection(null, true);
             }
 
-            // TODO-NULLABLE: Investigate if this can actually happen and if we should handle it
+            // TODO-NULLABLE: Investigate if NRE can actually happen and if we should handle it
             EventDescriptorCollection events = GetDescriptor(componentType, nameof(componentType))!.GetEvents(attributes);
 
             if (attributes != null && attributes.Length > 0)
@@ -1260,7 +1260,7 @@ namespace System.ComponentModel
                 return new PropertyDescriptorCollection(null, true);
             }
 
-            // TODO-NULLABLE: Investigate if this can actually happen and if we should handle it
+            // TODO-NULLABLE: Investigate if NRE can actually happen and if we should handle it
             return GetDescriptor(componentType, nameof(componentType))!.GetProperties();
         }
 
@@ -1279,7 +1279,7 @@ namespace System.ComponentModel
                 return new PropertyDescriptorCollection(null, true);
             }
 
-            // TODO-NULLABLE: Investigate if this can actually happen and if we should handle it
+            // TODO-NULLABLE: Investigate if NRE can actually happen and if we should handle it
             PropertyDescriptorCollection properties = GetDescriptor(componentType, nameof(componentType))!.GetProperties(attributes);
 
             if (attributes != null && attributes.Length > 0)
@@ -2694,7 +2694,7 @@ namespace System.ComponentModel
 
                 if (instance == null)
                 {
-                    // TODO-NULLABLE: If this returned new EmptyCustomTypeDescriptor() then base class's return value could likely bo not null
+                    // TODO-NULLABLE: If this returned new EmptyCustomTypeDescriptor() then base class's return value could likely be not null
                     return null;
                 }
 
