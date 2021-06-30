@@ -4462,12 +4462,18 @@ MonoStringHandle
 ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoError *error)
 {
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
-	gchar *absolute;
 	
-	if (g_path_is_absolute (mass->image->name)) {
-		absolute = g_strdup (mass->image->name);
+	/* return NULL for bundled assemblies in single-file scenarios */
+	const char* filename = m_image_get_filename (mass->image);
+
+	if (!filename)
+		return NULL_HANDLE_STRING;
+
+	gchar *absolute;
+	if (g_path_is_absolute (filename)) {
+		absolute = g_strdup (filename);
 	} else {
-		absolute = g_build_filename (mass->basedir, mass->image->name, (const char*)NULL);
+		absolute = g_build_filename (mass->basedir, filename, (const char*)NULL);
 	}
 
 	mono_icall_make_platform_path (absolute);
