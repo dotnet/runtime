@@ -74,9 +74,9 @@ namespace System.IO
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
                     int readFileResult = Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
-                    Debug.Assert(readFileResult == 0, "ReadFile should always return 0 for async or failed operations");
-
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    Debug.Assert(readFileResult == 0, $"ReadFile returned {readFileResult}, last error was {errorCode}");
+
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING || errorCode == Interop.Errors.ERROR_SUCCESS)
                     {
                         resetEvent.WaitOne();
@@ -157,9 +157,9 @@ namespace System.IO
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
                     int writeFileResult = Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
-                    Debug.Assert(writeFileResult == 0, "WriteFile should always return 0 for async or failed operations");
-
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    Debug.Assert(writeFileResult == 0, $"WriteFile returned {writeFileResult}, last error was {errorCode}");
+
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING || errorCode == Interop.Errors.ERROR_SUCCESS)
                     {
                         resetEvent.WaitOne();
