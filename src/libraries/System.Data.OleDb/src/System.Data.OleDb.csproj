@@ -99,7 +99,7 @@
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\WrappedIUnknown.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
     <Compile Include="OleDbComWrappers.cs" />
     <Compile Include="DbPropSet.COMWrappers.cs" />
