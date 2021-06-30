@@ -346,8 +346,6 @@ namespace System.Net.Security.Tests
 
                 Assert.Null(server.RemoteCertificate);
 
-                Console.WriteLine("AA " + server.SslProtocol);
-
                 var t = server.NegotiateClientCertificateAsync(cts.Token);
 
                 // Send application data instead of Client hello.
@@ -397,12 +395,10 @@ namespace System.Net.Security.Tests
 
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        [InlineData(true, SslProtocols.Tls12)]
-        [InlineData(false, SslProtocols.Tls12)]
-        [InlineData(true, SslProtocols.Tls13)]
-        [InlineData(false, SslProtocols.Tls13)]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate, SslProtocols protocol)
+        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -417,7 +413,7 @@ namespace System.Net.Security.Tests
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
                 {
                     TargetHost = Guid.NewGuid().ToString("N"),
-                    EnabledSslProtocols = protocol,
+                    EnabledSslProtocols = SslProtocols.Tls13,
                 };
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
