@@ -4,7 +4,7 @@
 /*============================================================
 **
 ** Purpose: Unsafe code that uses pointers should use
-** SafePointer to fix subtle lifetime problems with the
+** SafeBuffer to fix subtle lifetime problems with the
 ** underlying resource.
 **
 ===========================================================*/
