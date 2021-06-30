@@ -117,7 +117,7 @@ namespace System.Data.OleDb
 
                 // prevent someone from registering two different command builders on the adapter by
                 // silently removing the old one
-                if ((null != handler) && (value.Target is DbCommandBuilder))
+                if ((null != handler) && (value!.Target is DbCommandBuilder))
                 {
                     OleDbRowUpdatingEventHandler? d = (OleDbRowUpdatingEventHandler?)ADP.FindBuilder(handler);
                     if (null != d)

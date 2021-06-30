@@ -756,6 +756,16 @@ public:
         return m_pArgs;
     }
 
+    bool ContainsAllOneType(TypeHandle th)
+    {
+        for (auto i = GetNumArgs(); i > 0;)
+        {
+            if ((*this)[--i] != th)
+                return false;
+        }
+        return true;
+    }
+
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.
     FixupPointer<TypeHandle> * m_pArgs;
