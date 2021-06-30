@@ -21,17 +21,8 @@ namespace System
             return AndroidTimeZones.Local!;
         }
 
-        //TODO: PopulateAllSystemTimeZones maps to GetSystemTimeZonesCore in mono/mono implementation
         private static void PopulateAllSystemTimeZonesCore(CachedData cachedData)
         {
-            // I Think we can utilize the majority of PopulateAllSystemTimeZonesCore in the Unix implementation
-            // We would just need to properly handle
-            //
-            // string timeZoneDirectory = GetTimeZoneDirectory();
-            // foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
-            //
-            // That seems to be covered by mono/mono `AndroidTzData.GetAvailableIds` and works as long as ReadIndex is called
-            // db is first called -> GetDefaultTimeZoneDB -> AndroidTzData(paths) -> LoadData -> ReadHeader -> ReadIndex
             foreach (string timeZoneId in AndroidTimeZones.GetAvailableIds())
             {
                 // cachedData is not in this current context, I think we can push PopulateAllSystemTimeZonesCore back to AllUnix
