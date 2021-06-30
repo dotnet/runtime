@@ -1726,6 +1726,17 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
+    private static T DeserializeFromXmlString<T>(string xmlString)
+    {
+        XmlSerializer serializer = new XmlSerializer(typeof(T));
+        using (Stream ms = GenerateStreamFromString(xmlString))
+        {
+            T value = (T)serializer.Deserialize(ms);
+            return value;
+        }
+
+    }
+
     [Fact]
     public static void Xml_TypeWithMismatchBetweenAttributeAndPropertyType()
     {
