@@ -47,9 +47,19 @@ jobs:
     - task: DownloadBuildArtifacts@0
       displayName: Download package artifacts
       inputs:
-        artifactName: 'PackageArtifacts'
+        artifactName: 'IntermediateArtifacts'
+        itemPattern: '*/Shipping/*.nupkg'
         downloadPath: $(workloadPackagesPath)
         checkDownloadedFiles: true
+
+    - task: CopyFiles@2
+      displayName: Flatten packages
+      inputs:
+        sourceFolder: $(workloadPackagesPath)
+        contents: '*/Shipping/*.nupkg'
+        cleanTargetFolder: false
+        targetFolder: $(workloadPackagesPath)
+        flattenFolders: true
 
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset mono.workloads -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build workload artifacts
