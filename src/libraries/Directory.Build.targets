@@ -202,14 +202,6 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <!--
-    Hack workaround to skip the GenerateCompiledExpressionsTempFile target in
-    Microsoft.WorkflowBuildExtensions.targets target that always runs in VS
-    -->
-    <GenerateCompiledExpressionsTempFilePathForEditing />
-  </PropertyGroup>
-
   <!-- Returns the assembly version of the project for consumption
        by the NuGet package generation -->
   <Target Name="GetAssemblyVersion"
