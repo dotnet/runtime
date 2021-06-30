@@ -141,10 +141,18 @@ namespace System
             private static TimeZoneInfo? _GetTimeZone(string? id, string? name)
             {
                 if (db == null)
+                {
                     return null;
+                }
                 byte[] buffer = db.GetTimeZoneData(name);
                 if (buffer == null)
+                {
                     return null;
+                }
+                if (string.IsNullOrEmpty(id))
+                {
+                    return null;
+                }
 
                 return GetTimeZoneFromTzData(buffer, id);
             }
