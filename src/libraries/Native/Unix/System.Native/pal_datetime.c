@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
-
-#include <stdlib.h>
+#include "pal_datetime.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/time.h>
-
 #if defined(TARGET_ANDROID)
 #include <sys/system_properties.h>
 #endif
-
-
-#include "pal_datetime.h"
+#include <time.h>
 
 static const int64_t TICKS_PER_SECOND = 10000000; /* 10^7 */
 #if HAVE_CLOCK_REALTIME
