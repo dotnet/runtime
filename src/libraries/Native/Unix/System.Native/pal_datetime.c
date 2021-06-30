@@ -5,8 +5,19 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
+
+#include "pal_runtimeinformation.h"
+#include "pal_types.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/utsname.h>
+#if defined(TARGET_ANDROID)
+#include <sys/system_properties.h>
+#endif
+
 
 #include "pal_datetime.h"
 
@@ -38,4 +49,19 @@ int64_t SystemNative_GetSystemTimeAsTicks()
 #endif
     // in failure we return 00:00 01 January 1970 UTC (Unix epoch)
     return 0;
+}
+
+char* SystemNative_GetDefaultTimeZone()
+{
+#if defined(TARGET_ANDROID)
+    char timezonemitch[PROP_VALUE_MAX];
+    if (__system_property_get("persist.sys.timezone", timezonemitch))
+    {
+        return strdup(timezonemitch);
+    }
+    else
+    {
+        return NULL;
+    }
+#endif
 }

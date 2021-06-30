@@ -83,7 +83,11 @@ namespace System
         //TODO: Figure out if this maps to something in the other TimeZoneInfo files
         private static TimeZoneInfo? ParseTZBuffer(string? id, byte[] buffer, int length)
         {
-            throw new NotImplementedException("ParseTZBuffer has not been implemented yet");
+            if (string.IsNullOrEmpty(id))
+            {
+                return null;
+            }
+            return GetTimeZoneFromTzData(buffer, id);
         }
 
         // TODO: Validate you still need these functions / fields.  We should try to isolate the android implementation
@@ -261,6 +265,9 @@ namespace System
             //[DllImport ("__Internal")]
             //static extern void monodroid_free (IntPtr ptr);
 
+            [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetDefaultTimeZone")]
+            internal static extern string GetDefaultTimeZone();
+
             private static string? GetDefaultTimeZoneName()
             {
                 IntPtr value = IntPtr.Zero;
@@ -285,7 +292,7 @@ namespace System
 
                 // TODO: AndroidPlatform does not exist in runtime.  We need to add an interop call
                 //defaultTimeZone = (AndroidPlatform.GetDefaultTimeZone() ?? String.Empty).Trim();
-                defaultTimeZone = string.Empty;
+                defaultTimeZone = GetDefaultTimeZone();
                 if (!string.IsNullOrEmpty(defaultTimeZone))
                     return defaultTimeZone;
 

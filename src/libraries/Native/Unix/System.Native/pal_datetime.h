@@ -4,5 +4,8 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_types.h"
 
 PALEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);
+
+PALEXPORT char* SystemNative_GetDefaultTimeZone(void);
