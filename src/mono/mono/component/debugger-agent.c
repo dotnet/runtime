@@ -147,12 +147,12 @@ mono_class_try_get_##shortname##_class (void)	\
 #ifndef MONO_HANDLE_TRACK_OWNER
 
 #define MONO_HANDLE_NEW_DBG(type, object) \
-	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), get_mono_thread_info_current_var ())))
+	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), mono_thread_info_current ())))
 
 #else
 
 #define MONO_HANDLE_NEW_DBG(type, object) \
-	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), get_mono_thread_info_current_var (), HANDLE_OWNER)))
+	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), mono_thread_info_current (), HANDLE_OWNER)))
 
 #endif
 

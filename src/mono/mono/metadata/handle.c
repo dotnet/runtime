@@ -517,9 +517,3 @@ mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintp
 	MONO_HANDLE_SUPPRESS (g_assert (dest.__raw));
 	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)mono_array_get_internal (MONO_HANDLE_RAW (array), gpointer, index));
 }
-
-MonoThreadInfo * const
-get_mono_thread_info_current_var (void)
-{
-	return mono_thread_info_current_var;
-}
