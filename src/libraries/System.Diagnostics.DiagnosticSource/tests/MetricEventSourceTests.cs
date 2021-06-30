@@ -22,7 +22,7 @@ namespace System.Diagnostics.Metrics.Tests
             _output = output;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
             using Meter meter = new Meter("TestMeter1");
@@ -55,7 +55,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesTimeSeriesWithMetadata()
         {
             using Meter meter = new Meter("TestMeter2");
@@ -88,7 +88,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesTimeSeriesForLateMeter()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
@@ -139,7 +139,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesTimeSeriesForLateInstruments()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
@@ -181,7 +181,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, intervalSecs, 3);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesTimeSeriesWithTags()
         {
             using Meter meter = new Meter("TestMeter5");
@@ -240,7 +240,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourceFiltersInstruments()
         {
             using Meter meterA = new Meter("TestMeterA");
@@ -299,7 +299,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesMissingDataPoints()
         {
             using Meter meter = new Meter("TestMeter6");
@@ -364,7 +364,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, intervalSecs, 4);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesEndEventsOnNewListener()
         {
             using Meter meter = new Meter("TestMeter7");
@@ -401,7 +401,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, h);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesEndEventsOnMeterDispose()
         {
             using Meter meterA = new Meter("TestMeter8");
@@ -443,7 +443,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesInstruments()
         {
             using Meter meterA = new Meter("TestMeter10");
@@ -466,7 +466,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertInitialEnumerationCompleteEventPresent(events);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void EventSourcePublishesAllDataTypes()
         {
             using Meter meter = new Meter("TestMeter12");
@@ -799,7 +799,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            if(eventData.EventName != "Message" && eventData.Payload[0].ToString() != _sessionId)
+            if(eventData.EventName != "Message" && eventData.EventName != "Error" && eventData.Payload[0].ToString() != _sessionId)
             {
                 return;
             }
@@ -886,16 +886,16 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        private void AssertOnCollectionError()
+        private void AssertOnError()
         {
             lock (this)
             {
-                var errorEvent = Events.Where(e => e.EventName == "CollectionError").FirstOrDefault();
+                var errorEvent = Events.Where(e => e.EventName == "Error").FirstOrDefault();
                 if (errorEvent != null)
                 {
                     string message = errorEvent.Payload[1].ToString();
                     string stackTrace = errorEvent.Payload[2].ToString();
-                    Assert.True(errorEvent == null, "Unexpected CollectionError event: " + message + Environment.NewLine + stackTrace);
+                    Assert.True(errorEvent == null, "Unexpected Error event: " + message + Environment.NewLine + stackTrace);
                 }
             }
         }
@@ -904,7 +904,7 @@ namespace System.Diagnostics.Metrics.Tests
         {
             lock (this)
             {
-                AssertOnCollectionError();
+                AssertOnError();
                 return Events.Where(e => e.EventName == "CollectionStop").Count();
             }
         }
@@ -913,7 +913,7 @@ namespace System.Diagnostics.Metrics.Tests
         {
             lock (this)
             {
-                AssertOnCollectionError();
+                AssertOnError();
                 return Events.Where(e => e.EventName == "EndInstrumentReporting").Count();
             }
         }

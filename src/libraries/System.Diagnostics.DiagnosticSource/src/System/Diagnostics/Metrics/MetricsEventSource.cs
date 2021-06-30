@@ -131,8 +131,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
         }
 
-        [Event(9, Keywords = Keywords.TimeSeriesValues)]
-        public void CollectionError(string sessionId, string errorMessage, string errorStack)
+        [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
+        public void Error(string sessionId, string errorMessage, string errorStack)
         {
             WriteEvent(9, sessionId, errorMessage, errorStack);
         }
@@ -174,94 +174,109 @@ namespace System.Diagnostics.Metrics
 
             public void OnEventCommand(EventCommandEventArgs command)
             {
+                try
+                {
 #if OS_SUPPORT_ATTRTIBUTES
-                if (OperatingSystem.IsBrowser())
-                {
-                    // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
-                    // and browser doesn't support Thread.Start()
-                    //
-                    // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
-                    // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
-                    // modified to have some other fallback path that works for browser.
-                    Logger.Message("System.Diagnostics.Metrics EventSource not supported on browser");
-                    return;
-                }
+                    if (OperatingSystem.IsBrowser())
+                    {
+                        // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
+                        // and browser doesn't support Thread.Start()
+                        //
+                        // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
+                        // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
+                        // modified to have some other fallback path that works for browser.
+                        Logger.Error("", "System.Diagnostics.Metrics EventSource not supported on browser", "");
+                        return;
+                    }
 #endif
-                if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable ||
-                    command.Command == EventCommand.Enable)
-                {
-                    if (_aggregationManager != null)
+                    if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable ||
+                        command.Command == EventCommand.Enable)
                     {
-                        _aggregationManager.Dispose();
-                        _aggregationManager = null;
-                        Logger.Message($"Previous session with id {_sessionId} is stopped");
-                    }
-                    _sessionId = "";
-                }
-                if ((command.Command == EventCommand.Update || command.Command == EventCommand.Enable) &&
-                    command.Arguments != null)
-                {
-                    if (command.Arguments!.TryGetValue("SessionId", out string? id))
-                    {
-                        _sessionId = id!;
-                        Logger.Message($"SessionId argument received: {_sessionId}");
-                    }
-                    else
-                    {
-                        _sessionId = System.Guid.NewGuid().ToString();
-                        Logger.Message($"New session started. SessionId auto-generated: {_sessionId}");
-                    }
-
-
-                    double defaultIntervalSecs = 1;
-                    Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
-                    double refreshIntervalSecs = defaultIntervalSecs;
-                    if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
-                    {
-                        Logger.Message("RefreshInterval filter argument received: " + refreshInterval);
-                        if (!double.TryParse(refreshInterval, out refreshIntervalSecs))
+                        if (_aggregationManager != null)
                         {
-                            Logger.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
+                            _aggregationManager.Dispose();
+                            _aggregationManager = null;
+                            Logger.Message($"Previous session with id {_sessionId} is stopped");
+                        }
+                        _sessionId = "";
+                    }
+                    if ((command.Command == EventCommand.Update || command.Command == EventCommand.Enable) &&
+                        command.Arguments != null)
+                    {
+                        if (command.Arguments!.TryGetValue("SessionId", out string? id))
+                        {
+                            _sessionId = id!;
+                            Logger.Message($"SessionId argument received: {_sessionId}");
+                        }
+                        else
+                        {
+                            _sessionId = System.Guid.NewGuid().ToString();
+                            Logger.Message($"New session started. SessionId auto-generated: {_sessionId}");
+                        }
+
+
+                        double defaultIntervalSecs = 1;
+                        Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
+                        double refreshIntervalSecs = defaultIntervalSecs;
+                        if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
+                        {
+                            Logger.Message("RefreshInterval filter argument received: " + refreshInterval);
+                            if (!double.TryParse(refreshInterval, out refreshIntervalSecs))
+                            {
+                                Logger.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
+                                refreshIntervalSecs = defaultIntervalSecs;
+                            }
+                            else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
+                            {
+                                Logger.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
+                                refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs;
+                            }
+                        }
+                        else
+                        {
+                            Logger.Message($"No RefreshInterval filter argument received. Using default {defaultIntervalSecs}s.");
                             refreshIntervalSecs = defaultIntervalSecs;
                         }
-                        else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
+
+
+                        string sessionId = _sessionId;
+                        _aggregationManager = new AggregationManager(
+                            (i, s) => TransmitMetricValue(i, s, sessionId),
+                            startIntervalTime => Logger.CollectionStart(sessionId, startIntervalTime, refreshIntervalSecs),
+                            startIntervalTime => Logger.CollectionStop(sessionId, startIntervalTime, refreshIntervalSecs),
+                            i => Logger.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Logger.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Logger.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            () => Logger.InitialInstrumentEnumerationComplete(sessionId),
+                            e => Logger.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""));
+
+                        _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
+
+                        if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
                         {
-                            Logger.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
-                            refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs;
+                            Logger.Message("Metrics filter argument received: " + metricsSpecs);
+                            ParseSpecs(metricsSpecs);
                         }
+                        else
+                        {
+                            Logger.Message("No Metrics filter argument received");
+                        }
+
+                        _aggregationManager.Start();
                     }
-                    else
-                    {
-                        Logger.Message($"No RefreshInterval filter argument received. Using default {defaultIntervalSecs}s.");
-                        refreshIntervalSecs = defaultIntervalSecs;
-                    }
-
-
-                    string sessionId = _sessionId;
-                    _aggregationManager = new AggregationManager(
-                        (i, s) => TransmitMetricValue(i, s, sessionId),
-                        startIntervalTime => Logger.CollectionStart(sessionId, startIntervalTime, refreshIntervalSecs),
-                        startIntervalTime => Logger.CollectionStop(sessionId, startIntervalTime, refreshIntervalSecs),
-                        i => Logger.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                        i => Logger.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                        i => Logger.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                        () => Logger.InitialInstrumentEnumerationComplete(sessionId),
-                        e => Logger.CollectionError(sessionId, e.Message, e.StackTrace?.ToString() ?? ""));
-
-                    _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
-
-                    if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
-                    {
-                        Logger.Message("Metrics filter argument received: " + metricsSpecs);
-                        ParseSpecs(metricsSpecs);
-                    }
-                    else
-                    {
-                        Logger.Message("No Metrics filter argument received");
-                    }
-
-                    _aggregationManager.Start();
                 }
+                catch (Exception e) when (LogError(e))
+                {
+                    // this will never run
+                }
+            }
+
+            private bool LogError(Exception e)
+            {
+                Logger.Error(_sessionId, e.Message, e.StackTrace?.ToString() ?? "");
+                // this code runs as an exception filter
+                // returning false ensures the catch handler isn't run
+                return false;
             }
 
             private static char[] s_instrumentSeperators = new char[] { '\r', '\n', ',', ';' };
