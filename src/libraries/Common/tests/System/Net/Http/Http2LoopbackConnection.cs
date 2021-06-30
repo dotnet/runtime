@@ -80,6 +80,10 @@ namespace System.Net.Test.Common
 
             var con = new Http2LoopbackConnection(socket, stream, timeout);
             await con.ReadPrefixAsync().ConfigureAwait(false);
+            if (httpOptions.SetupAutomaticPingResponse)
+            {
+                con.SetupAutomaticPingResponse();
+            }
 
             return con;
         }
@@ -308,6 +312,7 @@ namespace System.Net.Test.Common
         // Starting from the time of the call, respond to all (non-ACK) PING frames which are received among other frames.
         public void SetupAutomaticPingResponse()
         {
+            if (_autoProcessPingFrames) return;
             _autoProcessPingFrames = true;
             _ = ExpectPingFrameAsync(true);
         }

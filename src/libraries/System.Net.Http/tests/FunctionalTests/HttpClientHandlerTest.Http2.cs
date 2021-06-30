@@ -769,7 +769,6 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
-                await connection.RespondToPingFrameAsync(); // Respond to 1 RTT PING
                 await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: false));
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
 
@@ -792,7 +791,6 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
-                await connection.RespondToPingFrameAsync(); // Receive 1 RTT PING
                 await connection.WriteFrameAsync(MakeSimpleDataFrame(streamId));
 
                 // As this is a connection level error, the client should see the request fail.
@@ -838,7 +836,6 @@ namespace System.Net.Http.Functional.Tests
 
                 await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
 
-                await connection.RespondToPingFrameAsync(); // Respond to 1 RTT PING
                 await connection.PingPong();
                 
                 await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: true));
@@ -898,7 +895,6 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection2 = await server.EstablishConnectionAsync();
                 int streamId2 = await connection2.ReadRequestHeaderAsync();
                 await connection2.SendDefaultResponseAsync(streamId2);
-                await connection2.RespondToPingFrameAsync(); // Receive 1 RTT PING in response to HEADERS
                 HttpResponseMessage response2 = await sendTask2;
                 Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
 
@@ -973,7 +969,6 @@ namespace System.Net.Http.Functional.Tests
                 // Complete second request
                 int streamId3 = await connection2.ReadRequestHeaderAsync();
                 await connection2.SendDefaultResponseAsync(streamId3);
-                await connection2.RespondToPingFrameAsync(); // Receive 1 RTT PING in response to HEADERS
                 HttpResponseMessage response2 = await sendTask2;
                 Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
                 await connection2.WaitForConnectionShutdownAsync();
@@ -1010,7 +1005,6 @@ namespace System.Net.Http.Functional.Tests
                 // Complete second request
                 int streamId3 = await connection2.ReadRequestHeaderAsync();
                 await connection2.SendDefaultResponseAsync(streamId3);
-                await connection2.RespondToPingFrameAsync(); // Expect 1 RTT PING in response to HEADERS
                 HttpResponseMessage response2 = await sendTask2;
                 Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
                 await connection2.WaitForConnectionShutdownAsync();
@@ -1170,9 +1164,6 @@ namespace System.Net.Http.Functional.Tests
                 // Send empty response.
                 await connection.SendDefaultResponseAsync(streamId);
 
-                // We expect an RTT PING in response to HEADERS:
-                await connection.RespondToPingFrameAsync();
-
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1297,9 +1288,6 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient())
             {
                 (int streamId, Http2LoopbackConnection connection) = await EstablishConnectionAndProcessOneRequestAsync(client, server);
-
-                // We expect one RTT PING as a response to HEADERS
-                await connection.RespondToPingFrameAsync();
 
                 // Send GOAWAY.
                 GoAwayFrame goAwayFrame = new GoAwayFrame(streamId, 0, new byte[0], 0);
@@ -2030,7 +2018,6 @@ namespace System.Net.Http.Functional.Tests
                 // Process first request and send response.
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseAsync(streamId);
-                await connection.RespondToPingFrameAsync(); // Handle 1 RTT PING received in response to HEADERS
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -3395,7 +3382,6 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                 await connection.SendResponseHeadersAsync(streamId);
-                await connection.RespondToPingFrameAsync(); // Handle 1 RTT PING in response to HEADERS
                 await sendAsyncCompleted.Task;
                 await connection.WaitForConnectionShutdownAsync();
             });
