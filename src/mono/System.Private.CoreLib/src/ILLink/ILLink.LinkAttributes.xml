@@ -21,6 +21,9 @@
     <type fullname="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- System.Runtime.CompilerServices -->
     <type fullname="System.Reflection.AssemblyCompanyAttribute">
