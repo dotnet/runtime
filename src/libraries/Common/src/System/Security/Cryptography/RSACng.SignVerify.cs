@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Computes the signature of a hash that was produced by the hash algorithm specified by "hashAlgorithm."
         /// </summary>
-        public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public override unsafe byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             if (hash == null)
             {
@@ -68,30 +68,22 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(hashAlgorithmName);
-                try
+                fixed (char* namePtr = hashAlgorithmName)
                 {
-                    unsafe
+                    int estimatedSize = KeySize / 8;
+                    switch (padding.Mode)
                     {
-                        int estimatedSize = KeySize / 8;
-                        switch (padding.Mode)
-                        {
-                            case RSASignaturePaddingMode.Pkcs1:
-                                var pkcsPaddingInfo = new BCRYPT_PKCS1_PADDING_INFO() { pszAlgId = namePtr };
-                                return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcsPaddingInfo, estimatedSize);
+                        case RSASignaturePaddingMode.Pkcs1:
+                            var pkcsPaddingInfo = new BCRYPT_PKCS1_PADDING_INFO() { pszAlgId = namePtr };
+                            return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcsPaddingInfo, estimatedSize);
 
-                            case RSASignaturePaddingMode.Pss:
-                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
-                                return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, estimatedSize);
+                        case RSASignaturePaddingMode.Pss:
+                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
+                            return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, estimatedSize);
 
-                            default:
-                                throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
-                        }
+                        default:
+                            throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
                     }
-                }
-                finally
-                {
-                    NativeMemoryHelper.Free(namePtr);
                 }
             }
         }
@@ -115,8 +107,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
                 }
 
-                IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(hashAlgorithmName);
-                try
+                fixed (char* namePtr = hashAlgorithmName)
                 {
                     switch (padding.Mode)
                     {
@@ -131,10 +122,6 @@ namespace System.Security.Cryptography
                         default:
                             throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
                     }
-                }
-                finally
-                {
-                    NativeMemoryHelper.Free(namePtr);
                 }
             }
         }

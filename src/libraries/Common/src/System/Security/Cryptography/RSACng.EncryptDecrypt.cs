@@ -104,8 +104,7 @@ namespace System.Security.Cryptography
                         return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encrypt);
 
                     case RSAEncryptionPaddingMode.Oaep:
-                        IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(padding.OaepHashAlgorithm.Name);
-                        try
+                        fixed (char* namePtr = padding.OaepHashAlgorithm.Name)
                         {
                             var paddingInfo = new BCRYPT_OAEP_PADDING_INFO()
                             {
@@ -116,10 +115,6 @@ namespace System.Security.Cryptography
                                 cbLabel = 0,
                             };
                             return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encrypt);
-                        }
-                        finally
-                        {
-                            NativeMemoryHelper.Free(namePtr);
                         }
 
                     default:
@@ -192,8 +187,7 @@ namespace System.Security.Cryptography
                         return TryEncryptOrDecrypt(keyHandle, data, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encrypt, out bytesWritten);
 
                     case RSAEncryptionPaddingMode.Oaep:
-                        IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(padding.OaepHashAlgorithm.Name);
-                        try
+                        fixed (char* namePtr = padding.OaepHashAlgorithm.Name)
                         {
                             var paddingInfo = new BCRYPT_OAEP_PADDING_INFO()
                             {
@@ -202,10 +196,6 @@ namespace System.Security.Cryptography
                                 cbLabel = 0,
                             };
                             return TryEncryptOrDecrypt(keyHandle, data, destination, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encrypt, out bytesWritten);
-                        }
-                        finally
-                        {
-                            NativeMemoryHelper.Free(namePtr);
                         }
 
                     default:

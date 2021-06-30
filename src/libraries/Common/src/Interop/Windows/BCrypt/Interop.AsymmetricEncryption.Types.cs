@@ -13,12 +13,12 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct BCRYPT_OAEP_PADDING_INFO
+        internal unsafe struct BCRYPT_OAEP_PADDING_INFO
         {
             /// <summary>
             ///     Null-terminated Unicode string that identifies the hashing algorithm used to create the padding.
             /// </summary>
-            internal IntPtr pszAlgId;
+            internal char* pszAlgId;
 
             /// <summary>
             ///     Address of a buffer that contains the data used to create the padding.
@@ -32,12 +32,12 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct BCRYPT_PKCS1_PADDING_INFO
+        internal unsafe struct BCRYPT_PKCS1_PADDING_INFO
         {
             /// <summary>
             ///     Null-terminated Unicode string that identifies the hashing algorithm used to create the padding.
             /// </summary>
-            internal IntPtr pszAlgId;
+            internal char* pszAlgId;
         }
 
         [StructLayout(LayoutKind.Sequential)]
