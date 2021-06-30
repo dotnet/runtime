@@ -339,7 +339,6 @@ namespace System
         private string tzdataPath;
         private Stream? data;
         private string version = "";
-        private string zoneTab = "";
 
         private string[]? ids;
         private int[]? byteOffsets;
@@ -358,13 +357,10 @@ namespace System
 
             tzdataPath = "/";
             version = "missing";
-            zoneTab = "# Emergency fallback data.\n";
             ids = new[]{ "GMT" };
         }
 
         public string Version => version;
-
-        public string ZoneTab => zoneTab;
 
         private static string GetApexTimeDataRoot()
         {
@@ -446,7 +442,6 @@ namespace System
             version = new string(s, 6, 5, Encoding.ASCII);
 
             ReadIndex(header.indexOffset, header.dataOffset, buffer);
-            ReadZoneTab(header.zoneTabOffset, checked((int)data!.Length) - header.zoneTabOffset);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
@@ -524,23 +519,6 @@ namespace System
                     break;
             }
             return len;
-        }
-
-        private unsafe void ReadZoneTab(int zoneTabOffset, int zoneTabSize)
-        {
-            byte[] ztab = new byte [zoneTabSize];
-
-            data!.Position = zoneTabOffset;
-
-            int r;
-            if ((r = data!.Read(ztab, 0, ztab.Length)) < ztab.Length)
-            {
-                //TODO: Put strings in resource file
-                throw new InvalidOperationException(
-                        string.Format ("Error reading zonetab: read {0} bytes, expected {1}", r, zoneTabSize));
-            }
-
-            zoneTab = Encoding.ASCII.GetString(ztab, 0, ztab.Length);
         }
 
         public IEnumerable<string> GetAvailableIds()
