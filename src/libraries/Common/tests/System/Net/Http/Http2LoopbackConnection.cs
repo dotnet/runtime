@@ -25,11 +25,11 @@ namespace System.Net.Test.Common
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
         private TaskCompletionSource<PingFrame> _expectPingFrame;
-        private bool _autoProcessPingFrames;
+        private bool _transparentPingResponse;
         private bool _respondToPing;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
-        private bool _expectClientShutdown;
+        private bool _expectClientDisconnect;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -81,9 +81,9 @@ namespace System.Net.Test.Common
 
             var con = new Http2LoopbackConnection(socket, stream, timeout);
             await con.ReadPrefixAsync().ConfigureAwait(false);
-            if (httpOptions.SetupAutomaticPingResponse)
+            if (httpOptions.EnableTransparentPingResponse)
             {
-                con.SetupAutomaticPingResponse();
+                con.SetuptransparentPingResponse();
             }
 
             return con;
@@ -257,8 +257,9 @@ namespace System.Net.Test.Common
                 {
                     await SendPingAckAsync(pingFrame.Data);
                 }
-                catch (IOException ex) when (_expectClientShutdown && ex.InnerException is SocketException sex && sex.SocketErrorCode == SocketError.Shutdown)
+                catch (IOException ex) when (_expectClientDisconnect && ex.InnerException is SocketException sex && sex.SocketErrorCode == SocketError.Shutdown)
                 {
+                    // couldn't send PING ACK, because client is already disconnected
                     shutdownOccured = true;
                 }
             }
@@ -266,7 +267,7 @@ namespace System.Net.Test.Common
             _expectPingFrame = null;
             _respondToPing = false;
 
-            if (_autoProcessPingFrames && !shutdownOccured)
+            if (_transparentPingResponse && !shutdownOccured)
             {
                 _ = ExpectPingFrameAsync(true);
             }
@@ -319,18 +320,11 @@ namespace System.Net.Test.Common
 
         // Recurring variant of ExpectPingFrame().
         // Starting from the time of the call, respond to all (non-ACK) PING frames which are received among other frames.
-        public void SetupAutomaticPingResponse()
+        private void SetuptransparentPingResponse()
         {
-            if (_autoProcessPingFrames) return;
-            _autoProcessPingFrames = true;
+            if (_transparentPingResponse) return;
+            _transparentPingResponse = true;
             _ = ExpectPingFrameAsync(true);
-        }
-
-        // Tear down automatic PING responses, but still expect (at most one) PING in flight
-        public void TearDownAutomaticPingResponse()
-        {
-            _respondToPing = false;
-            _autoProcessPingFrames = false;
         }
 
         public async Task ReadRstStreamAsync(int streamId)
@@ -358,7 +352,7 @@ namespace System.Net.Test.Common
         {
             IgnoreWindowUpdates();
 
-            _expectClientShutdown = true;
+            _expectClientDisconnect = true;
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame != null)
             {

@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { SetupAutomaticPingResponse = false };
+        private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false };
 
         [Fact]
         public async Task InitialHttp2StreamWindowSize_SentInSettingsFrame()
