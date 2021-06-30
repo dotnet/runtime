@@ -82,6 +82,7 @@ namespace System.Net.Http
 #endif
         // The default initial window size for streams and connections according to the RFC:
         // https://datatracker.ietf.org/doc/html/rfc7540#section-5.2.1
+        // Unlike HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize, this value should never be changed.
         internal const int DefaultInitialWindowSize = 65535;
 
         // We don't really care about limiting control flow at the connection level.
@@ -198,7 +199,7 @@ namespace System.Net.Http
                 // The connection-level window size can not be initialized by SETTINGS frames:
                 // https://datatracker.ietf.org/doc/html/rfc7540#section-6.9.2
                 // Send an initial connection-level WINDOW_UPDATE to setup the desired ConnectionWindowSize:
-                uint windowUpdateAmount = (ConnectionWindowSize - DefaultInitialWindowSize);
+                uint windowUpdateAmount = ConnectionWindowSize - DefaultInitialWindowSize;
                 if (NetEventSource.Log.IsEnabled()) Trace($"Initial connection-level WINDOW_UPDATE, windowUpdateAmount={windowUpdateAmount}");
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);

@@ -62,7 +62,7 @@ namespace System.Net.Http
         internal IDictionary<string, object?>? _properties;
 
         // Http2 flow control settings:
-        internal int _initialHttp2StreamWindowSize = Http2Connection.DefaultInitialWindowSize;
+        internal int _initialHttp2StreamWindowSize = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
 
         public HttpConnectionSettings()
         {

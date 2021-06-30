@@ -67,12 +67,14 @@ namespace System.Net.Http
             get => _settings._initialHttp2StreamWindowSize;
             set
             {
-                if (value < Http2Connection.DefaultInitialWindowSize || value > GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize)
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize || value > GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(InitialHttp2StreamWindowSize),
-                        SR.Format(SR.net_http_http2_invalidinitialstreamwindowsize, Http2Connection.DefaultInitialWindowSize,
-                            GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize));
+                    string message = SR.Format(
+                        SR.net_http_http2_invalidinitialstreamwindowsize,
+                        HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize,
+                        GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize);
+
+                    throw new ArgumentOutOfRangeException(nameof(InitialHttp2StreamWindowSize), message);
                 }
                 CheckDisposedOrStarted();
                 _settings._initialHttp2StreamWindowSize = value;

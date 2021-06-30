@@ -28,7 +28,11 @@ namespace System.Net.Http
         public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(1);
         public static readonly TimeSpan DefaultExpect100ContinueTimeout = TimeSpan.FromSeconds(1);
         public static readonly TimeSpan DefaultConnectTimeout = Timeout.InfiniteTimeSpan;
-        public const int DefaultHttp2MaxStreamWindowSize = 16 * 1024 * 1024;
-        public const double DefaultHttp2StreamWindowScaleThresholdMultiplier = 1.0;
+
+        // This is the default value for SocketsHttpHandler.InitialHttp2StreamWindowSize,
+        // which defines the value we communicate in stream SETTINGS frames.
+        // Should not be confused with Http2Connection.DefaultInitialWindowSize, which defines the RFC default.
+        // Unlike that value, DefaultInitialHttp2StreamWindowSize might be changed in the future.
+        public const int DefaultInitialHttp2StreamWindowSize = 65535;
     }
 }

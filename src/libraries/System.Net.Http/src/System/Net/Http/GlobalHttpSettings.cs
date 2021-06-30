@@ -45,16 +45,19 @@ namespace System.Net.Http
             // Defaults to 1.0. Higher values result in shorter window, but slower downloads.
             public static double Http2StreamWindowScaleThresholdMultiplier { get; } = GetHttp2StreamWindowScaleThresholdMultiplier();
 
+            public const int DefaultHttp2MaxStreamWindowSize = 16 * 1024 * 1024;
+            public const double DefaultHttp2StreamWindowScaleThresholdMultiplier = 1.0;
+
             private static int GetMaxHttp2StreamWindowSize()
             {
                 int value = RuntimeSettingParser.ParseInt32EnvironmentVariableValue(
                     "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE",
-                    HttpHandlerDefaults.DefaultHttp2MaxStreamWindowSize);
+                    DefaultHttp2MaxStreamWindowSize);
 
                 // Disallow small values:
-                if (value < Http2Connection.DefaultInitialWindowSize)
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize)
                 {
-                    value = Http2Connection.DefaultInitialWindowSize;
+                    value = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
                 }
                 return value;
             }
@@ -63,12 +66,12 @@ namespace System.Net.Http
             {
                 double value = RuntimeSettingParser.ParseDoubleEnvironmentVariableValue(
                     "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER",
-                    HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier);
+                    DefaultHttp2StreamWindowScaleThresholdMultiplier);
 
                 // Disallow negative values:
                 if (value < 0)
                 {
-                    value = HttpHandlerDefaults.DefaultHttp2StreamWindowScaleThresholdMultiplier;
+                    value = DefaultHttp2StreamWindowScaleThresholdMultiplier;
                 }
                 return value;
             }
