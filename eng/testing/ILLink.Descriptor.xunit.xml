@@ -20,8 +20,5 @@
       <method signature="System.Boolean CompareTypedSets(System.Collections.IEnumerable,System.Collections.IEnumerable)" />
     </type>
   </assembly>
-  <assembly fullname="System.Runtime.InteropServices">
-    <type fullname="System.Runtime.InteropServices.IDispatchImplAttribute" />
-  </assembly>
   <assembly fullname="xunit.runner.utility.netcoreapp10" />
 </linker>

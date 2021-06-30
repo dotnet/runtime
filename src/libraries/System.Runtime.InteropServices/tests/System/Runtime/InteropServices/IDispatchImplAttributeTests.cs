@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(2)]
         public void Ctor_ImplTypeShort(short implType)
         {
-            Type type = typeof(HandleCollector).Assembly.GetType(TypeName);
+            Type type = Type.GetType("System.Runtime.InteropServices.IDispatchImplAttribute, System.Runtime.InteropServices");
             PropertyInfo valueProperty = type.GetProperty(ValueName);
             Assert.NotNull(type);
             Assert.NotNull(valueProperty);
