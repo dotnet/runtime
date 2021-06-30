@@ -4405,7 +4405,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
 
-	mono_component_debugger ()->init ();
+	mono_component_debugger ()->init (&mono_defaults);
 
 #ifdef TARGET_WASM
 	mono_component_debugger ()->mono_wasm_debugger_init ();

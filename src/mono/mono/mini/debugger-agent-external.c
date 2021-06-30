@@ -27,9 +27,9 @@ mono_debugger_agent_init (void)
 }
 
 void
-mono_debugger_agent_parse_options (char *options)
+set_sdb_options (char *options)
 {
-	mono_component_debugger ()->mono_debugger_agent_parse_options (options);
+	mono_component_debugger ()->set_sdb_options (options);
 }
 
 #endif /* DISABLE_SDB */

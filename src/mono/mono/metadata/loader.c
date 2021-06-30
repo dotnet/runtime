@@ -2123,9 +2123,3 @@ mono_method_get_index (MonoMethod *method)
 	}
 	return 0;
 }
-
-MonoDefaults *
-get_mono_defaults (void)
-{
-	return &mono_defaults;
-}
