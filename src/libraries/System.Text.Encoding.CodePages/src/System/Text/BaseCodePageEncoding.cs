@@ -214,7 +214,7 @@ namespace System.Text
         protected int m_dataSize;
 
         // Safe handle wrapper around section map view
-        protected NativeMemoryHandle? safeNativeMemoryHandle;
+        protected SafeNativeMemoryHandle? safeNativeMemoryHandle;
 
         internal static Stream GetEncodingDataStream(string tableName)
         {
@@ -357,7 +357,7 @@ namespace System.Text
         {
             if (safeNativeMemoryHandle == null)
             {
-                safeNativeMemoryHandle = NativeMemoryHandle.Alloc(iSize);
+                safeNativeMemoryHandle = SafeNativeMemoryHandle.Alloc(iSize);
             }
 
             return (byte*)safeNativeMemoryHandle.DangerousGetHandle();
