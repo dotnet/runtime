@@ -541,7 +541,7 @@ namespace System.DirectoryServices.AccountManagement
                         finally
                         {
                             if (pSid != IntPtr.Zero)
-                                NativeMemoryHelper.Free(pSid);
+                                Marshal.FreeHGlobal(pSid);
                         }
                     }
 
@@ -596,7 +596,7 @@ namespace System.DirectoryServices.AccountManagement
                             finally
                             {
                                 if (pSid != IntPtr.Zero)
-                                    NativeMemoryHelper.Free(pSid);
+                                    Marshal.FreeHGlobal(pSid);
                             }
                         }
                     }

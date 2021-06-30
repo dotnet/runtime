@@ -110,7 +110,7 @@ namespace System.DirectoryServices.AccountManagement
                             Debug.Assert(bufferSize > 0);
 
                             // Set up the needed buffer
-                            pBuffer = NativeMemoryHelper.Alloc(bufferSize);
+                            pBuffer = Marshal.AllocHGlobal(bufferSize);
 
                             // Extract the group SIDs from the user's context, into our buffer.0
                             f = UnsafeNativeMethods.AuthzGetInformationFromContext(
@@ -221,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
                     UnsafeNativeMethods.AuthzFreeResourceManager(pResManager);
 
                 if (pBuffer != IntPtr.Zero)
-                    NativeMemoryHelper.Free(pBuffer);
+                    Marshal.FreeHGlobal(pBuffer);
             }
         }
 
@@ -583,7 +583,7 @@ namespace System.DirectoryServices.AccountManagement
             protected override bool ReleaseHandle()
             {
                 if (handle != IntPtr.Zero)
-                    NativeMemoryHelper.Free(handle);
+                    Marshal.FreeHGlobal(handle);
 
                 return true;
             }

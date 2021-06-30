@@ -217,7 +217,7 @@ namespace System.DirectoryServices.AccountManagement
                 finally
                 {
                     if (pSid != IntPtr.Zero)
-                        NativeMemoryHelper.Free(pSid);
+                        System.Runtime.InteropServices.Marshal.FreeHGlobal(pSid);
                 }
 
                 // We're running as the user, we know they must exist, but perhaps we don't have access
