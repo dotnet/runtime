@@ -19,9 +19,9 @@
 
     <WorkloadIntermediateOutputPath>$(ArtifactsObjDir)workloads/</WorkloadIntermediateOutputPath>
     <WorkloadOutputPath>$(ArtifactsBinDir)workloads/</WorkloadOutputPath>
-    <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)</WorkloadOutputPath>
+    <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
-    <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)</PackageSource>
+    <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
   </PropertyGroup>
 
   <!-- Arcade -->
