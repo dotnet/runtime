@@ -29,13 +29,19 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                return;
+            }
+
             var releaseServer = new TaskCompletionSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using (var handler = new SocketsHttpHandler())
+                using (var handler = CreateHttpClientHandler())
                 using (var invoker = new HttpMessageInvoker(handler))
                 {
-                    handler.ConnectTimeout = TimeSpan.FromSeconds(1);
+                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
                     await ValidateConnectTimeout(invoker, new UriBuilder(uri) { Scheme = "https" }.Uri, 500, 85_000);
 
