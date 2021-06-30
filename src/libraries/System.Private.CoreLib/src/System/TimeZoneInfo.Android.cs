@@ -22,13 +22,58 @@ namespace System
         //TODO: PopulateAllSystemTimeZones maps to GetSystemTimeZonesCore in mono/mono implementation
         private static void PopulateAllSystemTimeZonesCore(CachedData cachedData)
         {
-
+            // I Think we can utilize the majority of PopulateAllSystemTimeZonesCore in the Unix implementation
+            // We would just need to properly handle
+            //
+            // string timeZoneDirectory = GetTimeZoneDirectory();
+            // foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
+            //
+            // That seems to be covered by mono/mono `AndroidTzData.GetAvailableIds` and works as long as ReadIndex is called
+            // db is first called -> GetDefaultTimeZoneDB -> AndroidTzData(paths) -> LoadData -> ReadHeader -> ReadIndex
+            foreach (string timeZoneId in AndroidTzData.GetAvailableIds())
+            {
+                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true); // populate the cache
+            }
         }
 
         //TODO: TryGetTimeZoneFromLocalMachine maps to FindSystemTimeZoneByIdCore in mono/mono implementation
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            throw new NotImplementedException("TryGetTimeZoneFromLocalMachineCore is not implemented for Android");
+            value = null;
+            e = null;
+
+            try
+            {
+                value = GetTimeZone(id, id);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                e = ex;
+                return TimeZoneInfoResult.SecurityException;
+            }
+            catch (FileNotFoundException ex)
+            {
+                e = ex;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                e = ex;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
+            catch (IOException ex)
+            {
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath), ex);
+                return TimeZoneInfoResult.InvalidTimeZoneException;
+            }
+
+            if (value == null)
+            {
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath));
+                return TimeZoneInfoResult.TimeZoneNotFoundException; // Mono/mono throws TimeZoneNotFoundException, runtime throws InvalidTimeZoneException
+            }
+
+            return TimeZoneInfoResult.Success;
         }
 
         //TODO: Figure out if this maps to something in the other TimeZoneInfo files
