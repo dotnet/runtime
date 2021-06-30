@@ -9,8 +9,6 @@
     "author": "Microsoft",
     "license": "MIT",
     "dependencies": {
-      "fs": "0.0.1-security",
-      "path": "^0.12.7",
       "perf_hooks": "0.0.1",
       "ws": "^7.5.0"
     }

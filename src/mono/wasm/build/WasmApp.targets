@@ -251,23 +251,23 @@
      <WriteLinesToFile
       File="$(WasmAppDir)\package.json"
       Lines='{
-          "name": "mono-wasm-test",
-          "version": "1.0.0",
-          "author": "Microsoft",
-          "license": "MIT",
-          "dependencies": {
-            "fs": "0.0.1-security",
-            "path": "^0.12.7",
-            "perf_hooks": "0.0.1",
-            "ws": "^7.5.0"
-         }
-      }'
+  "name": "mono-wasm-test",
+  "version": "1.0.0",
+  "main": "runtime.js",
+  "author": "Microsoft",
+  "license": "MIT",
+  "dependencies": {
+    "perf_hooks": "0.0.1",
+    "ws": "^7.5.0"
+  }
+}'
       Overwrite="true"
       Condition="!Exists('package.json')">
     </WriteLinesToFile>
     
     <!-- npm install -->
-    <Exec Command="npm install --cwd $(WasmAppDir) --prefix $(WasmAppDir)"
+    <Exec Command="npm install"
+        WorkingDirectory="$(WasmAppDir)"
         IgnoreStandardErrorWarningFormat="true" />
   </Target>
 </Project>
