@@ -61,14 +61,6 @@ static bool IsSigDfl(struct sigaction* action)
            action->sa_handler == SIG_DFL;
 }
 
-// For these signals, the default handler is expected to terminate the application.
-static bool IsSignalThatTerminates(int signalCode)
-{
-    return signalCode == SIGINT ||
-           signalCode == SIGQUIT ||
-           signalCode == SIGTERM;
-}
-
 static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
     assert(posixSignal != NULL);
@@ -197,9 +189,13 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
         }
     }
 
-    // Signals that can be canceled through the PosixSignal API are handled later.
+    // For these signals, the runtime original sa_sigaction/sa_handler will terminate the app.
+    // This termination can be canceled using the PosixSignal API.
     // For other signals, we immediately invoke the original handler.
-    if (!IsSignalThatTerminates(sig))
+    bool isCancellableTeminationSignal = sig == SIGINT ||
+                                         sig == SIGQUIT ||
+                                         sig == SIGTERM;
+    if (!isCancellableTeminationSignal)
     {
         struct sigaction* origHandler = OrigActionFor(sig);
 #pragma clang diagnostic push
@@ -231,54 +227,53 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
 
 int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t handlersDisposed)
 {
-    // Performs action the runtime performs on signal that is cancelable
-    // using the PosixSignal API.
-    if (IsSignalThatTerminates(signalCode))
+    switch (signalCode)
     {
-        // Terminate the process using the original handler.
+        case SIGCONT:
+            // Default disposition is Continue.
 #ifdef HAS_CONSOLE_SIGNALS
-        UninitializeTerminal();
+            ReinitializeTerminal();
 #endif
-        // Restore the original signal handler and invoke it.
-        RestoreSignalHandler(signalCode);
-        kill(getpid(), signalCode);
-    }
-    else if (signalCode == SIGCHLD)
-    {
-        if (g_sigChldConsoleConfigurationDelayed)
-        {
-            g_sigChldConsoleConfigurationDelayed = false;
+            break;
+        case SIGTSTP:
+        case SIGTTIN:
+        case SIGTTOU:
+            // Default disposition is Stop.
+            // no-op.
+            break;
+        case SIGCHLD:
+            // Default disposition is Ignore.
+            if (g_sigChldConsoleConfigurationDelayed)
+            {
+                g_sigChldConsoleConfigurationDelayed = false;
 
-            assert(g_sigChldConsoleConfigurationCallback);
-            g_sigChldConsoleConfigurationCallback();
-        }
-    }
-    else if (signalCode == SIGCONT)
-    {
-#ifdef HAS_CONSOLE_SIGNALS
-        ReinitializeTerminal();
-#endif
-    }
-    else if (handlersDisposed)
-    {
-        // All PosixSignalRegistrations got Disposed by the time
-        // we wanted to call their handlers.
-        bool resendSignal;
-        pthread_mutex_lock(&lock);
-        {
-            if (g_hasPosixSignalRegistrations[signalCode - 1])
+                assert(g_sigChldConsoleConfigurationCallback);
+                g_sigChldConsoleConfigurationCallback();
+            }
+            break;
+        case SIGURG:
+        case SIGWINCH:
+            // Default disposition is Ignore.
+            // no-op.
+            break;
+        default:
+            // Default disposition is Terminate.
+            if (handlersDisposed && g_hasPosixSignalRegistrations[signalCode - 1])
             {
                 // New handlers got registered.
                 return 0;
             }
-            // Disposition changed back to SIG_DFL.
-            resendSignal = !g_handlerIsInstalled[signalCode - 1] &&
-                           IsSigDfl(OrigActionFor(signalCode));
-        }
-        if (resendSignal)
-        {
+            // Restore and invoke the original handler.
+            pthread_mutex_lock(&lock);
+            {
+                RestoreSignalHandler(signalCode);
+            }
+            pthread_mutex_unlock(&lock);
+#ifdef HAS_CONSOLE_SIGNALS
+            UninitializeTerminal();
+#endif
             kill(getpid(), signalCode);
-        }
+            break;
     }
     return 1;
 }
