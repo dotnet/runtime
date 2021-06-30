@@ -25,9 +25,9 @@ namespace System.ComponentModel
 
         EventDescriptorCollection GetEvents(object component);
 
-        EventDescriptorCollection GetEvents(object component, Attribute[] attributes);
+        EventDescriptorCollection GetEvents(object component, Attribute[]? attributes);
 
-        PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes);
+        PropertyDescriptorCollection GetProperties(object component, Attribute[]? attributes);
 
         object GetPropertyValue(object component, string propertyName, ref bool success);
 

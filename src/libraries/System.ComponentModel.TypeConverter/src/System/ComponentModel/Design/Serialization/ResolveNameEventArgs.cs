@@ -13,7 +13,7 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new resolve name event args object.
         /// </summary>
-        public ResolveNameEventArgs(string name)
+        public ResolveNameEventArgs(string? name)
         {
             Name = name;
             Value = null;
@@ -22,11 +22,11 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// The name of the object that needs to be resolved.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The object that matches the name.
         /// </summary>
-        public object Value { get; set; }
+        public object? Value { get; set; }
     }
 }

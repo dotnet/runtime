@@ -4,6 +4,7 @@
 namespace System.ComponentModel
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// DesignTimeVisibileAttribute marks a component's visibility. If
@@ -51,7 +52,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly DesignTimeVisibleAttribute Default = Yes;
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {

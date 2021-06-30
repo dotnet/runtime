@@ -35,11 +35,11 @@ namespace System.ComponentModel
         /// INestedSite and calls FullName, or ISite.Name if there is no nested site.
         /// If neither is available, this returns null.
         /// </summary>
-        protected virtual string OwnerName
+        protected virtual string? OwnerName
         {
             get
             {
-                string ownerName = null;
+                string? ownerName = null;
                 if (Owner != null && Owner.Site != null)
                 {
                     if (Owner.Site is INestedSite nestedOwnerSite)
@@ -59,7 +59,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a site for the component within the container.
         /// </summary>
-        protected override ISite CreateSite(IComponent component, string name)
+        protected override ISite CreateSite(IComponent component, string? name)
         {
             if (component == null)
             {
@@ -80,7 +80,7 @@ namespace System.ComponentModel
             base.Dispose(disposing);
         }
 
-        protected override object GetService(Type service)
+        protected override object? GetService(Type service)
         {
             if (service == typeof(INestedContainer))
             {
@@ -95,7 +95,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Called when our owning component is destroyed.
         /// </summary>
-        private void OnOwnerDisposed(object sender, EventArgs e) => Dispose();
+        private void OnOwnerDisposed(object? sender, EventArgs e) => Dispose();
 
         /// <summary>
         /// Simple site implementation. We do some special processing to name the site, but
@@ -103,9 +103,9 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class Site : INestedSite
         {
-            private string _name;
+            private string? _name;
 
-            internal Site(IComponent component, NestedContainer container, string name)
+            internal Site(IComponent component, NestedContainer container, string? name)
             {
                 Component = component;
                 Container = container;
@@ -118,7 +118,7 @@ namespace System.ComponentModel
             // The container in which the component is sited.
             public IContainer Container { get; }
 
-            public object GetService(Type service)
+            public object? GetService(Type service)
             {
                 return ((service == typeof(ISite)) ? this : ((NestedContainer)Container).GetService(service));
             }
@@ -137,13 +137,13 @@ namespace System.ComponentModel
                 }
             }
 
-            public string FullName
+            public string? FullName
             {
                 get
                 {
                     if (_name != null)
                     {
-                        string ownerName = ((NestedContainer)Container).OwnerName;
+                        string? ownerName = ((NestedContainer)Container).OwnerName;
                         string childName = _name;
                         if (ownerName != null)
                         {
@@ -158,7 +158,7 @@ namespace System.ComponentModel
             }
 
             // The name of the component.
-            public string Name
+            public string? Name
             {
                 get => _name;
                 [RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")]

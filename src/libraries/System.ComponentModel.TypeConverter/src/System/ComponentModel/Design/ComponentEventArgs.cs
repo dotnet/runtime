@@ -12,12 +12,12 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets or sets the component associated with the event.
         /// </summary>
-        public virtual IComponent Component { get; }
+        public virtual IComponent? Component { get; }
 
         /// <summary>
         /// Initializes a new instance of the System.ComponentModel.Design.ComponentEventArgs class.
         /// </summary>
-        public ComponentEventArgs(IComponent component)
+        public ComponentEventArgs(IComponent? component)
         {
             Component = component;
         }

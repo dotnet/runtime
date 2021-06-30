@@ -11,27 +11,27 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets or sets the component that is the cause of this event.
         /// </summary>
-        public object Component { get; }
+        public object? Component { get; }
 
         /// <summary>
         /// Gets or sets the member that is about to change.
         /// </summary>
-        public MemberDescriptor Member { get; }
+        public MemberDescriptor? Member { get; }
 
         /// <summary>
         /// Gets or sets the new value of the changed member.
         /// </summary>
-        public object NewValue { get; }
+        public object? NewValue { get; }
 
         /// <summary>
         /// Gets or sets the old value of the changed member.
         /// </summary>
-        public object OldValue { get; }
+        public object? OldValue { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.ComponentChangedEventArgs'/> class.
         /// </summary>
-        public ComponentChangedEventArgs(object component, MemberDescriptor member, object oldValue, object newValue)
+        public ComponentChangedEventArgs(object? component, MemberDescriptor? member, object? oldValue, object? newValue)
         {
             Component = component;
             Member = member;

@@ -18,15 +18,15 @@ namespace System.ComponentModel
         public static readonly LicenseProviderAttribute Default = new LicenseProviderAttribute();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        private Type _licenseProviderType;
+        private Type? _licenseProviderType;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        private readonly string _licenseProviderName;
+        private readonly string? _licenseProviderName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class without a license
         /// provider.
         /// </summary>
-        public LicenseProviderAttribute() : this((string)null)
+        public LicenseProviderAttribute() : this((string?)null)
         {
         }
 
@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class with
         /// the specified type.
         /// </summary>
-        public LicenseProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
+        public LicenseProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string? typeName)
         {
             _licenseProviderName = typeName;
         }
@@ -52,7 +52,7 @@ namespace System.ComponentModel
         /// Gets the license provider to use with the associated class.
         /// </summary>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        public Type LicenseProvider
+        public Type? LicenseProvider
         {
             get
             {
@@ -75,7 +75,7 @@ namespace System.ComponentModel
         {
             get
             {
-                string typeName = _licenseProviderName;
+                string? typeName = _licenseProviderName;
 
                 if (typeName == null && _licenseProviderType != null)
                 {
@@ -85,11 +85,11 @@ namespace System.ComponentModel
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is LicenseProviderAttribute && value != null)
             {
-                Type type = ((LicenseProviderAttribute)value).LicenseProvider;
+                Type? type = ((LicenseProviderAttribute)value).LicenseProvider;
                 if (type == LicenseProvider)
                 {
                     return true;

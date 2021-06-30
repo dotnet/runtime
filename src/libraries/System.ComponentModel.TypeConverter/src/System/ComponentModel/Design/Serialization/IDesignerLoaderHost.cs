@@ -22,7 +22,7 @@ namespace System.ComponentModel.Design.Serialization
         /// loader host may just call ToString on them). If the load was successful then
         /// errorCollection should either be null or contain an empty collection.
         /// </summary>
-        void EndLoad(string baseClassName, bool successful, ICollection errorCollection);
+        void EndLoad(string baseClassName, bool successful, ICollection? errorCollection);
 
         /// <summary>
         /// This is called by the designer loader when it wishes to reload the

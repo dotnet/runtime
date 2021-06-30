@@ -4,6 +4,7 @@
 using System.Threading;
 using System.ComponentModel;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 
 namespace System.Timers
 {
@@ -17,13 +18,13 @@ namespace System.Timers
         private bool _enabled;
         private bool _initializing;
         private bool _delayedEnable;
-        private ElapsedEventHandler _onIntervalElapsed;
+        private ElapsedEventHandler? _onIntervalElapsed;
         private bool _autoReset;
-        private ISynchronizeInvoke _synchronizingObject;
+        private ISynchronizeInvoke? _synchronizingObject;
         private bool _disposed;
-        private Threading.Timer _timer;
+        private Threading.Timer? _timer;
         private readonly TimerCallback _callback;
-        private object _cookie;
+        private object? _cookie;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Timers.Timer'/> class, with the properties
@@ -141,6 +142,7 @@ namespace System.Timers
 
         private void UpdateTimer()
         {
+            Debug.Assert(_timer != null, $"{nameof(_timer)} was expected not to be null");
             int i = (int)Math.Ceiling(_interval);
             _timer.Change(i, _autoReset ? i : Timeout.Infinite);
         }
@@ -182,7 +184,7 @@ namespace System.Timers
         /// <summary>
         /// Sets the enable property in design mode to true by default.
         /// </summary>
-        public override ISite Site
+        public override ISite? Site
         {
             get => base.Site;
             set
@@ -201,14 +203,14 @@ namespace System.Timers
         /// an interval has elapsed.
         /// </summary>
         [DefaultValue(null), TimersDescription(nameof(SR.TimerSynchronizingObject), null)]
-        public ISynchronizeInvoke SynchronizingObject
+        public ISynchronizeInvoke? SynchronizingObject
         {
             get
             {
                 if (_synchronizingObject == null && DesignMode)
                 {
-                    IDesignerHost host = (IDesignerHost)GetService(typeof(IDesignerHost));
-                    object baseComponent = host?.RootComponent;
+                    IDesignerHost? host = (IDesignerHost?)GetService(typeof(IDesignerHost));
+                    object? baseComponent = host?.RootComponent;
                     if (baseComponent != null && baseComponent is ISynchronizeInvoke)
                     {
                         _synchronizingObject = (ISynchronizeInvoke)baseComponent;
@@ -276,7 +278,7 @@ namespace System.Timers
             Enabled = false;
         }
 
-        private void MyTimerCallback(object state)
+        private void MyTimerCallback(object? state)
         {
             // System.Threading.Timer will not cancel the work item queued before the timer is stopped.
             // We don't want to handle the callback after a timer is stopped.
@@ -294,7 +296,7 @@ namespace System.Timers
             try
             {
                 // To avoid race between remove handler and raising the event
-                ElapsedEventHandler intervalElapsed = _onIntervalElapsed;
+                ElapsedEventHandler? intervalElapsed = _onIntervalElapsed;
                 if (intervalElapsed != null)
                 {
                     if (SynchronizingObject != null && SynchronizingObject.InvokeRequired)

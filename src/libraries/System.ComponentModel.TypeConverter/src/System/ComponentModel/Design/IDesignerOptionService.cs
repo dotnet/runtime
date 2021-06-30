@@ -14,7 +14,7 @@ namespace System.ComponentModel.Design
         /// Gets the value of an option defined in this package.
         /// </summary>
         [RequiresUnreferencedCode("The option value's Type cannot be statically discovered.")]
-        object GetOptionValue(string pageName, string valueName);
+        object? GetOptionValue(string pageName, string valueName);
 
         /// <summary>
         /// Sets the value of an option defined in this package.

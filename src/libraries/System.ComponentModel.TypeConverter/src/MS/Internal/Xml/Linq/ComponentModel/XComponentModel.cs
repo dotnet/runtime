@@ -17,7 +17,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
         {
             return new XTypeDescriptor<T>(base.GetTypeDescriptor(type, instance));
         }
@@ -25,7 +25,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XTypeDescriptor<T> : CustomTypeDescriptor
     {
-        public XTypeDescriptor(ICustomTypeDescriptor parent) : base(parent)
+        public XTypeDescriptor(ICustomTypeDescriptor? parent) : base(parent)
         {
         }
 
@@ -36,7 +36,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         }
 
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection properties = new PropertyDescriptorCollection(null);
             if (attributes == null)
@@ -95,7 +95,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             base.AddValueChanged(component, handler);
             if (hasValueChangedHandler)
                 return;
-            T c = component as T;
+            T? c = component as T;
             if (c != null && GetValueChangedHandler(component) != null)
             {
                 c.Changing += new EventHandler<XObjectChangeEventArgs>(OnChanging);
@@ -111,7 +111,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override void RemoveValueChanged(object component, EventHandler handler)
         {
             base.RemoveValueChanged(component, handler);
-            T c = component as T;
+            T? c = component as T;
             if (c != null && GetValueChangedHandler(component) == null)
             {
                 c.Changing -= new EventHandler<XObjectChangeEventArgs>(OnChanging);
@@ -123,7 +123,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        public override void SetValue(object component, object value)
+        public override void SetValue(object? component, object? value)
         {
         }
 
@@ -132,37 +132,37 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             return false;
         }
 
-        protected virtual void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected virtual void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
         }
 
-        protected virtual void OnChanging(object sender, XObjectChangeEventArgs args)
+        protected virtual void OnChanging(object? sender, XObjectChangeEventArgs args)
         {
         }
     }
 
     internal sealed class XElementAttributePropertyDescriptor : XPropertyDescriptor<XElement, object>
     {
-        private XDeferredSingleton<XAttribute> _value;
-        private XAttribute _changeState;
+        private XDeferredSingleton<XAttribute>? _value;
+        private XAttribute? _changeState;
 
         public XElementAttributePropertyDescriptor() : base("Attribute")
         {
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
-            return _value = new XDeferredSingleton<XAttribute>((e, n) => e.Attribute(n), component as XElement, null);
+            return _value = new XDeferredSingleton<XAttribute>((e, n) => e.Attribute(n), (component as XElement)!, null);
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
-                    XAttribute a = sender as XAttribute;
+                    XAttribute? a = sender as XAttribute;
                     if (a != null && _value.element == a.Parent && _value.name == a.Name)
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -179,14 +179,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             }
         }
 
-        protected override void OnChanging(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanging(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Remove:
-                    XAttribute a = sender as XAttribute;
+                    XAttribute? a = sender as XAttribute;
                     _changeState = a != null && _value.element == a.Parent && _value.name == a.Name ? a : null;
                     break;
             }
@@ -195,19 +195,19 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XElementDescendantsPropertyDescriptor : XPropertyDescriptor<XElement, IEnumerable<XElement>>
     {
-        private XDeferredAxis<XElement> _value;
-        private XName _changeState;
+        private XDeferredAxis<XElement>? _value;
+        private XName? _changeState;
 
         public XElementDescendantsPropertyDescriptor() : base("Descendants")
         {
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
-            return _value = new XDeferredAxis<XElement>((e, n) => n != null ? e.Descendants(n) : e.Descendants(), component as XElement, null);
+            return _value = new XDeferredAxis<XElement>((e, n) => n != null ? e.Descendants(n) : e.Descendants(), (component as XElement)!, null);
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
@@ -215,7 +215,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Add:
                 case XObjectChange.Remove:
-                    XElement e = sender as XElement;
+                    XElement? e = sender as XElement;
                     if (e != null && (_value.name == e.Name || _value.name == null))
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -232,14 +232,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             }
         }
 
-        protected override void OnChanging(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanging(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Name:
-                    XElement e = sender as XElement;
+                    XElement? e = sender as XElement;
                     _changeState = e != null ? e.Name : null;
                     break;
             }
@@ -248,26 +248,26 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XElementElementPropertyDescriptor : XPropertyDescriptor<XElement, object>
     {
-        private XDeferredSingleton<XElement> _value;
-        private XElement _changeState;
+        private XDeferredSingleton<XElement>? _value;
+        private XElement? _changeState;
 
         public XElementElementPropertyDescriptor() : base("Element")
         {
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
-            return _value = new XDeferredSingleton<XElement>((e, n) => e.Element(n), component as XElement, null);
+            return _value = new XDeferredSingleton<XElement>((e, n) => e.Element(n), (component as XElement)!, null);
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
-                    XElement e = sender as XElement;
+                    XElement? e = sender as XElement;
                     if (e != null && _value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e)
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -299,7 +299,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             }
         }
 
-        protected override void OnChanging(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanging(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
@@ -307,7 +307,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Remove:
                 case XObjectChange.Name:
-                    XElement e = sender as XElement;
+                    XElement? e = sender as XElement;
                     _changeState = e != null && _value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e ? e : null;
                     break;
             }
@@ -316,26 +316,26 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XElementElementsPropertyDescriptor : XPropertyDescriptor<XElement, IEnumerable<XElement>>
     {
-        private XDeferredAxis<XElement> _value;
-        private object _changeState;
+        private XDeferredAxis<XElement>? _value;
+        private object? _changeState;
 
         public XElementElementsPropertyDescriptor() : base("Elements")
         {
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
-            return _value = new XDeferredAxis<XElement>((e, n) => n != null ? e.Elements(n) : e.Elements(), component as XElement, null);
+            return _value = new XDeferredAxis<XElement>((e, n) => n != null ? e.Elements(n) : e.Elements(), (component as XElement)!, null);
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
-                    XElement e = sender as XElement;
+                    XElement? e = sender as XElement;
                     if (e != null && _value.element == e.Parent && (_value.name == e.Name || _value.name == null))
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -360,14 +360,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             }
         }
 
-        protected override void OnChanging(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanging(object? sender, XObjectChangeEventArgs args)
         {
             if (_value == null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Remove:
-                    XElement e = sender as XElement;
+                    XElement? e = sender as XElement;
                     _changeState = e != null ? e.Parent : null;
                     break;
                 case XObjectChange.Name:
@@ -380,7 +380,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XElementValuePropertyDescriptor : XPropertyDescriptor<XElement, string>
     {
-        private XElement _element;
+        private XElement? _element;
 
         public XElementValuePropertyDescriptor() : base("Value")
         {
@@ -391,7 +391,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             get { return false; }
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
             _element = component as XElement;
             if (_element == null)
@@ -399,15 +399,15 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             return _element.Value;
         }
 
-        public override void SetValue(object component, object value)
+        public override void SetValue(object? component, object? value)
         {
             _element = component as XElement;
             if (_element == null)
                 return;
-            _element.Value = value as string;
+            _element.Value = (value as string)!;
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_element == null)
                 return;
@@ -432,13 +432,13 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XElementXmlPropertyDescriptor : XPropertyDescriptor<XElement, string>
     {
-        private XElement _element;
+        private XElement? _element;
 
         public XElementXmlPropertyDescriptor() : base("Xml")
         {
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
             _element = component as XElement;
             if (_element == null)
@@ -446,7 +446,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             return _element.ToString(SaveOptions.DisableFormatting);
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_element == null)
                 return;
@@ -456,7 +456,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XAttributeValuePropertyDescriptor : XPropertyDescriptor<XAttribute, string>
     {
-        private XAttribute _attribute;
+        private XAttribute? _attribute;
 
         public XAttributeValuePropertyDescriptor() : base("Value")
         {
@@ -467,7 +467,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             get { return false; }
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
             _attribute = component as XAttribute;
             if (_attribute == null)
@@ -475,15 +475,15 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             return _attribute.Value;
         }
 
-        public override void SetValue(object component, object value)
+        public override void SetValue(object? component, object? value)
         {
             _attribute = component as XAttribute;
             if (_attribute == null)
                 return;
-            _attribute.Value = value as string;
+            _attribute.Value = (value as string)!;
         }
 
-        protected override void OnChanged(object sender, XObjectChangeEventArgs args)
+        protected override void OnChanged(object? sender, XObjectChangeEventArgs args)
         {
             if (_attribute == null)
                 return;
@@ -496,11 +496,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XDeferredAxis<T> : IEnumerable<T>, IEnumerable where T : XObject
     {
-        private readonly Func<XElement, XName, IEnumerable<T>> _func;
+        private readonly Func<XElement, XName?, IEnumerable<T>> _func;
         internal XElement element;
-        internal XName name;
+        internal XName? name;
 
-        public XDeferredAxis(Func<XElement, XName, IEnumerable<T>> func, XElement element, XName name)
+        public XDeferredAxis(Func<XElement, XName?, IEnumerable<T>> func, XElement element, XName? name)
         {
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
@@ -542,11 +542,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
     internal sealed class XDeferredSingleton<T> where T : XObject
     {
-        private readonly Func<XElement, XName, T> _func;
+        private readonly Func<XElement, XName, T?> _func;
         internal XElement element;
-        internal XName name;
+        internal XName? name;
 
-        public XDeferredSingleton(Func<XElement, XName, T> func, XElement element, XName name)
+        public XDeferredSingleton(Func<XElement, XName, T?> func, XElement element, XName? name)
         {
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
@@ -557,7 +557,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             this.name = name;
         }
 
-        public T this[string expandedName]
+        public T? this[string expandedName]
         {
             get
             {

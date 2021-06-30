@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -41,7 +43,7 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
     public sealed class ToolboxItemFilterAttribute : Attribute
     {
-        private string _typeId;
+        private string? _typeId;
 
         /// <summary>
         /// Initializes a new ToolboxItemFilterAttribute with the provide filter string and a filter type of
@@ -78,7 +80,7 @@ namespace System.ComponentModel
         /// </summary>
         public override object TypeId => _typeId ?? (_typeId = GetType().FullName + FilterString);
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {
@@ -96,7 +98,7 @@ namespace System.ComponentModel
             return FilterString.GetHashCode();
         }
 
-        public override bool Match(object obj)
+        public override bool Match([NotNullWhen(true)] object? obj)
         {
             return obj is ToolboxItemFilterAttribute other
                 && other.FilterString.Equals(FilterString);

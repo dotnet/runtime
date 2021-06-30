@@ -6,5 +6,5 @@ namespace System.ComponentModel.Design
     /// <summary>
     /// Declares a callback function to create an instance of a service on demand.
     /// </summary>
-    public delegate object ServiceCreatorCallback(IServiceContainer container, Type serviceType);
+    public delegate object? ServiceCreatorCallback(IServiceContainer container, Type serviceType);
 }

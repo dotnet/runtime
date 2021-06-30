@@ -7,5 +7,5 @@ namespace System.ComponentModel.Design.Serialization
     /// This delegate is used to resolve object names when performing
     /// serialization and deserialization.
     /// </summary>
-    public delegate void ResolveNameEventHandler(object sender, ResolveNameEventArgs e);
+    public delegate void ResolveNameEventHandler(object? sender, ResolveNameEventArgs e);
 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
+// TODO-NULLABLE: This class needs more attention. Many APIs allow null properties but some other don't expect it (i.e. Find).
 namespace System.ComponentModel
 {
     /// <summary>
@@ -18,11 +19,11 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly PropertyDescriptorCollection Empty = new PropertyDescriptorCollection(null, true);
 
-        private IDictionary _cachedFoundProperties;
+        private IDictionary? _cachedFoundProperties;
         private bool _cachedIgnoreCase;
-        private PropertyDescriptor[] _properties;
-        private readonly string[] _namedSort;
-        private readonly IComparer _comparer;
+        private PropertyDescriptor?[] _properties;
+        private readonly string[]? _namedSort;
+        private readonly IComparer? _comparer;
         private bool _propsOwned;
         private bool _needSort;
         private readonly bool _readOnly;
@@ -33,7 +34,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptorCollection'/>
         /// class.
         /// </summary>
-        public PropertyDescriptorCollection(PropertyDescriptor[] properties)
+        public PropertyDescriptorCollection(PropertyDescriptor[]? properties)
         {
             if (properties == null)
             {
@@ -52,12 +53,12 @@ namespace System.ComponentModel
         /// Initializes a new instance of a property descriptor collection, and allows you to mark the
         /// collection as read-only so it cannot be modified.
         /// </summary>
-        public PropertyDescriptorCollection(PropertyDescriptor[] properties, bool readOnly) : this(properties)
+        public PropertyDescriptorCollection(PropertyDescriptor[]? properties, bool readOnly) : this(properties)
         {
             _readOnly = readOnly;
         }
 
-        private PropertyDescriptorCollection(PropertyDescriptor[] properties, int propCount, string[] namedSort, IComparer comparer)
+        private PropertyDescriptorCollection(PropertyDescriptor?[] properties, int propCount, string[]? namedSort, IComparer? comparer)
         {
             _propsOwned = false;
             if (namedSort != null)
@@ -87,14 +88,14 @@ namespace System.ComponentModel
                     throw new IndexOutOfRangeException();
                 }
                 EnsurePropsOwned();
-                return _properties[index];
+                return _properties[index]!;
             }
         }
 
         /// <summary>
         /// Gets the property with the specified name.
         /// </summary>
-        public virtual PropertyDescriptor this[string name] => Find(name, false);
+        public virtual PropertyDescriptor? this[string name] => Find(name, false);
 
         public int Add(PropertyDescriptor value)
         {
@@ -172,11 +173,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the description of the property with the specified name.
         /// </summary>
-        public virtual PropertyDescriptor Find(string name, bool ignoreCase)
+        public virtual PropertyDescriptor? Find(string name, bool ignoreCase)
         {
             lock (_internalSyncObject)
             {
-                PropertyDescriptor p = null;
+                PropertyDescriptor? p = null;
 
                 if (_cachedFoundProperties == null || _cachedIgnoreCase != ignoreCase)
                 {
@@ -193,7 +194,7 @@ namespace System.ComponentModel
 
                 // first try to find it in the cache
                 //
-                object cached = _cachedFoundProperties[name];
+                object? cached = _cachedFoundProperties[name];
 
                 if (cached != null)
                 {
@@ -207,7 +208,7 @@ namespace System.ComponentModel
                 {
                     if (ignoreCase)
                     {
-                        if (string.Equals(_properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(_properties[i]!.Name, name, StringComparison.OrdinalIgnoreCase))
                         {
                             _cachedFoundProperties[name] = _properties[i];
                             p = _properties[i];
@@ -216,7 +217,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        if (_properties[i].Name.Equals(name))
+                        if (_properties[i]!.Name.Equals(name))
                         {
                             _cachedFoundProperties[name] = _properties[i];
                             p = _properties[i];
@@ -229,7 +230,7 @@ namespace System.ComponentModel
             }
         }
 
-        public int IndexOf(PropertyDescriptor value) => Array.IndexOf(_properties, value, 0, Count);
+        public int IndexOf(PropertyDescriptor? value) => Array.IndexOf(_properties, value, 0, Count);
 
         public void Insert(int index, PropertyDescriptor value)
         {
@@ -247,7 +248,7 @@ namespace System.ComponentModel
             Count++;
         }
 
-        public void Remove(PropertyDescriptor value)
+        public void Remove(PropertyDescriptor? value)
         {
             if (_readOnly)
             {
@@ -318,7 +319,7 @@ namespace System.ComponentModel
         /// Sorts the members of this PropertyDescriptorCollection. Any specified NamedSort arguments will
         /// be applied first, followed by sort using the specified IComparer.
         /// </summary>
-        protected void InternalSort(string[] names)
+        protected void InternalSort(string[]? names)
         {
             if (_properties.Length == 0)
             {
@@ -329,7 +330,7 @@ namespace System.ComponentModel
 
             if (names != null && names.Length > 0)
             {
-                List<PropertyDescriptor> propList = new List<PropertyDescriptor>(_properties);
+                List<PropertyDescriptor?> propList = new List<PropertyDescriptor?>(_properties);
                 int foundCount = 0;
                 int propCount = _properties.Length;
 
@@ -337,7 +338,7 @@ namespace System.ComponentModel
                 {
                     for (int j = 0; j < propCount; j++)
                     {
-                        PropertyDescriptor currentProp = propList[j];
+                        PropertyDescriptor? currentProp = propList[j];
 
                         // Found a matching property. Here, we add it to our array. We also
                         // mark it as null in our array list so we don't add it twice later.
@@ -371,7 +372,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Sorts the members of this PropertyDescriptorCollection using the specified IComparer.
         /// </summary>
-        protected void InternalSort(IComparer sorter)
+        protected void InternalSort(IComparer? sorter)
         {
             if (sorter == null)
             {
@@ -401,7 +402,7 @@ namespace System.ComponentModel
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot => null;
+        object ICollection.SyncRoot => null!;
 
         int ICollection.Count => Count;
 
@@ -413,7 +414,7 @@ namespace System.ComponentModel
 
         void IList.RemoveAt(int index) => RemoveAt(index);
 
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             if (!(value is PropertyDescriptor newProp))
             {
@@ -437,7 +438,7 @@ namespace System.ComponentModel
 
         bool IDictionary.IsReadOnly => _readOnly;
 
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key]
         {
             get
             {
@@ -475,7 +476,7 @@ namespace System.ComponentModel
                 {
                     for (int i = 0; i < Count; i++)
                     {
-                        if (_properties[i].Name.Equals((string)key))
+                        if (_properties[i]!.Name.Equals((string)key))
                         {
                             index = i;
                             break;
@@ -489,12 +490,12 @@ namespace System.ComponentModel
 
                 if (index == -1)
                 {
-                    Add((PropertyDescriptor)value);
+                    Add((PropertyDescriptor)value!);
                 }
                 else
                 {
                     EnsurePropsOwned();
-                    _properties[index] = (PropertyDescriptor)value;
+                    _properties[index] = (PropertyDescriptor)value!;
                     if (_cachedFoundProperties != null && key is string)
                     {
                         _cachedFoundProperties[key] = value;
@@ -510,7 +511,7 @@ namespace System.ComponentModel
                 string[] keys = new string[Count];
                 for (int i = 0; i < Count; i++)
                 {
-                    keys[i] = _properties[i].Name;
+                    keys[i] = _properties[i]!.Name;
                 }
                 return keys;
             }
@@ -538,7 +539,7 @@ namespace System.ComponentModel
         {
             if (key is string)
             {
-                PropertyDescriptor pd = this[(string)key];
+                PropertyDescriptor? pd = this[(string)key];
                 if (pd != null)
                 {
                     ((IList)this).Remove(pd);
@@ -546,21 +547,21 @@ namespace System.ComponentModel
             }
         }
 
-        int IList.Add(object value) => Add((PropertyDescriptor)value);
+        int IList.Add(object? value) => Add((PropertyDescriptor)value!);
 
-        bool IList.Contains(object value) => Contains((PropertyDescriptor)value);
+        bool IList.Contains(object? value) => Contains((PropertyDescriptor)value!);
 
-        int IList.IndexOf(object value) => IndexOf((PropertyDescriptor)value);
+        int IList.IndexOf(object? value) => IndexOf((PropertyDescriptor)value!);
 
-        void IList.Insert(int index, object value) => Insert(index, (PropertyDescriptor)value);
+        void IList.Insert(int index, object? value) => Insert(index, (PropertyDescriptor)value!);
 
         bool IList.IsReadOnly => _readOnly;
 
         bool IList.IsFixedSize => _readOnly;
 
-        void IList.Remove(object value) => Remove((PropertyDescriptor)value);
+        void IList.Remove(object? value) => Remove((PropertyDescriptor?)value);
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get => this[index];
             set
@@ -582,7 +583,7 @@ namespace System.ComponentModel
                 }
 
                 EnsurePropsOwned();
-                _properties[index] = (PropertyDescriptor)value;
+                _properties[index] = (PropertyDescriptor)value!;
             }
         }
 

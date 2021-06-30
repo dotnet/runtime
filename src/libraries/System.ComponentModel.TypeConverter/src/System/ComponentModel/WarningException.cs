@@ -24,7 +24,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with
         /// the specified message and no Help file.
         /// </summary>
-        public WarningException(string message) : this(message, null, null)
+        public WarningException(string? message) : this(message, null, null)
         {
         }
 
@@ -32,7 +32,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with
         /// the specified message, and with access to the specified Help file.
         /// </summary>
-        public WarningException(string message, string helpUrl) : this(message, helpUrl, null)
+        public WarningException(string? message, string? helpUrl) : this(message, helpUrl, null)
         {
         }
 
@@ -41,7 +41,7 @@ namespace System.ComponentModel
         /// reference to the inner exception that is the cause of this exception.
         /// FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
         /// </summary>
-        public WarningException(string message, Exception innerException) : base(message, innerException)
+        public WarningException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
 
@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with the
         /// specified message, and with access to the specified Help file and topic.
         /// </summary>
-        public WarningException(string message, string helpUrl, string helpTopic) : base(message)
+        public WarningException(string? message, string? helpUrl, string? helpTopic) : base(message)
         {
             HelpUrl = helpUrl;
             HelpTopic = helpTopic;
@@ -60,19 +60,19 @@ namespace System.ComponentModel
         /// </summary>
         protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            HelpUrl = (string)info.GetValue("helpUrl", typeof(string));
-            HelpTopic = (string)info.GetValue("helpTopic", typeof(string));
+            HelpUrl = (string?)info.GetValue("helpUrl", typeof(string));
+            HelpTopic = (string?)info.GetValue("helpTopic", typeof(string));
         }
 
         /// <summary>
         /// Specifies the Help file associated with the warning. This field is read-only.
         /// </summary>
-        public string HelpUrl { get; }
+        public string? HelpUrl { get; }
 
         /// <summary>
         /// Specifies the Help topic associated with the warning. This field is read-only.
         /// </summary>
-        public string HelpTopic { get; }
+        public string? HelpTopic { get; }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

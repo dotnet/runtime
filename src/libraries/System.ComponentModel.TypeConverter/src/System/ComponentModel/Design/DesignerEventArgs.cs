@@ -13,7 +13,7 @@ namespace System.ComponentModel.Design
         /// Initializes a new instance of the System.ComponentModel.Design.DesignerEventArgs
         /// class.
         /// </summary>
-        public DesignerEventArgs(IDesignerHost host)
+        public DesignerEventArgs(IDesignerHost? host)
         {
             Designer = host;
         }
@@ -21,6 +21,6 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets or sets the host of the document.
         /// </summary>
-        public IDesignerHost Designer { get; }
+        public IDesignerHost? Designer { get; }
     }
 }
