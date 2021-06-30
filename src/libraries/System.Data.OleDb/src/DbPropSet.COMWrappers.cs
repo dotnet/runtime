@@ -12,7 +12,7 @@ namespace System.Data.OleDb
 {
     internal sealed partial class DBPropSet
     {
-        private void SetLastErrorInfo(OleDbHResult lastErrorHr)
+        private unsafe void SetLastErrorInfo(OleDbHResult lastErrorHr)
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
             string message = string.Empty;

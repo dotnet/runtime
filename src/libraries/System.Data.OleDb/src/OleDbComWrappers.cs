@@ -18,7 +18,7 @@ namespace System.Data.OleDb
     internal unsafe class OleDbComWrappers : ComWrappers
     {
         private const int S_OK = (int)OleDbHResult.S_OK;
-        private static readonly Guid IID_IErrorInfo = new Guid(0x1CF2B120, 0x547D, 0x101B, 0x8E, 0xBB, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
+        private static readonly Guid IID_IErrorInfo = new Guid(0x1CF2B120, 0x547D, 0x101B, 0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
 
         internal static OleDbComWrappers Instance { get; } = new OleDbComWrappers();
 
