@@ -228,7 +228,7 @@ namespace System
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            PopulateAllSystemTimeZonesCore();
+            PopulateAllSystemTimeZonesCore(cachedData);
         }
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace System
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            return GetLocalTimeZoneCore(cachedData);
+            return GetLocalTimeZoneCore();
         }
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
