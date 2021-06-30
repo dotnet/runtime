@@ -816,29 +816,7 @@ namespace System.Net.Http.Functional.Tests
                 await AssertProtocolErrorAsync(sendTask, ProtocolErrors.PROTOCOL_ERROR);
 
                 // The client should close the connection as this is a fatal connection level error.
-                Assert.Null(await connection.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-            }
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task PingBeforeContinuationFrame_Success()
-        {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
-            using (HttpClient client = CreateHttpClient())
-            {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-                int streamId = await connection.ReadRequestHeaderAsync();
-
-                await connection.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
-
-                await connection.PingPong();
-                
-                await connection.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: true));
-                await connection.WriteFrameAsync(MakeSimpleDataFrame(streamId, endStream: true));
-
-                using HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                await connection.WaitForClientDisconnectAsync();
             }
         }
 

@@ -88,14 +88,14 @@ namespace System.Net.Http
         // We limit it per stream, and the user controls how many streams are created.
         // So set the connection window size to a large value.
         private const int ConnectionWindowSize = 64 * 1024 * 1024;
-        private const int ConnectionWindowUpdateRatio = 8;
 
-        // We hold off on sending WINDOW_UPDATE until we hit thi minimum threshold.
+        // We hold off on sending WINDOW_UPDATE until we hit the minimum threshold.
         // This value is somewhat arbitrary; the intent is to ensure it is much smaller than
         // the window size itself, or we risk stalling the server because it runs out of window space.
         // If we want to further reduce the frequency of WINDOW_UPDATEs, it's probably better to
         // increase the window size (and thus increase the threshold proportionally)
         // rather than just increase the threshold.
+        private const int ConnectionWindowUpdateRatio = 8;
         private const int ConnectionWindowThreshold = ConnectionWindowSize / ConnectionWindowUpdateRatio;
 
         // When buffering outgoing writes, we will automatically buffer up to this number of bytes.
@@ -472,14 +472,6 @@ namespace System.Net.Http
             while (!frameHeader.EndHeadersFlag)
             {
                 frameHeader = await ReadFrameAsync().ConfigureAwait(false);
-
-                // We may receive ping frames beetween the HEADERS/CONTINUATION frames.
-                // These are typically a PING ACKs in response to RTT PINGs.
-                if (frameHeader.Type == FrameType.Ping)
-                {
-                    ProcessPingFrame(frameHeader);
-                    continue;
-                }
 
                 if (frameHeader.Type != FrameType.Continuation ||
                     frameHeader.StreamId != streamId)
