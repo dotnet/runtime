@@ -80,7 +80,7 @@ namespace System.Drawing.Imaging
         private void Dispose(bool disposing)
         {
             if (_parameterValue != IntPtr.Zero)
-                NativeMemoryHelper.Free(_parameterValue);
+                Marshal.FreeHGlobal(_parameterValue);
             _parameterValue = IntPtr.Zero;
         }
 
@@ -90,9 +90,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(sizeof(byte));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
-            *(byte*)(nint)_parameterValue = value;
+            *(byte*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -105,9 +105,9 @@ namespace System.Drawing.Imaging
             else
                 _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(sizeof(byte));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
-            *(byte*)(nint)_parameterValue = value;
+            *(byte*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -117,9 +117,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeShort;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(sizeof(short));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(short));
 
-            *(short*)(nint)_parameterValue = value;
+            *(short*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -129,9 +129,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLong;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(sizeof(int));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(int));
 
-            *(int*)(nint)_parameterValue = unchecked((int)value);
+            *(int*)_parameterValue = unchecked((int)value);
             GC.KeepAlive(this);
         }
 
@@ -141,10 +141,10 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRational;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(2 * sizeof(int));
+            _parameterValue = Marshal.AllocHGlobal(2 * sizeof(int));
 
-            ((int*)(nint)_parameterValue)[0] = numerator;
-            ((int*)(nint)_parameterValue)[1] = denominator;
+            ((int*)_parameterValue)[0] = numerator;
+            ((int*)_parameterValue)[1] = denominator;
             GC.KeepAlive(this);
         }
 
@@ -154,10 +154,10 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLongRange;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(2 * sizeof(int));
+            _parameterValue = Marshal.AllocHGlobal(2 * sizeof(int));
 
-            ((int*)(nint)_parameterValue)[0] = unchecked((int)rangebegin);
-            ((int*)(nint)_parameterValue)[1] = unchecked((int)rangeend);
+            ((int*)_parameterValue)[0] = unchecked((int)rangebegin);
+            ((int*)_parameterValue)[1] = unchecked((int)rangeend);
             GC.KeepAlive(this);
         }
 
@@ -169,12 +169,12 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRationalRange;
             _numberOfValues = 1;
-            _parameterValue = NativeMemoryHelper.Alloc(4 * sizeof(int));
+            _parameterValue = Marshal.AllocHGlobal(4 * sizeof(int));
 
-            ((int*)(nint)_parameterValue)[0] = numerator1;
-            ((int*)(nint)_parameterValue)[1] = demoninator1;
-            ((int*)(nint)_parameterValue)[2] = numerator2;
-            ((int*)(nint)_parameterValue)[3] = demoninator2;
+            ((int*)_parameterValue)[0] = numerator1;
+            ((int*)_parameterValue)[1] = demoninator1;
+            ((int*)_parameterValue)[2] = numerator2;
+            ((int*)_parameterValue)[3] = demoninator2;
             GC.KeepAlive(this);
         }
 
@@ -184,7 +184,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeAscii;
             _numberOfValues = value.Length;
-            _parameterValue = NativeMemoryHelper.AllocStringUnicode(value);
+            _parameterValue = Marshal.StringToHGlobalAnsi(value);
             GC.KeepAlive(this);
         }
 
@@ -195,7 +195,7 @@ namespace System.Drawing.Imaging
             _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = value.Length;
 
-            _parameterValue = NativeMemoryHelper.Alloc(_numberOfValues);
+            _parameterValue = Marshal.AllocHGlobal(_numberOfValues);
 
             Marshal.Copy(value, 0, _parameterValue, _numberOfValues);
             GC.KeepAlive(this);
@@ -211,7 +211,7 @@ namespace System.Drawing.Imaging
                 _parameterValueType = EncoderParameterValueType.ValueTypeByte;
 
             _numberOfValues = value.Length;
-            _parameterValue = NativeMemoryHelper.Alloc(_numberOfValues);
+            _parameterValue = Marshal.AllocHGlobal(_numberOfValues);
 
             Marshal.Copy(value, 0, _parameterValue, _numberOfValues);
             GC.KeepAlive(this);
@@ -223,7 +223,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeShort;
             _numberOfValues = value.Length;
-            _parameterValue = NativeMemoryHelper.Alloc(checked(_numberOfValues * sizeof(short)));
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * sizeof(short)));
 
             Marshal.Copy(value, 0, _parameterValue, _numberOfValues);
             GC.KeepAlive(this);
@@ -235,9 +235,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLong;
             _numberOfValues = value.Length;
-            _parameterValue = NativeMemoryHelper.Alloc(checked(_numberOfValues * sizeof(int)));
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * sizeof(int)));
 
-            int* dest = (int*)(nint)_parameterValue;
+            int* dest = (int*)_parameterValue;
             fixed (long* source = value)
             {
                 for (int i = 0; i < value.Length; i++)
@@ -257,12 +257,12 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRational;
             _numberOfValues = numerator.Length;
-            _parameterValue = NativeMemoryHelper.Alloc(checked(_numberOfValues * 2 * sizeof(int)));
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * sizeof(int)));
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                ((int*)(nint)_parameterValue)[i * 2 + 0] = numerator[i];
-                ((int*)(nint)_parameterValue)[i * 2 + 1] = denominator[i];
+                ((int*)_parameterValue)[i * 2 + 0] = numerator[i];
+                ((int*)_parameterValue)[i * 2 + 1] = denominator[i];
             }
             GC.KeepAlive(this);
         }
@@ -276,12 +276,12 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLongRange;
             _numberOfValues = rangebegin.Length;
-            _parameterValue = NativeMemoryHelper.Alloc(checked(_numberOfValues * 2 * sizeof(int)));
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * sizeof(int)));
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                ((int*)(nint)_parameterValue)[i * 2 + 0] = unchecked((int)rangebegin[i]);
-                ((int*)(nint)_parameterValue)[i * 2 + 1] = unchecked((int)rangeend[i]);
+                ((int*)_parameterValue)[i * 2 + 0] = unchecked((int)rangebegin[i]);
+                ((int*)_parameterValue)[i * 2 + 1] = unchecked((int)rangeend[i]);
             }
             GC.KeepAlive(this);
         }
@@ -299,14 +299,14 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRationalRange;
             _numberOfValues = numerator1.Length;
-            _parameterValue = NativeMemoryHelper.Alloc(checked(_numberOfValues * 4 * sizeof(int)));
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 4 * sizeof(int)));
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                ((int*)(nint)_parameterValue)[i * 4 + 0] = numerator1[i];
-                ((int*)(nint)_parameterValue)[i * 4 + 1] = denominator1[i];
-                ((int*)(nint)_parameterValue)[i * 4 + 2] = numerator2[i];
-                ((int*)(nint)_parameterValue)[i * 4 + 3] = denominator2[i];
+                ((int*)_parameterValue)[i * 4 + 0] = numerator1[i];
+                ((int*)_parameterValue)[i * 4 + 1] = denominator1[i];
+                ((int*)_parameterValue)[i * 4 + 2] = numerator2[i];
+                ((int*)_parameterValue)[i * 4 + 3] = denominator2[i];
             }
             GC.KeepAlive(this);
         }
@@ -344,9 +344,9 @@ namespace System.Drawing.Imaging
 
             int bytes = checked(size * NumberOfValues);
 
-            _parameterValue = NativeMemoryHelper.Alloc(bytes);
+            _parameterValue = Marshal.AllocHGlobal(bytes);
 
-            new ReadOnlySpan<byte>((void*)Value, bytes).CopyTo(new Span<byte>((void*)(nint)_parameterValue, bytes));
+            new ReadOnlySpan<byte>((void*)Value, bytes).CopyTo(new Span<byte>((void*)_parameterValue, bytes));
 
             _parameterValueType = (EncoderParameterValueType)Type;
             _numberOfValues = NumberOfValues;
@@ -389,9 +389,9 @@ namespace System.Drawing.Imaging
 
             int bytes = checked(size * numberValues);
 
-            _parameterValue = NativeMemoryHelper.Alloc(bytes);
+            _parameterValue = Marshal.AllocHGlobal(bytes);
 
-            new ReadOnlySpan<byte>((void*)value, bytes).CopyTo(new Span<byte>((void*)(nint)_parameterValue, bytes));
+            new ReadOnlySpan<byte>((void*)value, bytes).CopyTo(new Span<byte>((void*)_parameterValue, bytes));
 
             _parameterValueType = type;
             _numberOfValues = numberValues;

@@ -175,7 +175,7 @@ namespace System.Drawing
             {
                 if (encoderParamsMemory != IntPtr.Zero)
                 {
-                    NativeMemoryHelper.Free(encoderParamsMemory);
+                    Marshal.FreeHGlobal(encoderParamsMemory);
                 }
             }
         }
@@ -251,7 +251,7 @@ namespace System.Drawing
             {
                 if (encoderParamsMemory != IntPtr.Zero)
                 {
-                    NativeMemoryHelper.Free(encoderParamsMemory);
+                    Marshal.FreeHGlobal(encoderParamsMemory);
                 }
             }
         }
@@ -275,7 +275,7 @@ namespace System.Drawing
             {
                 if (encoder != IntPtr.Zero)
                 {
-                    NativeMemoryHelper.Free(encoder);
+                    Marshal.FreeHGlobal(encoder);
                 }
             }
         }
@@ -305,7 +305,7 @@ namespace System.Drawing
             {
                 if (encoder != IntPtr.Zero)
                 {
-                    NativeMemoryHelper.Free(encoder);
+                    Marshal.FreeHGlobal(encoder);
                 }
             }
         }
@@ -339,7 +339,7 @@ namespace System.Drawing
                 //    UINT Count
                 //    ARGB Entries[size]
 
-                IntPtr memory = NativeMemoryHelper.Alloc(size);
+                IntPtr memory = Marshal.AllocHGlobal(size);
                 try
                 {
                     Gdip.CheckStatus(Gdip.GdipGetImagePalette(new HandleRef(this, nativeImage), memory, size));
@@ -347,7 +347,7 @@ namespace System.Drawing
                 }
                 finally
                 {
-                    NativeMemoryHelper.Free(memory);
+                    Marshal.FreeHGlobal(memory);
                 }
 
                 return palette;
@@ -364,7 +364,7 @@ namespace System.Drawing
                 {
                     if (memory != IntPtr.Zero)
                     {
-                        NativeMemoryHelper.Free(memory);
+                        Marshal.FreeHGlobal(memory);
                     }
                 }
             }

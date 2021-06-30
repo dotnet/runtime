@@ -177,7 +177,7 @@ namespace System.Drawing
             {
                 IntPtr nativeEncoderParams = encoderParams.ConvertToMemory();
                 st = Gdip.GdipSaveImageToFile(nativeImage, filename, ref guid, nativeEncoderParams);
-                NativeMemoryHelper.Free(nativeEncoderParams);
+                Marshal.FreeHGlobal(nativeEncoderParams);
             }
 
             Gdip.CheckStatus(st);
@@ -230,7 +230,7 @@ namespace System.Drawing
             finally
             {
                 if (nativeEncoderParams != IntPtr.Zero)
-                    NativeMemoryHelper.Free(nativeEncoderParams);
+                    Marshal.FreeHGlobal(nativeEncoderParams);
             }
 
             Gdip.CheckStatus(st);
@@ -242,7 +242,7 @@ namespace System.Drawing
 
             IntPtr nativeEncoderParams = encoderParams.ConvertToMemory();
             st = Gdip.GdipSaveAdd(nativeImage, nativeEncoderParams);
-            NativeMemoryHelper.Free(nativeEncoderParams);
+            Marshal.FreeHGlobal(nativeEncoderParams);
             Gdip.CheckStatus(st);
         }
 
@@ -252,7 +252,7 @@ namespace System.Drawing
 
             IntPtr nativeEncoderParams = encoderParams.ConvertToMemory();
             st = Gdip.GdipSaveAddImage(nativeImage, image.nativeImage, nativeEncoderParams);
-            NativeMemoryHelper.Free(nativeEncoderParams);
+            Marshal.FreeHGlobal(nativeEncoderParams);
             Gdip.CheckStatus(st);
         }
 
@@ -276,7 +276,7 @@ namespace System.Drawing
 
             int st = Gdip.GdipGetImagePaletteSize(nativeImage, out bytes);
             Gdip.CheckStatus(st);
-            IntPtr palette_data = NativeMemoryHelper.Alloc(bytes);
+            IntPtr palette_data = Marshal.AllocHGlobal(bytes);
             try
             {
                 st = Gdip.GdipGetImagePalette(nativeImage, palette_data, bytes);
@@ -287,7 +287,7 @@ namespace System.Drawing
 
             finally
             {
-                NativeMemoryHelper.Free(palette_data);
+                Marshal.FreeHGlobal(palette_data);
             }
         }
 
@@ -311,7 +311,7 @@ namespace System.Drawing
 
             finally
             {
-                NativeMemoryHelper.Free(palette_data);
+                Marshal.FreeHGlobal(palette_data);
             }
         }
 

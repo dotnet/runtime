@@ -446,7 +446,7 @@ namespace System.Drawing.Imaging
             int index = 0;
             int mapSize = map.Length;
             int size = 4; // Marshal.SizeOf(index.GetType());
-            IntPtr memory = NativeMemoryHelper.Alloc(checked(mapSize * size * 2));
+            IntPtr memory = Marshal.AllocHGlobal(checked(mapSize * size * 2));
 
             try
             {
@@ -465,7 +465,7 @@ namespace System.Drawing.Imaging
             }
             finally
             {
-                NativeMemoryHelper.Free(memory);
+                Marshal.FreeHGlobal(memory);
             }
         }
 
@@ -532,7 +532,7 @@ namespace System.Drawing.Imaging
             {
                 if (memory != IntPtr.Zero)
                 {
-                    NativeMemoryHelper.Free(memory);
+                    Marshal.FreeHGlobal(memory);
                 }
             }
         }

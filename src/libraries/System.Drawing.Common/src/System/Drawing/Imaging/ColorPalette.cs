@@ -82,7 +82,7 @@ namespace System.Drawing.Imaging
 
             // use Marshal.SizeOf()
             int length = _entries.Length;
-            IntPtr memory = NativeMemoryHelper.Alloc(checked(4 * (2 + length)));
+            IntPtr memory = Marshal.AllocHGlobal(checked(4 * (2 + length)));
 
             Marshal.WriteInt32(memory, 0, _flags);
             // use Marshal.SizeOf()

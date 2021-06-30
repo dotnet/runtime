@@ -46,7 +46,7 @@ namespace System.Drawing
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
                 pts[i] = (Point)Marshal.PtrToStructure(pos, typeof(Point))!;
 
-            NativeMemoryHelper.Free(prt);
+            Marshal.FreeHGlobal(prt);
         }
 
         // Copies a Ptr to an array of Points and releases the memory
@@ -57,14 +57,14 @@ namespace System.Drawing
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
                 pts[i] = (PointF)Marshal.PtrToStructure(pos, typeof(PointF))!;
 
-            NativeMemoryHelper.Free(prt);
+            Marshal.FreeHGlobal(prt);
         }
 
         // Copies an array of Points to unmanaged memory
         public static IntPtr FromPointToUnManagedMemoryI(Point[] pts)
         {
             int nPointSize = Marshal.SizeOf(pts[0]);
-            IntPtr dest = NativeMemoryHelper.Alloc(nPointSize * pts.Length);
+            IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
             IntPtr pos = dest;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
                 Marshal.StructureToPtr(pts[i], pos, false);
@@ -76,7 +76,7 @@ namespace System.Drawing
         public static IntPtr FromPointToUnManagedMemory(PointF[] pts)
         {
             int nPointSize = Marshal.SizeOf(pts[0]);
-            IntPtr dest = NativeMemoryHelper.Alloc(nPointSize * pts.Length);
+            IntPtr dest = Marshal.AllocHGlobal(nPointSize * pts.Length);
             IntPtr pos = dest;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
                 Marshal.StructureToPtr(pts[i], pos, false);

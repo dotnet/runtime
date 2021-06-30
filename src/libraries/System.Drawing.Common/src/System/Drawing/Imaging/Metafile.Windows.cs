@@ -247,7 +247,7 @@ namespace System.Drawing.Imaging
 
             MetafileHeader header = new MetafileHeader();
 
-            IntPtr memory = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
+            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
 
             try
             {
@@ -275,7 +275,7 @@ namespace System.Drawing.Imaging
             }
             finally
             {
-                NativeMemoryHelper.Free(memory);
+                Marshal.FreeHGlobal(memory);
             }
 
             return header;
@@ -288,7 +288,7 @@ namespace System.Drawing.Imaging
         {
             MetafileHeader header;
 
-            IntPtr memory = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
+            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
 
             try
             {
@@ -318,7 +318,7 @@ namespace System.Drawing.Imaging
             }
             finally
             {
-                NativeMemoryHelper.Free(memory);
+                Marshal.FreeHGlobal(memory);
             }
 
             return header;
@@ -331,7 +331,7 @@ namespace System.Drawing.Imaging
         {
             MetafileHeader header;
 
-            IntPtr memory = NativeMemoryHelper.Alloc(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
+            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
 
             try
             {
@@ -361,7 +361,7 @@ namespace System.Drawing.Imaging
             }
             finally
             {
-                NativeMemoryHelper.Free(memory);
+                Marshal.FreeHGlobal(memory);
             }
 
             return header;

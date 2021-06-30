@@ -809,7 +809,7 @@ namespace System.Drawing
                 }
 
                 int count = value.Length;
-                IntPtr buf = NativeMemoryHelper.Alloc(checked(4 * count));
+                IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
 
                 try
                 {
@@ -820,7 +820,7 @@ namespace System.Drawing
                 }
                 finally
                 {
-                    NativeMemoryHelper.Free(buf);
+                    Marshal.FreeHGlobal(buf);
                 }
             }
         }
