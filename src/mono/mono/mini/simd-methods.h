@@ -248,7 +248,7 @@ METHOD(HashUpdate2)
 METHOD(ScheduleUpdate0)
 METHOD(ScheduleUpdate1)
 METHOD(MixColumns)
-//AdvSimd
+// AdvSimd
 METHOD(AbsSaturate)
 METHOD(AbsSaturateScalar)
 METHOD(AbsScalar)
@@ -559,3 +559,15 @@ METHOD(ZeroExtendWideningLower)
 METHOD(ZeroExtendWideningUpper)
 METHOD(ZipHigh)
 METHOD(ZipLow)
+// Arm.Rdm
+METHOD(MultiplyRoundedDoublingAndAddSaturateHigh)
+METHOD(MultiplyRoundedDoublingAndSubtractSaturateHigh)
+METHOD(MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh)
+METHOD(MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh)
+// Arm.Rdm.Arm64
+METHOD(MultiplyRoundedDoublingAndAddSaturateHighScalar)
+METHOD(MultiplyRoundedDoublingAndSubtractSaturateHighScalar)
+METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh)
+METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
+// Arm.Dp
+METHOD(DotProductBySelectedQuadruplet)

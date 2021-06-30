@@ -135,17 +135,30 @@ mono_runtime_shutdown_handlers (void)
 static GHashTable *mono_saved_signal_handlers = NULL;
 
 static struct sigaction *
-get_saved_signal_handler (int signo, gboolean remove)
+get_saved_signal_handler (int signo)
 {
 	if (mono_saved_signal_handlers) {
 		/* The hash is only modified during startup, so no need for locking */
 		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
-		if (remove && handler)
-			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
 		return handler;
 	}
 	return NULL;
 }
+
+
+static void
+remove_saved_signal_handler (int signo)
+{
+	if (mono_saved_signal_handlers) {
+		/* The hash is only modified during startup, so no need for locking */
+		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		if (handler)
+			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+	}
+	return;
+}
+
+
 
 static void
 save_old_signal_handler (int signo, struct sigaction *old_action)
@@ -181,7 +194,7 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
-	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal, FALSE);
+	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal);
 
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
@@ -376,7 +389,7 @@ static void
 remove_signal_handler (int signo)
 {
 	struct sigaction sa;
-	struct sigaction *saved_action = get_saved_signal_handler (signo, TRUE);
+	struct sigaction *saved_action = get_saved_signal_handler (signo);
 
 	if (!saved_action) {
 		sa.sa_handler = SIG_DFL;
@@ -387,6 +400,7 @@ remove_signal_handler (int signo)
 	} else {
 		g_assert (sigaction (signo, saved_action, NULL) != -1);
 	}
+	remove_saved_signal_handler(signo);
 }
 
 void

@@ -41,7 +41,7 @@ namespace System.Net.Http.Functional.Tests
             using GenericLoopbackServer firstServer =
                 fromVersion.Major switch
                 {
-                    1 => new LoopbackServer(new LoopbackServer.Options { UseSsl = true }),
+                    1 => Http11LoopbackServerFactory.Singleton.CreateServer(new LoopbackServer.Options { UseSsl = true }),
                     2 => Http2LoopbackServer.CreateServer(),
                     _ => throw new Exception("Unknown HTTP version.")
                 };

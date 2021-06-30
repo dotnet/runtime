@@ -131,6 +131,7 @@ namespace System.IO.Hashing.Tests
             InstanceAppendAllocateAndResetDriver(testCase);
         }
 
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/54007", RuntimeConfiguration.Checked)]
         [Theory]
         [MemberData(nameof(TestCases))]
         public void InstanceMultiAppendGetCurrentHash(TestCase testCase)
