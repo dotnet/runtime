@@ -18,7 +18,7 @@ namespace System
             return GetLocalTimeZoneFromTzFile();
         }
 
-        private static void PopulateAllSystemTimeZonesCore()
+        private static void PopulateAllSystemTimeZonesCore(CachedData cachedData)
         {
             string timeZoneDirectory = GetTimeZoneDirectory();
             foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))

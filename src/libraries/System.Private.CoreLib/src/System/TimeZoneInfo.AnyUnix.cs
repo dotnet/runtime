@@ -241,7 +241,7 @@ namespace System
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            return GetLocalTimeZoneCore();
+            return GetLocalTimeZoneCore(cachedData);
         }
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
