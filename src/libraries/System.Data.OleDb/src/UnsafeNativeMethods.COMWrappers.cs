@@ -12,7 +12,7 @@ namespace System.Data.Common
         //
 
         [DllImport(Interop.Libraries.OleAut32)]
-        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
+        internal unsafe static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
             int dwReserved,
             System.IntPtr* ppIErrorInfo);
     }
