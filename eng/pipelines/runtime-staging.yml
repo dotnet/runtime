@@ -257,6 +257,7 @@ jobs:
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
+
 #
 # Build the whole product using Mono for Android and run runtime tests with interpreter
 #
