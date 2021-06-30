@@ -462,7 +462,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
-    REQUIRED_FUNCTION(SSL_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
@@ -493,6 +492,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
+    REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
     LEGACY_FUNCTION(SSL_state) \
@@ -902,7 +902,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
 #define SSL_CTX_set_ciphersuites SSL_CTX_set_ciphersuites_ptr
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
-#define SSL_set_options SSL_set_options_ptr
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
@@ -936,6 +935,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
+#define SSL_set_options SSL_set_options_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
