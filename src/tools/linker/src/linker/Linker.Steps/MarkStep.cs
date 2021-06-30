@@ -2747,6 +2747,10 @@ namespace Mono.Linker.Steps
 
 			case DependencyKind.Custom:
 			case DependencyKind.Unspecified:
+
+			// Don't warn for methods kept due to non-understood DebuggerDisplayAttribute
+			// until https://github.com/mono/linker/issues/1873 is fixed.
+			case DependencyKind.KeptForSpecialAttribute:
 				return;
 
 			default:
