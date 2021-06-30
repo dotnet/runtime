@@ -338,7 +338,6 @@ namespace System
 
         private string tzdataPath;
         private Stream? data;
-        private string version = "";
 
         private string[]? ids;
         private int[]? byteOffsets;
@@ -356,11 +355,8 @@ namespace System
             }
 
             tzdataPath = "/";
-            version = "missing";
             ids = new[]{ "GMT" };
         }
-
-        public string Version => version;
 
         private static string GetApexTimeDataRoot()
         {
@@ -438,8 +434,6 @@ namespace System
                 //TODO: Put strings in resource file
                 throw new InvalidOperationException ("bad tzdata magic: " + b.ToString ());
             }
-
-            version = new string(s, 6, 5, Encoding.ASCII);
 
             ReadIndex(header.indexOffset, header.dataOffset, buffer);
         }
