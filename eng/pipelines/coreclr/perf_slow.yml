@@ -1,0 +1,199 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+    - release/*
+  paths:
+    include:
+    - '*'
+    - src/libraries/System.Private.CoreLib/*
+    exclude:
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+schedules:
+- cron: "30 2 * * *"
+  displayName: Every night at 2:30AM
+  branches:
+    include:
+    - main
+  always: true
+
+jobs:
+
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+  
+  # build mono
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - Linux_arm64
+
+  # build coreclr and libraries
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      buildConfig: release
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+
+  # run arm64 interpreter jobs for mono
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'Interpreter'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfa64'
+
+  # build mono on wasm
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: wasm
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: Browser Wasm Artifacts
+          artifactName: BrowserWasm
+          archiveType: zip
+          archiveExtension: .zip
+
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+
+  # build coreclr and libraries
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      buildConfig: release
+      platforms:
+      - Linux_arm64
+      - windows_arm64
+      jobParameters:
+        testGroup: perf
+
+  # build mono on wasm
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: wasm
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: Browser Wasm Artifacts
+          artifactName: BrowserWasm
+          archiveType: zip
+          archiveExtension: .zip
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: AOT
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: AOT Mono Artifacts
+          artifactName: LinuxMonoAOTarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  # run mono aot microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildConfig: release
+      runtimeFlavor: aot
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'AOT'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+
+# run coreclr Linux arm64 microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfa64'
+
+# run coreclr Windows arm64 microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfsurf'
+

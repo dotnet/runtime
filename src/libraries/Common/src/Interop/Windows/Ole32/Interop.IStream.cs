@@ -56,8 +56,8 @@ internal static partial class Interop
                 ulong cb,
                 uint dwLockType);
 
-            void Stat(
-                out STATSTG pstatstg,
+            unsafe void Stat(
+                STATSTG* pstatstg,
                 STATFLAG grfStatFlag);
 
             IStream Clone();

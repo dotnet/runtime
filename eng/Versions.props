@@ -46,9 +46,9 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-rc1.21320.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>3.10.0</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-rc1.21324.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21321.1</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21321.1</MicrosoftDotNetBuildTasksFeedVersion>
@@ -166,6 +166,8 @@
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.7.21315.3</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <!-- MsQuic -->
+    <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21328.2</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21314.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21314.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
