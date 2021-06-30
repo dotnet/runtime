@@ -994,9 +994,14 @@ namespace System.Diagnostics.Tracing
                 int refObjIndex = 0;
 
                 Debug.Assert(EtwAPIMaxRefObjCount == 8);
+#if ES_BUILD_STANDALONE
+                int[] refObjPosition = new int[EtwAPIMaxRefObjCount];
+                object?[] dataRefObj = new object?[EtwAPIMaxRefObjCount];
+#else
                 EightObjects eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
+#endif
 
                 EventData* userData = stackalloc EventData[2 * argCount];
                 for (int i = 0; i < 2 * argCount; i++)
@@ -1035,12 +1040,18 @@ namespace System.Diagnostics.Tracing
 
                             if (refObjIndex >= dataRefObj.Length)
                             {
+#if ES_BUILD_STANDALONE
+                                Array.Resize(ref dataRefObj, dataRefObj.Length * 2);
+                                Array.Resize(ref refObjPosition, refObjPosition.Length * 2);
+#else
                                 Span<object?> newDataRefObj = new object?[dataRefObj.Length * 2];
-                                Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
                                 dataRefObj.CopyTo(newDataRefObj);
-                                refObjPosition.CopyTo(newRefObjPosition);
                                 dataRefObj = newDataRefObj;
+
+                                Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
+                                refObjPosition.CopyTo(newRefObjPosition);
                                 refObjPosition = newRefObjPosition;
+#endif
                             }
 
                             dataRefObj[refObjIndex] = supportedRefObj;
@@ -1162,6 +1173,7 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
+#if !ES_BUILD_STANDALONE
         /// <summary>Workaround for inability to stackalloc object[8].</summary>
         private struct EightObjects
         {
@@ -1176,6 +1188,7 @@ namespace System.Diagnostics.Tracing
             private object? _arg7;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
+#endif
 
         /// <summary>
         /// WriteEvent, method to be used by generated code on a derived class
