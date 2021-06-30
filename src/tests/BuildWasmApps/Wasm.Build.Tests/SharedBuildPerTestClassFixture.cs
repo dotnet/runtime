@@ -44,7 +44,7 @@ namespace Wasm.Build.Tests
         {
             try
             {
-                Directory.Delete(path, recursive: true);
+                 Directory.Delete(path, recursive: true);
             }
             catch (Exception ex)
             {
