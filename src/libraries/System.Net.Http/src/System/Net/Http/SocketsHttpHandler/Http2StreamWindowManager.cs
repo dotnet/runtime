@@ -25,8 +25,8 @@ namespace System.Net.Http
             {
                 HttpConnectionSettings settings = connection._pool.Settings;
                 _streamWindowSize = settings._initialHttp2StreamWindowSize;
-                _lastWindowUpdate = Stopwatch.GetTimestamp();
                 _deliveredBytes = 0;
+                _lastWindowUpdate = default;
 
                 if (NetEventSource.Log.IsEnabled()) stream.Trace($"[FlowControl] InitialClientStreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}, WindowScaleThresholdMultiplier: {WindowScaleThresholdMultiplier}");
             }
@@ -39,8 +39,14 @@ namespace System.Net.Http
 
             internal int StreamWindowSize => _streamWindowSize;
 
+            public void Start()
+            {
+                _lastWindowUpdate = Stopwatch.GetTimestamp();
+            }
+
             public void AdjustWindow(int bytesConsumed, Http2Stream stream)
             {
+                Debug.Assert(_lastWindowUpdate != default); // Make sure Start() has been invoked, otherwise we should not be receiving DATA.
                 Debug.Assert(bytesConsumed > 0);
                 Debug.Assert(_deliveredBytes < StreamWindowThreshold);
 

@@ -781,6 +781,10 @@ namespace System.Net.Http
                         Debug.Assert(_requestCompletionState != StreamCompletionState.Failed);
                     }
 
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingData)
+                    {
+                        _windowManager.Start();
+                    }
                     signalWaiter = _hasWaiter;
                     _hasWaiter = false;
                 }
