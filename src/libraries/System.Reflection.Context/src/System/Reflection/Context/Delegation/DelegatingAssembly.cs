@@ -70,6 +70,10 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.SecurityRuleSet; }
         }
 
+#if NETCOREAPP
+        [Obsolete]
+        [RequiresAssemblyFiles]
+#endif
         public override string CodeBase
         {
             get { return UnderlyingAssembly.CodeBase; }
@@ -85,6 +89,10 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.EntryPoint; }
         }
 
+#if NETCOREAPP
+        [Obsolete]
+        [RequiresAssemblyFiles]
+#endif
         public override string EscapedCodeBase
         {
             get { return UnderlyingAssembly.EscapedCodeBase; }
@@ -188,6 +196,9 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetTypes();
         }
 
+#if NETCOREAPP
+        [Obsolete]
+#endif
         public override bool GlobalAssemblyCache
         {
             get { return UnderlyingAssembly.GlobalAssemblyCache; }
