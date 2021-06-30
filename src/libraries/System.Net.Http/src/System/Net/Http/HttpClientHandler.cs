@@ -300,6 +300,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("ios")]
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
