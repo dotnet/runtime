@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -112,6 +113,12 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 try
                 {
                     string command = $"emcc {Arguments} -c -o {objFile} {srcFile}";
+
+                    // Log the command in a compact format which can be copy pasted
+                    StringBuilder envStr = new StringBuilder(string.Empty);
+                    foreach (var key in envVarsDict.Keys)
+                        envStr.Append($"{key}={envVarsDict[key]} ");
+                    Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
                     (int exitCode, string output) = Utils.RunShellCommand(command, envVarsDict, workingDir: Environment.CurrentDirectory);
 
                     if (exitCode != 0)

@@ -785,9 +785,16 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            for (int i = 0; i < array.Length; i++)
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
             {
-                array[i] = value;
+                for (int i = 0; i < array.Length; i++)
+                {
+                    array[i] = value;
+                }
+            }
+            else
+            {
+                new Span<T>(array).Fill(value);
             }
         }
 
@@ -798,19 +805,27 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (startIndex < 0 || startIndex > array.Length)
+            if ((uint)startIndex > (uint)array.Length)
             {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
-            if (count < 0 || startIndex > array.Length - count)
+            if ((uint)count > (uint)(array.Length - startIndex))
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            for (int i = startIndex; i < startIndex + count; i++)
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
             {
-                array[i] = value;
+                for (int i = startIndex; i < startIndex + count; i++)
+                {
+                    array[i] = value;
+                }
+            }
+            else
+            {
+                ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)startIndex);
+                new Span<T>(ref first, count).Fill(value);
             }
         }
 

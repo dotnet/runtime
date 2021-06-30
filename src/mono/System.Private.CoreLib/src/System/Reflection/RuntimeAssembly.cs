@@ -78,7 +78,7 @@ namespace System.Reflection
         {
             get
             {
-                return get_code_base(this, false);
+                return get_code_base(this);
             }
         }
 
@@ -467,7 +467,7 @@ namespace System.Reflection
         private extern string get_location();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern string get_code_base(Assembly a, bool escaped);
+        private static extern string? get_code_base(Assembly a);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern string get_fullname(Assembly a);

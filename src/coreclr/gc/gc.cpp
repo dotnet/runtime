@@ -3645,10 +3645,10 @@ void region_allocator::enter_spin_lock()
 
 void region_allocator::leave_spin_lock()
 {
-    region_allocator_lock.lock = -1;
 #ifdef _DEBUG
     region_allocator_lock.holding_thread = (Thread*)-1;
 #endif //_DEBUG
+    region_allocator_lock.lock = -1;
 }
 
 uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction)
