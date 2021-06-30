@@ -149,9 +149,9 @@ mono_handle_chunk_leak_check (HandleStack *handles) {
 
 // There are deliberately locals and a constant NULL global with this same name.
 #ifdef __cplusplus
-MONO_COMPONENT_API MonoThreadInfo * const mono_thread_info_current_var = NULL;
+MonoThreadInfo * const mono_thread_info_current_var = NULL;
 #else
-MONO_COMPONENT_API MonoThreadInfo * const mono_thread_info_current_var = NULL;
+MonoThreadInfo * const mono_thread_info_current_var = NULL;
 #endif
 
 /* Actual handles implementation */
@@ -516,4 +516,10 @@ mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintp
 {
 	MONO_HANDLE_SUPPRESS (g_assert (dest.__raw));
 	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)mono_array_get_internal (MONO_HANDLE_RAW (array), gpointer, index));
+}
+
+MonoThreadInfo * const
+get_mono_thread_info_current_var (void)
+{
+	return mono_thread_info_current_var;
 }

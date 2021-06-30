@@ -165,10 +165,10 @@ mono_wasm_debugger_init (void)
 	mono_de_init (&cbs);
 	mono_de_set_log_level (log_level, stdout);
 
-	mini_debug_options.gen_sdb_seq_points = TRUE;
-	mini_debug_options.mdb_optimizations = TRUE;
+	get_mini_debug_options ()->gen_sdb_seq_points = TRUE;
+	get_mini_debug_options ()->mdb_optimizations = TRUE;
 	mono_disable_optimizations (MONO_OPT_LINEARS);
-	mini_debug_options.load_aot_jit_info_eagerly = TRUE;
+	get_mini_debug_options ()->load_aot_jit_info_eagerly = TRUE;
 
 	MonoProfilerHandle prof = mono_profiler_create (NULL);
 	mono_profiler_set_jit_done_callback (prof, jit_done);

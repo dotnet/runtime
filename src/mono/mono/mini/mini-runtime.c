@@ -143,8 +143,7 @@ static mono_mutex_t jit_mutex;
 
 static MonoCodeManager *global_codeman;
 
-MONO_COMPONENT_API MonoDebugOptions mini_debug_options;
-MONO_COMPONENT_API char *sdb_options;
+MonoDebugOptions mini_debug_options;
 
 #ifdef VALGRIND_JIT_REGISTER_MAP
 int valgrind_register;
@@ -4205,7 +4204,7 @@ mini_add_profiler_argument (const char *desc)
 }
 
 
-MONO_COMPONENT_API const MonoEECallbacks *mono_interp_callbacks_pointer;
+const MonoEECallbacks *mono_interp_callbacks_pointer;
 
 void
 mini_install_interp_callbacks (const MonoEECallbacks *cbs)
@@ -4271,8 +4270,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 
-	if (sdb_options)
-		mono_component_debugger ()->parse_options (sdb_options);
+	mono_component_debugger ()->parse_options ();
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
@@ -5158,4 +5156,10 @@ MonoException*
 mini_get_stack_overflow_ex (void)
 {
 	return mono_get_root_domain ()->stack_overflow_ex;
+}
+
+const MonoEECallbacks*
+mini_get_interp_callbacks_api (void)
+{
+	return mono_interp_callbacks_pointer;
 }

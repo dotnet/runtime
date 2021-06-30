@@ -452,8 +452,9 @@ extern GHashTable *mono_single_method_hash;
 extern GList* mono_aot_paths;
 extern MonoDebugOptions mini_debug_options;
 extern GSList *mono_interp_only_classes;
-extern char *sdb_options;
 extern MonoMethodDesc *mono_stats_method_desc;
+
+MONO_COMPONENT_API MonoDebugOptions *get_mini_debug_options (void);
 
 /*
 This struct describes what execution engine feature to use.
@@ -509,6 +510,8 @@ extern const
 MonoEECallbacks*       mono_interp_callbacks_pointer;
 
 #define mini_get_interp_callbacks() (mono_interp_callbacks_pointer)
+
+MONO_COMPONENT_API const MonoEECallbacks* mini_get_interp_callbacks_api (void);
 
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version);
 void        mini_cleanup                   (MonoDomain *domain);

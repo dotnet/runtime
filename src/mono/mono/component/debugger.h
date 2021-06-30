@@ -174,7 +174,7 @@ typedef struct MonoComponentDebugger {
 	MonoComponent component;
 	void (*init) (void);
 	void (*user_break) (void);
-	void (*parse_options) (char *options);
+	void (*parse_options) (void);
 	void (*breakpoint_hit) (void *sigctx);
 	void (*single_step_event) (void *sigctx);
 	void (*single_step_from_context) (MonoContext *ctx);

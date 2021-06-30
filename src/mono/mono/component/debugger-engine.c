@@ -212,7 +212,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 		PRINT_DEBUG_MSG (1, "[dbg] Attempting to insert seq point at dead IL offset %d, ignoring.\n", (int)bp->il_offset);
 	} else if (count == 0) {
 		if (ji->is_interp) {
-			mini_get_interp_callbacks ()->set_breakpoint (ji, inst->ip);
+			mini_get_interp_callbacks_api ()->set_breakpoint (ji, inst->ip);
 		} else {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 			mono_arch_set_breakpoint (ji, inst->ip);
@@ -241,7 +241,7 @@ remove_breakpoint (BreakpointInstance *inst)
 
 	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
 		if (ji->is_interp) {
-			mini_get_interp_callbacks ()->clear_breakpoint (ji, ip);
+			mini_get_interp_callbacks_api ()->clear_breakpoint (ji, ip);
 		} else {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 			mono_arch_clear_breakpoint (ji, ip);
@@ -608,7 +608,7 @@ mono_de_start_single_stepping (void)
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_start_single_stepping ();
 #endif
-		mini_get_interp_callbacks ()->start_single_stepping ();
+		mini_get_interp_callbacks_api ()->start_single_stepping ();
 	}
 }
 
@@ -621,7 +621,7 @@ mono_de_stop_single_stepping (void)
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_stop_single_stepping ();
 #endif
-		mini_get_interp_callbacks ()->stop_single_stepping ();
+		mini_get_interp_callbacks_api ()->stop_single_stepping ();
 	}
 }
 
@@ -647,11 +647,11 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 		g_assert (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX);
 		frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
-		ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
+		ji = mini_get_interp_callbacks_api ()->frame_get_jit_info (frame);
 		if (domain)
 			*domain = mono_domain_get ();
 		if (out_ip)
-			*out_ip = mini_get_interp_callbacks ()->frame_get_ip (frame);
+			*out_ip = mini_get_interp_callbacks_api ()->frame_get_ip (frame);
 	}
 	return ji;
 }
@@ -823,7 +823,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
-	if (method->klass == mono_defaults.string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
+	if (method->klass == get_mono_defaults ()->string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		goto exit;
 
 	/*
@@ -1667,7 +1667,7 @@ get_this_addr (DbgEngineStackFrame *the_frame)
 {
 	StackFrame *frame = (StackFrame *)the_frame;
 	if (frame->de.ji->is_interp)
-		return mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+		return mini_get_interp_callbacks_api ()->frame_get_this (frame->interp_frame);
 
 	MonoDebugVarInfo *var = frame->jit->this_var;
 	if ((var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) != MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET)
@@ -1730,7 +1730,7 @@ get_notify_debugger_of_wait_completion_method (void)
 	if (notify_debugger_of_wait_completion_method_cache != NULL)
 		return notify_debugger_of_wait_completion_method_cache;
 	ERROR_DECL (error);
-	MonoClass* task_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading.Tasks", "Task");
+	MonoClass* task_class = mono_class_load_from_name (get_mono_defaults ()->corlib, "System.Threading.Tasks", "Task");
 	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, 1, FALSE, error);
 	mono_error_assert_ok (error);
 	g_assert (array->len == 1);

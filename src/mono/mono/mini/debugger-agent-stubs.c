@@ -15,7 +15,7 @@
 #include "debugger-agent.h"
 
 static void
-stub_debugger_agent_parse_options (char *options)
+stub_debugger_agent_parse_options (void)
 {
 	g_error ("This runtime is configured with the debugger agent disabled.");
 }

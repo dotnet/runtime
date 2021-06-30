@@ -13,7 +13,7 @@ static bool
 debugger_avaliable (void);
 
 static void
-stub_debugger_parse_options (char *options);
+stub_debugger_parse_options (void);
 
 static void
 stub_debugger_init (void);
@@ -119,7 +119,7 @@ mono_component_debugger_init (void)
 }
 
 static void
-stub_debugger_parse_options (char *options)
+stub_debugger_parse_options (void)
 {
 	g_error ("This runtime is configured with the debugger agent disabled.");
 }

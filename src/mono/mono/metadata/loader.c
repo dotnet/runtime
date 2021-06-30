@@ -70,7 +70,7 @@ static gboolean loader_lock_track_ownership;
  */
 static MonoNativeTlsKey loader_lock_nest_id;
 
-MONO_COMPONENT_API MonoDefaults mono_defaults;
+MonoDefaults mono_defaults;
 
 /* Statistics */
 static gint32 inflated_signatures_size;
@@ -2122,4 +2122,10 @@ mono_method_get_index (MonoMethod *method)
 		}
 	}
 	return 0;
+}
+
+MonoDefaults *
+get_mono_defaults (void)
+{
+	return &mono_defaults;
 }
