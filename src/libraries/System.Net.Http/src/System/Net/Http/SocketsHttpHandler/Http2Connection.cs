@@ -135,7 +135,7 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
 
-            _rttEstimator = new RttEstimator(this);
+            _rttEstimator = RttEstimator.Create();
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
@@ -454,7 +454,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
-                _rttEstimator.OnDataOrHeadersReceived();
+                _rttEstimator.OnDataOrHeadersReceived(this);
                 headersHandler = http2Stream;
             }
             else
@@ -590,7 +590,7 @@ namespace System.Net.Http
 
                 if (!endStream && frameData.Length > 0)
                 {
-                    _rttEstimator.OnDataOrHeadersReceived();
+                    _rttEstimator.OnDataOrHeadersReceived(this);
                 }
             }
 
@@ -626,7 +626,7 @@ namespace System.Net.Http
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
                 _expectingSettingsAck = false;
-                _rttEstimator.OnInitialSettingsAckReceived();
+                _rttEstimator.OnInitialSettingsAckReceived(this);
             }
             else
             {
@@ -2005,7 +2005,7 @@ namespace System.Net.Http
             // _keepAlivePingPayload is always non-negative.
             if (payload < 0) // RTT ping
             {
-                _rttEstimator.OnPingAckReceived(payload);
+                _rttEstimator.OnPingAckReceived(payload, this);
                 return;
             }
             else // Keepalive ping

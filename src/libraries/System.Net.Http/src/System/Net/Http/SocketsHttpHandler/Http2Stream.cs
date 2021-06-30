@@ -147,6 +147,8 @@ namespace System.Net.Http
 
             public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
 
+            public Http2Connection Connection => _connection;
+
             public HttpResponseMessage GetAndClearResponse()
             {
                 // Once SendAsync completes, the Http2Stream should no longer hold onto the response message.
@@ -1063,7 +1065,7 @@ namespace System.Net.Http
 
                 if (bytesRead != 0)
                 {
-                    _windowManager.AdjustWindow(bytesRead);
+                    _windowManager.AdjustWindow(bytesRead, this);
                 }
                 else
                 {
@@ -1092,7 +1094,7 @@ namespace System.Net.Http
 
                 if (bytesRead != 0)
                 {
-                    _windowManager.AdjustWindow(bytesRead);
+                    _windowManager.AdjustWindow(bytesRead, this);
                 }
                 else
                 {
@@ -1122,7 +1124,7 @@ namespace System.Net.Http
 
                         if (bytesRead != 0)
                         {
-                            _windowManager.AdjustWindow(bytesRead);
+                            _windowManager.AdjustWindow(bytesRead, this);
                             destination.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
                         }
                         else
@@ -1158,7 +1160,7 @@ namespace System.Net.Http
 
                         if (bytesRead != 0)
                         {
-                            _windowManager.AdjustWindow(bytesRead);
+                            _windowManager.AdjustWindow(bytesRead, this);
                             await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                         }
                         else
