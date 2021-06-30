@@ -377,7 +377,7 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array array, int index)
         {
-            CollectionHelpers.ValidateArguments(1, array, index);
+            CollectionHelpers.ValidateCopyToArguments(1, array, index);
             array.SetValue(_item, index);
         }
 

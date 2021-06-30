@@ -7,7 +7,7 @@ namespace System.Collections
 {
     internal static class CollectionHelpers
     {
-        internal static void ValidateArguments(int sourceCount, Array array, int index)
+        internal static void ValidateCopyToArguments(int sourceCount, Array array, int index)
         {
             if (array == null)
             {
@@ -37,7 +37,7 @@ namespace System.Collections
 
         internal static void CopyTo<T>(ICollection<T> collection, Array array, int index)
         {
-            ValidateArguments(collection.Count, array, index);
+            ValidateCopyToArguments(collection.Count, array, index);
 
             if (collection is ICollection nonGenericCollection)
             {

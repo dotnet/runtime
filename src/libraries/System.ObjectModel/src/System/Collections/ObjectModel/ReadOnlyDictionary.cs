@@ -175,7 +175,7 @@ namespace System.Collections.ObjectModel
 
         void ICollection.CopyTo(Array array, int index)
         {
-            CollectionHelpers.ValidateArguments(Count, array, index);
+            CollectionHelpers.ValidateCopyToArguments(Count, array, index);
 
             if (array is KeyValuePair<TKey, TValue>[] pairs)
             {
