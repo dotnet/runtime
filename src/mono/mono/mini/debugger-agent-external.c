@@ -27,7 +27,7 @@ mono_debugger_agent_init (void)
 }
 
 void
-set_sdb_options (char *options)
+mono_debugger_agent_parse_options (char *options)
 {
 	mono_component_debugger ()->set_sdb_options (options);
 }
