@@ -785,6 +785,13 @@ unsigned long local_SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options)
     return (unsigned long)SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, (long)options, NULL);
 }
 
+unsigned long local_SSL_set_options(SSL* ssl, unsigned long options)
+{
+    // SSL_ctrl is signed long in and signed long out; but SSL_set_options,
+    // which was a macro call to SSL_ctrl in 1.0, is unsigned/unsigned.
+    return (unsigned long)SSL_ctrl(ssl, SSL_CTRL_OPTIONS, (long)options, NULL);
+}
+
 int local_SSL_session_reused(SSL* ssl)
 {
     return (int)SSL_ctrl(ssl, SSL_CTRL_GET_SESSION_REUSED, 0, NULL);

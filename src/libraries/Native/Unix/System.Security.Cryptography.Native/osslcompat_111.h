@@ -7,6 +7,7 @@
 #include "pal_types.h"
 
 #undef SSL_CTX_set_options
+#undef SSL_set_options
 #undef SSL_session_reused
 
 typedef struct ossl_init_settings_st OPENSSL_INIT_SETTINGS;
