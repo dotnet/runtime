@@ -590,10 +590,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("?assertion classification? ");
     }
     printf("Assertion: ");
-    if (!optLocalAssertionProp)
-    {
-        printf("(%d, %d) ", curAssertion->op1.vn, curAssertion->op2.vn);
-    }
 
     if (!optLocalAssertionProp)
     {
