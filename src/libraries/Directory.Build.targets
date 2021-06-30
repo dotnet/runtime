@@ -43,12 +43,6 @@
                                 '$(IsReferenceAssembly)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
 
-    <AnalyzerForAssembly Condition="'$(AnalyzerForAssembly)' == '' AND ('$(IsGeneratorProject)' == 'true' or '$(IsAnalyzerProject)' == 'true')">$(AssemblyName.Substring(0, $(AssemblyName.LastIndexOf('.'))))</AnalyzerForAssembly>
-    <IsNETCoreAppAnalyzer Condition="'$(IsNETCoreAppAnalyzer)' == '' and
-                                     '$(AnalyzerForAssembly)' != '' and
-                                     $(NetCoreAppLibrary.Contains('$(AnalyzerForAssembly);'))">true</IsNETCoreAppAnalyzer>
-    <IsAspNetCoreAppAnalyzer Condition="'$(IsAspNetCoreApp)' == 'true' AND ('$(IsGeneratorProject)' == 'true' or '$(IsAnalyzerProject)' == 'true')">true</IsAspNetCoreAppAnalyzer>
-
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -71,6 +65,7 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+    <!-- remove when picking up https://github.com/dotnet/arcade/pull/7578 -->
     <EnableBinplacing Condition="'$(IsAspNetCoreAppAnalyzer)' == 'true' or '$(IsNetCoreAppAnalyzer)' == 'true'">true</EnableBinplacing>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
     <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
