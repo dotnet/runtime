@@ -290,7 +290,7 @@ use the `RuntimeIdentifier` metadata to filter out the details applicable for th
     of the components that were (resp, were not) selected.  For example `'hot_reload;
     diagnostics_tracing'`.  Each item has two metadata properties `ComponentLib` and
     `ComponentStubLib` (which may be empty) that specify the name of the static or dynamic library
-    of the compponent.  This is not the main output of the target, it's primarily for debugging.
+    of the component.  This is not the main output of the target, it's primarily for debugging.
   - output `@(_MonoRuntimeComponentLink)` a list of library names (relative to the `native/`
     subdirectory of the runtime pack) that (for dynamic components) must be placed next to the
     runtime in the application bundle, or (for static components) that must be linked with the
@@ -299,7 +299,7 @@ use the `RuntimeIdentifier` metadata to filter out the details applicable for th
     `'dynamic'`).  This output should be used by the workloads when linking the app and runtime if
     the workload uses an allow list of native libraries to link or bundle.
   - output `@(_MonoRuntimeComponentDontLink)` a list of library names (relative to the `native/`
-    subdirectory of the rutnime pack) that should be excluded from the application bundle (for
+    subdirectory of the runtime pack) that should be excluded from the application bundle (for
     dynamic linking) or that should not be passed to the native linker (for static linking).  This
     output should be used by workloads that just link or bundle every native library from `native/`
     in order to filter the contents of the subdirectory to exclude the disabled components (and to
@@ -313,7 +313,7 @@ Example fragment (assuming the mono workload has been imported):
 
 ```xml
   <Project>
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
       <_MonoComponent Include="hot_reload;diagnostics_tracing" />
     </ItemGroup>
 

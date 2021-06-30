@@ -28,7 +28,7 @@
          in _MonoComponent -->
     <!-- Output: _MonoRuntimeSelectedStubComponents (static linking only) subset of
          _MonoRuntimeComponentName items that were not in _MonoComponent -->
-    <!-- Ouptut: _MonoRuntimeUnSelectedComponents subset of _MonoRuntimeComponentName items that were not in _MonoComponent. That is, the components that are available but that weren't selected. -->
+    <!-- Output: _MonoRuntimeUnSelectedComponents subset of _MonoRuntimeComponentName items that were not in _MonoComponent. That is, the components that are available but that weren't selected. -->
     <!-- Output: _MonoRuntimeUnSelectedStubComponents (static linking only) subset of _MonoRuntimeComponentName items that were in _MonoComponent.  That is, components that were selected - so their stubs should not be linked. -->
     <!-- Output: _MonoRuntimeComponentLink item list of the filenames to link (relative paths
          relative to the native/ directory of the runtime pack). For dynamic linking, this is only
