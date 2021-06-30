@@ -931,7 +931,8 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
     else
     {
-        // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar.
+        // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar
+        // or a single-def var that is to be spilled at its definition.
         assert((varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
@@ -2057,10 +2058,10 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
 
     // We have a register candidate local that is marked with GTF_SPILL.
     // This flag generally means that we need to spill this local.
-    // The exception is the case of a use of an EH var use that is being "spilled"
+    // The exception is the case of a use of an EH/spill-at-single-def var use that is being "spilled"
     // to the stack, indicated by GTF_SPILL (note that all EH lclVar defs are always
-    // spilled, i.e. write-thru).
-    // An EH var use is always valid on the stack (so we don't need to actually spill it),
+    // spilled, i.e. write-thru. Likewise, single-def vars that are spilled at its definitions).
+    // An EH or single-def var use is always valid on the stack (so we don't need to actually spill it),
     // but the GTF_SPILL flag records the fact that the register value is going dead.
     if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef))
     {

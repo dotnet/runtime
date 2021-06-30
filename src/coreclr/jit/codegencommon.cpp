@@ -552,8 +552,8 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
     else
     {
         // If this is going live, the register must not have a variable in it, except
-        // in the case of an exception variable, which may be already treated as live
-        // in the register.
+        // in the case of an exception or "spill at single-def" variable, which may be already treated
+        // as live in the register.
         assert(varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
@@ -777,7 +777,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         if (varDsc->lvIsInReg())
         {
             // If this variable is going live in a register, it is no longer live on the stack,
-            // unless it is an EH var, which always remains live on the stack.
+            // unless it is an EH/"spill at single-def" var, which always remains live on the stack.
             if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
             {
 #ifdef DEBUG
