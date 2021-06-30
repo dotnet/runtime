@@ -10,6 +10,29 @@ using System.Text;
 
 namespace System.Diagnostics.Metrics
 {
+    /// <summary>
+    /// This EventSource is intended to let out-of-process tools (such as dotnet-counters) do
+    /// ad-hoc monitoring for the new Instrument APIs. This source only supports one listener
+    /// at a time. Each new listener will overwrite the configuration about which metrics
+    /// are being collected and the time interval for the collection. In the future it would
+    /// be nice to have support for multiple concurrent out-of-proc tools but EventSource's
+    /// handling of filter arguments doesn't make that easy right now.
+    ///
+    /// Configuration - The EventSource accepts the following filter arguments:
+    ///   - SessionId - An arbitrary opaque string that will be sent back to the listener in
+    ///   many event payloads. If listener B reconfigures the EventSource while listener A
+    ///   is still running it is possible that each of them will observe some of the events
+    ///   that were generated using the other's requested configuration. Filtering on sessionId
+    ///   allows each listener to ignore those events.
+    ///   - RefreshInterval - The frequency in seconds for sending the metric time series data.
+    ///   The format is anything parsable using double.TryParse(). Any
+    ///   value less than AggregationManager.MinCollectionTimeSecs (currently 0.1 sec) is rounded
+    ///   up to the minimum. If not specified the default interval is 1 second.
+    ///   - Metrics - A semicolon separated list. Each item in the list is either the name of a
+    ///   Meter or 'meter_name\instrument_name'. For example "Foo;System.Runtime\gc-gen0-size"
+    ///   would include all instruments in the 'Foo' meter and the single 'gc-gen0-size' instrument
+    ///   in the 'System.Runtime' meter.
+    /// </summary>
     [EventSource(Name = "System.Diagnostics.Metrics")]
     internal class MetricsEventSource : EventSource
     {
@@ -191,6 +214,7 @@ namespace System.Diagnostics.Metrics
 
 
                     double defaultIntervalSecs = 1;
+                    Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
                     double refreshIntervalSecs = defaultIntervalSecs;
                     if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                     {
@@ -200,10 +224,10 @@ namespace System.Diagnostics.Metrics
                             Logger.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
                             refreshIntervalSecs = defaultIntervalSecs;
                         }
-                        else if (refreshIntervalSecs < AggregationManager.MinCollectionTime)
+                        else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
                         {
-                            Logger.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTime} seconds.");
-                            refreshIntervalSecs = AggregationManager.MinCollectionTime;
+                            Logger.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
+                            refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs;
                         }
                     }
                     else

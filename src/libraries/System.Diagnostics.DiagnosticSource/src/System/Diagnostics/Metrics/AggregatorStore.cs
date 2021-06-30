@@ -281,8 +281,13 @@ namespace System.Diagnostics.Metrics
 
     internal struct LabelInstruction
     {
-        public int SourceIndex;
-        public string LabelName;
+        public LabelInstruction(int sourceIndex, string labelName)
+        {
+            SourceIndex = sourceIndex;
+            LabelName = labelName;
+        }
+        public readonly int SourceIndex;
+        public readonly string LabelName;
     }
 
     internal delegate bool AggregatorLookupFunc<TAggregator>(ReadOnlySpan<KeyValuePair<string, object?>> labels, out TAggregator? aggregator);
@@ -297,7 +302,7 @@ namespace System.Diagnostics.Metrics
             where TAggregator : Aggregator
         {
             LabelInstruction[] instructions = Compile(labels);
-            Array.Sort(instructions, (LabelInstruction a, LabelInstruction b) => a.LabelName.CompareTo(b.LabelName));
+            Array.Sort(instructions, (LabelInstruction a, LabelInstruction b) => string.CompareOrdinal(a.LabelName, b.LabelName));
             int expectedLabels = labels.Length;
             switch (instructions.Length)
             {
@@ -363,8 +368,7 @@ namespace System.Diagnostics.Metrics
             LabelInstruction[] valueFetches = new LabelInstruction[labels.Length];
             for (int i = 0; i < labels.Length; i++)
             {
-                valueFetches[i].LabelName = labels[i].Key;
-                valueFetches[i].SourceIndex = i;
+                valueFetches[i] = new LabelInstruction(i, labels[i].Key);
             }
 
             return valueFetches;

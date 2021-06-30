@@ -5,7 +5,6 @@ namespace System.Diagnostics.Metrics
 {
     internal class RateSumAggregator : Aggregator
     {
-        private double _prevSum;
         private double _sum;
 
         public override void Update(double value)
@@ -20,10 +19,8 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                RateStatistics? stats = default;
-                double delta = _sum - _prevSum;
-                stats = new RateStatistics(delta);
-                _prevSum = _sum;
+                RateStatistics? stats = new RateStatistics(_sum);
+                _sum = 0;
                 return stats;
             }
         }

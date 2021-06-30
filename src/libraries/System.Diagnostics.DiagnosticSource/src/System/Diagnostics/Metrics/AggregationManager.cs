@@ -16,15 +16,13 @@ namespace System.Diagnostics.Metrics
     [SecuritySafeCritical]
     internal class AggregationManager
     {
-        public const double MinCollectionTime = 0.1;
+        public const double MinCollectionTimeSecs = 0.1;
         private static readonly QuantileAggregation DefaultHistogramConfig = new QuantileAggregation(new double[] { 0.50, 0.95, 0.99 });
 
         // these fields are modified after construction and accessed on multiple threads, use lock(this) to ensure the data
         // is synchronized
         private List<Predicate<Instrument>> _instrumentConfigFuncs = new();
         private TimeSpan _collectionPeriod;
-
-
 
         private ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private CancellationTokenSource _cts = new();
@@ -86,8 +84,6 @@ namespace System.Diagnostics.Metrics
             _listener.SetMeasurementEventCallback<decimal>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
         }
 
-
-
         public AggregationManager Include(string meterName)
         {
             Include(i => i.Meter.Name == meterName);
@@ -127,10 +123,10 @@ namespace System.Diagnostics.Metrics
                 throw new InvalidOperationException("Start can only be called once");
             }
 
-            if (_collectionPeriod.TotalSeconds < MinCollectionTime)
+            if (_collectionPeriod.TotalSeconds < MinCollectionTimeSecs)
             {
                 // correct usage from internal code should never get here
-                throw new InvalidOperationException($"CollectionPeriod must be >= {MinCollectionTime} sec");
+                throw new InvalidOperationException($"CollectionPeriod must be >= {MinCollectionTimeSecs} sec");
             }
 
             // This explicitly uses a Thread and not a Task so that metrics still work
@@ -153,10 +149,10 @@ namespace System.Diagnostics.Metrics
                 {
                     collectionIntervalSecs = _collectionPeriod.TotalSeconds;
                 }
-                if (collectionIntervalSecs < MinCollectionTime)
+                if (collectionIntervalSecs < MinCollectionTimeSecs)
                 {
                     // correct usage from internal code should never get here
-                    throw new InvalidOperationException($"_collectionPeriod must be >= {MinCollectionTime} sec");
+                    throw new InvalidOperationException($"_collectionPeriod must be >= {MinCollectionTimeSecs} sec");
                 }
 
                 DateTime startTime = DateTime.UtcNow;
@@ -236,14 +232,14 @@ namespace System.Diagnostics.Metrics
                         if (filter(instrument))
                         {
                             instrumentState = BuildInstrumentState(instrument);
+                            if (instrumentState != null)
+                            {
+                                _instrumentStates.TryAdd(instrument, instrumentState);
+                                instrumentState = _instrumentStates[instrument];
+                            }
                             break;
                         }
                     }
-                }
-                if (instrumentState != null)
-                {
-                    _instrumentStates.TryAdd(instrument, instrumentState);
-                    instrumentState = _instrumentStates[instrument];
                 }
             }
             return instrumentState;

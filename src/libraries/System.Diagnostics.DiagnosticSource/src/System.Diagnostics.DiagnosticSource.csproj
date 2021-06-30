@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
@@ -10,17 +10,6 @@
   <PropertyGroup>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT;MEMORYMARSHAL_SUPPORT;OS_SUPPORT_ATTRTIBUTES</DefineConstants>
-      <!-- To allow this library to work on V4.5 runtimes and other old platforms
-         we also have a separate complilation of this DLL that works for V4.5
-         (which is netstandard1.1).  Again we duplicate in a portable-* folder
-         to work with older NuGet clients -->
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT;NO_ARRAY_EMPTY_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT;IS_GENERIC_TYPE_SUPPORT</DefineConstants>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
-    <!-- Avoid referencing NETStandard.Library on netstandard1.x since this package is part of that closure -->
-    <DisableImplicitFrameworkReferences Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3'">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
