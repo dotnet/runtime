@@ -423,10 +423,11 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(Stream stream)
         {
-            XmlTextReader xmlReader = new XmlTextReader(stream);
-            xmlReader.WhitespaceHandling = WhitespaceHandling.Significant;
-            xmlReader.Normalization = true;
-            xmlReader.XmlResolver = null;
+            //XmlTextReader xmlReader = new XmlTextReader(stream);
+            //xmlReader.WhitespaceHandling = WhitespaceHandling.Significant;
+            //xmlReader.Normalization = true;
+            //xmlReader.XmlResolver = null;
+            XmlReader xmlReader = XmlReader.Create(stream, new XmlReaderSettings() { IgnoreWhitespace = true });
             return Deserialize(xmlReader, null);
         }
 
