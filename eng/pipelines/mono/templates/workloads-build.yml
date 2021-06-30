@@ -53,15 +53,13 @@ jobs:
         runId: 1199078
         artifact: 'IntermediateArtifacts'
         path: $(workloadPackagesPath)
-        patterns:
-        - 'IntermediateArtifacts/*/Shipping/*.nupkg'
-        - '!**/*.symbols.nupkg'
+        patterns: 'IntermediateArtifacts/*/Shipping/*.nupkg'
 
     - task: CopyFiles@2
       displayName: Flatten packages
       inputs:
         sourceFolder: $(workloadPackagesPath)
-        contents: 'IntermediateArtifacts/*/Shipping/*.nupkg'
+        contents: '*/Shipping/*.nupkg'
         cleanTargetFolder: false
         targetFolder: $(workloadPackagesPath)
         flattenFolders: true
