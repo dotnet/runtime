@@ -288,6 +288,11 @@ namespace Internal.TypeSystem
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
         }
 
+        public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod, Func<TypeDesc, bool> inVersionBubble)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type, inVersionBubble);
+        }
+
         public static DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);

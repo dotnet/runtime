@@ -572,6 +572,11 @@ namespace Internal.TypeSystem
             return ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
         }
 
+        public override MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, Func<TypeDesc, bool> inVersionBubble)
+        {
+            return ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, (MetadataType)currentType, inVersionBubble);
+        }
+
         //////////////////////// INTERFACE RESOLUTION
         //Interface function resolution
         //    Interface function resolution follows the following rules
@@ -588,11 +593,6 @@ namespace Internal.TypeSystem
         //    See current interface call resolution for details on how that happens.
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
-            if (interfaceMethod.Signature.IsStatic)
-            {
-                return ResolveStaticVirtualMethod(interfaceMethod, currentType, allowVariantMatches: false);
-            }
-
             if (currentType.IsInterface)
                 return null;
 
@@ -662,11 +662,6 @@ namespace Internal.TypeSystem
 
         public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
-            if (interfaceMethod.Signature.IsStatic)
-            {
-                return ResolveStaticVirtualMethod(interfaceMethod, currentType, allowVariantMatches: true);
-            }
-
             MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
             bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
             MethodDesc implMethod;
@@ -842,62 +837,81 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <param name="interfaceMethod">Interface method to resolve</param>
         /// <param name="currentType">Type to attempt virtual static method resolution on</param>
-        /// <param name="allowVariantMatches">True when variant matches are allowed</param>
         /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
-        private static MethodDesc ResolveStaticVirtualMethod(MethodDesc interfaceMethod, TypeDesc currentType, bool allowVariantMatches)
+        public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType, Func<TypeDesc, bool> inVersionBubble)
         {
             TypeDesc interfaceType = interfaceMethod.OwningType;
+            if (!inVersionBubble(interfaceType))
+            {
+                return null;
+            }
 
             // Search for match on a per-level in the type hierarchy
             for (TypeDesc typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.BaseType)
             {
-                MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceType, interfaceMethod);
+                if (!inVersionBubble(typeToCheck))
+                {
+                    return null;
+                }
+
+                MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceMethod);
                 if (resolvedMethodOnType != null)
                 {
                     return resolvedMethodOnType;
                 }
 
-                if (interfaceType.HasVariance /* TODO || interfaceType.HasTypeEquivalence */)
+                // Variant interface dispatch
+                foreach (DefType runtimeInterfaceType in typeToCheck.RuntimeInterfaces)
                 {
-                    // Variant interface dispatch
-                    foreach (DefType runtimeInterfaceType in typeToCheck.RuntimeInterfaces)
+                    if (runtimeInterfaceType == interfaceType)
                     {
-                        if (runtimeInterfaceType == interfaceType)
+                        // This is the variant interface check logic, skip this
+                        continue;
+                    }
+
+                    if (!runtimeInterfaceType.HasSameTypeDefinition(interfaceType))
+                    {
+                        // Variance matches require a typedef match
+                        // Equivalence isn't sufficient, and is uninteresting as equivalent interfaces cannot have static virtuals.
+                        continue;
+                    }
+
+                    if (runtimeInterfaceType.CanCastTo(interfaceType))
+                    {
+                        if (!inVersionBubble(runtimeInterfaceType))
                         {
-                            // This is the variant interface check logic, skip this
-                            continue;
+                            // Fail the resolution if a candidate variant interface match is outside of the version bubble
+                            return null;
                         }
 
-                        if (!runtimeInterfaceType.HasSameTypeDefinition(interfaceType))
-                        {
-                            // Variance matches require a typedef match
-                            // Equivalence isn't sufficient, and is uninteresting as equivalent interfaces cannot have static virtuals.
-                            continue;
-                        }
+                        // Attempt to resolve on variance matched interface
+                        MethodDesc runtimeInterfaceMethod = TryResolveInterfaceMethodOnVariantCompatibleInterface(runtimeInterfaceType, interfaceMethod);
 
-                        bool equivalentOrVariantCompatible;
+                        if (runtimeInterfaceMethod != null)
+                        {
+                            resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, runtimeInterfaceMethod);
+                        }
+                        if (resolvedMethodOnType != null)
+                        {
+                            return resolvedMethodOnType;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
 
-                        if (allowVariantMatches)
-                        {
-                            equivalentOrVariantCompatible = runtimeInterfaceType.CanCastTo(interfaceType);
-                        }
-                        else
-                        {
-                            // When performing override checking to ensure that a concrete type is valid, require the implementation 
-                            // actually implement the exact or equivalent interface.
-                            equivalentOrVariantCompatible = false; // TODO: runtimeInterfaceType.IsEquivalentTo(interfaceType);
-                        }
-
-                        if (equivalentOrVariantCompatible)
-                        {
-                            // Variant or equivalent matching interface found
-                            // Attempt to resolve on variance matched interface
-                            resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, runtimeInterfaceType, interfaceMethod);
-                            if (resolvedMethodOnType != null)
-                            {
-                                return resolvedMethodOnType;
-                            }
-                        }
+        private static MethodDesc TryResolveInterfaceMethodOnVariantCompatibleInterface(TypeDesc compatibleInterfaceType, MethodDesc interfaceMethod)
+        {
+            Debug.Assert(compatibleInterfaceType.CanCastTo(interfaceMethod.OwningType));
+            if (compatibleInterfaceType is MetadataType mdType)
+            {
+                foreach (MethodDesc runtimeInterfaceMethod in mdType.GetVirtualMethods())
+                {
+                    if (runtimeInterfaceMethod.Name == interfaceMethod.Name &&
+                        runtimeInterfaceMethod.Signature == interfaceMethod.Signature)
+                    {
+                        return runtimeInterfaceMethod;
                     }
                 }
             }
@@ -911,14 +925,13 @@ namespace Internal.TypeSystem
         /// <param name="interfaceType">Interface declaring the method</param>
         /// <param name="interfaceMethod">Method to resolve</param>
         /// <returns>MethodDesc of the resolved method or null when not found (runtime lookup must be used)</returns>
-        private static MethodDesc TryResolveVirtualStaticMethodOnThisType(TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod)
+        private static MethodDesc TryResolveVirtualStaticMethodOnThisType(TypeDesc constrainedType, MethodDesc interfaceMethod)
         {
             if (constrainedType is MetadataType mdType)
             {
                 foreach (MethodImplRecord methodImpl in mdType.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name) ?? Array.Empty<MethodImplRecord>())
                 {
-                    if (methodImpl.Decl.OwningType == interfaceType &&
-                        methodImpl.Decl == interfaceMethod)
+                    if (methodImpl.Decl == interfaceMethod)
                     {
                         MethodDesc resolvedMethodImpl = methodImpl.Body;
                         if (resolvedMethodImpl.OwningType != mdType)
