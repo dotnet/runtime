@@ -29,6 +29,7 @@ namespace System.Net.Test.Common
         private bool _respondToPing;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
+        private bool _expectClientShutdown;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -249,15 +250,23 @@ namespace System.Net.Test.Common
         private async Task ProcessExpectedPingFrameAsync(PingFrame pingFrame)
         {
             _expectPingFrame.SetResult(pingFrame);
+            bool shutdownOccured = false;
             if (_respondToPing && !pingFrame.AckFlag)
             {
-                await SendPingAckAsync(pingFrame.Data);
+                try
+                {
+                    await SendPingAckAsync(pingFrame.Data);
+                }
+                catch (IOException ex) when (_expectClientShutdown && ex.InnerException is SocketException sex && sex.SocketErrorCode == SocketError.Shutdown)
+                {
+                    shutdownOccured = true;
+                }
             }
 
             _expectPingFrame = null;
             _respondToPing = false;
 
-            if (_autoProcessPingFrames)
+            if (_autoProcessPingFrames && !shutdownOccured)
             {
                 _ = ExpectPingFrameAsync(true);
             }
@@ -344,19 +353,12 @@ namespace System.Net.Test.Common
             }
         }
 
-        // Receive a single PING frame and respond with an ACK
-        public async Task RespondToPingFrameAsync()
-        {
-            PingFrame pingFrame = (PingFrame)await ReadFrameAsync(_timeout);
-            Assert.False(pingFrame.AckFlag, "Unexpected PING ACK");
-            await SendPingAckAsync(pingFrame.Data);
-        }
-
         // Wait for the client to close the connection, e.g. after the HttpClient is disposed.
         public async Task WaitForClientDisconnectAsync(bool ignoreUnexpectedFrames = false)
         {
             IgnoreWindowUpdates();
 
+            _expectClientShutdown = true;
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame != null)
             {

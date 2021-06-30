@@ -44,6 +44,8 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
+        private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { SetupAutomaticPingResponse = false };
+
         [Fact]
         public async Task InitialHttp2StreamWindowSize_SentInSettingsFrame()
         {
@@ -79,7 +81,8 @@ namespace System.Net.Http.Functional.Tests
                 PingFrame pingFrame = await connection.ReadPingAsync(); // expect an RTT PING
                 await connection.SendPingAckAsync(-6666); // send an invalid PING response
                 await connection.SendResponseDataAsync(streamId, new byte[] { 1, 2, 3 }, true); // otherwise fine response
-            });
+            },
+            NoAutoPingResponseHttp2Options);
         }
 
 
@@ -228,15 +231,16 @@ namespace System.Net.Http.Functional.Tests
             Action<SocketsHttpHandler> configureHandler = null)
         {
             TimeSpan timeout = TimeSpan.FromSeconds(30);
+            CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
 
             HttpClientHandler handler = CreateHttpClientHandler(HttpVersion20.Value);
             configureHandler?.Invoke(GetUnderlyingSocketsHttpHandler(handler));
 
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(NoAutoPingResponseHttp2Options);
             using HttpClient client = new HttpClient(handler, true);
             client.DefaultRequestVersion = HttpVersion20.Value;
 
-            Task<HttpResponseMessage> clientTask = client.GetAsync(server.Address);
+            Task<HttpResponseMessage> clientTask = client.GetAsync(server.Address, timeoutCts.Token);
             Http2LoopbackConnection connection = await server.AcceptConnectionAsync().ConfigureAwait(false);
             SettingsFrame clientSettingsFrame = await connection.ReadSettingsAsync().ConfigureAwait(false);
 
@@ -265,7 +269,8 @@ namespace System.Net.Http.Functional.Tests
             bool pingReceivedAfterReachingMaxWindow = false;
             bool unexpectedFrameReceived = false;
             CancellationTokenSource stopFrameProcessingCts = new CancellationTokenSource();
-            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, new CancellationTokenSource(timeout).Token);
+            
+            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, timeoutCts.Token);
             Task processFramesTask = ProcessIncomingFramesAsync(linkedCts.Token);
             byte[] buffer = new byte[16384];
 
