@@ -2006,7 +2006,6 @@ namespace System.Net.Http
             if (payload < 0) // RTT ping
             {
                 _rttEstimator.OnPingAckReceived(payload, this);
-                return;
             }
             else // Keepalive ping
             {
