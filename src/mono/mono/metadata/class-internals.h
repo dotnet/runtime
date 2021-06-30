@@ -1054,7 +1054,7 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context)
 GENERATE_GET_CLASS_WITH_CACHE_DECL (native_library)
 
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
-MONO_COMPONENT_API extern MonoDefaults mono_defaults;
+extern MonoDefaults mono_defaults;
 
 void
 mono_loader_init           (void);

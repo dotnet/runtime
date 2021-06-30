@@ -70,7 +70,7 @@ static gboolean loader_lock_track_ownership;
  */
 static MonoNativeTlsKey loader_lock_nest_id;
 
-MonoDefaults mono_defaults;
+MONO_COMPONENT_API MonoDefaults mono_defaults;
 
 /* Statistics */
 static gint32 inflated_signatures_size;

@@ -171,7 +171,7 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 }
 
 // There are deliberately locals and a constant NULL global with this same name.
-MONO_COMPONENT_API extern MonoThreadInfo * const mono_thread_info_current_var;
+extern MonoThreadInfo * const mono_thread_info_current_var;
 
 /*
 Icall macros

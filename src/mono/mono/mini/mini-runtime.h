@@ -450,9 +450,9 @@ extern MonoMethod *mono_current_single_method;
 extern GSList *mono_single_method_list;
 extern GHashTable *mono_single_method_hash;
 extern GList* mono_aot_paths;
-MONO_COMPONENT_API extern MonoDebugOptions mini_debug_options;
+extern MonoDebugOptions mini_debug_options;
 extern GSList *mono_interp_only_classes;
-MONO_COMPONENT_API extern char *sdb_options;
+extern char *sdb_options;
 extern MonoMethodDesc *mono_stats_method_desc;
 
 /*
@@ -505,7 +505,7 @@ void                   mono_runtime_print_stats      (void);
 void                   mono_interp_stub_init         (void);
 void                   mini_install_interp_callbacks (const MonoEECallbacks *cbs);
 
-MONO_COMPONENT_API extern const
+extern const
 MonoEECallbacks*       mono_interp_callbacks_pointer;
 
 #define mini_get_interp_callbacks() (mono_interp_callbacks_pointer)

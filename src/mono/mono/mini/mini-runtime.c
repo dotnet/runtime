@@ -143,8 +143,8 @@ static mono_mutex_t jit_mutex;
 
 static MonoCodeManager *global_codeman;
 
-MonoDebugOptions mini_debug_options;
-char *sdb_options;
+MONO_COMPONENT_API MonoDebugOptions mini_debug_options;
+MONO_COMPONENT_API char *sdb_options;
 
 #ifdef VALGRIND_JIT_REGISTER_MAP
 int valgrind_register;
@@ -4205,7 +4205,7 @@ mini_add_profiler_argument (const char *desc)
 }
 
 
-const MonoEECallbacks *mono_interp_callbacks_pointer;
+MONO_COMPONENT_API const MonoEECallbacks *mono_interp_callbacks_pointer;
 
 void
 mini_install_interp_callbacks (const MonoEECallbacks *cbs)
