@@ -7,6 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
+    /// <summary>
+    /// Provides APIs for populating nullability information/context from reflection members:
+    /// <see cref="ParameterInfo"/>, <see cref="FieldInfo"/>, <see cref="PropertyInfo"/> and <see cref="EventInfo"/>.
+    /// </summary>
     public sealed class NullabilityInfoContext
     {
         private const string CompilerServicesNameSpace = "System.Runtime.CompilerServices";
@@ -17,7 +21,7 @@ namespace System.Reflection
         [Flags]
         private enum NotAnnotatedStatus
         {
-            None = 0x0, // no restriction, all members annotated
+            None = 0x0,    // no restriction, all members annotated
             Private = 0x1, // private members not annotated
             Internal = 0x2 // internal members not annotated
         }
@@ -50,9 +54,20 @@ namespace System.Reflection
             return NullabilityState.Unknown;
         }
 
+        /// <summary>
+        /// Populates <see cref="NullabilityInfo" /> for the given <see cref="ParameterInfo" />.
+        /// </summary>
+        /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
+        /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
+        /// <returns><see cref="NullabilityInfo" /></returns>
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
+            if (parameterInfo is null)
+            {
+                throw new ArgumentNullException(nameof(parameterInfo));
+            }
+
             if (parameterInfo.Member is MethodBase method &&
                 (method.IsPrivate || method.IsFamilyAndAssembly || method.IsAssembly))
             {
@@ -144,9 +159,20 @@ namespace System.Reflection
             }
         }
 
+        /// <summary>
+        /// Populates <see cref="NullabilityInfo" /> for the given <see cref="PropertyInfo" />.
+        /// </summary>
+        /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
+        /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
+        /// <returns><see cref="NullabilityInfo" /></returns>
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
+            if (propertyInfo is null)
+            {
+                throw new ArgumentNullException(nameof(propertyInfo));
+            }
+
             var nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, propertyInfo.GetCustomAttributesData());
             var getterAttributes = propertyInfo.GetGetMethod(true)?.ReturnParameter.GetCustomAttributesData();
             var setterAttributes = propertyInfo.GetSetMethod(true)?.GetParameters()[0].GetCustomAttributesData();
@@ -164,13 +190,37 @@ namespace System.Reflection
             return nullability;
         }
 
+        /// <summary>
+        /// Populates <see cref="NullabilityInfo" /> for the given <see cref="EventInfo" />.
+        /// </summary>
+        /// <param name="eventInfo">The parameter which nullability info gets populated</param>
+        /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
+        /// <returns><see cref="NullabilityInfo" /></returns>
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
-        public NullabilityInfo Create(EventInfo eventInfo) =>
-            GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
+        public NullabilityInfo Create(EventInfo eventInfo)
+        {
+            if (eventInfo is null)
+            {
+                throw new ArgumentNullException(nameof(eventInfo));
+            }
 
+            return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
+        }
+
+        /// <summary>
+        /// Populates <see cref="NullabilityInfo" /> for the given <see cref="FieldInfo" />.
+        /// </summary>
+        /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
+        /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
+        /// <returns><see cref="NullabilityInfo" /></returns>
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
+            if (fieldInfo is null)
+            {
+                throw new ArgumentNullException(nameof(fieldInfo));
+            }
+
             if (fieldInfo.IsPrivate || fieldInfo.IsFamilyAndAssembly || fieldInfo.IsAssembly)
             {
                 if (IsPublicOnly(fieldInfo.IsPrivate, fieldInfo.IsFamilyAndAssembly, fieldInfo.IsAssembly, fieldInfo.Module))
@@ -392,25 +442,27 @@ namespace System.Reflection
                         }
                         else
                         {
-                            UpdateGenericArrayElements(nullability.TypeArguments[i].ElementType!, metaMember, genericArguments[i]);
+                            UpdateGenericArrayElements(nullability.TypeArguments[i].ElementType, metaMember, genericArguments[i]);
                         }
                     }
                 }
-
-                UpdateGenericArrayElements(nullability.ElementType, metaMember, metaType);
+                else
+                {
+                    UpdateGenericArrayElements(nullability.ElementType, metaMember, metaType);
+                }
             }
         }
 
         [RequiresUnreferencedCode("Nullability attributes are trimmed by the linker")]
-        private void UpdateGenericArrayElements(NullabilityInfo? element, MemberInfo metaMember, Type metaType)
+        private void UpdateGenericArrayElements(NullabilityInfo? elementState, MemberInfo metaMember, Type metaType)
         {
-            if (metaType.IsArray && element != null
+            if (metaType.IsArray && elementState != null
                 && metaType.GetElementType()!.IsGenericParameter)
             {
                 var elementType = metaType.GetElementType()!;
                 var n = GetNullabilityInfo(metaMember, elementType, elementType.GetCustomAttributesData(), 0);
-                element.ReadState = n.ReadState;
-                element.WriteState = n.WriteState;
+                elementState.ReadState = n.ReadState;
+                elementState.WriteState = n.WriteState;
             }
         }
 
