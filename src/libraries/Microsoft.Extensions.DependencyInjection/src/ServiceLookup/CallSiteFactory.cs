@@ -12,7 +12,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteFactory
+    internal sealed class CallSiteFactory : IServiceProviderIsService
     {
         private const int DefaultSlot = 0;
         private readonly ServiceDescriptor[] _descriptors;
@@ -75,6 +75,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem cacheItem);
                 _descriptorLookup[cacheKey] = cacheItem.Add(descriptor);
             }
+        }
+
+        // For unit testing
+        internal int? GetSlot(ServiceDescriptor serviceDescriptor)
+        {
+            if (_descriptorLookup.TryGetValue(serviceDescriptor.ServiceType, out ServiceDescriptorCacheItem item))
+            {
+                return item.GetSlot(serviceDescriptor);
+            }
+
+            return null;
         }
 
         internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain) =>
@@ -441,6 +452,38 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _callSiteCache[new ServiceCacheKey(type, DefaultSlot)] = serviceCallSite;
         }
 
+        public bool IsService(Type serviceType)
+        {
+            if (serviceType is null)
+            {
+                throw new ArgumentNullException(nameof(serviceType));
+            }
+
+            // Querying for an open generic should return false (they aren't resolvable)
+            if (serviceType.IsGenericTypeDefinition)
+            {
+                return false;
+            }
+
+            if (_descriptorLookup.ContainsKey(serviceType))
+            {
+                return true;
+            }
+
+            if (serviceType.IsConstructedGenericType && serviceType.GetGenericTypeDefinition() is Type genericDefinition)
+            {
+                // We special case IEnumerable since it isn't explicitly registered in the container
+                // yet we can manifest instances of it when requested.
+                return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(genericDefinition);
+            }
+
+            // These are the built in service types that aren't part of the list of service descriptors
+            // If you update these make sure to also update the code in ServiceProvider.ctor
+            return serviceType == typeof(IServiceProvider) ||
+                   serviceType == typeof(IServiceScopeFactory) ||
+                   serviceType == typeof(IServiceProviderIsService);
+        }
+
         private struct ServiceDescriptorCacheItem
         {
             private ServiceDescriptor _item;
@@ -505,7 +548,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int index = _items.IndexOf(descriptor);
                     if (index != -1)
                     {
-                        return Count - index + 1;
+                        return _items.Count - (index + 1);
                     }
                 }
 

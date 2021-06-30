@@ -16,6 +16,7 @@
 
 #include "utilcode.h"
 #include "ex.h"
+#include "executableallocator.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
@@ -553,10 +554,6 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         void *pResult;
         TaggedMemAllocPtr tmap;
 
@@ -632,10 +629,6 @@ public:
                                          )
     {
         WRAPPER_NO_CONTRACT;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         CRITSEC_Holder csh(m_CriticalSection);
 

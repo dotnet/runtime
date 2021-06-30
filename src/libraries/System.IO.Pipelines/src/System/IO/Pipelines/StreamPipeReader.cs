@@ -194,7 +194,10 @@ namespace System.IO.Pipelines
             // TODO ReadyAsync needs to throw if there are overlapping reads.
             ThrowIfCompleted();
 
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(cancellationToken));
+            }
 
             // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
@@ -273,7 +276,10 @@ namespace System.IO.Pipelines
             // TODO ReadyAsync needs to throw if there are overlapping reads.
             ThrowIfCompleted();
 
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(cancellationToken));
+            }
 
             // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;

@@ -5235,7 +5235,7 @@ void CEEPreloader::ExpandTypeDependencies(TypeHandle th)
     MethodTable::InterfaceMapIterator intIterator = pMT->IterateInterfaceMap();
     while (intIterator.Next())
     {
-        TriageTypeForZap(intIterator.GetInterface(), TRUE);
+        TriageTypeForZap(intIterator.GetInterfaceApprox(), TRUE);
     }
 
     // Make sure approx types for all fields are saved
@@ -5423,7 +5423,7 @@ void CEEPreloader::TriageTypeFromSoftBoundModule(TypeHandle th, Module * pSoftBo
         MethodTable::InterfaceMapIterator intIterator = pMT->IterateInterfaceMap();
         while (intIterator.Next())
         {
-            TriageTypeFromSoftBoundModule(intIterator.GetInterface(), pSoftBoundModule);
+            TriageTypeFromSoftBoundModule(intIterator.GetInterfaceApprox(), pSoftBoundModule);
         }
 
         // It does not seem worth it to reject the remaining items

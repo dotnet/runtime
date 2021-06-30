@@ -664,7 +664,6 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
@@ -764,7 +763,6 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP3 cannot be used.
-        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
@@ -1001,7 +999,7 @@ namespace System.Net.Http
 
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
-                        var authority = new HttpAuthority(value.Host!, value.Port);
+                        var authority = new HttpAuthority(value.Host ?? _originAuthority!.IdnHost, value.Port);
 
                         if (IsAltSvcBlocked(authority))
                         {

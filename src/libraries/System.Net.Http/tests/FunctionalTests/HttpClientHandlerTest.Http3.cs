@@ -170,7 +170,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/53688")]
-            if (streamLimit == 10 && this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
             {
                 return;
             }
@@ -317,8 +317,14 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using HttpClient client = CreateHttpClient();
             using HttpRequestMessage request = new HttpRequestMessage
             {
@@ -336,8 +342,14 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54726")]
         public async Task Public_Interop_Upgrade_Success(string uri)
         {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using HttpClient client = CreateHttpClient();
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.

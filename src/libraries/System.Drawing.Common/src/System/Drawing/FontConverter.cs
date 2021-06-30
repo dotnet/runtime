@@ -5,6 +5,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Text;
 using System.Globalization;
 using System.Reflection;
@@ -168,7 +169,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        fontSize = (float)TypeDescriptor.GetConverter(typeof(float)).ConvertFromString(context, culture, unitTokens.size);
+                        fontSize = (float)GetFloatConverter().ConvertFromString(context, culture, unitTokens.size);
                     }
                     catch
                     {
@@ -207,6 +208,10 @@ namespace System.Drawing
             }
 
             return new Font(fontName, fontSize, fontStyle, units);
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "TypeDescriptor.GetConverter is safe for primitive types.")]
+            static TypeConverter GetFloatConverter() => TypeDescriptor.GetConverter(typeof(float));
         }
 
         private (string?, string?) ParseSizeTokens(string text, char separator)
@@ -360,6 +365,7 @@ namespace System.Drawing
 
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override PropertyDescriptorCollection GetProperties(
             ITypeDescriptorContext? context,
             object? value,

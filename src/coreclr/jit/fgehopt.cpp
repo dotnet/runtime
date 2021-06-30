@@ -102,7 +102,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
-        for (Statement* stmt : firstBlock->Statements())
+        for (Statement* const stmt : firstBlock->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
@@ -197,7 +197,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -349,7 +349,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
-        BasicBlock* const endHandlerBlock   = lastHandlerBlock->bbNext;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -474,7 +473,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // handler region (if any) won't change.
         //
         // Kind of overkill to loop here, but hey.
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -511,7 +510,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
         // Decrement nesting level of enclosed GT_END_LFINs.
-        for (BasicBlock* block = firstHandlerBlock; block != endHandlerBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
             {
@@ -545,7 +544,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             // If we're in a non-funclet model, decrement the nesting
             // level of any GT_END_LFIN we find in the handler region,
             // since we're removing the enclosing handler.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
@@ -733,7 +732,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Should we compute statement cost here, or is it
             // premature...? For now just count statements I guess.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 regionStmtCount++;
             }
@@ -1244,7 +1243,7 @@ PhaseStatus Compiler::fgCloneFinally()
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);
 
-            for (BasicBlock* block = firstBlock; block != lastBlock->bbNext; block = block->bbNext)
+            for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
                 if (block->hasProfileWeight())
                 {
@@ -1343,10 +1342,9 @@ void Compiler::fgDebugCheckTryFinallyExits()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() <= XTnum);
         assert(lastTryBlock->getTryIndex() <= XTnum);
-        BasicBlock* const afterTryBlock = lastTryBlock->bbNext;
-        BasicBlock* const finallyBlock  = isFinally ? HBtab->ebdHndBeg : nullptr;
+        BasicBlock* const finallyBlock = isFinally ? HBtab->ebdHndBeg : nullptr;
 
-        for (BasicBlock* block = firstTryBlock; block != afterTryBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
         {
             // Only check the directly contained blocks.
             assert(block->hasTryIndex());
@@ -1357,12 +1355,8 @@ void Compiler::fgDebugCheckTryFinallyExits()
             }
 
             // Look at each of the normal control flow possibilities.
-            const unsigned numSuccs = block->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const succBlock : block->Succs())
             {
-                BasicBlock* const succBlock = block->GetSucc(i);
-
                 if (succBlock->hasTryIndex() && succBlock->getTryIndex() <= XTnum)
                 {
                     // Successor does not exit this try region.
@@ -1514,7 +1508,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // Remove the GT_END_LFIN from the continuation,
     // Note we only expect to see one such statement.
     bool foundEndLFin = false;
-    for (Statement* stmt : continuation->Statements())
+    for (Statement* const stmt : continuation->Statements())
     {
         GenTree* expr = stmt->GetRootNode();
         if (expr->gtOper == GT_END_LFIN)
@@ -1566,7 +1560,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // in case bits are left over from EH clauses being deleted.
 
     // Walk all blocks, and reset the target bits.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
@@ -1585,7 +1579,7 @@ void Compiler::fgAddFinallyTargetFlags()
         return;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->isBBCallAlwaysPair())
         {
@@ -1682,10 +1676,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
     // Look for finallys.
     bool hasFinally = false;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-
         // Check if this is a try/finally.
         if (HBtab->HasFinallyHandler())
         {
