@@ -71,16 +71,6 @@ namespace System
             return TimeZoneInfoResult.Success;
         }
 
-        //TODO: Figure out if this maps to something in the other TimeZoneInfo files
-        private static TimeZoneInfo? ParseTZBuffer(string? id, byte[] buffer, int length)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return null;
-            }
-            return GetTimeZoneFromTzData(buffer, id);
-        }
-
         // TODO: Validate you still need these functions / fields.  We should try to isolate the android implementation
         // as much as possible.
         // In other words, mirroring how mono/mono did it is a good first step and then we can walk back what's
@@ -156,8 +146,7 @@ namespace System
                 if (buffer == null)
                     return null;
 
-                // TODO: See if we needd to port this function or can use something in TZ
-                return TimeZoneInfo.ParseTZBuffer(id, buffer, buffer.Length);
+                return GetTimeZoneFromTzData(buffer, id);
             }
 
             internal static TimeZoneInfo? GetTimeZone(string? id, string? name)
