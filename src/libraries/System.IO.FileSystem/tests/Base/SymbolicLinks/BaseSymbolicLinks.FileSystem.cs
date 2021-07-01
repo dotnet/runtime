@@ -9,7 +9,6 @@ namespace System.IO.Tests
     // Contains test methods that can be used for FileInfo, DirectoryInfo, File or Directory.
     public abstract class BaseSymbolicLinks_FileSystem : BaseSymbolicLinks
     {
-        private const string ExtendedPrefix = @"\\?\";
         /// <summary>Creates a new file or directory depending on the implementing class.
         /// If createOpposite is true, creates a directory if the implementing class is for File or FileInfo, or
         /// creates a file if the implementing class is for Directory or DirectoryInfo.</summary>
@@ -21,6 +20,19 @@ namespace System.IO.Tests
 
         /// <summary>Calls the actual public API for creating a symbolic link.</summary>
         protected abstract FileSystemInfo CreateSymbolicLink(string path, string pathToTarget);
+
+        private void CreateSymbolicLink_Opposite(string path, string pathToTarget)
+        {
+            Type t = GetType();
+            if (t == typeof(Directory_SymbolicLinks) || t == typeof(DirectoryInfo_SymbolicLinks))
+            {
+                File.CreateSymbolicLink(path, pathToTarget);
+            }
+            else
+            {
+                Directory.CreateSymbolicLink(path, pathToTarget);
+            }
+        }
 
         /// <summary>Calls the actual public API for resolving the symbolic link target.</summary>
         protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false);
@@ -34,7 +46,7 @@ namespace System.IO.Tests
 #if WINDOWS
             if (PathInternal.IsExtended(actual))
             {
-                Assert.StartsWith(ExtendedPrefix, actual);
+                Assert.StartsWith(PathInternal.ExtendedPathPrefix, actual);
                 actual = actual.Substring(4);
             }
 #endif
@@ -302,7 +314,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void CreateSymbolicLink_WrongTargetType()
+        public void CreateSymbolicLink_WrongTargetType_Throws()
         {
             // dirLink -> file
             // fileLink -> dir
@@ -310,6 +322,38 @@ namespace System.IO.Tests
             string targetPath = GetRandomFilePath();
             CreateFileOrDirectory(targetPath, createOpposite: true); // The underlying file system entry needs to be different
             Assert.Throws<IOException>(() => CreateSymbolicLink(GetRandomFilePath(), targetPath));
+        }
+
+        [Fact]
+        public void CreateSymbolicLink_WrongTargetType_Indirect_Throws()
+        {
+            // link-2 (dir) -> link-1 (file) -> file
+            // link-2 (file) -> link-1 (dir) -> dir
+            string targetPath = GetRandomFilePath();
+            string firstLinkPath = GetRandomFilePath();
+            string secondLinkPath = GetRandomFilePath();
+
+            CreateFileOrDirectory(targetPath, createOpposite: true);
+            CreateSymbolicLink_Opposite(firstLinkPath, targetPath);
+
+            Assert.Throws<IOException>(() => CreateSymbolicLink(secondLinkPath, firstLinkPath));
+        }
+
+        [Fact]
+        public void CreateSymbolicLink_CorrectTargetType_Indirect_Succeeds()
+        {
+            // link-2 (file) -> link-1 (file) -> file
+            // link-2 (dir) -> link-1 (dir) -> dir
+            string targetPath = GetRandomFilePath();
+            string firstLinkPath = GetRandomFilePath();
+            string secondLinkPath = GetRandomFilePath();
+
+            CreateFileOrDirectory(targetPath, createOpposite: false);
+            CreateSymbolicLink(firstLinkPath, targetPath);
+
+            FileSystemInfo secondLinkInfo = CreateSymbolicLink(secondLinkPath, firstLinkPath);
+            Assert.Equal(firstLinkPath, secondLinkInfo.LinkTarget);
+            AssertFullNameEquals(targetPath, secondLinkInfo.ResolveLinkTarget(true).FullName);
         }
 
         private void VerifySymbolicLinkAndResolvedTarget(string linkPath, string expectedLinkTarget, string targetPath = null)
@@ -431,7 +475,7 @@ namespace System.IO.Tests
             // Rooted absolute
             Path.Combine(Path.GetTempPath(), "foo"),
             Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
-            @"\\SERVER\share\path", @"\\.\pipe\foo",
+            @"\\SERVER\share\path"
         };
     }
 }
