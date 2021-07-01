@@ -1795,7 +1795,7 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvLiveInOutOfHndlr)
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
-                setIntervalAsSpilled(newInt); // TODO: Explore what happens if we mark interval as spilled right here.
+                setIntervalAsSpilled(newInt);
             }
 
             INTRACK_STATS(regCandidateVarCount++);
@@ -3285,9 +3285,9 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
     if (interval->isSingleDef && RefTypeIsDef(interval->firstRefPosition->refType) &&
         !interval->firstRefPosition->spillAfter)
     {
-        //TODO: Check if it is beneficial to spill at def, meaning, is it in hot block and if yes, don't worry about
-        // doing the spill....
-        // Also check how many uses are present for this variable. If USE > 3, then only do this optimization.
+        // TODO-CQ: Check if it is beneficial to spill at def, meaning, if it is a hot block don't worry about
+        // doing the spill. Another option is to track number of refpositions and a interval has more than X refpositions
+        // then perform this optimization.
         interval->firstRefPosition->singleDefSpill = true;
     }
 
