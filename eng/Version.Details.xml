@@ -12,38 +12,6 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.linux-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.osx-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Python.win-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Python.osx-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.win-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.linux-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.osx-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
-    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.21329.8">
