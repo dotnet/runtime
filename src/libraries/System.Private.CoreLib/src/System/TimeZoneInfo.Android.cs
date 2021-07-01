@@ -66,52 +66,6 @@ namespace System
             return TimeZoneInfoResult.Success;
         }
 
-        // TODO: Validate you still need these functions / fields.  We should try to isolate the android implementation
-        // as much as possible.
-        // In other words, mirroring how mono/mono did it is a good first step and then we can walk back what's
-        // common with TimeZoneInfo.cs and TimeZoneInfo.AnyUnix.cs
-        private static string GetApexTimeDataRoot()
-        {
-            var ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
-            if (!string.IsNullOrEmpty(ret))
-            {
-                return ret;
-            }
-
-            return "/apex/com.android.tzdata";
-        }
-
-        private static string GetApexRuntimeRoot()
-        {
-            var ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
-            if (!string.IsNullOrEmpty(ret))
-            {
-                return ret;
-            }
-
-            return "/apex/com.android.runtime";
-        }
-
-        private static string GetTimeZoneDirectory()
-        {
-            // Android 10+, TimeData module where the updates land
-            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", TimeZoneFileName)))
-            {
-                return GetApexTimeDataRoot() + "/etc/tz/";
-            }
-            // Android 10+, Fallback location if the above isn't found or corrupted
-            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", TimeZoneFileName)))
-            {
-                return GetApexRuntimeRoot() + "/etc/tz/";
-            }
-            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", TimeZoneFileName)))
-            {
-                return Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
-            }
-
-            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
-        }
-
         private static class AndroidTimeZones
         {
             private static IAndroidTimeZoneDB? db = GetDefaultTimeZoneDB();
