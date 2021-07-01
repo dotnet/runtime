@@ -13,6 +13,9 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public sealed class PosixSignalRegistration : IDisposable
     {
+        private static volatile bool s_initialized;
+        private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>?>> s_registrations = new();
+
         private readonly Action<PosixSignalContext> _handler;
         private readonly PosixSignal _signal;
         private readonly int _signo;
@@ -285,8 +288,5 @@ namespace System.Runtime.InteropServices
                 }
             }
         }
-
-        private static volatile bool s_initialized;
-        private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>?>> s_registrations = new();
     }
 }
