@@ -16,24 +16,18 @@ namespace System.Net
 
         private static bool IsIPv6Disabled()
         {
-            bool value;
-
             // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch(DisableIPv6AppCtxSwitch, out value))
+            if (AppContext.TryGetSwitch(DisableIPv6AppCtxSwitch, out bool disabled))
             {
-                return value;
+                return disabled;
             }
 
             // AppContext switch wasn't used. Check the environment variable.
             string? envVar = Environment.GetEnvironmentVariable(DisableIPv6EnvironmentVariable);
 
-            if (bool.TryParse(envVar, out value))
+            if (envVar is not null)
             {
-                return value;
-            }
-            else if (uint.TryParse(envVar, out uint intVal))
-            {
-                return intVal != 0;
+                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
             }
 
             return false;
