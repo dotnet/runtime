@@ -1538,7 +1538,6 @@ namespace System.Net.Http.Tests
             Assert.Equal(new HashSet<string> { "Location", "Date" }, nonValidated.Keys.ToHashSet());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
         [Fact]
         public void NonValidated_ValidInvalidAndRaw_AllReturned()
         {
