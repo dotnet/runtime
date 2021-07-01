@@ -12,7 +12,7 @@ namespace System.Data.Common
 
         public abstract CommandType CommandType { get; set; }
 
-        public abstract int RecordsAffected { get; set; }
+        public abstract int RecordsAffected { get; }
 
         public DbParameterCollection Parameters => DbParameterCollection;
 

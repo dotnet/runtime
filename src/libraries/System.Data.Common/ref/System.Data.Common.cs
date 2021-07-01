@@ -1949,7 +1949,7 @@ namespace System.Data.Common
     {
         public abstract string CommandText { get; set; }
         public abstract CommandType CommandType { get; set; }
-        public abstract int RecordsAffected { get; set; }
+        public abstract int RecordsAffected { get; }
         public DbParameterCollection Parameters { get { throw null; } }
         protected abstract DbParameterCollection DbParameterCollection { get; }
     }
