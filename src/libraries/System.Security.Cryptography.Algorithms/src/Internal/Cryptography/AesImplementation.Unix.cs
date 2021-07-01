@@ -25,6 +25,19 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> iv,
+            int blockSize,
+            int paddingSize,
+            int feedback,
+            bool encrypting)
+        {
+            IntPtr algorithm = GetAlgorithm(key.Length * 8, feedback * 8, cipherMode);
+            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
+        }
+
         private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode) =>
             (keySize, cipherMode) switch
             {
