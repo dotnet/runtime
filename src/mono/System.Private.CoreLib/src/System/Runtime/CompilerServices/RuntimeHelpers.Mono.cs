@@ -154,15 +154,6 @@ namespace System.Runtime.CompilerServices
             return GetUninitializedObjectInternal(new RuntimeTypeHandle(rt).Value);
         }
 
-        internal static long GetILBytesJitted()
-        {
-            return (long)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_IL_BYTES_JITTED);
-        }
-
-        internal static int GetMethodsJittedCount()
-        {
-            return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_METHODS_JITTED);
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void PrepareMethod(IntPtr method, IntPtr* instantiations, int ninst);

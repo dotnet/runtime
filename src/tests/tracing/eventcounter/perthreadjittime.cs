@@ -37,23 +37,16 @@ namespace PerTHreadJitTime
             long threadOneJitTime = 0;
             long threadTwoJitTime = 0;
 
-            MethodInfo getNanosecondsInJitForThread = typeof(RuntimeHelpers).GetMethod("GetNanosecondsInJitForThread", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            if (getNanosecondsInJitForThread is null)
-            {
-                foreach (var m in typeof(RuntimeHelpers).GetMembers(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy))
-                    Console.WriteLine($"\t{m}");
-            }
-
             Thread[] threads = new Thread[2];
             threads[0] = new Thread(() => {
                 var mc = new MyClass();
                 int n = mc.MyMethod(100);
-                threadOneJitTime = (long)getNanosecondsInJitForThread.Invoke(null, null);
+                threadOneJitTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
             });
             threads[1] = new Thread(() => {
                 var moc = new MyOtherClass();
                 int n = moc.MyOtherMethod(10);
-                threadTwoJitTime = (long)getNanosecondsInJitForThread.Invoke(null, null);
+                threadTwoJitTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
             });
 
             foreach (Thread t in threads)
