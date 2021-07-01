@@ -247,7 +247,7 @@
         SkipUnchangedFiles="true" 
         Condition="Exists('package.json')"/>
 
-    <!-- Otherwise create a new file in th eoutput directory with the defaults -->
+    <!-- Otherwise create a new file in the output directory with the defaults -->
      <WriteLinesToFile
       File="$(WasmAppDir)\package.json"
       Lines='{

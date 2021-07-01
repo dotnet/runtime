@@ -198,8 +198,7 @@ const IOHandler = {
 				try {
 					if (is_node) {
 						const fs = require ('fs');
-						const buffer = fs.readFileSync(path);
-						bytes = buffer.buffer;
+						bytes = fs.readFileSync(path);
 					} else {
 						bytes = read (path, 'binary');
 					}
