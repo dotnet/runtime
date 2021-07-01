@@ -59,7 +59,7 @@ namespace System.Net.Http
             }
 
             Activity? activity = null;
-            DiagnosticListener diagnosticListener = Settings.s_diagnosticListener;
+            DiagnosticListener diagnosticListener = s_diagnosticListener;
 
             // if there is no listener, but propagation is enabled (with previous IsEnabled() check)
             // do not write any events just start/stop Activity and propagate Ids
