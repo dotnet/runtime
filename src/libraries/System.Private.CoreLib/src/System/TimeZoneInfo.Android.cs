@@ -35,6 +35,8 @@ namespace System
             {
                 // can id be null or empty here?
                 value = AndroidTimeZones.GetTimeZone(id, id);
+
+                // Are the below exceptions correct? Does GetTimeZone hit them at all
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -74,7 +76,7 @@ namespace System
             {
                 foreach (var p in AndroidTzData.Paths)
                 {
-                    if (File.Exists (p))
+                    if (File.Exists(p))
                     {
                         return new AndroidTzData(AndroidTzData.Paths);
                     }
@@ -220,7 +222,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential, Pack=1)]
     internal unsafe struct AndroidTzDataHeader
     {
-        public fixed byte signature [12];
+        public fixed byte signature[12];
         public int indexOffset;
         public int dataOffset;
         public int zoneTabOffset;
@@ -229,7 +231,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential, Pack=1)]
     internal unsafe struct AndroidTzDataEntry
     {
-        public fixed byte id [40];
+        public fixed byte id[40];
         public int byteOffset;
         public int length;
         public int rawUtcOffset;
@@ -265,7 +267,7 @@ namespace System
         private int[]? byteOffsets;
         private int[]? lengths;
 
-        public AndroidTzData (params string[] paths)
+        public AndroidTzData(params string[] paths)
         {
             foreach (var path in paths)
             {
@@ -283,7 +285,7 @@ namespace System
         private static string GetApexTimeDataRoot()
         {
             string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
-            if (!string.IsNullOrEmpty (ret!)) {
+            if (!string.IsNullOrEmpty(ret!)) {
                 return ret!;
             }
 
@@ -293,7 +295,7 @@ namespace System
         private static string GetApexRuntimeRoot()
         {
             string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
-            if (!string.IsNullOrEmpty (ret!))
+            if (!string.IsNullOrEmpty(ret!))
             {
                 return ret!;
             }
@@ -347,14 +349,14 @@ namespace System
 
             if (magic != "tzdata" || header.signature[11] != 0)
             {
-                var b = new StringBuilder ();
-                b.Append ("bad tzdata magic:");
+                var b = new StringBuilder();
+                b.Append("bad tzdata magic:");
                 for (int i = 0; i < 12; ++i) {
-                    b.Append(' ').Append(((byte)s[i]).ToString ("x2"));
+                    b.Append(' ').Append(((byte)s[i]).ToString("x2"));
                 }
 
                 //TODO: Put strings in resource file
-                throw new InvalidOperationException ("bad tzdata magic: " + b.ToString ());
+                throw new InvalidOperationException("bad tzdata magic: " + b.ToString());
             }
 
             ReadIndex(header.indexOffset, header.dataOffset, buffer);
@@ -362,14 +364,14 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Android TimeZone")]
-        private unsafe T ReadAt<T> (long position, byte[] buffer)
+        private unsafe T ReadAt<T>(long position, byte[] buffer)
             where T : struct
         {
             int size = Marshal.SizeOf(typeof(T));
             if (buffer.Length < size)
             {
                 //TODO: Put strings in resource file
-                throw new InvalidOperationException ("Internal error: buffer too small");
+                throw new InvalidOperationException("Internal error: buffer too small");
             }
 
             data!.Position = position;
@@ -377,11 +379,11 @@ namespace System
             if ((r = data!.Read(buffer, 0, size)) < size)
             {
                 //TODO: Put strings in resource file
-                throw new InvalidOperationException (
-                        string.Format ("Error reading '{0}': read {1} bytes, expected {2}", tzdataPath, r, size));
+                throw new InvalidOperationException(
+                        string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzdataPath, r, size));
             }
 
-            fixed (byte* b = buffer)
+            fixed(byte* b = buffer)
             {
                 return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
             }
@@ -463,7 +465,7 @@ namespace System
                 {
                     //TODO: Put strings in resource file
                     throw new InvalidOperationException(
-                            string.Format ("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.",
+                            string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.",
                                 tzdataPath, offset, length, r, buffer.Length));
                 }
             }
