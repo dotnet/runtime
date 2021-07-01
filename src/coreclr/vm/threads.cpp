@@ -50,7 +50,7 @@
 #include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
+static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
     // A new frame will always be allocated before the frame is modified,

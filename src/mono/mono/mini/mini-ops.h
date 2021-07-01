@@ -1562,8 +1562,13 @@ MINI_OP3(OP_XOP_OVR_SCALAR_X_X_X_X, "xop_ovr_scalar_x_x_x_x", XREG, XREG, XREG, 
 MINI_OP(OP_XOP_OVR_BYSCALAR_X_X_X, "xop_ovr_byscalar_x_x_x", XREG, XREG, XREG)
 
 MINI_OP(OP_XCONCAT, "xconcat", XREG, XREG, XREG)
-
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
+MINI_OP(OP_XLOWER, "xlower", XREG, XREG, NONE)
+MINI_OP(OP_XUPPER, "xupper", XREG, XREG, NONE)
+MINI_OP(OP_XWIDEN, "xwiden", XREG, XREG, NONE)
+MINI_OP(OP_XWIDEN_UNSAFE, "xwiden_unsafe", XREG, XREG, NONE)
+MINI_OP(OP_XINSERT_LOWER, "xinsert_lower", XREG, XREG, XREG)
+MINI_OP(OP_XINSERT_UPPER, "xinsert_upper", XREG, XREG, XREG)
 
 /* Extract an element from a vector with a variable lane index.
  * The index is assumed to be in range.
@@ -1588,6 +1593,7 @@ MINI_OP3(OP_XINSERT_I4, "xinsert_i4", XREG, XREG, IREG, IREG)
 MINI_OP3(OP_XINSERT_I8, "xinsert_i8", XREG, XREG, LREG, IREG)
 MINI_OP3(OP_XINSERT_R4, "xinsert_r4", XREG, XREG, FREG, IREG)
 MINI_OP3(OP_XINSERT_R8, "xinsert_r8", XREG, XREG, FREG, IREG)
+
 
 MINI_OP(OP_LZCNT32, "lzcnt32", IREG, IREG, NONE)
 MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)
