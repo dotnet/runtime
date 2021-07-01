@@ -42,7 +42,7 @@ internal static partial class Interop
         internal const string Wtsapi32 = "wtsapi32.dll";
         internal const string CompressionNative = "System.IO.Compression.Native";
         internal const string GlobalizationNative = "System.Globalization.Native";
-        internal const string MsQuic = "MsQuic.Native.dll";
+        internal const string MsQuic = "msquic.dll";
         internal const string HostPolicy = "hostpolicy.dll";
         internal const string Ucrtbase = "ucrtbase.dll";
     }

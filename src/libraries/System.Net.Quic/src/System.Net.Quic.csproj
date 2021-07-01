@@ -88,20 +88,18 @@
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />
-    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.dll" TargetPath="MsQuic.Native.dll" />
-    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.pdb" TargetPath="MsQuic.Native.pdb" />
+    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.dll" />
+    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.pdb" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <TargetPath>MsQuic.Native.dll</TargetPath>
     </Content>
     <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <TargetPath>MsQuic.Native.pdb</TargetPath>
     </Content>
     <Content Include="libmsquic.dylib" Condition="Exists('libmsquic.dylib')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
