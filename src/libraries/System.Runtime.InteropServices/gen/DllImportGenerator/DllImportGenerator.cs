@@ -56,7 +56,13 @@ namespace Microsoft.Interop
                 generatorDiagnostics.ReportTargetFrameworkNotSupported(MinimumSupportedFrameworkVersion);
             }
 
-            var env = new StubEnvironment(context.Compilation, isSupported, targetFrameworkVersion, context.AnalyzerConfigOptions.GlobalOptions);
+            var env = new StubEnvironment(
+                context.Compilation,
+                isSupported,
+                targetFrameworkVersion,
+                context.AnalyzerConfigOptions.GlobalOptions,
+                context.Compilation.SourceModule.GetAttributes()
+                    .Any(a => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
 
             var generatedDllImports = new StringBuilder();
 
@@ -130,10 +136,10 @@ namespace Microsoft.Interop
                     generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
                 }
 
-                List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+                List<AttributeSyntax> forwardedAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
 
                 // Create the stub.
-                var dllImportStub = DllImportStub.Create(methodSymbolInfo, stubDllImportData!, env, generatorDiagnostics, additionalAttributes, context.CancellationToken);
+                var dllImportStub = DllImportStub.Create(methodSymbolInfo, stubDllImportData!, env, generatorDiagnostics, forwardedAttributes, context.CancellationToken);
 
                 PrintGeneratedSource(generatedDllImports, methodSyntax, dllImportStub);
             }
