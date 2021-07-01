@@ -78,23 +78,26 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot("non_existent_path")
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .EnvironmentVariable(
-                    Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
-                    sharedTestState.InstallLocation)
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
-                // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
-                .And.HaveStdErrContaining("Using global installation location")
-                .And.HaveStdOutContaining("Hello World");
+            using (TestOnlyProductBehavior.Enable(appExe))
+            {
+                Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot("non_existent_path")
+                    .MultilevelLookup(false)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                        sharedTestState.InstallLocation)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
+                    // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
+                    .And.HaveUsedGlobalInstallLocation(sharedTestState.InstallLocation)
+                    .And.HaveStdOutContaining("Hello World");
+            }
         }
 
         [Fact]
-        public void EnvironmentVariable_DotnetRooPathExistsButHasNoHost()
+        public void EnvironmentVariable_DotnetRootPathExistsButHasNoHost()
         {
             var fixture = sharedTestState.PortableAppFixture
                 .Copy();
@@ -103,7 +106,7 @@ namespace HostActivation.Tests
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(fixture.TestProject.ProjectDirectory)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .MultilevelLookup(false)
                 .EnvironmentVariable(
                     Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                     sharedTestState.InstallLocation)
