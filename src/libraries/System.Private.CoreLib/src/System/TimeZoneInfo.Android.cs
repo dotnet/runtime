@@ -33,6 +33,7 @@ namespace System
 
             try
             {
+                // can id be null or empty here?
                 value = AndroidTimeZones.GetTimeZone(id, id);
             }
             catch (UnauthorizedAccessException ex)
@@ -135,7 +136,77 @@ namespace System
                     : db.GetAvailableIds();
             }
 
-            private static TimeZoneInfo? _GetTimeZone(string? id, string? name)
+            // This should be called when name begins with GMT
+            private static int ParseGMTNumericZone(string name)
+            {
+                int sign;
+                if (name[3] == '+')
+                {
+                    sign = 1;
+                }
+                else if (name[3] == '-')
+                {
+                    sign = -1;
+                }
+                else
+                {
+                    return 0;
+                }
+
+                int where;
+                int hour = 0;
+                bool colon = false;
+                for (where = 4; where < name.Length; where++)
+                {
+                    char c = name[where];
+
+                    if (c == ':')
+                    {
+                        where++;
+                        colon = true;
+                        break;
+                    }
+
+                    if (c >= '0' && c <= '9')
+                    {
+                        hour = hour * 10 + c - '0';
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+
+                int min = 0;
+                for (; where < name.Length; where++)
+                {
+                    char c = name [where];
+
+                    if (c >= '0' && c <= '9')
+                    {
+                        min = min * 10 + c - '0';
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+
+                if (colon)
+                {
+                    return sign * (hour * 60 + min) * 60;
+                }
+                else if (hour >= 100)
+                {
+                    return sign * ((hour / 100) * 60 + (hour % 100)) * 60;
+                }
+                else
+                {
+                    return sign * (hour * 60) * 60;
+                }
+            }
+
+            private static TimeZoneInfo? _GetTimeZone(string id, string name)
             {
                 if (db == null)
                 {
@@ -146,142 +217,48 @@ namespace System
                 {
                     return null;
                 }
-                if (string.IsNullOrEmpty(id))
-                {
-                    return null;
-                }
 
                 return GetTimeZoneFromTzData(buffer, id);
             }
 
-            internal static TimeZoneInfo? GetTimeZone(string? id, string? name)
+            internal static TimeZoneInfo? GetTimeZone(string id, string name)
             {
-                if (name != null)
+                if (name == "GMT" || name == "UTC")
                 {
-                    if (name == "GMT" || name == "UTC")
-                    {
-                        return new TimeZoneInfo(id!, TimeSpan.FromSeconds(0), id!, name!, name!, null, disableDaylightSavingTime:true);
-                    }
-                    if (name.StartsWith ("GMT"))
-                    {
-                        return new TimeZoneInfo (id!,
-                                TimeSpan.FromSeconds(ParseNumericZone(name!)),
-                                id!, name!, name!, null, disableDaylightSavingTime:true);
-                    }
+                    return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
+                }
+                if (name.StartsWith("GMT"))
+                {
+                    return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime:true);
                 }
 
                 try
                 {
                     return _GetTimeZone(id, name);
-                } catch (Exception)
+                }
+                catch (Exception)
                 {
+                    // Should we return null?
                     return null;
                 }
             }
 
-            private static int ParseNumericZone (string? name)
-            {
-                if (name == null || !name.StartsWith ("GMT") || name.Length <= 3)
-                    return 0;
-
-                int sign;
-                if (name [3] == '+')
-                    sign = 1;
-                else if (name [3] == '-')
-                    sign = -1;
-                else
-                    return 0;
-
-                int where;
-                int hour = 0;
-                bool colon = false;
-                for (where = 4; where < name.Length; where++)
-                {
-                    char c = name [where];
-
-                    if (c == ':')
-                    {
-                        where++;
-                        colon = true;
-                        break;
-                    }
-
-                    if (c >= '0' && c <= '9')
-                        hour = hour * 10 + c - '0';
-                    else
-                        return 0;
-                }
-
-                int min = 0;
-                for (; where < name.Length; where++)
-                {
-                    char c = name [where];
-
-                    if (c >= '0' && c <= '9')
-                        min = min * 10 + c - '0';
-                    else
-                        return 0;
-                }
-
-                if (colon)
-                    return sign * (hour * 60 + min) * 60;
-                else if (hour >= 100)
-                    return sign * ((hour / 100) * 60 + (hour % 100)) * 60;
-                else
-                    return sign * (hour * 60) * 60;
-            }
+            [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetDefaultTimeZone")]
+            internal static extern string GetDefaultTimeZone();
 
             internal static TimeZoneInfo? Local
             {
                 get
                 {
-                    var id  = GetDefaultTimeZoneName();
-                    return GetTimeZone(id, id);
+                    var id = GetDefaultTimeZone();
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        return GetTimeZone(id, id);
+                    }
+
+                    // If we can't find a default time zone, return UTC
+                    return Utc;
                 }
-            }
-
-            // TODO: We probably don't need this.  However, if we do, move to Interop
-            //
-            //[DllImport ("__Internal")]
-            //static extern int monodroid_get_system_property (string name, ref IntPtr value);
-
-            // TODO: Move this into Interop
-            //
-            //[DllImport ("__Internal")]
-            //static extern void monodroid_free (IntPtr ptr);
-
-            [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetDefaultTimeZone")]
-            internal static extern string GetDefaultTimeZone();
-
-            private static string? GetDefaultTimeZoneName()
-            {
-                IntPtr value = IntPtr.Zero;
-                //int n = 0;
-                string? defaultTimeZone  = Environment.GetEnvironmentVariable("__XA_OVERRIDE_TIMEZONE_ID__");
-
-                if (!string.IsNullOrEmpty(defaultTimeZone))
-                    return defaultTimeZone;
-
-                // TODO: See how we can test this without hacks
-                // Used by the tests
-                //if (Environment.GetEnvironmentVariable ("__XA_USE_JAVA_DEFAULT_TIMEZONE_ID__") == null)
-                //    n = monodroid_get_system_property ("persist.sys.timezone", ref value);
-
-//                if (n > 0 && value != IntPtr.Zero)
-//                {
-//                    defaultTimeZone = (Marshal.PtrToStringAnsi(value) ?? String.Empty).Trim();
-//                    monodroid_free(value);
-//                    if (!String.IsNullOrEmpty(defaultTimeZone))
-//                        return defaultTimeZone;
-//                }
-
-                // TODO: AndroidPlatform does not exist in runtime.  We need to add an interop call
-                //defaultTimeZone = (AndroidPlatform.GetDefaultTimeZone() ?? String.Empty).Trim();
-                defaultTimeZone = GetDefaultTimeZone();
-                if (!string.IsNullOrEmpty(defaultTimeZone))
-                    return defaultTimeZone;
-
-                return null;
             }
         }
     }
@@ -517,9 +494,9 @@ namespace System
             return ids!;
         }
 
-        public byte[] GetTimeZoneData(string? id)
+        public byte[] GetTimeZoneData(string id)
         {
-            int i = Array.BinarySearch(ids!, id!, StringComparer.Ordinal);
+            int i = Array.BinarySearch(ids!, id, StringComparer.Ordinal);
             if (i < 0)
             {
                 //TODO: Put strings in resource file
