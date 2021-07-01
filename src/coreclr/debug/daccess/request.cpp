@@ -5074,6 +5074,7 @@ HRESULT ClrDataAccess::IsTrackedType(
     if (SUCCEEDED(hr))
     {
         *isTrackedType = mt->IsTrackedReferenceWithFinalizer();
+        hr = *isTrackedType ? S_OK : S_FALSE;
 
 #ifdef FEATURE_OBJCMARSHAL
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
@@ -5124,7 +5125,7 @@ HRESULT ClrDataAccess::GetTaggedMemory(
             PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
             if (pInfo != NULL)
             {
-                *taggedMemory = PTR_CDADDR(pInfo->GetTaggedMemory());
+                *taggedMemory = TO_CDADDR(pInfo->GetTaggedMemory());
                 *taggedMemorySizeInBytes = pInfo->GetTaggedMemorySizeInBytes();
             }
         }
