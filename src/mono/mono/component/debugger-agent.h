@@ -52,5 +52,5 @@ void
 mono_ss_args_destroy (SingleStepArgs *ss_args);
 
 int 
-mono_get_this_async_id (DbgEngineStackFrame *frame);
+mono_de_frame_async_id (DbgEngineStackFrame *frame);
 #endif

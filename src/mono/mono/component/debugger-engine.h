@@ -349,7 +349,6 @@ void mono_de_unlock (void);
 // domain handling
 void mono_de_foreach_domain (GHFunc func, gpointer user_data);
 void mono_de_domain_add (MonoDomain *domain);
-void mono_de_domain_remove (MonoDomain *domain); //never called, can remove?
 
 //breakpoints
 void mono_de_clear_breakpoint (MonoBreakpoint *bp);

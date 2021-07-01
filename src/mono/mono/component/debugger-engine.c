@@ -95,17 +95,6 @@ mono_de_foreach_domain (GHFunc func, gpointer user_data)
  * LOCKING: Takes the loader lock
  */
 void
-mono_de_domain_remove (MonoDomain *domain)
-{
-	mono_loader_lock ();
-	g_hash_table_remove (domains, domain);
-	mono_loader_unlock ();
-}
-
-/*
- * LOCKING: Takes the loader lock
- */
-void
 mono_de_domain_add (MonoDomain *domain)
 {
 	mono_loader_lock ();
@@ -1114,7 +1103,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 				mono_debug_free_method_async_debug_info (asyncMethod);
 
 			//breakpoint was hit in parallelly executing async method, ignore it
-			if (ss_req->async_id != mono_get_this_async_id (frames [0]))
+			if (ss_req->async_id != mono_de_frame_async_id (frames [0]))
 				continue;
 		}
 
@@ -1343,7 +1332,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			// of this await call and sets async_id so we can distinguish it from parallel executions
 			for (i = 0; i < asyncMethod->num_awaits; i++) {
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
-					ss_req->async_id = mono_get_this_async_id (frames [0]);
+					ss_req->async_id = mono_de_frame_async_id (frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
@@ -1360,7 +1349,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			if (ss_req->depth == STEP_DEPTH_OUT) {
 				//If we are inside `async void` method, do normal step-out
 				if (set_set_notification_for_wait_completion_flag (frames [0])) {
-					ss_req->async_id = mono_get_this_async_id (frames [0]);
+					ss_req->async_id = mono_de_frame_async_id (frames [0]);
 					ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
 					g_hash_table_destroy (ss_req_bp_cache);

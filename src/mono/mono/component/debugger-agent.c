@@ -4162,7 +4162,7 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 //This ID is used to figure out if breakpoint hit on resumeOffset belongs to us or not
 //since thread probably changed...
 int
-mono_get_this_async_id (DbgEngineStackFrame *frame)
+mono_de_frame_async_id (DbgEngineStackFrame *frame)
 {
 	MonoClassField *builder_field;
 	gpointer builder;
