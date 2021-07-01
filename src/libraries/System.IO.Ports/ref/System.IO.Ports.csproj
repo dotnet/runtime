@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Condition="'$(TargetFramework)' != 'net461'" Include="System.IO.Ports.cs" />
     <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.IO.Ports.net461.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
   </ItemGroup>
 </Project>

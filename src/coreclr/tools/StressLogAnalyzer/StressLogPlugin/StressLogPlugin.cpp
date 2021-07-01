@@ -544,8 +544,8 @@ static LONG s_wrappedWriteThreadCount;
 
 static const LONG MAX_MESSAGE_COUNT = 64 * 1024 * 1024;
 static StressThreadAndMsg* s_threadMsgBuf;
-static volatile LONG s_msgCount = 0;
-static volatile LONG s_totalMsgCount = 0;
+static volatile LONGLONG s_msgCount = 0;
+static volatile LONGLONG s_totalMsgCount = 0;
 static double s_timeFilterStart = 0;
 static double s_timeFilterEnd = 0;
 static wchar_t* s_outputFileName = nullptr;
@@ -988,7 +988,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
 
 static void IncludeMessage(uint64_t threadId, StressMsg* msg)
 {
-    LONG msgCount = _InterlockedIncrement(&s_msgCount) - 1;
+    LONGLONG msgCount = _InterlockedIncrement64(&s_msgCount) - 1;
     if (msgCount < MAX_MESSAGE_COUNT)
     {
         s_threadMsgBuf[msgCount].threadId = threadId;
@@ -1133,7 +1133,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
         s_threadStressLogDesc[threadStressLogIndex].workFinished = 1;
     }
 
-    InterlockedAdd(&s_totalMsgCount, totalMsgCount);
+    InterlockedAdd64(&s_totalMsgCount, totalMsgCount);
     InterlockedAdd(&s_wrappedWriteThreadCount, wrappedWriteThreadCount);
 
     return 0;
@@ -1151,7 +1151,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
     return latestTime;
 }
 
-static void PrintFriendlyNumber(int n)
+static void PrintFriendlyNumber(LONGLONG n)
 {
     if (n < 1000)
         printf("%d", n);

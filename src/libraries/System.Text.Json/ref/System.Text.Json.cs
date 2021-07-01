@@ -847,12 +847,12 @@ namespace System.Text.Json.Serialization
         Metadata = 1,
         Serialization = 2,
     }
-    public sealed partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
+    public partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
     {
         public JsonStringEnumConverter() { }
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
-        public override bool CanConvert(System.Type typeToConvert) { throw null; }
-        public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+        public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
+        public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
     public enum JsonUnknownTypeHandling
     {

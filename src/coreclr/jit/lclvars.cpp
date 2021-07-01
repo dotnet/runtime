@@ -3566,7 +3566,7 @@ void Compiler::lvaSortByRefCount()
         jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_BlendedCode_Less(lvaTable DEBUGARG(lvaCount)));
     }
 
-    lvaTrackedCount = min(lclMAX_TRACKED, trackedCount);
+    lvaTrackedCount = min((unsigned)JitConfig.JitMaxLocalsToTrack(), trackedCount);
 
     JITDUMP("Tracked variable (%u out of %u) table:\n", lvaTrackedCount, lvaCount);
 
@@ -3779,6 +3779,7 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
     {
         if (lclVarType == TYP_STRUCT)
         {
+            assert(!tree->OperIsLocalField() && "do not expect struct local fields.");
             lclVarType = GetLayout()->GetRegisterType();
         }
         targetType = lclVarType;

@@ -1544,7 +1544,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         InterfaceMapIterator it = IterateInterfaceMap();
         while (it.Next())
         {
-            if (it.GetInterface()->CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
+            if (it.GetInterfaceApprox()->CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited, this))
                 return TRUE;
         }
     }
@@ -1552,7 +1552,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
 }
 
 //==========================================================================================
-BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT, TypeHandlePairList *pVisited)
+BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT, TypeHandlePairList *pVisited, MethodTable* pMTInterfaceMapOwner /*= NULL*/)
 {
     CONTRACTL
     {
@@ -1569,6 +1569,16 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // shortcut when having same types
     if (this == pTargetMT)
+    {
+        return TRUE;
+    }
+
+    // Shortcut for generic approx type scenario
+    if (pMTInterfaceMapOwner != NULL &&
+        IsSpecialMarkerTypeForGenericCasting() &&
+        GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
+        GetModule() == pTargetMT->GetModule() &&
+        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner))
     {
         return TRUE;
     }
@@ -1591,6 +1601,11 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
+            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner)
+            {
+                thArg = pMTInterfaceMapOwner;
+            }
+
             TypeHandle thTargetArg = targetInst[i];
 
             // If argument types are not equivalent, test them for compatibility
@@ -1998,7 +2013,7 @@ MethodTable::Debug_DumpInterfaceMap(
         InterfaceMapIterator it(this);
         while (it.Next())
         {
-            MethodTable *pInterfaceMT = it.GetInterface();
+            MethodTable *pInterfaceMT = it.GetInterfaceApprox();
 
             //LF_ALWAYS allowed here because this is controlled by special env var code:EEConfig::ShouldDumpOnClassLoad
             LOG((LF_ALWAYS, LL_ALWAYS,
@@ -4337,7 +4352,7 @@ BOOL MethodTable::ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pV
     InterfaceMapIterator it = IterateInterfaceMap();
     while (it.Next())
     {
-        if (!image->CanPrerestoreEagerBindToMethodTable(it.GetInterface(), pVisited))
+        if (!image->CanPrerestoreEagerBindToMethodTable(it.GetInterface(this), pVisited))
         {
             UPDATE_RESTORE_REASON(InterfaceIsGeneric);
             return TRUE;
@@ -5389,7 +5404,8 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
     while (it.Next())
     {
-        it.GetInterface()->DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
+        MethodTable* pItf = it.GetInterfaceApprox();
+        pItf->DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
 
         if (fNeedAccessChecks)
         {
@@ -5399,7 +5415,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 // A transparent type should not be allowed to implement a critical interface.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
-                DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
+                DoAccessibilityCheck(this, pItf, IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
             }
         }
     }
@@ -6225,8 +6241,7 @@ MethodTable::FindEncodedMapDispatchEntry(
             DispatchMapEntry * pCurEntry = it.Entry();
             if (pCurEntry->GetSlotNumber() == slotNumber)
             {
-                MethodTable * pCurEntryType = LookupDispatchMapType(pCurEntry->GetTypeID());
-                if (pCurEntryType == dispatchTokenType)
+                if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), dispatchTokenType))
                 {
                     *pEntry = *pCurEntry;
                     return TRUE;
@@ -6751,8 +6766,6 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     } CONTRACT_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
-    InterfaceMapIterator it = this->IterateInterfaceMap();
-
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
 
@@ -6795,7 +6808,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
             while (!it.Finished())
             {
-                MethodTable *pCurMT = it.GetInterface();
+                MethodTable *pCurMT = it.GetInterface(pMT);
+
                 MethodDesc *pCurMD = NULL;
                 if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
                 {
@@ -7033,7 +7047,7 @@ BOOL MethodTable::ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, 
         for (; it.IsValid(); it.Next())
         {
             DispatchMapEntry *pCurEntry = it.Entry();
-            if (LookupDispatchMapType(pCurEntry->GetTypeID()) == pItfMT)
+            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
             {
                 // this class and its parents up to pParentMT must have no mappings for the interface
                 return FALSE;
@@ -7083,7 +7097,7 @@ BOOL MethodTable::HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, Me
         for (; it.IsValid(); it.Next())
         {
             DispatchMapEntry *pCurEntry = it.Entry();
-            if (LookupDispatchMapType(pCurEntry->GetTypeID()) == pItfMT)
+            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
             {
                 UINT32 ifaceSlot = pCurEntry->GetSlotNumber();
                 if (!bitMask.TestBit(ifaceSlot))
@@ -7115,6 +7129,7 @@ BOOL MethodTable::HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, Me
 #endif // !DACCESS_COMPILE
 
 //==========================================================================================
+#ifndef DACCESS_COMPILE
 MethodTable * MethodTable::LookupDispatchMapType(DispatchMapTypeID typeID)
 {
     CONTRACTL {
@@ -7125,7 +7140,21 @@ MethodTable * MethodTable::LookupDispatchMapType(DispatchMapTypeID typeID)
     _ASSERTE(!typeID.IsThisClass());
 
     InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
-    return intIt.GetInterface();
+    return intIt.GetInterface(this);
+}
+#endif // DACCESS_COMPILE
+
+//==========================================================================================
+bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT)
+{
+    CONTRACTL {
+        WRAPPER(THROWS);
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    _ASSERTE(!typeID.IsThisClass());
+    InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
+    return intIt.CurrentInterfaceMatches(this, pMT);
 }
 
 //==========================================================================================
@@ -8311,7 +8340,7 @@ MethodTable::MethodDataInterfaceImpl::PopulateNextLevel()
         MethodTable::InterfaceMapIterator it = m_pImpl->GetImplMethodTable()->IterateInterfaceMap();
         while (it.Next())
         {
-            if (pDeclMT == it.GetInterface())
+            if (it.CurrentInterfaceMatches(m_pImpl->GetImplMethodTable(), pDeclMT))
             {   // We found the interface
                 INDEBUG(dbg_fInterfaceFound = TRUE);
                 DispatchMapTypeID declTypeID = DispatchMapTypeID::InterfaceClassID(it.GetIndex());
@@ -8504,10 +8533,7 @@ MethodTable::GetMethodDataHelper(
     MethodDataWrapper hDecl(GetMethodData(pMTDecl, FALSE));
     MethodDataWrapper hImpl(GetMethodData(pMTImpl, FALSE));
 
-    UINT32 cb = MethodDataInterfaceImpl::GetObjectSize(pMTDecl);
-    NewArrayHolder<BYTE> pb(new BYTE[cb]);
-    MethodDataInterfaceImpl * pData = new (pb.GetValue()) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
-    pb.SuppressRelease();
+    MethodDataInterfaceImpl * pData = new ({ pMTDecl }) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
     return pData;
 } // MethodTable::GetMethodDataHelper
@@ -8548,10 +8574,8 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
         }
         else {
             UINT32 cb = MethodDataObject::GetObjectSize(pMTDecl);
-            NewArrayHolder<BYTE> pb(new BYTE[cb]);
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new (pb.GetValue()) MethodDataObject(pMTDecl, h.GetValue());
-            pb.SuppressRelease();
+            pData = new ({ pMTDecl }) MethodDataObject(pMTDecl, h.GetValue());
         }
     }
     else {
@@ -9217,7 +9241,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
             InterfaceMapIterator it = IterateInterfaceMap();
             while (it.Next())
             {
-                if (pInterfaceTypeCanonical == it.GetInterface())
+                if (it.CurrentInterfaceMatches(this, pInterfaceTypeCanonical))
                 {
                     canonicalEquivalentFound = true;
                     break;
@@ -9243,13 +9267,13 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     MethodTable::InterfaceMapIterator it = IterateInterfaceMap();
                     while (it.Next())
                     {
-                        if (it.GetInterface() == pInterfaceType)
+                        if (it.CurrentInterfaceMatches(this, pInterfaceType))
                         {
                             // This is the variant interface check logic, skip the 
                             continue;
                         }
 
-                        if (!it.GetInterface()->HasSameTypeDefAs(pInterfaceType))
+                        if (!it.HasSameTypeDefAs(pInterfaceType))
                         {
                             // Variance matches require a typedef match
                             // Equivalence isn't sufficient, and is uninteresting as equivalent interfaces cannot have static virtuals.
@@ -9258,22 +9282,24 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
 
                         BOOL equivalentOrVariantCompatible;
 
+                        MethodTable *pItfInMap = it.GetInterface(this, CLASS_LOAD_EXACTPARENTS);
+
                         if (allowVariantMatches)
                         {
-                            equivalentOrVariantCompatible = it.GetInterface()->CanCastTo(pInterfaceType, NULL);
+                            equivalentOrVariantCompatible = pItfInMap->CanCastTo(pInterfaceType, NULL);
                         }
                         else
                         {
                             // When performing override checking to ensure that a concrete type is valid, require the implementation 
                             // actually implement the exact or equivalent interface.
-                            equivalentOrVariantCompatible = it.GetInterface()->IsEquivalentTo(pInterfaceType);
+                            equivalentOrVariantCompatible = pItfInMap->IsEquivalentTo(pInterfaceType);
                         }
 
                         if (equivalentOrVariantCompatible)
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(it.GetInterface(), pInterfaceMD, verifyImplemented);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -9448,9 +9474,10 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
     InterfaceMapIterator it = IterateInterfaceMap();
     while (it.Next())
     {
-        MethodTable *pInterfaceMT = it.GetInterface();
+        MethodTable *pInterfaceMT = it.GetInterfaceApprox();
         if (pInterfaceMT->HasVirtualStaticMethods())
         {
+            pInterfaceMT = it.GetInterface(this, CLASS_LOAD_EXACTPARENTS);
             for (MethodIterator it(pInterfaceMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
@@ -9527,7 +9554,7 @@ MethodTable::TryResolveConstraintMethodApprox(
         DWORD cPotentialMatchingInterfaces = 0;
         while (it.Next())
         {
-            TypeHandle thPotentialInterfaceType(it.GetInterface());
+            TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
             if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
                 thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
             {
@@ -9777,6 +9804,35 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
     return nullptr;
 #endif
 }
+
+#ifndef DACCESS_COMPILE
+PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMTOwner, ClassLoadLevel loadLevel /*= CLASS_LOADED*/)
+{
+    CONTRACT(PTR_MethodTable)
+    {
+        GC_TRIGGERS;
+        THROWS;
+        PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    MethodTable *pResult = m_pMap->GetMethodTable();
+    if (pResult->IsSpecialMarkerTypeForGenericCasting())
+    {
+        TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
+        for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
+            ownerAsInst[i] = pMTOwner;
+
+        _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
+        Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());
+        pResult = ClassLoader::LoadGenericInstantiationThrowing(pResult->GetModule(), pResult->GetCl(), inst, ClassLoader::LoadTypes, loadLevel).AsMethodTable();
+        if (pResult->IsFullyLoaded())
+            SetInterface(pResult);
+    }
+    RETURN (pResult);
+}
+#endif // DACCESS_COMPILE
 
 #ifdef FEATURE_READYTORUN_COMPILER
 

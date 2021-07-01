@@ -1240,6 +1240,22 @@ public:
 
     BOOL ContainsGenericMethodVariables();
 
+    // When creating an interface map, under some circumstances the
+    // runtime will place the special marker type in the interface map instead
+    // of the fully loaded type. This is to reduce the amount of type loading
+    // performed at process startup.
+    //
+    // The current rule is that these interfaces can only appear
+    // on valuetypes that are not shared generic, and that the special
+    // marker type is the open generic type.
+    // 
+    inline bool IsSpecialMarkerTypeForGenericCasting()
+    {
+        return IsGenericTypeDefinition();
+    }
+
+    static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
+
     static BOOL ComputeContainsGenericVariables(Instantiation inst);
 
     inline void SetContainsGenericVariables()
@@ -1913,7 +1929,7 @@ public:
     BOOL ArraySupportsBizarreInterface(MethodTable* pInterfaceMT, TypeHandlePairList* pVisited);
     BOOL ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
 
-    BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
+    BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited, MethodTable* pMTInterfaceMapOwner = NULL);
 
     // The inline part of equivalence check.
 #ifndef DACCESS_COMPILE
@@ -2171,8 +2187,16 @@ public:
             return (m_i == m_count);
         }
 
-        // Get the interface at the current position
-        inline PTR_MethodTable GetInterface()
+#ifndef DACCESS_COMPILE
+        // Get the interface at the current position. This GetInterfaceMethod
+        // will ensure that the exact correct instantiation of the interface
+        // is found, even if the MethodTable in the interface map is the generic
+        // approximation
+        PTR_MethodTable GetInterface(MethodTable* pMTOwner, ClassLoadLevel loadLevel = CLASS_LOADED);
+#endif
+
+        // Get the interface at the current position, with whatever its normal load level is
+        inline PTR_MethodTable GetInterfaceApprox()
         {
             CONTRACT(PTR_MethodTable)
             {
@@ -2185,6 +2209,53 @@ public:
             CONTRACT_END;
 
             RETURN (m_pMap->GetMethodTable());
+        }
+
+        inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
+        {
+            CONTRACT(bool)
+            {
+                GC_NOTRIGGER;
+                NOTHROW;
+                SUPPORTS_DAC;
+                PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+            }
+            CONTRACT_END;
+
+            bool exactMatch = m_pMap->GetMethodTable() == pMT;
+            if (!exactMatch)
+            {
+                if (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT) && 
+                    pMT->HasInstantiation() && 
+                    m_pMap->GetMethodTable()->IsSpecialMarkerTypeForGenericCasting() && 
+                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                {
+                    exactMatch = true;
+#ifndef DACCESS_COMPILE
+                    // We match exactly, and have an actual pMT loaded. Insert
+                    // the searched for interface if it is fully loaded, so that
+                    // future checks are more efficient
+                    if (pMT->IsFullyLoaded())
+                        SetInterface(pMT);
+#endif
+                }
+            }
+
+            RETURN (exactMatch);
+        }
+
+        inline bool HasSameTypeDefAs(MethodTable* pMT)
+        {
+            CONTRACT(bool)
+            {
+                GC_NOTRIGGER;
+                NOTHROW;
+                SUPPORTS_DAC;
+                PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+            }
+            CONTRACT_END;
+
+            RETURN (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
         }
 
 #ifndef DACCESS_COMPILE
@@ -2390,7 +2461,10 @@ public:
     UINT32 GetTypeID();
 
 
+    // Will return either the dispatch map type. May trigger type loader in order to get
+    // exact result.
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
+    bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
 
     MethodDesc *GetIntroducingMethodDesc(DWORD slotNumber);
 
@@ -3157,7 +3231,7 @@ public:
 
 protected:
     //--------------------------------------------------------------------------------------
-    class MethodDataObject : public MethodData
+    class MethodDataObject final : public MethodData
     {
       public:
         // Static method that returns the amount of memory to allocate for a particular type.
@@ -3237,19 +3311,32 @@ protected:
                 { LIMITED_METHOD_CONTRACT; return m_pMDImpl; }
         };
 
-        //
-        // At the end of this object is an array, so you cannot derive from this class.
-        //
 
         inline MethodDataObjectEntry *GetEntryData()
-            { LIMITED_METHOD_CONTRACT; return (MethodDataObjectEntry *)(this + 1); }
+            { LIMITED_METHOD_CONTRACT; return &m_rgEntries[0]; }
 
         inline MethodDataObjectEntry *GetEntry(UINT32 i)
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
         void FillEntryDataForAncestor(MethodTable *pMT);
 
-        // MethodDataObjectEntry m_rgEntries[...];
+        //
+        // At the end of this object is an array
+        //
+        MethodDataObjectEntry m_rgEntries[0];
+
+      public:
+        struct TargetMethodTable
+        {
+            MethodTable* pMT;
+        };
+
+        static void* operator new(size_t size, TargetMethodTable targetMT)
+        {
+            _ASSERTE(size <= GetObjectSize(targetMT.pMT));
+            return ::operator new(GetObjectSize(targetMT.pMT));
+        }
+        static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
     //--------------------------------------------------------------------------------------
@@ -3303,7 +3390,7 @@ protected:
     };  // class MethodDataInterface
 
     //--------------------------------------------------------------------------------------
-    class MethodDataInterfaceImpl : public MethodData
+    class MethodDataInterfaceImpl final : public MethodData
     {
       public:
         // Object construction-related methods
@@ -3377,12 +3464,25 @@ protected:
         //
 
         inline MethodDataEntry *GetEntryData()
-            { LIMITED_METHOD_CONTRACT; return (MethodDataEntry *)(this + 1); }
+            { LIMITED_METHOD_CONTRACT; return &m_rgEntries[0]; }
 
         inline MethodDataEntry *GetEntry(UINT32 i)
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
-        // MethodDataEntry m_rgEntries[...];
+        MethodDataEntry m_rgEntries[0];
+
+      public:
+        struct TargetMethodTable
+        {
+            MethodTable* pMT;
+        };
+
+        static void* operator new(size_t size, TargetMethodTable targetMT)
+        {
+            _ASSERTE(size <= GetObjectSize(targetMT.pMT));
+            return ::operator new(GetObjectSize(targetMT.pMT));
+        }
+        static void* operator new(size_t size) = delete;
     };  // class MethodDataInterfaceImpl
 
     //--------------------------------------------------------------------------------------
@@ -3637,6 +3737,7 @@ private:
                                              | enum_flag_ComObject
                                              | enum_flag_ICastable
                                              | enum_flag_IDynamicInterfaceCastable
+                                             | enum_flag_Category_ValueType
 
     };  // enum WFLAGS_HIGH_ENUM
 

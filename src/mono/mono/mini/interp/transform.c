@@ -2429,6 +2429,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		// We do a reference comparison only if we know both operands are runtime type
 		// (they originate from object.GetType or ldftn + GetTypeFromHandle)
 		*op = MINT_CEQ_P;
+	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Inequality") &&
+			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
+		*op = MINT_CNE_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
 		if (!strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
@@ -9770,7 +9773,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_runtime_print_stats ();
 	}
 
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (imethod->method);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
 	if (!g_hash_table_lookup (jit_mm->seq_points, imethod->method))
 		g_hash_table_insert (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
