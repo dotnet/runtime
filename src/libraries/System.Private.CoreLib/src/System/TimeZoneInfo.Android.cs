@@ -92,18 +92,21 @@ namespace System
             return "/apex/com.android.runtime";
         }
 
-        internal static readonly string[] Paths = new string[] { GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
-                                                                 GetApexRuntimeRoot() + "/etc/tz/",  // Android 10+, Fallback location if the above isn't found or corrupted
-                                                                 Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", };
-
         private static string GetTimeZoneDirectory()
         {
-            foreach (var filePath in Paths)
+            // Android 10+, TimeData module where the updates land
+            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", TimeZoneFileName)))
             {
-                if (File.Exists(Path.Combine(filePath, TimeZoneFileName)))
-                {
-                    return filePath;
-                }
+                return GetApexTimeDataRoot() + "/etc/tz/";
+            }
+            // Android 10+, Fallback location if the above isn't found or corrupted
+            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", TimeZoneFileName)))
+            {
+                return GetApexRuntimeRoot() + "/etc/tz/";
+            }
+            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", TimeZoneFileName)))
+            {
+                return Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
             }
 
             return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
