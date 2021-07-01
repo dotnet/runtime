@@ -4112,12 +4112,12 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
         {
-            varDsc->lvSpillAtSingleDef = false;
-
             if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
                 bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
+                // TODO: Zero-inits in LSRA are created with below condition. Try to use similar condition here as well.
+                // if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
                 if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
