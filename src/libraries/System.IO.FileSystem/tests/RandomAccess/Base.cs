@@ -18,7 +18,12 @@ namespace System.IO.Tests
         public static IEnumerable<object[]> GetSyncAsyncOptions()
         {
             yield return new object[] { FileOptions.None };
-            yield return new object[] { FileOptions.Asynchronous };
+
+            // https://github.com/dotnet/runtime/issues/34582
+            if (!(OperatingSystem.IsWindows && PlatformDetection.IsMonoRuntime))
+            {
+                yield return new object[] { FileOptions.Asynchronous };
+            }
         }
 
         [Fact]
