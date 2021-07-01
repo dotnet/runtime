@@ -3,8 +3,22 @@
 
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// Provides data for a <see cref="PosixSignalRegistration"/> event.
+    /// </summary>
     public sealed class PosixSignalContext
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PosixSignalContext"/> class.
+        /// </summary>
+        public PosixSignalContext(PosixSignal signal)
+        {
+            Signal = signal;
+        }
+
+        /// <summary>
+        /// Gets the signal that occurred.
+        /// </summary>
         public PosixSignal Signal
         {
             get;
@@ -12,17 +26,12 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Cancels default handling of the signal.
+        /// Gets or sets a value that indicates whether to cancel the default handling of the signal. The default is is <see langword="false"/>.
         /// </summary>
         public bool Cancel
         {
             get;
             set;
-        }
-
-        public PosixSignalContext(PosixSignal signal)
-        {
-            Signal = signal;
         }
 
         internal PosixSignalContext()
