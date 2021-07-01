@@ -47,6 +47,13 @@ static int GetSignalMax() // Returns the highest usable signal number.
 #endif
 }
 
+static bool IsCancelableTerminationSignal(int sig)
+{
+    return sig == SIGINT ||
+           sig == SIGQUIT ||
+           sig == SIGTERM;
+}
+
 static bool IsSigIgn(struct sigaction* action)
 {
     assert(action);
@@ -192,10 +199,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     // For these signals, the runtime original sa_sigaction/sa_handler will terminate the app.
     // This termination can be canceled using the PosixSignal API.
     // For other signals, we immediately invoke the original handler.
-    bool isCancellableTeminationSignal = sig == SIGINT ||
-                                         sig == SIGQUIT ||
-                                         sig == SIGTERM;
-    if (!isCancellableTeminationSignal)
+    if (!IsCancelableTerminationSignal(sig))
     {
         struct sigaction* origHandler = OrigActionFor(sig);
 #pragma clang diagnostic push
@@ -258,6 +262,11 @@ int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t ha
             break;
         default:
             // Default disposition is Terminate.
+            if (!IsCancelableTerminationSignal(signalCode) && !IsSigDfl(OrigActionFor(signalCode)))
+            {
+                // We've already called the original handler in SignalHandler.
+                break;
+            }
             if (handlersDisposed && g_hasPosixSignalRegistrations[signalCode - 1])
             {
                 // New handlers got registered.

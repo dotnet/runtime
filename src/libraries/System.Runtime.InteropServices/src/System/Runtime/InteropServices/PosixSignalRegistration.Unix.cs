@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices
                     // Microsoft.Win32.Primitives.
                     Interop.CheckIo(-1);
                 }
-                
+
                 Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
                 s_initialized = true;
             }
