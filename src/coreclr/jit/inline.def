@@ -172,7 +172,7 @@ INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc str
 
 // ------ Call Site Information -------
 
-INLINE_OBSERVATION(NONGENERIC_CALLS_GENERIC, bool,    "callee is generic and caller is not",  INFORMATION, CALLSITE)
+INLINE_OBSERVATION(NONGENERIC_CALLS_GENERIC,  bool,   "callee is generic and caller is not",  INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_EXACT_CLS,             int,    "arg is of an exact class",             INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_EXACT_CLS_SIG_IS_NOT,  int,    "arg is more concrete than in sig.",    INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_CONST,                 int,    "arg is a constant",                    INFORMATION, CALLSITE)
