@@ -104,6 +104,7 @@ namespace System.Reflection.Emit
 
         public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
+        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
         [RequiresUnreferencedCode("Types might be removed")]

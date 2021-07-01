@@ -23,7 +23,7 @@ namespace System.Net
             }
             finally
             {
-                if (socket == invalid)
+                if (socket != invalid)
                 {
                     Interop.Sys.Close(socket);
                 }
