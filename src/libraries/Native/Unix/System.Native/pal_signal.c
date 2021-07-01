@@ -57,14 +57,14 @@ static bool IsCancelableTerminationSignal(int sig)
 static bool IsSigIgn(struct sigaction* action)
 {
     assert(action);
-    return (action->sa_flags & SA_SIGINFO) == 0 &&
+    return (!(action->sa_flags & SA_SIGINFO)) &&
            action->sa_handler == SIG_IGN;
 }
 
 static bool IsSigDfl(struct sigaction* action)
 {
     assert(action);
-    return (action->sa_flags & SA_SIGINFO) == 0 &&
+    return (!(action->sa_flags & SA_SIGINFO)) &&
            action->sa_handler == SIG_DFL;
 }
 
