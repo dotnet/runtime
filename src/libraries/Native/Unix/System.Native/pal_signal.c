@@ -532,10 +532,7 @@ int32_t InitializeSignalHandlingCore()
     {
         free(g_origSigHandler);
         free(g_handlerIsInstalled);
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-        free((void*)g_hasPosixSignalRegistrations);
-#pragma clang diagnostic pop
+        free((void*)(size_t)g_hasPosixSignalRegistrations);
         g_origSigHandler = NULL;
         g_handlerIsInstalled = NULL;
         g_hasPosixSignalRegistrations = NULL;
