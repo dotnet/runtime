@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 
 namespace System.Text.Json
 {
@@ -14,12 +15,16 @@ namespace System.Text.Json
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
-        /// <exception cref="JsonException">Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input is not  RFC 8259-compliant.</exception>
+        /// <exception cref="JsonException">
+        /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
+        /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
+        /// or the input JSON exceeds the default recursive depth of 64.
+        /// </exception>
         /// <remarks>
         /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
         /// being written, and/or the overall payload being written to the writer instance being invalid.
         ///
-        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails.
+        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails (when it is enabled).
         ///
         /// The <see cref="JsonWriterOptions.SkipValidation"/> value for the writer instance is honored when using this method.
         ///
@@ -46,12 +51,16 @@ namespace System.Text.Json
         /// <param name="json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
         /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
-        /// <exception cref="JsonException">Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input is not  RFC 8259-compliant.</exception>
+        /// <exception cref="JsonException">
+        /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
+        /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
+        /// or the input JSON exceeds the default recursive depth of 64.
+        /// </exception>
         /// <remarks>
         /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
         /// being written, and/or the overall payload being written to the writer instance being invalid.
         ///
-        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails.
+        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails (when it is enabled).
         ///
         /// The <see cref="JsonWriterOptions.SkipValidation"/> value for the writer instance is honored when using this method.
         ///
@@ -72,13 +81,17 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8Json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
-        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
-        /// <exception cref="JsonException">Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input is not  RFC 8259-compliant.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or equal to <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="JsonException">
+        /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
+        /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
+        /// or the input JSON exceeds the default recursive depth of 64.
+        /// </exception>
         /// <remarks>
         /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
         /// being written, and/or the overall payload being written to the writer instance being invalid.
         ///
-        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails.
+        /// When using this method, the input content will be written to the writer destination as-is, unless validation fails (when it is enabled).
         ///
         /// The <see cref="JsonWriterOptions.SkipValidation"/> value for the writer instance is honored when using this method.
         ///
@@ -91,11 +104,21 @@ namespace System.Text.Json
                 ValidateWritingValue();
             }
 
-            WriteRawValueInternal(utf8Json, skipInputValidation);
+            if (utf8Json.Length == int.MaxValue)
+            {
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(int.MaxValue);
+            }
+
+            WriteRawValueCore(utf8Json, skipInputValidation);
         }
 
         private void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
         {
+            if (json.Length > JsonConstants.MaxUtf16RawValueLength)
+            {
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(json.Length);
+            }
+
             byte[]? tempArray = null;
 
             // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
@@ -122,7 +145,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteRawValueInternal(ReadOnlySpan<byte> utf8Json, bool skipInputValidation)
+        private void WriteRawValueCore(ReadOnlySpan<byte> utf8Json, bool skipInputValidation)
         {
             int len = utf8Json.Length;
 
@@ -130,10 +153,12 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
             }
-            else if (len > JsonConstants.MaxRawValueLength)
-            {
-                ThrowHelper.ThrowArgumentException_ValueTooLarge(len);
-            }
+
+            // In the UTF-16-based entry point methods above, we validate that the payload length <= int.MaxValue /3.
+            // The result of this division will be rounded down, so even if every input character needs to be transcoded
+            // (with expansion factor of 3), the resulting payload would be less than int.MaxValue,
+            // as (int.MaxValue/3) * 3 is less than int.MaxValue.
+            Debug.Assert(len < int.MaxValue);
 
             if (skipInputValidation)
             {
@@ -147,15 +172,13 @@ namespace System.Text.Json
             {
                 // Utilize reader validation.
                 Utf8JsonReader reader = new(utf8Json);
-                while (reader.Read())
-                {
-                    _tokenType = reader.TokenType;
-                }
+                while (reader.Read());
+                _tokenType = reader.TokenType;
             }
 
             // TODO (https://github.com/dotnet/runtime/issues/29293):
             // investigate writing this in chunks, rather than requesting one potentially long, contiguous buffer.
-            int maxRequired = len + 1; // Optionally, 1 list separator
+            int maxRequired = len + 1; // Optionally, 1 list separator. We've guarded against integer overflow earlier in the call stack.
 
             if (_memory.Length - BytesPending < maxRequired)
             {

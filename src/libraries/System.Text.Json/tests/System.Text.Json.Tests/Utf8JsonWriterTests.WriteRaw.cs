@@ -109,7 +109,7 @@ namespace System.Text.Json.Tests
         {
             byte[] quotedBuffer = new byte[buffer.Length + 2];
             quotedBuffer[0] = (byte)'"';
-            buffer.CopyTo(quotedBuffer.AsSpan().Slice(1));
+            buffer.CopyTo(quotedBuffer.AsSpan(1));
             quotedBuffer[buffer.Length + 1] = (byte)'"';
             return quotedBuffer;
         }
@@ -236,6 +236,56 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void WriteRawDepthExceedsMaxOf64Fail()
+        {
+
+            RunTest(GenerateJsonUsingDepth(1), false);
+            RunTest(GenerateJsonUsingDepth(64), false);
+            RunTest(GenerateJsonUsingDepth(65), true);
+            RunTest(GenerateJsonUsingDepth(65), false, true);
+
+            void RunTest(string json, bool expectFail, bool skipInputValidation = false)
+            {
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms);
+
+                if (expectFail)
+                {
+                    Assert.ThrowsAny<JsonException>(() => writer.WriteRawValue(json, skipInputValidation));
+                }
+                else
+                {
+                    writer.WriteRawValue(json, skipInputValidation);
+                    writer.Flush();
+
+                    Assert.Equal(json, Encoding.UTF8.GetString(ms.ToArray()));
+                }
+            }
+        }
+
+        private static string GenerateJsonUsingDepth(int depth)
+        {
+            Assert.True(depth > 0 && depth <= 65, "Test depth out of range");
+
+            StringBuilder sb = new();
+            sb.Append("{");
+
+            for (int i = 0; i < depth - 1; i++)
+            {
+                sb.Append(@"""prop"":{");
+            }
+
+            for (int i = 0; i < depth - 1; i++)
+            {
+                sb.Append("}");
+            }
+
+            sb.Append("}");
+
+            return sb.ToString();
+        }
+
         /// <summary>
         /// This test is constrained to run on Windows and MacOSX because it causes
         /// problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
@@ -296,52 +346,86 @@ namespace System.Text.Json.Tests
         [InlineData(JsonTokenType.String)]
         [InlineData(JsonTokenType.StartArray)]
         [InlineData(JsonTokenType.StartObject)]
-        public static void WriteRawMaxInputLength(JsonTokenType tokenType)
+        public static void WriteRawMaxUtf16InputLength(JsonTokenType tokenType)
         {
             // Max raw payload length supported by the writer.
             int maxLength = int.MaxValue / 3;
 
-            byte[] payload = new byte[maxLength];
-            payload[0] = (byte)'"';
-            payload[maxLength - 1] = (byte)'"';
+            StringBuilder sb = new();
+            sb.Append('"');
 
             for (int i = 1; i < maxLength - 1; i++)
             {
-                payload[i] = (byte)'a';
+                sb.Append('a');
             }
 
-            using MemoryStream ms = new();
-            using Utf8JsonWriter writer = new(ms);
+            sb.Append('"');
 
-            switch(tokenType)
+            string payload = sb.ToString();
+
+            RunTest(OverloadParamType.ROSChar);
+            RunTest(OverloadParamType.String);
+            RunTest(OverloadParamType.ByteArray);
+
+            void RunTest(OverloadParamType paramType)
             {
-                case JsonTokenType.String:
-                    writer.WriteRawValue(payload);
-                    writer.Flush();
-                    Assert.Equal(payload.Length, writer.BytesCommitted);
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms);
+
+                switch (tokenType)
+                {
+                    case JsonTokenType.String:
+                        WriteRawValueWithSetting(writer, payload, paramType);
+                        writer.Flush();
+                        Assert.Equal(payload.Length, writer.BytesCommitted);
+                        break;
+                    case JsonTokenType.StartArray:
+                        writer.WriteStartArray();
+                        WriteRawValueWithSetting(writer, payload, paramType);
+                        WriteRawValueWithSetting(writer, payload, paramType);
+                        writer.WriteEndArray();
+                        writer.Flush();
+                        // Start/EndArray + comma, 2 array elements
+                        Assert.Equal(3 + (payload.Length * 2), writer.BytesCommitted);
+                        break;
+                    case JsonTokenType.StartObject:
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("1");
+                        WriteRawValueWithSetting(writer, payload, paramType);
+                        writer.WritePropertyName("2");
+                        WriteRawValueWithSetting(writer, payload, paramType);
+                        writer.WriteEndObject();
+                        writer.Flush();
+                        // Start/EndToken + comma, 2 property names, 2 property values
+                        Assert.Equal(3 + (4 * 2) + (payload.Length * 2), writer.BytesCommitted);
+                        break;
+                    default:
+                        Assert.True(false, "Unexpected test configuration");
+                        break;
+                }
+            }
+        }
+
+        private enum OverloadParamType
+        {
+            ROSChar,
+            String,
+            ByteArray
+        }
+
+        private static void WriteRawValueWithSetting(Utf8JsonWriter writer, string payload, OverloadParamType param)
+        {
+            switch (param)
+            {
+                case OverloadParamType.ROSChar:
+                    writer.WriteRawValue(payload.AsSpan());
                     break;
-                case JsonTokenType.StartArray:
-                    writer.WriteStartArray();
+                case OverloadParamType.String:
                     writer.WriteRawValue(payload);
-                    writer.WriteRawValue(payload);
-                    writer.WriteEndArray();
-                    writer.Flush();
-                    // Start/EndArray + comma, 2 array elements
-                    Assert.Equal(3 + (payload.Length * 2), writer.BytesCommitted);
                     break;
-                case JsonTokenType.StartObject:
-                    writer.WriteStartObject();
-                    writer.WritePropertyName("1");
-                    writer.WriteRawValue(payload);
-                    writer.WritePropertyName("2");
-                    writer.WriteRawValue(payload);
-                    writer.WriteEndObject();
-                    writer.Flush();
-                    // Start/EndToken + comma, 2 property names, 2 property values
-                    Assert.Equal(3 + (4 * 2) + (payload.Length * 2), writer.BytesCommitted);
-                    break;
-                default:
-                    Assert.True(false, "Unexpected test configuration");
+                case OverloadParamType.ByteArray:
+                    byte[] payloadAsBytes = Encoding.UTF8.GetBytes(payload);
+                    writer.WriteRawValue(payloadAsBytes);
                     break;
             }
         }
@@ -350,20 +434,73 @@ namespace System.Text.Json.Tests
         [ConditionalTheory(nameof(IsX64))]
         [InlineData((int.MaxValue / 3) + 1)]
         [InlineData(int.MaxValue / 3 + 2)]
-        public static void WriteRawLengthGreaterThanMax(int len)
+        public static void WriteRawUtf16LengthGreaterThanMax(int len)
         {
-            byte[] payload = new byte[len];
-            payload[0] = (byte)'"';
-            payload[len - 1] = (byte)'"';
+            StringBuilder sb = new();
+            sb.Append('"');
 
             for (int i = 1; i < len - 1; i++)
             {
-                payload[i] = (byte)'a';
+                sb.Append('a');
             }
+
+            sb.Append('"');
+
+            string payload = sb.ToString();
 
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
-            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(payload));
+
+            // UTF-16 overloads not compatible with this length.
+            Assert.Throws<ArgumentException>(() => WriteRawValueWithSetting(writer, payload, OverloadParamType.ROSChar));
+            Assert.Throws<ArgumentException>(() => WriteRawValueWithSetting(writer, payload, OverloadParamType.String));
+
+            // UTF-8 overload is okay.
+            WriteRawValueWithSetting(writer, payload, OverloadParamType.ByteArray);
+            writer.Flush();
+
+            Assert.Equal(payload.Length, Encoding.UTF8.GetString(ms.ToArray()).Length);
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(IsX64))]
+        public static void WriteRawTranscodeFromUtf16ToUtf8TooLong()
+        {
+            // Max raw payload length supported by the writer.
+            int maxLength = int.MaxValue / 3;
+
+            StringBuilder sb = new();
+            sb.Append('"');
+
+            for (int i = 1; i < maxLength - 1; i++)
+            {
+                sb.Append('的'); // Non-UTF-8 character than will expand during transcoding
+            }
+
+            sb.Append('"');
+
+            string payload = sb.ToString();
+
+            RunTest(OverloadParamType.ROSChar);
+            RunTest(OverloadParamType.String);
+            RunTest(OverloadParamType.ByteArray);
+
+            void RunTest(OverloadParamType paramType)
+            {
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms);
+
+                try
+                {
+                    WriteRawValueWithSetting(writer, payload, paramType);
+                    writer.Flush();
+
+                    // All characters in the payload will be expanded during transcoding, except for the quotes.
+                    int expectedLength = ((payload.Length - 2) * 3) + 2;
+                    Assert.Equal(expectedLength, writer.BytesCommitted);
+                }
+                catch (OutOfMemoryException) { } // OutOfMemoryException is okay since the transcoding output is probably too large.
+            }
         }
     }
 }

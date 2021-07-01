@@ -67,7 +67,9 @@ namespace System.Text.Json
         // When transcoding from UTF8 -> UTF16, the byte count threshold where we rent from the array pool before performing a normal alloc.
         public const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 
-        public const int MaxRawValueLength = int.MaxValue / MaxExpansionFactorWhileTranscoding;
+        // The maximum number of characters allowed when writing raw UTF-16 JSON. This is the maximum length that we can guarantee can
+        // be safely transcoded to UTF-8 and fit within an integer-length span, given the max expansion factor of a single character (3).
+        public const int MaxUtf16RawValueLength = int.MaxValue / MaxExpansionFactorWhileTranscoding;
 
         public const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         public const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
