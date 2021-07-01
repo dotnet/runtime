@@ -20,6 +20,11 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef TARGET_LINUX
+#include <dlfcn.h>
+#include "pal_atomic.h"
+#endif
+
 c_static_assert(PAL_GSS_C_DELEG_FLAG == GSS_C_DELEG_FLAG);
 c_static_assert(PAL_GSS_C_MUTUAL_FLAG == GSS_C_MUTUAL_FLAG);
 c_static_assert(PAL_GSS_C_REPLAY_FLAG == GSS_C_REPLAY_FLAG);
@@ -47,6 +52,70 @@ static char gss_ntlm_oid_value[] =
 static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_value) - 1,
                                               .elements = gss_ntlm_oid_value};
 #endif
+
+// gssapi shim
+#ifdef TARGET_LINUX
+
+#define libraryName "libgssapi_krb5.so"
+
+typedef struct gss_shim_t
+{
+    TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
+} gss_shim_t;
+
+static gss_shim_t s_gss_shim;
+static gss_shim_t* volatile s_gss_shim_ptr = NULL;
+
+static void init_gss_shim()
+{
+    void* lib = dlopen(libraryName, RTLD_LAZY);
+    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", libraryName, dlerror()); abort(); }
+
+    s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(lib, "gss_accept_sec_context");
+    if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", libraryName, dlerror()); abort(); }
+
+    pal_atomic_cas_ptr((void* volatile *)&s_gss_shim_ptr, &s_gss_shim, NULL);
+    dlclose(lib);
+}
+
+static gss_shim_t* get_gss_shim()
+{
+    gss_shim_t* ptr = s_gss_shim_ptr;
+    if (ptr == NULL)
+    {
+        init_gss_shim();
+        return s_gss_shim_ptr;
+    }
+
+    return ptr;
+}
+
+#define gss_accept_sec_context(...) get_gss_shim()->gss_accept_sec_context_ptr(__VA_ARGS__)
+
+// gss_accept_sec_context
+// gss_acquire_cred
+// gss_acquire_cred_with_password
+// gss_delete_sec_context
+// gss_display_name
+// gss_display_status
+// gss_import_name
+// gss_indicate_mechs
+// gss_init_sec_context
+// gss_inquire_context
+// gss_mech_krb5
+// gss_oid_equal
+// gss_release_buffer
+// gss_release_cred
+// gss_release_name
+// gss_release_oid_set
+// gss_unwrap
+// gss_wrap
+
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+// gss_set_cred_option
+#endif
+
+#endif // TARGET_LINUX
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
