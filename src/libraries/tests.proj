@@ -277,14 +277,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
-    <!-- Issue: https://github.com/dotnet/runtime/issues/54194 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles/tests/System.IO.MemoryMappedFiles.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/52393 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/50724 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
