@@ -56,9 +56,11 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- Project references -->
+
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageReference Include="System.Net.MsQuic.Transport" PrivateAssets="all" Version="$(SystemNetMsQuicTransportVersion)" />
+    <PackageReference Include="System.Net.MsQuic.Transport" PrivateAssets="all" GeneratePathProperty="true" Version="$(SystemNetMsQuicTransportVersion)" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -76,11 +78,31 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <BinPlaceNative>true</BinPlaceNative>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
+  </PropertyGroup>
+
   <!-- Support for deploying msquic -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86')">
+    <Content Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.dll" Condition="'$(TargetsWindows)' == 'true'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>MsQuic.Native.dll</TargetPath>
+    </Content>
+    <Content Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.pdb" Condition="'$(TargetsWindows)' == 'true'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>MsQuic.Native.pdb</TargetPath>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>MsQuic.Native.dll</TargetPath>
     </Content>
     <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
