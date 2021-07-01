@@ -84,9 +84,7 @@ namespace System.Net.Http
                         return;
 
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REDIRECT:
-                        string? redirectUriString = Marshal.PtrToStringUni(statusInformation);
-                        Debug.Assert(redirectUriString != null);
-                        var redirectUri = new Uri(redirectUriString);
+                        var redirectUri = new Uri(Marshal.PtrToStringUni(statusInformation)!);
                         OnRequestRedirect(state, redirectUri);
                         return;
 
