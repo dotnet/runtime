@@ -8,6 +8,10 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>d7db669b70f4dd67ec001c192f9809c218cab88b</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64" Version="6.0.0-preview.7.21330.1">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.21330.2">
@@ -209,10 +213,6 @@
     <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21330.5">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>366fc54b3a9b6226dbbbf3672fae78ba82e82b6f</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64" Version="6.0.0-preview.7.21330.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21330.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>

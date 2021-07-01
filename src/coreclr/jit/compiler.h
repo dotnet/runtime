@@ -9778,6 +9778,11 @@ public:
 #endif // FEATURE_MULTIREG_RET
     }
 
+    bool compEnregLocals()
+    {
+        return ((opts.compFlags & CLFLG_REGVAR) != 0);
+    }
+
     bool compEnregStructLocals()
     {
         return (JitConfig.JitEnregStructLocals() != 0);
@@ -9832,6 +9837,16 @@ public:
     bool compMethodRequiresPInvokeFrame()
     {
         return (info.compUnmanagedCallCountWithGCTransition > 0);
+    }
+
+    // Returns true if address-exposed user variables should be poisoned with a recognizable value
+    bool compShouldPoisonFrame()
+    {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (opts.IsOSR())
+            return false;
+#endif
+        return !info.compInitMem && opts.compDbgCode;
     }
 
 #if defined(DEBUG)
