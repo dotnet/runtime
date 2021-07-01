@@ -160,6 +160,7 @@ GSList *mono_interp_only_classes;
 static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
+static void mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data);
 
 gboolean
 mono_running_on_valgrind (void)
@@ -4357,6 +4358,7 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.install_state_summarizer = mini_register_sigterm_handler;
 #endif
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
+	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.init_mem_manager = init_jit_mem_manager;
 	callbacks.free_mem_manager = free_jit_mem_manager;
 
@@ -5139,12 +5141,17 @@ mono_runtime_install_custom_handlers_usage (void)
 }
 #endif /* HOST_WIN32 */
 
-void
+static void
 mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc G_GNUC_UNUSED, uint32_t generation G_GNUC_UNUSED)
 {
 	mini_get_interp_callbacks ()->invalidate_transformed ();
 }
 
+static void
+mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data)
+{
+	mini_get_interp_callbacks ()->jit_info_foreach (func, user_data);
+}
 
 /*
  * mini_get_default_mem_manager:

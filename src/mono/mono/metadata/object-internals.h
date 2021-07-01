@@ -610,6 +610,9 @@ typedef struct {
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 
+
+typedef void (*InterpJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
+
 /* 
  * Callbacks supplied by the runtime and called by the modules in metadata/
  * This interface is easier to extend than adding a new function type +
@@ -643,6 +646,7 @@ typedef struct {
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
+	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
