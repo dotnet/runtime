@@ -669,7 +669,7 @@ HRESULT ManagedObjectWrapper::QueryInterface(
 
                 default:
                     _ASSERTE(false && "Unknown result value");
-                    [[fallthrough]];
+                    FALLTHROUGH;
                 case TryInvokeICustomQueryInterfaceResult::FailedToInvoke:
                     // Set the 'lacks' flag since our attempt to use ICustomQueryInterface
                     // indicated the object lacks an implementation.
