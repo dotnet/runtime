@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Used to check if StartAsync has been called.
         private bool _started;
 
-        // Used by the class to indicate that the stream is m_Readable.
+        // Used by the class to indicate that the stream is readable.
         private bool _canRead;
 
         // Used by the class to indicate that the stream is writable.
@@ -36,8 +36,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private sealed class State
         {
-            public GCHandle StateHandle;
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
+            public GCHandle StateGCHandle;
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
 
             public ReadState ReadState;
@@ -69,6 +69,17 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public void Cleanup()
+            {
+                ShutdownState = ShutdownState.Finished;
+                CleanupSendState(this);
+                Handle?.Dispose();
+                Marshal.FreeHGlobal(SendQuicBuffers);
+                SendQuicBuffers = IntPtr.Zero;
+                if (StateGCHandle.IsAllocated) StateGCHandle.Free();
+                ConnectionState?.RemoveStream(null);
+            }
         }
 
         // inbound.
@@ -79,23 +90,23 @@ namespace System.Net.Quic.Implementations.MsQuic
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
 
-            _state.StateHandle = GCHandle.Alloc(_state);
+            _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_streamDelegate,
-                    GCHandle.ToIntPtr(_state.StateHandle));
+                    GCHandle.ToIntPtr(_state.StateGCHandle));
             }
             catch
             {
-                _state.StateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw;
             }
 
             if (!connectionState.TryAddStream(this))
             {
-                _state.StateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
@@ -117,7 +128,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _canWrite = true;
-            _state.StateHandle = GCHandle.Alloc(_state);
+            _state.StateGCHandle = GCHandle.Alloc(_state);
 
             try
             {
@@ -125,7 +136,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     connectionState.Handle,
                     flags,
                     s_streamDelegate,
-                    GCHandle.ToIntPtr(_state.StateHandle),
+                    GCHandle.ToIntPtr(_state.StateGCHandle),
                     out _state.Handle);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
@@ -136,14 +147,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             catch
             {
                 _state.Handle?.Dispose();
-                _state.StateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw;
             }
 
             if (!connectionState.TryAddStream(this))
             {
                 _state.Handle?.Dispose();
-                _state.StateHandle.Free();
+                _state.StateGCHandle.Free();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
@@ -667,15 +678,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (releaseHandles)
             {
-                if (_state.StateHandle.IsAllocated)
-                {
-                    // may be freed/not allocated if we fail in constructor.
-                    _state.Handle.Dispose();
-                    _state.StateHandle.Free();
-                }
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
-                CleanupSendState(_state);
-                _state.ConnectionState?.RemoveStream(this);
+                _state.Cleanup();
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -903,12 +906,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool releaseHandles = Interlocked.Exchange(ref state.ShutdownDone, 2) == 1;
             if (releaseHandles)
             {
-                state.ShutdownState = ShutdownState.Finished;
-                state.Handle.Dispose();
-                Marshal.FreeHGlobal(state.SendQuicBuffers);
-                if (state.StateHandle.IsAllocated) state.StateHandle.Free();
-                CleanupSendState(state);
-                state.ConnectionState?.RemoveStream(null);
+                state.Cleanup();
             }
 
             return MsQuicStatusCodes.Success;

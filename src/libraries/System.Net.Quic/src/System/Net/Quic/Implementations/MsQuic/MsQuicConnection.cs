@@ -20,6 +20,7 @@ namespace System.Net.Quic.Implementations.MsQuic
     {
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        private const uint DefaultResetValue = 0xffffffff; // Arbitrary value unlikely to conflict with application protocols.
 
         // Delegate that wraps the static function that will be called when receiving an event.
         private static readonly ConnectionCallbackDelegate s_connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
@@ -648,17 +649,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         private async Task FlushAcceptQueue()
         {
             _state.AcceptQueue.Writer.TryComplete();
-            await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+            await foreach (MsQuicStream stream in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
             {
-                if (item.CanRead)
+                if (stream.CanRead)
                 {
-                    item.AbortRead(0xffffffff);
+                    stream.AbortRead(DefaultResetValue);
                 }
-                if (item.CanWrite)
+                if (stream.CanWrite)
                 {
-                    item.AbortWrite(0xffffffff);
+                    stream.AbortWrite(DefaultResetValue);
                 }
-                item.Dispose();
+                stream.Dispose();
             }
         }
 
@@ -689,8 +690,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
-                _state!.Handle.Dispose();
-                _state.StateGCHandle.Free();
+                // We may not be fully initialized if constructor fails.
+                _state.Handle?.Dispose();
+                if (_state.StateGCHandle.IsAllocated) _state.StateGCHandle.Free();
             }
         }
 
