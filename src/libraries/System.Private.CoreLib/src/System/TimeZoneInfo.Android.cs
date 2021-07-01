@@ -225,7 +225,6 @@ namespace System
         public fixed byte signature[12];
         public int indexOffset;
         public int dataOffset;
-        public int zoneTabOffset;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack=1)]
@@ -252,7 +251,6 @@ namespace System
      */
     internal sealed class AndroidTzData
     {
-
         internal static readonly string[] Paths = new string[] {
             GetApexTimeDataRoot() + "/etc/tz/tzdata", // Android 10+, TimeData module where the updates land
             GetApexRuntimeRoot() + "/etc/tz/tzdata",  // Android 10+, Fallback location if the above isn't found or corrupted
@@ -342,7 +340,6 @@ namespace System
 
             header.indexOffset = NetworkToHostOrder(header.indexOffset);
             header.dataOffset = NetworkToHostOrder(header.dataOffset);
-            header.zoneTabOffset = NetworkToHostOrder(header.zoneTabOffset);
 
             sbyte* s = (sbyte*)header.signature;
             string magic = new string(s, 0, 6, Encoding.ASCII);
