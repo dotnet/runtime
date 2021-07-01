@@ -35,7 +35,7 @@ namespace Internal.Cryptography
             // zeros at the end of a block are part of the plaintext or the padding.
             //
             int decryptedBytes = 0;
-            if (DepaddingRequired)
+            if (SymmetricPadding.DepaddingRequired(PaddingMode))
             {
                 // If we have data saved from a previous call, decrypt that into the output first
                 if (_heldoverCipher != null)
@@ -131,7 +131,7 @@ namespace Internal.Cryptography
 
         protected override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (DepaddingRequired)
+            if (SymmetricPadding.DepaddingRequired(PaddingMode))
             {
                 byte[] rented = CryptoPool.Rent(inputCount + InputBlockSize);
                 int written = 0;
@@ -190,7 +190,7 @@ namespace Internal.Cryptography
             // until it's been decrypted. We don't want to decrypt in to a user-supplied buffer and then throw
             // a padding exception after we've already filled the user buffer with plaintext. We should only
             // release the plaintext to the caller once we know the padding is valid.
-            if (!DepaddingRequired)
+            if (!SymmetricPadding.DepaddingRequired(PaddingMode))
             {
                 if (output.Length >= input.Length)
                 {
@@ -239,27 +239,6 @@ namespace Internal.Cryptography
             {
                 Array.Clear(_heldoverCipher);
                 _heldoverCipher = null;
-            }
-        }
-
-        private bool DepaddingRequired
-        {
-            get
-            {
-                // Some padding modes encode sufficient information to allow for automatic depadding to happen.
-                switch (PaddingMode)
-                {
-                    case PaddingMode.PKCS7:
-                    case PaddingMode.ANSIX923:
-                    case PaddingMode.ISO10126:
-                        return true;
-                    case PaddingMode.Zeros:
-                    case PaddingMode.None:
-                        return false;
-                    default:
-                        Debug.Fail($"Unknown padding mode {PaddingMode}.");
-                        throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
-                }
             }
         }
 
