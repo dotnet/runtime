@@ -17444,14 +17444,14 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 newVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
                 newVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
-                newVarDsc->lvLclBlockOpAddr   = varDsc->lvLclBlockOpAddr;
-                newVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-                newVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-                newVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
+                newVarDsc->lvLclBlockOpAddr        = varDsc->lvLclBlockOpAddr;
+                newVarDsc->lvLclFieldExpr          = varDsc->lvLclFieldExpr;
+                newVarDsc->lvVMNeedsStackAddr      = varDsc->lvVMNeedsStackAddr;
+                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
                 newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
                 newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
-                newVarDsc->lvSpillAtSingleDef = varDsc->lvSpillAtSingleDef;
-                newVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+                newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;
+                newVarDsc->lvLiveAcrossUCall       = varDsc->lvLiveAcrossUCall;
 #endif // DEBUG
 
                 // If the promotion is dependent, the promoted temp would just be committed

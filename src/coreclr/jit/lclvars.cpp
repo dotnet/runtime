@@ -4114,8 +4114,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         {
             if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
-                bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
+                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
                 // TODO: Zero-inits in LSRA are created with below condition. Try to use similar condition here as well.
                 // if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
@@ -7505,7 +7505,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" single-def");
     }
-    
+
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
         printf(" double-align");

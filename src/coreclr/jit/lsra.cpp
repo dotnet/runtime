@@ -3286,7 +3286,8 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
         !interval->firstRefPosition->spillAfter)
     {
         // TODO-CQ: Check if it is beneficial to spill at def, meaning, if it is a hot block don't worry about
-        // doing the spill. Another option is to track number of refpositions and a interval has more than X refpositions
+        // doing the spill. Another option is to track number of refpositions and a interval has more than X
+        // refpositions
         // then perform this optimization.
         interval->firstRefPosition->singleDefSpill = true;
     }
@@ -5873,9 +5874,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
     }
 
-    bool reload         = currentRefPosition->reload;
-    bool spillAfter     = currentRefPosition->spillAfter;
-    bool writeThru      = currentRefPosition->writeThru;
+    bool reload     = currentRefPosition->reload;
+    bool spillAfter = currentRefPosition->spillAfter;
+    bool writeThru  = currentRefPosition->writeThru;
 
     // In the reload case we either:
     // - Set the register to REG_STK if it will be referenced only from the home location, or
@@ -6039,7 +6040,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             // This is the first (and only) def of a single-def var (only defs are marked 'singleDefSpill').
             // Mark it as GTF_SPILL, so it is spilled immediately to the stack at definition and
             // GTF_SPILLED, so the variable stays live in the register.
-            // 
+            //
             // TODO: This approach would still create the resolution moves but during codegen, will check for
             // `lvSpillAtSingleDef` to decide whether to generate spill or not. In future, see if there is some
             // better way to avoid resolution moves, perhaps by updating the varDsc->SetRegNum(REG_STK) in this
