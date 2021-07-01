@@ -54,18 +54,25 @@ static bool IsCancelableTerminationSignal(int sig)
            sig == SIGTERM;
 }
 
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    assert(action);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
+    return (action->sa_flags & SA_SIGINFO) != 0;
+#pragma clang diagnostic pop
+}
+
 static bool IsSigIgn(struct sigaction* action)
 {
     assert(action);
-    return (!(action->sa_flags & SA_SIGINFO)) &&
-           action->sa_handler == SIG_IGN;
+    return !IsSaSigInfo(action) && action->sa_handler == SIG_IGN;
 }
 
 static bool IsSigDfl(struct sigaction* action)
 {
     assert(action);
-    return (!(action->sa_flags & SA_SIGINFO)) &&
-           action->sa_handler == SIG_DFL;
+    return !IsSaSigInfo(action) && action->sa_handler == SIG_DFL;
 }
 
 static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
@@ -202,10 +209,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     if (!IsCancelableTerminationSignal(sig))
     {
         struct sigaction* origHandler = OrigActionFor(sig);
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
-        if (origHandler->sa_flags & SA_SIGINFO)
-#pragma clang diagnostic pop
+        if (IsSaSigInfo(origHandler))
         {
             assert(origHandler->sa_sigaction);
             origHandler->sa_sigaction(sig, siginfo, context);
