@@ -787,8 +787,7 @@ unsigned long local_SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options)
 
 unsigned long local_SSL_set_options(SSL* ssl, unsigned long options)
 {
-
-    printf("%s:%d local fn called", __FILE__, __LINE__);
+    printf("%s:%d local fn called %s \n", __FILE__, __LINE__, OPENSSL_VERSION_TEXT);
     // SSL_ctrl is signed long in and signed long out; but SSL_set_options,
     // which was a macro call to SSL_ctrl in 1.0, is unsigned/unsigned.
     return (unsigned long)SSL_ctrl(ssl, SSL_CTRL_OPTIONS, (long)options, NULL);
