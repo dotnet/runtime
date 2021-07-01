@@ -13,7 +13,7 @@ static bool
 debugger_avaliable (void);
 
 static void
-stub_debugger_parse_options (void);
+stub_debugger_parse_options (char *options);
 
 static void
 stub_debugger_init (MonoDefaults *mono_defaults);
@@ -58,7 +58,7 @@ static void
 stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause);
 
 static gboolean 
-stub_mono_debugger_agent_transport_handshake (void);
+stub_debugger_transport_handshake (void);
 
 static void
 stub_mono_wasm_breakpoint_hit (void);
@@ -83,7 +83,7 @@ static MonoComponentDebugger fn_table = {
 	&stub_debugger_debug_log,
 	&stub_debugger_debug_log_is_enabled,
 	&stub_debugger_send_crash,
-	&stub_mono_debugger_agent_transport_handshake,
+	&stub_debugger_transport_handshake,
 
 	//wasm
 	&stub_mono_wasm_breakpoint_hit,
@@ -103,8 +103,10 @@ mono_component_debugger_init (void)
 }
 
 static void
-stub_debugger_parse_options (void)
+stub_debugger_parse_options (char *options)
 {
+	if (!options)
+		return;
 	g_error ("This runtime is configured with the debugger agent disabled.");
 }
 
@@ -185,7 +187,7 @@ stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
 }
 
 static gboolean 
-stub_mono_debugger_agent_transport_handshake(void)
+stub_debugger_transport_handshake (void)
 {
 	g_assert_not_reached();
 }

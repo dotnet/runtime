@@ -174,7 +174,7 @@ typedef struct MonoComponentDebugger {
 	MonoComponent component;
 	void (*init) (MonoDefaults *mono_defaults);
 	void (*user_break) (void);
-	void (*parse_options) (void);
+	void (*parse_options) (char *options);
 	void (*breakpoint_hit) (void *sigctx);
 	void (*single_step_event) (void *sigctx);
 	void (*single_step_from_context) (MonoContext *ctx);
@@ -188,7 +188,7 @@ typedef struct MonoComponentDebugger {
 	void (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
 	void (*send_crash) (char *json_dump, MonoStackHash *hashes, int pause);
-	gboolean (*mono_debugger_agent_transport_handshake) (void);
+	gboolean (*transport_handshake) (void);
 
 	//wasm
 	void (*mono_wasm_breakpoint_hit) (void);

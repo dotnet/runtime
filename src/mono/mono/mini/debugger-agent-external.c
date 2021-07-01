@@ -32,7 +32,7 @@ mono_debugger_agent_register_transport (DebuggerTransport *trans)
 gboolean
 mono_debugger_agent_transport_handshake (void)
 {
-	return mono_component_debugger ()->mono_debugger_agent_transport_handshake ();
+	return mono_component_debugger ()->transport_handshake ();
 }
 
 void

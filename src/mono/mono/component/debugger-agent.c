@@ -595,9 +595,8 @@ parse_flag (const char *option, char *flag)
 }
 
 static void
-debugger_agent_parse_options (void)
+debugger_agent_parse_options (char *options)
 {
-	char *options = mono_debugger_agent_get_sdb_options ();
 	if (!options)
 		return;
 	char **args, **ptr;
@@ -10278,7 +10277,7 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->debug_log = debugger_agent_debug_log;
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	fn_table->send_crash = mono_debugger_agent_send_crash;
-	fn_table->mono_debugger_agent_transport_handshake = debugger_agent_transport_handshake;
+	fn_table->transport_handshake = debugger_agent_transport_handshake;
 }
 
 

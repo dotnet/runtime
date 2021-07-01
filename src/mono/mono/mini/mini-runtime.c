@@ -72,6 +72,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/components.h>
+#include <mono/mini/debugger-agent-external.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -4271,7 +4272,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 	mono_components_init ();
 	
-	mono_component_debugger ()->parse_options ();
+	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
