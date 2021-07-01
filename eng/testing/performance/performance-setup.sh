@@ -271,7 +271,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     mv $wasm_runtime_loc $wasm_dotnet_path
     if [[ "$wasmaot" == "true" ]]; then
         # cp -r $source_directory/!(payload|docs|src/coreclr|src/tests) $wasm_dotnet_path
-        rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
+        rsync -a --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
         # diagnostic logging for testing only, should be removed before PR.
         du --summarize --human-readable $source_directory/* | sort -h
         du --summarize --human-readable $source_directory/src/* | sort -h
