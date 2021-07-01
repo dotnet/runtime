@@ -782,6 +782,7 @@ namespace System
             while (true)
             {
                 // Search all installed languages.  The enumerator is re-used between loop iterations.
+                language[0] = '\0';
                 bool succeeded = Interop.Kernel32.GetFileMUIPath(
                     Interop.Kernel32.MUI_USE_INSTALLED_LANGUAGES,
                     filePath, language, ref languageLength,
@@ -798,6 +799,7 @@ namespace System
 
                     // Final fallback, using the preferred installed UI language.
                     enumerator = 0;
+                    language[0] = '\0';
                     succeeded = Interop.Kernel32.GetFileMUIPath(
                         Interop.Kernel32.MUI_USER_PREFERRED_UI_LANGUAGES,
                         filePath, language, ref languageLength,

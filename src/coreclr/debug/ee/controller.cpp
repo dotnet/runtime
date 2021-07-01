@@ -1393,7 +1393,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)        
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
     }
 // TODO: : determine if this is needed for AMD64
 #if defined(TARGET_X86) //REVISIT_TODO what is this?!
@@ -1496,7 +1496,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)        
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
     }
     else
     {
@@ -4352,6 +4352,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
     m_pSharedPatchBypassBuffer = patch->GetOrCreateSharedPatchBypassBuffer();
     BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
+    LOG((LF_CORDB, LL_INFO10000, "DPS::DPS: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", patch->opcode, patch->address, m_pSharedPatchBypassBuffer));
 
     // Copy the instruction block over to the patch skip
     // WARNING: there used to be an issue here because CopyInstructionBlock copied the breakpoint from the
@@ -4412,8 +4413,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         }
         else
         {
+            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, SharedPatchBypassBuffer::cbBufferBypass);
+            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
             if (m_instrAttrib.m_fIsWrite)
             {
@@ -4901,11 +4903,14 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
             break;
 
         case 16:
-            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, 16);
+        case 32:
+            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
             break;
 
         default:
-            _ASSERTE(!"bad operand size");
+            _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
+                relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
+                and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
         }
     }
 #endif

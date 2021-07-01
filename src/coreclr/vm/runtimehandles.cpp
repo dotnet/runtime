@@ -906,7 +906,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
             MethodTable::InterfaceMapIterator it = typeHandle.GetMethodTable()->IterateInterfaceMap();
             while (it.Next())
             {
-                OBJECTREF refInterface = it.GetInterface()->GetManagedClassObject();
+                OBJECTREF refInterface = it.GetInterface(typeHandle.GetMethodTable())->GetManagedClassObject();
                 refRetVal->SetAt(i, refInterface);
                 _ASSERTE(refRetVal->GetAt(i) != NULL);
                 i++;
