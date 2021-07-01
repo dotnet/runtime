@@ -2076,7 +2076,7 @@ genTreeOps DecomposeLongs::GetLoOper(genTreeOps oper)
 //
 void DecomposeLongs::PromoteLongVars()
 {
-    if ((m_compiler->opts.compFlags & CLFLG_REGVAR) == 0)
+    if (!m_compiler->compEnregLocals())
     {
         return;
     }

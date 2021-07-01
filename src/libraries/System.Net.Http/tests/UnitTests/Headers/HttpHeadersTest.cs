@@ -1501,7 +1501,6 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
         [Fact]
         public void NonValidated_ValidAndInvalidValues_DictionaryMembersWork()
         {
