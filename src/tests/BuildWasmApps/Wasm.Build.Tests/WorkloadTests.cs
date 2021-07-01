@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Serialization;
 using Xunit;
@@ -55,10 +56,14 @@ namespace Wasm.Build.Tests
             // We don't install the cross compiler pack from nupkg, so we don't
             // have the unixFilePermissions for that
             // Expect just the emscripten ones here for now
+
+            // linux doesn't have Emscripten.Python package, so only 2 there
+            int expectedPermFileCount = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 2 : 3;
+
             int permFileCount = unixPermFiles.Count();
-            if (permFileCount != 3)
+            if (permFileCount != expectedPermFileCount)
                 throw new XunitException($"Expected to find 3 UnixFilePermissions.xml files, from emscripten packages. But got {permFileCount}."
-                                        + $"{Environment.NewLine}Files: {string.Join(", ", unixPermFiles)}");
+                                            + $"{Environment.NewLine}Files: {string.Join(", ", unixPermFiles)}");
         }
     }
 
