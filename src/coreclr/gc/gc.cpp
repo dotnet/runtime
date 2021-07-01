@@ -7126,17 +7126,13 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
     {
         return;
     }
-
     int align_const = get_alignment_constant (TRUE);
-
 #ifdef USE_REGIONS
-    heap_segment* region = find_segment(acontext->alloc_limit - 1, FALSE);
-    bool is_ephemeral_heap_segment = region == ephemeral_heap_segment;
-    uint8_t* allocated = is_ephemeral_heap_segment ? alloc_allocated : heap_segment_allocated (region);
+    bool is_ephemeral_heap_segment = in_range_for_segment (acontext->alloc_limit, ephemeral_heap_segment);
 #else // USE_REGIONS
-    uint8_t* allocated = alloc_allocated;
+    bool is_ephemeral_heap_segment = true;
 #endif // USE_REGIONS
-    if (((size_t)(allocated - acontext->alloc_limit) > Align (min_obj_size, align_const)) ||
+    if ((!is_ephemeral_heap_segment) || ((size_t)(alloc_allocated - acontext->alloc_limit) > Align (min_obj_size, align_const)) ||
         !for_gc_p)
     {
         uint8_t*  point = acontext->alloc_ptr;
@@ -7160,12 +7156,8 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
     }
     else if (for_gc_p)
     {
-#ifdef USE_REGIONS
-        if (is_ephemeral_heap_segment)
-#endif // USE_REGIONS
-        {
-            alloc_allocated = acontext->alloc_ptr;
-        }
+        assert (is_ephemeral_heap_segment);
+        alloc_allocated = acontext->alloc_ptr;
         assert (heap_segment_allocated (ephemeral_heap_segment) <=
                 heap_segment_committed (ephemeral_heap_segment));
         if (record_ac_p)
