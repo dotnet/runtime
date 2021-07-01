@@ -1277,14 +1277,17 @@ namespace System.Net.Http
                 }
                 catch (OperationCanceledException e) when (e.CancellationToken == _requestBodyCancellationSource.Token)
                 {
-                    if (_resetException is Exception resetException)
+                    lock (SyncObject)
                     {
-                        if (_canRetry)
+                        if (_resetException is Exception resetException)
                         {
-                            ThrowRetry(SR.net_http_request_aborted, resetException);
-                        }
+                            if (_canRetry)
+                            {
+                                ThrowRetry(SR.net_http_request_aborted, resetException);
+                            }
 
-                        ThrowRequestAborted(resetException);
+                            ThrowRequestAborted(resetException);
+                        }
                     }
 
                     throw;
