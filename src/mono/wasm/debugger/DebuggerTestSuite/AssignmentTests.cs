@@ -33,7 +33,7 @@ namespace DebuggerTests
             { "MONO_TYPE_U2",          TNumber(0),                                              TNumber(1) },
             { "MONO_TYPE_U4",          TNumber(0),                                              TNumber(1) },
             { "MONO_TYPE_U8",          TNumber(0),                                              TNumber(1) },
-            { "MONO_TYPE_R4",          TNumber(0),                                              TNumber("3.1414999961853027") },
+            { "MONO_TYPE_R4",          TNumber(0),                                              TNumber("3.1415") }, //this is also the value that we see if we debug using VS
             { "MONO_TYPE_R8",          TNumber(0),                                              TNumber("3.1415") },
         };
 

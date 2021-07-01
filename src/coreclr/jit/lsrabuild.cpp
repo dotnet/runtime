@@ -525,7 +525,7 @@ RefPosition* LinearScan::newRefPosition(
            (regRecord->lastRefPosition->refType != theRefType));
     associateRefPosWithInterval(newRP);
 
-    DBEXEC(VERBOSE, newRP->dump());
+    DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
 
@@ -620,7 +620,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     associateRefPosWithInterval(newRP);
 
-    DBEXEC(VERBOSE, newRP->dump());
+    DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
 
@@ -2064,7 +2064,7 @@ void LinearScan::buildIntervals()
         printf("\n-----------------\n");
         printf("LIVENESS:\n");
         printf("-----------------\n");
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             printf(FMT_BB " use def in out\n", block->bbNum);
             dumpConvertedVarSet(compiler, block->bbVarUse);
@@ -2333,6 +2333,15 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+        // For frame poisoning we generate code into scratch BB right after prolog since
+        // otherwise the prolog might become too large. In this case we will put the poison immediate
+        // into the scratch register, so it will be killed here.
+        if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
+        {
+            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            currentLoc += 2;
+        }
+
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange)
         {
@@ -2584,7 +2593,7 @@ void LinearScan::buildIntervals()
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }
@@ -2624,7 +2633,7 @@ void LinearScan::validateIntervals()
             printf("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
-                ref->dump();
+                ref->dump(this);
                 RefType refType = ref->refType;
                 if (!defined && RefTypeIsUse(refType))
                 {
@@ -3097,6 +3106,10 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     }
     if (use != nullptr)
     {
+        // If node != rmwNode, then definitely node should be marked as "delayFree".
+        // However, if node == rmwNode, then we can mark node as "delayFree" only
+        // none of the node/rmwNode are the last uses. If either of them are last use,
+        // we can safely reuse the rmwNode as destination.
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
         {
             setDelayFree(use);

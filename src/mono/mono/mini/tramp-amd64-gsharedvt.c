@@ -26,7 +26,6 @@
 #include "mini.h"
 #include "mini-amd64.h"
 #include "mini-amd64-gsharedvt.h"
-#include "debugger-agent.h"
 
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 

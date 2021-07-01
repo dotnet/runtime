@@ -70,11 +70,10 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/w32subset.h>
+#include <mono/metadata/components.h>
 
 #include "mini.h"
 #include "trace.h"
-#include "debugger-agent.h"
-#include "debugger-engine.h"
 #include "seq-points.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
@@ -782,8 +781,8 @@ unwinder_unwind_frame (Unwinder *unwinder,
 /*
  * This function is async-safe.
  */
-static gpointer
-get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
+gpointer
+mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 {
 	MonoGenericJitInfo *gi;
 	MonoMethod *method;
@@ -1356,7 +1355,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 		/* actual_method might already be set by mono_arch_unwind_frame () */
 		if (!frame.actual_method) {
 			if ((unwind_options & MONO_UNWIND_LOOKUP_ACTUAL_METHOD) && frame.ji)
-				frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
+				frame.actual_method = get_method_from_stack_frame (frame.ji, mono_get_generic_info_from_stack_frame (frame.ji, &ctx));
 			else
 				frame.actual_method = frame.method;
 		}
@@ -1895,7 +1894,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			jmethod = frame.method;
 			actual_method = frame.actual_method;
 		} else {
-			actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
+			actual_method = get_method_from_stack_frame (ji, mono_get_generic_info_from_stack_frame (ji, &ctx));
 		}
 	}
 
@@ -1951,7 +1950,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 
 	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
 		return catch_class;
-	context = mono_get_generic_context_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, ctx));
+	context = mono_get_generic_context_from_stack_frame (ji, mono_get_generic_info_from_stack_frame (ji, ctx));
 
 	/* FIXME: we shouldn't inflate but instead put the
 	   type in the rgctx and fetch it from there.  It
@@ -2183,7 +2182,8 @@ typedef enum {
  * return \c MONO_FIRST_PASS_CALLBACK_TO_NATIVE).
  */
 static MonoFirstPassResult
-handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoJitInfo **out_prev_ji, MonoObject *non_exception, StackFrameInfo *catch_frame, gboolean *last_mono_wrapper_runtime_invoke)
+handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoJitInfo **out_prev_ji,
+							 MonoObject *non_exception, StackFrameInfo *catch_frame, gboolean *last_mono_wrapper_runtime_invoke, gboolean enable_trace)
 {
 	ERROR_DECL (error);
 	MonoDomain *domain = mono_domain_get ();
@@ -2281,12 +2281,6 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP_ENTRY:
-			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
-				/*
-				 * There might be AOTed frames above the intepreted frames which can handle the exception,
-				 * so stop first pass, the caller will rethrow the exception, starting the process again.
-				 */
-				return MONO_FIRST_PASS_UNHANDLED;
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP:
@@ -2320,7 +2314,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			// avoid giant stack traces during a stack overflow
 			if (frame_count < 1000) {
 				trace_ips = g_list_prepend (trace_ips, ip);
-				trace_ips = g_list_prepend (trace_ips, get_generic_info_from_stack_frame (ji, ctx));
+				trace_ips = g_list_prepend (trace_ips, mono_get_generic_info_from_stack_frame (ji, ctx));
 				trace_ips = g_list_prepend (trace_ips, ji);
 			}
 		}
@@ -2397,12 +2391,18 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 #endif
 					}
 
-					mini_get_dbg_callbacks ()->begin_exception_filter (mono_ex, ctx, &initial_ctx);
+					mono_component_debugger ()->begin_exception_filter (mono_ex, ctx, &initial_ctx);
 
 					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
 						jit_tls->orig_ex_ctx_set = TRUE;
 						MONO_PROFILER_RAISE (exception_clause, (method, i, (MonoExceptionEnum)ei->flags, ex_obj));
 						jit_tls->orig_ex_ctx_set = FALSE;
+					}
+
+					if (enable_trace) {
+						char *name = mono_method_get_full_name (method);
+						g_print ("[%p:] EXCEPTION running filter clause %d in '%s'.\n", (void*)(gsize)mono_native_thread_id_get (), i, name);
+						g_free (name);
 					}
 
 					if (ji->is_interp) {
@@ -2411,7 +2411,11 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					} else {
 						filtered = call_filter (ctx, ei->data.filter);
 					}
-					mini_get_dbg_callbacks ()->end_exception_filter (mono_ex, ctx, &initial_ctx);
+
+					if (enable_trace)
+						g_print ("[%p:] EXCEPTION filter result: %d\n", (void*)(gsize)mono_native_thread_id_get (), filtered);
+
+					mono_component_debugger ()->end_exception_filter (mono_ex, ctx, &initial_ctx);
 					if (filtered && out_filter_idx)
 						*out_filter_idx = filter_idx;
 					if (out_ji)
@@ -2596,6 +2600,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	 */
 	memcpy (&jit_tls->orig_ex_ctx, ctx, sizeof (MonoContext));
 
+	gboolean enable_trace = FALSE;
+
 	if (!resume) {
 		MonoContext ctx_cp = *ctx;
 		if (mono_trace_is_enabled ()) {
@@ -2631,9 +2637,12 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			}
 			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)(gsize)mono_native_thread_id_get (), m_class_get_name_space (mono_object_class (obj)), m_class_get_name (mono_object_class (obj)), msg);
 			g_free (msg);
-			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex)))
+			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex))) {
+				enable_trace = TRUE;
 				mono_print_thread_dump_from_ctx (ctx);
+			}
 		}
+
 		jit_tls->orig_ex_ctx_set = TRUE;
 		MONO_PROFILER_RAISE (exception_throw, (obj));
 		jit_tls->orig_ex_ctx_set = FALSE;
@@ -2642,17 +2651,12 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 		StackFrameInfo catch_frame;
 		MonoFirstPassResult res;
-		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame, &last_mono_wrapper_runtime_invoke);
+		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame, &last_mono_wrapper_runtime_invoke, enable_trace);
 
 		if (res == MONO_FIRST_PASS_UNHANDLED) {
-			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-				/* Reached the top interpreted frames, but there might be native frames above us */
-				throw_exception (obj, TRUE);
-				g_assert_not_reached ();
-			}
 			if (mini_debug_options.break_on_exc)
 				G_BREAKPOINT ();
-			mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
+			mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
@@ -2662,21 +2666,21 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			gboolean unhandled = FALSE;
 
 			if (unhandled)
-				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
+				mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 			else if (!ji || (jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 				if (last_mono_wrapper_runtime_invoke && !mono_thread_internal_current ()->threadpool_thread) {
-					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
+					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 					if (mini_get_debug_options ()->top_runtime_invoke_unhandled) {
 						mini_set_abort_threshold (&catch_frame);
 						mono_unhandled_exception_internal (obj);
 					}
 				} else {
-					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
+					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
 				}
 			}
 			else if (res != MONO_FIRST_PASS_CALLBACK_TO_NATIVE)
 				if (!is_caught_unmanaged)
-					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
+					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
 		}
 	}
 

@@ -489,15 +489,9 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef TARGET_UNIX
-    // On Unix, the GS cookie is stored in a read only data segment
-    DWORD newProtection = PAGE_READWRITE;
-#else // TARGET_UNIX
-    DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !TARGET_UNIX
-
+    // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
+    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
     {
         ThrowLastError();
     }
@@ -709,11 +703,6 @@ void EEStartupHelper()
         }
 #endif
 
-#ifdef PROFILING_SUPPORTED
-        // The diagnostics server might register a profiler for delayed startup, indicate here that 
-        // it is not currently set. This will be set to TRUE if a profiler is registered.
-       g_profControlBlock.fIsStoredProfilerRegistered = FALSE;
-#endif // PROFILING_SUPPORTED
 #ifdef FEATURE_PERFTRACING
         DiagnosticServerAdapter::Initialize();
         DiagnosticServerAdapter::PauseForDiagnosticsMonitor();
@@ -989,10 +978,6 @@ void EEStartupHelper()
 #endif // CROSSGEN_COMPILE
 
         Assembly::Initialize();
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         SystemDomain::System()->Init();
 
@@ -1414,10 +1399,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             // Don't call back in to the profiler if we are being torn down, it might be unloaded
             if (!fIsDllUnloading)
             {
-                BEGIN_PIN_PROFILER(CORProfilerPresent());
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->Shutdown();
-                END_PIN_PROFILER();
+                (&g_profControlBlock)->Shutdown();
+                END_PROFILER_CALLBACK();
             }
 
             g_fEEShutDown |= ShutDown_Profiler;

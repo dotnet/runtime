@@ -729,7 +729,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsRefer
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
@@ -762,7 +761,8 @@ DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_P
 DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
-DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE, GetArrayDataReference, NoSig)
+DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
+DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
@@ -779,7 +779,6 @@ DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
 DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
 
 DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
-DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, PREV,                          Prev)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
 
@@ -788,7 +787,6 @@ DEFINE_FIELD(TAIL_CALL_TLS,            FRAME,                         Frame)
 DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER,                    ArgBuffer)
 
 DEFINE_CLASS_U(CompilerServices,           PortableTailCallFrame, PortableTailCallFrame)
-DEFINE_FIELD_U(Prev,                       PortableTailCallFrame, Prev)
 DEFINE_FIELD_U(TailCallAwareReturnAddress, PortableTailCallFrame, TailCallAwareReturnAddress)
 DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
 
@@ -1069,6 +1067,7 @@ DEFINE_METHOD(CSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,        
 
 DEFINE_CLASS(FIXEDWSTRMARSHALER,   StubHelpers,            FixedWSTRMarshaler)
 DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_Int_RetVoid)
+DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_Int_RetStr)
 
 DEFINE_CLASS(BSTRMARSHALER,         StubHelpers,            BSTRMarshaler)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_RetIntPtr)

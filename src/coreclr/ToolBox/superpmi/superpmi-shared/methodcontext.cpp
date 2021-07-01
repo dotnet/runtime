@@ -18,9 +18,6 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-bool g_debugRec = false;
-bool g_debugRep = false;
-
 // static variable initialization
 Hash MethodContext::m_hash;
 
@@ -3167,23 +3164,53 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     }
 
     Agnostic_ResolveVirtualMethodKey key;
+    ZeroMemory(&key, sizeof(key)); // Zero token including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
+
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
     Agnostic_ResolveVirtualMethodResult result;
-    result.returnValue = returnValue;
-    result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
+    result.returnValue                = returnValue;
+    result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
-    result.exactContext = CastHandle(info->exactContext);
-    result.detail = (DWORD) info->detail;
+    result.exactContext               = CastHandle(info->exactContext);
+    result.detail                     = (DWORD) info->detail;
+
+    if (returnValue)
+    {
+        result.resolvedTokenDevirtualizedMethod        = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedMethod, ResolveToken);
+        result.resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+    }
+    else
+    {
+        ZeroMemory(&result.resolvedTokenDevirtualizedMethod, sizeof(result.resolvedTokenDevirtualizedMethod));
+        ZeroMemory(&result.resolvedTokenDevirtualizedUnboxedMethod, sizeof(result.resolvedTokenDevirtualizedUnboxedMethod));
+    }
+
     ResolveVirtualMethod->Add(key, result);
     DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX, detail-%d",
-        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext, result.detail);
+    printf("ResolveVirtualMethod key virtMethod-%016llX, objClass-%016llX, context-%016llX pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
+        key.virtualMethod,
+        key.objClass,
+        key.context,
+        key.pResolvedTokenVirtualMethodNonNull,
+        key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
+    printf(", value returnValue-%s, devirtMethod-%016llX, requiresInstArg-%s, exactContext-%016llX, detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+        result.returnValue ? "true" : "false",
+        result.devirtualizedMethod,
+        result.requiresInstMethodTableArg ? "true" : "false",
+        result.exactContext,
+        result.detail,
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod).c_str() : "???");
 }
 
 bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
@@ -3194,7 +3221,11 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
-    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
+    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
     Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
@@ -3203,6 +3234,11 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
+    if (result.returnValue)
+    {
+        info->resolvedTokenDevirtualizedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedMethod, ResolveToken);
+        info->resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+    }
     return result.returnValue;
 }
 
@@ -7123,4 +7159,31 @@ void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
         isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
     }
 
+}
+
+
+bool g_debugRec = false;
+bool g_debugRep = false;
+
+void SetDebugDumpVariables()
+{
+    static WCHAR* g_debugRecStr = nullptr;
+    static WCHAR* g_debugRepStr = nullptr;
+    if (g_debugRecStr == nullptr)
+    {
+        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
+    }
+    if (g_debugRepStr == nullptr)
+    {
+        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+    }
+
+    if (0 == wcscmp(g_debugRecStr, W("1")))
+    {
+        g_debugRec = true;
+    }
+    if (0 == wcscmp(g_debugRepStr, W("1")))
+    {
+        g_debugRep = true;
+    }
 }

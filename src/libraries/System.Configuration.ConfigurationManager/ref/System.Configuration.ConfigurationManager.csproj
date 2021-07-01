@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
-    <Compile Include="System.Configuration.ConfigurationManager.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <Compile Include="System.Configuration.ConfigurationManager.net461.cs" />
-    <Reference Include="System.Configuration" />
+  <ItemGroup >
+    <Compile Include="System.Configuration.ConfigurationManager.cs" Condition="'$(TargetFramework)' != 'net461'" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" Condition="'$(TargetFramework)' != 'net461'" />
+    <Compile Include="System.Configuration.ConfigurationManager.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Configuration" />
   </ItemGroup>
 </Project>

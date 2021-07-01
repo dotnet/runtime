@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -12,11 +14,6 @@ namespace System.Tests
     public class DoubleTests
     {
         // NOTE: Consider duplicating any tests added here in SingleTests.cs
-
-        private static ulong DoubleToUInt64Bits(double value)
-        {
-            return (ulong)(BitConverter.DoubleToInt64Bits(value));
-        }
 
         [Theory]
         [InlineData("a")]
@@ -103,7 +100,7 @@ namespace System.Tests
         public static void Epsilon()
         {
             Assert.Equal(4.9406564584124654E-324, double.Epsilon);
-            Assert.Equal(0x00000000_00000001u, DoubleToUInt64Bits(double.Epsilon));
+            Assert.Equal(0x00000000_00000001u, BitConverter.DoubleToUInt64Bits(double.Epsilon));
         }
 
         [Theory]
@@ -221,28 +218,28 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(1.7976931348623157E+308, double.MaxValue);
-            Assert.Equal(0x7FEFFFFF_FFFFFFFFu, DoubleToUInt64Bits(double.MaxValue));
+            Assert.Equal(0x7FEFFFFF_FFFFFFFFu, BitConverter.DoubleToUInt64Bits(double.MaxValue));
         }
 
         [Fact]
         public static void MinValue()
         {
             Assert.Equal(-1.7976931348623157E+308, double.MinValue);
-            Assert.Equal(0xFFEFFFFF_FFFFFFFFu, DoubleToUInt64Bits(double.MinValue));
+            Assert.Equal(0xFFEFFFFF_FFFFFFFFu, BitConverter.DoubleToUInt64Bits(double.MinValue));
         }
 
         [Fact]
         public static void NaN()
         {
             Assert.Equal(0.0 / 0.0, double.NaN);
-            Assert.Equal(0xFFF80000_00000000u, DoubleToUInt64Bits(double.NaN));
+            Assert.Equal(0xFFF80000_00000000u, BitConverter.DoubleToUInt64Bits(double.NaN));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
             Assert.Equal(-1.0 / 0.0, double.NegativeInfinity);
-            Assert.Equal(0xFFF00000_00000000u, DoubleToUInt64Bits(double.NegativeInfinity));
+            Assert.Equal(0xFFF00000_00000000u, BitConverter.DoubleToUInt64Bits(double.NegativeInfinity));
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -348,6 +345,67 @@ namespace System.Tests
 
                 Assert.Equal(expected, double.Parse(value, style));
                 Assert.Equal(expected, double.Parse(value, style, NumberFormatInfo.CurrentInfo));
+            }
+        }
+
+        internal static string SplitPairs(string input)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                return input.Replace("-", "");
+            }
+
+            return string.Concat(input.Split('-').Select(pair => Reverse(pair)));
+        }
+
+        internal static string Reverse(string s)
+        {
+            char[] charArray = s.ToCharArray();
+            Array.Reverse(charArray);
+            return new string(charArray);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public static void ParsePatterns()
+        {
+            string path = Directory.GetCurrentDirectory();
+            using (FileStream file = new FileStream(Path.Combine(path, "ibm-fpgen.txt"), FileMode.Open))
+            {
+                using (var streamReader = new StreamReader(file))
+                {
+                    string line = streamReader.ReadLine();
+                    while (line != null)
+                    {
+                        string[] data = line.Split(' ');
+                        string inputHalfBytes = data[0];
+                        string inputFloatBytes = data[1];
+                        string inputDoubleBytes = data[2];
+                        string correctValue = data[3];
+
+                        double doubleValue = double.Parse(correctValue, NumberFormatInfo.InvariantInfo);
+                        string doubleBytes = BitConverter.ToString(BitConverter.GetBytes(doubleValue));
+                        float floatValue = float.Parse(correctValue, NumberFormatInfo.InvariantInfo);
+                        string floatBytes = BitConverter.ToString(BitConverter.GetBytes(floatValue));
+                        Half halfValue = Half.Parse(correctValue, NumberFormatInfo.InvariantInfo);
+                        string halfBytes = BitConverter.ToString(BitConverter.GetBytes(halfValue));
+
+                        doubleBytes = SplitPairs(doubleBytes);
+                        floatBytes = SplitPairs(floatBytes);
+                        halfBytes = SplitPairs(halfBytes);
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            doubleBytes = Reverse(doubleBytes);
+                            floatBytes = Reverse(floatBytes);
+                            halfBytes = Reverse(halfBytes);
+                        }
+
+                        Assert.Equal(doubleBytes, inputDoubleBytes);
+                        Assert.Equal(floatBytes, inputFloatBytes);
+                        Assert.Equal(halfBytes, inputHalfBytes);
+                        line = streamReader.ReadLine();
+                    }
+                }
             }
         }
 
@@ -474,7 +532,7 @@ namespace System.Tests
         public static void PositiveInfinity()
         {
             Assert.Equal(1.0 / 0.0, double.PositiveInfinity);
-            Assert.Equal(0x7FF00000_00000000u, DoubleToUInt64Bits(double.PositiveInfinity));
+            Assert.Equal(0x7FF00000_00000000u, BitConverter.DoubleToUInt64Bits(double.PositiveInfinity));
         }
 
         public static IEnumerable<object[]> ToString_TestData()

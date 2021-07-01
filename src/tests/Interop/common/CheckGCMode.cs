@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 using TestLibrary;
 
@@ -13,8 +14,7 @@ unsafe internal class CheckGCMode
     {
         // GetIsInCooperativeGCModeFunctionPointer is conditionally included based on the runtime build configuration,
         // so we check for its existence and only do the explicit mode validation if it is available.
-        Type marshalType = typeof(object).Assembly.GetType(typeof(System.Runtime.InteropServices.Marshal).FullName);
-        MethodInfo getFunctionPtr = marshalType.GetMethod("GetIsInCooperativeGCModeFunctionPointer", BindingFlags.NonPublic | BindingFlags.Static);
+        MethodInfo getFunctionPtr = typeof(Marshal).GetMethod("GetIsInCooperativeGCModeFunctionPointer", BindingFlags.NonPublic | BindingFlags.Static);
         if (getFunctionPtr != null)
         {
             var isInCooperativeModeFunc = (delegate* unmanaged<int>)(IntPtr)getFunctionPtr.Invoke(null, null);

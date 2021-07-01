@@ -865,7 +865,11 @@ namespace Microsoft.VisualBasic
                 string typeName = GetTypeOutput(e.CreateType);
                 Output.Write(typeName);
 
-                if (typeName.IndexOf('(') == -1) // string.Contains(char) is .NetCore2.1+ specific
+#if NETCOREAPP
+                if (!typeName.Contains('('))
+#else
+                if (typeName.IndexOf('(') == -1)
+#endif
                 {
                     Output.Write("()");
                 }

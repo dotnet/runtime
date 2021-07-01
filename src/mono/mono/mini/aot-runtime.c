@@ -65,13 +65,14 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
 #include "mono-private-unstable.h"
 #include "llvmonly-runtime.h"
+
+#include <mono/metadata/components.h>
 
 #ifndef DISABLE_AOT
 
@@ -4190,7 +4191,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 	if (mono_llvm_only) {
 		guint8 flags = amodule->method_flags_table [method_index];
 		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
-		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+		if (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY)) {
 			mono_aot_lock ();
 			if (!code_to_method_flags)
 				code_to_method_flags = g_hash_table_new (NULL, NULL);
@@ -5321,10 +5322,10 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				MONO_AOT_ICALL (mono_exception_from_token)
 
 				case MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
+					target = (gpointer)mono_component_debugger ()->single_step_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
+					target = (gpointer)mono_component_debugger ()->breakpoint_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_throw_exception:
 					target = mono_get_throw_exception_addr ();

@@ -3453,4 +3453,7 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>
   </data>
+  <data name="ImportInfo" xml:space="preserve">
+    <value>Importing {0} ({1}/{2})</value>
+  </data>
 </root>

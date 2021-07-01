@@ -47,6 +47,7 @@ internal class Xcode
         string projectName,
         string entryPointLib,
         IEnumerable<string> asmFiles,
+        IEnumerable<string> asmLinkFiles,
         string workspace,
         string binDir,
         string monoInclude,
@@ -101,7 +102,7 @@ internal class Xcode
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
-            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + Path.GetRelativePath(binDir, r))))
+            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r))))
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
@@ -179,6 +180,11 @@ internal class Xcode
             aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
             toLink += $"    {name}{Environment.NewLine}";
             aotList += $" {name}";
+        }
+
+        foreach (string asmLinkFile in asmLinkFiles)
+        {
+            toLink += $"    {asmLinkFile}{Environment.NewLine}";
         }
 
         string frameworks = "";

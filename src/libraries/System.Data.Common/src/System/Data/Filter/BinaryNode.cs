@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Data.SqlTypes;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -30,16 +31,19 @@ namespace System.Data
             _right.Bind(table, list);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return Eval(null, DataRowVersion.Default);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             return EvalBinaryOp(_op, _left, _right, row, version, null);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             return EvalBinaryOp(_op, _left, _right, null, DataRowVersion.Default, recordNos);
@@ -109,7 +113,7 @@ namespace System.Data
 
             if (IsConstant())
             {
-                object val = Eval();
+                object val = EvalConstant();
 
                 if (val == DBNull.Value)
                 {
@@ -134,6 +138,15 @@ namespace System.Data
             throw ExprException.TypeMismatchInBinop(op, left, right);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Evaluating constant expression is safe.")]
+        private object EvalConstant()
+        {
+            Debug.Assert(IsConstant());
+            return Eval();
+        }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static object Eval(ExpressionNode expr, DataRow? row, DataRowVersion version, int[]? recordNos)
         {
             if (recordNos == null)
@@ -267,6 +280,7 @@ namespace System.Data
             return result;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object EvalBinaryOp(int op, ExpressionNode left, ExpressionNode right, DataRow? row, DataRowVersion version, int[]? recordNos)
         {
             object vLeft;
@@ -1514,6 +1528,7 @@ namespace System.Data
         {
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             object vLeft = _left.Eval(row, version);

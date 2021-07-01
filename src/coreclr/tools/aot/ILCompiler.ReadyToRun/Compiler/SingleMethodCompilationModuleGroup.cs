@@ -17,7 +17,7 @@ namespace ILCompiler
         private MethodDesc _method;
 
         public SingleMethodCompilationModuleGroup(
-            TypeSystemContext context,
+            CompilerTypeSystemContext context,
             bool isCompositeBuildMode,
             bool isInputBubble,
             IEnumerable<EcmaModule> compilationModuleSet,
@@ -36,7 +36,7 @@ namespace ILCompiler
 
         public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
-            return method == _method;
+            return (method == _method) || (method == _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
         public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)

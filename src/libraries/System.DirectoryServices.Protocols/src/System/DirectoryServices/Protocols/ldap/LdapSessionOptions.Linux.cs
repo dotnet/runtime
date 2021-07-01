@@ -9,11 +9,26 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) { /* No op */ }
 
-        [SupportedOSPlatform("windows")]
+        private bool _secureSocketLayer;
+
         public bool SecureSocketLayer
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
+                return _secureSocketLayer;
+            }
+            set
+            {
+                if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
+                _secureSocketLayer = value;
+            }
+        }
+
+        public int ProtocolVersion
+        {
+            get => GetPtrValueHelper(LdapOption.LDAP_OPT_VERSION).ToInt32();
+            set => SetPtrValueHelper(LdapOption.LDAP_OPT_VERSION, new IntPtr(value));
         }
     }
 }

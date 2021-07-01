@@ -813,6 +813,9 @@
   <data name="Argument_AdjustmentRulesOutOfOrder" xml:space="preserve">
     <value>The elements of the AdjustmentRule array must be in chronological order and must not overlap.</value>
   </data>
+  <data name="Argument_AlignmentMustBePow2" xml:space="preserve">
+    <value>The alignment must be a power of two.</value>
+  </data>
   <data name="Argument_AlreadyACCW" xml:space="preserve">
     <value>The object already has a CCW associated with it.</value>
   </data>
@@ -953,6 +956,9 @@
   </data>
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
+  </data>
+  <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
+    <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
   </data>
   <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
     <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
@@ -3780,5 +3786,8 @@
   </data>
   <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
     <value>File encryption is not supported on this platform.</value>
+  </data>
+  <data name="Arg_MemberInfoNotFound" xml:space="preserve">
+    <value>A MemberInfo that matches '{0}' could not be found.</value>
   </data>
 </root>

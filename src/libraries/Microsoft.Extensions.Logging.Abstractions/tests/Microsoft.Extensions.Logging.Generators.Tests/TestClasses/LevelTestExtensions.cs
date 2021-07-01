@@ -34,5 +34,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         [LoggerMessage(EventId = 9, Message = "M9")]
         public static partial void M9(LogLevel level, ILogger logger);
+
+        [LoggerMessage(eventId: 10, level: LogLevel.Warning, message: "event ID 10 vs. 11", EventId = 11)]
+        public static partial void M10vs11(ILogger logger);
     }
 }

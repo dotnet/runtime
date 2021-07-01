@@ -7,41 +7,48 @@ namespace System.Globalization
     {
         private static partial class Settings
         {
-            internal static readonly bool Invariant = GetGlobalizationInvariantMode();
-        }
-
-        internal static bool Invariant => Settings.Invariant;
-
-        internal static bool UseNls => false;
-
-        private static bool GetGlobalizationInvariantMode()
-        {
-            bool invariantEnabled = GetInvariantSwitchValue();
-            if (!invariantEnabled)
+            /// <summary>
+            /// Load ICU (when not in Invariant mode) in a static cctor to ensure it is loaded early in the process.
+            /// Other places, e.g. CompareInfo.GetSortKey, rely on ICU already being loaded before they are called.
+            /// </summary>
+            static Settings()
             {
-                if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                if (!Invariant)
                 {
-                    LoadAppLocalIcu(icuSuffixAndVersion);
+                    if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                    {
+                        LoadAppLocalIcu(icuSuffixAndVersion);
+                    }
+                    else
+                    {
+                        int loaded = LoadICU();
+                        if (loaded == 0)
+                        {
+                            Environment.FailFast(GetIcuLoadFailureMessage());
+                        }
+                    }
+                }
+            }
+
+            private static string GetIcuLoadFailureMessage()
+            {
+                // These strings can't go into resources, because a resource lookup requires globalization, which requires ICU
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ||
+                    OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS() || OperatingSystem.IsMacCatalyst())
+                {
+                    return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information";
                 }
                 else
                 {
-                    int loaded = LoadICU();
-                    if (loaded == 0 && !OperatingSystem.IsBrowser())
-                    {
-                        // This can't go into resources, because a resource lookup requires globalization, which requires ICU
-                        string message = "Couldn't find a valid ICU package installed on the system. " +
-                                         "Please install libicu using your package manager and try again. " +
-                                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
-                                         "Please see https://aka.ms/dotnet-missing-libicu for more information.";
-                        Environment.FailFast(message);
-                    }
-
-                    // fallback to Invariant mode if LoadICU failed (Browser).
-                    return loaded == 0;
+                    return "Couldn't find a valid ICU package installed on the system. " +
+                        "Please install libicu using your package manager and try again. " +
+                        "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
+                        "Please see https://aka.ms/dotnet-missing-libicu for more information.";
                 }
             }
-            return invariantEnabled;
         }
+
+        internal static bool UseNls => false;
 
         private static void LoadAppLocalIcuCore(ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {

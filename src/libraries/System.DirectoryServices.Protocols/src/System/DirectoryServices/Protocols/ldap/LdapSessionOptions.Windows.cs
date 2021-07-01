@@ -9,7 +9,6 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
-        [SupportedOSPlatform("windows")]
         public bool SecureSocketLayer
         {
             get
@@ -22,6 +21,12 @@ namespace System.DirectoryServices.Protocols
                 int temp = value ? 1 : 0;
                 SetIntValueHelper(LdapOption.LDAP_OPT_SSL, temp);
             }
+        }
+
+        public int ProtocolVersion
+        {
+            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
+            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
         }
     }
 }

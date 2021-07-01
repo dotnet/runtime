@@ -7,20 +7,11 @@
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <ICULibDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
-    <WasmEnableMetadataUpdate Condition="'$(MonoMetadataUpdate)' == 'true'">true</WasmEnableMetadataUpdate>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- TODO: set to "false" for publishing/production builds -->
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">true</MonoMetadataUpdate>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -87,8 +78,6 @@
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <_EmccFlags Include="--profiling-funcs" />
       <_EmccFlags Include="@(_EmccCommonFlags)" />
-
-      <_EmccFlags Include="-DENABLE_METADATA_UPDATE=1" Condition="'$(WasmEnableMetadataUpdate)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -200,6 +189,9 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a" />
+      <MonoComponentLibs Include="$(MonoArtifactsPath)libmono-component-hot_reload-static.a;
+                                  $(MonoArtifactsPath)libmono-component-debugger-static.a;
+                                  $(MonoArtifactsPath)libmono-component-diagnostics_tracing-stub-static.a" />
       <MonoLibFiles Include="$(MonoArtifactsPath)libmono-ee-interp.a;
                              $(MonoArtifactsPath)libmonosgen-2.0.a;
                              $(MonoArtifactsPath)libmono-ilgen.a;
@@ -207,6 +199,7 @@
                              $(NativeBinDir)libSystem.Native.a;
                              $(NativeBinDir)libSystem.IO.Compression.Native.a" />
       <MonoLibFiles Include="@(ICULibNativeFiles)" />
+      <MonoLibFiles Include="@(MonoComponentLibs)" />
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
@@ -245,7 +238,7 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       runtime/binding_support.js; 
+                       runtime/binding_support.js;
                        runtime/dotnet_support.js;
                        runtime/library_mono.js;
                        $(SystemNativeDir)\pal_random.js;"

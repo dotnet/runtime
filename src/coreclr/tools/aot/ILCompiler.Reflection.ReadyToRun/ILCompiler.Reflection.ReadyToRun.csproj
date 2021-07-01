@@ -7,14 +7,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
     <OutputPath>$(RuntimeBinDir)</OutputPath>
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +27,9 @@
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\PgoFormat.cs" />
-    <Compile Include="..\..\Common\TypeSystem\Common\TargetArchitecture.cs" Link="Common\TargetArchitecture.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
   </ItemGroup>
 </Project>

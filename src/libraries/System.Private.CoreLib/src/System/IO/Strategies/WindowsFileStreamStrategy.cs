@@ -14,8 +14,6 @@ namespace System.IO.Strategies
         protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
         private readonly FileShare _share;
-        private readonly bool _canSeek; // Whether can seek (file) or not (pipe).
-        private readonly bool _isPipe; // Whether to disable async buffering code.
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
@@ -24,16 +22,23 @@ namespace System.IO.Strategies
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
-            InitFromHandle(handle, access, out _canSeek, out _isPipe);
-
-            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
-            // but we can't as they're readonly.
             _access = access;
             _share = share;
             _exposedHandle = true;
 
-            // As the handle was passed in, we must set the handle field at the very end to
-            // avoid the finalizer closing the handle when we throw errors.
+            handle.InitThreadPoolBindingIfNeeded();
+
+            if (handle.CanSeek)
+            {
+                // given strategy was created out of existing handle, so we have to perform
+                // a syscall to get the current handle offset
+                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
+            }
+            else
+            {
+                _filePosition = 0;
+            }
+
             _fileHandle = handle;
         }
 
@@ -45,12 +50,10 @@ namespace System.IO.Strategies
             _access = access;
             _share = share;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, preallocationSize);
+            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
             try
             {
-                _canSeek = true;
-
                 Init(mode, path);
             }
             catch
@@ -63,7 +66,7 @@ namespace System.IO.Strategies
             }
         }
 
-        public sealed override bool CanSeek => _canSeek;
+        public sealed override bool CanSeek => _fileHandle.CanSeek;
 
         public sealed override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
 
@@ -77,12 +80,12 @@ namespace System.IO.Strategies
             {
                 if (_share > FileShare.Read || _exposedHandle)
                 {
-                    return FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                    return RandomAccess.GetFileLength(_fileHandle, _path);
                 }
 
                 if (_length < 0)
                 {
-                    _length = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                    _length = RandomAccess.GetFileLength(_fileHandle, _path);
                 }
 
                 return _length;
@@ -116,7 +119,8 @@ namespace System.IO.Strategies
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
-        internal sealed override bool IsPipe => _isPipe;
+        internal sealed override bool IsPipe => _fileHandle.IsPipe;
+
         // Flushing is the responsibility of BufferedFileStreamStrategy
         internal sealed override SafeFileHandle SafeFileHandle
         {
@@ -136,22 +140,14 @@ namespace System.IO.Strategies
             }
         }
 
-        // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
-        // their performance is going to be horrible
-        // TODO: should we consider adding a new event provider and log an event so it can be detected?
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            Span<byte> buffer = stackalloc byte[1];
-            int bytesRead = Read(buffer);
-            return bytesRead == 1 ? buffer[0] : -1;
+            byte b;
+            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
         }
 
-        public override void WriteByte(byte value)
-        {
-            Span<byte> buffer = stackalloc byte[1];
-            buffer[0] = value;
-            Write(buffer);
-        }
+        public override unsafe void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(&value, 1));
 
         // this method just disposes everything (no buffer, no need to flush)
         public override ValueTask DisposeAsync()
@@ -226,15 +222,9 @@ namespace System.IO.Strategies
 
         internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
 
-        protected abstract void OnInitFromHandle(SafeFileHandle handle);
-
-        protected virtual void OnInit() { }
-
         private void Init(FileMode mode, string originalPath)
         {
             FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
-
-            OnInit();
 
             // For Append mode...
             if (mode == FileMode.Append)
@@ -244,43 +234,6 @@ namespace System.IO.Strategies
             else
             {
                 _appendStart = -1;
-            }
-        }
-
-        private void InitFromHandle(SafeFileHandle handle, FileAccess access, out bool canSeek, out bool isPipe)
-        {
-#if DEBUG
-            bool hadBinding = handle.ThreadPoolBinding != null;
-
-            try
-            {
-#endif
-                InitFromHandleImpl(handle, out canSeek, out isPipe);
-#if DEBUG
-            }
-            catch
-            {
-                Debug.Assert(hadBinding || handle.ThreadPoolBinding == null, "We should never error out with a ThreadPoolBinding we've added");
-                throw;
-            }
-#endif
-        }
-
-        private void InitFromHandleImpl(SafeFileHandle handle, out bool canSeek, out bool isPipe)
-        {
-            FileStreamHelpers.GetFileTypeSpecificInformation(handle, out canSeek, out isPipe);
-
-            OnInitFromHandle(handle);
-
-            if (_canSeek)
-            {
-                // given strategy was created out of existing handle, so we have to perform
-                // a syscall to get the current handle offset
-                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
-            }
-            else
-            {
-                _filePosition = 0;
             }
         }
 

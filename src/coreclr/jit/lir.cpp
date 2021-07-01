@@ -1583,6 +1583,11 @@ LIR::Range& LIR::AsRange(BasicBlock* block)
     return *static_cast<Range*>(block);
 }
 
+const LIR::Range& LIR::AsRange(const BasicBlock* block)
+{
+    return *static_cast<const Range*>(block);
+}
+
 //------------------------------------------------------------------------
 // LIR::EmptyRange: Constructs and returns an empty range.
 //
