@@ -2622,6 +2622,7 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DNER_NoRegVars:
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert((opts.compFlags & CLFLG_REGVAR) == 0);
+            assert(!compEnregLocals());
             break;
         case DNER_MinOptsGC:
             JITDUMP("It is a GC Ref and we are compiling MinOpts\n");
@@ -3496,10 +3497,6 @@ void Compiler::lvaSortByRefCount()
         {
             varDsc->lvTracked = 0;
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_MinOptsGC));
-        }
-        if ((opts.compFlags & CLFLG_REGVAR) == 0)
-        {
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_NoRegVars));
         }
 #if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
         if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
