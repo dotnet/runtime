@@ -22,7 +22,7 @@ namespace System
 
         private static List<string> GetTimeZoneIds()
         {
-            return AndroidTimeZones.GetAvailableIds();
+            return new List<string>(AndroidTimeZones.GetAvailableIds());
         }
 
         //TODO: TryGetTimeZoneFromLocalMachine maps to FindSystemTimeZoneByIdCore in mono/mono implementation
