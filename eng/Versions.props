@@ -177,8 +177,8 @@
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21314.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21314.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21314.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <!-- emscripten / Node -->
-    <MicrosoftNETWorkloadEmscriptenManifest60100>6.0.0-preview.7.21329.1</MicrosoftNETWorkloadEmscriptenManifest60100>
+    <!-- emscripten Workload Manifest  -->
+    <MicrosoftNETWorkloadEmscriptenManifest60100>6.0.0-preview.7.21330.1</MicrosoftNETWorkloadEmscriptenManifest60100>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
 </Project>
