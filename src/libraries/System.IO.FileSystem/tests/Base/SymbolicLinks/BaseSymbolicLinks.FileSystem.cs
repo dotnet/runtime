@@ -468,6 +468,7 @@ namespace System.IO.Tests
 
         internal static string[] PathToTargetData => new[]
         {
+#if WINDOWS
             //Non-rooted relative
             "foo", ".\\foo", "..\\foo",
             // Rooted relative
@@ -475,7 +476,16 @@ namespace System.IO.Tests
             // Rooted absolute
             Path.Combine(Path.GetTempPath(), "foo"),
             Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
-            @"\\SERVER\share\path"
+            @"\\SERVER\share\path", @"\\.\pipe\foo"
+#else
+            //Non-rooted relative
+            "foo", "./foo", "../foo",
+            // Rooted relative
+            "/foo",
+            // Rooted absolute
+            Path.Combine(Path.GetTempPath(), "foo"),
+            @"//SERVER/share/path", @"//./pipe/foo"
+#endif
         };
     }
 }
