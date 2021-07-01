@@ -1024,8 +1024,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
 #if FEATURE_LOOP_ALIGN
     emitLastAlignedIgNum        = 0;
-    emitLastInnerLoopStartIgNum = 0;
-    emitLastInnerLoopEndIgNum   = 0;
+    emitLastLoopStart = 0;
+    emitLastLoopEnd   = 0;
 #endif
 
     /* Record stack frame info (the temp size is just an estimate) */
@@ -4820,58 +4820,118 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 //                       if currIG has back-edge to dstIG.
 //
 // Notes:
-//    If the current loop encloses a loop that is already marked as align, then remove
-//    the alignment flag present on IG before dstIG.
+//    Despite we align only inner most loop, we might see intersected loops because of control flow
+//    re-arrangement like adding a split edge in LSRA.
+// 
+//    If there is an intersection of current loop with last loop that is already marked as align,
+//    then *do not align* one of the loop that completely encloses the other one. Or if they both intersect,
+//    then *do not align* either of them because since the flow is complicated enough that aligning one of them
+//    will not improve the performance.
 //
 void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 {
     insGroup* dstIG = (insGroup*)loopTopBlock->bbEmitCookie;
+    bool      noAlignCurrentLoop      = false;
+    bool      noAlignLastLoop = false;
 
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
     // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
-
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
         unsigned currLoopStart = dstIG->igNum;
         unsigned currLoopEnd   = emitCurIG->igNum;
 
         // Only mark back-edge if current loop starts after the last inner loop ended.
-        if (emitLastInnerLoopEndIgNum < currLoopStart)
+        if (emitLastLoopEnd < currLoopStart)
         {
             emitCurIG->igLoopBackEdge = dstIG;
 
             JITDUMP("** IG%02u jumps back to IG%02u forming a loop.\n", currLoopEnd, currLoopStart);
 
-            emitLastInnerLoopStartIgNum = currLoopStart;
-            emitLastInnerLoopEndIgNum   = currLoopEnd;
+            emitLastLoopStart = currLoopStart;
+            emitLastLoopEnd   = currLoopEnd;
         }
-        // Otherwise, mark the dstIG->prevIG as no alignment needed.
-        //
-        // Note: If current loop's back-edge target is same as emitLastInnerLoopStartIgNum,
-        // retain the alignment flag of dstIG->prevIG so the loop
-        // (emitLastInnerLoopStartIgNum ~ emitLastInnerLoopEndIgNum) is still aligned.
-        else if (emitLastInnerLoopStartIgNum != currLoopStart)
+        // else if current loop completely encloses last loop,
+        // then current loop should not be aligned.
+        else if ((currLoopStart <= emitLastLoopStart) && (emitLastLoopEnd < currLoopEnd))
         {
-            // Find the IG before dstIG...
+            // Note: If current and last loop starts at same point,
+            // retain the alignment flag of the smaller loop.
+            //               |
+            //         .---->|<----.
+            //   last  |     |     |
+            //   loop  |     |     | current
+            //         .---->|     | loop
+            //               |     |
+            //               |-----.
+            //
+            noAlignCurrentLoop = true;
+        }
+
+        // else if last loop completely encloses current loop,
+        // then last loop should not be aligned.
+        else if ((emitLastLoopStart <= currLoopStart) && (currLoopEnd < emitLastLoopEnd))
+        {
+            // Note: If current and last loop starts at same point,
+            // retain the alignment flag of the smaller loop.
+            //               |
+            //         .---->|<----.
+            //   last  |     |     |
+            //   loop  |     |     | current
+            //         |     |-----. loop
+            //         |     |
+            //         .---->|
+            //
+            noAlignLastLoop = true;
+        }
+        else
+        {
+            // The loops intersect and should not align either of the loops
+            noAlignLastLoop    = true;
+            noAlignCurrentLoop = true;
+        }
+
+        if (noAlignLastLoop || noAlignCurrentLoop)
+        {
             instrDescAlign* alignInstr = emitAlignList;
-            while ((alignInstr != nullptr) && (alignInstr->idaIG->igNext != dstIG))
+            bool            markedLastLoop = !noAlignLastLoop;
+            bool            markedCurrLoop = !noAlignCurrentLoop;
+            while ((alignInstr != nullptr))
             {
+                // Find the IG before current loop and clear the IGF_LOOP_ALIGN flag
+                if (noAlignCurrentLoop && (alignInstr->idaIG->igNext == dstIG))
+                {
+                    assert(!markedCurrLoop);
+                    alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
+                    markedCurrLoop = true;
+                    JITDUMP("** Skip alignment for loop IG%02u ~ IG%02u because it encloses an aligned loop IG%02u ~ IG%02u.\n",
+                            currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
+                }
+
+                // Find the IG before the last loop and clear the IGF_LOOP_ALIGN flag
+                if (noAlignLastLoop && (alignInstr->idaIG->igNext != nullptr) &&
+                    (alignInstr->idaIG->igNext->igNum == emitLastLoopStart))
+                {
+                    assert(!markedLastLoop);
+                    assert(alignInstr->idaIG->isLoopAlign());
+                    alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
+                    markedLastLoop = true;
+                    JITDUMP("** Skip alignment for loop IG%02u ~ IG%02u because it encloses an aligned loop IG%02u ~ IG%02u.\n",
+                            emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
+                }
+
+                if (markedLastLoop && markedCurrLoop)
+                {
+                    break;
+                }
+
                 alignInstr = alignInstr->idaNext;
             }
 
-            // ...and clear the IGF_LOOP_ALIGN flag
-            if (alignInstr != nullptr)
-            {
-                assert(alignInstr->idaIG->igNext == dstIG);
-                alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
-            }
-
-            JITDUMP(
-                "** Skip alignment for loop IG%02u ~ IG%02u, because it encloses an aligned loop IG%02u ~ IG%02u.\n",
-                currLoopStart, currLoopEnd, emitLastInnerLoopStartIgNum, emitLastInnerLoopEndIgNum);
+            assert(markedLastLoop && markedCurrLoop);
         }
     }
 }
