@@ -3467,7 +3467,7 @@ void Compiler::lvaSortByRefCount()
             assert(varDsc->lvType != TYP_STRUCT ||
                    varDsc->lvDoNotEnregister); // For structs, should have set this when we set lvAddrExposed.
         }
-        else if (varTypeIsStruct(varDsc))
+        if (varTypeIsStruct(varDsc))
         {
             // Promoted structs will never be considered for enregistration anyway,
             // and the DoNotEnregister flag was used to indicate whether promotion was
@@ -3481,28 +3481,28 @@ void Compiler::lvaSortByRefCount()
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
         }
-        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
+        if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_DepField));
         }
-        else if (varDsc->lvPinned)
+        if (varDsc->lvPinned)
         {
             varDsc->lvTracked = 0;
 #ifdef JIT32_GCENCODER
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_PinningRef));
 #endif
         }
-        else if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
+        if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
         {
             varDsc->lvTracked = 0;
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_MinOptsGC));
         }
-        else if ((opts.compFlags & CLFLG_REGVAR) == 0)
+        if ((opts.compFlags & CLFLG_REGVAR) == 0)
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_NoRegVars));
         }
 #if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
-        else if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
+        if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
         {
             // For x86/Linux, we need to track "this".
             // However we cannot have it in tracked variables, so we set "this" pointer always untracked
