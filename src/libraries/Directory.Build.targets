@@ -21,7 +21,7 @@
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
     <NetCoreAppCurrentTestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
     <NetCoreAppCurrentTestHostSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
-    
+
     <TargetsForTfmSpecificContentInPackage Condition="'$(IsPackable)' == 'true'">$(TargetsForTfmSpecificContentInPackage);LibIntellisenseDocs</TargetsForTfmSpecificContentInPackage>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
 
@@ -300,7 +300,7 @@
   <!-- TODO: Remove this after https://github.com/NuGet/NuGet.Client/pull/3980 is merged.-->
   <Target Name="RemoveXmlFilesFromBuildOutput" BeforeTargets="GenerateNuspec">
     <PropertyGroup>
-      <AllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;</AllowedOutputExtensionsInPackageBuildOutputFolder> 
+      <AllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;</AllowedOutputExtensionsInPackageBuildOutputFolder>
       <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>.pdb;.mdb;$(AllowedOutputExtensionsInPackageBuildOutputFolder)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
     </PropertyGroup>
   </Target>
@@ -310,8 +310,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Ensure AnalyzerReference items are restored and built 
-         The target framework of Analyzers has no relationship to that of the refrencing project, 
+    <!-- Ensure AnalyzerReference items are restored and built
+         The target framework of Analyzers has no relationship to that of the refrencing project,
          so we don't apply TargetFramework filters nor do we pass in TargetFramework.
          When BuildProjectReferences=false we make sure to set BuildReference=false to make
          sure not to try to call GetTargetPath in the outerbuild of the analyzer project. -->
@@ -329,9 +329,9 @@
 
     <ItemGroup>
       <Content Include="@(_AnalyzerFile)" Pack="True" Condition="!%(_AnalyzerFile.IsSymbol)" />
-      <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).           
+      <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).
            Pack does honor TargetPath and does Path.Combine("lib/%(TargetFramework)", "%(TargetPath)"),
-           so a rooted path value for TargetPath will override lib. 
+           so a rooted path value for TargetPath will override lib.
            https://github.com/NuGet/Home/issues/10860 -->
       <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
     </ItemGroup>
@@ -347,7 +347,7 @@
       <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
       <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
     </ItemGroup>
-    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'" 
+    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
            Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
 
@@ -404,8 +404,9 @@
     </ItemGroup>
 
     <Message Text="** Installing workload @(WorkloadIdForTesting)" Importance="High" />
-    <InstallWorkload ManifestPackage="@(WorkloadManifestForTesting)"
+    <InstallWorkload
                      WorkloadId="@(WorkloadIdForTesting)"
+                     VersionBand="$(SdkBandVersion)"
                      BuiltNuGetsPath="$(LibrariesShippingPackagesDir)"
                      ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
                      OutputDir="$(SdkPathForWorkloadTesting)" />

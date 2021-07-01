@@ -61,8 +61,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <WorkloadManifestForTesting Include="Microsoft.NET.Workload.Mono.ToolChain.Manifest-$(SdkBandVersion)" Version="$(PackageVersion)" VersionBand="$(SdkBandVersion)" />
-    <WorkloadIdForTesting Include="microsoft-net-sdk-blazorwebassembly-aot" Name="microsoft.net.workload.mono.toolchain" />
+    <!--<WorkloadManifestForTesting Include="Microsoft.NET.Workload.Mono.ToolChain.Manifest-$(SdkBandVersion)" Version="$(PackageVersion)" VersionBand="$(SdkBandVersion)" />-->
+    <!--<WorkloadIdForTesting Include="microsoft-net-sdk-blazorwebassembly-aot" Name="microsoft.net.workload.mono.toolchain" />-->
+
+    <WorkloadIdForTesting Include="microsoft-net-sdk-blazorwebassembly-aot" Name="microsoft.net.workload.mono.toolchain"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />

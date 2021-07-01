@@ -54,8 +54,11 @@ namespace Microsoft.Workload.Build.Tasks
         {
             Utils.Logger = Log;
 
-            if (!HasMetadata(WorkloadId, nameof(WorkloadId), "Version"))
+            if (!HasMetadata(WorkloadId, nameof(WorkloadId), "Version") ||
+                !HasMetadata(WorkloadId, nameof(WorkloadId), "ManifestName"))
+            {
                 return false;
+            }
 
             if (!Directory.Exists(OutputDir))
             {
@@ -73,6 +76,10 @@ namespace Microsoft.Workload.Build.Tasks
 
             PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
             // if (!installer.Install(
+            if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
+            {
+                return false;
+            }
 
 
             // if (!InstallWorkloadManifest(WorkloadId.ItemSpec, WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
@@ -89,27 +96,46 @@ namespace Microsoft.Workload.Build.Tasks
             return !Log.HasLoggedErrors;
         }
 
-        private bool InstallWorkloadManifest(string workloadId, string workloadVersion, [NotNullWhen(true)] out ManifestInformation? manifest)
+        private bool InstallWorkloadManifest(string name, string version, [NotNullWhen(true)] out ManifestInformation? manifest)
         {
             manifest = null;
-            StringBuilder errorBuilder = new();
 
-            if (TryInstallManifestFromArtifacts(workloadId, workloadVersion))
+            PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
+            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
+                                          Version: version,
+                                          OutputDir: Path.Combine(OutputDir, "sdk-manifests", VersionBand, name),
+                                          relativeSourceDir: "data");
 
-            string jsonPath = Path.Combine(targetManifestDirectory, "WorkloadManifest.json");
+            if (!installer.Install(pkgRef))
+                return false;
+
+            // StringBuilder errorBuilder = new();
+
+            // if (TryInstallManifestFromArtifacts(workloadId, workloadVersion))
+            string manifestDir = pkgRef.OutputDir;
+
+            string jsonPath = Path.Combine(manifestDir, "WorkloadManifest.json");
             if (!File.Exists(jsonPath))
             {
                 Log.LogError($"Could not find WorkloadManifest.json at {jsonPath}");
                 return false;
             }
 
-            manifest = JsonSerializer.Deserialize<ManifestInformation>(
-                                File.ReadAllBytes(jsonPath),
-                                new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                {
-                                    AllowTrailingCommas = true,
-                                    ReadCommentHandling = JsonCommentHandling.Skip
-                                });
+            try
+            {
+                manifest = JsonSerializer.Deserialize<ManifestInformation>(
+                                    File.ReadAllBytes(jsonPath),
+                                    new JsonSerializerOptions(JsonSerializerDefaults.Web)
+                                    {
+                                        AllowTrailingCommas = true,
+                                        ReadCommentHandling = JsonCommentHandling.Skip
+                                    });
+            }
+            catch (JsonException je)
+            {
+                Log.LogError($"Failed to read from {jsonPath}: {je.Message}");
+                return false;
+            }
 
             if (manifest == null)
             {
@@ -117,11 +143,9 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            manifestNupkgPath = nupkgPath;
+            // manifestNupkgPath = nupkgPath;
             return true;
         }
-
-
 
         private IEnumerable<PackageReference> GetPackageReferencesForWorkload(ManifestInformation manifest, string workloadId)
         {
@@ -151,7 +175,7 @@ namespace Microsoft.Workload.Build.Tasks
                 }
 
                 if (!string.IsNullOrEmpty(packageName) && !packageName.Contains("cross", StringComparison.InvariantCultureIgnoreCase))
-                    references.Add(new PackageReference(packageName, item.Value.Version));
+                    references.Add(new PackageReference(packageName, item.Value.Version, Path.Combine(_packsDir!, $"{packageName}.{item.Value.Version}")));
             }
 
             return references;
@@ -218,5 +242,5 @@ namespace Microsoft.Workload.Build.Tasks
         );
     }
 
-    internal record PackageReference(string Name, string Version, string OutputDir, string? RestoredPath=null);
+    internal record PackageReference(string Name, string Version, string OutputDir, string? relativeSourceDir=null, string? RestoredPath=null);
 }

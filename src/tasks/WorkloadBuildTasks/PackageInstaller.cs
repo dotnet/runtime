@@ -62,15 +62,14 @@ namespace Microsoft.Workload.Build.Tasks
                                                StringBuilder errorBuilder,
                                                [NotNullWhen(true)] out IEnumerable<PackageReference>? remaining)
         {
-            // string builtNuGetsFullPath = BuiltNuGetsPath.GetMetadata("FullPath");
-
+            remaining = null;
             var allFiles = string.Join($"{Environment.NewLine}  ", Directory.EnumerateFiles(_localNuGetsPath, "*", new EnumerationOptions { RecurseSubdirectories = true }));
             _logger.LogMessage(MessageImportance.Low, $"Files in {_localNuGetsPath}: {allFiles}");
 
             List<PackageReference> remainingList = new(references.Count());
-            foreach (var reference in references)
+            foreach (var pkgRef in references)
             {
-                var nupkgFileName = $"{reference.Name}.{reference.Version}.nupkg";
+                var nupkgFileName = $"{pkgRef.Name}.{pkgRef.Version}.nupkg";
                 var nupkgPath = Path.Combine(_localNuGetsPath, nupkgFileName);
                 if (!File.Exists(nupkgPath))
                 {
@@ -82,7 +81,7 @@ namespace Microsoft.Workload.Build.Tasks
 
                     if (found.Length == 0)
                     {
-                        remainingList.Add(reference);
+                        remainingList.Add(pkgRef);
                         continue;
                     }
 
@@ -91,24 +90,38 @@ namespace Microsoft.Workload.Build.Tasks
                 }
 
                 // string installedPackDir = Path.Combine(_packsDir!, reference.Name, reference.Version);
-                string stampFilePath = Path.Combine(reference.OutputDir, s_stampFileName);
+                string stampFilePath = Path.Combine(pkgRef.OutputDir, s_stampFileName);
                 if (!IsFileNewer(nupkgPath, stampFilePath))
                 {
-                    _logger.LogMessage(MessageImportance.Normal, $"Skipping {reference.Name}/{reference.Version} as it is already installed in {reference.OutputDir}.{Environment.NewLine}  {nupkgPath} is older than {stampFilePath}");
+                    _logger.LogMessage(MessageImportance.Normal, $"Skipping {pkgRef.Name}/{pkgRef.Version} as it is already installed in {pkgRef.OutputDir}.{Environment.NewLine}  {nupkgPath} is older than {stampFilePath}");
                     continue;
                 }
 
-                if (Directory.Exists(reference.OutputDir))
+                if (Directory.Exists(pkgRef.OutputDir))
                 {
-                    _logger.LogMessage(MessageImportance.Normal, $"Deleting {reference.OutputDir}");
-                    Directory.Delete(reference.OutputDir, recursive: true);
+                    _logger.LogMessage(MessageImportance.Normal, $"Deleting {pkgRef.OutputDir}");
+                    Directory.Delete(pkgRef.OutputDir, recursive: true);
                 }
 
-                _logger.LogMessage(MessageImportance.High, $"Extracting {nupkgPath} => {reference.OutputDir}");
-                ZipFile.ExtractToDirectory(nupkgPath, reference.OutputDir);
+                _logger.LogMessage(MessageImportance.High, $"Extracting {nupkgPath} => {pkgRef.OutputDir}");
+
+                if (string.IsNullOrEmpty(pkgRef.relativeSourceDir))
+                {
+                    ZipFile.ExtractToDirectory(nupkgPath, pkgRef.OutputDir);
+                }
+                else
+                {
+                    string tmpUnzipDir = Path.Combine(_tempDir, "tmp-unzip", pkgRef.Name);
+                    ZipFile.ExtractToDirectory(nupkgPath, tmpUnzipDir);
+
+                    var sourceDir = Path.Combine(tmpUnzipDir, pkgRef.relativeSourceDir);
+                    var targetDir = Path.Combine(pkgRef.OutputDir);
+                    if (!CopyDirectoryAfresh(sourceDir, targetDir))
+                        return false;
+                }
 
                 // Add .nupkg.sha512, so it gets picked up when resolving nugets
-                File.WriteAllText(Path.Combine(reference.OutputDir, $"{nupkgFileName}.sha512"), string.Empty);
+                File.WriteAllText(Path.Combine(pkgRef.OutputDir, $"{nupkgFileName}.sha512"), string.Empty);
 
                 File.WriteAllText(stampFilePath, string.Empty);
             }
@@ -156,7 +169,10 @@ namespace Microsoft.Workload.Build.Tasks
                     }
 
                     var source = pkgRef.RestoredPath;
-                    if (!CopyDirectory(pkgRef.RestoredPath, pkgRef.OutputDir))
+                    if (!string.IsNullOrEmpty(pkgRef.relativeSourceDir))
+                        source = Path.Combine(source, pkgRef.relativeSourceDir);
+
+                    if (!CopyDirectoryAfresh(source, pkgRef.OutputDir))
                         return false;
                 }
 
@@ -256,7 +272,7 @@ namespace Microsoft.Workload.Build.Tasks
             return true;
         }
 
-        private bool CopyDirectory(string srcDir, string destDir)
+        private bool CopyDirectoryAfresh(string srcDir, string destDir)
         {
             try
             {
