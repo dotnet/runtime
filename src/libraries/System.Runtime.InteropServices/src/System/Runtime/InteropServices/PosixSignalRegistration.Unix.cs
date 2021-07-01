@@ -77,6 +77,7 @@ namespace System.Runtime.InteropServices
                     // Microsoft.Win32.Primitives.
                     Interop.CheckIo(-1);
                 }
+                
                 Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
                 s_initialized = true;
             }
@@ -87,6 +88,7 @@ namespace System.Runtime.InteropServices
                     signalRegistrations = new List<WeakReference<PosixSignalRegistration>>();
                     s_registrations.Add(_signo, signalRegistrations);
                 }
+
                 if (signalRegistrations.Count == 0)
                 {
                     if (!Interop.Sys.EnablePosixSignalHandling(_signo))
@@ -96,6 +98,7 @@ namespace System.Runtime.InteropServices
                         Interop.CheckIo(-1);
                     }
                 }
+
                 signalRegistrations.Add(new WeakReference<PosixSignalRegistration>(this));
             }
             _registered = true;
@@ -211,15 +214,18 @@ namespace System.Runtime.InteropServices
                             }
                         }
                     }
+
                     if (ctx.Cancel)
                     {
                         return;
                     }
                 }
+
                 if (Interop.Sys.HandleNonCanceledPosixSignal(state.signo, handlersCalled ? 0 : 1))
                 {
                     return;
                 }
+
                 // HandleNonCanceledPosixSignal returns false when handlers got registered.
                 state.registrations = GetRegistrations(state.signo);
             } while (true);
@@ -252,6 +258,7 @@ namespace System.Runtime.InteropServices
                             i--;
                         }
                     }
+
                     if (signalRegistrations.Count == 0)
                     {
                         Interop.Sys.DisablePosixSignalHandling(_signo);
