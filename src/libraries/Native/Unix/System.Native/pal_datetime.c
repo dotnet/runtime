@@ -54,5 +54,7 @@ char* SystemNative_GetDefaultTimeZone()
     {
         return NULL;
     }
+#else
+    return NULL;
 #endif
 }
